@@ -8,6 +8,13 @@ import {
     gameDataSession,
 } from "./gameDataValidators"
 import {
+    discordBotHeartbeats,
+    discordPanelServers,
+    discordPanelStatus,
+    discordPublications,
+    discordPublicPanels,
+} from "./discordPublicationTable"
+import {
     imageAssetKind,
     imageContentType,
     matchTeamAssignment,
@@ -22,23 +29,19 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
-    discordSeedMessages,
-    discordSeedPlans,
-    discordSeedRuns,
-} from "./discordSeedTable"
-import {
     leagueFixtures,
     leagueResults,
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
 import {
+    discordSeedMessages,
+    discordSeedPlans,
+    discordSeedRuns,
+} from "./discordSeedTable"
+import {
     discordApplicationEmoji,
     discordPanelGraphics,
 } from "./discordPanelGraphicsTable"
-import {
-    discordPublications,
-    discordPublicPanels,
-} from "./discordPublicationTable"
 import { storedMatchTemplateValidator } from "./matchTemplateValidators"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
 import { defineSchema, defineTable } from "convex/server"
@@ -562,6 +565,9 @@ const guildGames = defineTable({
 export default defineSchema({
     discordPublications,
     discordPublicPanels,
+    discordPanelStatus,
+    discordPanelServers,
+    discordBotHeartbeats,
     peopleIntegrationState: defineTable({
         key: v.literal("global"),
         generation: v.string(),
@@ -1237,6 +1243,9 @@ export default defineSchema({
         leaseUntil: v.number(),
         threadId: v.optional(v.string()),
         ticketId: v.optional(v.id("ticketThreads")),
+        // Ticket number reserved on submit, so the private thread is named
+        // "Hlášení #17 · Hans_88" (L3-68); absent on older reports.
+        reportNumber: v.optional(v.number()),
     })
         .index("draftId", ["draftId"])
         .index("ticketId", ["ticketId"])

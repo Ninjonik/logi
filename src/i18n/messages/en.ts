@@ -4309,7 +4309,8 @@ export const enMessages = {
         publishedTraining: "Training published.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
-            not_found: "This draft no longer exists. Someone may have deleted it.",
+            not_found:
+                "This draft no longer exists. Someone may have deleted it.",
             not_draft: "This match has already been published.",
             forbidden:
                 "Only clan managers can create matches. If your session expired, sign in again.",
@@ -4351,14 +4352,28 @@ export const enMessages = {
             map: "Map",
             timeOfDay: "Time of day",
             strongpoint: "Middle point",
-            timesOfDay: { day: "Day", morning: "Morning", dusk: "Dusk", evening: "Evening", night: "Night", rain: "Rain", overcast: "Overcast" },
+            timesOfDay: {
+                day: "Day",
+                morning: "Morning",
+                dusk: "Dusk",
+                evening: "Evening",
+                night: "Night",
+                rain: "Rain",
+                overcast: "Overcast",
+            },
             choose: "Choose",
             name: "Name",
-            nameHint: "Filled in from the teams and template. You can change it.",
+            nameHint:
+                "Filled in from the teams and template. You can change it.",
             category: "Category",
             noCategory: "No category",
             mode: "Mode",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the hill" },
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the hill",
+            },
             storedMap: "Saved map: {map}. Choose a map only to change it.",
             otherTeam: "Another team",
             addTeam: "Add another team",
@@ -4389,7 +4404,8 @@ export const enMessages = {
             duration: "Duration",
             minutes: "min",
             repeat: "Repeat every week",
-            repeatHint: "The next matches are created automatically two weeks ahead.",
+            repeatHint:
+                "The next matches are created automatically two weeks ahead.",
         },
         signups: {
             fromTemplate: "From the {name} template",
@@ -4402,7 +4418,8 @@ export const enMessages = {
             },
             noLimit: "no limit",
             max: "max {count}",
-            noGroups: "This game has no sign-up groups; players sign up without choosing one.",
+            noGroups:
+                "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -4413,11 +4430,13 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote: "Every clan member signs up for a training with one button.",
+            trainingNote:
+                "Every clan member signs up for a training with one button.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
-            capHint: "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
+            capHint:
+                "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
             reminderOptions: {
                 off: "Nobody",
                 member: "Members",
@@ -4425,13 +4444,16 @@ export const enMessages = {
                 all: "Members, recruits and reserves",
             },
             attendanceReminders: "Attendance reminders",
-            attendanceHint: "A DM to roster players who have not confirmed, before the meeting.",
+            attendanceHint:
+                "A DM to roster players who have not confirmed, before the meeting.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "A change reschedules the reminders that have not been sent yet.",
+            attendanceEditHint:
+                "A change reschedules the reminders that have not been sent yet.",
             squadPreset: "Squad preset",
             squadPresetNone: "No preset",
             squadPresetHint: "The roster starts from it once you create it.",
-            squadPresetRosterExists: "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
+            squadPresetRosterExists:
+                "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
             requiredRoles: "Roles needed to sign up",
             rewardRoles: "Roles for passing",
             rolesPlaceholder: "Choose roles",
@@ -4452,18 +4474,23 @@ export const enMessages = {
             password: "Password",
             passwordHint: "Only players on the roster see the password.",
             defaultChannel: "Default channel",
-            channelsLocked: "Channels stay as they were when the match was published; the bot manages its messages there.",
+            channelsLocked:
+                "Channels stay as they were when the match was published; the bot manages its messages there.",
             meetingChannel: "Meeting voice channel",
             meetingChannelDefault: "Clan default",
-            meetingChannelHint: "Logi reads attendance at the meeting from this channel.",
+            meetingChannelHint:
+                "Logi reads attendance at the meeting from this channel.",
             voiceCategory: "Category for the voice channels",
             voiceCategoryDefault: "Clan default",
             topicPreset: "Forum topics",
             topicPresetNone: "No topics",
             participantRoles: "Attendee and reserve roles",
-            participantRolesHint: "The bot gives the players a role of this match.",
-            participantRolesOffHint: "When you switch it off, the bot deletes the roles it created.",
-            forumMissing: "The clan has no forum category set, so no forum will be created.",
+            participantRolesHint:
+                "The bot gives the players a role of this match.",
+            participantRolesOffHint:
+                "When you switch it off, the bot deletes the roles it created.",
+            forumMissing:
+                "The clan has no forum category set, so no forum will be created.",
             openChannelSettings: "Set up channels",
         },
         review: {
@@ -4487,7 +4514,8 @@ export const enMessages = {
             missing: "Missing",
             changes: "What changes",
             noChanges: "You have not changed anything yet.",
-            noticeEdit: "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
+            noticeEdit:
+                "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
         },
         preview: {
             title: "Discord preview",
@@ -4514,9 +4542,11 @@ export const enMessages = {
             title: "More options",
             summary: "Description, pictures, notes and tactical maps",
             description: "Description",
-            descriptionHint: "Shown in the Discord announcement when there are no notes.",
+            descriptionHint:
+                "Shown in the Discord announcement when there are no notes.",
             notes: "Notes",
-            notesHint: "Shown in the Discord announcement instead of the description.",
+            notesHint:
+                "Shown in the Discord announcement instead of the description.",
             thumbnail: "Thumbnail",
             image: "Picture",
             upload: "Upload",
@@ -4528,7 +4558,8 @@ export const enMessages = {
         edit: {
             title: "Edit match",
             titleTraining: "Edit training",
-            description: "Saved changes go straight into the announcement in Discord.",
+            description:
+                "Saved changes go straight into the announcement in Discord.",
             breadcrumb: "Edit",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Saved times",
@@ -4543,17 +4574,22 @@ export const enMessages = {
             leavePrompt: "You have unsaved changes. Leave anyway?",
             series: "This match belongs to a weekly series. Changes apply to this date only.",
             seriesEdit: "Edit the series",
-            seriesSource: "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
+            seriesSource:
+                "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
             stopHint: "Switch repeating off to stop the series.",
             lockedTitle: "This match can no longer be edited",
             lockedTrainingTitle: "This training can no longer be edited",
-            lockedDescription: "The match is closed. You find the result and attendance on the match page.",
-            lockedTrainingDescription: "The training is closed. You find attendance on the training page.",
+            lockedDescription:
+                "The match is closed. You find the result and attendance on the match page.",
+            lockedTrainingDescription:
+                "The training is closed. You find attendance on the training page.",
             backToMatch: "Back to the match",
             backToTraining: "Back to the training",
             notFoundTitle: "Match not found",
-            notFoundDescription: "It may have been deleted, or it belongs to another clan.",
-            invalidSchedule: "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
+            notFoundDescription:
+                "It may have been deleted, or it belongs to another clan.",
+            invalidSchedule:
+                "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
             fields: {
                 name: "Name",
                 category: "Category",
@@ -4602,8 +4638,10 @@ export const enMessages = {
         },
         overview: {
             title: "Overview",
-            description: "How the match is set up and how players see it in Discord.",
-            descriptionTraining: "How the training is set up and how players see it in Discord.",
+            description:
+                "How the match is set up and how players see it in Discord.",
+            descriptionTraining:
+                "How the training is set up and how players see it in Discord.",
             edit: "Edit",
             readOnly: "Only clan managers can change the match.",
             stratmaps: "Tactical maps",
@@ -5724,6 +5762,120 @@ export const enMessages = {
         unknownUser: "user",
         unknownRole: "role",
         unknownChannel: "channel",
+    },
+    joinPage: {
+        metaTitle: "Join {name}",
+        metaDescription: "Join the game server {name}.",
+        opening: "Opening {game}…",
+        players: "{players} / {capacity} players",
+        map: "map {map}",
+        steamPrompt: "Steam asks whether to open the link. Confirm Open.",
+        openAgain: "Open again",
+        manualTitle: "Join manually",
+        addressLabel: "Server address",
+        copy: "Copy",
+        copied: "Copied",
+        copyFailed: "Copying failed. Select the address and copy it yourself.",
+        steamInstructions:
+            "In Steam: View → Game Servers → Favorites → Add a server and paste the address.",
+        backToDiscord: "Back to Discord",
+        joinCodeTitle: "Join code",
+        joinCodeLabel: "Code for joining the game",
+        joinCodeHelp: "In the game, open joining a game and enter this code.",
+        noAddress: "The server address is not set yet. Ask a clan admin.",
+        noJoinCode: "The join code is not set yet. Ask a clan admin.",
+        notFoundTitle: "Server not found",
+    },
+    discordPanelStatus: {
+        states: {
+            published: "Published",
+            error: "Error",
+            waiting: "Waiting for the bot",
+            unsent: "Not sent",
+            paused: "Paused",
+        },
+        botOnline: "Bot online",
+        botVersion: "version {version} · last contact {ago}",
+        refreshEvery: "Panels refresh every 60 s",
+        botOffline:
+            "The bot is not responding · last contact {ago}. Panels are not refreshing and new ones will not be sent. Check that the bot is running; restart it after an update.",
+        botNeverSeen:
+            "The bot has not checked in yet. Panels do not refresh and new ones are not sent until the bot runs.",
+        botOutdated:
+            "The bot runs an older version {version}. Discord panels need a newer version. Restart the bot after updating; while the old version runs, panels do not refresh.",
+        permissions: {
+            view_channel: "View Channel",
+            send_messages: "Send Messages",
+            embed_links: "Embed Links",
+            attach_files: "Attach Files",
+            read_message_history: "Read Message History",
+        },
+        errors: {
+            bot_not_in_server: {
+                title: "The bot is not in the Discord server.",
+                fix: "Invite the Logi bot to the server again, then click Try again.",
+            },
+            channel_missing: {
+                title: "Channel {channel} no longer exists or the bot cannot see it.",
+                fix: "Choose another channel in the editor and save.",
+            },
+            channel_type: {
+                title: "Messages cannot be posted in {channel}.",
+                fix: "Choose a text or announcement channel in the editor.",
+            },
+            missing_permissions: {
+                title: "The bot lacks the {permissions} permission in {channel}.",
+                fix: "In Discord open Edit Channel → Permissions → Logi and turn on {permissions}. Then click Try again.",
+            },
+            delivery_uncertain: {
+                title: "Discord did not confirm whether it received the message.",
+                fix: "The bot finds the message on the next refresh or sends it again. Nothing to do.",
+            },
+            discord_unavailable: {
+                title: "Discord is not responding right now.",
+                fix: "The bot retries on its own. If it takes long, click Try again.",
+            },
+            source_missing: {
+                title: "The panel's game server is no longer in Logi.",
+                fix: "Choose another server in the editor, or delete the panel.",
+            },
+            source_not_collecting: {
+                title: "Logi is not collecting data from the game server.",
+                fix: "Turn on collection in Game servers, then click Try again.",
+            },
+            provider_unreachable: {
+                title: "The game server is not responding.",
+                fix: "The panel shows the last data. Check the address and key in Game servers.",
+            },
+            provider_rate_limited: {
+                title: "The data provider is refusing more requests right now.",
+                fix: "The panel shows the last data and retries. If it lasts over an hour, raise the key's limit or replace it in Game servers.",
+            },
+            render_failed: {
+                title: "The panel could not be built.",
+                fix: "Shorten the panel's title or description. If the error persists, report it to Logi support.",
+            },
+            unsupported_kind: {
+                title: "The bot does not support this panel kind yet.",
+                fix: "Update the bot and restart it.",
+            },
+            competition_missing: {
+                title: "The panel's competition no longer exists.",
+                fix: "Choose another competition in the editor, or delete the panel.",
+            },
+            unknown: {
+                title: "The message could not be sent.",
+                fix: "Click Try again. If the error persists, report it to Logi support.",
+            },
+        },
+        warnings: {
+            password_hidden_public_channel:
+                "The channel is now public, so the password was removed from the panel. Move the panel to a private channel to show the password again.",
+            live_data_unavailable:
+                "Live data is unavailable right now; the panel shows the last collected data.",
+            attach_files_missing:
+                "The bot lacks the Attach Files permission, so the panel has no image.",
+        },
     },
 } as const
 

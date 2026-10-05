@@ -146,18 +146,18 @@ function startFallbackWorker() {
     return fallbackWorker
 }
 
-import {
-    startPublicPanelWorker,
-    handlePublicPanelButton,
-} from "./public-panels/worker"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
+import { startPublicPanelWorker } from "./public-panels/worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
     startLeagueWorker(client)
-    startPublicPanelWorker(client)
+    // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
+    startPublicPanelWorker(client, {
+        refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
+    })
     startManagedRoleWorker(client)
     startTeamRequestNotificationWorker(client)
     startApplicationEmojiProvisioning(client)
@@ -200,7 +200,7 @@ client.on(Events.InteractionCreate, (interaction) =>
     // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
     runInteraction(interaction, async () => {
         if (interaction.isButton()) {
-            if (await handlePublicPanelButton(interaction)) return
+            // Panel buttons route through the registry (public-panels/interactions.ts).
             await interactionHandler.handleButtonInteraction(interaction)
             return
         }

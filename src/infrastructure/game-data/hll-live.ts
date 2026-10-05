@@ -18,22 +18,26 @@ const number = z
     .nonnegative()
     .nullish()
     .transform((v) => v ?? null)
+const mapSchema = z.object({
+    id: text.optional(),
+    pretty_name: text,
+    game_mode: text.optional(),
+    /** CRCON 10+: "day", "night", "dusk", …; absent on older servers. */
+    environment: text.nullish(),
+})
 const infoSchema = z.object({
     name: z.object({ name: text }),
     current_map: z
         .object({
             start: z.number().finite().nullish(),
-            map: z
-                .object({
-                    id: text.optional(),
-                    pretty_name: text,
-                    game_mode: text.optional(),
-                })
-                .nullable(),
+            map: mapSchema.nullable(),
         })
         .nullable(),
+    next_map: z.object({ map: mapSchema.nullable() }).nullish().catch(null),
     player_count: count,
     max_player_count: count,
+    /** Only some CRCON builds report the join queue; never guessed. */
+    queue_count: count.nullish().catch(null),
     score: z.object({ allied: count, axis: count }).nullable(),
     time_remaining: number,
 })
@@ -77,6 +81,16 @@ function status(body: unknown, now: number): NonNullable<HllLive["status"]> {
               ]
             : [],
         timeRemainingSeconds: data.time_remaining,
+        environment: data.current_map?.map?.environment ?? null,
+        queueCount: data.queue_count ?? null,
+        nextMap: data.next_map?.map
+            ? {
+                  name: data.next_map.map.pretty_name,
+                  layerId: data.next_map.map.id ?? null,
+                  mode: data.next_map.map.game_mode ?? null,
+                  environment: data.next_map.map.environment ?? null,
+              }
+            : null,
     }
 }
 const delay = (error: unknown) =>

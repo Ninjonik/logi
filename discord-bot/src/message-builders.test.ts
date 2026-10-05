@@ -4,7 +4,6 @@ import test from "node:test"
 import {
     buildAnnouncementV2Message,
     buildAttendanceReminderComponents,
-    buildCalendarPanelEmbed,
     buildEventComponents,
     buildEventEmbed,
     buildMatchTeamLogoEmbeds,
@@ -16,7 +15,6 @@ import {
     escapeMatchTeamText,
 } from "./message-builders"
 import type {
-    CalendarItem,
     DiscordConfig,
     EventCategory,
     EventRecord,
@@ -95,12 +93,6 @@ function createTrainingEvent(patch: Partial<EventRecord> = {}): EventRecord {
         }),
         ...patch,
     }
-}
-
-function futureIso(days: number, hours = 0) {
-    return new Date(
-        Date.now() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000
-    ).toISOString()
 }
 
 test("membership panel categories open the shared membership wizard", () => {
@@ -528,99 +520,6 @@ test("buildEventEmbed links the event-specific forum channel when available", ()
     ).toJSON().description
 
     assert.match(description ?? "", /^-# <#forum-123> · Managed in Logi$/m)
-})
-
-test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
-    const embed = buildCalendarPanelEmbed(
-        { ...config, defaultLanguage: "en" },
-        [{ id: "friendly", label: "Friendly", color: "#22c55e", emoji: "🟩" }],
-        [
-            createMatchEvent({
-                matchType: "friendly",
-                meetingStart: "2099-01-01T19:00:00.000Z",
-                gameStart: "2099-01-01T20:00:00.000Z",
-                gameEnd: "2099-01-01T21:30:00.000Z",
-            }),
-        ]
-    )
-
-    assert.match(embed.toJSON().description ?? "", /🟩 Friendly/)
-    assert.doesNotMatch(embed.toJSON().description ?? "", /🟩 🟩 Friendly/)
-})
-
-test("buildCalendarPanelEmbed renders chronicle-style grouped rows with matched color chips", () => {
-    const embed = buildCalendarPanelEmbed(
-        config,
-        [
-            {
-                id: "competitive",
-                label: "Kompetitivní zápas",
-                color: "#dc2626",
-                emoji: "ðŸ†",
-            },
-        ],
-        [
-            createMatchEvent({
-                id: "event-red",
-                name: "Registrace do aktivního výběru",
-                matchType: "competitive",
-                meetingStart: futureIso(1),
-                gameStart: futureIso(1),
-                gameEnd: futureIso(1, 1),
-            }),
-        ],
-        [
-            {
-                id: "calendar-green",
-                guildId: "guild-1",
-                title: "VLK vs 57TH - Friendly",
-                color: "#22c55e",
-                emoji: "ðŸ¤",
-                label: "Přátelský zápas",
-                startAt: futureIso(2),
-                endAt: futureIso(2, 1),
-                allDay: false,
-                createdAt: "2026-07-29T10:00:00.000Z",
-                updatedAt: "2026-07-29T10:00:00.000Z",
-            } satisfies CalendarItem,
-        ]
-    )
-
-    const json = embed.toJSON()
-    assert.equal(json.title, "📅 Kalendář")
-    assert.match(json.description ?? "", /\*\*Kategorie\*\*/)
-    assert.match(json.description ?? "", /🟥 .*Kompetitivní zápas/)
-    assert.match(json.description ?? "", /🟩 .*Přátelský zápas/)
-    assert.equal((json.description ?? "").match(/\*\*.*20\d\d\*\*/g)?.length, 2)
-    assert.match(
-        json.description ?? "",
-        /🟥 \[Registrace do aktivního výběru\]\(https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE/
-    )
-    assert.match(
-        json.description ?? "",
-        /🟩 VLK vs 57TH - Friendly <t:\d+:t> - <t:\d+:t>/
-    )
-})
-
-test("buildCalendarPanelEmbed tolerates missing event categories", () => {
-    const embed = buildCalendarPanelEmbed(
-        config,
-        undefined as unknown as EventCategory[],
-        [
-            createMatchEvent({
-                id: "event-no-categories",
-                name: "Fallback Match",
-                meetingStart: futureIso(1),
-                gameStart: futureIso(1),
-                gameEnd: futureIso(1, 1),
-            }),
-        ],
-        []
-    )
-
-    const json = embed.toJSON()
-    assert.equal(json.title, "📅 Kalendář")
-    assert.match(json.description ?? "", /Fallback Match/)
 })
 
 test("published roster image keeps its URL for signup-only changes and changes for roster content", () => {

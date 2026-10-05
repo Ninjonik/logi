@@ -1,14 +1,15 @@
 import {
-    findPublicationMessage,
-    PUBLICATION_RENDER_VERSION,
-    publicationCreatePayload,
-} from "./publication-marker"
-import {
     ChannelType,
+    MessageFlags,
     PermissionFlagsBits,
     type Client,
     type MessageCreateOptions,
 } from "discord.js"
+import {
+    findPublicationMessage,
+    PUBLICATION_RENDER_VERSION,
+    publicationCreatePayload,
+} from "./publication-marker"
 import {
     publish,
     PublicationNotSent,
@@ -27,6 +28,42 @@ const discordCode = (error: unknown) =>
     typeof error === "object" && error !== null && "code" in error
         ? error.code
         : undefined
+
+/**
+ * Why a publication channel cannot take the message, so the dashboard can
+ * name the cause and the fix (P1-16): the channel is gone, is not a text
+ * channel, or the bot lacks named permissions there.
+ */
+export class PublicationChannelError extends Error {
+    constructor(
+        readonly reason:
+            "channel_missing" | "channel_type" | "missing_permissions",
+        readonly permissions: string[] = []
+    ) {
+        super(
+            reason === "missing_permissions"
+                ? "Publication channel permissions missing."
+                : "Unsupported publication channel."
+        )
+        this.name = "PublicationChannelError"
+    }
+}
+
+/**
+ * The content hash of a message: file contents are versioned by their names,
+ * so the bytes themselves are not hashed (a re-used image is not an edit).
+ */
+export function publicationHash(message: MessageCreateOptions) {
+    const files = (message.files ?? []).map((file) =>
+        file && typeof file === "object" && "name" in file
+            ? String(file.name)
+            : "file"
+    )
+    return createHash("sha256")
+        .update(PUBLICATION_RENDER_VERSION)
+        .update(JSON.stringify({ ...message, files }))
+        .digest("hex")
+}
 /** Unknown Channel (10003): the previous channel was deleted. Permission errors
  * keep the binding so a restored channel never receives a duplicate. */
 const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
@@ -62,21 +99,27 @@ export async function publishManagedMessage(
 ) {
     const guild = await client.guilds.fetch(input.guildId)
     const channel = async (id: string) => {
-        const found = await guild.channels.fetch(id, { force: true })
+        const found = await guild.channels
+            .fetch(id, { force: true })
+            .catch((error: unknown) => {
+                if (isUnknownChannel(error))
+                    throw new PublicationChannelError("channel_missing")
+                throw error
+            })
+        if (!found) throw new PublicationChannelError("channel_missing")
         if (
-            !found ||
             ![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(
                 found.type
             ) ||
             !found.isTextBased()
         )
-            throw new Error("Unsupported publication channel.")
+            throw new PublicationChannelError("channel_type")
         const me = await guild.members.fetchMe({ force: true })
         // Only demand what this message needs; text-only panels must not fail on Attach Files.
-        if (
-            !found
+        const missing =
+            found
                 .permissionsFor(me)
-                ?.has([
+                ?.missing([
                     PermissionFlagsBits.ViewChannel,
                     PermissionFlagsBits.ReadMessageHistory,
                     PermissionFlagsBits.SendMessages,
@@ -86,9 +129,12 @@ export async function publishManagedMessage(
                     ...(input.message.files?.length
                         ? [PermissionFlagsBits.AttachFiles]
                         : []),
-                ])
-        )
-            throw new Error("Publication channel permissions missing.")
+                ]) ?? []
+        if (missing.length || !found.permissionsFor(me))
+            throw new PublicationChannelError(
+                "missing_permissions",
+                missing.length ? missing : ["ViewChannel"]
+            )
         return found
     }
     const owned = async (id: string, messageId: string) => {
@@ -110,10 +156,7 @@ export async function publishManagedMessage(
     }
     // Serialize builders before hashing; counts/timestamps come from observation data.
     // The render version re-edits every message once when the payload shape changes.
-    const hash = createHash("sha256")
-        .update(PUBLICATION_RENDER_VERSION)
-        .update(JSON.stringify(input.message))
-        .digest("hex")
+    const hash = publicationHash(input.message)
     const result = await publish(
         {
             claim: () =>
@@ -163,11 +206,16 @@ export async function publishManagedMessage(
                     client.user?.id
                 ),
             create: async (id, marker) => {
-                const destination = await channel(id).catch(() => {
-                    throw new PublicationNotSent(
-                        "Channel unavailable before send."
-                    )
-                })
+                const destination = await channel(id).catch(
+                    (error: unknown) => {
+                        throw Object.assign(
+                            new PublicationNotSent(
+                                "Channel unavailable before send."
+                            ),
+                            { cause: error }
+                        )
+                    }
+                )
                 // No visible marker: the first component carries an
                 // invisible id for recovering an uncertain create.
                 const sent = await destination
@@ -179,8 +227,11 @@ export async function publishManagedMessage(
                                 error.status
                             )
                         )
-                            throw new PublicationNotSent(
-                                "Discord rejected the create request."
+                            throw Object.assign(
+                                new PublicationNotSent(
+                                    "Discord rejected the create request."
+                                ),
+                                { cause: error }
                             )
                         throw error
                     })
@@ -193,6 +244,14 @@ export async function publishManagedMessage(
                         "Message removed during publication; retry."
                     )
                 const { flags, ...body } = input.message
+                // Discord cannot turn a Components V2 message back into a
+                // classic one: remove it, and the next pass sends it anew.
+                if (!flags && message.flags.has(MessageFlags.IsComponentsV2)) {
+                    await message.delete()
+                    throw new Error(
+                        "Message removed during publication; retry."
+                    )
+                }
                 await message.edit({
                     ...body,
                     ...publicationFiles(body.files, [
