@@ -122,7 +122,12 @@ export const pruneFixtures = internalMutation({
         assertSessionGateway(args.secret)
         const now = Date.now()
         let removed = 0
-        for (const phase of ["completed", "cancelled", "upcoming"] as const)
+        for (const phase of [
+            "completed",
+            "cancelled",
+            "upcoming",
+            "live",
+        ] as const)
             for (const row of await ctx.db
                 .query("leagueFixtures")
                 .withIndex("phase_scheduledAt", (q) => q.eq("phase", phase))

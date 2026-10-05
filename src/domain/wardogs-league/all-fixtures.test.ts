@@ -9,6 +9,7 @@ import {
     FIXTURE_RETENTION_MS,
     FIXTURE_STALE_MS,
     LATE_KICKOFF_GRACE_MS,
+    LIVE_WINDOW_MS,
     RESULT_HORIZON_MS,
     SETTLED_RESULT_MS,
 } from "./all-fixtures"
@@ -283,3 +284,43 @@ test("a shown fixture is stale after a failed read or about three missed refresh
         true
     )
 })
+
+test("a page stuck on Live is neither shown first nor polled forever", () => {
+    const kickoff = Date.parse("2026-10-09T18:00:00.000Z")
+    const live = (now: number) =>
+        nextFixtureRefreshAt({
+            phase: "live",
+            scheduledAt: kickoff,
+            firstSeenAt: kickoff - DAY,
+            hasResult: false,
+            resultConfirmed: false,
+            inWindow: true,
+            now,
+        })
+    assert.equal(
+        live(kickoff + 3600_000),
+        kickoff + 3600_000 + FIXTURE_REFRESH_MS.window
+    )
+    const late = kickoff + LIVE_WINDOW_MS + 1
+    assert.equal(live(late), late + FIXTURE_REFRESH_MS.settling)
+    assert.equal(live(kickoff + RESULT_HORIZON_MS), null)
+    const item = {
+        matchId: "stuck",
+        phase: "live" as const,
+        scheduledAt: new Date(kickoff).toISOString(),
+        fixtureNumber: 1,
+    }
+    assert.equal(nearestFixtures([item], kickoff + 3600_000, 6).total, 1)
+    assert.equal(nearestFixtures([item], late, 6).total, 0)
+    assert.equal(
+        fixtureExpired({
+            phase: "live",
+            scheduledAt: kickoff,
+            firstSeenAt: kickoff,
+            listed: false,
+            now: kickoff + RESULT_HORIZON_MS,
+        }),
+        true
+    )
+})
+const DAY = 86_400_000

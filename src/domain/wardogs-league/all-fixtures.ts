@@ -24,6 +24,8 @@ export const MAX_LEAGUE_FIXTURES = 600
 export const PANEL_WINDOW = 10
 /** A kickoff this far in the past still counts as "upcoming" when the League is late. */
 export const LATE_KICKOFF_GRACE_MS = 3 * 3600_000
+/** A match still "Live" this long after kickoff is treated as a stale page. */
+export const LIVE_WINDOW_MS = 12 * 3600_000
 /** Fixture refresh cadences; the shared five-minute detail cache bounds the fastest one. */
 export const FIXTURE_REFRESH_MS = {
     window: CACHE_MS,
@@ -175,6 +177,14 @@ export function nextFixtureRefreshAt(input: {
     const anchor = input.scheduledAt ?? input.firstSeenAt
     switch (input.phase) {
         case "live":
+            // A page stuck on "Live" long after kickoff is not polled forever.
+            if (
+                input.scheduledAt !== null &&
+                now > input.scheduledAt + LIVE_WINDOW_MS
+            )
+                return now < anchor + RESULT_HORIZON_MS
+                    ? now + FIXTURE_REFRESH_MS.settling
+                    : null
             return now + FIXTURE_REFRESH_MS.window
         case "upcoming":
             return (
@@ -230,22 +240,24 @@ export type FixtureOrderItem = {
 /**
  * The nearest fixtures for "nejbližší zápasy" (P6-21, P6-B04): live ones
  * first, then upcoming by kickoff; a fixture whose kickoff passed more than
- * three hours ago without a live or final state is no longer "upcoming".
- * Fixtures without a known kickoff come last.
+ * three hours ago without a live or final state is no longer "upcoming", and
+ * one still "Live" twelve hours after kickoff is a stale page. Fixtures
+ * without a known kickoff come last.
  */
 export function nearestFixtures<T extends FixtureOrderItem>(
     fixtures: readonly T[],
     now: number,
     count: number
 ): { shown: T[]; hidden: number; total: number } {
+    const since = (fixture: T, window: number) =>
+        fixture.scheduledAt === null ||
+        Date.parse(fixture.scheduledAt) >= now - window
     const eligible = fixtures
         .filter(
             (fixture) =>
-                fixture.phase === "live" ||
+                (fixture.phase === "live" && since(fixture, LIVE_WINDOW_MS)) ||
                 (fixture.phase === "upcoming" &&
-                    (fixture.scheduledAt === null ||
-                        Date.parse(fixture.scheduledAt) >=
-                            now - LATE_KICKOFF_GRACE_MS))
+                    since(fixture, LATE_KICKOFF_GRACE_MS))
         )
         .sort((a, b) => {
             if (a.phase !== b.phase) return a.phase === "live" ? -1 : 1
