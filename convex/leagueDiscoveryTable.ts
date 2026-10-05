@@ -76,6 +76,8 @@ export const leagueMessageRefs = defineTable({
     version: v.optional(v.number()),
     deleted: v.optional(v.boolean()),
     expiresAt: v.optional(v.number()),
+    /** Matches of this message the bot already answered (L3-56, once each). */
+    repliedMatchIds: v.optional(v.array(v.string())),
 })
     .index("identity", ["guildId", "messageId"])
     .index("guildId", ["guildId"])

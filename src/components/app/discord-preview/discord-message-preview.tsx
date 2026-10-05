@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
 
 import {
     parseDiscordMarkdown,
-    type MarkdownBlock,
+    type MarkdownLineBlock,
     type MarkdownInline,
 } from "./markdown"
 import { formatPreviewTimestamp } from "./timestamp"
@@ -211,7 +211,7 @@ function MarkdownText({
     className?: string
 }) {
     const blocks = parseDiscordMarkdown(markdown)
-    const line = (block: MarkdownBlock) =>
+    const line = (block: MarkdownLineBlock) =>
         block.lines.map((nodes, index) => (
             <span key={index} className="block min-h-[1em]">
                 <Inline nodes={nodes} context={context} />
@@ -221,6 +221,35 @@ function MarkdownText({
         <div className={cn("min-w-0 [overflow-wrap:anywhere]", className)}>
             {blocks.map((block, index) => {
                 switch (block.type) {
+                    case "code":
+                        return (
+                            <pre
+                                key={index}
+                                className="overflow-x-auto rounded border border-[#1e1f22] bg-[#2b2d31] px-2.5 py-2 font-mono text-[12.5px] leading-[19px] whitespace-pre text-[#dbdee1]"
+                            >
+                                {block.lines.map((segments, row) => (
+                                    <span
+                                        key={row}
+                                        className="block min-h-[1em]"
+                                    >
+                                        {segments.map((segment, part) =>
+                                            segment.strong ? (
+                                                <span
+                                                    key={part}
+                                                    className="font-bold text-white"
+                                                >
+                                                    {segment.text}
+                                                </span>
+                                            ) : (
+                                                <span key={part}>
+                                                    {segment.text}
+                                                </span>
+                                            )
+                                        )}
+                                    </span>
+                                ))}
+                            </pre>
+                        )
                     case "h1":
                         return (
                             <p

@@ -18,13 +18,12 @@ import {
     FIXTURE_LEASE_MS,
     MAX_LEAGUE_FIXTURES,
 } from "../src/domain/wardogs-league/all-fixtures"
-import { leagueCollectionWanted } from "../src/application/wardogs-league/tracking"
-import { isPanelPaused } from "../src/domain/discord-publications/settings"
 import { leagueReadSchema } from "../src/domain/wardogs-league/contracts"
 import { internalMutation, internalQuery } from "./_generated/server"
 import { leagueSeason } from "../src/domain/wardogs-league/results"
 import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { assertSessionGateway } from "./dashboardSessionStore"
+import { leagueCollectionActive } from "./leagueTrackingStore"
 import { v } from "convex/values"
 
 /**
@@ -35,21 +34,7 @@ export const status = internalQuery({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
         assertSessionGateway(args.secret)
-        const enabled = await ctx.db
-            .query("leagueTrackingSettings")
-            .withIndex("enabled", (q) => q.eq("enabled", true))
-            .take(1)
-        // A sent, running WD League panel keeps the League-wide collection on.
-        const leaguePanels = enabled.length
-            ? 0
-            : (await ctx.db.query("discordPublicPanels").take(5000)).filter(
-                  (panel) =>
-                      panel.kind === "league" &&
-                      !panel.draft &&
-                      !panel.removing &&
-                      !isPanelPaused(panel)
-              ).length
-        return { wanted: leagueCollectionWanted(enabled, leaguePanels) }
+        return { wanted: await leagueCollectionActive(ctx) }
     },
 })
 

@@ -28,6 +28,8 @@ export const PANEL_ERROR_CODES = [
     "render_failed",
     "unsupported_kind",
     "competition_missing",
+    /** Wardogs League is turned off in its settings; the panel's messages are gone (L3-55). */
+    "league_disabled",
     "unknown",
 ] as const
 export type PanelErrorCode = (typeof PANEL_ERROR_CODES)[number]

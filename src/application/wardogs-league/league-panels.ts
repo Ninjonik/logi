@@ -1,6 +1,7 @@
 import {
     buildFixturesView,
     buildStandingsView,
+    leagueDataAt,
     type LeagueFixturesView,
     type LeaguePanelOptions,
     type LeagueStandingsView,
@@ -44,14 +45,18 @@ export async function loadLeaguePanels(
 ): Promise<LeaguePanels> {
     const season = leagueSeason(new Date(input.now).toISOString())
     const wantsFixtures = input.options.fixtures || input.options.recentResults
+    if (!input.options.table && !wantsFixtures)
+        return { standings: null, fixtures: null }
     const [revisions, seasonResults, recent, open] = await Promise.all([
         source.revisions(),
         input.options.table ? source.seasonResults(season) : [],
         input.options.recentResults
             ? source.resultsSince(input.now - RECENT_RESULT_DAYS * 86_400_000)
             : [],
-        input.options.fixtures ? source.openFixtures() : [],
+        source.openFixtures(),
     ])
+    // The footer's time: the latest League page read, whatever is shown.
+    const dataAt = leagueDataAt(open)
     return {
         standings: input.options.table
             ? buildStandingsView(seasonResults, {
@@ -59,6 +64,7 @@ export async function loadLeaguePanels(
                   ourTeamCodes: input.ourTeamCodes,
                   revision: revisions.results,
                   season,
+                  dataAt,
               })
             : null,
         fixtures: wantsFixtures
@@ -67,6 +73,7 @@ export async function loadLeaguePanels(
                   ourTeamCodes: input.ourTeamCodes,
                   options: input.options,
                   revision: Math.max(revisions.fixtures, revisions.results),
+                  dataAt,
               })
             : null,
     }

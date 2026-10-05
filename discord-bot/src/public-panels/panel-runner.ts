@@ -70,6 +70,7 @@ import type { SeedPanelState } from "../../../src/application/discord-seed/panel
 import { resultCardView } from "../../../src/domain/discord-publications/result-panel"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
 import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
+import type { LeaguePanelOptions } from "../../../src/domain/wardogs-league/panels"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
@@ -119,6 +120,7 @@ export type BotPanel = {
     description?: string
     enabled: boolean
     paused?: boolean
+    pausedAt?: number | null
     draft?: boolean
     removing?: boolean
     showPlayers: boolean
@@ -129,6 +131,8 @@ export type BotPanel = {
     presentation?: Partial<PanelPresentation> | null
     calendarCategories?: string[]
     competitionId?: string
+    /** WD League content (P2-B15); read with `leagueOptionsOf` (W5). */
+    league?: Partial<LeaguePanelOptions>
     requestedAt?: number
     revision: number
     createdAt: number
@@ -206,8 +210,15 @@ export type PanelRunPorts = {
     purge(panelId: string): Promise<boolean>
     /** Tells the admins in the errors channel that the password was removed (P4-30). */
     notifyPasswordHidden(panel: BotPanel): Promise<void>
-    /** W5's WD League renderer; absent until it lands. */
-    league?: (panel: BotPanel, pass: GuildPass) => Promise<number>
+    /** W5's WD League renderer (`discord-bot/src/league/panels.ts`). */
+    league?: (panel: BotPanel, pass: GuildPass) => Promise<LeaguePassResult>
+}
+
+/** What one WD League pass delivered: its messages, the League data time, warnings. */
+export type LeaguePassResult = {
+    messages: number
+    dataAt: number | null
+    warnings: PanelWarning[]
 }
 
 /** What a pass remembers between passes in one bot process. */
@@ -250,7 +261,8 @@ const ownsKey = (panel: BotPanel, key: string) =>
     key.startsWith(`${keyOf(panel)}:`) ||
     (panel.kind === "calendar" && key === "calendar")
 
-function chipIcons(emoji: PanelEmojiMarkup) {
+/** Installed status emoji as chip icons per tone. */
+export function panelChipIcons(emoji: PanelEmojiMarkup) {
     const icons: Partial<Record<ChipTone, string>> = {}
     if (emoji.live) icons.success = emoji.live
     if (emoji.seeding) icons.warning = emoji.seeding
@@ -661,7 +673,7 @@ async function runLive(
         ...messagePayload(view, {
             language: pass.language,
             style: pass.style,
-            chipIcons: chipIcons(pass.emoji),
+            chipIcons: panelChipIcons(pass.emoji),
         }),
         ...(files.length ? { files } : {}),
     }
@@ -829,7 +841,7 @@ async function runCombined(
             ...messagePayload(view, {
                 language: pass.language,
                 style: pass.style,
-                chipIcons: chipIcons(pass.emoji),
+                chipIcons: panelChipIcons(pass.emoji),
             }),
             ...(files.length ? { files } : {}),
         },
@@ -933,7 +945,7 @@ async function runResults(
                 const message = messagePayload(view, {
                     language: pass.language,
                     style: pass.style,
-                    chipIcons: chipIcons(pass.emoji),
+                    chipIcons: panelChipIcons(pass.emoji),
                 })
                 messages++
                 latest = Math.max(
@@ -1148,9 +1160,18 @@ export async function runPanel(
                 break
             case "league": {
                 if (!ports.league) throw new PanelPassError("unsupported_kind")
-                const messages = await ports.league(panel, pass)
+                const league = await ports.league(panel, pass)
                 result = {
-                    attempt: attempt(pass, { handledRequestAt, messages }),
+                    attempt: attempt(pass, {
+                        handledRequestAt,
+                        messages: league.messages,
+                        dataAt: league.dataAt,
+                        warnings: league.warnings,
+                        // A paused League panel keeps its last state (L3-54).
+                        nextAt: isPanelPaused(panel)
+                            ? null
+                            : pass.now + REFRESH_MS,
+                    }),
                 }
                 break
             }

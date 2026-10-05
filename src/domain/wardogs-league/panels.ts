@@ -25,12 +25,13 @@ import { z } from "zod"
 export const LEAGUE_PANEL_REFRESH_MS = 60_000
 /** Discord's text limit for one Components V2 message (P6-B05). */
 export const DISCORD_MESSAGE_TEXT_LIMIT = 4000
-/** Managed publication keys; the bot posts them once in this order, then edits (P6-B07). */
-export const LEAGUE_PANEL_KEYS = {
-    standings: "league-panel:standings",
-    fixtures: "league-panel:fixtures",
-} as const
+/** The two messages of a WD League panel; the bot posts them once in this order, then edits (P6-B07). */
 export const LEAGUE_PANEL_ORDER = ["standings", "fixtures"] as const
+export type LeaguePanelPart = (typeof LEAGUE_PANEL_ORDER)[number]
+/** Managed publication key of one message of a panel (`panel:<id>:…`, PANELS-API §1). */
+export function leaguePanelKey(panelId: string, part: LeaguePanelPart) {
+    return `panel:${panelId}:${part}`
+}
 export const LEAGUE_LINKS = {
     /** "Otevřít ligu". */
     league: "https://wardogsleague.net",
@@ -114,6 +115,8 @@ export const leagueStandingsViewSchema = z.object({
     pointsRule: z.array(z.number().int().nonnegative()).nullable(),
     rows: z.array(leagueStandingRowSchema),
     revision: z.number().int().nonnegative(),
+    /** The latest League page read; "Aktualizováno …" in the footer. */
+    dataAt: iso.nullable(),
     links: z.object({ league: z.url() }),
 })
 export type LeagueStandingsView = z.infer<typeof leagueStandingsViewSchema>
@@ -150,6 +153,8 @@ export const leagueFixturesViewSchema = z.object({
     revision: z.number().int().nonnegative(),
     /** Some shown fixture is older than the shared cache or failed its last read. */
     stale: z.boolean(),
+    /** The latest League page read; "Aktualizováno …" in the footer. */
+    dataAt: iso.nullable(),
     links: z.object({ fixtures: z.url(), results: z.url() }),
 })
 export type LeagueFixturesView = z.infer<typeof leagueFixturesViewSchema>
@@ -168,6 +173,19 @@ export type StoredLeagueFixture = {
     snapshot: LeagueSnapshot
     stale: boolean
     revision: number
+}
+
+const isoOrNull = (value: number | null | undefined) =>
+    value === null || value === undefined || !Number.isFinite(value)
+        ? null
+        : new Date(value).toISOString()
+
+/** The latest League page read among stored fixtures, for the footer. */
+export function leagueDataAt(fixtures: readonly StoredLeagueFixture[]) {
+    const times = fixtures
+        .map((fixture) => Date.parse(fixture.snapshot.fetchedAt))
+        .filter(Number.isFinite)
+    return times.length ? Math.max(...times) : null
 }
 
 function fixtureView(
@@ -227,6 +245,7 @@ export function buildStandingsView(
         ourTeamCodes: readonly string[]
         revision: number
         season?: string
+        dataAt?: number | null
     }
 ): LeagueStandingsView {
     const season =
@@ -243,6 +262,7 @@ export function buildStandingsView(
         pointsRule: standings.pointsRule,
         rows: standings.rows,
         revision: input.revision,
+        dataAt: isoOrNull(input.dataAt),
         links: { league: LEAGUE_LINKS.league },
     })
 }
@@ -261,6 +281,7 @@ export function buildFixturesView(
         ourTeamCodes: readonly string[]
         options: LeaguePanelOptions
         revision: number
+        dataAt?: number | null
     }
 ): LeagueFixturesView {
     const ours = new Set(input.ourTeamCodes)
@@ -300,6 +321,7 @@ export function buildFixturesView(
             : null,
         revision: input.revision,
         stale: shown.some((fixture) => fixture.stale),
+        dataAt: isoOrNull(input.dataAt),
         links: {
             fixtures: LEAGUE_LINKS.fixtures,
             results: LEAGUE_LINKS.results,

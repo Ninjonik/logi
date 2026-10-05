@@ -19,7 +19,7 @@ keeps the old key `calendar` so its message is edited, not reposted.
 | `server`      | One live game server (P4). Old `scoreboard` rows read as `server`. | `connectionId`                          |
 | `servers`     | "Naše servery", several servers in one message (P4-37..39)         | `connectionIds` (1–10, ordered)         |
 | `results`     | Confirmed results of one game, one card per match (P6)             | `gameId`; one per game per workspace    |
-| `league`      | WD League, two messages (P5); rendering is W5's                    | `league` options; one per workspace     |
+| `league`      | WD League, two messages (P6), rendered by W5                       | `league` options; one per workspace     |
 | `calendar`    | "Nejbližší akce" (L3-12..18)                                       | `calendarCategories`; one per workspace |
 | `competition` | One table per division of a Logi competition (L3-19..24)           | `competitionId`                         |
 
@@ -272,9 +272,11 @@ clan-only panels. All are registered through the interaction feature
   "Pokračovat" call `discordPanelBot:act` with `connectionId` after the bot's own
   fresh admin-role check. The live panel reads running seeds from
   `discordSeedBot:panelStates` and draws "Seedujeme" with the progress bar.
-- **W5 (WD League)**: implement `PanelRunPorts.league(panel, pass)` returning the
-  number of messages it owns, keyed `panel:<id>:…`. Until then a League panel
-  reports `unsupported_kind`.
+- **W5 (WD League)**: `PanelRunPorts.league(panel, pass)` is implemented in
+  `discord-bot/src/league/panels.ts` and wired in the worker. It returns
+  `{ messages, dataAt, warnings }` and owns `panel:<id>:standings` and
+  `panel:<id>:fixtures`; a workspace that turned Wardogs League off gets
+  `league_disabled` after both messages are deleted.
 
 ## 6. Join page
 
