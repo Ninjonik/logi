@@ -117,7 +117,11 @@ function row(entry: CalendarEntry, input: CalendarPanelInput) {
 export function calendarPanelView(input: CalendarPanelInput): MessageView {
     const { copy } = input
     const entries = input.entries
-    const next = entries.find((entry) => entry.event) ?? null
+    // "Další:" is the next match (L3-13); a training only when no match is planned.
+    const next =
+        entries.find((entry) => entry.event && entry.category !== "training") ??
+        entries.find((entry) => entry.event) ??
+        null
     const rest = entries
         .filter((entry) => entry !== next)
         .slice(0, CALENDAR_PANEL_ROWS)
@@ -137,7 +141,14 @@ export function calendarPanelView(input: CalendarPanelInput): MessageView {
         content.push({
             kind: "text",
             markdown: `**${copy.next}** ${linked(
-                [next.title, next.typeWord].filter(Boolean).join(" · "),
+                [
+                    next.title,
+                    next.typeWord?.trim() !== next.title.trim()
+                        ? next.typeWord
+                        : null,
+                ]
+                    .filter(Boolean)
+                    .join(" · "),
                 next.url
             )}\n${when}`,
         })

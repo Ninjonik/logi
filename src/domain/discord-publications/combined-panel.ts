@@ -90,7 +90,12 @@ export function combinedPanelView(input: CombinedPanelInput): MessageView {
         }
     })
     const joins: MessageButton[] = input.servers
-        .filter((server) => server.joinUrl && server.joinable)
+        .filter(
+            (server) =>
+                server.joinUrl &&
+                server.joinable &&
+                server.facts.freshness !== "unavailable"
+        )
         .map((server) => ({
             kind: "link" as const,
             url: server.joinUrl!,

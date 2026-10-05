@@ -39,7 +39,11 @@ const compact = (value: string) =>
         .toLowerCase()
         .replace(/[^a-z0-9.:]/g, "")
 
-/** Whether an event's free-text server names this server. */
+/**
+ * Whether an event's free-text server names this server: its address, or
+ * one of its names in full or before " · " ("Vlci #1" for "Vlci #1 ·
+ * Public"). Exact after normalising, so "Vlci #1" never matches "Vlci #10".
+ */
 export function eventNamesServer(
     eventServer: string | null,
     server: { names: Array<string | null>; address: string | null }
@@ -50,8 +54,12 @@ export function eventNamesServer(
     if (!wanted) return false
     if (server.address && compact(server.address) === wanted) return true
     return server.names.some((name) => {
-        const value = name ? compact(name) : ""
-        return value.length >= 3 && (value === wanted || value.includes(wanted))
+        if (!name?.trim()) return false
+        const head = name.split(/\s+[·|–-]\s+/)[0] ?? name
+        return [name, head].some((candidate) => {
+            const value = compact(candidate)
+            return value.length >= 3 && value === wanted
+        })
     })
 }
 

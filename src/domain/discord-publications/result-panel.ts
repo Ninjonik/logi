@@ -191,6 +191,8 @@ export function resultCardView(input: ResultCardInput): MessageView {
                   .map((part) => escapeMarkdownText(part))
                   .join(" · ")
             : input.mapLabel
+              ? escapeMarkdownText(input.mapLabel)
+              : null
         : null
     const facts = (
         corrected && input.compact

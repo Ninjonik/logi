@@ -127,3 +127,44 @@ test("HLL artwork uses a fixed catalog for localized layer names", () => {
     )
     assert.equal(hllMapArtwork("../../secrets"), "/img/games/hll.jpg")
 })
+test("HLL reads the next map, day or night and the queue only when CRCON reports them", async () => {
+    const reported = status()
+    const result = reported.result as Record<string, unknown>
+    ;(result.current_map as { map: Record<string, unknown> }).map.environment =
+        "day"
+    result.next_map = {
+        map: {
+            id: "foy_warfare_night",
+            pretty_name: "Foy Warfare (Night)",
+            game_mode: "warfare",
+            environment: "night",
+        },
+    }
+    result.queue_count = 3
+    const live = await readHllLive(
+        http([reported, stats(), reported]),
+        () => now
+    )
+    assert.equal(live.status?.environment, "day")
+    assert.equal(live.status?.queueCount, 3)
+    assert.deepEqual(live.status?.nextMap, {
+        name: "Foy Warfare (Night)",
+        layerId: "foy_warfare_night",
+        mode: "warfare",
+        environment: "night",
+    })
+    const plain = await readHllLive(
+        http([status(), stats(), status()]),
+        () => now
+    )
+    assert.equal(plain.status?.environment, null)
+    assert.equal(plain.status?.queueCount, null)
+    assert.equal(plain.status?.nextMap, null)
+    // A malformed optional field never breaks the panel.
+    const odd = status()
+    ;(odd.result as Record<string, unknown>).next_map = "rotation"
+    ;(odd.result as Record<string, unknown>).queue_count = -4
+    const tolerant = await readHllLive(http([odd, stats(), odd]), () => now)
+    assert.equal(tolerant.status?.nextMap, null)
+    assert.equal(tolerant.status?.queueCount, null)
+})
