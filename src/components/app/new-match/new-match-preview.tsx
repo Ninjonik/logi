@@ -2,6 +2,10 @@
 
 import { useSyncExternalStore, type ReactNode } from "react"
 
+import {
+    NEUTRAL_FACTION_MARKER,
+    panelFactionOf,
+} from "@/domain/discord-publications/panel-presentation"
 import type { NewMatchStep } from "@/domain/events/new-match-flow"
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -11,14 +15,20 @@ export type NewMatchPreviewModel = {
     kind: "match" | "training"
     /** The clan's bot language; the message is written in it. */
     language: string
+    /** The event name; the bot adds the category label after it. */
     title: string
-    teams: Array<{ code: string; side: string | null; own: boolean }>
-    mapLine: string | null
+    categoryLabel?: string | null
+    /** Teams by slot with their stored side ("Allies", "Valkyra", ...). */
+    teams: Array<{ code: string; side: string | null }>
+    /** Map name and time-of-day key ("day", "night", ...). */
+    map: { name: string; time: string | null } | null
+    cap: string | null
     meetingStart: string | null
     gameStart: string | null
     registrationEnd: string | null
     groups: Array<{ name: string; max?: number }>
-    mention: string | null
+    /** Role names the announcement pings, shown above the card. */
+    mentions: string[]
     forum: boolean
     accentColor?: string
 }
@@ -33,8 +43,22 @@ function useIsBrowser() {
     )
 }
 
-function capitalize(value: string) {
-    return value.charAt(0).toLocaleUpperCase() + value.slice(1)
+/** The bot's emblem before a side: HLL team colours, a marker for Wardogs factions. */
+function sideEmblem(side: string | null) {
+    const faction = panelFactionOf(side)
+    if (!faction) return null
+    if (faction === "allies") return "🟦"
+    if (faction === "axis") return "🟥"
+    return NEUTRAL_FACTION_MARKER
+}
+
+function relativeTime(iso: string, locale: string) {
+    const minutes = Math.round((Date.parse(iso) - Date.now()) / 60000)
+    const relative = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
+    if (Math.abs(minutes) < 60) return relative.format(minutes, "minute")
+    const hours = Math.round(minutes / 60)
+    if (Math.abs(hours) < 48) return relative.format(hours, "hour")
+    return relative.format(Math.round(hours / 24), "day")
 }
 
 function Section({
@@ -62,10 +86,12 @@ function Section({
 }
 
 /**
- * The registration announcement as players will see it in Discord (design
- * D2): title, teams and map, the start and deadlines, sign-up groups with
- * their caps and the buttons, then who is pinged and where it lives. The part
- * the current step changes is outlined.
+ * The registration announcement as the bot posts it (design D2, message style
+ * H1): the ping above the card, the title, the teams with their sides, the
+ * start, map, meeting and sign-up deadline on one line, the sign-up counts
+ * with group caps, the buttons and the footer. Values the match does not have
+ * yet (sign-ups, the forum link) show as they will right after publishing. The
+ * part the current step changes is outlined.
  */
 export function NewMatchPreview({
     model,
@@ -83,36 +109,59 @@ export function NewMatchPreview({
     const text = dictionary.newMatch.preview
     const messages = getClanDiscordMessages(model.language)
     const intl = messages.locale
-    const formatDay = (iso: string) =>
-        capitalize(
-            new Intl.DateTimeFormat(intl, {
-                weekday: "long",
-                day: "numeric",
-                month: "numeric",
-            }).format(new Date(iso))
-        )
+    const valid = (iso: string | null): iso is string =>
+        Boolean(iso && Number.isFinite(Date.parse(iso)))
+    const formatFull = (iso: string) =>
+        new Intl.DateTimeFormat(intl, {
+            dateStyle: "full",
+            timeStyle: "short",
+        }).format(new Date(iso))
     const formatTime = (iso: string) =>
         new Intl.DateTimeFormat(intl, {
             hour: "2-digit",
             minute: "2-digit",
         }).format(new Date(iso))
-    const formatShort = (iso: string) =>
-        new Intl.DateTimeFormat(intl, {
-            weekday: "short",
-            day: "numeric",
-            month: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(iso))
-    const valid = (iso: string | null): iso is string =>
-        Boolean(iso && Number.isFinite(Date.parse(iso)))
-    const start = model.kind === "match" ? model.gameStart : model.meetingStart
-    const hasGroups = model.kind === "match" && model.groups.length > 0
-    const footer = [
-        model.mention ? `@${model.mention}` : copy.noPing,
-        model.forum ? copy.forumThread : null,
-        copy.managedInLogi,
-    ]
+    const sideLabel = (side: string) => {
+        const faction = panelFactionOf(side)
+        return faction === "allies" || faction === "axis"
+            ? copy.factions[faction]
+            : side
+    }
+    const isMatch = model.kind === "match"
+    const title =
+        model.categoryLabel && model.categoryLabel !== model.title.trim()
+            ? `${model.title || dictionary.newMatch.untitled} · ${model.categoryLabel}`
+            : model.title || dictionary.newMatch.untitled
+    const timeLabel = (time: string) =>
+        (copy.times as Record<string, string>)[time] ?? time
+    const facts = isBrowser
+        ? [
+              isMatch && model.map
+                  ? [
+                        model.map.name,
+                        model.map.time ? timeLabel(model.map.time) : null,
+                    ]
+                        .filter(Boolean)
+                        .join(" · ")
+                  : null,
+              isMatch && model.cap
+                  ? `${messages.embed.cap} ${model.cap}`
+                  : null,
+              valid(model.meetingStart)
+                  ? copy.meetingAt.replace(
+                        "{time}",
+                        formatTime(model.meetingStart)
+                    )
+                  : null,
+              valid(model.registrationEnd)
+                  ? copy.registrationCloses.replace(
+                        "{time}",
+                        relativeTime(model.registrationEnd, intl)
+                    )
+                  : null,
+          ].filter(Boolean)
+        : []
+    const footer = [model.forum ? `#${copy.forum}` : null, copy.managedShort]
         .filter(Boolean)
         .join(" · ")
 
@@ -146,55 +195,61 @@ export function NewMatchPreview({
                                 {copy.today}
                             </span>
                         </div>
+                        {model.mentions.length ? (
+                            <Section
+                                active={step === "discord"}
+                                className="flex flex-wrap gap-1"
+                            >
+                                {model.mentions.map((mention) => (
+                                    <span
+                                        key={mention}
+                                        className="rounded-[3px] bg-[#5865f2]/30 px-0.5 font-medium text-[#c9cdfb]"
+                                    >
+                                        @{mention}
+                                    </span>
+                                ))}
+                            </Section>
+                        ) : null}
                         <div
                             className="flex flex-col gap-3 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5"
                             style={{
-                                borderLeftColor: model.accentColor ?? "#e8a33d",
+                                borderLeftColor: model.accentColor ?? "#FFB000",
                             }}
                         >
                             <Section
                                 active={step === "match"}
-                                className="flex flex-col gap-2.5"
+                                className="flex flex-col gap-2"
                             >
                                 <span className="text-base leading-snug font-semibold break-words text-[#f2f3f5]">
-                                    {model.title ||
-                                        dictionary.newMatch.untitled}
+                                    {title}
                                 </span>
-                                {model.kind === "match" &&
-                                model.teams.length ? (
-                                    <div className="flex flex-wrap items-center gap-2.5">
+                                {isMatch && model.teams.length ? (
+                                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
                                         {model.teams.map((team, index) => (
                                             <span
                                                 key={`${team.code}-${index}`}
                                                 className="inline-flex items-center gap-1.5"
                                             >
                                                 {index ? (
-                                                    <span className="mr-1 text-xs text-[#949ba4]">
+                                                    <span className="mr-1 text-[#949ba4]">
                                                         vs
                                                     </span>
                                                 ) : null}
-                                                <span
-                                                    className={cn(
-                                                        "flex h-6 min-w-6 items-center justify-center rounded-md px-1 text-[9px] font-bold",
-                                                        team.own
-                                                            ? "bg-[#f2f3f5] text-[#171717]"
-                                                            : "bg-[#4e5058] text-[#f2f3f5]"
-                                                    )}
-                                                >
+                                                {sideEmblem(team.side) ? (
+                                                    <span aria-hidden>
+                                                        {sideEmblem(team.side)}
+                                                    </span>
+                                                ) : null}
+                                                <strong className="text-[#f2f3f5]">
                                                     {team.code}
-                                                </span>
+                                                </strong>
                                                 {team.side ? (
-                                                    <span className="text-[13px]">
-                                                        {team.side}
+                                                    <span>
+                                                        {sideLabel(team.side)}
                                                     </span>
                                                 ) : null}
                                             </span>
                                         ))}
-                                    </div>
-                                ) : null}
-                                {model.kind === "match" && model.mapLine ? (
-                                    <span className="text-[13px] text-[#b5bac1]">
-                                        {model.mapLine}
                                     </span>
                                 ) : null}
                             </Section>
@@ -203,59 +258,48 @@ export function NewMatchPreview({
                                 className="flex flex-col gap-0.5"
                             >
                                 <span className="font-semibold text-[#f2f3f5]">
-                                    {isBrowser && valid(start)
-                                        ? `${formatDay(start)} · ${copy.start.replace("{time}", formatTime(start))}`
+                                    {isBrowser && valid(model.gameStart)
+                                        ? formatFull(model.gameStart)
                                         : "…"}
                                 </span>
-                                <span className="text-[13px] text-[#b5bac1]">
-                                    {isBrowser
-                                        ? [
-                                              model.kind === "match" &&
-                                              valid(model.meetingStart)
-                                                  ? copy.meeting.replace(
-                                                        "{time}",
-                                                        formatTime(
-                                                            model.meetingStart
-                                                        )
-                                                    )
-                                                  : null,
-                                              valid(model.registrationEnd)
-                                                  ? copy.signupsUntil.replace(
-                                                        "{date}",
-                                                        formatShort(
-                                                            model.registrationEnd
-                                                        )
-                                                    )
-                                                  : null,
-                                          ]
-                                              .filter(Boolean)
-                                              .join(" · ")
-                                        : "…"}
-                                </span>
+                                {facts.length ? (
+                                    <span className="text-[13px] text-[#b5bac1]">
+                                        {facts.join(" · ")}
+                                    </span>
+                                ) : null}
                             </Section>
                             <Section
                                 active={step === "signups"}
                                 className="flex flex-col gap-2.5"
                             >
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-semibold tracking-wide text-[#b5bac1] uppercase">
-                                        {copy.signedUp.replace("{count}", "0")}
-                                    </span>
-                                    {hasGroups ? (
-                                        <span className="text-[13px]">
-                                            {model.groups
-                                                .map((group) =>
-                                                    group.max
-                                                        ? `${group.name} 0/${group.max}`
-                                                        : `${group.name} 0`
-                                                )
-                                                .join(" · ")}
+                                <span className="text-[13px]">
+                                    {[
+                                        <strong
+                                            key="total"
+                                            className="text-[#f2f3f5]"
+                                        >
+                                            {copy.signedUpTotal.replace(
+                                                "{count}",
+                                                "0"
+                                            )}
+                                        </strong>,
+                                        ...(isMatch
+                                            ? model.groups.map((group) =>
+                                                  group.max
+                                                      ? `${group.name} 0/${group.max}`
+                                                      : `${group.name} 0`
+                                              )
+                                            : []),
+                                    ].map((part, index) => (
+                                        <span key={index}>
+                                            {index ? " · " : null}
+                                            {part}
                                         </span>
-                                    ) : null}
-                                </div>
+                                    ))}
+                                </span>
                                 <div className="flex flex-wrap gap-2">
                                     <span className="inline-flex h-8 items-center rounded bg-[#248046] px-3.5 text-[13px] font-medium text-white">
-                                        {model.kind === "match"
+                                        {isMatch
                                             ? messages.embed.chooseSignup
                                             : messages.buttons.attend}
                                     </span>

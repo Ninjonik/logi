@@ -3700,8 +3700,7 @@ export const deMessages = {
         publishedTraining: "Training veröffentlicht.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
-            not_found:
-                "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
+            not_found: "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
             not_draft: "Dieses Match ist schon veröffentlicht.",
             forbidden:
                 "Nur Clan-Verwalter können Matches anlegen. Wenn deine Sitzung abgelaufen ist, melde dich neu an.",
@@ -3743,15 +3742,7 @@ export const deMessages = {
             map: "Karte",
             timeOfDay: "Tageszeit",
             strongpoint: "Mittelpunkt",
-            timesOfDay: {
-                day: "Tag",
-                morning: "Morgen",
-                dusk: "Dämmerung",
-                evening: "Abend",
-                night: "Nacht",
-                rain: "Regen",
-                overcast: "Bewölkt",
-            },
+            timesOfDay: { day: "Tag", morning: "Morgen", dusk: "Dämmerung", evening: "Abend", night: "Nacht", rain: "Regen", overcast: "Bewölkt" },
             choose: "Wählen",
             name: "Name",
             nameHint: "Aus Teams und Vorlage ergänzt. Du kannst ihn ändern.",
@@ -3780,8 +3771,7 @@ export const deMessages = {
             duration: "Dauer",
             minutes: "Min.",
             repeat: "Jede Woche wiederholen",
-            repeatHint:
-                "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
+            repeatHint: "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
         },
         signups: {
             fromTemplate: "Aus der Vorlage {name}",
@@ -3794,8 +3784,7 @@ export const deMessages = {
             },
             noLimit: "ohne Limit",
             max: "max. {count}",
-            noGroups:
-                "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
+            noGroups: "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
             generalOn: "erlaubt",
             reminder: "Anmeldeerinnerung",
@@ -3849,15 +3838,23 @@ export const deMessages = {
         preview: {
             title: "Vorschau in Discord",
             hint: "Jeder sieht die Zeiten in seiner Zeitzone",
-            note: "Der hervorgehobene Teil folgt dem Schritt, den du gerade ausfüllst. Die Nachricht zeigt nie das Passwort oder lange Datumsangaben.",
+            note: "Der hervorgehobene Teil folgt dem Schritt, den du gerade ausfüllst. Die Nachricht zeigt nie das Serverpasswort.",
             today: "heute",
-            start: "Start {time}",
-            meeting: "Treffpunkt {time}",
-            signupsUntil: "Anmeldung bis {date}",
-            signedUp: "Angemeldet {count}",
-            forumThread: "Forenthread",
-            managedInLogi: "verwaltet in Logi",
-            noPing: "kein Ping",
+            meetingAt: "Treffen {time}",
+            registrationCloses: "Anmeldung endet {time}",
+            signedUpTotal: "Angemeldet {count}",
+            managedShort: "Verwaltet in Logi",
+            forum: "match-forum",
+            factions: { allies: "Alliierte", axis: "Achsenmächte" },
+            times: {
+                day: "Tag",
+                morning: "Morgen",
+                dusk: "Dämmerung",
+                evening: "Abend",
+                night: "Nacht",
+                rain: "Regen",
+                overcast: "bewölkt",
+            },
         },
     },
     matchList: {

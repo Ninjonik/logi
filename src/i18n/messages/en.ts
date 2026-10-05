@@ -3601,8 +3601,7 @@ export const enMessages = {
         publishedTraining: "Training published.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
-            not_found:
-                "This draft no longer exists. Someone may have deleted it.",
+            not_found: "This draft no longer exists. Someone may have deleted it.",
             not_draft: "This match has already been published.",
             forbidden:
                 "Only clan managers can create matches. If your session expired, sign in again.",
@@ -3644,19 +3643,10 @@ export const enMessages = {
             map: "Map",
             timeOfDay: "Time of day",
             strongpoint: "Middle point",
-            timesOfDay: {
-                day: "Day",
-                morning: "Morning",
-                dusk: "Dusk",
-                evening: "Evening",
-                night: "Night",
-                rain: "Rain",
-                overcast: "Overcast",
-            },
+            timesOfDay: { day: "Day", morning: "Morning", dusk: "Dusk", evening: "Evening", night: "Night", rain: "Rain", overcast: "Overcast" },
             choose: "Choose",
             name: "Name",
-            nameHint:
-                "Filled in from the teams and template. You can change it.",
+            nameHint: "Filled in from the teams and template. You can change it.",
         },
         time: {
             date: "Start date",
@@ -3682,8 +3672,7 @@ export const enMessages = {
             duration: "Duration",
             minutes: "min",
             repeat: "Repeat every week",
-            repeatHint:
-                "The next matches are created automatically two weeks ahead.",
+            repeatHint: "The next matches are created automatically two weeks ahead.",
         },
         signups: {
             fromTemplate: "From the {name} template",
@@ -3696,8 +3685,7 @@ export const enMessages = {
             },
             noLimit: "no limit",
             max: "max {count}",
-            noGroups:
-                "This game has no sign-up groups; players sign up without choosing one.",
+            noGroups: "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -3708,8 +3696,7 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote:
-                "Every clan member signs up for a training with one button.",
+            trainingNote: "Every clan member signs up for a training with one button.",
         },
         discord: {
             announcement: "Announcement and sign-ups",
@@ -3751,15 +3738,23 @@ export const enMessages = {
         preview: {
             title: "Discord preview",
             hint: "Everyone sees times in their own time zone",
-            note: "The highlighted part follows the step you are filling in. The message never shows the password or long dates.",
+            note: "The highlighted part follows the step you are filling in. The message never shows the server password.",
             today: "today",
-            start: "start {time}",
-            meeting: "Meeting {time}",
-            signupsUntil: "sign-ups until {date}",
-            signedUp: "Signed up {count}",
-            forumThread: "forum thread",
-            managedInLogi: "managed in Logi",
-            noPing: "no ping",
+            meetingAt: "meeting {time}",
+            registrationCloses: "sign-ups close {time}",
+            signedUpTotal: "Signed up {count}",
+            managedShort: "Managed in Logi",
+            forum: "match-forum",
+            factions: { allies: "Allies", axis: "Axis" },
+            times: {
+                day: "day",
+                morning: "morning",
+                dusk: "dusk",
+                evening: "evening",
+                night: "night",
+                rain: "rain",
+                overcast: "overcast",
+            },
         },
     },
     matchList: {

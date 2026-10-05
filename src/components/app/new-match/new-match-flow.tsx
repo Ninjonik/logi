@@ -570,14 +570,6 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
               }) ?? values.mapId)
             : values.mapId
     })()
-    const mapLine = selectedMap
-        ? [
-              selectedMap.name,
-              values.timeOfDay ? timeLabel(values.timeOfDay) : null,
-          ]
-              .filter(Boolean)
-              .join(" · ")
-        : null
 
     // The timeline from the start and the template's offsets.
     const startLocal =
@@ -625,14 +617,6 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         id
             ? (metadata?.roles.find((role) => role.id === id)?.name ?? null)
             : null
-    const mention =
-        values.pingMode === "clan"
-            ? (roleName(props.clanRoleId) ?? t.discord.pingClan)
-            : values.pingMode === "roles"
-              ? values.pingRoleIds
-                    .map((id) => roleName(id) ?? id)
-                    .join(", @") || null
-              : null
     const category = props.eventCategories.find(
         (entry) => entry.id === values.matchType
     )
@@ -643,25 +627,30 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const limitOf = (groupId: string) =>
         values.signupGroupLimits.find((limit) => limit.groupId === groupId)?.max
 
+    // The bot lists the stored team assignments by slot; without any it shows
+    // the clan's own side.
+    const previewTeams = [
+        ...(ownTeam ? [{ code: ownCode, side: values.ownSide }] : []),
+        ...(opponentCode
+            ? [{ code: opponentCode, side: values.opponentSide }]
+            : []),
+    ]
     const previewModel: NewMatchPreviewModel = {
         kind: values.kind,
         language: props.botLanguage,
         title: name,
+        categoryLabel: category?.label ?? null,
         teams: isMatch
-            ? [
-                  { code: ownCode, side: sideLabel(values.ownSide), own: true },
-                  ...(opponentCode
-                      ? [
-                            {
-                                code: opponentCode,
-                                side: sideLabel(values.opponentSide),
-                                own: false,
-                            },
-                        ]
-                      : []),
-              ]
+            ? previewTeams.length
+                ? previewTeams
+                : values.ownSide
+                  ? [{ code: ownCode, side: values.ownSide }]
+                  : []
             : [],
-        mapLine,
+        map: selectedMap
+            ? { name: selectedMap.name, time: values.timeOfDay || null }
+            : null,
+        cap: values.cap || null,
         meetingStart: schedule?.meetingStart ?? null,
         gameStart: schedule?.gameStart ?? null,
         registrationEnd: schedule?.registrationEnd ?? null,
@@ -669,7 +658,12 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             name: group.name,
             max: limitOf(group.id),
         })),
-        mention,
+        mentions:
+            values.pingMode === "clan"
+                ? [roleName(props.clanRoleId) ?? t.discord.pingClan]
+                : values.pingMode === "roles"
+                  ? values.pingRoleIds.map((id) => roleName(id) ?? id)
+                  : [],
         forum: isMatch && values.createForumChannel,
         accentColor: category?.color,
     }
