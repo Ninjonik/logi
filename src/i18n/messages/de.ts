@@ -3393,10 +3393,10 @@ export const deMessages = {
                     description:
                         "Die Clan-Rolle und die Rolle, die Logi verwalten darf.",
                 },
-                stats: {
-                    title: "Befehl /stats",
+                commands: {
+                    title: "Befehle",
                     description:
-                        "Spielerstatistiken in Discord: für welche Spiele und wo sie geteilt werden.",
+                        "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo.",
                 },
                 membership: {
                     title: "Mitgliedschaft",
@@ -3598,32 +3598,152 @@ export const deMessages = {
             unknownMember: "Mitglied ohne Logi-Konto",
             moreManagers: "und {count} weitere",
         },
-        statsPage: {
-            enable: "/stats erlauben",
-            on: "An",
-            off: "Aus",
-            gamesTitle: "Spiele und Datenquelle",
-            hllSource:
-                "Aus öffentlichen HLL-Records-Profilen, über das Steam-Konto des Spielers.",
-            wardogsSource: "Aus gespeicherten Spielen deiner",
-            gameServersLink: "Spielserver",
-            shareTitle: "Teilen",
-            defaultChannel: "Standardkanal",
-            defaultChannelHelp:
-                "Die Schaltfläche Teilen bietet diesen Kanal zuerst an.",
-            noChannel: "Kein Standardkanal",
-            legacyTitle: "Alte Stats-Server-Verbindungen · {count}",
-            legacyHelp:
-                "Mit Token und Adresse in den Bot-Einstellungen eingetragen. Neue Verbindungen gehören zu den Spielservern, wo der Schlüssel verschlüsselt gespeichert und getestet werden kann.",
-            openGameServers: "Spielserver öffnen",
-            previewTitle: "Vorschau der Antwort in Discord",
-            previewExample: "Beispieldaten",
-            previewEphemeral: "Nur du kannst das sehen · Verwerfen",
-            previewPlayer: "Beispielspieler",
-            previewNote:
-                "Die Zahlen sind ein Beispiel. Die echte Antwort zeigt die Statistiken des Spielers von deinen Spielservern.",
-            showConnections: "Verbindungen anzeigen",
-            hideConnections: "Verbindungen ausblenden",
+        commandsPage: {
+            title: "Befehle in Discord",
+            description:
+                "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo. Er antwortet in der Clan-Sprache.",
+            registration: {
+                title: "Registrierung der Befehle",
+                phoneTitle: "Befehle sind registriert",
+                registered:
+                    "Registriert {when} · {count} auf dem Server {server}. Nach dem Speichern registriert der Bot sie selbst erneut; Discord zeigt sie innerhalb einer Minute.",
+                registeredShort: "{when} · {count}",
+                count: { one: "{count} Befehl", other: "{count} Befehle" },
+                today: "heute um {time}",
+                yesterday: "gestern um {time}",
+                neverTitle: "Befehle sind noch nicht registriert",
+                never: "Der Bot registriert sie, sobald er läuft und diesen Server sieht. Nach dem Speichern registriert er sie selbst erneut.",
+                pending:
+                    "Der Bot registriert die Befehle innerhalb einer Minute erneut.",
+                failedTitle: "Registrierung der Befehle fehlgeschlagen",
+                failed: "{reason} Prüfen Sie, dass der Bot auf dem Server ist und Befehle verwalten darf, und versuchen Sie es erneut.",
+                failures: {
+                    forbidden:
+                        "Discord hat dem Bot die Registrierung nicht erlaubt.",
+                    rate_limited:
+                        "Discord hat Anfragen vorübergehend begrenzt.",
+                    unavailable: "Discord hat nicht geantwortet.",
+                },
+                reregister: "Erneut registrieren",
+                requested:
+                    "Der Bot registriert die Befehle innerhalb einer Minute erneut.",
+                requestFailed: "Die Anfrage konnte nicht gesendet werden.",
+            },
+            legacy: {
+                title: "Alte Stats-Server-Verbindungen · {count}",
+                help: "Nur die Spielersuche in /link und in der Clan-Bewerbung nutzt sie, /stats nicht. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
+                convert: "Zu Spielservern übertragen",
+                show: "Verbindungen anzeigen",
+                hide: "Verbindungen ausblenden",
+                converted:
+                    "Übertragen: {converted}. Testen Sie sie unter Spielserver; danach können Sie die alten Verbindungen entfernen.",
+                nothingToConvert:
+                    "Alle Verbindungen sind schon bei den Spielservern oder lassen sich nicht übertragen.",
+                skipped:
+                    "Nicht übertragen: {count} (kein https, kein Schlüssel oder ein anderes Spiel).",
+                encryptionUnavailable:
+                    "Die Schlüsselverschlüsselung ist gerade nicht verfügbar; nichts wurde übertragen.",
+                failed: "Das Übertragen ist fehlgeschlagen.",
+            },
+            commands: {
+                title: "Befehle",
+                intro: "Logi prüft die Berechtigung bei jeder Nutzung, frisch aus Discord. Das Menü nach „/“ ist für alle gleich; wer einen Befehl nicht nutzen darf, bekommt eine kurze Erklärung und /help bietet ihn nicht an.",
+                members: "Für Mitglieder",
+                staff: "Für Verwalter",
+                new: "Neu",
+                on: "An",
+                off: "Aus",
+                who: "Wer darf ihn nutzen",
+                reply: "Antwort",
+                where: "Wo er funktioniert",
+                audiences: {
+                    everyone: {
+                        label: "Alle auf dem Server",
+                        description: "Jedes Mitglied des Discord-Servers",
+                    },
+                    clanMembers: {
+                        label: "Clan-Mitglieder",
+                        description:
+                            "Mit der Clan-Rolle aus Rollen und Zugriff",
+                    },
+                    logiAdmins: {
+                        label: "Logi-Verwalter",
+                        description: "Administrator oder die Verwalterrolle",
+                    },
+                },
+                rolesHint: "Zusätzlich können Sie bestimmte Rollen hinzufügen.",
+                audienceWithRoles: "{group} und zusätzlich die Rolle {roles}.",
+                addRole: "Rolle",
+                addRoleAria: "Rolle zu {command} hinzufügen",
+                removeRole: "Rolle {role} entfernen",
+                searchRoles: "Rolle suchen",
+                noRoles: "Keine weitere Rolle",
+                replies: {
+                    private: "Nur der Autor",
+                    privateShare: "Nur der Autor, mit Teilen-Button",
+                },
+                fixedWho: {
+                    help: "Alle auf dem Server · jeder sieht nur seine Befehle",
+                    link: "Alle auf dem Server · auch Bewerber brauchen ihn",
+                    notice: "Angemeldet für ein Event, das noch nicht begonnen hat",
+                },
+                allChannels: "Alle Kanäle",
+                someChannels: "Nur ausgewählte Kanäle",
+                addChannel: "Kanal",
+                addChannelAria: "Kanal zu {command} hinzufügen",
+                removeChannel: "Kanal {channel} entfernen",
+                searchChannels: "Kanal suchen",
+                noChannels: "Kein weiterer Kanal",
+                channelsHint:
+                    "Anderswo sagt der Bot, wo der Befehl funktioniert.",
+                playerShareHint:
+                    "Teilen sendet das Profil in den Kanal, in dem der Befehl genutzt wurde.",
+                whoLabel: "Wer {command} nutzen darf",
+                replyLabel: "Antwort von {command}",
+                whereLabel: "Wo {command} funktioniert",
+                closeTicket: {
+                    toggle: "folgt Tickets",
+                    who: "Kategorie-Support oder Logi-Verwalter",
+                    whoLink: "Tickets",
+                    reply: "Bestätigung an den Autor des Befehls, Zusammenfassung im Thread, DM an den Ticket-Autor",
+                    where: "Nur in Ticket-Threads",
+                },
+                closeApplication: {
+                    toggle: "folgt Mitgliedschaft",
+                    who: "Kategorie-Support oder Logi-Verwalter",
+                    whoLink: "Mitgliedschaft",
+                    reply: "Bestätigung an den Autor des Befehls, Entscheidung im Thread, DM an den Bewerber",
+                    where: "Nur in Bewerbungs-Threads",
+                },
+            },
+            stats: {
+                gamesTitle: "Spiele und Datenquelle",
+                gameSwitch: "{game}-Statistiken",
+                hllSource:
+                    "Aus öffentlichen HLL-Records-Profilen, über das Steam-Konto des Spielers.",
+                wardogsSource: "Aus gespeicherten Spielen Ihrer",
+                gameServersLink: "Spielserver",
+                shareChannel: "Kanal für Teilen",
+                shareChannelHelp:
+                    "Teilen sendet die Karte direkt hierher. Ohne Kanal fragt der Bot den Spieler, wohin.",
+                noShareChannel: "Kein Kanal",
+                previewTitle: "Antwortvorschau · Beispieldaten",
+                previewPlayer: "Spieler 17",
+            },
+            descriptions: {
+                title: "Befehlsbeschreibungen in Discord",
+                intro: "Discord zeigt die Beschreibung allen Mitgliedern in der Clan-Sprache, unabhängig von der Sprache ihrer App. Die Clan-Sprache ist {language}; nach einer Änderung unter {channels} registriert der Bot die Befehle erneut. Den Zusatz „(für Verwalter)“ fügt der Bot nur Befehlen hinzu, die nur Logi-Verwalter nutzen dürfen.",
+                channelsLink: "Kanäle und Sprache",
+                languages: { cs: "Tschechisch", en: "Englisch", de: "Deutsch" },
+                command: "Befehl",
+                clanLanguage: "Clan-Sprache",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote:
+                "Nach dem Speichern registriert der Bot die Befehle erneut.",
+            saved: "Befehlseinstellungen gespeichert. Der Bot registriert die Befehle erneut.",
+            saveError:
+                "Die Befehlseinstellungen konnten nicht gespeichert werden.",
         },
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",
@@ -3758,10 +3878,10 @@ export const deMessages = {
                 description:
                     "Die Clan-Rolle und die Rolle, die das Logi-Dashboard öffnet.",
             },
-            stats: {
-                title: "/stats-Befehl",
+            commands: {
+                title: "Befehle",
                 description:
-                    "Für welche Spiele /stats antwortet, wo Ergebnisse geteilt werden und welche Statistik-Server gelesen werden.",
+                    "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo. Er antwortet in der Clan-Sprache.",
             },
             membership: {
                 title: "Mitgliedschaft",

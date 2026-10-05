@@ -12,7 +12,11 @@ import {
     ChannelScopeLegend,
     DiscordChannelSettingsForm,
 } from "@/components/app/settings/discord-channel-settings-form"
-import { StatsCommandSettingsForm } from "@/components/app/settings/stats-command-settings-form"
+import {
+    discordCommandsWebAccess,
+    readCommandRegistration,
+} from "@/lib/gateways/discord-commands"
+import { CommandsSettingsForm } from "@/components/app/settings/commands/commands-settings-form"
 import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-settings-form"
 import { DiscordMessagesSettings } from "@/components/app/settings/discord-messages-settings"
 import { MatchTemplatesSettings } from "@/components/app/settings/match-templates-settings"
@@ -214,17 +218,53 @@ export default async function ServerSettingsSectionPage({
                 />
             )
             break
-        case "stats":
+        case "commands": {
+            const access = await discordCommandsWebAccess(serverId)
             content = (
-                <StatsCommandSettingsForm
+                <CommandsSettingsForm
                     serverId={serverId}
+                    serverName={server.name}
                     dictionary={dictionary}
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
-                    gameServersHref={`/${locale}/dashboard/servers/${serverId}/settings/game-servers${gameId ? `?game=${gameId}` : ""}`}
+                    registration={
+                        access
+                            ? await readCommandRegistration(access).catch(
+                                  () => null
+                              )
+                            : null
+                    }
+                    now={new Date().getTime()}
+                    hrefs={{
+                        gameServers: settingsHref(
+                            locale,
+                            serverId,
+                            "game-servers",
+                            gameId
+                        ),
+                        channels: settingsHref(
+                            locale,
+                            serverId,
+                            "channels",
+                            gameId
+                        ),
+                        tickets: settingsHref(
+                            locale,
+                            serverId,
+                            "tickets",
+                            gameId
+                        ),
+                        membership: settingsHref(
+                            locale,
+                            serverId,
+                            "membership",
+                            gameId
+                        ),
+                    }}
                 />
             )
             break
+        }
         case "membership":
             content = (
                 <MembershipSettingsForm
@@ -351,7 +391,11 @@ export default async function ServerSettingsSectionPage({
             enabledGames={server.enabledGames}
             dictionary={dictionary}
             legend={legend}
-            ownHeader={section === "tickets" || section === "game-servers"}
+            ownHeader={
+                section === "tickets" ||
+                section === "game-servers" ||
+                section === "commands"
+            }
         >
             {content}
         </SettingsSectionFrame>

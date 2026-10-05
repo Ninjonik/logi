@@ -3298,10 +3298,10 @@ export const enMessages = {
                     description:
                         "The clan role and the role that may manage Logi.",
                 },
-                stats: {
-                    title: "/stats command",
+                commands: {
+                    title: "Commands",
                     description:
-                        "Player statistics in Discord: for which games and where they are shared.",
+                        "Which commands the bot offers, who may use them and where.",
                 },
                 membership: {
                     title: "Membership",
@@ -3499,31 +3499,147 @@ export const enMessages = {
             unknownMember: "Member without a Logi account",
             moreManagers: "and {count} more",
         },
-        statsPage: {
-            enable: "Allow /stats",
-            on: "On",
-            off: "Off",
-            gamesTitle: "Games and data source",
-            hllSource:
-                "From public HLL Records profiles, by the player's Steam account.",
-            wardogsSource: "From games stored from your",
-            gameServersLink: "game servers",
-            shareTitle: "Sharing",
-            defaultChannel: "Default channel",
-            defaultChannelHelp: "The Share button offers this channel first.",
-            noChannel: "No default channel",
-            legacyTitle: "Old stats server connections · {count}",
-            legacyHelp:
-                "Entered with a token and address in the bot settings. New connections belong in Game servers, where the key is stored encrypted and can be tested.",
-            openGameServers: "Open Game servers",
-            previewTitle: "Reply preview in Discord",
-            previewExample: "Example data",
-            previewEphemeral: "Only you can see this · Dismiss",
-            previewPlayer: "Example player",
-            previewNote:
-                "The numbers are an example. The real reply shows the player's statistics from your game servers.",
-            showConnections: "Show connections",
-            hideConnections: "Hide connections",
+        commandsPage: {
+            title: "Commands in Discord",
+            description:
+                "Which commands the bot offers, who may use them and where. It replies in the clan language.",
+            registration: {
+                title: "Command registration",
+                phoneTitle: "Commands are registered",
+                registered:
+                    "Registered {when} · {count} in {server}. After you save changes the bot registers them again by itself; Discord shows them within a minute.",
+                registeredShort: "{when} · {count}",
+                count: { one: "{count} command", other: "{count} commands" },
+                today: "today at {time}",
+                yesterday: "yesterday at {time}",
+                neverTitle: "Commands aren't registered yet",
+                never: "The bot registers them as soon as it runs and sees this server. After you save changes it registers them again by itself.",
+                pending:
+                    "The bot will register the commands again within a minute.",
+                failedTitle: "Command registration failed",
+                failed: "{reason} Check that the bot is in the server and may manage commands, then try again.",
+                failures: {
+                    forbidden:
+                        "Discord did not allow the bot to register them.",
+                    rate_limited: "Discord temporarily limited requests.",
+                    unavailable: "Discord did not answer.",
+                },
+                reregister: "Register again",
+                requested:
+                    "The bot will register the commands again within a minute.",
+                requestFailed: "The request could not be sent.",
+            },
+            legacy: {
+                title: "Old stats server connections · {count}",
+                help: "Only the player search in /link and in the clan application uses them, /stats does not. After moving them to Game servers the key is stored encrypted and can be tested.",
+                convert: "Move to Game servers",
+                show: "Show connections",
+                hide: "Hide connections",
+                converted:
+                    "Moved: {converted}. Test them in Game servers; you can then remove the old connections.",
+                nothingToConvert:
+                    "Every connection is already in Game servers or cannot be moved.",
+                skipped:
+                    "Not moved: {count} (not https, no key or another game).",
+                encryptionUnavailable:
+                    "Key encryption is not available right now; nothing was moved.",
+                failed: "Moving the connections failed.",
+            },
+            commands: {
+                title: "Commands",
+                intro: "Logi checks permission on every use, freshly from Discord. The menu after typing “/” is the same for everyone; whoever may not use a command gets a short explanation and /help does not offer it.",
+                members: "For members",
+                staff: "For managers",
+                new: "New",
+                on: "On",
+                off: "Off",
+                who: "Who may use it",
+                reply: "Reply",
+                where: "Where it works",
+                audiences: {
+                    everyone: {
+                        label: "Everyone in the server",
+                        description: "Every member of the Discord server",
+                    },
+                    clanMembers: {
+                        label: "Clan members",
+                        description: "With the clan role from Roles and access",
+                    },
+                    logiAdmins: {
+                        label: "Logi managers",
+                        description: "Administrator or the managers' role",
+                    },
+                },
+                rolesHint: "You can add specific roles on top.",
+                audienceWithRoles: "{group} and also the {roles} role.",
+                addRole: "Role",
+                addRoleAria: "Add a role to {command}",
+                removeRole: "Remove role {role}",
+                searchRoles: "Search roles",
+                noRoles: "No other role",
+                replies: {
+                    private: "Only the author",
+                    privateShare: "Only the author, with a Share button",
+                },
+                fixedWho: {
+                    help: "Everyone in the server · each sees only their commands",
+                    link: "Everyone in the server · applicants need it too",
+                    notice: "Signed up for an event that hasn't started",
+                },
+                allChannels: "All channels",
+                someChannels: "Selected channels only",
+                addChannel: "Channel",
+                addChannelAria: "Add a channel to {command}",
+                removeChannel: "Remove channel {channel}",
+                searchChannels: "Search channels",
+                noChannels: "No other channel",
+                channelsHint: "Elsewhere the bot says where the command works.",
+                playerShareHint:
+                    "Share posts the profile to the channel where the command was used.",
+                whoLabel: "Who may use {command}",
+                replyLabel: "Reply of {command}",
+                whereLabel: "Where {command} works",
+                closeTicket: {
+                    toggle: "follows Tickets",
+                    who: "Category support or Logi managers",
+                    whoLink: "Tickets",
+                    reply: "Confirmation to the author of the command, summary in the thread, DM to the ticket author",
+                    where: "Only in ticket threads",
+                },
+                closeApplication: {
+                    toggle: "follows Membership",
+                    who: "Category support or Logi managers",
+                    whoLink: "Membership",
+                    reply: "Confirmation to the author of the command, decision in the thread, DM to the applicant",
+                    where: "Only in application threads",
+                },
+            },
+            stats: {
+                gamesTitle: "Games and data source",
+                gameSwitch: "{game} statistics",
+                hllSource:
+                    "From public HLL Records profiles, by the player's Steam account.",
+                wardogsSource: "From games stored from your",
+                gameServersLink: "game servers",
+                shareChannel: "Channel for Share",
+                shareChannelHelp:
+                    "Share posts the card straight here. Without a channel the bot asks the player where.",
+                noShareChannel: "No channel",
+                previewTitle: "Reply preview · example data",
+                previewPlayer: "Player 17",
+            },
+            descriptions: {
+                title: "Command descriptions in Discord",
+                intro: "Discord shows the description in the clan language to every member, whatever their app language. The clan language is {language}; after a change in {channels} the bot registers the commands again. The bot adds “(managers)” only to commands only Logi managers may use.",
+                channelsLink: "Channels and language",
+                languages: { cs: "Czech", en: "English", de: "German" },
+                command: "Command",
+                clanLanguage: "clan language",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote: "After saving the bot registers the commands again.",
+            saved: "Command settings saved. The bot registers the commands again.",
+            saveError: "The command settings could not be saved.",
         },
         messagesPage: {
             lookTitle: "Look of all messages",
@@ -3657,10 +3773,10 @@ export const enMessages = {
                 description:
                     "The clan role and the role that opens the Logi dashboard.",
             },
-            stats: {
-                title: "/stats command",
+            commands: {
+                title: "Commands",
                 description:
-                    "Which games /stats answers for, where results are shared and which stats servers it reads.",
+                    "Which commands the bot offers, who may use them and where. It replies in the clan language.",
             },
             membership: {
                 title: "Membership",
