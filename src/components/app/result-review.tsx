@@ -569,7 +569,8 @@ function Review({
                         <>
                             {left && right ? (
                                 <div className="bg-muted/50 flex flex-col items-center gap-3 rounded-2xl px-4 py-6">
-                                    <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
+                                    {/* Phones stack team, scores, team (E2 phone). */}
+                                    <div className="flex w-full flex-col items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6">
                                         <div className="flex min-w-0 justify-end">
                                             {teamBlock(left, "left")}
                                         </div>
