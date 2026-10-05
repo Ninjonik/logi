@@ -3,8 +3,8 @@ import test from "node:test"
 
 import {
     buildAnnouncementV2Message,
+    buildAttendanceReminderComponents,
     buildCalendarPanelEmbed,
-    buildCompactV2FieldText,
     buildEventComponents,
     buildEventEmbed,
     buildMatchTeamLogoEmbeds,
@@ -101,21 +101,6 @@ function futureIso(days: number, hours = 0) {
     ).toISOString()
 }
 
-test("buildCompactV2FieldText removes padding and preserves row order when compacting columns", () => {
-    const result = buildCompactV2FieldText([
-        { name: "Infantry (4)", value: "Alpha\nDelta", inline: true },
-        { name: "\u200B", value: "Bravo", inline: true },
-        { name: "\u200B", value: "Charlie", inline: true },
-        { name: "\u200B", value: "\u200B", inline: true },
-        { name: "Armor (0)", value: "Nobody yet", inline: true },
-    ])
-
-    assert.equal(
-        result,
-        "**Infantry (4)**\nAlpha, Bravo, Charlie, Delta\n\n**Armor (0)**\nNobody yet"
-    )
-})
-
 test("membership panel categories open the shared membership wizard", () => {
     const membershipConfig: DiscordConfig = {
         ...config,
@@ -165,7 +150,7 @@ test("buildEventComponents omits group buttons when signupGroupIds is empty", ()
     const buttons = rows.flatMap((row) => row.toJSON().components)
     assert.deepEqual(
         buttons.map((button) => ("label" in button ? button.label : undefined)),
-        ["Přihlásit se", "Moje přihláška", "Nepřijdu", "Přidat do kalendáře"]
+        ["Přihlásit se", "Moje přihláška", "Nepřijdu", "Do kalendáře"]
     )
     assert.deepEqual(
         buttons.map((button) => button.style),
@@ -178,7 +163,7 @@ test("buildEventComponents omits group buttons when signupGroupIds is empty", ()
     )
 })
 
-test("buildEventEmbed omits group fields when signupGroupIds is empty", () => {
+test("announcements count sign-ups instead of listing names", () => {
     const embed = buildEventEmbed(
         config,
         groups,
@@ -191,39 +176,58 @@ test("buildEventEmbed omits group fields when signupGroupIds is empty", () => {
                     status: "not_attending",
                     updatedAt: "2026-07-29T10:00:00.000Z",
                 },
+                {
+                    userId: "user-2",
+                    status: "attending",
+                    updatedAt: "2026-07-29T10:00:00.000Z",
+                },
             ],
-        })
-    )
+        }),
+        undefined,
+        { "user-1": "Alpha Nick", "user-2": "Bravo Nick" }
+    ).toJSON()
 
-    const fields = embed.toJSON().fields ?? []
-    assert.equal(fields.length, 1)
-    assert.match(fields[0]?.name ?? "", /Neúčastní se|Not attending/i)
-})
-
-test("buildEventEmbed uses training-specific start wording for trainings", () => {
-    const embed = buildEventEmbed(
-        config,
-        groups,
-        eventCategories,
-        createTrainingEvent()
-    )
-
+    assert.equal(embed.fields, undefined)
     assert.match(
-        embed.toJSON().description ?? "",
-        /Začátek trainingu|Training Start/
+        embed.description ?? "",
+        /\*\*Přihlášeno 1\*\* · Bez skupiny 1/
     )
-    assert.doesNotMatch(
-        embed.toJSON().description ?? "",
-        /Start zápasu|Match Start/
-    )
+    assert.doesNotMatch(JSON.stringify(embed), /Alpha Nick|Bravo Nick|<@/)
 })
 
-test("buildEventEmbed shows the match start, meeting and sign-up deadline as short Discord times", () => {
+test("training cards show the start and a plain sign-up count", () => {
+    const description =
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createTrainingEvent({
+                participants: [
+                    {
+                        userId: "user-1",
+                        status: "attending",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                ],
+            })
+        ).toJSON().description ?? ""
+
+    assert.match(description, /^\*\*<t:1785333600:F>\*\*$/m)
+    assert.match(description, /^\*\*Přihlášeno 1\*\*$/m)
+    assert.doesNotMatch(description, /Command|Infantry|Strana/)
+})
+
+test("buildEventEmbed shows the start, map, meeting and sign-up deadline as Discord times", () => {
     const embed = buildEventEmbed(
         { ...config, defaultLanguage: "en" },
         groups,
         eventCategories,
-        createMatchEvent({ map: "Foy", cap: "50", matchType: "competitive" })
+        createMatchEvent({
+            map: "foy_warfare",
+            cap: "50",
+            matchType: "competitive",
+            side: "Allies",
+        })
     ).toJSON()
     const [header] = (embed.description ?? "").split(/\n-{20,}\n/)
 
@@ -232,21 +236,42 @@ test("buildEventEmbed shows the match start, meeting and sign-up deadline as sho
     assert.equal(
         header,
         [
-            "**Match Start:** <t:1785333600:F>",
-            "Foy · Cap 50 · meeting <t:1785330000:t> · sign-ups close <t:1785328200:R>",
+            "**Side:** 🟦 Allies",
+            "**<t:1785333600:F>**",
+            "Foy · day · Cap 50 · meeting <t:1785330000:t> · sign-ups close <t:1785328200:R>",
         ].join("\n")
     )
-    // Decorative line icons are gone; times stay Discord timestamps.
-    assert.doesNotMatch(embed.description ?? "", /🗺️|🎮|🔒|📌|👥|🏷️/)
+    assert.doesNotMatch(embed.description ?? "", /🗺️|🎮|🔒|📌|👥|🏷️|🛡️/)
     // Once registration closes the status says so; no past deadline.
-    assert.doesNotMatch(
+    const closed =
         buildEventEmbed(
             { ...config, defaultLanguage: "en" },
             groups,
             eventCategories,
             createMatchEvent({ status: "closed" })
-        ).toJSON().description ?? "",
-        /sign-ups close/
+        ).toJSON().description ?? ""
+    assert.doesNotMatch(closed, /sign-ups close/)
+    assert.match(closed, /Status: Closed/)
+})
+
+test("map labels use the clan language and name non-warfare modes", () => {
+    const describe = (map: string, language: "cs" | "de") =>
+        (
+            buildEventEmbed(
+                { ...config, defaultLanguage: language },
+                groups,
+                eventCategories,
+                createMatchEvent({ map })
+            ).toJSON().description ?? ""
+        ).split("\n")[1]
+    assert.match(describe("foy_warfare_night", "cs") ?? "", /^Foy · noc · sraz/)
+    assert.match(
+        describe("foy_offensive_ger", "de") ?? "",
+        /^Foy · Tag · Offensive · Treffen/
+    )
+    assert.match(
+        describe("Custom *map*", "cs") ?? "",
+        /^Custom \\\*map\\\* · sraz/
     )
 })
 
@@ -328,32 +353,52 @@ test("public event cards never contain the server or its password", () => {
     )
 })
 
-test("buildEventEmbed shows the total number of signed-up players", () => {
+test("sign-up counts list each offered group with its cap", () => {
+    const attending = (userId: string, group: string) => ({
+        userId,
+        status: "attending" as const,
+        group,
+        updatedAt: "2026-07-29T10:00:00.000Z",
+    })
     const event = createMatchEvent({
+        signupGroupIds: ["command", "inf"],
         participants: [
+            attending("one", "inf"),
+            attending("two", "inf"),
+            attending("three", "command"),
             {
-                userId: "one",
-                status: "attending",
-                updatedAt: "2026-07-29T10:00:00.000Z",
-            },
-            {
-                userId: "two",
+                userId: "four",
                 status: "not_attending",
                 updatedAt: "2026-07-29T10:00:00.000Z",
             },
         ],
     })
-    const description = buildEventEmbed(
-        { ...config, defaultLanguage: "en" },
-        groups,
-        eventCategories,
-        event
-    ).toJSON().description
+    const withLimits = {
+        ...event,
+        signupGroupLimits: [{ groupId: "command", max: 1 }],
+    } as EventRecord
+    const description = (value: EventRecord) =>
+        buildEventEmbed(
+            { ...config, defaultLanguage: "en" },
+            groups,
+            eventCategories,
+            value
+        ).toJSON().description ?? ""
 
     assert.match(
-        description ?? "",
-        /\*\*Signed up 1\*\* · Status: Registration/
+        description(withLimits),
+        /^\*\*Signed up 3\*\* · Command 1\/1 · Infantry 2$/m
     )
+    // Without caps (or with a malformed field) the counts stay plain.
+    assert.match(
+        description(event),
+        /^\*\*Signed up 3\*\* · Command 1 · Infantry 2$/m
+    )
+    assert.match(
+        description({ ...event, signupGroupLimits: "6" } as EventRecord),
+        /Command 1 · Infantry 2$/m
+    )
+    assert.doesNotMatch(description(event), /Status:/)
 })
 
 test("buildEventEmbed links the event-specific forum channel when available", () => {
@@ -367,7 +412,7 @@ test("buildEventEmbed links the event-specific forum channel when available", ()
         { forumChannelId: "forum-123" }
     ).toJSON().description
 
-    assert.match(description ?? "", /Event forum: <#forum-123>/)
+    assert.match(description ?? "", /^-# <#forum-123> · Managed in Logi$/m)
 })
 
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
@@ -463,159 +508,6 @@ test("buildCalendarPanelEmbed tolerates missing event categories", () => {
     assert.match(json.description ?? "", /Fallback Match/)
 })
 
-test("buildEventEmbed uses plain display names instead of Discord mentions", () => {
-    const embed = buildEventEmbed(
-        config,
-        groups,
-        eventCategories,
-        createMatchEvent({
-            participants: [
-                {
-                    userId: "user-1",
-                    status: "attending",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-2",
-                    status: "not_attending",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-            ],
-        }),
-        undefined,
-        {
-            "user-1": "Alpha Nick",
-            "user-2": "Bravo Nick",
-        }
-    )
-
-    const fields = embed.toJSON().fields ?? []
-    const combinedValues = fields.map((field) => field.value ?? "").join(" | ")
-    assert.match(combinedValues, /Alpha Nick/)
-    assert.match(combinedValues, /Bravo Nick/)
-    assert.doesNotMatch(combinedValues, /<@/)
-})
-
-for (const language of ["en", "cs", "de"] as const) {
-    test(`buildEventEmbed alphabetizes signup columns using the configured ${language} locale`, () => {
-        const embed = buildEventEmbed(
-            { ...config, defaultLanguage: language },
-            groups,
-            eventCategories,
-            createMatchEvent({
-                participants: [
-                    {
-                        userId: "user-1",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-2",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-3",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-4",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-5",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-6",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                    {
-                        userId: "user-7",
-                        status: "attending",
-                        group: "command",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                ],
-            }),
-            undefined,
-            {
-                "user-1": "Golf",
-                "user-2": "Delta",
-                "user-3": "Alpha",
-                "user-4": "Foxtrot",
-                "user-5": "Charlie",
-                "user-6": "Echo",
-                "user-7": "Bravo",
-            }
-        )
-
-        const fields = embed.toJSON().fields ?? []
-        assert.equal(fields[0]?.inline, true)
-        assert.equal(fields[1]?.inline, true)
-        assert.equal(fields[2]?.inline, true)
-        assert.match(fields[0]?.name ?? "", /Command \(7\)/)
-        const expected =
-            language === "cs"
-                ? ["Alpha\nEcho\nCharlie", "Bravo\nFoxtrot", "Delta\nGolf"]
-                : ["Alpha\nDelta\nGolf", "Bravo\nEcho", "Charlie\nFoxtrot"]
-        assert.deepEqual(
-            fields.slice(0, 3).map((field) => field.value),
-            expected
-        )
-        assert.equal(
-            buildCompactV2FieldText(fields.slice(0, 3)),
-            `**${fields[0]!.name}**\n${
-                language === "cs"
-                    ? "Alpha, Bravo, Delta, Echo, Foxtrot, Golf, Charlie"
-                    : "Alpha, Bravo, Charlie, Delta, Echo, Foxtrot, Golf"
-            }`
-        )
-    })
-}
-
-test("buildEventEmbed pads signup sections so the next group starts on a new row", () => {
-    const embed = buildEventEmbed(
-        config,
-        groups,
-        eventCategories,
-        createMatchEvent({
-            participants: [
-                {
-                    userId: "user-1",
-                    status: "attending",
-                    group: "command",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-                {
-                    userId: "user-2",
-                    status: "attending",
-                    group: "inf",
-                    updatedAt: "2026-07-29T10:00:00.000Z",
-                },
-            ],
-        })
-    )
-
-    const fields = embed.toJSON().fields ?? []
-    assert.equal(
-        fields.some(
-            (field) => field.name === "\u200B" && field.value === "\u200B"
-        ),
-        true
-    )
-})
-
 test("published roster image keeps its URL for signup-only changes and changes for roster content", () => {
     const roster: Roster = {
         id: "roster-1",
@@ -665,7 +557,7 @@ test("published roster image keeps its URL for signup-only changes and changes f
     assert.notEqual(rosterChangedUrl, imageUrl)
 })
 
-test("published roster keeps signup groups visible while registration is open", () => {
+test("a published roster keeps the sign-up counts while registration is open", () => {
     const roster: Roster = {
         id: "roster-1",
         eventId: "event-1",
@@ -688,21 +580,11 @@ test("published roster keeps signup groups visible while registration is open", 
         eventCategories,
         event,
         roster,
-        {
-            "user-1": "Alpha",
-        },
-        { showPublishedRosterImage: true }
+        { "user-1": "Alpha" }
     ).toJSON()
 
-    assert.ok(embed.image?.url)
-    assert.equal(
-        embed.fields?.some((field) => /Command \(1\)/.test(field.name)),
-        true
-    )
-    assert.equal(
-        embed.fields?.some((field) => field.value === "Alpha"),
-        true
-    )
+    assert.match(embed.description ?? "", /\*\*Přihlášeno 1\*\* · Command 1/)
+    assert.doesNotMatch(JSON.stringify(embed), /Alpha/)
 })
 
 test("Components V2 announcements show published roster below event artwork", () => {
@@ -844,7 +726,7 @@ function v2Sections(message: ReturnType<typeof buildAnnouncementV2Message>) {
     )
 }
 
-test("buildEventEmbed lists match teams by slot next to the side line", () => {
+test("the sides line lists teams by slot with faction emblems", () => {
     const description =
         buildEventEmbed(
             config,
@@ -861,60 +743,53 @@ test("buildEventEmbed lists match teams by slot next to the side line", () => {
                     }),
                     createMatchTeam("b", "Bravo", { side: "Manticore" }),
                 ],
-            })
+            }),
+            undefined,
+            {},
+            {
+                factionEmoji: {
+                    valkyra: "<:logi_valkyra_1:111111111111111111>",
+                },
+            }
         ).toJSON().description ?? ""
-    const lines = description.split("\n")
-    const sideIndex = lines.findIndex((line) => line === "**Strana:** Valkyra")
 
-    assert.ok(sideIndex >= 0)
     assert.equal(
-        lines[sideIndex + 1],
-        "**🛡️ Týmy:** Alpha [ALP] (Valkyra) vs Bravo (Manticore) vs Charlie [CH]"
+        description.split("\n")[0],
+        "<:logi_valkyra_1:111111111111111111> **ALP** Valkyra  vs  ◈ **Bravo** Manticore  vs  **CH**"
     )
+    assert.doesNotMatch(description, /Strana|🛡️/)
 })
 
-test("buildEventEmbed uses localized team wording and omits empty assignments", () => {
+test("sides use the clan language and events without teams show the clan side", () => {
     const event = createMatchEvent({
         matchTeams: [
             createMatchTeam("a", "Alpha", { side: "Allies" }),
             createMatchTeam("b", "Bravo", { side: "Axis" }),
         ],
     })
-    const english = buildEventEmbed(
-        { ...config, defaultLanguage: "en" },
-        groups,
-        eventCategories,
-        event
-    ).toJSON().description
-    const german = buildEventEmbed(
-        { ...config, defaultLanguage: "de" },
-        groups,
-        eventCategories,
-        event
-    ).toJSON().description
+    const firstLine = (language: "en" | "cs" | "de", value = event) =>
+        (
+            buildEventEmbed(
+                { ...config, defaultLanguage: language },
+                groups,
+                eventCategories,
+                value
+            ).toJSON().description ?? ""
+        ).split("\n")[0]
 
-    assert.match(
-        english ?? "",
-        /\*\*🛡️ Teams:\*\* Alpha \(Allies\) vs Bravo \(Axis\)/
+    assert.equal(firstLine("cs"), "🟦 **Alpha** Spojenci  vs  🟥 **Bravo** Osa")
+    assert.equal(
+        firstLine("de"),
+        "🟦 **Alpha** Alliierte  vs  🟥 **Bravo** Achsenmächte"
     )
-    assert.match(german ?? "", /\*\*🛡️ Teams:\*\* Alpha \(Allies\) vs Bravo/)
-
-    const legacy = buildEventEmbed(
-        config,
-        groups,
-        eventCategories,
-        createMatchEvent()
-    ).toJSON()
-    assert.deepEqual(
-        buildEventEmbed(
-            config,
-            groups,
-            eventCategories,
-            createMatchEvent({ matchTeams: [] })
-        ).toJSON(),
-        legacy
+    assert.equal(
+        firstLine("cs", createMatchEvent({ side: "Axis", matchTeams: [] })),
+        "**Strana:** 🟥 Osa"
     )
-    assert.doesNotMatch(legacy.description ?? "", /🛡️/)
+    assert.equal(
+        firstLine("en", createMatchEvent({ side: "Blue team" })),
+        "**Side:** Blue team"
+    )
     assert.doesNotMatch(
         buildEventEmbed(
             config,
@@ -924,7 +799,7 @@ test("buildEventEmbed uses localized team wording and omits empty assignments", 
                 matchTeams: [createMatchTeam("a", "Alpha")],
             })
         ).toJSON().description ?? "",
-        /🛡️/
+        /Alpha/
     )
 })
 
@@ -939,7 +814,7 @@ test("match team labels escape Markdown, neutralize mentions and never form link
                     createMatchTeam(
                         "a",
                         "<@123> *Bold* __u__ @everyone [x](https://evil.example)",
-                        { shortCode: "<#9>", side: "Allies" }
+                        { side: "Allies" }
                     ),
                     createMatchTeam("b", "Line\nbreak <:emoji:1> <@&5>", {
                         shortCode: "x](https://evil.example)",
@@ -947,19 +822,22 @@ test("match team labels escape Markdown, neutralize mentions and never form link
                 ],
             })
         ).toJSON().description ?? ""
-    const teamsLine =
-        description.split("\n").find((line) => line.includes("🛡️")) ?? ""
+    const teamsLine = description.split("\n")[0] ?? ""
 
-    assert.ok(teamsLine)
+    assert.match(teamsLine, / {2}vs {2}/)
     assert.doesNotMatch(teamsLine, /<@|<#|<:|@everyone|https:\/\//)
     assert.doesNotMatch(teamsLine, /assets\.example\.test/)
     assert.match(teamsLine, /@\u200Beveryone/)
     assert.match(teamsLine, /<\u200B@\u200B123>/)
     assert.match(teamsLine, /\\\*Bold\\\* \\_\\_u\\_\\_/)
-    assert.match(teamsLine, /\\\[x\\\]\\\(https:\u200B\/\/evil\.example\\\)/)
-    assert.match(teamsLine, /\[<\u200B#9>\] \(Allies\)/)
-    assert.match(teamsLine, /Line break <\u200B:emoji:1> <\u200B@\u200B&5>/)
-    assert.match(teamsLine, /\[x\\\]\\\(https:\u200B\/\/evil\.example\\\)\]$/)
+    assert.match(
+        teamsLine,
+        /\\\[x\\\]\\\(https:\u200B\/\/evil\.example\\\)\*\* Allies/
+    )
+    assert.match(
+        teamsLine,
+        /\*\*x\\\]\\\(https:\u200B\/\/evil\.example\\\)\*\*$/
+    )
 })
 
 test("escapeMatchTeamText neutralizes block Markdown at the start of a line", () => {
@@ -1117,7 +995,7 @@ test("Components V2 information cards add one logo section per team only when re
         },
     })
     const rendered = JSON.stringify(card.components?.[0]?.toJSON())
-    assert.match(rendered, /🛡️ Teams:\*\* Alpha \[ALP\] \(Allies\) vs Bravo/)
+    assert.match(rendered, /🟦 \*\*ALP\*\* Allies {2}vs {2}🟥 \*\*Bravo/)
 
     assert.deepEqual(
         v2Sections(buildAnnouncementV2Message(payload, event, {})),
@@ -1139,7 +1017,7 @@ test("Components V2 information cards add one logo section per team only when re
     )
 })
 
-test("Components V2 cards keep hyphen-run team names in one literal Teams line", () => {
+test("Components V2 cards keep hyphen-run team names on one literal sides line", () => {
     const payload = {
         config: { ...config, defaultLanguage: "en" },
         groups,
@@ -1167,16 +1045,13 @@ test("Components V2 cards keep hyphen-run team names in one literal Teams line",
             return component.components.map((text) => text.content)
         return []
     })
-    const teamsBlocks = contents.filter((content) => content.includes("🛡️"))
+    const sidesLine = contents[0]?.split("\n")[1] ?? ""
 
-    assert.equal(teamsBlocks.length, 1)
-    const teamsLine =
-        teamsBlocks[0]?.split("\n").find((line) => line.includes("🛡️")) ?? ""
-    assert.match(teamsLine, /Pwned heading \(Allies\) vs Bravo/)
-    assert.match(teamsLine, /> quoted \(Axis\)$/)
-    assert.doesNotMatch(teamsLine, /--/)
-    for (const content of contents.slice(1)) {
-        assert.doesNotMatch(content, /^(#|>)/m)
+    assert.match(sidesLine, /Pwned heading\*\* Allies {2}vs {2}🟥 \*\*Bravo/)
+    assert.match(sidesLine, /> quoted\*\* Axis$/)
+    assert.doesNotMatch(sidesLine, /--/)
+    for (const content of contents) {
+        assert.doesNotMatch(content, /^(#{1,2} |>)/m)
     }
 })
 
@@ -1238,26 +1113,27 @@ test("match team logo labels stay within Discord UTF-16 limits and never contain
     )
 })
 
-test("members without a stored name appear as a mention, never as a raw ID", () => {
-    const fields =
-        buildEventEmbed(
-            config,
-            groups,
-            eventCategories,
-            createMatchEvent({
-                participants: [
-                    {
-                        userId: "123456789012345678",
-                        status: "attending",
-                        updatedAt: "2026-07-29T10:00:00.000Z",
-                    },
-                ],
-            })
-        ).toJSON().fields ?? []
-    const values = fields.map((field) => field.value).join("\n")
+test("roster members without a stored name appear as a mention, never as a raw ID", () => {
+    const event = createMatchEvent()
+    const summary = buildRosterSummaryText(config, event, {
+        id: "roster-1",
+        eventId: event.id,
+        published: true,
+        reservePlayerIds: [],
+        updatedAt: "2026-07-29T10:00:00.000Z",
+        squads: [
+            {
+                name: "Command",
+                group: "Command",
+                color: "#d4a017",
+                order: 1,
+                players: [{ id: "123456789012345678", ack: false }],
+            },
+        ],
+    })
 
-    assert.match(values, /<@123456789012345678>/)
-    assert.doesNotMatch(values, /(^|[^@])123456789012345678/)
+    assert.match(summary, /<@123456789012345678>/)
+    assert.doesNotMatch(summary, /(^|[^@])123456789012345678/)
 })
 
 test("published roster cards list meeting, squads with counts and reserves", () => {
@@ -1329,8 +1205,55 @@ test("published roster cards list meeting, squads with counts and reserves", () 
             { showPublishedRosterImage: true }
         ).components?.[0]?.toJSON()
     )
-    assert.match(card, /# Soupiska · Test Match · Competitive/)
+    assert.match(card, /### Soupiska · Test Match\\n/)
     assert.match(card, /\*\*Able\*\* · 3 hráči/)
     assert.match(card, /roster-assignment:event-1/)
     assert.match(card, /Celá soupiska na webu/)
+    // The roster card is only the roster: no facts, sign-ups or calendar.
+    assert.doesNotMatch(card, /Přihlášeno|Do kalendáře|Competitive/)
+})
+
+test("reminder DMs offer confirm, running late and can't make it", () => {
+    const buttons = buildAttendanceReminderComponents("event-1", "cs")
+        .flatMap((row) => row.toJSON().components)
+        .map((button) => ({
+            label: "label" in button ? button.label : undefined,
+            style: button.style,
+            customId: "custom_id" in button ? button.custom_id : undefined,
+        }))
+    assert.deepEqual(buttons, [
+        { label: "Potvrdím", style: 3, customId: "attendance:event-1:ack" },
+        {
+            label: "Přijdu později",
+            style: 2,
+            customId: "attendance-late:event-1",
+        },
+        {
+            label: "Nemůžu",
+            style: 4,
+            customId: "attendance-decline:event-1",
+        },
+    ])
+})
+
+test("the announcement ping sits above the card", () => {
+    const payload = {
+        config,
+        groups,
+        guild: { eventCategories },
+        rosters: [],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
+    const [lead, card] =
+        buildAnnouncementV2Message(
+            payload,
+            createMatchEvent(),
+            {},
+            {
+                pingRoleIds: ["role-1"],
+            }
+        ).components ?? []
+    assert.deepEqual(lead?.toJSON(), { type: 10, content: "<@&role-1>" })
+    assert.equal(card?.toJSON().type, 17)
+    assert.doesNotMatch(JSON.stringify(card?.toJSON()), /<@&role-1>/)
 })

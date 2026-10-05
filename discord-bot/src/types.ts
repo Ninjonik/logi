@@ -324,6 +324,12 @@ export type EventRecord = {
         offsetHours: number
         sentAt: string
     }>
+    /** Late and "can't make it" notices; older payloads may omit them. */
+    absenceNotices?: Array<{
+        userId: string
+        reason: string
+        createdAt: string
+    }>
     signUps: Array<{
         userId: string
         group?: string | null

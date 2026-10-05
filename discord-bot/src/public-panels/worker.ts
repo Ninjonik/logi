@@ -33,6 +33,7 @@ import { factionAssets, panelArtwork } from "./assets"
 import { makeFunctionReference } from "convex/server"
 import { loadPlayerDetails } from "./player-details"
 import { logWarn as writeWarning } from "../log"
+import { buildPublicMatchUrl } from "../utils"
 import { env } from "../environment"
 import { convex } from "../convex"
 import { panelCopy } from "./copy"
@@ -324,7 +325,14 @@ async function syncResults(
                     channelId,
                     message: event?.result
                         ? renderResult(
-                              { ...event, result: event.result },
+                              {
+                                  ...event,
+                                  result: event.result,
+                                  gameId: panel.gameId,
+                                  matchUrl: event.card?.publicMatch
+                                      ? buildPublicMatchUrl(event.id, language)
+                                      : undefined,
+                              },
                               emoji,
                               panel,
                               language

@@ -74,6 +74,12 @@ import {
     rollbackMembershipApplicationSetup,
 } from "./interactions/shared"
 import {
+    ATTENDANCE_DECLINE_MODAL_PREFIX,
+    ATTENDANCE_DECLINE_PREFIX,
+    handleAttendanceDeclineButton,
+    handleAttendanceDeclineModalSubmit,
+} from "./interactions/attendance-decline"
+import {
     handleEventButtonInteraction,
     handleCheckSignupInteraction,
     handleEventSignupPickerInteraction,
@@ -591,6 +597,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await handleMatchRecapPreference(interaction)
                 return
             }
+            if (interaction.customId.startsWith(ATTENDANCE_DECLINE_PREFIX)) {
+                await handleAttendanceDeclineButton(interaction)
+                return
+            }
             if (interaction.customId.startsWith("attendance-late:")) {
                 const eventId = interaction.customId.replace(
                     "attendance-late:",
@@ -690,6 +700,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await handlePlatformLinkMockApplyModalSubmit(interaction)
             } else if (interaction.customId.startsWith("notice-modal:")) {
                 await handleNoticeModalSubmit(interaction)
+            } else if (
+                interaction.customId.startsWith(ATTENDANCE_DECLINE_MODAL_PREFIX)
+            ) {
+                await handleAttendanceDeclineModalSubmit(interaction, options)
             }
         },
 

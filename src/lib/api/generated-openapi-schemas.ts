@@ -30,6 +30,9 @@ export const generatedOpenApiSchemas = {
                     }
                 ]
             },
+            "isDraft": {
+                "type": "boolean"
+            },
             "matchType": {
                 "type": "string"
             },
@@ -576,6 +579,7 @@ export const generatedOpenApiSchemas = {
             "guildId": "string",
             "gameId": "hell_let_loose",
             "kind": "match",
+            "isDraft": true,
             "matchType": "string",
             "name": "string",
             "description": "string",

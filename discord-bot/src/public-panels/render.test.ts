@@ -350,8 +350,12 @@ test("custom faction emoji replace application emoji on scores, leaders and resu
             { presentation }
         )
     ).join("\n")
-    assert.match(result, /<a:ls:12345678901234567890> \*\*Lonestar\*\* · 3/)
-    assert.match(result, /◈ \*\*Clan\*\* · 1/)
+    // Faction emblems follow the override; labels that are not factions
+    // carry none.
+    assert.match(
+        result,
+        /## <a:ls:12345678901234567890> \*\*Lonestar\*\* {2}3 : 1 {2}\*\*Clan\*\*$/m
+    )
     assert.equal(factionIcon("Allies", { allies: "🇺🇸" }), "🇺🇸")
 })
 
@@ -546,7 +550,10 @@ test("layout toggles each change the rendered panel", () => {
     )[0]
     assert.ok(!compactResult.startsWith("###"))
     assert.ok(!compactResult.includes("Ozeti"))
-    assert.match(compactResult, /· 3 {2}· {2}<:logi_manticore/)
+    assert.match(
+        compactResult,
+        /\*\*Valkyra\*\* {2}3 : 1 {2}\*\*Manticore\*\* <:logi_manticore/
+    )
 })
 
 test("maximum-length custom emoji keep the public panel within the component text budget", () => {
@@ -702,7 +709,7 @@ test("live panels, player pages and results speak the clan language", () => {
             "cs"
         )
     )
-    assert.match(result, /Opravený výsledek · v2/)
+    assert.match(result, /-# VÝSLEDEK · OPRAVENO/)
     assert.match(result, /Potvrzeno <t:1791142800:R>/)
     // Unknown languages keep the historical English copy.
     assert.match(
@@ -711,4 +718,86 @@ test("live panels, player pages and results speak the clan language", () => {
         ),
         /Live · score in progress/
     )
+})
+
+test("result cards show the category, teams, the clan's outcome, who confirmed and the match page", () => {
+    const event = {
+        id: "event-1",
+        name: "VLK vs DEF",
+        map: "carentan_warfare",
+        gameId: "hell_let_loose",
+        result: {
+            status: "confirmed",
+            version: 2,
+            reviewedAt: "2026-10-04T19:40:00.000Z",
+            participants: [
+                { label: "Allies", score: 3 },
+                { label: "Axis", score: 2 },
+            ],
+        },
+        card: {
+            category: "Přátelák",
+            side: "Allies",
+            teams: [
+                { code: "VLK", side: "Allies" },
+                { code: "DEF", side: "Axis" },
+            ],
+            reviewer: "Hráč *01*",
+            publicMatch: true,
+            imported: null,
+        },
+        matchUrl: "https://logi.example.test/cs/matches/event-1",
+    }
+    const rendered = json(renderResult(event, {}, undefined, "cs"))
+    assert.deepEqual(texts(rendered), [
+        [
+            "-# VÝSLEDEK · PŘÁTELÁK",
+            "## 🟦 **VLK**  3 : 2  **DEF** 🟥",
+            "**Výhra** · Carentan · den · potvrdil Hráč \\*01\\*",
+        ].join("\n"),
+    ])
+    assert.equal(container(rendered).accent_color, 0xffb000)
+    const button = tree(rendered).find((n) => n.type === 2)
+    assert.equal(button?.label, "Detail zápasu")
+    assert.equal(button?.url, "https://logi.example.test/cs/matches/event-1")
+
+    // The other side won: a loss for the clan.
+    const loss = texts(
+        renderResult(
+            { ...event, card: { ...event.card, side: "Axis" } },
+            {},
+            undefined,
+            "en"
+        )
+    )[0]
+    assert.match(loss ?? "", /^\*\*Loss\*\* · Carentan · day · confirmed by/m)
+
+    // Without the clan's side, a reviewer or a public page nothing is guessed.
+    const bare = json(
+        renderResult(
+            {
+                ...event,
+                card: {
+                    ...event.card,
+                    side: null,
+                    teams: [],
+                    reviewer: null,
+                    publicMatch: false,
+                },
+                matchUrl: undefined,
+            },
+            {},
+            undefined,
+            "cs"
+        )
+    )
+    assert.deepEqual(texts(bare), [
+        [
+            "-# VÝSLEDEK · PŘÁTELÁK",
+            "**VLK vs DEF**",
+            "## 🟦 **Spojenci**  3 : 2  **Osa** 🟥",
+            "Carentan · den · Potvrzeno <t:1791142800:R>",
+        ].join("\n"),
+    ])
+    assert.equal(tree(bare).filter((n) => n.type === 2).length, 0)
 })

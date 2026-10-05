@@ -83,7 +83,7 @@ test("received human edits remain available for backend receipt cleanup after in
         null
     )
 })
-test("League cards use the clan language for labels, footer and button", () => {
+test("League cards follow the message style in the clan language", () => {
     const snapshot = {
         ...parseMatchHtml(
             readFileSync(
@@ -110,14 +110,35 @@ test("League cards use the clan language for labels, footer and button", () => {
         lastAttemptAt: null,
         error: null,
     }
-    const czech = JSON.stringify(renderLeagueCard(fixture, undefined, {}, "cs"))
-    assert.match(czech, /"title":"Zápas /)
-    assert.match(czech, /Kontrola připravenosti/)
-    assert.match(czech, /Otevřít na webu ligy/)
-    assert.match(czech, /Zdroj ověřen/)
-    assert.doesNotMatch(czech, /View match|Preparation|Source checked/)
+    const czech = renderLeagueCard(fixture, undefined, {}, "cs")
+    const embed = czech.embeds?.[0]
+    const json = embed && "toJSON" in embed ? embed.toJSON() : undefined
+    assert.equal(json?.author?.name, "WARDOGS LEAGUE · ZÁPAS 38")
+    assert.equal(json?.title, "VLK vs ROG vs BAMC")
+    assert.equal(json?.color, 0xffb000)
+    assert.deepEqual(json?.description?.split("\n"), [
+        "**<t:1791657000:F>**",
+        "◈ **VLK** · Valkyra",
+        "◈ **ROG** · Manticore",
+        "◈ **BAMC** · Lonestar",
+        "Zestafona · SmallFactory · DayLateGrayFog · kontrola připravenosti: Not started",
+        "-# Friendly · Scheduled",
+    ])
+    assert.equal(json?.fields, undefined)
+    assert.match(JSON.stringify(czech), /Otevřít na webu ligy/)
+    assert.doesNotMatch(
+        JSON.stringify(czech),
+        /View match|Preparation|Source checked|Zdroj ověřen/
+    )
     assert.match(
         JSON.stringify(renderLeagueCard(fixture)),
-        /"title":"Match #.*View match/
+        /"name":"WARDOGS LEAGUE · MATCH #38".*View match/
+    )
+    // Stale or paused data stays visible on the card.
+    assert.match(
+        JSON.stringify(
+            renderLeagueCard({ ...fixture, stale: true }, undefined, {}, "cs")
+        ),
+        /Zastaralá data ze zdroje/
     )
 })

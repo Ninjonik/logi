@@ -197,7 +197,7 @@ test("event messages without team assignments keep the previous payload", () => 
     }
 })
 
-test("legacy event information messages append one logo embed per assigned team", () => {
+test("event information messages add team logos until the roster is published", () => {
     const { payload, event } = createMessageFixture({
         gameId: "hell_let_loose",
         matchTeams: [
@@ -205,8 +205,9 @@ test("legacy event information messages append one logo embed per assigned team"
             createMatchTeam("a", "Alpha", "Allies"),
         ],
     })
+    const draftPayload = { ...payload, rosters: [] }
     const content = buildEventMessageContent({
-        payload,
+        payload: draftPayload,
         event,
         userDisplayNames: {},
         legacyEmbeds: true,
@@ -215,24 +216,11 @@ test("legacy event information messages append one logo embed per assigned team"
     })
     assert.ok(content.embeds)
     const [main, ...teams] = content.embeds.map((embed) => embed.toJSON())
-    const previous = buildPreviousEventMessageContent({
-        payload,
-        event,
-        legacyEmbeds: true,
-        includeSignup: false,
-        pingRoleIds: [],
-    })
 
-    assert.ok(previous.embeds)
-    assert.deepEqual(toPlainJson(main), toPlainJson(previous.embeds[0]))
-    assert.match(
-        main?.description ?? "",
-        /Foy • Day • Warfare · meeting <t:\d+:t>/
-    )
-    assert.equal(main?.image?.url?.includes("/roster"), true)
-    assert.match(
-        main?.description ?? "",
-        /🛡️ Teams:\*\* Alpha \(Allies\) vs Bravo \(Axis\)/
+    assert.match(main?.description ?? "", /Foy · day · meeting <t:\d+:t>/)
+    assert.equal(
+        main?.description?.split("\n")[0],
+        "🟦 **Alpha** Allies  vs  🟥 **Bravo** Axis"
     )
     assert.deepEqual(toPlainJson(teams), [
         {
@@ -254,9 +242,23 @@ test("legacy event information messages append one logo embed per assigned team"
     ])
     assert.deepEqual(content.components, [])
     assert.ok(content.embeds.length <= 10)
+
+    // Published: the same message becomes the roster card, without logos.
+    const published = buildEventMessageContent({
+        payload,
+        event,
+        userDisplayNames: {},
+        legacyEmbeds: true,
+        includeSignup: false,
+        pingRoleIds: [],
+    })
+    assert.equal(published.embeds?.length, 1)
+    const roster = published.embeds?.[0]?.toJSON()
+    assert.equal(roster?.title, "Roster · Native Match")
+    assert.equal(roster?.image?.url?.includes("/roster"), true)
 })
 
-test("registration cards show team labels but no logo cards", () => {
+test("registration cards show the sides line but no logo cards", () => {
     const { payload, event } = createMessageFixture({
         status: "registration",
         gameId: "wardogs",
@@ -273,12 +275,13 @@ test("registration cards show team labels but no logo cards", () => {
         legacyEmbeds: true,
         includeSignup: true,
         pingRoleIds: ["clan-role"],
+        factionEmoji: { lonestar: "<:logi_lonestar_1:111111111111111111>" },
     })
     assert.ok(legacy.embeds)
     assert.equal(legacy.embeds.length, 1)
-    assert.match(
-        legacy.embeds[0]?.toJSON().description ?? "",
-        /Alpha \(Valkyra\) vs Bravo \(Manticore\) vs Charlie \(Lonestar\)/
+    assert.equal(
+        legacy.embeds[0]?.toJSON().description?.split("\n")[0],
+        "◈ **Alpha** Valkyra  vs  ◈ **Bravo** Manticore  vs  <:logi_lonestar_1:111111111111111111> **Charlie** Lonestar"
     )
     assert.ok(legacy.components.length > 0)
 
@@ -295,7 +298,7 @@ test("registration cards show team labels but no logo cards", () => {
     assert.doesNotMatch(JSON.stringify(v2), /assets\.example\.test/)
 })
 
-test("Components V2 information cards keep controls and add Wardogs team logos", () => {
+test("Components V2 information cards add Wardogs team logos before publication and become the roster card after it", () => {
     const { payload, event } = createMessageFixture({
         gameId: "wardogs",
         matchTeams: [
@@ -304,43 +307,59 @@ test("Components V2 information cards keep controls and add Wardogs team logos",
             createMatchTeam("b", "Bravo", null, null),
         ],
     })
-    const content = buildEventMessageContent({
-        payload,
-        event,
-        userDisplayNames: {},
-        legacyEmbeds: false,
-        includeSignup: false,
-        pingRoleIds: [],
-    })
-    assert.ok("flags" in content)
-    assert.equal(content.flags, MessageFlags.IsComponentsV2)
-    const container = toPlainJson(content.components[0]) as {
-        components: Array<{
-            type: number
-            accessory?: { type: number; media: { url: string } }
-            components?: Array<{ type: number; custom_id?: string }>
-        }>
+    const render = (rosters: Roster[]) => {
+        const content = buildEventMessageContent({
+            payload: { ...payload, rosters },
+            event,
+            userDisplayNames: {},
+            legacyEmbeds: false,
+            includeSignup: false,
+            pingRoleIds: [],
+        })
+        assert.ok("flags" in content)
+        assert.equal(content.flags, MessageFlags.IsComponentsV2)
+        assert.equal(content.components.length, 1)
+        return toPlainJson(content.components[0]) as {
+            components: Array<{
+                type: number
+                accessory?: { type: number; media: { url: string } }
+                components?: Array<{ type: number; custom_id?: string }>
+                items?: Array<{ media: { url: string } }>
+            }>
+        }
     }
-    const logoSections = container.components.filter(
-        (component) => component.type === 9 && component.accessory?.type === 11
+    const logos = (container: ReturnType<typeof render>) =>
+        container.components
+            .filter(
+                (component) =>
+                    component.type === 9 && component.accessory?.type === 11
+            )
+            .map((section) => section.accessory?.media.url)
+
+    const draft = render([])
+    assert.deepEqual(logos(draft), [
+        "https://assets.example.test/a.png",
+        "https://assets.example.test/c.png",
+    ])
+    assert.match(
+        JSON.stringify(draft.components.find((c) => c.type === 12)),
+        /example\.com\/banner\.png/
     )
-    assert.deepEqual(
-        logoSections.map((section) => section.accessory?.media.url),
-        [
-            "https://assets.example.test/a.png",
-            "https://assets.example.test/c.png",
-        ]
-    )
-    const last = container.components.at(-1)
+
+    const rosterCard = render(payload.rosters)
+    assert.deepEqual(logos(rosterCard), [])
+    const last = rosterCard.components.at(-1)
     assert.equal(last?.type, 1)
     assert.ok(
         last?.components?.some(
             (button) => button.custom_id === "roster-assignment:event-1"
         )
     )
-    const gallery = container.components.find(
+    const gallery = rosterCard.components.find(
         (component) => component.type === 12
     )
-    assert.match(JSON.stringify(gallery), /example\.com\/banner\.png/)
-    assert.equal(content.components.length, 1)
+    assert.deepEqual(
+        gallery?.items?.map((item) => item.media.url.includes("/roster")),
+        [true]
+    )
 })
