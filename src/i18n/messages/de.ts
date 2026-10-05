@@ -1647,6 +1647,35 @@ export const deMessages = {
         publish: "Artikel veröffentlichen",
         attachments: "Anhänge",
         saveFailed: "Artikel konnte nicht veröffentlicht werden.",
+        titleLabel: "Titel",
+        descriptionLabel: "Kurzbeschreibung",
+        tagsLabel: "Tags",
+        tagsHint: "Trenne Tags mit Kommas.",
+        bodyLabel: "Artikel",
+        attachmentsHint:
+            "Dateien werden sofort hochgeladen und unter dem Artikel verlinkt.",
+        uploading: "{count} Datei(en) werden hochgeladen…",
+        uploadFailed: "Die Datei konnte nicht hochgeladen werden: {reason}",
+        removeAttachment: "Anhang {name} entfernen",
+        waitForUpload: "Warte, bis der Upload fertig ist.",
+        publishing: "Wird veröffentlicht…",
+        titleRequired: "Gib einen Titel ein.",
+        descriptionRequired: "Gib eine Kurzbeschreibung ein.",
+        bodyRequired: "Schreib den Artikel.",
+        emptyTitle: "Noch keine Artikel",
+        emptyDescription:
+            "Artikel bringen allen Mitgliedern Clan-News und längere Updates.",
+        emptyMemberDescription:
+            "Clan-News und längere Updates erscheinen hier, sobald ein Manager sie veröffentlicht.",
+        publishedOn: "Veröffentlicht {date}",
+        deleteAction: "Artikel löschen",
+        deleteTitle: "„{title}“ löschen?",
+        deleteDescription:
+            "Der Artikel verschwindet für alle Mitglieder. Hochgeladene Dateien bleiben über bereits geteilte Links erreichbar. Das lässt sich nicht rückgängig machen.",
+        deleted: "Artikel gelöscht.",
+        deleteFailed:
+            "Der Artikel konnte nicht gelöscht werden. Versuch es noch einmal.",
+        backToList: "Alle Artikel",
     },
     common: {
         actions: "Aktionen",
@@ -2993,6 +3022,23 @@ export const deMessages = {
         usedByPlayers: "Primäre Spieler",
         starterDescription:
             "Start-Clan-Spezialisierungen abgestimmt auf das Standard-HLL-Squad-Setup.",
+        created: "Gruppe erstellt.",
+        saved: "Gruppe gespeichert.",
+        saveFailed:
+            "Die Gruppe konnte nicht gespeichert werden. Versuch es noch einmal.",
+        duplicateName: "Eine Gruppe mit diesem Namen gibt es schon.",
+        deleteAction: "Gruppe löschen",
+        deleteTitle: "Gruppe „{name}“ löschen?",
+        deleteDescription:
+            "Spieler verlieren diese Gruppe. Roster und vergangene Events behalten den kopierten Gruppennamen. Das lässt sich nicht rückgängig machen.",
+        deleteImpact:
+            "{primary} Spieler haben sie als Hauptgruppe und {secondary} als zusätzliche Gruppe.",
+        deleted: "Gruppe gelöscht.",
+        deleteFailed:
+            "Die Gruppe konnte nicht gelöscht werden. Versuch es noch einmal.",
+        emptyTitle: "Noch keine Gruppen",
+        emptyDescription:
+            "Gruppen sind Clan-Spezialisierungen wie Panzerfahrer oder Kommandeure. Squad-Presets und Spieler nutzen sie.",
     },
     tables: {
         event: "Event",
@@ -3126,6 +3172,12 @@ export const deMessages = {
             created: "Erstellt",
             error: "Fehler",
         },
+    },
+    workspacePages: {
+        managersOnlyTitle: "Nur Manager können diese Seite öffnen",
+        managersOnlyDescription:
+            "Frag einen Clan-Manager, wenn du Zugriff brauchst. Alles, was du nutzen kannst, findest du im Menü.",
+        backToOverview: "Zurück zur Übersicht",
     },
     stratmaps: {
         title: "Stratmaps",

@@ -1579,6 +1579,34 @@ export const csMessages = {
         publish: "Publikovat článek",
         attachments: "Přílohy",
         saveFailed: "Článek se nepodařilo publikovat.",
+        titleLabel: "Název",
+        descriptionLabel: "Krátký popis",
+        tagsLabel: "Štítky",
+        tagsHint: "Štítky oddělte čárkou.",
+        bodyLabel: "Článek",
+        attachmentsHint:
+            "Soubory se nahrají hned a připojí se pod článek jako odkazy.",
+        uploading: "Nahrávám soubory ({count})…",
+        uploadFailed: "Soubor se nepovedlo nahrát: {reason}",
+        removeAttachment: "Odebrat přílohu {name}",
+        waitForUpload: "Počkejte, až se nahrávání dokončí.",
+        publishing: "Publikuji…",
+        titleRequired: "Vyplňte název.",
+        descriptionRequired: "Vyplňte krátký popis.",
+        bodyRequired: "Napište text článku.",
+        emptyTitle: "Zatím žádný článek",
+        emptyDescription:
+            "Články přinášejí členům klanu novinky a delší zprávy.",
+        emptyMemberDescription:
+            "Novinky klanu a delší zprávy se tu objeví, jakmile je správce zveřejní.",
+        publishedOn: "Zveřejněno {date}",
+        deleteAction: "Smazat článek",
+        deleteTitle: "Smazat „{title}“?",
+        deleteDescription:
+            "Článek zmizí všem členům. Nahrané soubory zůstanou dostupné přes už sdílené odkazy. Nejde to vrátit.",
+        deleted: "Článek smazán.",
+        deleteFailed: "Článek se nepovedlo smazat. Zkuste to znovu.",
+        backToList: "Všechny články",
     },
     common: {
         actions: "Akce",
@@ -2904,6 +2932,21 @@ export const csMessages = {
         usedByPlayers: "Hlavní hráči",
         starterDescription:
             "Výchozí klanové specializace sladěné s defaultní HLL sestavou.",
+        created: "Skupina vytvořena.",
+        saved: "Skupina uložena.",
+        saveFailed: "Skupinu se nepovedlo uložit. Zkuste to znovu.",
+        duplicateName: "Skupina s tímto názvem už existuje.",
+        deleteAction: "Smazat skupinu",
+        deleteTitle: "Smazat skupinu „{name}“?",
+        deleteDescription:
+            "Hráči o tuto skupinu přijdou. Soupisky a proběhlé akce si ponechají zkopírovaný název. Nejde to vrátit.",
+        deleteImpact:
+            "Hlavní skupinou je pro {primary} hráčů, jako další skupinu ji má {secondary} hráčů.",
+        deleted: "Skupina smazána.",
+        deleteFailed: "Skupinu se nepovedlo smazat. Zkuste to znovu.",
+        emptyTitle: "Zatím žádná skupina",
+        emptyDescription:
+            "Skupiny jsou specializace klanu, třeba tankisté nebo velitelé. Používají je šablony jednotek i hráči.",
     },
     tables: {
         event: "Akce",
@@ -3036,6 +3079,12 @@ export const csMessages = {
             created: "Vytvořeno",
             error: "Chyba",
         },
+    },
+    workspacePages: {
+        managersOnlyTitle: "Tuto stránku otevřou jen správci",
+        managersOnlyDescription:
+            "Pokud potřebujete přístup, napište správci klanu. Vše, co můžete používat, najdete v menu.",
+        backToOverview: "Zpět na přehled",
     },
     stratmaps: {
         title: "Stratmapy",

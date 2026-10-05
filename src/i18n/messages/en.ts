@@ -1583,6 +1583,34 @@ export const enMessages = {
         publish: "Publish article",
         attachments: "Attachments",
         saveFailed: "Unable to publish article.",
+        titleLabel: "Title",
+        descriptionLabel: "Short description",
+        tagsLabel: "Tags",
+        tagsHint: "Separate tags with commas.",
+        bodyLabel: "Article",
+        attachmentsHint:
+            "Files are uploaded right away and linked under the article.",
+        uploading: "Uploading {count} file(s)…",
+        uploadFailed: "The file could not be uploaded: {reason}",
+        removeAttachment: "Remove attachment {name}",
+        waitForUpload: "Wait until the upload finishes.",
+        publishing: "Publishing…",
+        titleRequired: "Enter a title.",
+        descriptionRequired: "Enter a short description.",
+        bodyRequired: "Write the article.",
+        emptyTitle: "No articles yet",
+        emptyDescription:
+            "Articles share clan news and longer updates with every member.",
+        emptyMemberDescription:
+            "Clan news and longer updates appear here once a manager publishes them.",
+        publishedOn: "Published {date}",
+        deleteAction: "Delete article",
+        deleteTitle: "Delete “{title}”?",
+        deleteDescription:
+            "The article disappears for every member. Uploaded files stay reachable through links already shared. This cannot be undone.",
+        deleted: "Article deleted.",
+        deleteFailed: "The article could not be deleted. Try again.",
+        backToList: "All articles",
     },
     common: {
         actions: "Actions",
@@ -2903,6 +2931,21 @@ export const enMessages = {
         usedByPlayers: "Primary players",
         starterDescription:
             "Starter clan specialties aligned with the default HLL squad setup.",
+        created: "Group created.",
+        saved: "Group saved.",
+        saveFailed: "The group could not be saved. Try again.",
+        duplicateName: "A group with this name already exists.",
+        deleteAction: "Delete group",
+        deleteTitle: "Delete the group “{name}”?",
+        deleteDescription:
+            "Players lose this group. Rosters and past events keep the group name they copied. This cannot be undone.",
+        deleteImpact:
+            "{primary} player(s) have it as their primary group and {secondary} as an additional group.",
+        deleted: "Group deleted.",
+        deleteFailed: "The group could not be deleted. Try again.",
+        emptyTitle: "No groups yet",
+        emptyDescription:
+            "Groups are clan specialties such as tankers or commanders. Squad presets and players use them.",
     },
     tables: {
         event: "Event",
@@ -3035,6 +3078,12 @@ export const enMessages = {
             created: "Created",
             error: "Error",
         },
+    },
+    workspacePages: {
+        managersOnlyTitle: "Only managers can open this page",
+        managersOnlyDescription:
+            "Ask a clan manager if you need access. Everything you can use is in the menu.",
+        backToOverview: "Back to the overview",
     },
     stratmaps: {
         title: "Stratmaps",
