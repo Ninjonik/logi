@@ -78,10 +78,11 @@ labels for now: Logi does not create monthly matches.
 Select **Matches** in the active workspace and choose **New match** (or **New
 training** under Trainings). Creating takes five steps; the step pills at the
 top show where you are, and you can jump to any step. Beside the steps,
-**Preview in Discord** shows the registration announcement as players will see
-it, in the clan's bot language, and outlines the part the current step changes.
-Discord shows the times in each reader's own time zone; the message never shows
-the server password.
+**Preview in Discord** shows exactly the announcement card the bot posts, in the
+clan's bot language: the ping above it, the team codes and category, the sides,
+the start, map and meeting, **Sign-ups open** with the counts, the notes and the
+five buttons. Discord shows the times in each reader's own time zone; the
+message never shows the server password.
 
 <Steps>
 
@@ -108,8 +109,11 @@ Switch on **Repeat every week** for a weekly series.
 ### Sign-ups
 
 Choose which member statuses may sign up. The offered groups and their caps
-come from the template: when a capped group is full, a player who picks it is
-signed up as a reserve without a group instead, and the bot tells them so.
+come from the template. In Discord players press **Sign up** and choose a group
+in a private picker that shows each group's count; when a capped group is full,
+a player who picks it is signed up as a reserve without a group instead, the
+bot tells them so ("Tanks are full (6/6)") and the announcement names the full
+groups.
 The sign-up reminder row shows who gets the daily reminder.
 
 ### Discord
@@ -259,7 +263,9 @@ sign-up activity.
   channel**.
 - The **No response** filter lists members who never answered the sign-up.
   While sign-ups are open, **Remind** sends them the sign-up reminder by
-  Discord DM.
+  Discord DM, at most once an hour per match. The same reminder can be sent from
+  Discord with **Remind non-responders** under **Show sign-ups** on the
+  announcement; both share the one-hour limit.
 
 When a reminder does not reach everyone, the match **Overview** tells
 managers for a week: "The reminder reached 9 of 12 players" with the names of
@@ -351,23 +357,38 @@ competition rules or results process.
 
 ## Teams on Discord match cards
 
-When teams from the team catalogue are assigned to a match, its
-Discord messages show a **Teams** line next to the side, listing each team as
-name, short code and side in slot order (for example
-`Alpha [ALP] (Allies) vs Bravo (Axis)`). The event information card also shows
-the logo of each assigned team that has one: up to two teams for Hell Let Loose
-and three for Wardogs. Teams without a logo appear only as text. Labels and
-logos come from the snapshot saved when the team was assigned; later catalogue
+When teams from the team catalogue are assigned to a match, the announcement
+is titled with their short codes ("VLK vs ROG") and its sides row shows each
+team's code as a chip with its side and faction emblem in slot order (for
+example `VLK` Allies ★ vs `ROG` Axis ✚). The separate team logo cards are gone.
+Codes come from the snapshot saved when the team was assigned; later catalogue
 edits change them only if that snapshot is refreshed before the match concludes.
-Matches without assigned teams look exactly as before, and the cards keep their
-room, sign-up buttons, map and banner.
+Matches without assigned teams keep their name as the title and show the
+clan's side.
+
+## The match in Discord
+
+The match keeps one announcement card in the announcement channel from the
+announcement to the result; the bot edits it at every change, and the
+[events guide](/wiki/operations/events#what-the-discord-messages-show) lists
+each state with its buttons. In short: **Sign-ups open**, then **Sign-ups
+closed** while command builds the roster, **Roster published**, **Starting**
+from the meeting with the confirmation counts, **In progress** from the start,
+and finally **Played** with the confirmed result and **Show match**. A match
+ended before its meeting shows **Cancelled** and cancels its Discord event.
+
+**Show sign-ups** on the card lets every member see who signed up, by group,
+with the reserves and who is not coming. Clan leadership also sees the reasons,
+the members without an answer, **Remind non-responders** and **Open on the
+web**, which opens the **Sign-ups and attendance** tab of this page.
 
 ## Result, conclusion, and scoring are separate
 
 Recording a match result stores the result and can update a linked competition
-fixture. Concluding the match changes its lifecycle, removes its Discord event
-messages, completes or cancels its linked Discord scheduled event, and triggers
-the one-time score calculation. The calculation uses the workspace score
+fixture. Concluding the match changes its lifecycle, turns its announcement into
+the **Played** card (or **Cancelled** when it ended before the meeting), removes
+its roster card, completes or cancels its linked Discord scheduled event, and
+triggers the one-time score calculation. The calculation uses the workspace score
 settings, roster position, manager-confirmed attendance, decline status, and
 absence notices; it does not infer attendance from merely signing up or
 acknowledging a reminder.
@@ -430,6 +451,9 @@ membership, attendance or game ownership.
 - the result appears in the channel of the workspace's Discord results panel,
   when one is set up for the game (otherwise the page says it stays in Logi and
   the clan API);
+- the match announcement in Discord shows it ("**Win 4 : 1** · confirmed by
+  Kowalski"), with **Show match** when a public match page exists and the
+  results channel in its footer;
 - players get their personal summary by DM, which today is already sent when
   the statistics are imported;
 - for a match linked to a competition fixture, a confirmed or corrected HLL

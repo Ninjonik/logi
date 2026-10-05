@@ -53,20 +53,20 @@ export async function syncEventRoles(
                 })
             return { attendeeRoleId: undefined, reserveRoleId: undefined }
         }
-        if (
-            !attendeeRoleId ||
-            !(await guild.roles.fetch(attendeeRoleId).catch(() => null))
-        )
+        const existingAttendee = attendeeRoleId
+            ? await guild.roles.fetch(attendeeRoleId).catch(() => null)
+            : null
+        if (!existingAttendee)
             attendeeRoleId = (
                 await guild.roles.create({
                     name: eventRoleName(event, "players", language),
                     reason: `Event attendees for ${event.name}`,
                 })
             ).id
-        if (
-            !reserveRoleId ||
-            !(await guild.roles.fetch(reserveRoleId).catch(() => null))
-        )
+        const existingReserve = reserveRoleId
+            ? await guild.roles.fetch(reserveRoleId).catch(() => null)
+            : null
+        if (!existingReserve)
             reserveRoleId = (
                 await guild.roles.create({
                     name: eventRoleName(event, "reserves", language),
@@ -103,7 +103,8 @@ export async function syncEventRoles(
         const reserveRole = await guild.roles
             .fetch(reserveRoleId!)
             .catch(() => null)
-        // Roles created before the redesign get the clan-language names.
+        // Roles created before the redesign, or before the match was
+        // renamed, get the current clan-language names.
         for (const [role, kind] of [
             [attendeeRole, "players"],
             [reserveRole, "reserves"],

@@ -39,6 +39,11 @@ export type DiscordPreviewMentions = {
 
 export type DiscordMessagePreviewProps = {
     view: MessageView
+    /**
+     * Markdown sent above the card as plain message content, e.g. the role
+     * ping of a match announcement ("@Klan").
+     */
+    content?: string
     /** The clan language: the bot's words and every timestamp follow it. */
     language: string
     /** The clan's message style (clan colour and icon density). */
@@ -530,6 +535,7 @@ function Block({
  */
 export function DiscordMessagePreview({
     view,
+    content,
     language,
     style,
     labels,
@@ -616,6 +622,9 @@ export function DiscordMessagePreview({
                                 </span>
                             )}
                         </p>
+                    )}
+                    {content?.trim() && (
+                        <MarkdownText markdown={content} context={context} />
                     )}
                     <article
                         className="flex min-w-0 flex-col gap-2.5 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5 [overflow-wrap:anywhere]"

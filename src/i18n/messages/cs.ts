@@ -3359,7 +3359,8 @@ export const csMessages = {
             forum: "Kategorie pro fóra akcí",
             forumHelp: "Kde bot zakládá vlákna k akcím.",
             squadVoice: "Kategorie pro hlasové kanály čet",
-            squadVoiceHelp: "Sem bot vytváří kanály čet před akcí.",
+            squadVoiceHelp:
+                "Každý zápas dostane pro kanály čet vlastní kategorii hned pod touto, se stejnými oprávněními.",
             meeting: "Kanál pro sraz",
             meetingHelp: "Kam se hráči sejdou před akcí.",
             addChannelException: "Jiný kanál pro hru",
@@ -4784,7 +4785,7 @@ export const csMessages = {
         preview: {
             title: "Náhled v Discordu",
             hint: "Časy uvidí každý ve svém pásmu",
-            note: "Zvýrazněná část se mění podle kroku, který právě vyplňujete. Ve zprávě nikdy není heslo serveru.",
+            note: "Přesně tuto zprávu bot pošle po zveřejnění. Ve zprávě nikdy není heslo serveru.",
             today: "dnes",
             meetingAt: "sraz {time}",
             registrationCloses: "přihlášky končí {time}",

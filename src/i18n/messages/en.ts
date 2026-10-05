@@ -3370,7 +3370,7 @@ export const enMessages = {
             forumHelp: "Where the bot opens threads for events.",
             squadVoice: "Category for squad voice channels",
             squadVoiceHelp:
-                "The bot creates squad channels here before an event.",
+                "Each match gets its own category for its squad channels, right below this one and with the same permissions.",
             meeting: "Meeting channel",
             meetingHelp: "Where players gather before an event.",
             addChannelException: "Different channel for a game",
@@ -4808,7 +4808,7 @@ export const enMessages = {
         preview: {
             title: "Discord preview",
             hint: "Everyone sees times in their own time zone",
-            note: "The highlighted part follows the step you are filling in. The message never shows the server password.",
+            note: "This is exactly the message the bot posts once the match is published. It never shows the server password.",
             today: "today",
             meetingAt: "meeting {time}",
             registrationCloses: "sign-ups close {time}",

@@ -3471,7 +3471,7 @@ export const deMessages = {
             forumHelp: "Wo der Bot Threads zu Events anlegt.",
             squadVoice: "Kategorie für Squad-Sprachkanäle",
             squadVoiceHelp:
-                "Hier legt der Bot vor einem Event die Squad-Kanäle an.",
+                "Jedes Match bekommt für seine Squad-Kanäle eine eigene Kategorie direkt unter dieser, mit denselben Berechtigungen.",
             meeting: "Treffpunkt-Kanal",
             meetingHelp: "Wo sich die Spieler vor einem Event treffen.",
             addChannelException: "Anderer Kanal für ein Spiel",
@@ -4930,7 +4930,7 @@ export const deMessages = {
         preview: {
             title: "Vorschau in Discord",
             hint: "Jeder sieht die Zeiten in seiner Zeitzone",
-            note: "Der hervorgehobene Teil folgt dem Schritt, den du gerade ausfüllst. Die Nachricht zeigt nie das Serverpasswort.",
+            note: "Genau diese Nachricht postet der Bot nach dem Veröffentlichen. Sie zeigt nie das Serverpasswort.",
             today: "heute",
             meetingAt: "Treffen {time}",
             registrationCloses: "Anmeldung endet {time}",

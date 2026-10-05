@@ -1,32 +1,37 @@
 "use client"
 
-import { useSyncExternalStore, type ReactNode } from "react"
+import { useSyncExternalStore } from "react"
 
 import {
-    messageLineIcon,
-    type MessageIconDensity,
-    type MessageLine,
-} from "@/domain/discord-messages/message-style"
-import { panelFactionOf } from "@/domain/discord-publications/panel-presentation"
-import { resolveMessageAccentColor } from "@/domain/discord-messages/format"
-import { factionEmblem } from "@/domain/discord-messages/faction-emblem"
+    buildAnnouncementView,
+    type MatchCardEvent,
+} from "@/domain/discord-messages/match-announcement"
+import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
+import type { MessageIconDensity } from "@/domain/discord-messages/message-style"
+import { escapeMarkdownText } from "@/domain/discord-messages/message-view"
+import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
 import type { NewMatchStep } from "@/domain/events/new-match-flow"
 import { getEventMessages } from "@/lib/clan-language/events"
 import type { Dictionary } from "@/i18n/dictionaries"
-import { cn } from "@/lib/utils"
 
 export type NewMatchPreviewModel = {
     kind: "match" | "training"
     /** The clan's bot language; the message is written in it. */
     language: string
-    /** The event name; the bot adds the category label after it. */
+    /** The clan's time zone, for the weekday of the dates. */
+    timeZone: string
+    /** The event name; the bot shows the team codes instead when there are teams. */
     title: string
     categoryLabel?: string | null
     /** Teams by slot with their stored side ("Allies", "Valkyra", ...). */
     teams: Array<{ code: string; side: string | null }>
     /** Map name and time-of-day key ("day", "night", ...). */
     map: { name: string; time: string | null } | null
+    /** Logi's own picture of the map, which the bot puts top right. */
+    mapImageUrl?: string | null
     cap: string | null
+    /** A training shows its server on the card (never the password). */
+    server?: string | null
     meetingStart: string | null
     gameStart: string | null
     registrationEnd: string | null
@@ -34,7 +39,7 @@ export type NewMatchPreviewModel = {
     /** Role names the announcement pings, shown above the card. */
     mentions: string[]
     forum: boolean
-    /** The event category's colour, before the clan's accent colour. */
+    /** The event category's colour: only the category chip's dot. */
     categoryColor?: string
     /** The clan's message style (Settings › Discord messages). */
     messageStyle?: { accentColor?: string; iconDensity?: MessageIconDensity }
@@ -45,72 +50,40 @@ export type NewMatchPreviewModel = {
     signups?: { total: number; byGroup: Record<string, number> }
 }
 
-const subscribeNever = () => () => undefined
-/** Discord shows times in each reader's zone, so they render in the browser only. */
-function useIsBrowser() {
-    return useSyncExternalStore(
-        subscribeNever,
-        () => true,
-        () => false
-    )
+const MINUTE_MS = 60_000
+const subscribeMinute = (onChange: () => void) => {
+    const timer = setInterval(onChange, MINUTE_MS)
+    return () => clearInterval(timer)
+}
+const currentMinute = () => Math.floor(Date.now() / MINUTE_MS) * MINUTE_MS
+const noMinute = () => undefined
+/**
+ * The reader's clock to the minute. Discord shows times in each reader's zone,
+ * so they render in the browser only; the server render has no clock.
+ */
+function useBrowserMinute(): number | undefined {
+    return useSyncExternalStore(subscribeMinute, currentMinute, noMinute)
 }
 
-/** The bot's emblem before a side, the same fallback the bot uses. */
-function sideEmblem(side: string | null) {
-    return factionEmblem(side) ?? null
-}
-
-function relativeTime(iso: string, locale: string) {
-    const minutes = Math.round((Date.parse(iso) - Date.now()) / 60000)
-    const relative = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
-    if (Math.abs(minutes) < 60) return relative.format(minutes, "minute")
-    const hours = Math.round(minutes / 60)
-    if (Math.abs(hours) < 48) return relative.format(hours, "hour")
-    return relative.format(Math.round(hours / 24), "day")
-}
-
-function Section({
-    active,
-    children,
-    className,
-}: {
-    active: boolean
-    children: ReactNode
-    className?: string
-}) {
-    return (
-        <div
-            className={cn(
-                "rounded-md outline-offset-4 transition-[outline-color]",
-                active
-                    ? "outline-2 outline-sky-400 outline-solid"
-                    : "outline-transparent",
-                className
-            )}
-        >
-            {children}
-        </div>
-    )
-}
+/** Role and channel IDs the preview's mention pills name. */
+const FORUM_CHANNEL_ID = "1"
+const roleId = (index: number) => String(100 + index)
 
 /**
- * The registration announcement as the bot posts it (design D2, message style
- * H1): the ping above the card, the title, the teams with their sides, the
- * start, map, meeting and sign-up deadline on one line, the sign-up counts
- * with group caps, the buttons and the footer. Values the match does not have
- * yet (sign-ups, the forum link) show as they will right after publishing. The
- * part the current step changes is outlined.
+ * The announcement exactly as the bot posts it (board L1): the same view the
+ * bot builds (`buildAnnouncementView`) drawn by the shared Discord preview,
+ * with the ping above the card. Values the match does not have yet (sign-ups,
+ * the forum) show as they will right after publishing.
  */
 export function NewMatchPreview({
     model,
-    step,
     dictionary,
     copy,
     hint,
     note,
 }: {
     model: NewMatchPreviewModel
-    /** The step whose part is outlined; the review step outlines nothing. */
+    /** The step being filled; the preview is the whole message at every step. */
     step: NewMatchStep
     dictionary: Dictionary
     /** The preview copy in the clan's bot language. */
@@ -120,76 +93,76 @@ export function NewMatchPreview({
     /** Replaces the note below the message; null leaves it out. */
     note?: string | null
 }) {
-    const isBrowser = useIsBrowser()
+    const now = useBrowserMinute()
     const text = dictionary.newMatch.preview
     const messages = getEventMessages(model.language)
-    const intl = messages.locale
-    const valid = (iso: string | null): iso is string =>
-        Boolean(iso && Number.isFinite(Date.parse(iso)))
-    const formatFull = (iso: string) =>
-        new Intl.DateTimeFormat(intl, {
-            dateStyle: "full",
-            timeStyle: "short",
-        }).format(new Date(iso))
-    const formatTime = (iso: string) =>
-        new Intl.DateTimeFormat(intl, {
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(iso))
-    const sideLabel = (side: string) => {
-        const faction = panelFactionOf(side)
-        return faction === "allies" || faction === "axis"
-            ? copy.factions[faction]
-            : side
-    }
-    const isMatch = model.kind === "match"
-    const icon = (line: MessageLine) =>
-        messageLineIcon(line, model.messageStyle?.iconDensity)
-    const accentColor = `#${resolveMessageAccentColor({
-        categoryColor: model.categoryColor,
-        messageStyle: model.messageStyle,
-    })
-        .toString(16)
-        .padStart(6, "0")}`
-    const title =
-        model.categoryLabel && model.categoryLabel !== model.title.trim()
-            ? `${model.title || dictionary.newMatch.untitled} · ${model.categoryLabel}`
-            : model.title || dictionary.newMatch.untitled
+    const announcement = getAnnouncementMessages(model.language)
     const timeLabel = (time: string) =>
         (copy.times as Record<string, string>)[time] ?? time
-    const facts = isBrowser
+    const mapLabel = model.map
         ? [
-              isMatch && model.map
-                  ? [
-                        model.map.name,
-                        model.map.time ? timeLabel(model.map.time) : null,
-                    ]
-                        .filter(Boolean)
-                        .join(" · ")
-                  : null,
-              isMatch && model.cap
-                  ? `${messages.embed.cap} ${model.cap}`
-                  : null,
-              valid(model.meetingStart)
-                  ? copy.meetingAt.replace(
-                        "{time}",
-                        formatTime(model.meetingStart)
-                    )
-                  : null,
-              valid(model.registrationEnd)
-                  ? copy.registrationCloses.replace(
-                        "{time}",
-                        relativeTime(model.registrationEnd, intl)
-                    )
-                  : null,
-          ].filter(Boolean)
-        : []
-    const footer = [
-        model.forum ? `${icon("forum")}#${copy.forum}` : null,
-        copy.managedShort,
-    ]
-        .filter(Boolean)
-        .join(" · ")
+              escapeMarkdownText(model.map.name),
+              model.map.time ? timeLabel(model.map.time) : null,
+          ]
+              .filter(Boolean)
+              .join(" · ")
+        : null
+    const card: MatchCardEvent = {
+        kind: model.kind,
+        eventId: "preview",
+        guildId: "preview",
+        name: model.title || dictionary.newMatch.untitled,
+        category: model.categoryLabel
+            ? { label: model.categoryLabel, color: model.categoryColor }
+            : null,
+        teams: model.kind === "match" ? model.teams : [],
+        mapLabel,
+        server: model.kind === "training" ? (model.server ?? null) : null,
+        meetingStart: model.meetingStart ?? "",
+        gameStart: model.gameStart ?? "",
+        registrationEnd: model.registrationEnd ?? "",
+        timeZone: model.timeZone,
+        locale: messages.locale,
+    }
+    const view = buildAnnouncementView({
+        event: card,
+        state: "open",
+        counts: {
+            groups:
+                model.kind === "match"
+                    ? model.groups.map((group) => ({
+                          id: group.name,
+                          name: group.name,
+                          count: model.signups?.byGroup[group.name] ?? 0,
+                          ...(group.max ? { max: group.max } : {}),
+                      }))
+                    : [],
+            withoutGroup: 0,
+            total: model.signups?.total ?? 0,
+            declined: 0,
+        },
+        notes: model.notes,
+        forumChannelId:
+            model.kind === "match" && model.forum ? FORUM_CHANNEL_ID : null,
+        thumbnail:
+            model.kind === "match" && (model.mapImageUrl || model.thumbnailUrl)
+                ? {
+                      url: (model.mapImageUrl || model.thumbnailUrl)!,
+                      description: model.map
+                          ? announcement.card.mapAlt.replace(
+                                "{map}",
+                                model.map.name
+                            )
+                          : undefined,
+                  }
+                : null,
+        links: {
+            calendar:
+                "https://calendar.google.com/calendar/render?action=TEMPLATE",
+        },
+        copy: announcement,
+    })
+    const ping = model.mentions.map((_, index) => `<@&${roleId(index)}>`)
 
     return (
         <aside aria-labelledby="new-match-preview" className="space-y-2.5">
@@ -201,188 +174,25 @@ export function NewMatchPreview({
                     {hint ?? text.hint}
                 </span>
             </div>
-            <div className="rounded-2xl bg-[#313338] p-4 text-sm leading-5 text-[#dbdee1]">
-                <div className="flex gap-3">
-                    <span
-                        aria-hidden="true"
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#171717] font-semibold text-[#fafafa]"
-                    >
-                        L
-                    </span>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[#f2f3f5]">
-                                Logi
-                            </span>
-                            <span className="rounded-[3px] bg-[#5865f2] px-1 py-px text-[10px] font-semibold text-white">
-                                APP
-                            </span>
-                            <span className="text-xs text-[#949ba4]">
-                                {copy.today}
-                            </span>
-                        </div>
-                        {model.mentions.length ? (
-                            <Section
-                                active={step === "discord"}
-                                className="flex flex-wrap gap-1"
-                            >
-                                {model.mentions.map((mention) => (
-                                    <span
-                                        key={mention}
-                                        className="rounded-[3px] bg-[#5865f2]/30 px-0.5 font-medium text-[#c9cdfb]"
-                                    >
-                                        @{mention}
-                                    </span>
-                                ))}
-                            </Section>
-                        ) : null}
-                        <div
-                            className="flex flex-col gap-3 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5"
-                            style={{
-                                borderLeftColor: accentColor,
-                            }}
-                        >
-                            <Section
-                                active={step === "match"}
-                                className="flex flex-col gap-2"
-                            >
-                                <span className="flex items-start justify-between gap-3">
-                                    <span className="min-w-0 text-base leading-snug font-semibold break-words text-[#f2f3f5]">
-                                        {title}
-                                    </span>
-                                    {model.thumbnailUrl ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={model.thumbnailUrl}
-                                            alt=""
-                                            className="size-12 shrink-0 rounded-md object-cover"
-                                        />
-                                    ) : null}
-                                </span>
-                                {isMatch && model.teams.length ? (
-                                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
-                                        {icon("side") ? (
-                                            <span aria-hidden>
-                                                {icon("side")}
-                                            </span>
-                                        ) : null}
-                                        {model.teams.map((team, index) => (
-                                            <span
-                                                key={`${team.code}-${index}`}
-                                                className="inline-flex items-center gap-1.5"
-                                            >
-                                                {index ? (
-                                                    <span className="mr-1 text-[#949ba4]">
-                                                        vs
-                                                    </span>
-                                                ) : null}
-                                                {sideEmblem(team.side) ? (
-                                                    <span aria-hidden>
-                                                        {sideEmblem(team.side)}
-                                                    </span>
-                                                ) : null}
-                                                <strong className="text-[#f2f3f5]">
-                                                    {team.code}
-                                                </strong>
-                                                {team.side ? (
-                                                    <span>
-                                                        {sideLabel(team.side)}
-                                                    </span>
-                                                ) : null}
-                                            </span>
-                                        ))}
-                                    </span>
-                                ) : null}
-                            </Section>
-                            <Section
-                                active={step === "time"}
-                                className="flex flex-col gap-0.5"
-                            >
-                                <span className="font-semibold text-[#f2f3f5]">
-                                    {isBrowser && valid(model.gameStart)
-                                        ? `${icon("start")}${formatFull(model.gameStart)}`
-                                        : "…"}
-                                </span>
-                                {facts.length ? (
-                                    <span className="text-[13px] text-[#b5bac1]">
-                                        {icon("details")}
-                                        {facts.join(" · ")}
-                                    </span>
-                                ) : null}
-                            </Section>
-                            {model.notes ? (
-                                <Section
-                                    active={step === "match"}
-                                    className="border-t border-[#3f4147] pt-2.5"
-                                >
-                                    <span className="line-clamp-4 text-[13px] break-words whitespace-pre-line text-[#dbdee1]">
-                                        {model.notes}
-                                    </span>
-                                </Section>
-                            ) : null}
-                            <Section
-                                active={step === "signups"}
-                                className="flex flex-col gap-2.5"
-                            >
-                                <span className="text-[13px]">
-                                    {icon("status")}
-                                    {[
-                                        <strong
-                                            key="total"
-                                            className="text-[#f2f3f5]"
-                                        >
-                                            {copy.signedUpTotal.replace(
-                                                "{count}",
-                                                String(
-                                                    model.signups?.total ?? 0
-                                                )
-                                            )}
-                                        </strong>,
-                                        ...(isMatch
-                                            ? model.groups.map((group) => {
-                                                  const count =
-                                                      model.signups?.byGroup[
-                                                          group.name
-                                                      ] ?? 0
-                                                  return group.max
-                                                      ? `${group.name} ${count}/${group.max}`
-                                                      : `${group.name} ${count}`
-                                              })
-                                            : []),
-                                    ].map((part, index) => (
-                                        <span key={index}>
-                                            {index ? " · " : null}
-                                            {part}
-                                        </span>
-                                    ))}
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className="inline-flex h-8 items-center rounded bg-[#248046] px-3.5 text-[13px] font-medium text-white">
-                                        {isMatch
-                                            ? messages.embed.chooseSignup
-                                            : messages.buttons.attend}
-                                    </span>
-                                    <span className="inline-flex h-8 items-center rounded bg-[#4e5058] px-3.5 text-[13px] font-medium text-white">
-                                        {messages.buttons.checkSignup}
-                                    </span>
-                                    <span className="inline-flex h-8 items-center rounded bg-[#b3302f] px-3.5 text-[13px] font-medium text-white">
-                                        {messages.buttons.decline}
-                                    </span>
-                                    <span className="inline-flex h-8 items-center rounded bg-[#4e5058] px-3.5 text-[13px] font-medium text-white">
-                                        {messages.buttons.addToCalendar}
-                                    </span>
-                                </div>
-                            </Section>
-                            <Section
-                                active={step === "discord"}
-                                className="text-xs text-[#949ba4]"
-                            >
-                                {footer}
-                            </Section>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DiscordMessagePreview
+                view={view}
+                content={ping.length ? ping.join(" ") : undefined}
+                language={model.language}
+                style={model.messageStyle}
+                labels={dictionary.discordPreview}
+                now={now}
+                timeZone={now === undefined ? model.timeZone : undefined}
+                mentions={{
+                    roles: Object.fromEntries(
+                        model.mentions.map((name, index) => [
+                            roleId(index),
+                            name,
+                        ])
+                    ),
+                    channels: { [FORUM_CHANNEL_ID]: copy.forum },
+                }}
+                author={{ time: copy.today }}
+            />
             {note === null ? null : (
                 <p className="text-muted-foreground text-xs leading-[18px]">
                     {note ?? text.note}

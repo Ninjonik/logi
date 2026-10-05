@@ -350,6 +350,8 @@ export type EventRecord = {
         userId: string
         reason: string
         createdAt: string
+        /** "late" or "cannot_come"; older notices have none and read as late. */
+        kind?: "late" | "cannot_come"
     }>
     signUps: Array<{
         userId: string
@@ -359,6 +361,8 @@ export type EventRecord = {
         userId: string
         status: "attending" | "not_attending"
         group?: string | null
+        /** The full capped group a reserve chose. */
+        requestedGroup?: string | null
         completed?: "passed" | "failed"
         updatedAt: string
     }>

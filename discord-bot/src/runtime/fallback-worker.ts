@@ -84,6 +84,7 @@ async function runTick() {
                 | "conclude-event"
                 | "attendance-reminder"
                 | "signup-reminder"
+                | "refresh-announcement"
         }>
         const attendanceReminderEventIds = new Set<string>()
         const signupReminderEventIds = new Set<string>()

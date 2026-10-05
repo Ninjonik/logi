@@ -7,6 +7,8 @@ export type SyncEventLike = {
     status: "registration" | "closed" | "starting" | "concluded"
     meetingStart: string
     gameEnd: string
+    /** When the match was ended; before its meeting means it was cancelled. */
+    concludedAt?: string
 }
 
 export type SyncRosterLike = {
