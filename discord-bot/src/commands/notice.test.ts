@@ -191,6 +191,38 @@ test("an event that started meanwhile gets its own card; the rule's refusal is m
     assert.doesNotMatch(refused.text(), /before game start/)
 })
 
+test("a saved notice asks for the post in the match thread; a refused one does not (L5-42..43)", async () => {
+    const announced: Array<[string, string]> = []
+    const announce = async (eventId: string, userId: string) => {
+        announced.push([eventId, userId])
+    }
+    const saved = submit("Kolem 20:30")
+    await handleNoticeModalSubmit(saved.interaction, ports({ announce }).ports)
+    assert.deepEqual(announced, [[EVENT_ID, TEST_USER]])
+    // A failing post never breaks the player's confirmation.
+    const failing = submit("Kolem 20:30")
+    await handleNoticeModalSubmit(
+        failing.interaction,
+        ports({
+            announce: async () => {
+                throw new Error("thread gone")
+            },
+        }).ports
+    )
+    assert.match(failing.text(), /Velení ví, že přijdeš později/)
+    const refused = submit("Za hodinu")
+    await handleNoticeModalSubmit(
+        refused.interaction,
+        ports({
+            announce,
+            save: async () => {
+                throw new Error("Notices can only be sent before game start")
+            },
+        }).ports
+    )
+    assert.equal(announced.length, 1)
+})
+
 test("a modal from a DM saves with the event's server and language", async () => {
     const fake = ports({ configs: configsOf(null) })
     const f = submit("Kolem 20:30", EVENT_ID, null)

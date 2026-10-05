@@ -538,6 +538,7 @@ export function DiscordMessagePreview({
     const hasHeader = Boolean(
         header?.label?.trim() ||
         header?.title?.trim() ||
+        header?.subtitle?.trim() ||
         state?.chips.length ||
         state?.status
     )
@@ -625,6 +626,13 @@ export function DiscordMessagePreview({
                                         <span className="text-base leading-[22px] font-semibold text-[#f2f3f5]">
                                             {header.title.trim()}
                                         </span>
+                                    )}
+                                    {header.subtitle?.trim() && (
+                                        <MarkdownText
+                                            markdown={header.subtitle.trim()}
+                                            context={context}
+                                            className="text-[13px] leading-[18px] text-[#b5bac1]"
+                                        />
                                     )}
                                     {state &&
                                         (state.chips.length > 0 ||

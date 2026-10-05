@@ -16,6 +16,7 @@ export function startTeamRequestNotificationWorker(client: Client) {
     return startTeamRequestNotificationLoop(async () => {
         if (!client.isReady()) return
         await deliverTeamRequestNotifications({
+            siteUrl: env.appSiteUrl,
             claim: () =>
                 convex.mutation(references.claimTeamRequestNotifications, {
                     secret: env.internalSecret,

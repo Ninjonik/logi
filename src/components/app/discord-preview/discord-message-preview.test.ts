@@ -173,3 +173,27 @@ test("without a fixed now, relative times show the absolute time so renders stay
     const html = render({ view: frame, now: undefined })
     assert.match(textOf(html), /Aktualizováno 11\. října 2026 v 20:00/)
 })
+
+test("the header subtitle renders under the title with its mentions", () => {
+    const html = render({
+        view: {
+            accent: "system",
+            header: {
+                label: "Chyba bota · Zápas",
+                title: "Ohlášení zápasu se neodeslalo",
+                subtitle: "VLK vs ROG · Kanál <#100000000000000001>",
+                chips: [{ label: "Zkusí se znovu po opravě", tone: "warning" }],
+            },
+            blocks: [],
+        },
+        mentions: { channels: { "100000000000000001": "oznameni" } },
+    })
+    const text = textOf(html)
+    assert.ok(
+        text.indexOf("Ohlášení zápasu se neodeslalo") <
+            text.indexOf("VLK vs ROG")
+    )
+    assert.ok(text.indexOf("VLK vs ROG") < text.indexOf("Zkusí se znovu"))
+    assert.match(text, /#oznameni/)
+    assert.match(html, /border-left-color:#80848e/)
+})

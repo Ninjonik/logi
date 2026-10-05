@@ -13,6 +13,7 @@ import {
     matchRecapView,
     type RecapStats,
 } from "../../../src/domain/discord-messages/direct-message-views"
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
 import { dmFrame, dmSettingsUrl, eventMapLabel } from "../events/match-context"
@@ -158,6 +159,9 @@ export async function processMatchRecaps(client: Client, eventId: string) {
         logWarn("match-recaps", "Match context is not available", { eventId })
         return
     }
+    // "Shrnutí zápasu" is a clan switch on "Zprávy a panely" (N1-20); the
+    // player's own switch still applies when it is on.
+    if (!isMessageEnabled(inputs.context.config, "matchRecapDm")) return
     const options = {
         language: inputs.context.config.defaultLanguage,
         style: inputs.context.config.messageStyle,

@@ -28,6 +28,7 @@ import type { PanelFactionEmoji } from "../../../src/domain/discord-publications
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { publishManagedMessage, isUnknownMessage } from "./publication"
@@ -985,7 +986,11 @@ async function syncEvent(
     }
 
     const scheduledLifecycle = deriveScheduledEventLifecycle(event)
-    if (payload.config.meetingChannelId) {
+    // "Událost na Discordu" is a clan switch (N1-16); off cancels it below.
+    if (
+        payload.config.meetingChannelId &&
+        isMessageEnabled(payload.config, "scheduledEvent")
+    ) {
         try {
             const meetingChannel = await guild.channels
                 .fetch(payload.config.meetingChannelId)
