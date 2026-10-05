@@ -32,6 +32,32 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
     assert.deepEqual(payload.assignments, [{ userId: "user-1" }])
 })
 
+test("buildGuildPayload never passes a draft to the bot", () => {
+    const payload = buildGuildPayload(
+        {
+            guild: { id: "guild-1" },
+            config: { guildId: "guild-1" },
+            groups: [],
+            squadPresets: [],
+            topicPresets: [],
+        },
+        [
+            {
+                event: { id: "draft", isDraft: true },
+                roster: { eventId: "draft" },
+                syncState: null,
+            },
+            { event: { id: "published" }, roster: null, syncState: null },
+        ]
+    )
+
+    assert.deepEqual(
+        payload.events.map((event) => event.id),
+        ["published"]
+    )
+    assert.equal(payload.rosters.length, 0)
+})
+
 test("buildEventSignatureMap and getChangedEventIds detect event changes", () => {
     const previous = new Map<string, string>([["event-1", "v1|r1"]])
     const next = buildEventSignatureMap({

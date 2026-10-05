@@ -200,6 +200,9 @@ export const references = {
     backfillMissingScheduledJobs: makeFunctionReference<"mutation">(
         "scheduledJobs:backfillMissing"
     ),
+    generateRecurringEvents: makeFunctionReference<"mutation">(
+        "eventRecurrence:generateDue"
+    ),
     recoverScheduledJobQueue: makeFunctionReference<"mutation">(
         "scheduledJobs:recoverQueue"
     ),

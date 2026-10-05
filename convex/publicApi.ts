@@ -55,6 +55,7 @@ import { refreshEventSchedule } from "../src/infrastructure/convex/event-schedul
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { currentEventStatus } from "../src/domain/events/status"
 import { systemClock } from "../src/domain/shared/clock"
@@ -481,7 +482,9 @@ export const mutateClanEvent = mutation({
             const current = args.eventId ? await ctx.db.get(args.eventId) : null
             if (
                 args.operation !== "create" &&
-                (!current || current.guildId !== key.guildId)
+                (!current ||
+                    current.guildId !== key.guildId ||
+                    isDraftEvent(current))
             ) {
                 status = 404
                 response = {
@@ -621,7 +624,7 @@ export const mutateClanEventSignup = mutation({
         const event = await ctx.db.get(args.eventId)
         let status = 200
         let response!: Record<string, unknown>
-        if (!event || event.guildId !== key.guildId) {
+        if (!event || event.guildId !== key.guildId || isDraftEvent(event)) {
             status = 404
             response = {
                 error: { code: "not_found", message: "Event not found." },
@@ -975,7 +978,10 @@ export const mutateClanPreset = mutation({
                         "hell_let_loose"
                     if (eventId && !event)
                         throw new Error("Referenced event was not found.")
-                    if (event && event.guildId !== key.guildId)
+                    if (
+                        event &&
+                        (event.guildId !== key.guildId || isDraftEvent(event))
+                    )
                         throw new Error("Referenced event was not found.")
                     if (
                         event &&
@@ -1611,10 +1617,12 @@ export const getClanMeta = query({
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         if (!guild) return null
         const guildId = key.guildId
-        const events = await ctx.db
-            .query("events")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect()
+        const events = withoutDrafts(
+            await ctx.db
+                .query("events")
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                .collect()
+        )
         const [
             groups,
             assignments,
@@ -2026,7 +2034,8 @@ export const getClanMatchByEvent = query({
         if (!key || key.revokedAt) return null
         if (!allowsApiKeyRead(key.readAccess, "matches")) return null
         const event = await ctx.db.get(args.eventId)
-        if (!event || event.guildId !== key.guildId) return null
+        if (!event || event.guildId !== key.guildId || isDraftEvent(event))
+            return null
         if (
             !allowsApiKeyRead(
                 key.readAccess,
@@ -2176,7 +2185,12 @@ export const getClanResourcePage = query({
             const result = await query.paginate(options)
             return {
                 items: result.page
-                    .filter((item) => belongsToGame(item as never, args.game))
+                    .filter(
+                        (item) =>
+                            belongsToGame(item as never, args.game) &&
+                            // Unpublished drafts are left out of `/api/v1`.
+                            !(args.resource === "events" && isDraftEvent(item))
+                    )
                     .map((item) =>
                         [
                             "events",
@@ -2212,6 +2226,7 @@ export const getClanResourcePage = query({
                     items: result.page
                         .filter(
                             (event) =>
+                                !isDraftEvent(event) &&
                                 matchesGameScope(event.gameId, args.game) &&
                                 (args.resource === "event-summaries" ||
                                     (event.kind ?? "match") === "match")
@@ -2533,6 +2548,7 @@ export const getClanResource = query({
             if (
                 !event ||
                 event.guildId !== key.guildId ||
+                isDraftEvent(event) ||
                 !allowsApiKeyRead(
                     key.readAccess,
                     args.resource,

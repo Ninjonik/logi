@@ -1,5 +1,6 @@
 import {
     ActionRowBuilder,
+    escapeMarkdown,
     StringSelectMenuBuilder,
     type ButtonInteraction,
     type GuildMember,
@@ -433,7 +434,12 @@ export async function handleEventButtonInteraction(
             eventId: eventId as never,
             userId: interaction.user.id,
             group: resolved.group,
-        })) as { appliedSignupLabel: string; removed: boolean }
+        })) as {
+            appliedSignupLabel: string
+            removed: boolean
+            /** The capped group was full; the player got a reserve place. */
+            fullGroup?: string
+        }
         await revalidateAppData({
             type: "event-changed",
             serverId: context.event.guildId,
@@ -472,6 +478,14 @@ export async function handleEventButtonInteraction(
                     labels: { ...messages.interaction, ...messages.buttons },
                     emoji,
                 }),
+                ...(result.fullGroup
+                    ? [
+                          messages.interaction.groupFullReserve.replace(
+                              "{group}",
+                              escapeMarkdown(result.fullGroup)
+                          ),
+                      ]
+                    : []),
                 ...(selectionRow
                     ? [messages.interaction.changeSignupSelection]
                     : []),

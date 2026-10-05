@@ -305,7 +305,12 @@ export const resultsPage = query({
             .paginate({ cursor: args.cursor, numItems: 100 })
         const events = []
         for (const e of page.page) {
-            if ((e.gameId ?? "hell_let_loose") !== panel.gameId) continue
+            // Unpublished drafts never reach a public panel.
+            if (
+                e.isDraft === true ||
+                (e.gameId ?? "hell_let_loose") !== panel.gameId
+            )
+                continue
             const result =
                 e.reviewedResultGameId === panel.gameId &&
                 e.reviewedResult?.status !== "provisional"

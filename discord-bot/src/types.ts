@@ -323,6 +323,12 @@ export type EventRecord = {
     stratmapIds?: string[]
     /** Native match teams; absent or empty on legacy events. */
     matchTeams?: MatchTeamAssignment[]
+    /** Saved but unpublished; Convex leaves drafts out of every bot read. */
+    isDraft?: boolean
+    /** Attendance DM offsets in hours; missing means every offset. */
+    attendanceReminderHours?: number[]
+    /** Missing means the bot creates the attendee and reserve roles. */
+    createParticipantRoles?: boolean
     status: "registration" | "closed" | "starting" | "concluded"
     statusUpdatedAt: string
     concludedAt?: string

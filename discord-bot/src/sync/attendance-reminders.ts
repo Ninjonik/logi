@@ -6,10 +6,10 @@ import {
     fillTemplate,
     resolveMessageAccentColor,
 } from "../../../src/domain/discord-messages/format"
+import { resolveAttendanceReminderHours } from "../../../src/domain/events/scheduled-job-policy"
 import { calendarDayOffset } from "../../../src/domain/discord-messages/calendar-day"
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { buildAttendanceReminderComponents } from "../message-builders"
-import { ATTENDANCE_OFFSETS_HOURS } from "../constants"
 import { convex, references } from "../convex"
 import type { SyncPayload } from "../types"
 import { logInfo, logWarn } from "../log"
@@ -211,10 +211,14 @@ export async function processAttendanceReminders(
             sentAt: string
         }> = []
         for (const userId of unacknowledgedUserIds) {
-            const dueOffsets = ATTENDANCE_OFFSETS_HOURS.filter(
-                (offsetHours) =>
-                    now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+            // Only the offsets the match chose (all four on older events).
+            const dueOffsets = resolveAttendanceReminderHours(
+                event.attendanceReminderHours
             )
+                .filter(
+                    (offsetHours) =>
+                        now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+                )
                 .filter(
                     (offsetHours) =>
                         !event.attendanceReminderLog.some(

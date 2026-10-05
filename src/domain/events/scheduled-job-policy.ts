@@ -2,6 +2,33 @@ import type { EventStatus } from "./types"
 
 const HISTORICAL_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
+/** Hours before the meeting when unconfirmed roster players get a DM. */
+export const ATTENDANCE_REMINDER_OFFSETS = [24, 18, 12, 6] as const
+
+/**
+ * Supported offsets, largest first; anything else is dropped. Undefined stays
+ * undefined (legacy events remind at every offset) and [] turns reminders off.
+ */
+export function normalizeAttendanceReminderHours(
+    hours: readonly number[] | undefined
+): number[] | undefined {
+    if (hours === undefined) return undefined
+    return ATTENDANCE_REMINDER_OFFSETS.filter((offset) =>
+        hours.includes(offset)
+    )
+}
+
+/** The offsets an event reminds at. */
+export function resolveAttendanceReminderHours(
+    hours: readonly number[] | undefined
+): number[] {
+    return (
+        normalizeAttendanceReminderHours(hours) ?? [
+            ...ATTENDANCE_REMINDER_OFFSETS,
+        ]
+    )
+}
+
 export function resolveSignupReminderStatuses(
     statuses: Array<"recruit" | "member" | "reserve_member"> | undefined
 ) {
@@ -60,8 +87,10 @@ export function shouldDiscardScheduledJob(input: {
     eventStatus?: EventStatus
     gameEnd: string
     now: Date
+    /** Drafts are never announced, so none of their deadlines may run. */
+    isDraft?: boolean
 }): boolean {
-    if (input.eventStatus === "concluded") {
+    if (input.eventStatus === "concluded" || input.isDraft === true) {
         return true
     }
 

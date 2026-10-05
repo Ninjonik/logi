@@ -25,8 +25,8 @@ import {
     discordPublications,
     discordPublicPanels,
 } from "./discordPublicationTable"
+import { storedMatchTemplateValidator } from "./matchTemplateValidators"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
-import { matchTemplateValidator } from "./matchTemplateValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
@@ -680,7 +680,7 @@ export default defineSchema({
         description: v.optional(v.string()),
         eventCategories: v.optional(v.array(eventCategory)),
         // Create-form defaults per match or training type; events never read them.
-        matchTemplates: v.optional(v.array(matchTemplateValidator)),
+        matchTemplates: v.optional(v.array(storedMatchTemplateValidator)),
         enabledGames: v.optional(v.array(gameId)),
         botInside: v.boolean(),
         adminIds: v.array(v.string()),
@@ -826,6 +826,21 @@ export default defineSchema({
                 weekday: v.optional(v.number()),
             })
         ),
+        // Generated occurrences of a weekly series point at the event that
+        // carries the recurrence; missing on the series event itself.
+        recurrenceSeriesId: v.optional(v.id("events")),
+        // Signup group caps from the match template; a full group offers the
+        // player a reserve place instead. Missing means no caps.
+        signupGroupLimits: v.optional(
+            v.array(v.object({ groupId: v.string(), max: v.number() }))
+        ),
+        // Hours before the meeting when roster players who have not confirmed
+        // get an attendance DM. Missing means every offset (24, 18, 12, 6).
+        attendanceReminderHours: v.optional(v.array(v.number())),
+        // Missing means the bot creates the attendee and reserve roles.
+        createParticipantRoles: v.optional(v.boolean()),
+        // The squad preset the event's roster starts from.
+        squadPresetId: v.optional(v.id("squadPresets")),
         attendeeRoleId: v.optional(v.string()),
         reserveRoleId: v.optional(v.string()),
         server: v.optional(v.string()),

@@ -33,8 +33,9 @@ search by name, opponent or map; **Clear filters** brings everything back.
 
 ### Drafts (manager)
 
-A match saved with **Save as draft** in the new-match form is a draft: the bot
-does not announce it and members never see it. Drafts appear only in the
+A match saved with **Save as draft** in the new-match flow, or autosaved while
+you fill it in, is a draft: the bot does not announce it and members never see
+it. Drafts appear only in the
 **Drafts** tab (with their number, for example **Drafts · 1**), never under
 Upcoming or Played. Each shows **not announced**, the **Draft** label and, when
 no opponent is chosen yet, **no opponent yet**. Open a draft to continue in the
@@ -59,46 +60,81 @@ also lands on the roster or result tab when opening a row that needs one.
 ## Recurring matches
 
 **Recurring** lists match series in the same rows as the match list; each row
-starts with its schedule, for example **repeats every Wednesday**. To change or
-stop a series, open its match with **Edit series** and change or switch off the
-repeat settings, then save. Matches that already exist stay as they are.
+starts with its schedule, for example **repeats every Wednesday**. A match
+created with **Repeat every week** is a weekly series: Logi creates the next
+matches of the series on its own, two weeks ahead, at the same local time in
+the clan's time zone, with the same teams, map, sign-up and Discord settings
+and empty sign-ups. Each one is announced like any other match. The bot creates
+them, so they appear only while the Logi bot is running. To change or stop a
+series, open its first match with **Edit series** and change or switch off the
+repeat settings, then save; matches already created stay as they are. Monthly
+repeat settings are only labels for now: Logi does not create monthly matches.
 
 ## Create a match (manager)
 
+Select **Matches** in the active workspace and choose **New match** (or **New
+training** under Trainings). Creating takes five steps; the step pills at the
+top show where you are, and you can jump to any step. Beside the steps,
+**Preview in Discord** shows the registration announcement as players will see
+it, in the clan's bot language, and outlines the part the current step changes.
+Discord shows the times in each reader's own time zone; the message never shows
+the server password.
+
 <Steps>
 
-### Open Matches
+### Match
 
-Select **Matches** in the active workspace and choose **New match**. From
-**All games**, choose the target game when prompted; the match is then created
-only in that game.
+Pick the **game** and a **template** (see
+[match templates](/wiki/configuration/presets-and-templates#match-templates)).
+The template fills the times, sign-ups and Discord settings of the next steps.
+A training template turns the flow into a training: no opponent and no map.
+Under **Teams**, your clan is listed with its side; choose the **opponent**
+from the global team catalogue and its side. A team missing from the catalogue
+can be requested with **Request it**; it becomes selectable once Logi's
+administrators approve it. Choose the **map**, **time of day** and, for Hell
+Let Loose, the **middle point**. The **name** is filled in from the teams and
+the template ("VLK vs ROG · Friendly") until you change it.
 
-### Pick a template
+### Time
 
-Choose one of the clan's [match templates](/wiki/configuration/presets-and-templates#match-templates)
-at the top of the form. It fills the times, category, sign-up options and
-Discord options; every field can still be changed. On a wide screen the
-**Preview in Discord** beside the form shows the registration announcement the
-bot will post, with the same lines and buttons, in the clan's bot language.
-Discord shows the times in each reader's own time zone. Signed-up players and
-the forum link appear in Discord once the match exists.
+Enter the start date and time. The box below shows the timeline the template
+gives: announcement, registration close, meeting and end. **Change for this
+match only** lets you adjust those offsets without touching the template.
+Switch on **Repeat every week** for a weekly series.
 
-### Set the essential information
+### Sign-ups
 
-Enter a clear match name, meeting and game schedule, and the map/mode/side
-information your team needs. Hell Let Loose: Vietnam follows the HLL match-data
-shape. Wardogs offers Bakurani, Ozeti, and Zestafona with the usual time-of-day
-choices; its only available game mode is KOTH. Wardogs matches use the Valkyra,
-Lonestar, and Manticore sides.
+Choose which member statuses may sign up. The offered groups and their caps
+come from the template: when a capped group is full, a player who picks it is
+signed up as a reserve without a group instead, and the bot tells them so.
+The sign-up reminder row shows who gets the daily reminder.
 
-### Prepare the match
+### Discord
 
-Attach topic presets, stratmaps, and a roster as needed. These are separate resources, so check each one rather than assuming that creating a match creates them automatically. A match creates a Discord forum post by default when the bot and forum category are configured; disable that event option if you do not want one. Use the optional registration announcement start when the match should appear in calendars before its Discord registration message and forum post are published.
+Choose the announcement channel and the roster channel (the clan defaults are
+preselected), whom the announcement pings, whether the match forum and the
+squad voice channels are created, and the server name and password. Only
+players on the published roster ever see the password.
 
-### Create it
+### Review
 
-Choose **Create match**. The bot posts the announcement when the registration
-announcement start is reached, or straight away when none is set.
+Check the summary; **Edit** goes back to a step. **Publish** creates the match:
+the bot posts the announcement (straight away, or when the template's
+announcement time is reached) and creates the forum. You build the roster after
+registration closes; it starts from the template's squad preset.
+
+</Steps>
+
+### Drafts
+
+Work in progress is saved as a **draft** a moment after each change ("Draft
+saved at …" next to the title), and **Save as draft** in the review step saves
+it on purpose. A draft is visible only to the clan's managers in the
+dashboard: the bot does not announce it, nobody can sign up, and it is left out
+of calendars, public pages, the website feed and `/api/v1`. Open a draft from
+the match list to continue where you stopped (the address keeps
+`?draftId=…`). **Publish** turns it into the match; **Delete draft** removes it
+after a confirmation. Only drafts can be deleted this way.
 
 ### Record the outcome
 

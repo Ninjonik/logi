@@ -31,6 +31,8 @@ type ClanDiscordMessages = {
         signupUpdatedWithType: string
         signupRemovedWithType: string
         markedNotAttending: string
+        /** `{group}`: a capped signup group that was already full. */
+        groupFullReserve: string
         changeSignupSelection: string
         attendanceNotOpen: string
         rosterNotPublished: string
@@ -498,6 +500,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "You are signed up as {type}.",
             signupRemovedWithType: "Removed signup from {type}.",
             markedNotAttending: "Marked as not attending.",
+            groupFullReserve:
+                "{group} is full, so you are signed up as a reserve without a group.",
             changeSignupSelection:
                 "You are already signed up. Use the selector below only to change your role; choosing the same role keeps your signup.",
             attendanceNotOpen:
@@ -1119,6 +1123,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "Jste přihlášeni jako {type}.",
             signupRemovedWithType: "Odhlášeno z {type}.",
             markedNotAttending: "Označeno jako neúčast.",
+            groupFullReserve:
+                "Skupina {group} je plná, proto jsi přihlášen jako záloha bez skupiny.",
             changeSignupSelection:
                 "Už jste přihlášeni. Výběr níže použijte jen pro změnu role;",
             attendanceNotOpen: "Potvrzování účasti teď není otevřené.",
@@ -1568,6 +1574,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "Sie sind als {type} angemeldet.",
             signupRemovedWithType: "Anmeldung für {type} entfernt.",
             markedNotAttending: "Als nicht teilnehmend markiert.",
+            groupFullReserve:
+                "{group} ist voll, deshalb bist du als Reserve ohne Gruppe angemeldet.",
             changeSignupSelection:
                 "Sie sind bereits angemeldet. Nutzen Sie die Auswahl unten nur, um Ihre Rolle zu ändern; bei gleicher Rolle bleibt Ihre Anmeldung bestehen.",
             attendanceNotOpen:

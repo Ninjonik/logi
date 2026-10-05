@@ -527,6 +527,7 @@ export const linkCandidates = query({
                 for (const event of events) {
                     if (
                         candidates.has(String(event._id)) ||
+                        event.isDraft === true ||
                         event.kind === "training" ||
                         resolveGameScope(event.gameId) !== gameId ||
                         (event.competitionFixtureId &&
