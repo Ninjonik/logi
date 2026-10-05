@@ -154,6 +154,13 @@ export const leagueFixturesViewSchema = z.object({
 })
 export type LeagueFixturesView = z.infer<typeof leagueFixturesViewSchema>
 
+/** Website parity of both panels (`GET /api/v1/clan/league-fixtures/overview`). */
+export const leagueOverviewSchema = z.object({
+    standings: leagueStandingsViewSchema,
+    fixtures: leagueFixturesViewSchema,
+})
+export type LeagueOverview = z.infer<typeof leagueOverviewSchema>
+
 /** A fixture as the store keeps it, with freshness decided by the adapter. */
 export type StoredLeagueFixture = {
     matchId: string

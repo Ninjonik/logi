@@ -2,10 +2,14 @@ import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
+import { convexLeaguePanelSource } from "../src/infrastructure/convex/league-fixture-store"
+import { loadLeaguePanels } from "../src/application/wardogs-league/league-panels"
 import { projectLeagueFixture } from "../src/domain/wardogs-league/fixture"
+import { leagueOverviewSchema } from "../src/domain/wardogs-league/panels"
+import { PANEL_WINDOW } from "../src/domain/wardogs-league/all-fixtures"
+import { trackedMatch, trackingConfig } from "./leagueTrackingStore"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { query, type QueryCtx } from "./_generated/server"
-import { trackedMatch } from "./leagueTrackingStore"
 import { v } from "convex/values"
 export async function readLeagueFixture(
     ctx: Pick<QueryCtx, "db">,
@@ -14,6 +18,24 @@ export async function readLeagueFixture(
 ) {
     const row = await trackedMatch(ctx, guildId, id)
     return row ? projectLeagueFixture(row, Date.now()) : null
+}
+/** The key must be live, belong to the guild and carry an explicit league-fixtures/wardogs grant. */
+async function fixtureKeyAllowed(
+    ctx: Pick<QueryCtx, "db">,
+    keyHash: string,
+    guildId: string
+) {
+    const key = await ctx.db
+        .query("apiKeys")
+        .withIndex("keyHash", (q) => q.eq("keyHash", keyHash))
+        .unique()
+    return Boolean(
+        key &&
+        !key.revokedAt &&
+        key.guildId === guildId &&
+        isApiKeyReadAccess(key.readAccess) &&
+        allowsApiKeyRead(key.readAccess, "league-fixtures", "wardogs")
+    )
 }
 export const list = query({
     args: {
@@ -25,17 +47,7 @@ export const list = query({
     },
     handler: async (ctx, args) => {
         assertSessionGateway(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (
-            !key ||
-            key.revokedAt ||
-            key.guildId !== args.guildId ||
-            !isApiKeyReadAccess(key.readAccess) ||
-            !allowsApiKeyRead(key.readAccess, "league-fixtures", "wardogs")
-        )
+        if (!(await fixtureKeyAllowed(ctx, args.keyHash, args.guildId)))
             return null
         if (
             !Number.isInteger(args.limit) ||
@@ -57,5 +69,45 @@ export const list = query({
             }),
             nextCursor: page.isDone ? null : page.continueCursor,
         }
+    },
+})
+/**
+ * The whole League as the WD League panels show it: Logi's table of the
+ * current season and the nearest fixtures with recent results. Shared
+ * League data; the guild's watched codes mark its own team.
+ */
+export const overview = query({
+    args: {
+        secret: v.string(),
+        keyHash: v.string(),
+        guildId: v.string(),
+        limit: v.number(),
+    },
+    handler: async (ctx, args) => {
+        assertSessionGateway(args.secret)
+        if (!(await fixtureKeyAllowed(ctx, args.keyHash, args.guildId)))
+            return null
+        if (
+            !Number.isInteger(args.limit) ||
+            args.limit < 1 ||
+            args.limit > PANEL_WINDOW
+        )
+            throw new Error("Invalid limit.")
+        const config = await trackingConfig(ctx, args.guildId)
+        const now = Date.now()
+        const panels = await loadLeaguePanels(
+            convexLeaguePanelSource(ctx, now),
+            {
+                now,
+                ourTeamCodes: config?.teamCodes ?? [],
+                options: {
+                    table: true,
+                    fixtures: true,
+                    recentResults: true,
+                    fixtureCount: args.limit,
+                },
+            }
+        )
+        return leagueOverviewSchema.parse(panels)
     },
 })

@@ -2,10 +2,12 @@ import {
     fixtureChanges,
     fixtureExpired,
     fixturePhase,
+    fixtureStale,
     nearestFixtures,
     nextFixtureRefreshAt,
     FIXTURE_REFRESH_MS,
     FIXTURE_RETENTION_MS,
+    FIXTURE_STALE_MS,
     LATE_KICKOFF_GRACE_MS,
     RESULT_HORIZON_MS,
     SETTLED_RESULT_MS,
@@ -265,4 +267,19 @@ test("nearest fixtures: live first, then by kickoff, late ones dropped, unknown 
         hidden: 0,
         total: 0,
     })
+})
+
+test("a shown fixture is stale after a failed read or about three missed refreshes", () => {
+    const now = Date.parse("2026-10-09T12:00:00.000Z")
+    const fetchedAt = new Date(now - FIXTURE_STALE_MS + 1).toISOString()
+    assert.equal(fixtureStale({ fetchedAt, error: null, now }), false)
+    assert.equal(fixtureStale({ fetchedAt, error: "rate_limited", now }), true)
+    assert.equal(
+        fixtureStale({
+            fetchedAt: new Date(now - FIXTURE_STALE_MS).toISOString(),
+            error: null,
+            now,
+        }),
+        true
+    )
 })

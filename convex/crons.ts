@@ -77,4 +77,11 @@ crons.interval(
     {}
 )
 
+crons.interval(
+    "collect all League fixtures and results for the WD League panels",
+    { minutes: 1 },
+    makeFunctionReference<"action">("leagueDiscoveryFixtureJobs:collectDue"),
+    {}
+)
+
 export default crons

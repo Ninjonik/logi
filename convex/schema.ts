@@ -22,6 +22,11 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
+    leagueFixtures,
+    leagueResults,
+    leagueCollectionState,
+} from "./leagueDiscoveryFixtureTable"
+import {
     discordPublications,
     discordPublicPanels,
 } from "./discordPublicationTable"
@@ -1556,6 +1561,9 @@ export default defineSchema({
     leagueTrackedMatches,
     leagueIndexCache,
     leagueMessageRefs,
+    leagueFixtures,
+    leagueResults,
+    leagueCollectionState,
     leagueMatchCache: defineTable({
         matchId: v.string(),
         snapshotJson: v.optional(v.string()),

@@ -17,8 +17,9 @@ export const FIXTURE_PHASES = [
 ] as const
 export type FixturePhase = (typeof FIXTURE_PHASES)[number]
 
-/** Bound of the shared all-League fixture store. */
-export const MAX_LEAGUE_FIXTURES = 1000
+/** Bound of the shared all-League fixture store: the 500-link index plus fixtures that
+ * dropped off it but are still retained. Admission reads the whole store at once. */
+export const MAX_LEAGUE_FIXTURES = 600
 /** Upcoming fixtures refreshed at the fastest cadence: the largest panel count. */
 export const PANEL_WINDOW = 10
 /** A kickoff this far in the past still counts as "upcoming" when the League is late. */
@@ -38,6 +39,24 @@ export const SETTLED_RESULT_MS = 7 * 86_400_000
 export const FIXTURE_RETENTION_MS = 30 * 86_400_000
 /** `nextRefreshAt` of a fixture that no longer needs reading. */
 export const NEVER = 8_640_000_000_000_000
+/** A shown fixture is stale after missing about three refreshes or on a failed read. */
+export const FIXTURE_STALE_MS = 3 * CACHE_MS
+/** Fenced lease of one fixture read. */
+export const FIXTURE_LEASE_MS = 30_000
+/** Fixture reads per collection run; with the index and tracked reads it stays
+ * inside the shared budget of 20 League fetches per minute. */
+export const FIXTURE_READS_PER_RUN = 6
+
+export function fixtureStale(input: {
+    fetchedAt: string
+    error: string | null
+    now: number
+}) {
+    return (
+        input.error !== null ||
+        input.now - Date.parse(input.fetchedAt) >= FIXTURE_STALE_MS
+    )
+}
 
 const step = (match: Pick<LeagueMatch, "progress">, label: string) =>
     match.progress?.find(
