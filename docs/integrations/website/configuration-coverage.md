@@ -21,6 +21,7 @@ The team catalogue, team request and competition rows follow the
 | Managed Discord membership roles                          | Membership settings: applications and a separate role-sync switch, categories (with "skip waiting" per main-member category), recruitment/final/support roles and game-specific settings; operation status/audit                                                                                                                                                                                     | Existing assignment/application workflows drive the queue. Audit refresh is manual; no permission-bypassing force/retry control exists.                                                                                                                                                                                                                                                                                                |
 | SSO application registration                              | Settings → Clan website and sign-in → Single sign-on applications: application name, website URL, callback URI, create/edit/remove client (editing keeps the client ID and secret; dashboard only, no `/api/v1` operation, like create and remove)                                                                                                                                                   | Server-wide provider activation, signing keys and issuer remain deployment configuration.                                                                                                                                                                                                                                                                                                                                              |
 | Discord commands                                          | Settings → Discord → Commands: per command on/off (`/help`, `/stats`, `/player`, `/link`, `/notice`, `/server-status`), who may use it (everyone, clan members, Logi managers, plus extra roles), reply (private, or private with Share), allowed channels; `/stats` games and default sharing channel; registration state with **Re-register commands**; conversion of old stats server connections | Checked freshly against Discord at every use; refusals are private cards in the clan language. Commands are registered per server in the clan language on start, on joining a server and after a language or settings change. `/close_ticket` and `/close_application` follow the ticket and application settings. Settings reach `/api/v1` as the `commands` slice; re-registering and the conversion are dashboard-only (see below). |
+| Server seeding                                            | Settings → Discord → Seed (`settings/discord-seed`, under Discord panels): a tab per game server; status with **Seed now** / **End seed**; plan (live from, start below, schedule, automatic start, seed channel, Seed role and self-service, ping window, cooldown, call text, at the threshold, maximum duration); private control channel; 30-day history                                         | Channels and the role are checked in Discord before saving; the control channel must be private (`@everyone` cannot view it). Previews use the bot's own copy in the clan language. Plans reach `/api/v1` as the `seed` slice; **Seed now**, **End seed** and the Discord control buttons are live actions without an API operation (see below).                                                                                       |
 | Website event-write policy                                | Settings → Clan website and sign-in → Create and edit events: registered SSO application, live restricted command key, enabled flag, allowed Discord roles per supported game                                                                                                                                                                                                                        | Saving an enabled policy grants event-command write access for games with roles; disabling removes it. Bearer keys cannot configure policies. Roles are picked by name.                                                                                                                                                                                                                                                                |
 | Global team catalogue                                     | Superadmin → Team catalogue: per-game list, search, archived filter, add/edit (name, short code, logo, description, up to 3 links, linked workspace), archive/restore, merge                                                                                                                                                                                                                         | Global administrators only; HLL and Wardogs. Names are unique per game, archived included. Writes are revision-checked and audited. Merge archives the duplicate and moves its competition entries, fixtures and pending requests; match snapshots stay. Logos are platform-owned.                                                                                                                                                     |
 | Team requests moderation                                  | Superadmin → Team requests: one queue across workspaces; approve (proposed fields editable), merge a new-team request into an existing team, reject with a reason                                                                                                                                                                                                                                    | Global administrators only. Each decision queues one Discord DM to the requester in the workspace language, retried with backoff; closed DMs are marked failed without blocking. No `/api/v1` operation (internal moderation, API-parity exception).                                                                                                                                                                                   |
@@ -90,6 +91,15 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   deliberately no `/api/v1` operation for them. The panel settings themselves
   belong in a `GET/PATCH /api/v1/clan/settings` slice, which the panels page UI
   (redesign workstream W3) adds; until then they are dashboard-only.
+- **Seed live actions (deliberate API exclusion):** "Seed teď" / "Ukončit seed"
+  on the seed page (`POST /api/servers/{serverId}/discord-seed/{connectionId}`
+  with `{"action":"start","requestKey":…}` or `{"action":"stop"}`) and the
+  buttons of the "Ovládání serveru" message in the private admin channel
+  ("Spustit seed", "Ukončit seed", "Obnovit panel", "Pozastavit panel") post,
+  edit or delete the seed call and ping the Seed role in the clan's Discord at
+  once, on behalf of the clan admin who clicks; the Discord buttons re-check
+  that member's Logi admin role first. There is deliberately no `/api/v1`
+  operation for them. The seed plans themselves are the `seed` slice below.
 - **Provider keys:** workspaces enter and rotate their own API keys in Logi. The
   operator must activate encryption once (`LOGI_CREDENTIAL_KEYRING` in Convex and
   the Next server) and migrate existing `LOGI_GAME_DATA_<NAME>_TOKEN` variables;
@@ -250,6 +260,32 @@ Deliberate exclusions:
   never leave the dashboard and the keyring; it has no `/api/v1` operation.
 - `/close_ticket` and `/close_application` are not in the slice: they follow
   the ticket and application settings.
+
+### `seed` slice (Seed serverů)
+
+`src/domain/api/seed-settings-slice.ts`, stored in `discordSeedPlans`
+(external slice, store `convex/discordSeedApiStore.ts`). GET returns one entry
+per game server of the clan: `connectionId`, `gameId`, `name`, `configured`
+(false until the first save; the settings are then the defaults), `revision`
+and `settings` (`enabled`, `liveFrom`, `startBelow`, `schedule` with `slots` of
+`days` 0 = Sunday … 6 and local `time`, `auto` with `below`, `from`, `to`,
+`seedChannelId`, `controlChannelId`, `seedRoleId`, `roleSelfService`,
+`pingWindowMinutes`, `cooldownMinutes`, `maxDurationMinutes`, `template`
+(`null` = the bot's default text) and `endAction` `edit`/`delete`). PATCH takes
+`servers[]` with `connectionId`, optional `expectedRevision` (`409 conflict`
+when stale; omit to overwrite) and any of those settings; `schedule` and `auto`
+are replaced whole. The merged plan is checked with the dashboard's rules and
+saved through the same use-case (`saveSeedPlan`), so the control message and
+the pinned intro follow an API change too. A broken rule (for example
+`startBelow` not under `liveFrom`, or `liveFrom` above the server's capacity)
+or an unknown connection is `400 validation_error` naming the server and field;
+a refused request writes no plan. API writes record `api:<key id>`.
+
+**Deliberate exclusions:** starting and ending a seed (see "Seed live actions"
+above). The dashboard checks the channels and the role in Discord before it
+saves (`verifyOnly` on the page route); the API cannot reach Discord, so the
+bot itself refuses to post the control message into a channel `@everyone` can
+view and reports that in the clan's errors channel.
 
 ### `matchMessages` slice
 

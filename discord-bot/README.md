@@ -138,6 +138,14 @@ without it the bot reports its package version.
   with the bot version; private "Zobrazit hráče" pages and the private
   "Nahlásit hráče" flow (`interactions.ts`, `../player-reports.ts`). See the
   [panels contract](../docs/superpowers/specs/discord-redesign/PANELS-API.md)
+- Run server seeding (`src/seed/worker.ts`, every 20 s and after a button): the
+  seed call with its 10-piece progress, refreshed every 60 s, then edited to
+  "Server je živý" or deleted; the pinned intro with "Zvát mě na seed"; one
+  "Ovládání serveru" message per server, posted only into a channel
+  `@everyone` cannot view. Its buttons (`src/seed/interactions.ts`) re-check
+  the member's Logi admin role before they start or end a seed or refresh or
+  pause the server's panel. The role is pinged only when a call is posted. See
+  the [seed wiki page](../content/configuration/server-seeding.mdx)
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
