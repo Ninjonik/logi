@@ -71,7 +71,7 @@ export function SegmentedControl<T extends string>({
                             }
                         }}
                         className={cn(
-                            "focus-visible:ring-ring/50 h-8 min-w-0 flex-1 truncate rounded-md px-3 text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:opacity-50",
+                            "focus-visible:ring-ring/50 min-h-8 flex-1 rounded-md px-3 py-1 text-sm leading-tight transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:opacity-50",
                             checked
                                 ? "bg-background text-foreground font-semibold shadow-sm"
                                 : "text-muted-foreground hover:text-foreground"

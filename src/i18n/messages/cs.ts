@@ -499,6 +499,43 @@ export const csMessages = {
     },
     apiKeys: {
         revokeTitle: "Zrušit klíč {name}?",
+        groupsLegend: "Oblasti",
+        groups: {
+            matches: {
+                label: "Zápasy",
+                short: "zápasy",
+                help: "Akce, zápasy, jejich souhrny a taktické mapy.",
+            },
+            rosters: {
+                label: "Soupisky",
+                short: "soupisky",
+                help: "Soupisky, čety a zařazení hráčů.",
+            },
+            results: {
+                label: "Výsledky",
+                short: "výsledky",
+                help: "Potvrzené výsledky, statistiky hráčů a historie her.",
+            },
+            members: {
+                label: "Členové",
+                short: "členové",
+                help: "Členové klanu a jejich stav. Čtení členství má navíc vlastní pravidla.",
+            },
+            servers: {
+                label: "Herní servery",
+                short: "servery",
+                help: "Živý stav serverů, Warcon, HLL a zdraví připojení.",
+            },
+            league: {
+                label: "Liga a týmy",
+                short: "liga",
+                help: "Zápasy Wardogs League a katalog týmů.",
+            },
+        },
+        partialGroup: "{group} (část)",
+        readOnlyShort: "jen čtení",
+        everyGame: "všechny hry",
+        createdOn: "vytvořen {date}",
         revokeDescription:
             "Vše, co klíč používá, třeba váš web, hned přestane dostávat data z Logi. Nejde to vrátit; přístup obnoví jen nový klíč.",
         revokeConfirm: "Zrušit klíč",
@@ -2249,6 +2286,8 @@ export const csMessages = {
             loginPage: "Přihlašovací stránka klanu",
             ssoApps: "Aplikace pro jednotné přihlášení",
             addApplication: "Přidat aplikaci",
+            membersRowHelp: "Přes klíč {key}. Člen musí mít jednu z rolí.",
+            saveRoles: "Uložit role",
             membersTitle: "Zjistit, kdo je člen",
             membersHelp:
                 "Přes klíč jen pro čtení s přístupem k členství v Discordu. Web uvidí jen členy s jednou z vybraných rolí.",
@@ -2266,6 +2305,9 @@ export const csMessages = {
                 "Přidejte svůj web jako aplikaci a členové se na něj budou moct přihlásit účtem Discordu přes Logi.",
             redirects: "Adresy pro návrat po přihlášení: {count}",
             clientId: "Client ID",
+            edit: "Upravit",
+            save: "Uložit změny",
+            saved: "Aplikace uložena.",
             removeTitle: "Odebrat {name}?",
             removeDescription:
                 "Členové se na {website} přes Logi už nepřihlásí. Client ID a tajný klíč aplikace přestanou platit a zastaví se i akce, které přes ni web zakládá. Nejde to vrátit.",
@@ -2377,6 +2419,9 @@ export const csMessages = {
         panelChannel: "Kanál s panelem",
         threadChannel: "Kde vznikají vlákna",
         threadChannelHint: "Bot tu musí moct zakládat soukromá vlákna.",
+        threadChannelOk: "Bot tu může zakládat soukromá vlákna",
+        categoriesShort: "Kategorie",
+        categoriesEditorNote: "Každá kategorie je jedno tlačítko v panelu.",
         headingLabel: "Nadpis",
         textLabel: "Text",
         imageOptional: "volitelné",

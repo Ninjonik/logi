@@ -22,9 +22,11 @@ export function WebsiteSettings({
     const web = dictionary.integrationSettings.web
     return (
         <div className="space-y-6">
-            <SettingsStep id="website-apiKeys" number={1} title={web.stepKey}>
-                <ApiKeyManager serverId={serverId} dictionary={dictionary} />
-            </SettingsStep>
+            <ApiKeyManager
+                serverId={serverId}
+                dictionary={dictionary}
+                step={{ id: "website-apiKeys", number: 1, title: web.stepKey }}
+            />
             <SettingsStep id="website-login" number={2} title={web.stepLogin}>
                 <CustomLoginLink
                     url={guildLoginUrl}
@@ -42,18 +44,24 @@ export function WebsiteSettings({
                 number={3}
                 title={web.stepMembers}
             >
-                <div className="space-y-6">
-                    <MembershipIntegrationSettings
-                        serverId={serverId}
-                        dictionary={dictionary}
-                    />
-                    <WebsiteEventPolicySettings
-                        serverId={serverId}
-                        dictionary={dictionary}
-                    />
+                <div className="divide-y">
+                    <div className="pb-4">
+                        <MembershipIntegrationSettings
+                            serverId={serverId}
+                            dictionary={dictionary}
+                        />
+                    </div>
+                    <div className="pt-4">
+                        <WebsiteEventPolicySettings
+                            serverId={serverId}
+                            dictionary={dictionary}
+                        />
+                    </div>
                 </div>
             </SettingsStep>
-            <p className="text-muted-foreground text-sm">{web.footer}</p>
+            <p className="bg-muted/60 text-muted-foreground rounded-2xl border px-4 py-3 text-sm">
+                {web.footer}
+            </p>
         </div>
     )
 }

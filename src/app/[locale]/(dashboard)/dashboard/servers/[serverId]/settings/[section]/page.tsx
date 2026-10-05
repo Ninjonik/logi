@@ -318,6 +318,7 @@ export default async function ServerSettingsSectionPage({
             enabledGames={server.enabledGames}
             dictionary={dictionary}
             legend={legend}
+            ownHeader={section === "tickets" || section === "game-servers"}
         >
             {content}
         </SettingsSectionFrame>

@@ -518,6 +518,43 @@ export const deMessages = {
     },
     apiKeys: {
         revokeTitle: "Schlüssel {name} widerrufen?",
+        groupsLegend: "Bereiche",
+        groups: {
+            matches: {
+                label: "Matches",
+                short: "Matches",
+                help: "Events, Matches, ihre Zusammenfassungen und Strat-Maps.",
+            },
+            rosters: {
+                label: "Aufstellungen",
+                short: "Aufstellungen",
+                help: "Aufstellungen, Squads und Zuordnungen der Spieler.",
+            },
+            results: {
+                label: "Ergebnisse",
+                short: "Ergebnisse",
+                help: "Bestätigte Ergebnisse, Spielerstatistiken und Spielverlauf.",
+            },
+            members: {
+                label: "Mitglieder",
+                short: "Mitglieder",
+                help: "Clan-Mitglieder und ihr Status. Für das Lesen der Mitgliedschaft gelten zusätzlich eigene Regeln.",
+            },
+            servers: {
+                label: "Spielserver",
+                short: "Server",
+                help: "Live-Zustand der Server, Warcon, HLL und Zustand der Verbindung.",
+            },
+            league: {
+                label: "Liga und Teams",
+                short: "Liga",
+                help: "Matches der Wardogs League und der Teamkatalog.",
+            },
+        },
+        partialGroup: "{group} (teilweise)",
+        readOnlyShort: "nur lesen",
+        everyGame: "alle Spiele",
+        createdOn: "erstellt {date}",
         revokeDescription:
             "Alles, was diesen Schlüssel nutzt, etwa deine Website, bekommt sofort keine Daten mehr von Logi. Das lässt sich nicht rückgängig machen; für neuen Zugriff erstellst du einen neuen Schlüssel.",
         revokeConfirm: "Schlüssel widerrufen",
@@ -2324,6 +2361,9 @@ export const deMessages = {
             loginPage: "Anmeldeseite des Clans",
             ssoApps: "Anwendungen für Single Sign-on",
             addApplication: "Anwendung hinzufügen",
+            membersRowHelp:
+                "Über den Schlüssel {key}. Ein Mitglied braucht eine der Rollen.",
+            saveRoles: "Rollen speichern",
             membersTitle: "Herausfinden, wer Mitglied ist",
             membersHelp:
                 "Über einen Nur-Lese-Schlüssel mit Zugriff auf die Discord-Mitgliedschaft. Die Website sieht nur Mitglieder mit einer der gewählten Rollen.",
@@ -2341,6 +2381,9 @@ export const deMessages = {
                 "Füge deine Website als Anwendung hinzu, damit sich Mitglieder dort über Logi mit ihrem Discord-Konto anmelden können.",
             redirects: "Rücksprungadressen nach der Anmeldung: {count}",
             clientId: "Client-ID",
+            edit: "Bearbeiten",
+            save: "Änderungen speichern",
+            saved: "Anwendung gespeichert.",
             removeTitle: "{name} entfernen?",
             removeDescription:
                 "Mitglieder können sich auf {website} nicht mehr mit Logi anmelden. Client-ID und Secret der Anwendung werden ungültig, und Event-Befehle der Website über diese Anwendung funktionieren nicht mehr. Das lässt sich nicht rückgängig machen.",
@@ -2457,6 +2500,9 @@ export const deMessages = {
         threadChannel: "Wo Threads entstehen",
         threadChannelHint:
             "Der Bot muss hier private Threads erstellen können.",
+        threadChannelOk: "Der Bot kann hier private Threads anlegen",
+        categoriesShort: "Kategorien",
+        categoriesEditorNote: "Jede Kategorie ist ein Button im Panel.",
         headingLabel: "Überschrift",
         textLabel: "Text",
         imageOptional: "optional",

@@ -501,6 +501,43 @@ export const enMessages = {
     },
     apiKeys: {
         revokeTitle: "Revoke the key {name}?",
+        groupsLegend: "Areas",
+        groups: {
+            matches: {
+                label: "Matches",
+                short: "matches",
+                help: "Events, matches, their summaries and strat maps.",
+            },
+            rosters: {
+                label: "Rosters",
+                short: "rosters",
+                help: "Rosters, squads and player assignments.",
+            },
+            results: {
+                label: "Results",
+                short: "results",
+                help: "Confirmed results, player statistics and game history.",
+            },
+            members: {
+                label: "Members",
+                short: "members",
+                help: "Clan members and their status. Reading membership also has its own rules.",
+            },
+            servers: {
+                label: "Game servers",
+                short: "servers",
+                help: "Live server state, Warcon, HLL and connection health.",
+            },
+            league: {
+                label: "League and teams",
+                short: "league",
+                help: "Wardogs League matches and the team catalogue.",
+            },
+        },
+        partialGroup: "{group} (part)",
+        readOnlyShort: "read only",
+        everyGame: "every game",
+        createdOn: "created {date}",
         revokeDescription:
             "Everything that uses this key, such as your website, stops getting data from Logi immediately. This cannot be undone; to restore access, create a new key.",
         revokeConfirm: "Revoke key",
@@ -2252,6 +2289,9 @@ export const enMessages = {
             loginPage: "Clan sign-in page",
             ssoApps: "Single sign-on applications",
             addApplication: "Add application",
+            membersRowHelp:
+                "Through the {key} key. A member needs one of the roles.",
+            saveRoles: "Save roles",
             membersTitle: "Find out who is a member",
             membersHelp:
                 "Through a read-only key with the Discord membership grant. The website sees only members with one of the chosen roles.",
@@ -2269,6 +2309,9 @@ export const enMessages = {
                 "Add your website as an application so members can sign in to it with their Discord account through Logi.",
             redirects: "Return addresses after sign-in: {count}",
             clientId: "Client ID",
+            edit: "Edit",
+            save: "Save changes",
+            saved: "Application saved.",
             removeTitle: "Remove {name}?",
             removeDescription:
                 "Members can no longer sign in to {website} with Logi. The application's client ID and secret stop working, and website event commands bound to it stop too. This cannot be undone.",
@@ -2381,6 +2424,9 @@ export const enMessages = {
         threadChannel: "Where threads open",
         threadChannelHint:
             "The bot needs to be able to create private threads here.",
+        threadChannelOk: "The bot can open private threads here",
+        categoriesShort: "Categories",
+        categoriesEditorNote: "Each category is one button in the panel.",
         headingLabel: "Heading",
         textLabel: "Text",
         imageOptional: "optional",

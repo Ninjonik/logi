@@ -32,6 +32,7 @@ import { SettingsSectionHeader } from "@/components/app/settings/settings-sectio
 import { SegmentedControl } from "@/components/app/settings/segmented-control"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { Ellipsis, Plus, Server, TriangleAlert, X } from "lucide-react"
+import { MobileActionBar } from "@/components/app/mobile-action-bar"
 import { formatRelativeTime } from "@/lib/format/relative-time"
 import { EmptyState } from "@/components/app/empty-state"
 import { WarconScoreboard } from "./warcon-scoreboard"
@@ -187,16 +188,18 @@ function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
                 title={section.title}
                 description={section.description}
                 actions={
-                    <Button
-                        type="button"
-                        className="rounded-lg"
-                        aria-controls="game-server-add"
-                        disabled={!list}
-                        onClick={openForm}
-                    >
-                        <Plus className="size-4" aria-hidden="true" />
-                        {t.add}
-                    </Button>
+                    <MobileActionBar>
+                        <Button
+                            type="button"
+                            className="rounded-lg"
+                            aria-controls="game-server-add"
+                            disabled={!list}
+                            onClick={openForm}
+                        >
+                            <Plus className="size-4" aria-hidden="true" />
+                            {t.add}
+                        </Button>
+                    </MobileActionBar>
                 }
             />
             {list?.encryption === "unavailable" && (
@@ -664,7 +667,7 @@ function ServerCard({
                     <h3 id={`${id}-name`} className="font-semibold break-words">
                         {source.displayName}
                     </h3>
-                    <p className="text-muted-foreground text-sm break-all">
+                    <p className="text-muted-foreground text-sm break-words">
                         {t.games[source.gameId]} ·{" "}
                         {t.form.types[source.provider]} · {host}
                         {source.provider === "hll_crcon"
