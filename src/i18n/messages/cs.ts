@@ -1168,7 +1168,7 @@ export const csMessages = {
         platformWorkspace: "Pracovní prostor pro stav platformy",
         platformStatusChannel: "Kanál stavu",
         platformStatusChannelHint:
-            "Bot zde udržuje status embed a vytvoří vlákno Aktualizace stavu pro výpadky a obnovení.",
+            "Bot tu udržuje jednu zprávu se stavem a vlákno Změny stavu pro výpadky a obnovení.",
         platformSave: "Uložit nastavení platformy",
         platformSaved: "Nastavení platformy bylo uloženo.",
         platformWorkspacePlaceholder: "Vyberte pracovní prostor",

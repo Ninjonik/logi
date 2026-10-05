@@ -102,7 +102,7 @@ They are examples of the configured bot capabilities, not separate services.
 | Event forum posts and briefings                 | Forum category                                                                                    | Create a test event and confirm one forum post is created or updated.                                             |
 | Discord scheduled events and meeting attendance | Meeting voice/stage channel                                                                       | Confirm the scheduled event points to the correct meeting channel; test the manager attendance confirmation flow. |
 | Calendar panel                                  | Calendar channel                                                                                  | Confirm the bot creates or refreshes the calendar panel.                                                          |
-| Bot error reporting                             | Errors channel                                                                                    | Confirm the configured channel is appropriate for restricted diagnostics.                                         |
+| Bot error reporting                             | **Channel for bot errors** on **Settings → Discord → Messages and panels**                        | Use a channel only managers can read; see [Bot errors channel](#bot-errors-channel).                              |
 | Dashboard-admin role sync                       | Dashboard admin role, then use the dashboard's resync control                                     | Add and remove the role on a test account and confirm dashboard access changes after the sync.                    |
 | Group sign-up eligibility and membership roles  | Group-linked roles for sign-up/import; clan role and membership category roles for role changes   | Test the two behaviors separately; only membership-category roles are added or removed by the bot.                |
 | Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
@@ -223,16 +223,52 @@ The operator must deploy the compatible bot/backend and configure the collection
 first. A person added as a manager only in Logi needs the managers' role or an
 extra role on the Commands page to use the command in Discord.
 
+## Bot errors channel
+
+When the bot cannot do something for the clan, it posts a report to the
+**Channel for bot errors** chosen on **Settings → Discord → Messages and
+panels**. Reports are written in the clan language with a grey bar, never the
+clan colour, and contain no error codes, stack traces or IDs. Each report has:
+
+- what failed, for example "The match announcement was not sent", with the match,
+  ticket or application it concerns and the channel or role involved;
+- **Why**: in plain words, for example the bot lacks the **Send Messages**
+  permission in `#oznameni`, the role is above the bot's role, the channel was
+  deleted, or Discord did not answer in time;
+- **What to do**: the step that fixes it and whether the bot tries again by
+  itself, after the fix or not at all, and whether the player was told;
+- buttons to the match or the settings page that fixes it (for example
+  **Channels and language**, **Roles and access**, **Tickets**).
+
+Pick a channel only managers can read and give the bot **View Channel**,
+**Send Messages** and **Embed Links** there. Without a channel the reports stay
+in the bot's logs. A member whose direct messages are closed is not reported
+here; the match **Overview** shows who a reminder did not reach.
+
+When **Absences and late notices in the match thread** is turned on under
+**Messages and panels**, `/notice`, **Running late** and **Can't make it** also
+post who is late or absent and the arrival time to the match forum thread,
+without the reason. It is off by default.
+
 ## Platform status channel (superadmins)
 
 Superadmins can choose one bot-enabled workspace as Logi's platform workspace
-under **Platform settings**. Enter a writable text-channel ID there. The bot
-keeps one service-status embed in that channel and creates a **Status updates**
-thread beneath it. It tracks the same dashboard, Convex, data-store, Discord,
-and LogiComms dependencies shown on Logi's public status page, posting only
-when a monitored service degrades or recovers. The selected workspace remains
-a normal Logi workspace; this adds platform monitoring and does not replace its
-own clan configuration.
+under **Platform settings**, with the channel for the status message. The bot
+keeps one service-status message in that channel, in the language of that
+workspace and with a grey bar: **Everything is running**, the name of the
+service that is down, or **We don't know the status right now** when the status
+monitor does not answer. Each service shows **Running** or **Unavailable**
+with since when, and the message says it is checked every 30 seconds and when
+it was last checked. The message is edited in place, not posted again.
+
+Below it the bot keeps a **Status changes** thread, and posts a short card
+there only when a monitored service goes down or comes back, with how long the
+outage lasted. A thread created earlier under the old name **Status updates**
+is renamed; for that the bot needs **Manage Threads** in the channel. It tracks
+the same dashboard, Convex, data-store, Discord, and LogiComms dependencies
+shown on Logi's public status page. The selected workspace remains a normal Logi
+workspace; this adds platform monitoring and does not replace its own clan
+configuration.
 
 ## Troubleshooting
 

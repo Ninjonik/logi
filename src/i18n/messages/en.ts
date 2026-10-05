@@ -1177,7 +1177,7 @@ export const enMessages = {
         platformWorkspace: "Platform status workspace",
         platformStatusChannel: "Status channel",
         platformStatusChannelHint:
-            "The bot keeps a status embed here and creates a Status updates thread for outages and recoveries.",
+            "The bot keeps one status message here and a Status changes thread for outages and recoveries.",
         platformSave: "Save platform settings",
         platformSaved: "Platform settings saved.",
         platformWorkspacePlaceholder: "Choose a workspace",

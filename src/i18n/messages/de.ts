@@ -1205,7 +1205,7 @@ export const deMessages = {
         platformWorkspace: "Workspace für den Plattformstatus",
         platformStatusChannel: "Status-Channel",
         platformStatusChannelHint:
-            "Der Bot hält hier ein Status-Embed aktuell und erstellt einen Thread für Ausfälle und Wiederherstellungen.",
+            "Der Bot hält hier eine Statusnachricht aktuell und einen Thread Statusänderungen für Ausfälle und Wiederherstellungen.",
         platformSave: "Plattform-Einstellungen speichern",
         platformSaved: "Plattform-Einstellungen gespeichert.",
         platformWorkspacePlaceholder: "Workspace wählen",
