@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useState } from "react"
-import { Copy, Plus, Trash2 } from "lucide-react"
+import { Copy, KeyRound, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -16,7 +16,9 @@ import {
     isApiKeyReadAccess,
     type ApiKeyReadAccess,
 } from "@/domain/api/key-access"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
+import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
@@ -50,6 +52,7 @@ export function ApiKeyManager(props: Props) {
 
 function ApiKeyManagerForm({ serverId, dictionary }: Props) {
     const t = dictionary.apiKeys
+    const web = dictionary.integrationSettings.web
     const id = useId()
     const [keys, setKeys] = useState<ApiKey[]>([])
     const [name, setName] = useState("")
@@ -61,6 +64,9 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
     const [pending, setPending] = useState(false)
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(false)
+    // The form starts open so a clan without keys sees it at once; once the
+    // list loads it folds behind "New key" when keys already exist.
+    const [formOpen, setFormOpen] = useState(true)
     const url = `/api/servers/${encodeURIComponent(serverId)}/api-keys`
     const readAccess = { resources: selectedResources, gameIds: games }
     const valid =
@@ -83,6 +89,7 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                         setKeys(loadedKeys)
                         setLoadError(false)
                     }
+                    return loadedKeys
                 })
                 .catch(() => {
                     if (!signal?.aborted) setLoadError(true)
@@ -95,7 +102,10 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
 
     useEffect(() => {
         const controller = new AbortController()
-        void load(controller.signal)
+        void load(controller.signal).then((loadedKeys) => {
+            if (loadedKeys && !controller.signal.aborted)
+                setFormOpen(!loadedKeys.some((key) => !key.revokedAt))
+        })
         return () => controller.abort()
     }, [load])
 
@@ -121,6 +131,7 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
             }
             setNewKey(body.key)
             setName("")
+            setFormOpen(false)
             await load()
         } catch {
             toast.error(t.createFailed)
@@ -130,7 +141,7 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
     }
 
     async function revoke(keyId: string) {
-        if (pending) return
+        if (pending) return false
         setPending(true)
         try {
             const response = await fetch(
@@ -139,8 +150,10 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
             )
             if (!response.ok) throw new Error(t.revokeFailed)
             await load()
+            return true
         } catch {
             toast.error(t.revokeFailed)
+            return false
         } finally {
             setPending(false)
         }
@@ -148,7 +161,26 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
 
     return (
         <div className="space-y-5">
-            <p className="text-muted-foreground text-sm">{t.description}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <p className="text-muted-foreground max-w-prose min-w-0 flex-1 text-sm">
+                    {t.description}
+                </p>
+                <Button
+                    type="button"
+                    variant={formOpen ? "ghost" : "default"}
+                    className="rounded-xl"
+                    aria-expanded={formOpen}
+                    aria-controls={`${id}-form`}
+                    onClick={() => setFormOpen((open) => !open)}
+                >
+                    {formOpen ? (
+                        <X className="size-4" />
+                    ) : (
+                        <Plus className="size-4" />
+                    )}
+                    {formOpen ? web.closeForm : web.newKey}
+                </Button>
+            </div>
             {newKey ? (
                 <div
                     className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3"
@@ -186,165 +218,183 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                     </Button>
                 </div>
             ) : null}
-            <form
-                onSubmit={(event) => {
-                    event.preventDefault()
-                    void create()
-                }}
-            >
-                <fieldset className="space-y-4" disabled={pending}>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor={`${id}-name`}>{t.name}</Label>
-                            <Input
-                                id={`${id}-name`}
-                                value={name}
-                                onChange={(event) =>
-                                    setName(event.target.value)
-                                }
-                                placeholder={t.namePlaceholder}
-                                maxLength={80}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor={`${id}-access`}>{t.access}</Label>
-                            <Select
-                                value={mode}
-                                onValueChange={(value) =>
-                                    setMode(
-                                        value === "legacy"
-                                            ? "legacy"
-                                            : "read-only"
-                                    )
-                                }
-                                disabled={pending}
-                            >
-                                <SelectTrigger
-                                    id={`${id}-access`}
-                                    className="w-full"
+            {formOpen ? (
+                <form
+                    id={`${id}-form`}
+                    className="rounded-xl border p-4"
+                    onSubmit={(event) => {
+                        event.preventDefault()
+                        void create()
+                    }}
+                >
+                    <fieldset className="space-y-4" disabled={pending}>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor={`${id}-name`}>{t.name}</Label>
+                                <Input
+                                    id={`${id}-name`}
+                                    value={name}
+                                    onChange={(event) =>
+                                        setName(event.target.value)
+                                    }
+                                    placeholder={t.namePlaceholder}
+                                    maxLength={80}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`${id}-access`}>
+                                    {t.access}
+                                </Label>
+                                <Select
+                                    value={mode}
+                                    onValueChange={(value) =>
+                                        setMode(
+                                            value === "legacy"
+                                                ? "legacy"
+                                                : "read-only"
+                                        )
+                                    }
+                                    disabled={pending}
                                 >
-                                    <SelectValue>
-                                        {mode === "read-only"
-                                            ? t.readOnly
-                                            : t.fullAccess}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="read-only">
-                                        {t.readOnly}
-                                    </SelectItem>
-                                    <SelectItem value="legacy">
-                                        {t.fullAccess}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                                    <SelectTrigger
+                                        id={`${id}-access`}
+                                        className="w-full"
+                                    >
+                                        <SelectValue>
+                                            {mode === "read-only"
+                                                ? t.readOnly
+                                                : t.fullAccess}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="read-only">
+                                            {t.readOnly}
+                                        </SelectItem>
+                                        <SelectItem value="legacy">
+                                            {t.fullAccess}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                    </div>
-                    {mode === "read-only" ? (
-                        <div className="space-y-4 rounded-lg border p-4">
-                            <p className="text-muted-foreground text-sm">
-                                {t.readOnlyHelp}
-                            </p>
-                            <fieldset className="space-y-3">
-                                <legend className="text-sm font-medium">
-                                    {t.resources}
-                                </legend>
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    {resources.map((resource) => (
-                                        <div
-                                            key={resource}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <Checkbox
-                                                id={`${id}-${resource}`}
-                                                checked={selectedResources.includes(
-                                                    resource
-                                                )}
-                                                disabled={pending}
-                                                onCheckedChange={(checked) =>
-                                                    setSelectedResources(
-                                                        (current) =>
+                        {mode === "read-only" ? (
+                            <div className="space-y-4 rounded-lg border p-4">
+                                <p className="text-muted-foreground text-sm">
+                                    {t.readOnlyHelp}
+                                </p>
+                                <fieldset className="space-y-3">
+                                    <legend className="text-sm font-medium">
+                                        {t.resources}
+                                    </legend>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {resources.map((resource) => (
+                                            <div
+                                                key={resource}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Checkbox
+                                                    id={`${id}-${resource}`}
+                                                    checked={selectedResources.includes(
+                                                        resource
+                                                    )}
+                                                    disabled={pending}
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) =>
+                                                        setSelectedResources(
+                                                            (current) =>
+                                                                checked === true
+                                                                    ? [
+                                                                          ...current,
+                                                                          resource,
+                                                                      ]
+                                                                    : current.filter(
+                                                                          (
+                                                                              value
+                                                                          ) =>
+                                                                              value !==
+                                                                              resource
+                                                                      )
+                                                        )
+                                                    }
+                                                />
+                                                <Label
+                                                    htmlFor={`${id}-${resource}`}
+                                                >
+                                                    {t.resourceLabels[resource]}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-muted-foreground text-xs">
+                                        {t.privateData}
+                                    </p>
+                                </fieldset>
+                                <fieldset className="space-y-3">
+                                    <legend className="text-sm font-medium">
+                                        {t.games}
+                                    </legend>
+                                    <div className="flex flex-wrap gap-4">
+                                        {GAME_IDS.map((game) => (
+                                            <div
+                                                key={game}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Checkbox
+                                                    id={`${id}-${game}`}
+                                                    checked={games.includes(
+                                                        game
+                                                    )}
+                                                    disabled={pending}
+                                                    onCheckedChange={(
+                                                        checked
+                                                    ) =>
+                                                        setGames((current) =>
                                                             checked === true
                                                                 ? [
                                                                       ...current,
-                                                                      resource,
+                                                                      game,
                                                                   ]
                                                                 : current.filter(
                                                                       (value) =>
                                                                           value !==
-                                                                          resource
+                                                                          game
                                                                   )
-                                                    )
-                                                }
-                                            />
-                                            <Label
-                                                htmlFor={`${id}-${resource}`}
-                                            >
-                                                {t.resourceLabels[resource]}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-muted-foreground text-xs">
-                                    {t.privateData}
-                                </p>
-                            </fieldset>
-                            <fieldset className="space-y-3">
-                                <legend className="text-sm font-medium">
-                                    {t.games}
-                                </legend>
-                                <div className="flex flex-wrap gap-4">
-                                    {GAME_IDS.map((game) => (
-                                        <div
-                                            key={game}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <Checkbox
-                                                id={`${id}-${game}`}
-                                                checked={games.includes(game)}
-                                                disabled={pending}
-                                                onCheckedChange={(checked) =>
-                                                    setGames((current) =>
-                                                        checked === true
-                                                            ? [...current, game]
-                                                            : current.filter(
-                                                                  (value) =>
-                                                                      value !==
-                                                                      game
-                                                              )
-                                                    )
-                                                }
-                                            />
-                                            <Label htmlFor={`${id}-${game}`}>
-                                                {GAME_LABELS[game]}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </fieldset>
-                            {!isApiKeyReadAccess(readAccess) ? (
-                                <p className="text-muted-foreground text-sm">
-                                    {t.selectScope}
-                                </p>
-                            ) : null}
-                        </div>
-                    ) : (
-                        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                            {t.fullAccessHelp}
-                        </p>
-                    )}
-                    <Button type="submit" disabled={pending || !valid}>
-                        <Plus className="size-4" />
-                        {mode === "read-only"
-                            ? t.createReadOnly
-                            : t.createFullAccess}
-                    </Button>
-                </fieldset>
-            </form>
+                                                        )
+                                                    }
+                                                />
+                                                <Label
+                                                    htmlFor={`${id}-${game}`}
+                                                >
+                                                    {GAME_LABELS[game]}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                {!isApiKeyReadAccess(readAccess) ? (
+                                    <p className="text-muted-foreground text-sm">
+                                        {t.selectScope}
+                                    </p>
+                                ) : null}
+                            </div>
+                        ) : (
+                            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                                {t.fullAccessHelp}
+                            </p>
+                        )}
+                        <Button type="submit" disabled={pending || !valid}>
+                            <Plus className="size-4" />
+                            {mode === "read-only"
+                                ? t.createReadOnly
+                                : t.createFullAccess}
+                        </Button>
+                    </fieldset>
+                </form>
+            ) : null}
             <div className="space-y-2">
                 <h3 className="text-sm font-medium">{t.existingKeys}</h3>
-                <p className="text-muted-foreground text-xs">{t.rotateHelp}</p>
                 {loading ? (
                     <p className="text-muted-foreground text-sm" role="status">
                         {t.loading}
@@ -365,12 +415,16 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                     </div>
                 ) : null}
                 {!loading && !loadError && keys.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">{t.empty}</p>
+                    <EmptyState
+                        icon={KeyRound}
+                        title={t.emptyTitle}
+                        description={t.emptyDescription}
+                    />
                 ) : null}
                 {keys.map((key) => (
                     <div
                         key={key.id}
-                        className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3"
+                        className={`flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3 ${key.revokedAt ? "opacity-70" : ""}`}
                     >
                         <div className="min-w-0 flex-1 space-y-1">
                             <p className="font-medium break-words">
@@ -407,20 +461,36 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                             )}
                         </div>
                         {!key.revokedAt ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={pending || loadError}
-                                aria-label={`${t.revoke}: ${key.name}`}
-                                onClick={() => void revoke(key.id)}
-                            >
-                                <Trash2 className="size-4" />
-                                {t.revoke}
-                            </Button>
+                            <ConfirmActionDialog
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={pending || loadError}
+                                        aria-label={`${t.revoke}: ${key.name}`}
+                                    >
+                                        <Trash2 className="size-4" />
+                                        {t.revoke}
+                                    </Button>
+                                }
+                                title={t.revokeTitle.replace(
+                                    "{name}",
+                                    key.name
+                                )}
+                                description={t.revokeDescription}
+                                confirmLabel={t.revokeConfirm}
+                                cancelLabel={
+                                    dictionary.integrationSettings.cancel
+                                }
+                                onConfirm={() => revoke(key.id)}
+                            />
                         ) : null}
                     </div>
                 ))}
+                <p className="text-muted-foreground text-xs">
+                    {web.keyShownOnce} {t.rotateHelp}
+                </p>
             </div>
         </div>
     )

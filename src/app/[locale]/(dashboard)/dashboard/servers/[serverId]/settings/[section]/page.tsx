@@ -1,10 +1,11 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
 import {
     isSettingsSectionId,
+    mergedSettingsSection,
     visibleSettingsSections,
 } from "@/domain/workspaces/settings-sections"
 import { DiscordChannelSettingsForm } from "@/components/app/settings/discord-channel-settings-form"
@@ -17,6 +18,7 @@ import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-set
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
+import { settingsHref } from "@/components/app/settings/settings-section-meta"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
 import { WardogsLeaguePreview } from "@/components/app/wardogs-league-preview"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
@@ -25,6 +27,7 @@ import { TicketSettingsForm } from "@/components/app/ticket-settings-form"
 import { LeagueTrackingForm } from "@/components/app/league-tracking-form"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
+import { SettingsStep } from "@/components/app/settings/settings-step"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
 import { CustomLoginLink } from "@/components/app/custom-login-link"
 import { SsoApplications } from "@/components/app/sso-applications"
@@ -64,7 +67,7 @@ function Block({
     return (
         <section className="space-y-3">
             <div className="space-y-1">
-                <h2 className="text-base font-semibold">{title}</h2>
+                <h3 className="text-sm font-semibold">{title}</h3>
                 {description ? (
                     <p className="text-muted-foreground text-sm">
                         {description}
@@ -84,9 +87,11 @@ export default async function ServerSettingsSectionPage({
     searchParams: Promise<{ game?: string }>
 }) {
     const { locale, serverId, section } = await params
-    if (!isSettingsSectionId(section)) notFound()
     const { game } = await searchParams
     const gameId = isGameId(game) ? game : undefined
+    const merged = mergedSettingsSection(section)
+    if (merged) redirect(settingsHref(locale, serverId, merged, gameId))
+    if (!isSettingsSectionId(section)) notFound()
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const context = await getServerContext(serverId, gameId ?? "all")
     if (!context?.canAdmin) return null
@@ -172,6 +177,7 @@ export default async function ServerSettingsSectionPage({
                     serverId={serverId}
                     config={discordConfig}
                     dictionary={dictionary}
+                    rolesHref={settingsHref(locale, serverId, "roles", gameId)}
                 />
             )
             break
@@ -195,56 +201,94 @@ export default async function ServerSettingsSectionPage({
         case "league":
             content = (
                 <div className="space-y-6">
-                    <LeagueTrackingForm serverId={serverId} />
+                    <LeagueTrackingForm
+                        serverId={serverId}
+                        dictionary={dictionary}
+                        events={context.events
+                            .filter(
+                                (event) =>
+                                    event.gameId === "wardogs" &&
+                                    event.kind === "match"
+                            )
+                            .sort((a, b) =>
+                                b.gameStart.localeCompare(a.gameStart)
+                            )
+                            .map((event) => ({
+                                id: event.id,
+                                name: event.name,
+                                startsAt: event.gameStart,
+                            }))}
+                    />
                     <WardogsLeaguePreview serverId={serverId} />
                 </div>
             )
             break
-        case "website":
+        case "website": {
+            const web = dictionary.integrationSettings.web
             content = (
-                <div className="space-y-8">
-                    <Block title={dictionary.clan.websiteApi}>
+                <div className="space-y-6">
+                    <SettingsStep
+                        id="website-key"
+                        number={1}
+                        title={web.stepKey}
+                    >
                         <ApiKeyManager
                             serverId={serverId}
                             dictionary={dictionary}
                         />
-                    </Block>
-                    <Block title={dictionary.websiteEventPolicies.title}>
-                        <WebsiteEventPolicySettings
-                            serverId={serverId}
-                            dictionary={dictionary}
-                        />
-                    </Block>
-                    <Block title={dictionary.membershipIntegration.title}>
-                        <MembershipIntegrationSettings
-                            serverId={serverId}
-                            dictionary={dictionary}
-                        />
-                    </Block>
-                </div>
-            )
-            break
-        case "login":
-            content = (
-                <div className="space-y-8">
-                    <Block title={dictionary.serverSettings.guildLoginUrl}>
+                    </SettingsStep>
+                    <SettingsStep
+                        id="website-login"
+                        number={2}
+                        title={web.stepLogin}
+                    >
                         <CustomLoginLink
                             url={guildLoginUrl}
+                            label={web.loginPage}
                             dictionary={dictionary}
                         />
-                    </Block>
-                    <Block
-                        title={dictionary.serverSettings.ssoTitle}
-                        description={dictionary.serverSettings.ssoDescription}
-                    >
+                        <p className="text-muted-foreground text-sm">
+                            {dictionary.serverSettings.ssoDescription}
+                        </p>
                         <SsoApplications
                             serverId={serverId}
                             dictionary={dictionary}
+                            title={web.ssoApps}
                         />
-                    </Block>
+                    </SettingsStep>
+                    <SettingsStep
+                        id="website-members"
+                        number={3}
+                        title={web.stepMembers}
+                    >
+                        <div className="space-y-8">
+                            <Block
+                                title={web.membersTitle}
+                                description={web.membersHelp}
+                            >
+                                <MembershipIntegrationSettings
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            </Block>
+                            <Block
+                                title={web.eventsTitle}
+                                description={web.eventsHelp}
+                            >
+                                <WebsiteEventPolicySettings
+                                    serverId={serverId}
+                                    dictionary={dictionary}
+                                />
+                            </Block>
+                        </div>
+                    </SettingsStep>
+                    <p className="text-muted-foreground text-sm">
+                        {web.footer}
+                    </p>
                 </div>
             )
             break
+        }
         case "calendar":
             content = (
                 <CalendarFeedSettings

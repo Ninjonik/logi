@@ -111,9 +111,9 @@ export const enMessages = {
         description:
             "Choose which Discord roles each integration may read. Access also requires a read-only key with the Discord membership grant. The website decides how to use these observations.",
         enabled: "Allow membership lookups with this key",
-        roles: "Allowed role IDs",
+        roles: "Allowed roles",
         rolesHelp:
-            "Enter one role ID per line. An empty list shares presence and Logi assignment only. Save to apply changes.",
+            "Without roles, only presence and the Logi assignment are shared. Save to apply changes.",
         empty: "Create a read-only API key with the Discord membership grant, then refresh this list.",
         loading: "Loading…",
         refresh: "Refresh",
@@ -133,9 +133,9 @@ export const enMessages = {
             "Register a single sign-on application first. The policy binds the website's commands to that application.",
         noKeys: "Create a restricted API key for the website backend, then refresh. Legacy unrestricted keys cannot carry a command policy.",
         enabled: "Allow event commands with this key",
-        roles: "Allowed role IDs",
+        roles: "Allowed roles",
         rolesHelp:
-            "Enter one Discord role ID per line. A game without roles stays read-only. Saving an enabled policy grants event-command write access for the listed games; disabling it removes the grant.",
+            "A game without roles stays read-only. Saving an enabled policy grants event-command write access for the games with roles; disabling it removes the grant.",
         granted: "Write access granted for: {games}",
         notGranted: "No event-command write access granted.",
         loading: "Loading…",
@@ -222,6 +222,16 @@ export const enMessages = {
     },
     gameData: {
         servers: {
+            emptyTitle: "No game server connected yet",
+            emptyDescription:
+                "Connect a CRCON or Warcon server so Logi can collect results and statistics. The API key is stored encrypted and nobody sees it again.",
+            closeForm: "Close",
+            keyLabel: "API key",
+            lastTestLabel: "Last test",
+            notTested: "Not tested yet",
+            collectionLabel: "Collection",
+            moreActions: "More actions for {name}",
+            historyTitle: "Game history",
             title: "Game servers",
             description:
                 "Connect the Hell Let Loose CRCON or Wardogs Warcon servers this workspace collects from: the server's HTTPS address, its ID at the provider and the API key. Logi tests the connection and stores the key encrypted. A saved key can't be shown or exported; to change it, enter a new one.",
@@ -288,9 +298,12 @@ export const enMessages = {
                 remove: "Remove server",
             },
             confirm: {
+                removeKeyTitle: "Remove the key for {name}?",
+                removeTitle: "Remove {name}?",
+                cancel: "Cancel",
                 removeKey:
-                    "Remove the stored key for {name}? Collection that needs the key stops.",
-                remove: "Remove {name}? Collection stops and its stored key is deleted. Collected history is kept.",
+                    "Collection that needs the key stops until a new key is entered.",
+                remove: "Collection stops and the stored key is deleted. Collected history is kept.",
             },
             key: {
                 set: "Key stored encrypted",
@@ -432,6 +445,13 @@ export const enMessages = {
         },
     },
     apiKeys: {
+        revokeTitle: "Revoke the key {name}?",
+        revokeDescription:
+            "Everything that uses this key, such as your website, stops getting data from Logi immediately. This cannot be undone; to restore access, create a new key.",
+        revokeConfirm: "Revoke key",
+        emptyTitle: "No API key yet",
+        emptyDescription:
+            "Create a key for your website's server. Choose only the data and games it needs.",
         description:
             "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
         name: "Key name",
@@ -1956,7 +1976,167 @@ export const enMessages = {
         accessBackend:
             "Later backend work can connect these rules to Discord roles and Convex queries.",
     },
+    integrationSettings: {
+        cancel: "Cancel",
+        web: {
+            stepKey: "API key for the website",
+            stepLogin: "Sign in with Logi",
+            stepMembers: "What the website may do for members",
+            newKey: "New key",
+            closeForm: "Close",
+            keyShownOnce:
+                "A key is shown only once, right after it is created. Keep it on your website's server.",
+            loginPage: "Clan sign-in page",
+            ssoApps: "Single sign-on applications",
+            addApplication: "Add application",
+            membersTitle: "Find out who is a member",
+            membersHelp:
+                "Through a read-only key with the Discord membership grant. The website sees only members with one of the chosen roles.",
+            eventsTitle: "Create and edit events",
+            eventsHelp:
+                "Through a single sign-on application and its key. Only people with one of the chosen roles.",
+            footer: "Keys and applications are saved immediately. Roles are saved with the button of each key.",
+            rolesPlaceholder: "Choose roles",
+            rolesUnavailable:
+                "Discord roles could not be loaded. Refresh the page to try again.",
+        },
+        sso: {
+            emptyTitle: "No sign-in application yet",
+            emptyDescription:
+                "Add your website as an application so members can sign in to it with their Discord account through Logi.",
+            redirects: "Return addresses after sign-in: {count}",
+            clientId: "Client ID",
+            removeTitle: "Remove {name}?",
+            removeDescription:
+                "Members can no longer sign in to {website} with Logi. The application's client ID and secret stop working, and website event commands bound to it stop too. This cannot be undone.",
+            removeConfirm: "Remove application",
+        },
+        webhooks: {
+            emptyTitle: "No webhooks yet",
+            emptyDescription:
+                "Add an HTTPS address and Logi will send event, roster, article and settings changes to it, signed with a secret.",
+            deleteTitle: "Delete this webhook?",
+            deleteDescription:
+                "Logi stops sending changes to {url} immediately and its signing secret stops working. This cannot be undone.",
+            deleteConfirm: "Delete webhook",
+            loadFailed: "Unable to load webhooks. Refresh and try again.",
+            createFailed:
+                "Unable to create the webhook. Check the address and try again.",
+            actionFailed: "The change was not saved. Try again.",
+            rotateFailed: "Unable to rotate the signing secret.",
+            historyFailed: "Unable to load the delivery history.",
+        },
+        calendar: {
+            emptyTitle: "No calendar link yet",
+            emptyDescription:
+                "Create a private link and add it to Google Calendar or another calendar app. Anyone with the link can see the clan's events.",
+            rotateTitle: "Create a new calendar link?",
+            rotateDescription:
+                "The current link stops working. Everyone who subscribed with it has to add the new link again.",
+            rotateConfirm: "Create new link",
+        },
+        league: {
+            title: "Wardogs League tracking",
+            cadence:
+                "New matches are checked every {scan} minutes and tracked details every {refresh} minutes. The website and Discord use the same record.",
+            enable: "Track matches and post Discord cards",
+            teamCodes: "Codes of tracked teams (comma separated)",
+            scanEvery: "Look for new matches every",
+            refreshEvery: "Refresh tracked details every",
+            minutes: "{minutes} minutes",
+            scanNote:
+                "The shared index scan runs at the fastest interval any enabled clan asks for; this clan takes a fresh index only after its own interval. Limits at the source can stretch the intervals.",
+            intakeChannel: "Channel where people post links",
+            intakePlaceholder: "Choose the intake channel",
+            outputChannel: "Channel for match cards",
+            outputPlaceholder: "Choose the card channel",
+            intakeNote:
+                "Bot messages are ignored. Reading people's messages automatically needs Message Content enabled for the bot by its operator. Scanning and manual additions work without it.",
+            save: "Save settings",
+            saved: "Saved.",
+            saveFailed:
+                "Saving failed. Check permissions, the link and the channel settings.",
+            loadFailed: "Tracking settings could not be loaded.",
+            lastScan: "Last successful scan",
+            nextScan: "Next scan",
+            incomplete: "The list is incomplete; add a missing match manually.",
+            queueFull:
+                "Automatic discovery is full. Existing matches still refresh; the remaining slots are kept for manual additions.",
+            sourceError:
+                "The source is unavailable. The last valid data is kept.",
+            addByUrl: "Add a match by its League URL",
+            preview: "Load preview",
+            previewFailed: "Preview unavailable. Check the match URL.",
+            track: "Track this match",
+            createNative: "Create your own match in Logi",
+            states: {
+                pending: "Waiting to load",
+                tracked: "Tracking",
+                paused: "Paused",
+                ignored: "Ignored",
+                archived: "Archived",
+                unmatched: "Outside the filter",
+            },
+            refreshOnce: "Load again",
+            resume: "Resume",
+            pause: "Pause",
+            ignore: "Ignore",
+            staleData: "Older data, last loaded {time}",
+            linkedEvent: "Logi match for this fixture",
+            notLinked: "Not linked",
+            unknownEvent: "Linked match that is no longer listed",
+            noEvents:
+                "There is no Wardogs match in Logi yet. Create one, then link it here.",
+            saveLink: "Save link",
+            emptyTitle: "No tracked match yet",
+            emptyDescription:
+                "Matches of the tracked teams appear here after the next scan. You can also add one by its URL above.",
+        },
+    },
     ticketSettings: {
+        questionsTitle: "Questions in the form",
+        questionsCount: "{count} of {max}",
+        edit: "Edit",
+        doneEditing: "Done",
+        removeQuestion: "Remove question",
+        requiredShort: "required",
+        optionalShort: "optional",
+        untitledQuestion: "Untitled question",
+        noQuestionsShort:
+            "No questions: the thread opens right after the click.",
+        enabledLabel: "On",
+        enabledAria: "Tickets on",
+        flowLabel: "How a ticket works",
+        flow: {
+            pick: "A member picks a category in the panel",
+            form: "Fills in a short form",
+            thread: "A private thread with support opens",
+            close: "Support closes it and the author gets a DM",
+        },
+        panelSection: "Panel",
+        panelChannel: "Channel with the panel",
+        threadChannel: "Where threads open",
+        threadChannelHint:
+            "The bot needs to be able to create private threads here.",
+        headingLabel: "Heading",
+        textLabel: "Text",
+        imageOptional: "optional",
+        previewTitle: "Preview in Discord",
+        columns: {
+            button: "Button",
+            handledBy: "Who answers",
+            questions: "Questions",
+            actions: "Actions",
+        },
+        nobodyAdmins: "nobody, only Logi administrators",
+        removeCategory: "Remove category",
+        untitledCategory: "Untitled category",
+        noCategoriesDescription:
+            "Each category becomes a button in the panel, for example Report a player or Bot problem.",
+        saveNote: "Saves tickets only. Other settings stay as they are.",
+        saveAndRefresh: "Save and update the panel",
+        discard: "Discard",
+        unsaved: "Unsaved changes",
         title: "Ticket settings",
         pageDescription:
             "Configure the ticket panel, categories, staff roles, and modal questions for Discord tickets.",
@@ -2061,6 +2241,48 @@ export const enMessages = {
         },
     },
     membershipSettings: {
+        clanRoleMissingChip: "clan role not set",
+        applicationsTitle: "Join requests",
+        applicationsChannel: "The Apply button in #{channel}",
+        applicationsNoChannel:
+            "Choose the panel channel under Panel and threads.",
+        roleSyncToggleTitle: "Role sync",
+        roleSyncToggleDescription:
+            "Logi adds and removes roles by member status. It is switched on and off together with join requests.",
+        roleSyncOn: "On",
+        roleSyncOff: "Off",
+        tabsLabel: "Membership sections",
+        tabs: {
+            categories: "Categories",
+            panel: "Panel and threads",
+            scores: "Attendance points",
+            roleChanges: "Role changes",
+        },
+        categoryButtonTitle: "Button in the panel",
+        categoryText: "Text",
+        categoryDescriptionLabel: "Description under the button",
+        resultTitle: "After approval the player becomes",
+        rolesByStatus: "Roles by status",
+        statusPending: "Waiting for a decision",
+        statusRecruit: "Recruit",
+        noRoles: "no roles",
+        handledBy: "Who handles requests",
+        handledByAdmins: "and Logi administrators",
+        clanRoleNote:
+            "{role} is the clan role from Roles and access. It applies to every category.",
+        clanRoleMissingNote:
+            "The clan role is not set yet. Choose it in Roles and access; it applies to every category.",
+        clanRoleLink: "Open Roles and access",
+        missingFinalRole: "final role missing",
+        missingRecruitRole: "recruit role missing",
+        removeCategory: "Remove category",
+        noCategoriesDescription:
+            "Each category is one option in the application, for example main member, reserve or mercenary.",
+        rolePlaceholder: "Add a role",
+        saveNote: "Saves membership only. Other settings stay as they are.",
+        discard: "Discard",
+        saveShort: "Save",
+        unsaved: "Unsaved changes",
         title: "Membership settings",
         pageDescription:
             "Configure the Discord application embed, required application categories, and default assignment behavior for new clan members.",
@@ -2130,15 +2352,10 @@ export const enMessages = {
         rosterScoreExcusedAbsence: "Reacted, absent, but had notice",
         rolesMissingTitle: "Some membership roles are not configured",
         rolesMissingClanRole: "The base clan role is not set. ",
-        rolesMissingRecruitRole:
-            "{count} member {noun} {verb} missing a recruit role. ",
-        rolesMissingFinalRole: "{count} {noun} {verb} missing a final role. ",
+        rolesMissingRecruitRole: "Recruit role missing: {categories}. ",
+        rolesMissingFinalRole: "Final role missing: {categories}. ",
         rolesMissingSummary:
             "In those cases, Logi will still track the application state, but Discord role changes will be partial or skipped.",
-        singleCategory: "category",
-        multipleCategories: "categories",
-        singleIs: "is",
-        pluralAre: "are",
         save: "Save membership settings",
         saved: "Membership settings saved.",
         saveError: "Unable to save membership settings.",
@@ -2646,14 +2863,9 @@ export const enMessages = {
                     "Tracked league matches and their links to your events.",
             },
             website: {
-                title: "Clan website and API",
+                title: "Clan website and sign-in",
                 description:
-                    "API keys, event commands from your website and membership sync.",
-            },
-            login: {
-                title: "Sign-in",
-                description:
-                    "Your clan's sign-in page and single sign-on applications.",
+                    "For a clan website that reads data from Logi or signs members in through it. The steps build on each other.",
             },
             calendar: {
                 title: "Google Calendar",

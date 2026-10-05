@@ -6,6 +6,9 @@ import {
     type MembershipPolicyInput,
     type MembershipPolicySettings,
 } from "@/domain/membership/policy"
+import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
+import { PolicyRolePicker } from "@/components/app/settings/policy-role-picker"
+import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
 import { useEffect, useState, useCallback, useId } from "react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
@@ -22,6 +25,7 @@ function Settings({ serverId, dictionary }: Props) {
         [error, setError] = useState(false),
         [saved, setSaved] = useState(false)
     const [pending, setPending] = useState(false)
+    const roles = useDiscordMetadata(serverId)?.roles ?? null
     const url = `/api/servers/${encodeURIComponent(serverId)}/membership-integrations`
     const load = useCallback(
         (signal?: AbortSignal) =>
@@ -104,6 +108,7 @@ function Settings({ serverId, dictionary }: Props) {
                 <PolicyForm
                     key={`${key.apiKeyId}:${key.policy?.version ?? "new"}`}
                     entry={key}
+                    roles={roles}
                     dictionary={dictionary}
                     disabled={pending || loading}
                     save={save}
@@ -114,11 +119,13 @@ function Settings({ serverId, dictionary }: Props) {
 }
 function PolicyForm({
     entry,
+    roles: discordRoles,
     dictionary,
     disabled,
     save,
 }: {
     entry: MembershipPolicySettings[number]
+    roles: DiscordSelectOption[] | null
     dictionary: Dictionary
     disabled: boolean
     save(input: MembershipPolicyInput): Promise<void>
@@ -126,13 +133,12 @@ function PolicyForm({
     const t = dictionary.membershipIntegration,
         id = useId()
     const [enabled, setEnabled] = useState(entry.policy?.enabled ?? false)
-    const [roles, setRoles] = useState<Record<string, string>>(
+    const [roles, setRoles] = useState<Record<string, string[]>>(
         Object.fromEntries(
             entry.gameIds.map((game) => [
                 game,
-                entry.policy?.games
-                    .find((value) => value.gameId === game)
-                    ?.roleIds.join("\n") ?? "",
+                entry.policy?.games.find((value) => value.gameId === game)
+                    ?.roleIds ?? [],
             ])
         )
     )
@@ -147,13 +153,7 @@ function PolicyForm({
                     enabled,
                     games: entry.gameIds.map((gameId) => ({
                         gameId,
-                        roleIds: [
-                            ...new Set(
-                                (roles[gameId] ?? "")
-                                    .split(/[\s,]+/)
-                                    .filter(Boolean)
-                            ),
-                        ],
+                        roleIds: [...new Set(roles[gameId] ?? [])],
                     })),
                 })
                 setInvalid(!input.success)
@@ -173,22 +173,19 @@ function PolicyForm({
                 <p className="text-muted-foreground text-sm">{t.rolesHelp}</p>
                 {entry.gameIds.map((game) => (
                     <div key={game} className="space-y-2">
-                        <label
-                            className="block text-sm font-medium"
-                            htmlFor={`${id}-${game}`}
-                        >
+                        <p className="text-sm font-medium" id={`${id}-${game}`}>
                             {GAME_LABELS[game]} · {t.roles}
-                        </label>
-                        <textarea
-                            id={`${id}-${game}`}
-                            className="bg-background w-full rounded-md border p-2 font-mono text-sm"
-                            rows={3}
-                            value={roles[game] ?? ""}
-                            onChange={(event) =>
-                                setRoles({
-                                    ...roles,
-                                    [game]: event.target.value,
-                                })
+                        </p>
+                        <PolicyRolePicker
+                            labelId={`${id}-${game}`}
+                            value={roles[game] ?? []}
+                            roles={discordRoles}
+                            placeholder={
+                                dictionary.integrationSettings.web
+                                    .rolesPlaceholder
+                            }
+                            onChange={(value) =>
+                                setRoles({ ...roles, [game]: value })
                             }
                         />
                     </div>

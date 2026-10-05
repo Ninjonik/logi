@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     SETTINGS_SECTIONS,
     isSettingsSectionId,
+    mergedSettingsSection,
     settingsSectionForRequirement,
     settingsSectionStatus,
     settingsSetupProgress,
@@ -32,6 +33,13 @@ test("section ids are unique and recognised", () => {
     assert.ok(isSettingsSectionId("channels"))
     assert.ok(!isSettingsSectionId("system"))
     assert.ok(!isSettingsSectionId("__proto__"))
+})
+
+test("sign-in settings live on the website page and old links redirect there", () => {
+    assert.ok(!isSettingsSectionId("login"))
+    assert.equal(mergedSettingsSection("login"), "website")
+    assert.equal(mergedSettingsSection("website"), undefined)
+    assert.equal(mergedSettingsSection("constructor"), undefined)
 })
 
 test("the Wardogs League page appears only for Wardogs clans", () => {

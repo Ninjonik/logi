@@ -34,15 +34,20 @@ another.
 | Discord                  | Tickets               | The ticket panel, categories, support roles and questions                                 |
 | Game data                | Game servers          | Game servers, provider keys and data collection                                           |
 | Game data                | Wardogs League        | League tracking and match preview; shown when the clan plays Wardogs                      |
-| Website and integrations | Clan website and API  | Website API keys, website event commands and Discord membership integrations              |
-| Website and integrations | Sign-in               | The clan sign-in page and single sign-on applications                                     |
+| Website and integrations | Clan website and sign-in | Three steps: the website API key, sign-in with Logi (sign-in page and single sign-on applications) and what the website may do for members |
 | Website and integrations | Google Calendar       | The private calendar subscription link                                                    |
 | Website and integrations | Webhooks              | Signed webhook subscriptions                                                              |
 | Maintenance              | Imports and repairs   | Event and Discord member imports, ID linking and statistics refresh                       |
 | Maintenance              | Helper data           | Reference data used when importing and matching players                                   |
 
 The former **System**, **Membership settings** and **Ticket settings** addresses
-still work and open the matching settings page.
+still work and open the matching settings page. The former **Sign-in** page
+(`/settings/login`) now opens **Clan website and sign-in**.
+
+Destructive actions on these pages ask for confirmation first and say what
+stops working: deleting a webhook, revoking an API key, removing a single
+sign-on application, creating a new calendar link and removing a game server or
+its key. Empty lists show what is missing and the next step.
 
 Every configuration screen shows its scope above the editor. One game icon means
 the change applies only to that selected game; a row of active game icons means
@@ -121,7 +126,7 @@ links to this settings section. When exactly one is active, creation pages
 select it automatically. With multiple games active, starting a game-owned
 creation flow from **All games** first asks the manager to choose a game.
 
-Integrations have their own manager-only settings pages: **Clan website and API** (website API keys, website event commands and Discord membership integrations), **Sign-in**, **Google Calendar** and **Webhooks**; imports and helper data are under **Maintenance**. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
+Integrations have their own manager-only settings pages: **Clan website and sign-in** (website API keys, the sign-in page, single sign-on applications, Discord membership integrations and website event commands), **Google Calendar** and **Webhooks**; imports and helper data are under **Maintenance**. Treat keys, webhook signing secrets, and secret configuration as sensitive: never paste them into articles, roster notes, public screenshots, or support messages.
 
 Each website API key belongs to the currently selected workspace. Its permissions
 determine which data it can read or change. Give it a recognisable name of at most 80
@@ -132,7 +137,7 @@ create and deploy a replacement key before revoking one used by a live site.
 
 #### Read-only integration keys
 
-In **Settings → Clan website and API → Website API**, the form starts with **Read-only** access and
+In **Settings → Clan website and sign-in → API key for the website**, press **New key** (the form is already open while the clan has no key). It starts with **Read-only** access and
 only **Event summaries** and **Match summaries** selected. Choose the required
 games explicitly; an empty resource or game selection cannot create a restricted
 key. Review the selection, enter a name and press **Create read-only key**.
@@ -442,7 +447,8 @@ subscription; add the newly generated URL in Google Calendar afterward.
 ## Game server data
 
 In **Settings → Game servers**, workspace administrators connect their own game
-servers under **Game servers**. For each server enter a name, the game, the
+servers with **Connect server** (the form is already open while no server is
+connected). For each server enter a name, the game, the
 provider, the HTTPS address without a path, the server ID at the provider (the
 CRCON server number, usually `1`, or the Warcon panel's server UUID) and the API
 key. **Test connection** makes one read-only request and checks that the key
@@ -458,10 +464,11 @@ whether a key is stored, when it was changed, whether it passed its last test,
 whether collection is running and when it last succeeded. **Change key** tests
 the new key first and replaces the old one only if the test passes, unless you
 explicitly save it as unverified, which stops collection until a test passes.
-**Test saved key** re-checks the stored key, **Remove key** deletes it and stops
-collection (a CRCON server can then be started again without a key) and
-**Remove server** stops collection and
-deletes the key while keeping collected history. The address and server ID
+**Test saved key** re-checks the stored key. **Rename**, **Remove key** and
+**Remove server** are in the server's **…** menu and the two removals ask for
+confirmation first: **Remove key** deletes the key and stops collection (a CRCON
+server can then be started again without a key) and **Remove server** stops
+collection and deletes the key while keeping collected history. The address and server ID
 cannot be edited: connect a new server instead. Names are unique within the
 workspace; up to 20 servers can be connected, and connection tests are limited
 to 30 per workspace, 6 per server and 30 per administrator every 10 minutes. For
@@ -621,8 +628,9 @@ API key or disable the origin check.
 ## Discord membership integrations
 
 Create a read-only key with the Discord membership resource and selected games in
-Website API. Open Discord membership integrations, refresh, enter the allowed role
-IDs per game, enable the policy and save. Blank role lists share only presence and
+step 1 of **Clan website and sign-in**. In step 3, **Find out who is a member**,
+refresh, pick the allowed Discord roles per game by name, enable the policy and
+save. Blank role lists share only presence and
 Logi assignment. Policy administration requires your signed-in server administrator
 session; API keys cannot change these permissions.
 
@@ -636,9 +644,9 @@ subscriptions do not gain member access automatically.
 ## Website event commands
 
 A connected website may create, update or cancel events through its own service
-key only when a manager enables a policy for it. Open **Settings → Clan website and API → Website event
-commands**, choose the registered single sign-on application, and for each live
-restricted API key enter the allowed Discord role IDs per game (one ID per line),
+key only when a manager enables a policy for it. Open **Settings → Clan website and sign-in → Create and
+edit events** (step 3), choose the registered single sign-on application, and for each live
+restricted API key pick the allowed Discord roles per game by name,
 tick **Allow event commands with this key** and save. Saving grants event-command
 write access for the games that have at least one role; a game without roles stays
 read-only, and disabling the policy removes the grant again.
