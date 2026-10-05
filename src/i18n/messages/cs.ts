@@ -2321,7 +2321,36 @@ export const csMessages = {
         moreEvents: "další akce",
         allDay: "Celý den",
         manualItemAdminHint:
-            "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
+            "Vidí jen správci. Položku upravíte v Nastavení klanu → Profil klanu, nebo ji tady smažete.",
+        nextUp: "Nejbližší",
+        emptyTitle: "Zatím nic naplánováno",
+        emptyDescription:
+            "Zápasy, tréninky a položky kalendáře se tu objeví, jakmile je naplánujete.",
+        emptyMonth: "Tento měsíc není nic naplánováno.",
+        previousMonth: "Předchozí měsíc",
+        nextMonth: "Další měsíc",
+        timezoneHint: "Časy jsou v časovém pásmu klanu ({timezone}).",
+        start: "Začátek",
+        end: "Konec",
+        category: "Kategorie",
+        meetingPlace: "Místo srazu",
+        openVoiceChannel: "Hlasový kanál v Discordu",
+        toBeDecided: "Upřesní se",
+        deleteItem: "Smazat položku",
+        deleteItemTitle: "Smazat „{title}“?",
+        deleteItemDescription:
+            "Položka zmizí z kalendáře i z kalendářového odběru pro všechny. Nejde to vrátit.",
+        deleteRecurringNote: "Smažou se i všechna opakování této položky.",
+        itemDeleted: "Položka kalendáře smazána.",
+        itemDeleteFailed:
+            "Položku kalendáře se nepovedlo smazat. Zkuste to znovu.",
+        itemCreated: "Položka kalendáře přidána.",
+        itemCreateFailed:
+            "Položku kalendáře se nepovedlo uložit. Zkuste to znovu.",
+        titleRequired: "Vyplňte název.",
+        startRequired: "Vyberte začátek.",
+        endRequired: "Vyberte konec.",
+        endBeforeStart: "Konec musí být po začátku.",
     },
     settingsHub: {
         title: "Nastavení klanu",
@@ -2469,7 +2498,7 @@ export const csMessages = {
         title: "Soupiska",
         listDescription:
             "Procházejte soupisky akcí, kontrolujte počty jednotek a hned vidíte, které sestavy jsou publikované.",
-        modeView: "Pouze zobrazeni",
+        modeView: "Pouze zobrazení",
         modeLayout: "Editor jednotek",
         modeAssignment: "Editor soupisky",
         updatePublished: "Aktualizovat publikovanou soupisku",

@@ -2398,7 +2398,37 @@ export const deMessages = {
         moreEvents: "weitere Events",
         allDay: "Ganztägig",
         manualItemAdminHint:
-            "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
+            "Nur Manager sehen das. Ändere den Eintrag unter Clan-Einstellungen → Clan-Profil oder lösche ihn hier.",
+        nextUp: "Als Nächstes",
+        emptyTitle: "Noch nichts geplant",
+        emptyDescription:
+            "Matches, Trainings und Kalendereinträge erscheinen hier, sobald sie geplant sind.",
+        emptyMonth: "In diesem Monat ist nichts geplant.",
+        previousMonth: "Vorheriger Monat",
+        nextMonth: "Nächster Monat",
+        timezoneHint: "Zeiten in der Zeitzone des Clans ({timezone}).",
+        start: "Beginn",
+        end: "Ende",
+        category: "Kategorie",
+        meetingPlace: "Treffpunkt",
+        openVoiceChannel: "Sprachkanal in Discord",
+        toBeDecided: "Folgt noch",
+        deleteItem: "Eintrag löschen",
+        deleteItemTitle: "„{title}“ löschen?",
+        deleteItemDescription:
+            "Der Eintrag verschwindet für alle aus dem Kalender und dem Kalender-Abo. Das lässt sich nicht rückgängig machen.",
+        deleteRecurringNote:
+            "Alle Wiederholungen dieses Eintrags werden ebenfalls gelöscht.",
+        itemDeleted: "Kalendereintrag gelöscht.",
+        itemDeleteFailed:
+            "Der Kalendereintrag konnte nicht gelöscht werden. Versuch es noch einmal.",
+        itemCreated: "Kalendereintrag hinzugefügt.",
+        itemCreateFailed:
+            "Der Kalendereintrag konnte nicht gespeichert werden. Versuch es noch einmal.",
+        titleRequired: "Gib einen Titel ein.",
+        startRequired: "Wähle den Beginn.",
+        endRequired: "Wähle das Ende.",
+        endBeforeStart: "Das Ende muss nach dem Beginn liegen.",
     },
     settingsHub: {
         title: "Clan-Einstellungen",

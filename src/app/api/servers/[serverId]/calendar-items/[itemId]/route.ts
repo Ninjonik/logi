@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server"
 
+import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
+import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { saveGuildFrontendSettings } from "@/lib/server-guild-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
-import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
 export async function DELETE(
-    _request: Request,
+    request: Request,
     { params }: { params: Promise<{ serverId: string; itemId: string }> }
 ) {
     const { serverId, itemId } = await params
+    if (!isDashboardWriteOrigin(request)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/calendar`)
     const context = await getServerContext(serverId)
     if (!context?.canAdmin) {
