@@ -97,9 +97,11 @@ private reports. See the [implementation and operational limits](https://github.
    application, and must have at least one linked platform ID. If no platform
    ID exists, platform selection and ID entry remain inside that wizard.
 3. After **Agree and submit**, the bot creates a private application thread and an assignment. It starts as
-   pending unless **auto-assign recruit on apply** is enabled for a member
-   category, in which case it starts as recruit and the configured recruit roles
-   are queued for the bot. The category decides whether its assignment is member, reserve
+   pending unless **Skip waiting and add straight as a recruit** is on for
+   that category (main members only), in which case it starts as recruit and
+   the configured recruit roles are queued for the bot. A category without its
+   own choice follows the clan-wide setting saved before the switch moved to
+   categories. The category decides whether its assignment is member, reserve
    member, or mercenary.
 4. Eligible staff close it with `/close_application` and choose **denied**,
    **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
@@ -111,6 +113,13 @@ private reports. See the [implementation and operational limits](https://github.
    the operation status before assuming that Discord has applied them.
 
 ### Membership role and score settings
+
+**Membership** has two switches at the top: **Applications** publishes the
+panel and opens application threads, **Role sync** lets Logi add and remove
+membership roles by member status. Role sync follows applications until you
+change it, and it also works with applications switched off, for example when
+staff assign members on the dashboard only. The Discord panel lists every
+category with the description written under it.
 
 The workspace clan role is added for recruit or active membership outcomes.
 The category's **recruit roles** apply only to recruit, and its **final roles**
