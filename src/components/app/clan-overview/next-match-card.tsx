@@ -1,6 +1,9 @@
 import { CalendarPlus } from "lucide-react"
 import Link from "next/link"
 
+import { RemindUnansweredButton } from "@/components/app/clan-overview/remind-unanswered-button"
+import { currentEventStatus } from "@/domain/events/status"
+
 import {
     rosterFill,
     signupSummary,
@@ -58,6 +61,7 @@ function TeamTile({ team }: { team: MatchTeamAssignment }) {
 
 /** The clan's next match: when, who, roster places, sign-ups and the next step. */
 export function NextMatchCard({
+    serverId,
     event,
     roster,
     assignments,
@@ -69,6 +73,7 @@ export function NextMatchCard({
     now,
     dictionary,
 }: {
+    serverId: string
     event: EventRecord | null
     roster: Roster | null
     assignments: readonly OverviewAssignment[]
@@ -129,6 +134,12 @@ export function NextMatchCard({
     ]
         .filter(Boolean)
         .join(" · ")
+    const remindCount =
+        canAdmin &&
+        signups.unanswered &&
+        currentEventStatus(event, now) === "registration"
+            ? signups.unanswered
+            : 0
 
     return (
         <section
@@ -176,11 +187,14 @@ export function NextMatchCard({
                     </div>
                 ) : null}
                 <div className="flex min-w-0 flex-[1_1_200px] flex-col gap-0.5">
-                    <span className="text-lg leading-snug font-semibold break-words">
+                    <Link
+                        href={hrefs.match(event.id)}
+                        className="focus-visible:ring-ring/50 rounded-md text-lg leading-snug font-semibold break-words outline-none hover:underline focus-visible:ring-[3px]"
+                    >
                         {categoryLabel
                             ? `${event.name} · ${categoryLabel}`
                             : event.name}
-                    </span>
+                    </Link>
                     <span className="text-muted-foreground text-sm">
                         {details.join(" · ")}
                     </span>
@@ -226,9 +240,20 @@ export function NextMatchCard({
                         </Link>
                     </Button>
                 ) : null}
-                <Button asChild variant="outline" className="rounded-xl">
-                    <Link href={hrefs.match(event.id)}>{text.openMatch}</Link>
-                </Button>
+                {remindCount ? (
+                    <RemindUnansweredButton
+                        serverId={serverId}
+                        eventId={event.id}
+                        label={format.count(remindCount, text.remind.button)}
+                        dictionary={dictionary}
+                    />
+                ) : (
+                    <Button asChild variant="outline" className="rounded-xl">
+                        <Link href={hrefs.match(event.id)}>
+                            {text.openMatch}
+                        </Link>
+                    </Button>
+                )}
             </div>
         </section>
     )

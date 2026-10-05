@@ -56,7 +56,10 @@ selected in the sidebar, every block shows only that game.
   members of that game whose membership may sign up, without paused members and
   applicants. That count is left out when the match also requires Discord roles,
   because Logi cannot check them for every member. Managers get a button to
-  create or finish the roster; members see the published roster.
+  create or finish the roster; members see the published roster. While sign-ups
+  are open, managers can also **remind** the members without an answer: after a
+  confirmation the bot sends them a direct message in Discord, and the page
+  says how many reminders went out.
 - **Waiting for you** (managers only): staged results that wait for
   confirmation, required settings that are still missing, and membership
   applications in the pending phase with the date of the oldest one. Below it
@@ -64,9 +67,18 @@ selected in the sidebar, every block shows only that game.
 - **This week**: today and the next six days with their matches and trainings.
 - **Form**: the outcomes of the last ten matches with a known result, oldest
   first. A result with a dashed border still waits for confirmation.
+- **Most attendance points this month** (managers only): the four members with
+  the most points from this month's closed matches. Points follow the clan's
+  score rules under **Settings → Membership → Attendance points**, the same
+  rules that change a member's score when a match closes; only members with
+  points above zero are listed.
+- **Clan statistics**: upcoming events, published rosters, members and presets,
+  performance charts over the recorded matches (combat and support
+  effectiveness, K/D with kills and deaths, points), and the last ten results
+  with the record, win rate and top players.
 
-The overview does not send reminders itself: signup reminders go out on the
-match's own schedule.
+Apart from the reminder button, the overview does not send reminders: sign-up
+reminders go out on the match's own schedule.
 
 When you have a default workspace, the signed-in landing page opens it directly,
 but only while you can still open that clan; otherwise you see the list of your
