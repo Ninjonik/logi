@@ -188,6 +188,14 @@ attempt instead of continuing with stale Discord permissions.
   sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
   players who answered or confirmed in the meantime are skipped
 - `src/interactions/attendance-decline.ts` handles **Can't make it** from reminder DMs
+- `src/interactions/membership-application*.ts` run the clan application in
+  Discord windows (panel button, progress message, windows, review, submit and
+  thread creation); `membership-decision.ts` handles the decision buttons on
+  the thread card, the rejection reason window and `/close_application`;
+  `membership-panel.ts` publishes the application panel;
+  `membership-web-submissions.ts` turns web-form submissions (Variant B) into
+  the same thread and card; `membership-steam-watch.ts` updates the progress
+  message when the applicant verifies Steam on the website
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data

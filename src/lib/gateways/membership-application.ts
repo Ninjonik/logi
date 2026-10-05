@@ -6,6 +6,7 @@ import {
     checkApplicationChannels,
     type ApplicationChannelReport,
 } from "@/domain/membership/application-channels"
+import type { ApplicationState } from "../../../convex/membershipApplications"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { getDiscordBotToken, getInternalAuthSecret } from "@/lib/env"
@@ -133,7 +134,19 @@ export async function verifyApplicationChannels(
 
 type ActorArgs = { secret: string; actor: DashboardActor; guildId: string }
 
-const pageQuery = makeFunctionReference<"query", ActorArgs, unknown>(
+export type WebApplicationPage =
+    | { status: "signed-out" }
+    | { status: "unavailable" }
+    | { status: "ready"; applicantName: string; state: ApplicationState }
+
+export type WebApplicationStatus =
+    | { state: "signed-out" }
+    | { state: "editing" }
+    | { state: "queued" }
+    | { state: "failed"; reason: string }
+    | { state: "done"; number: number; threadId: string }
+
+const pageQuery = makeFunctionReference<"query", ActorArgs, WebApplicationPage>(
     "membershipApplications:webApplicationPage"
 )
 const saveMutation = makeFunctionReference<
@@ -144,9 +157,11 @@ const saveMutation = makeFunctionReference<
 const submitMutation = makeFunctionReference<"mutation", ActorArgs, unknown>(
     "membershipApplications:submitWebApplication"
 )
-const statusQuery = makeFunctionReference<"query", ActorArgs, unknown>(
-    "membershipApplications:webApplicationStatus"
-)
+const statusQuery = makeFunctionReference<
+    "query",
+    ActorArgs,
+    WebApplicationStatus
+>("membershipApplications:webApplicationStatus")
 
 const args = (actor: DashboardActor, guildId: string): ActorArgs => ({
     secret: getInternalAuthSecret(),

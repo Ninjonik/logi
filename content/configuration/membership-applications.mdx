@@ -1,0 +1,145 @@
+---
+title: Clan applications
+description: Configure the clan application form in Discord windows, the decision buttons and the optional web form.
+---
+
+import { Callout, Steps } from "nextra/components"
+
+# Clan applications
+
+A clan application is one form in several Discord windows. The player fills
+the windows one after another and sends the application only at the end, after
+a review. Only then does the bot create a private application thread with the
+answers, the welcome message and the decision buttons. Configure it in
+**Settings → Membership** (the page is called **Clan application**).
+
+## The settings page
+
+The switch **Applications on** next to the title turns the whole flow on or
+off. The page has four tabs: **Application**, **Categories** (with the number
+of categories), **Attendance points** and **Role changes**. The save bar at the
+bottom counts the unsaved changes; saving updates the panel in Discord by
+itself. **Discard** drops every unsaved change.
+
+### Panel and channels
+
+- **Panel channel**: where the bot posts the panel with the **Apply** button.
+  Under the select, Logi asks Discord whether the bot can post and embed
+  images there.
+- **Where application threads are created**: the text channel that holds the
+  private threads. Logi checks that the bot can create private threads, send
+  messages in them and manage them.
+- **Title**, **Text** and an optional **Image** above the title. Upload a PNG,
+  JPEG or WebP image of up to 2 MiB or choose one the clan already uploaded.
+  The categories are listed under the text automatically.
+- The preview beside the fields shows the panel as Discord will show it, in
+  the clan language.
+
+### Form: windows and questions
+
+- **Window 1 · About you** always asks for the game (only when the clan plays
+  more than one game), the category and the in-game name, then the clan's
+  questions for this window. Everyone sees window 1, so its questions cannot be
+  limited to a game or category.
+- **Window 2 · Game accounts** asks for Steam and, for Hell Let Loose, Epic,
+  Xbox and PlayStation. Accounts the player already has in Logi are prefilled.
+  **Require verified Steam** (Hell Let Loose) sends the player to verify Steam
+  on the Logi website before window 2; a typed Steam ID is then not accepted.
+- **Window 3 · Clan questions** and the optional windows **3b** and **3c**
+  hold the clan's own questions.
+
+Question types are **Short text**, **Long text**, **Select**,
+**Multi-select**, **Yes/no** and **Number**. Each question has a label of at
+most 45 characters (the counter shows Discord's limit), an optional help line
+of at most 100 characters and a placeholder. Selects have up to 25 options;
+a multi-select also has **Pick from** and **to**. Outside window 1 a question
+can be limited to one game and to some categories. Drag a question by its
+handle, or focus the handle and use the arrow keys, to reorder it.
+
+Discord allows at most five fields in one window. Each window shows how many
+fields the applicant who sees the most questions gets; a full window says so
+and offers **Add window**. Beside the windows, the page previews one window as
+a Discord window and the review message the applicant sees before sending.
+
+### Categories
+
+The table lists what the applicant chooses from in window 1: the game, the
+roles after acceptance (recruit → final), who sees the thread and the switch
+**Ask for specialization**. The specialization question is asked only in Hell
+Let Loose categories that have the switch on; it is disabled for Wardogs
+categories. **Edit** opens the category on the **Categories** tab, where its
+button text, description, roles and support roles are edited. The clan role
+everyone accepted receives is set in **Roles and access**.
+
+### After sending
+
+- The bot always creates a private thread with the answers and the welcome
+  message. The welcome may use `{applicant}`, `{support_roles}` and
+  `{category}`.
+- **Mention the category's support roles in the thread** and **Add support
+  role members individually** decide how support staff get into the thread.
+- **Give the Recruit role right after sending** applies to categories that
+  have a recruit role.
+- **Send the applicant a confirmation DM** sends the thread link.
+- An unfinished application is kept for 24 hours, then deleted.
+
+The decision preview shows the card in the thread with its buttons:
+**Accept as member**, **Accept as recruit**, **Accept as mercenary**,
+**Reject…** (asks for a reason) and **Not decided yet** (leaves a note on the
+card without a DM). The table under it shows which roles each button adds or
+removes for the previewed category. Category support and Logi admins may
+decide; Logi reloads the decider's roles from Discord when the button is
+pressed. `/close_application` keeps working with the same check.
+
+### Variant B · filling in on the web
+
+**Also offer filling in on the web** is off by default. When it is on, the
+panel gets a second button that opens the same form on a Logi page after
+signing in with Discord. The application ends in the same thread with the
+same card and roles. While the switch is off, the page does not exist.
+
+## What the applicant sees
+
+<Steps>
+
+### Apply
+
+The player presses **Apply** in the panel. A private message shows the steps;
+**Continue** opens the next window, because Discord cannot open a window
+directly from a window. Each window is saved when it is sent.
+
+### Review
+
+After the last window the private message shows every step with **Edit** and
+one **Send application**. Nothing is visible to staff until then.
+
+### Decision
+
+The bot creates the private thread and posts the card. After the decision it
+updates the card, changes the roles and sends the applicant a DM in the clan
+language that names the roles without mentions and quotes a rejection reason.
+
+</Steps>
+
+## Website API
+
+`GET/PATCH /api/v1/clan/settings` exposes the settings as the
+`membershipApplication` slice: the switches, channels, panel texts, the whole
+form and the per-category specialization switch. Decisions are Discord thread
+actions and have no API operation; images are uploaded in the dashboard.
+
+<Callout type="warning">
+    The bot needs View Channel, Send Messages, Embed Links, Attach Files and
+    Read Message History in the panel channel, and View Channel, Create Private
+    Threads, Send Messages in Threads and Manage Threads in the thread channel.
+    Anyone with Manage Threads can see private threads; give it only to staff.
+</Callout>
+
+## Test the complete path
+
+1. Apply from an account without staff roles and check every window, the
+   review and the thread's visibility.
+2. Decide with a support role, then check that an unrelated member cannot use
+   the buttons or `/close_application`.
+3. Use a disposable recruit and final role first and confirm the role changes
+   on **Role changes** before using production roles.

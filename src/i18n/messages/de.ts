@@ -4616,7 +4616,8 @@ export const deMessages = {
         publishedTraining: "Training veröffentlicht.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
-            not_found: "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
+            not_found:
+                "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
             not_draft: "Dieses Match ist schon veröffentlicht.",
             forbidden:
                 "Nur Clan-Verwalter können Matches anlegen. Wenn deine Sitzung abgelaufen ist, melde dich neu an.",
@@ -4658,15 +4659,29 @@ export const deMessages = {
             map: "Karte",
             timeOfDay: "Tageszeit",
             strongpoint: "Mittelpunkt",
-            timesOfDay: { day: "Tag", morning: "Morgen", dusk: "Dämmerung", evening: "Abend", night: "Nacht", rain: "Regen", overcast: "Bewölkt" },
+            timesOfDay: {
+                day: "Tag",
+                morning: "Morgen",
+                dusk: "Dämmerung",
+                evening: "Abend",
+                night: "Nacht",
+                rain: "Regen",
+                overcast: "Bewölkt",
+            },
             choose: "Wählen",
             name: "Name",
             nameHint: "Aus Teams und Vorlage ergänzt. Du kannst ihn ändern.",
             category: "Kategorie",
             noCategory: "Keine Kategorie",
             mode: "Modus",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the Hill" },
-            storedMap: "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the Hill",
+            },
+            storedMap:
+                "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
             otherTeam: "Weiteres Team",
             addTeam: "Weiteres Team hinzufügen",
             otherSide: "Seite des weiteren Teams",
@@ -4696,7 +4711,8 @@ export const deMessages = {
             duration: "Dauer",
             minutes: "Min.",
             repeat: "Jede Woche wiederholen",
-            repeatHint: "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
+            repeatHint:
+                "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
         },
         signups: {
             fromTemplate: "Aus der Vorlage {name}",
@@ -4709,7 +4725,8 @@ export const deMessages = {
             },
             noLimit: "ohne Limit",
             max: "max. {count}",
-            noGroups: "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
+            noGroups:
+                "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
             generalOn: "erlaubt",
             reminder: "Anmeldeerinnerung",
@@ -4725,7 +4742,8 @@ export const deMessages = {
             groupOffered: "Gruppe {name} anbieten",
             capLabel: "Limit der Gruppe {name}",
             capPlaceholder: "ohne Limit",
-            capHint: "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
+            capHint:
+                "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
             reminderOptions: {
                 off: "Niemandem",
                 member: "Mitgliedern",
@@ -4733,13 +4751,17 @@ export const deMessages = {
                 all: "Mitgliedern, Rekruten und Reservisten",
             },
             attendanceReminders: "Anwesenheitserinnerungen",
-            attendanceHint: "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
+            attendanceHint:
+                "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
+            attendanceEditHint:
+                "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
             squadPreset: "Trupp-Vorlage",
             squadPresetNone: "Keine Vorlage",
-            squadPresetHint: "Der Kader startet mit ihr, sobald du ihn anlegst.",
-            squadPresetRosterExists: "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
+            squadPresetHint:
+                "Der Kader startet mit ihr, sobald du ihn anlegst.",
+            squadPresetRosterExists:
+                "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
             requiredRoles: "Rollen für die Anmeldung",
             rewardRoles: "Rollen für das Bestehen",
             rolesPlaceholder: "Rollen wählen",
@@ -4760,18 +4782,23 @@ export const deMessages = {
             password: "Passwort",
             passwordHint: "Das Passwort sehen nur Spieler in der Aufstellung.",
             defaultChannel: "Standardkanal",
-            channelsLocked: "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
+            channelsLocked:
+                "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
             meetingChannel: "Sprachkanal für das Treffen",
             meetingChannelDefault: "Clan-Standard",
-            meetingChannelHint: "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
+            meetingChannelHint:
+                "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
             voiceCategory: "Kategorie für die Sprachkanäle",
             voiceCategoryDefault: "Clan-Standard",
             topicPreset: "Forenthemen",
             topicPresetNone: "Keine Themen",
             participantRoles: "Teilnehmer- und Reserverollen",
-            participantRolesHint: "Der Bot gibt den Spielern eine Rolle dieses Matches.",
-            participantRolesOffHint: "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
-            forumMissing: "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
+            participantRolesHint:
+                "Der Bot gibt den Spielern eine Rolle dieses Matches.",
+            participantRolesOffHint:
+                "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
+            forumMissing:
+                "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
             openChannelSettings: "Kanäle einrichten",
         },
         review: {
@@ -4795,7 +4822,8 @@ export const deMessages = {
             missing: "Fehlt",
             changes: "Was sich ändert",
             noChanges: "Du hast noch nichts geändert.",
-            noticeEdit: "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
+            noticeEdit:
+                "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
         },
         preview: {
             title: "Vorschau in Discord",
@@ -4822,9 +4850,11 @@ export const deMessages = {
             title: "Weitere Optionen",
             summary: "Beschreibung, Bilder, Notizen und Taktikkarten",
             description: "Beschreibung",
-            descriptionHint: "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
+            descriptionHint:
+                "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
             notes: "Notizen",
-            notesHint: "Stehen in der Discord-Ankündigung statt der Beschreibung.",
+            notesHint:
+                "Stehen in der Discord-Ankündigung statt der Beschreibung.",
             thumbnail: "Vorschaubild",
             image: "Bild",
             upload: "Hochladen",
@@ -4836,7 +4866,8 @@ export const deMessages = {
         edit: {
             title: "Match bearbeiten",
             titleTraining: "Training bearbeiten",
-            description: "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
+            description:
+                "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
             breadcrumb: "Bearbeiten",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Gespeicherte Zeiten",
@@ -4846,22 +4877,30 @@ export const deMessages = {
             save: "Änderungen speichern",
             saved: "Änderungen gespeichert.",
             leaveTitle: "Ungespeicherte Änderungen verwerfen?",
-            leaveDescription: "Deine Änderungen an diesem Match werden nicht gespeichert.",
+            leaveDescription:
+                "Deine Änderungen an diesem Match werden nicht gespeichert.",
             leaveConfirm: "Änderungen verwerfen",
-            leavePrompt: "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
+            leavePrompt:
+                "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
             series: "Dieses Match gehört zu einer wöchentlichen Serie. Änderungen gelten nur für diesen Termin.",
             seriesEdit: "Serie bearbeiten",
-            seriesSource: "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
+            seriesSource:
+                "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
             stopHint: "Schalte die Wiederholung aus, um die Serie zu beenden.",
             lockedTitle: "Dieses Match kann nicht mehr bearbeitet werden",
-            lockedTrainingTitle: "Dieses Training kann nicht mehr bearbeitet werden",
-            lockedDescription: "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
-            lockedTrainingDescription: "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
+            lockedTrainingTitle:
+                "Dieses Training kann nicht mehr bearbeitet werden",
+            lockedDescription:
+                "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
+            lockedTrainingDescription:
+                "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
             backToMatch: "Zurück zum Match",
             backToTraining: "Zurück zum Training",
             notFoundTitle: "Match nicht gefunden",
-            notFoundDescription: "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
-            invalidSchedule: "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
+            notFoundDescription:
+                "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
+            invalidSchedule:
+                "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
             fields: {
                 name: "Name",
                 category: "Kategorie",
@@ -4910,8 +4949,10 @@ export const deMessages = {
         },
         overview: {
             title: "Übersicht",
-            description: "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
-            descriptionTraining: "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
+            description:
+                "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
+            descriptionTraining:
+                "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
             edit: "Bearbeiten",
             readOnly: "Nur Clan-Manager können das Match ändern.",
             stratmaps: "Taktikkarten",
@@ -6062,6 +6103,355 @@ export const deMessages = {
         unknownUser: "Benutzer",
         unknownRole: "Rolle",
         unknownChannel: "Kanal",
+    },
+    membershipApplication: {
+        title: "Clan-Bewerbung",
+        description:
+            "Ein Formular in mehreren Fenstern, erst am Ende abgeschickt. Danach ein privater Thread, Rollen und die Entscheidung.",
+        breadcrumbParent: "Mitgliedschaft",
+        enabled: "Bewerbungen an",
+        tabsLabel: "Bereiche der Bewerbung",
+        tabs: {
+            application: "Bewerbung",
+            categories: "Kategorien",
+            scores: "Punkte für Anwesenheit",
+            roleChanges: "Rollenänderungen",
+        },
+        categoryCount: {
+            one: "{count} Kategorie",
+            few: "{count} Kategorien",
+            many: "{count} Kategorien",
+            other: "{count} Kategorien",
+        },
+        panel: {
+            title: "Panel und Kanäle",
+            channel: "Kanal mit dem Panel",
+            threads: "Wo Bewerbungs-Threads entstehen",
+            channelOk: "Der Bot kann hier schreiben und Bilder einbetten.",
+            channelBlocked:
+                "Der Bot kann hier nicht schreiben oder keine Bilder einbetten. Gib ihm im Kanal Kanal ansehen, Nachrichten senden, Links einbetten, Dateien anhängen und Nachrichtenverlauf lesen.",
+            threadsOk: "Der Bot kann hier private Threads erstellen.",
+            threadsBlocked:
+                "Der Bot kann hier keine privaten Threads erstellen. Gib ihm im Kanal Kanal ansehen, Private Threads erstellen, Nachrichten in Threads senden und Threads verwalten.",
+            checking: "Berechtigungen des Bots werden geprüft…",
+            checkUnavailable:
+                "Die Berechtigungen des Bots lassen sich gerade nicht prüfen. Versuche es gleich noch einmal.",
+            heading: "Titel",
+            text: "Text",
+            textHelp:
+                "Die Kategorien werden unter dem Text automatisch aufgelistet.",
+            image: "Bild",
+            upload: "Bild hochladen",
+            uploading: "Wird hochgeladen…",
+            pick: "Hochgeladenes wählen",
+            pickTitle: "Hochgeladene Panel-Bilder",
+            pickDescription:
+                "Bilder, die der Clan schon für seine Discord-Panels hochgeladen hat.",
+            pickEmpty: "Noch kein hochgeladenes Bild.",
+            pickUnavailable:
+                "Die hochgeladenen Bilder lassen sich gerade nicht laden.",
+            pickImage: "Bild {number} verwenden",
+            removeImage: "Bild entfernen",
+            imageHelp:
+                "Optional, über dem Panel-Titel. PNG, JPEG oder WebP bis 2 MiB.",
+            imageAlt: "Bild des Bewerbungs-Panels",
+            attachFailed:
+                "Das Bild konnte nicht verwendet werden. Versuche es noch einmal.",
+            uploadErrors: {
+                unsupported_type:
+                    "Nur PNG-, JPEG- und WebP-Bilder werden angenommen.",
+                type_mismatch: "Der Dateiinhalt passt nicht zu seinem Bildtyp.",
+                bad_dimensions:
+                    "Das Bild muss mindestens 1×1 und höchstens 4096×4096 Pixel groß sein.",
+                animated: "Animierte Bilder werden nicht unterstützt.",
+                undecodable: "Das Bild konnte nicht gelesen werden.",
+                invalid_kind:
+                    "Diese Datei kann nicht als Panel-Bild verwendet werden.",
+                invalid_asset:
+                    "Das hochgeladene Bild konnte nicht gespeichert werden.",
+                too_large: "Das Bild ist größer als 2 MiB.",
+                upload_limited:
+                    "Zu viele Uploads. Versuche es in {seconds} s noch einmal.",
+                forbidden: "Du darfst hier keine Bilder hochladen.",
+                unavailable: "Das Hochladen ist vorübergehend nicht verfügbar.",
+            },
+            preview: "Vorschau in #{channel}",
+            previewNoChannel: "Vorschau des Panels",
+            previewEmpty:
+                "Das Panel erscheint, sobald der Clan mindestens eine Kategorie hat.",
+        },
+        form: {
+            title: "Formular: Fenster und Fragen",
+            intro: "Eine Bewerbung in mehreren Fenstern. Fragetypen: Kurzer Text, Langer Text, Auswahl, Mehrfachauswahl, Ja/Nein und Zahl.",
+            note: "Die Bewerber gehen die Fenster nacheinander durch und schicken erst nach der Kontrolle ab. Zwischen den Fenstern zeigt der Bot den Button Weiter, weil Discord kein Fenster direkt aus einem Fenster öffnen lässt. Die Feldanzahl gilt für die Bewerbung mit den meisten Fragen.",
+            window: "Fenster {number} · {name}",
+            windowNames: {
+                about: "Über dich",
+                accounts: "Spielkonten",
+                questions: "Fragen des Clans",
+            },
+            fieldCount: "{count} von 5 Feldern",
+            inPreview: "in der Vorschau",
+            fixed: "festes Feld",
+            fixedFields: {
+                games: "Spiel",
+                category: "Kategorie",
+                name: "Spielname",
+                steam: "Steam",
+                epic: "Epic",
+                xbox: "Xbox",
+                playstation: "PlayStation",
+            },
+            gamesNote: "nur wenn der Clan mehrere Spiele spielt",
+            categoryNote: "Kategorien des gewählten Spiels",
+            accountsNote:
+                "Die Felder erscheinen nur für das Spiel, das sie braucht. Konten, die schon in Logi stehen, sind vorausgefüllt.",
+            requireSteam: "Bestätigtes Steam verlangen",
+            requireSteamHelp:
+                "Für HLL. Vor Fenster 2 schickt der Bot den Link Mit Steam bestätigen; eine eingetippte Steam-ID geht dann nicht.",
+            addQuestion: "Frage hinzufügen",
+            newQuestion: "Neue Frage",
+            option: "Option {number}",
+            edit: "Bearbeiten",
+            editAria: "Frage {name} bearbeiten",
+            close: "Schließen",
+            move: "Frage {name} verschieben",
+            moveHint:
+                "Mit der Maus ziehen oder mit den Pfeiltasten nach oben und unten.",
+            remove: "Frage {name} löschen",
+            windowFull: "Das Fenster ist voll.",
+            windowFullText:
+                "Discord erlaubt höchstens 5 Felder pro Fenster. Die nächste Frage gehört in ein neues Fenster.",
+            addWindow: "Fenster hinzufügen",
+            noMoreWindows:
+                "Es geht kein weiteres Fenster: Die Bewerbung hat höchstens die Fenster 3, 3b und 3c.",
+            windowEmpty: "Dieses Fenster hat noch keine Fragen.",
+            removeWindow: "Fenster {number} entfernen",
+            types: {
+                short_text: "Kurzer Text",
+                long_text: "Langer Text",
+                select: "Auswahl",
+                multi_select: "Mehrfachauswahl",
+                yes_no: "Ja/Nein",
+                number: "Zahl",
+                member: "Clan-Mitglied",
+            },
+            required: "Pflicht",
+            bothGames: "Beide Spiele",
+            allGames: "Alle Spiele",
+            specializationCategories: "Kategorien laut Kategorie-Einstellung",
+            gameShort: {
+                hell_let_loose: "HLL",
+                hell_let_loose_vietnam: "HLL: Vietnam",
+                wardogs: "Wardogs",
+            },
+            editor: {
+                title: "Frage {name} bearbeiten",
+                type: "Typ",
+                typeFixed: "Der Typ dieser Frage ist fest.",
+                required: "Pflicht",
+                label: "Beschriftung",
+                labelCount:
+                    "{count} / 45 Zeichen · mehr erlaubt Discord nicht.",
+                help: "Hilfe",
+                helpHint: "Unter der Beschriftung, höchstens 100 Zeichen.",
+                placeholder: "Platzhalter",
+                options: "Optionen",
+                optionInput: "Option {number}",
+                removeOption: "Option {name} entfernen",
+                moveOption: "Option {name} verschieben",
+                addOption: "Option hinzufügen",
+                maxOptions: "Höchstens 25 Optionen.",
+                selectFrom: "Wählen von",
+                selectTo: "bis",
+                game: "Nur für Spiel",
+                gameBoth: "Beide",
+                gameAll: "Alle",
+                category: "Nur für Kategorie",
+                categoryHint: "Nichts angehakt heißt jede Kategorie.",
+                categoryOtherGame:
+                    "{game} · die Frage ist nur für {questionGame}",
+                specializationNote:
+                    "Nach der Spezialisierung fragt der Bot nur in Kategorien, bei denen sie in der Tabelle Kategorien unten eingeschaltet ist. Nur für HLL.",
+                aboutNoFilters:
+                    "Fenster 1 sieht jede Bewerbung: Dort werden Spiel und Kategorie gewählt.",
+                done: "Fertig",
+            },
+            issues: {
+                "window-full":
+                    "Das Fenster hat mehr als 5 Felder. Verschiebe eine Frage in ein anderes Fenster.",
+                "too-many-windows":
+                    "Die Bewerbung hat höchstens die Fenster 3, 3b und 3c.",
+                "label-empty": "Die Frage braucht eine Beschriftung.",
+                "label-too-long": "Die Beschriftung ist länger als 45 Zeichen.",
+                "help-too-long": "Die Hilfe ist länger als 100 Zeichen.",
+                "placeholder-too-long":
+                    "Der Platzhalter ist länger als 100 Zeichen.",
+                "options-missing":
+                    "Eine Auswahl braucht mindestens eine Option.",
+                "options-too-many": "Die Auswahl hat mehr als 25 Optionen.",
+                "option-empty": "Jede Option braucht einen Text.",
+                "option-too-long": "Eine Option ist länger als 100 Zeichen.",
+                "option-duplicate": "Zwei Optionen heißen gleich.",
+                "values-range":
+                    "Der Bereich Wählen von–bis passt nicht zur Anzahl der Optionen.",
+                "duplicate-id": "Die Frage steht zweimal im Formular.",
+                "type-invalid": "Dieser Typ passt nicht zur Frage.",
+                "category-unknown":
+                    "Die Frage ist auf eine Kategorie beschränkt, die es nicht mehr gibt.",
+                "specialization-duplicate":
+                    "Die Frage Spezialisierung steht zweimal im Formular.",
+            },
+            issuesTitle: "Das Formular lässt sich noch nicht speichern",
+            windowPreview:
+                "Vorschau von Fenster {number} in Discord · Bewerbung für {game}, {category}",
+            windowPreviewNoCategory: "Vorschau von Fenster {number} in Discord",
+            previewWindowPick: "Fenster in der Vorschau",
+            modalLabel: "Bewerbungsfenster in Discord",
+            modalClose: "Fenster schließen",
+            modalCancel: "Abbrechen",
+            modalSubmit: "Absenden",
+            reviewPreview:
+                "Kontrolle vor dem Absenden · nur für die Bewerbung sichtbar",
+            sample: {
+                name: "Spieler 17",
+                shortText: "Antwort aus der Bewerbung",
+                longText: "Ich suche ein Team für regelmäßige Matches…",
+            },
+        },
+        categories: {
+            title: "Kategorien",
+            intro: "Was in Fenster 1 zur Wahl steht. Die Details einer Kategorie bearbeitest du im Tab Kategorien.",
+            columns: {
+                category: "Kategorie",
+                game: "Spiel",
+                roles: "Rollen nach Aufnahme · Rekrut → endgültig",
+                thread: "Thread sichtbar für",
+                specialization: "Nach Spezialisierung fragen",
+                actions: "Aktionen",
+            },
+            noRecruit: "ohne Rekrut",
+            noRole: "keine Rolle",
+            admins: "nur Logi-Admins",
+            edit: "Bearbeiten",
+            editAria: "Kategorie {name} bearbeiten",
+            specializationAria: "Nach Spezialisierung fragen: {name}",
+            add: "Kategorie hinzufügen",
+            note: "@{role} bekommt jeder Aufgenommene; einstellen unter Rollen und Zugriff. Spezialisierung gibt es nur bei HLL.",
+            noteNoRole:
+                "Die Clan-Rolle für jeden Aufgenommenen stellst du unter Rollen und Zugriff ein. Spezialisierung gibt es nur bei HLL.",
+            empty: "Noch keine Kategorie. Ohne sie kann sich niemand bewerben.",
+            specializationMissing:
+                "Die Frage Spezialisierung ist nicht im Formular, deshalb stellt der Bot sie nicht.",
+            restoreSpecialization: "Frage Spezialisierung zurückholen",
+        },
+        after: {
+            title: "Nach dem Absenden",
+            thread: "Privaten Thread in #{channel} erstellen",
+            threadNoChannel: "Privaten Thread erstellen",
+            threadHelp:
+                "Immer. Am Anfang stehen die Antworten und die Begrüßung unten.",
+            mention: "Support-Rollen der Kategorie im Thread erwähnen",
+            mentionHelp:
+                "Zum Beispiel @Rekrutierung; sonst sieht niemand den Thread.",
+            recruit: "Rolle Rekrut gleich nach dem Absenden geben",
+            recruitHelp: "Nur bei Kategorien mit einer Rekrut-Rolle.",
+            dm: "Der Bewerbung eine Bestätigung per DM schicken",
+            dmHelp: "Mit Link zum Thread.",
+            keep: "Unfertige Bewerbung 24 h aufbewahren",
+            keepHelp:
+                "Danach wird der Entwurf gelöscht und die Bewerbung beginnt neu.",
+            welcome: "Begrüßung im Thread",
+            welcomePlaceholder:
+                "{applicant}, danke für deine Bewerbung. {support_roles} meldet sich bald.",
+            welcomeHelp:
+                "Möglich sind {applicant}, {support_roles} und {category}.",
+            decisionPreview:
+                "Entscheidung im Thread · Buttons statt /close_application",
+            tableCaption: "Was die Buttons bei der Kategorie {category} tun",
+            table: {
+                button: "Button",
+                roles: "Rollenänderung",
+                applicant: "Die Bewerbung bekommt",
+            },
+            outcomes: {
+                member: "Als Mitglied aufnehmen",
+                recruit: "Als Rekrut aufnehmen",
+                mercenary: "Als Söldner aufnehmen",
+                denied: "Ablehnen…",
+                pending: "Noch nicht entschieden",
+            },
+            gets: {
+                result: "Ergebnis und DM",
+                reason: "Fenster für den Grund, Ergebnis und DM",
+                pending: "Notiz auf der Karte, keine DM",
+            },
+            noRoleChange: "keine Änderung",
+            roleSyncOff:
+                "Die Rollen-Synchronisierung ist aus, deshalb ändert Logi keine Rollen.",
+            decisionNote:
+                "Entscheiden dürfen der Support der Kategorie und die Logi-Admins. Der Befehl /close_application funktioniert weiter.",
+        },
+        web: {
+            title: "Variante B · Ausfüllen im Web",
+            switch: "Auch Ausfüllen im Web anbieten",
+            help: "Das Panel bekommt einen zweiten Button Im Web ausfüllen. Dasselbe Formular auf einer Logi-Seite, ohne das Limit von 5 Feldern pro Fenster, nach der Anmeldung mit Discord. Die Bewerbung landet im selben Thread mit denselben Rollen.",
+            note: "Praktisch für lange Formulare oder Bewerbungen am Handy, wo sich die Discord-Fenster schlechter ausfüllen lassen.",
+            address: "Adresse des Formulars",
+        },
+        save: {
+            changes: {
+                one: "{count} ungespeicherte Änderung",
+                few: "{count} ungespeicherte Änderungen",
+                many: "{count} ungespeicherte Änderungen",
+                other: "{count} ungespeicherte Änderungen",
+            },
+            note: "Das Panel in #{channel} aktualisiert sich nach dem Speichern selbst.",
+            noteNoChannel:
+                "Das Panel aktualisiert sich nach dem Speichern selbst.",
+            discard: "Verwerfen",
+            save: "Speichern",
+            saved: "Die Bewerbung ist gespeichert.",
+            error: "Die Bewerbung konnte nicht gespeichert werden.",
+            formInvalid:
+                "Das Formular hat einen Fehler. Korrigiere die markierten Fragen und speichere erneut.",
+        },
+    },
+    applicationWeb: {
+        brand: "Logi · Clan {clan}",
+        signedInAs: "Mit Discord angemeldet als {name}",
+        title: "Bewerbung bei {clan}",
+        stepsLabel: "Schritte der Bewerbung",
+        review: "Kontrolle",
+        autosave: "Was du ausfüllst, wird automatisch gespeichert.",
+        next: "Nächster Schritt",
+        back: "Zurück",
+        saving: "Wird gespeichert…",
+        submit: "Bewerbung absenden",
+        submitting: "Wird gesendet…",
+        edit: "Bearbeiten",
+        required: "Pflicht",
+        chooseUpTo: "Wähle {min} bis {max}.",
+        reviewTitle: "Prüfe deine Bewerbung",
+        reviewNote: "Eine unfertige Bewerbung bewahren wir 24 h auf.",
+        queued: "Die Bewerbung ist abgeschickt. Der Bot erstellt jetzt einen privaten Thread…",
+        done: "Die Bewerbung ist abgeschickt. Die Rekrutierung meldet sich im Thread.",
+        openThread: "Thread in Discord öffnen",
+        failed: "Die Bewerbung konnte nicht gesendet werden. Versuche es noch einmal.",
+        retry: "Noch einmal versuchen",
+        expired:
+            "Die unfertige Bewerbung ist nach 24 Stunden abgelaufen. Bitte fülle sie neu aus.",
+        busy: "Die Bewerbung wird gerade gesendet. Warte bitte einen Moment.",
+        unavailable:
+            "Das Formular geht gerade nicht. Versuche es gleich noch einmal.",
+        disabled: "Der Clan nimmt gerade keine Bewerbungen im Web an.",
+        alreadyOpen: "Du hast schon eine offene Clan-Bewerbung.",
+        member: "Du bist schon im Clan. Eine Bewerbung brauchst du nicht.",
+        steamLocked:
+            "Steam kommt nur aus der Steam-Bestätigung auf der Logi-Website.",
+        memberHint:
+            "Die Discord-Konto-ID des Mitglieds, das dich eingeladen hat.",
+        fixErrors: "Korrigiere bitte die markierten Felder.",
     },
 } as const
 

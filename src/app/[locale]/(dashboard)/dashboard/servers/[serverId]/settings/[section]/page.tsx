@@ -259,9 +259,14 @@ export default async function ServerSettingsSectionPage({
             content = (
                 <MembershipSettingsForm
                     serverId={serverId}
+                    guildId={server.discordId}
                     config={discordConfig}
                     dictionary={dictionary}
                     rolesHref={settingsHref(locale, serverId, "roles", gameId)}
+                    clanName={server.name}
+                    siteUrl={getSiteUrl()}
+                    now={new Date().getTime()}
+                    locale={locale}
                 />
             )
             break
@@ -381,10 +386,21 @@ export default async function ServerSettingsSectionPage({
             enabledGames={server.enabledGames}
             dictionary={dictionary}
             legend={legend}
-            ownHeader={section === "tickets" || section === "game-servers"}
+            ownHeader={
+                section === "tickets" ||
+                section === "game-servers" ||
+                section === "membership"
+            }
             breadcrumbParent={
                 section === "panel-graphics"
                     ? dictionary.panelGraphicsPage.breadcrumbParent
+                    : section === "membership"
+                      ? dictionary.membershipApplication.breadcrumbParent
+                      : undefined
+            }
+            breadcrumbCurrent={
+                section === "membership"
+                    ? dictionary.membershipApplication.title
                     : undefined
             }
         >

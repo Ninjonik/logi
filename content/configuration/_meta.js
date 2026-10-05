@@ -6,5 +6,6 @@ export default {
     "game-history": "Server game history",
     "single-sign-on": "Single sign-on",
     tickets: "Tickets",
+    "membership-applications": "Clan applications",
     "panel-graphics": "Panel graphics",
 }

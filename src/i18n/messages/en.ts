@@ -4498,7 +4498,8 @@ export const enMessages = {
         publishedTraining: "Training published.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
-            not_found: "This draft no longer exists. Someone may have deleted it.",
+            not_found:
+                "This draft no longer exists. Someone may have deleted it.",
             not_draft: "This match has already been published.",
             forbidden:
                 "Only clan managers can create matches. If your session expired, sign in again.",
@@ -4540,14 +4541,28 @@ export const enMessages = {
             map: "Map",
             timeOfDay: "Time of day",
             strongpoint: "Middle point",
-            timesOfDay: { day: "Day", morning: "Morning", dusk: "Dusk", evening: "Evening", night: "Night", rain: "Rain", overcast: "Overcast" },
+            timesOfDay: {
+                day: "Day",
+                morning: "Morning",
+                dusk: "Dusk",
+                evening: "Evening",
+                night: "Night",
+                rain: "Rain",
+                overcast: "Overcast",
+            },
             choose: "Choose",
             name: "Name",
-            nameHint: "Filled in from the teams and template. You can change it.",
+            nameHint:
+                "Filled in from the teams and template. You can change it.",
             category: "Category",
             noCategory: "No category",
             mode: "Mode",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the hill" },
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the hill",
+            },
             storedMap: "Saved map: {map}. Choose a map only to change it.",
             otherTeam: "Another team",
             addTeam: "Add another team",
@@ -4578,7 +4593,8 @@ export const enMessages = {
             duration: "Duration",
             minutes: "min",
             repeat: "Repeat every week",
-            repeatHint: "The next matches are created automatically two weeks ahead.",
+            repeatHint:
+                "The next matches are created automatically two weeks ahead.",
         },
         signups: {
             fromTemplate: "From the {name} template",
@@ -4591,7 +4607,8 @@ export const enMessages = {
             },
             noLimit: "no limit",
             max: "max {count}",
-            noGroups: "This game has no sign-up groups; players sign up without choosing one.",
+            noGroups:
+                "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -4602,11 +4619,13 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote: "Every clan member signs up for a training with one button.",
+            trainingNote:
+                "Every clan member signs up for a training with one button.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
-            capHint: "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
+            capHint:
+                "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
             reminderOptions: {
                 off: "Nobody",
                 member: "Members",
@@ -4614,13 +4633,16 @@ export const enMessages = {
                 all: "Members, recruits and reserves",
             },
             attendanceReminders: "Attendance reminders",
-            attendanceHint: "A DM to roster players who have not confirmed, before the meeting.",
+            attendanceHint:
+                "A DM to roster players who have not confirmed, before the meeting.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "A change reschedules the reminders that have not been sent yet.",
+            attendanceEditHint:
+                "A change reschedules the reminders that have not been sent yet.",
             squadPreset: "Squad preset",
             squadPresetNone: "No preset",
             squadPresetHint: "The roster starts from it once you create it.",
-            squadPresetRosterExists: "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
+            squadPresetRosterExists:
+                "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
             requiredRoles: "Roles needed to sign up",
             rewardRoles: "Roles for passing",
             rolesPlaceholder: "Choose roles",
@@ -4641,18 +4663,23 @@ export const enMessages = {
             password: "Password",
             passwordHint: "Only players on the roster see the password.",
             defaultChannel: "Default channel",
-            channelsLocked: "Channels stay as they were when the match was published; the bot manages its messages there.",
+            channelsLocked:
+                "Channels stay as they were when the match was published; the bot manages its messages there.",
             meetingChannel: "Meeting voice channel",
             meetingChannelDefault: "Clan default",
-            meetingChannelHint: "Logi reads attendance at the meeting from this channel.",
+            meetingChannelHint:
+                "Logi reads attendance at the meeting from this channel.",
             voiceCategory: "Category for the voice channels",
             voiceCategoryDefault: "Clan default",
             topicPreset: "Forum topics",
             topicPresetNone: "No topics",
             participantRoles: "Attendee and reserve roles",
-            participantRolesHint: "The bot gives the players a role of this match.",
-            participantRolesOffHint: "When you switch it off, the bot deletes the roles it created.",
-            forumMissing: "The clan has no forum category set, so no forum will be created.",
+            participantRolesHint:
+                "The bot gives the players a role of this match.",
+            participantRolesOffHint:
+                "When you switch it off, the bot deletes the roles it created.",
+            forumMissing:
+                "The clan has no forum category set, so no forum will be created.",
             openChannelSettings: "Set up channels",
         },
         review: {
@@ -4676,7 +4703,8 @@ export const enMessages = {
             missing: "Missing",
             changes: "What changes",
             noChanges: "You have not changed anything yet.",
-            noticeEdit: "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
+            noticeEdit:
+                "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
         },
         preview: {
             title: "Discord preview",
@@ -4703,9 +4731,11 @@ export const enMessages = {
             title: "More options",
             summary: "Description, pictures, notes and tactical maps",
             description: "Description",
-            descriptionHint: "Shown in the Discord announcement when there are no notes.",
+            descriptionHint:
+                "Shown in the Discord announcement when there are no notes.",
             notes: "Notes",
-            notesHint: "Shown in the Discord announcement instead of the description.",
+            notesHint:
+                "Shown in the Discord announcement instead of the description.",
             thumbnail: "Thumbnail",
             image: "Picture",
             upload: "Upload",
@@ -4717,7 +4747,8 @@ export const enMessages = {
         edit: {
             title: "Edit match",
             titleTraining: "Edit training",
-            description: "Saved changes go straight into the announcement in Discord.",
+            description:
+                "Saved changes go straight into the announcement in Discord.",
             breadcrumb: "Edit",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Saved times",
@@ -4732,17 +4763,22 @@ export const enMessages = {
             leavePrompt: "You have unsaved changes. Leave anyway?",
             series: "This match belongs to a weekly series. Changes apply to this date only.",
             seriesEdit: "Edit the series",
-            seriesSource: "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
+            seriesSource:
+                "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
             stopHint: "Switch repeating off to stop the series.",
             lockedTitle: "This match can no longer be edited",
             lockedTrainingTitle: "This training can no longer be edited",
-            lockedDescription: "The match is closed. You find the result and attendance on the match page.",
-            lockedTrainingDescription: "The training is closed. You find attendance on the training page.",
+            lockedDescription:
+                "The match is closed. You find the result and attendance on the match page.",
+            lockedTrainingDescription:
+                "The training is closed. You find attendance on the training page.",
             backToMatch: "Back to the match",
             backToTraining: "Back to the training",
             notFoundTitle: "Match not found",
-            notFoundDescription: "It may have been deleted, or it belongs to another clan.",
-            invalidSchedule: "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
+            notFoundDescription:
+                "It may have been deleted, or it belongs to another clan.",
+            invalidSchedule:
+                "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
             fields: {
                 name: "Name",
                 category: "Category",
@@ -4791,8 +4827,10 @@ export const enMessages = {
         },
         overview: {
             title: "Overview",
-            description: "How the match is set up and how players see it in Discord.",
-            descriptionTraining: "How the training is set up and how players see it in Discord.",
+            description:
+                "How the match is set up and how players see it in Discord.",
+            descriptionTraining:
+                "How the training is set up and how players see it in Discord.",
             edit: "Edit",
             readOnly: "Only clan managers can change the match.",
             stratmaps: "Tactical maps",
@@ -5913,6 +5951,345 @@ export const enMessages = {
         unknownUser: "user",
         unknownRole: "role",
         unknownChannel: "channel",
+    },
+    membershipApplication: {
+        title: "Clan application",
+        description:
+            "One form in several windows, sent only at the end. Then a private thread, roles and the decision.",
+        breadcrumbParent: "Membership",
+        enabled: "Applications on",
+        tabsLabel: "Parts of the application",
+        tabs: {
+            application: "Application",
+            categories: "Categories",
+            scores: "Attendance points",
+            roleChanges: "Role changes",
+        },
+        categoryCount: {
+            one: "{count} category",
+            few: "{count} categories",
+            many: "{count} categories",
+            other: "{count} categories",
+        },
+        panel: {
+            title: "Panel and channels",
+            channel: "Panel channel",
+            threads: "Where application threads are created",
+            channelOk: "The bot can post and embed images here.",
+            channelBlocked:
+                "The bot cannot post or embed images here. Give it View Channel, Send Messages, Embed Links, Attach Files and Read Message History in this channel.",
+            threadsOk: "The bot can create private threads here.",
+            threadsBlocked:
+                "The bot cannot create private threads here. Give it View Channel, Create Private Threads, Send Messages in Threads and Manage Threads in this channel.",
+            checking: "Checking the bot's permissions…",
+            checkUnavailable:
+                "The bot's permissions cannot be checked right now. Try again in a moment.",
+            heading: "Title",
+            text: "Text",
+            textHelp: "The categories are listed under the text automatically.",
+            image: "Image",
+            upload: "Upload image",
+            uploading: "Uploading…",
+            pick: "Choose uploaded",
+            pickTitle: "Uploaded panel images",
+            pickDescription:
+                "Images the clan has already uploaded for its Discord panels.",
+            pickEmpty: "No uploaded image yet.",
+            pickUnavailable: "The uploaded images cannot be loaded right now.",
+            pickImage: "Use image {number}",
+            removeImage: "Remove image",
+            imageHelp:
+                "Optional, above the panel title. PNG, JPEG or WebP up to 2 MiB.",
+            imageAlt: "Application panel image",
+            attachFailed: "The image could not be used. Try again.",
+            uploadErrors: {
+                unsupported_type:
+                    "Only PNG, JPEG and WebP images are accepted.",
+                type_mismatch:
+                    "The file content does not match its image type.",
+                bad_dimensions:
+                    "The image must be at least 1×1 and at most 4096×4096 pixels.",
+                animated: "Animated images are not supported.",
+                undecodable: "The image could not be read.",
+                invalid_kind: "This file cannot be used as a panel image.",
+                invalid_asset: "The uploaded image could not be saved.",
+                too_large: "The image is larger than 2 MiB.",
+                upload_limited: "Too many uploads. Try again in {seconds} s.",
+                forbidden: "You are not allowed to upload images here.",
+                unavailable: "Uploading is temporarily unavailable.",
+            },
+            preview: "Preview in #{channel}",
+            previewNoChannel: "Panel preview",
+            previewEmpty:
+                "The panel appears once the clan has at least one category.",
+        },
+        form: {
+            title: "Form: windows and questions",
+            intro: "One application in several windows. Question types: Short text, Long text, Select, Multi-select, Yes/no and Number.",
+            note: "The applicant goes through the windows in order and sends only after the review. Between windows the bot shows a Continue button, because Discord does not allow opening a window directly from a window. The field count is for the applicant who sees the most questions.",
+            window: "Window {number} · {name}",
+            windowNames: {
+                about: "About you",
+                accounts: "Game accounts",
+                questions: "Clan questions",
+            },
+            fieldCount: "{count} of 5 fields",
+            inPreview: "in preview",
+            fixed: "fixed field",
+            fixedFields: {
+                games: "Game",
+                category: "Category",
+                name: "In-game name",
+                steam: "Steam",
+                epic: "Epic",
+                xbox: "Xbox",
+                playstation: "PlayStation",
+            },
+            gamesNote: "only when the clan plays more than one game",
+            categoryNote: "categories of the chosen game",
+            accountsNote:
+                "Fields appear only for the game that needs them. Accounts the applicant already has in Logi are prefilled.",
+            requireSteam: "Require verified Steam",
+            requireSteamHelp:
+                "For HLL. Before window 2 the bot sends a Verify with Steam link; a typed Steam ID is then not accepted.",
+            addQuestion: "Add question",
+            newQuestion: "New question",
+            option: "Option {number}",
+            edit: "Edit",
+            editAria: "Edit question {name}",
+            close: "Close",
+            move: "Move question {name}",
+            moveHint: "Drag with the mouse, or use the up and down arrow keys.",
+            remove: "Delete question {name}",
+            windowFull: "The window is full.",
+            windowFullText:
+                "Discord allows at most 5 fields in one window. Put the next question in a new window.",
+            addWindow: "Add window",
+            noMoreWindows:
+                "No more windows can be added: the application has at most windows 3, 3b and 3c.",
+            windowEmpty: "This window has no questions yet.",
+            removeWindow: "Remove window {number}",
+            types: {
+                short_text: "Short text",
+                long_text: "Long text",
+                select: "Select",
+                multi_select: "Multi-select",
+                yes_no: "Yes/no",
+                number: "Number",
+                member: "Clan member",
+            },
+            required: "Required",
+            bothGames: "Both games",
+            allGames: "All games",
+            specializationCategories: "categories as set per category",
+            gameShort: {
+                hell_let_loose: "HLL",
+                hell_let_loose_vietnam: "HLL: Vietnam",
+                wardogs: "Wardogs",
+            },
+            editor: {
+                title: "Editing question {name}",
+                type: "Type",
+                typeFixed: "The type of this question is fixed.",
+                required: "Required",
+                label: "Label",
+                labelCount: "{count} / 45 characters · Discord allows no more.",
+                help: "Help",
+                helpHint: "Under the label, at most 100 characters.",
+                placeholder: "Placeholder",
+                options: "Options",
+                optionInput: "Option {number}",
+                removeOption: "Remove option {name}",
+                moveOption: "Move option {name}",
+                addOption: "Add option",
+                maxOptions: "At most 25 options.",
+                selectFrom: "Pick from",
+                selectTo: "to",
+                game: "Only for game",
+                gameBoth: "Both",
+                gameAll: "All",
+                category: "Only for category",
+                categoryHint: "Nothing ticked means every category.",
+                categoryOtherGame:
+                    "{game} · the question is only for {questionGame}",
+                specializationNote:
+                    "The bot asks for a specialization only in categories that have it switched on in the Categories table below. HLL only.",
+                aboutNoFilters:
+                    "Every applicant sees window 1: it is where they pick the game and category.",
+                done: "Done",
+            },
+            issues: {
+                "window-full":
+                    "The window has more than 5 fields. Move a question to another window.",
+                "too-many-windows":
+                    "The application has at most windows 3, 3b and 3c.",
+                "label-empty": "The question needs a label.",
+                "label-too-long": "The label is longer than 45 characters.",
+                "help-too-long": "The help is longer than 100 characters.",
+                "placeholder-too-long":
+                    "The placeholder is longer than 100 characters.",
+                "options-missing": "A select needs at least one option.",
+                "options-too-many": "The select has more than 25 options.",
+                "option-empty": "Every option needs a text.",
+                "option-too-long": "An option is longer than 100 characters.",
+                "option-duplicate": "Two options have the same name.",
+                "values-range":
+                    "The Pick from–to range does not fit the number of options.",
+                "duplicate-id": "The question is in the form twice.",
+                "type-invalid": "This type does not fit the question.",
+                "category-unknown":
+                    "The question is limited to a category that no longer exists.",
+                "specialization-duplicate":
+                    "The Specialization question is in the form twice.",
+            },
+            issuesTitle: "The form cannot be saved yet",
+            windowPreview:
+                "Preview of window {number} in Discord · applicant for {game}, {category}",
+            windowPreviewNoCategory: "Preview of window {number} in Discord",
+            previewWindowPick: "Window in preview",
+            modalLabel: "Application window in Discord",
+            modalClose: "Close window",
+            modalCancel: "Cancel",
+            modalSubmit: "Submit",
+            reviewPreview: "Review before sending · only the applicant sees it",
+            sample: {
+                name: "Player 17",
+                shortText: "The applicant's answer",
+                longText: "Looking for a team for regular matches…",
+            },
+        },
+        categories: {
+            title: "Categories",
+            intro: "What the applicant chooses from in window 1. Edit a category's details on the Categories tab.",
+            columns: {
+                category: "Category",
+                game: "Game",
+                roles: "Roles after acceptance · recruit → final",
+                thread: "Thread visible to",
+                specialization: "Ask for specialization",
+                actions: "Actions",
+            },
+            noRecruit: "no recruit",
+            noRole: "no role",
+            admins: "Logi admins only",
+            edit: "Edit",
+            editAria: "Edit category {name}",
+            specializationAria: "Ask for specialization: {name}",
+            add: "Add category",
+            note: "@{role} is given to everyone accepted; set it in Roles and access. Specialization is HLL only.",
+            noteNoRole:
+                "Set the clan role for everyone accepted in Roles and access. Specialization is HLL only.",
+            empty: "There is no category yet. Without one, nobody can apply.",
+            specializationMissing:
+                "The Specialization question is not in the form, so the bot does not ask it.",
+            restoreSpecialization: "Restore the Specialization question",
+        },
+        after: {
+            title: "After sending",
+            thread: "Create a private thread in #{channel}",
+            threadNoChannel: "Create a private thread",
+            threadHelp:
+                "Always. It opens with the answers and the welcome below.",
+            mention: "Mention the category's support roles in the thread",
+            mentionHelp:
+                "For example @Recruiting; nobody else sees the thread.",
+            recruit: "Give the Recruit role right after sending",
+            recruitHelp: "Only for categories that have a Recruit role.",
+            dm: "Send the applicant a confirmation DM",
+            dmHelp: "With a link to the thread.",
+            keep: "Keep an unfinished application for 24 h",
+            keepHelp:
+                "Then the draft is deleted and the applicant starts again.",
+            welcome: "Welcome in the thread",
+            welcomePlaceholder:
+                "{applicant}, thanks for applying. {support_roles} will get back to you soon.",
+            welcomeHelp:
+                "You can use {applicant}, {support_roles} and {category}.",
+            decisionPreview:
+                "Decision in the thread · buttons instead of /close_application",
+            tableCaption: "What the buttons do for the category {category}",
+            table: {
+                button: "Button",
+                roles: "Role changes",
+                applicant: "The applicant gets",
+            },
+            outcomes: {
+                member: "Accept as member",
+                recruit: "Accept as recruit",
+                mercenary: "Accept as mercenary",
+                denied: "Reject…",
+                pending: "Not decided yet",
+            },
+            gets: {
+                result: "The result and a DM",
+                reason: "A window for the reason, the result and a DM",
+                pending: "A note on the card, no DM",
+            },
+            noRoleChange: "no change",
+            roleSyncOff:
+                "Role synchronization is off, so Logi does not change roles.",
+            decisionNote:
+                "Category support and Logi admins may decide. The /close_application command keeps working.",
+        },
+        web: {
+            title: "Variant B · filling in on the web",
+            switch: "Also offer filling in on the web",
+            help: "The panel gets a second button, Fill in on the web. The same form on a Logi page, without the 5-fields-per-window limit, after signing in with Discord. The application ends up in the same thread with the same roles.",
+            note: "Useful for long forms or applicants on a phone, where Discord windows are harder to fill in.",
+            address: "Form address",
+        },
+        save: {
+            changes: {
+                one: "{count} unsaved change",
+                few: "{count} unsaved changes",
+                many: "{count} unsaved changes",
+                other: "{count} unsaved changes",
+            },
+            note: "The panel in #{channel} updates itself after saving.",
+            noteNoChannel: "The panel updates itself after saving.",
+            discard: "Discard",
+            save: "Save",
+            saved: "The application is saved.",
+            error: "The application could not be saved.",
+            formInvalid:
+                "The form has an error. Fix the marked questions and save again.",
+        },
+    },
+    applicationWeb: {
+        brand: "Logi · Clan {clan}",
+        signedInAs: "Signed in with Discord as {name}",
+        title: "Application to {clan}",
+        stepsLabel: "Application steps",
+        review: "Review",
+        autosave: "Your progress is saved automatically.",
+        next: "Next step",
+        back: "Back",
+        saving: "Saving…",
+        submit: "Send application",
+        submitting: "Sending…",
+        edit: "Edit",
+        required: "required",
+        chooseUpTo: "Choose {min} to {max}.",
+        reviewTitle: "Check your application",
+        reviewNote: "We keep an unfinished application for 24 h.",
+        queued: "The application is sent. The bot is now creating a private thread…",
+        done: "The application is sent. Recruiting will reply in the thread.",
+        openThread: "Open the thread in Discord",
+        failed: "The application could not be sent. Please try again.",
+        retry: "Try again",
+        expired:
+            "The unfinished application expired after 24 hours. Please fill it in again.",
+        busy: "The application is being sent right now. Please wait a moment.",
+        unavailable:
+            "The form cannot be used right now. Try again in a moment.",
+        disabled:
+            "The clan is not accepting applications on the web right now.",
+        alreadyOpen: "You already have an open clan application.",
+        member: "You are already in the clan. You do not need to apply.",
+        steamLocked:
+            "Steam comes only from Steam verification on the Logi website.",
+        memberHint: "The Discord account ID of the member who invited you.",
+        fixErrors: "Please fix the marked fields.",
     },
 } as const
 
