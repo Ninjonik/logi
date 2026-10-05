@@ -1,7 +1,7 @@
 import { MessageFlags, type Client } from "discord.js"
 
 import { resolveMessageAccentColor } from "../../../src/domain/discord-messages/format"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import { buildAttendanceReminderMessage } from "./attendance-reminders"
 import { buildAttendanceReminderComponents } from "../message-builders"
 import { buildSignupReminderMessage } from "./signup-reminders"
@@ -48,7 +48,7 @@ export async function deliverManualReminder(input: {
         return sent
     }
 
-    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+    const messages = getEventMessages(payload.config.defaultLanguage)
     const roster = payload.rosters.find((item) => item.eventId === event.id)
     const places = new Map<
         string,

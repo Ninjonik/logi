@@ -9,14 +9,14 @@ import {
 } from "discord.js"
 
 import { DECLINE_REASON_MAX_LENGTH } from "../../../src/domain/rosters/attendance-decline"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import type { EventInteractionContext } from "../types"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
 import { logInfo } from "../log"
 
-type Messages = ReturnType<typeof getClanDiscordMessages>
+type Messages = ReturnType<typeof getEventMessages>
 type Options = {
     enqueueEventSync: (eventId: string) => void
     triggerPollSoon: () => void
@@ -132,13 +132,13 @@ export async function handleAttendanceDeclineButton(
     const context = await loadContext(eventId)
     if (!context || !belongsHere(interaction, context)) {
         await interaction.reply({
-            content: getClanDiscordMessages(context?.config.defaultLanguage)
+            content: getEventMessages(context?.config.defaultLanguage)
                 .interaction.unableToLoadEventContext,
             flags: interaction.guildId ? MessageFlags.Ephemeral : undefined,
         })
         return
     }
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
     const refusal = declineRefusal(context, interaction.user.id, messages)
     if (refusal) {
         await interaction.reply({
@@ -161,12 +161,12 @@ export async function handleAttendanceDeclineModalSubmit(
     const context = await loadContext(eventId)
     if (!context || !belongsHere(interaction, context)) {
         await interaction.editReply({
-            content: getClanDiscordMessages(context?.config.defaultLanguage)
+            content: getEventMessages(context?.config.defaultLanguage)
                 .interaction.unableToLoadEventContext,
         })
         return
     }
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
     const typed = interaction.fields.getTextInputValue("reason").trim()
     const result = (await convex.mutation(references.declineAttendance, {
         secret: env.internalSecret,

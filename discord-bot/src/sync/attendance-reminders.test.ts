@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 
 import {
     buildAttendanceReminderMessage,
@@ -18,7 +18,7 @@ test("attendance reminder includes the player's roster position and notes", () =
             roleName: "Squad Leader",
             note: "Join the briefing voice channel early.",
         },
-        messages: getClanDiscordMessages("en"),
+        messages: getEventMessages("en"),
         accentColor: 0x123456,
     }).toJSON()
     const description = embed.description ?? ""
@@ -43,7 +43,7 @@ test("attendance reminder speaks the clan language and escapes roster text", () 
         meetingStartMs: Date.parse("2026-10-11T17:30:00.000Z"),
         gameStartMs: Date.parse("2026-10-11T18:00:00.000Z"),
         assignment: { squadName: "Able", roleName: "Medic", note: "*bold*" },
-        messages: getClanDiscordMessages("cs"),
+        messages: getEventMessages("cs"),
     }).toJSON()
 
     assert.equal(embed.title, "Hraješ VLK vs ROG")
@@ -62,7 +62,7 @@ test("the reminder title says today or tomorrow in the clan's time zone", () => 
             eventName: "VLK vs ROG",
             meetingStartMs: Date.parse("2026-10-11T17:30:00.000Z"),
             gameStartMs: Date.parse("2026-10-11T18:00:00.000Z"),
-            messages: getClanDiscordMessages("cs"),
+            messages: getEventMessages("cs"),
             now: Date.parse(now),
             timeZone,
         }).toJSON().title

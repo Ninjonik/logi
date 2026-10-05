@@ -1,4 +1,4 @@
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getSystemMessages } from "../../../src/lib/clan-language/system"
 import { GAME_LABELS } from "../../../src/domain/games/game"
 import { TEAM_GAMES } from "../../../src/domain/teams/team"
 import { EmbedBuilder, escapeMarkdown } from "discord.js"
@@ -55,7 +55,7 @@ export function buildTeamRequestDecisionMessage(
     const status = notification.status
     if (status !== "approved" && status !== "merged" && status !== "rejected")
         return null
-    const copy = getClanDiscordMessages(notification.language).teamRequests
+    const copy = getSystemMessages(notification.language).teamRequests
     const title = {
         approved: copy.approvedTitle,
         merged: copy.mergedTitle,

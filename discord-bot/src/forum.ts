@@ -6,7 +6,7 @@ import {
     MessageFlags,
 } from "discord.js"
 
-import { getClanDiscordMessages } from "../../src/lib/clan-language"
+import { getEventMessages } from "../../src/lib/clan-language/events"
 
 import {
     DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES,
@@ -157,7 +157,7 @@ export async function syncForumChannel(input: {
         attendeeRoleId,
         reserveRoleId,
     } = input
-    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const messages = getEventMessages(config.defaultLanguage)
     const forumName = buildForumThreadName(config, event)
     const existingForumChannel = forumChannelId
         ? await guild.channels.fetch(forumChannelId).catch(() => null)
@@ -326,9 +326,9 @@ export async function syncForumChannel(input: {
         : []
     const infoPostNames = [
         messages.forum.matchInformation,
-        getClanDiscordMessages("en").forum.matchInformation,
-        getClanDiscordMessages("cs").forum.matchInformation,
-        getClanDiscordMessages("de").forum.matchInformation,
+        getEventMessages("en").forum.matchInformation,
+        getEventMessages("cs").forum.matchInformation,
+        getEventMessages("de").forum.matchInformation,
     ]
     const infoPost = existingPosts.find((post) =>
         infoPostNames.includes(post.name)
@@ -530,7 +530,7 @@ export async function finalizeForumAfterConclusion(
     event: EventRecord,
     language: ClanLanguage
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     const activePosts = await forumChannel.threads
         .fetchActive()
         .catch(() => null)
@@ -539,9 +539,9 @@ export async function finalizeForumAfterConclusion(
         : []
     const debriefNames = [
         messages.forum.debrief,
-        getClanDiscordMessages("en").forum.debrief,
-        getClanDiscordMessages("cs").forum.debrief,
-        getClanDiscordMessages("de").forum.debrief,
+        getEventMessages("en").forum.debrief,
+        getEventMessages("cs").forum.debrief,
+        getEventMessages("de").forum.debrief,
     ]
 
     let debriefPost = existingPosts.find((post) =>

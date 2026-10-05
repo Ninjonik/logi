@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { buildEventSignupActions } from "@/lib/event-signup"
 import { EmojiValue } from "@/components/app/emoji-value"
 import type { EventRecord, Group } from "@/types/domain"
@@ -26,7 +26,7 @@ export function EventSignupActions({
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const messages = getClanDiscordMessages(signupLanguage)
+    const messages = getEventMessages(signupLanguage)
     const actions = buildEventSignupActions(event, groups, messages.buttons)
 
     async function handleSignup(actionId: string) {

@@ -30,12 +30,12 @@ import {
     getPlatformProfileUrl,
     stripPlatformPrefix,
 } from "../../src/lib/platform-ids"
-import {
-    getClanDiscordMessages,
-    type ClanLanguage,
-} from "../../src/lib/clan-language"
 import { skipsPendingOnApply } from "../../src/domain/membership/membership-options"
+import { getMembershipMessages } from "../../src/lib/clan-language/membership"
 import { withGameOverrides, type GameId } from "../../src/domain/games/game"
+import { getCommandMessages } from "../../src/lib/clan-language/commands"
+import { getEventMessages } from "../../src/lib/clan-language/events"
+import type { ClanLanguage } from "../../src/lib/clan-language/core"
 
 import {
     buildMockPlayerMessage,
@@ -344,7 +344,7 @@ function buildPlatformFieldValue(platformIds: string[]) {
 
 function buildRecentMatchesValue(
     profile: ClanPlayerProfile,
-    messages = getClanDiscordMessages("en")
+    messages = getCommandMessages("en")
 ) {
     if (!profile.recentMatches.length) {
         return messages.playerStats.noMatchHistory
@@ -443,7 +443,7 @@ function buildClanPlayerProfileEmbed(profile: ClanPlayerProfile) {
 
 function buildClanPlayerProfileV2(
     profile: ClanPlayerProfile,
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getCommandMessages>
 ) {
     const container = new ContainerBuilder().setAccentColor(0x5865f2)
     container.addTextDisplayComponents(
@@ -479,7 +479,7 @@ function buildClanPlayerProfileV2(
 }
 
 function buildTicketCloseEmbed(input: {
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getMembershipMessages>
     ticketNumber: number
     closerId: string
     closedAt: Date
@@ -511,7 +511,7 @@ function buildTicketCloseEmbed(input: {
 }
 
 export function buildMembershipApplicationCloseEmbed(input: {
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getMembershipMessages>
     applicationNumber: number
     closerId: string
     closedAt: Date
@@ -607,7 +607,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     "attendance-late:",
                     ""
                 )
-                const messages = getClanDiscordMessages(
+                const messages = getEventMessages(
                     await resolveEventButtonLanguage(
                         interaction.guildId,
                         eventId
@@ -746,7 +746,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async registerGuildCommands(guild: import("discord.js").Guild) {
-            const messages = getClanDiscordMessages(
+            const messages = getCommandMessages(
                 guild.preferredLocale === "cs"
                     ? "cs"
                     : guild.preferredLocale === "de"
@@ -760,9 +760,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setName("close_ticket")
                     .setDescription(messages.commands.closeTicketDescription)
                     .setDescriptionLocalizations({
-                        cs: getClanDiscordMessages("cs").commands
+                        cs: getCommandMessages("cs").commands
                             .closeTicketDescription,
-                        de: getClanDiscordMessages("de").commands
+                        de: getCommandMessages("de").commands
                             .closeTicketDescription,
                     })
                     .addStringOption((option) =>
@@ -772,9 +772,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                 messages.commands.reasonOptionDescription
                             )
                             .setDescriptionLocalizations({
-                                cs: getClanDiscordMessages("cs").commands
+                                cs: getCommandMessages("cs").commands
                                     .reasonOptionDescription,
-                                de: getClanDiscordMessages("de").commands
+                                de: getCommandMessages("de").commands
                                     .reasonOptionDescription,
                             })
                             .setMaxLength(500)
@@ -787,9 +787,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                         messages.commands.closeApplicationDescription
                     )
                     .setDescriptionLocalizations({
-                        cs: getClanDiscordMessages("cs").commands
+                        cs: getCommandMessages("cs").commands
                             .closeApplicationDescription,
-                        de: getClanDiscordMessages("de").commands
+                        de: getCommandMessages("de").commands
                             .closeApplicationDescription,
                     })
                     .addStringOption((option) =>
@@ -799,66 +799,66 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                 messages.commands.outcomeOptionDescription
                             )
                             .setDescriptionLocalizations({
-                                cs: getClanDiscordMessages("cs").commands
+                                cs: getCommandMessages("cs").commands
                                     .outcomeOptionDescription,
-                                de: getClanDiscordMessages("de").commands
+                                de: getCommandMessages("de").commands
                                     .outcomeOptionDescription,
                             })
                             .setRequired(true)
                             .addChoices(
                                 {
-                                    name: getClanDiscordMessages("en").commands
+                                    name: getCommandMessages("en").commands
                                         .outcomeDenied,
                                     value: "denied",
                                     name_localizations: {
-                                        cs: getClanDiscordMessages("cs")
-                                            .commands.outcomeDenied,
-                                        de: getClanDiscordMessages("de")
-                                            .commands.outcomeDenied,
+                                        cs: getCommandMessages("cs").commands
+                                            .outcomeDenied,
+                                        de: getCommandMessages("de").commands
+                                            .outcomeDenied,
                                     },
                                 },
                                 {
-                                    name: getClanDiscordMessages("en").commands
+                                    name: getCommandMessages("en").commands
                                         .outcomePending,
                                     value: "pending",
                                     name_localizations: {
-                                        cs: getClanDiscordMessages("cs")
-                                            .commands.outcomePending,
-                                        de: getClanDiscordMessages("de")
-                                            .commands.outcomePending,
+                                        cs: getCommandMessages("cs").commands
+                                            .outcomePending,
+                                        de: getCommandMessages("de").commands
+                                            .outcomePending,
                                     },
                                 },
                                 {
-                                    name: getClanDiscordMessages("en").commands
+                                    name: getCommandMessages("en").commands
                                         .outcomeRecruit,
                                     value: "recruit",
                                     name_localizations: {
-                                        cs: getClanDiscordMessages("cs")
-                                            .commands.outcomeRecruit,
-                                        de: getClanDiscordMessages("de")
-                                            .commands.outcomeRecruit,
+                                        cs: getCommandMessages("cs").commands
+                                            .outcomeRecruit,
+                                        de: getCommandMessages("de").commands
+                                            .outcomeRecruit,
                                     },
                                 },
                                 {
-                                    name: getClanDiscordMessages("en").commands
+                                    name: getCommandMessages("en").commands
                                         .outcomeMember,
                                     value: "member",
                                     name_localizations: {
-                                        cs: getClanDiscordMessages("cs")
-                                            .commands.outcomeMember,
-                                        de: getClanDiscordMessages("de")
-                                            .commands.outcomeMember,
+                                        cs: getCommandMessages("cs").commands
+                                            .outcomeMember,
+                                        de: getCommandMessages("de").commands
+                                            .outcomeMember,
                                     },
                                 },
                                 {
-                                    name: getClanDiscordMessages("en").commands
+                                    name: getCommandMessages("en").commands
                                         .outcomeMercenary,
                                     value: "mercenary",
                                     name_localizations: {
-                                        cs: getClanDiscordMessages("cs")
-                                            .commands.outcomeMercenary,
-                                        de: getClanDiscordMessages("de")
-                                            .commands.outcomeMercenary,
+                                        cs: getCommandMessages("cs").commands
+                                            .outcomeMercenary,
+                                        de: getCommandMessages("de").commands
+                                            .outcomeMercenary,
                                     },
                                 }
                             )
@@ -870,9 +870,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                 messages.commands.reasonOptionDescription
                             )
                             .setDescriptionLocalizations({
-                                cs: getClanDiscordMessages("cs").commands
+                                cs: getCommandMessages("cs").commands
                                     .reasonOptionDescription,
-                                de: getClanDiscordMessages("de").commands
+                                de: getCommandMessages("de").commands
                                     .reasonOptionDescription,
                             })
                             .setMaxLength(500)
@@ -883,10 +883,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setName("notice")
                     .setDescription(messages.commands.noticeDescription)
                     .setDescriptionLocalizations({
-                        cs: getClanDiscordMessages("cs").commands
-                            .noticeDescription,
-                        de: getClanDiscordMessages("de").commands
-                            .noticeDescription,
+                        cs: getCommandMessages("cs").commands.noticeDescription,
+                        de: getCommandMessages("de").commands.noticeDescription,
                     })
                     .addStringOption((option) =>
                         option
@@ -895,9 +893,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                 messages.commands.noticeEventOptionDescription
                             )
                             .setDescriptionLocalizations({
-                                cs: getClanDiscordMessages("cs").commands
+                                cs: getCommandMessages("cs").commands
                                     .noticeEventOptionDescription,
-                                de: getClanDiscordMessages("de").commands
+                                de: getCommandMessages("de").commands
                                     .noticeEventOptionDescription,
                             })
                             .setRequired(true)
@@ -908,20 +906,16 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     .setName("link")
                     .setDescription(messages.commands.linkDescription)
                     .setDescriptionLocalizations({
-                        cs: getClanDiscordMessages("cs").commands
-                            .linkDescription,
-                        de: getClanDiscordMessages("de").commands
-                            .linkDescription,
+                        cs: getCommandMessages("cs").commands.linkDescription,
+                        de: getCommandMessages("de").commands.linkDescription,
                     })
                     .setDMPermission(false),
                 new SlashCommandBuilder()
                     .setName("player")
                     .setDescription(messages.commands.playerDescription)
                     .setDescriptionLocalizations({
-                        cs: getClanDiscordMessages("cs").commands
-                            .playerDescription,
-                        de: getClanDiscordMessages("de").commands
-                            .playerDescription,
+                        cs: getCommandMessages("cs").commands.playerDescription,
+                        de: getCommandMessages("de").commands.playerDescription,
                     })
                     .addStringOption((option) =>
                         option
@@ -930,9 +924,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                                 messages.commands.playerOptionDescription
                             )
                             .setDescriptionLocalizations({
-                                cs: getClanDiscordMessages("cs").commands
+                                cs: getCommandMessages("cs").commands
                                     .playerOptionDescription,
-                                de: getClanDiscordMessages("de").commands
+                                de: getCommandMessages("de").commands
                                     .playerOptionDescription,
                             })
                             .setRequired(true)
@@ -950,7 +944,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleTicketButtonInteraction(
         interaction: ButtonInteraction
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId || !interaction.guild) {
             await interaction.reply({
                 content: fallbackMessages.ticket.serverOnly,
@@ -964,7 +958,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.guildId,
             categoryId
         )
-        const messages = getClanDiscordMessages(context?.config.defaultLanguage)
+        const messages = getMembershipMessages(context?.config.defaultLanguage)
         if (!context?.config.ticketSettings?.enabled) {
             await interaction.reply({
                 content: messages.ticket.unavailable,
@@ -1019,7 +1013,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleNoticeCommand(
         interaction: ChatInputCommandInteraction
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId) {
             await interaction.reply({
                 content: fallbackMessages.membership.serverOnly,
@@ -1039,7 +1033,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .catch(() => null)) as {
             defaultLanguage?: "en" | "cs" | "de"
         } | null
-        const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
+        const messages = getCommandMessages(guildConfig?.defaultLanguage)
 
         const matches = (await convex.query(references.findNoticeTarget, {
             secret: env.internalSecret,
@@ -1144,7 +1138,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     ) {
         if (!interaction.guildId) {
             await interaction.reply({
-                content: getClanDiscordMessages("en").commands.playerServerOnly,
+                content: getCommandMessages("en").commands.playerServerOnly,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -1159,7 +1153,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             .catch(() => null)) as {
             defaultLanguage?: "en" | "cs" | "de"
         } | null
-        const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
+        const messages = getCommandMessages(guildConfig?.defaultLanguage)
 
         const playerId = interaction.options.getString("player", true).trim()
         const profile = (await convex
@@ -1316,8 +1310,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (!guildId) {
             await interaction.editReply({
                 content:
-                    getClanDiscordMessages("en").interaction
-                        .unableToLoadEventContext,
+                    getEventMessages("en").interaction.unableToLoadEventContext,
             })
             return
         }
@@ -1331,7 +1324,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                   .catch(() => null)) as {
                   defaultLanguage?: "en" | "cs" | "de"
               } | null)
-        const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
+        const messages = getCommandMessages(guildConfig?.defaultLanguage)
 
         await convex.mutation(references.upsertNotice, {
             secret: env.internalSecret,
@@ -1352,7 +1345,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     }
 
     async function handleLinkCommand(interaction: ChatInputCommandInteraction) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId) {
             await interaction.reply({
                 content: fallbackMessages.membership.serverOnly,
@@ -1393,7 +1386,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleTicketModalSubmit(
         interaction: ModalSubmitInteraction
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId) {
             await interaction.reply({
                 content: fallbackMessages.ticket.serverOnly,
@@ -1407,7 +1400,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.guildId,
             categoryId
         )
-        const messages = getClanDiscordMessages(context?.config.defaultLanguage)
+        const messages = getMembershipMessages(context?.config.defaultLanguage)
         if (!context?.config.ticketSettings?.enabled) {
             await interaction.reply({
                 content: messages.ticket.unavailable,
@@ -1500,7 +1493,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const container = new ContainerBuilder().setAccentColor(0x5865f2)
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-                `# ${getClanDiscordMessages(language).membership.modalTitle}`
+                `# ${getMembershipMessages(language).membership.modalTitle}`
             )
         )
         container.addSeparatorComponents(new SeparatorBuilder())
@@ -1656,13 +1649,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             references.getConfigByDiscordGuildId,
             { secret: env.internalSecret, guildId: interaction.guildId }
         )) as EventInteractionContext["config"] | null
-        const language = getClanDiscordMessages(
+        const language = getEventMessages(
             config?.defaultLanguage
         ).locale.startsWith("cs")
             ? "cs"
-            : getClanDiscordMessages(config?.defaultLanguage).locale.startsWith(
-                    "de"
-                )
+            : getEventMessages(config?.defaultLanguage).locale.startsWith("de")
               ? "de"
               : "en"
 
@@ -1694,7 +1685,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             if (!context) {
                 await interaction.reply({
                     content:
-                        getClanDiscordMessages(language).membership.unavailable,
+                        getMembershipMessages(language).membership.unavailable,
                     flags: MessageFlags.Ephemeral,
                 })
                 return
@@ -1809,7 +1800,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 buildMembershipQuestionsModal(
                     `membership-flow-modal:${draftId}`,
                     context.category,
-                    getClanDiscordMessages(language).membership.modalTitle,
+                    getMembershipMessages(language).membership.modalTitle,
                     5
                 )
             )
@@ -1831,7 +1822,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             ) {
                 await interaction.reply({
                     content:
-                        getClanDiscordMessages(language).membership.unavailable,
+                        getMembershipMessages(language).membership.unavailable,
                     flags: MessageFlags.Ephemeral,
                 })
                 return
@@ -1915,7 +1906,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     ),
                     platform,
                     language,
-                    getClanDiscordMessages(language).membership.modalTitle
+                    getMembershipMessages(language).membership.modalTitle
                 )
             )
             return
@@ -1997,11 +1988,11 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.user.id,
             updatedDraft.gameId
         )
-        const language = getClanDiscordMessages(
+        const language = getEventMessages(
             context.config.defaultLanguage
         ).locale.startsWith("cs")
             ? "cs"
-            : getClanDiscordMessages(
+            : getEventMessages(
                     context.config.defaultLanguage
                 ).locale.startsWith("de")
               ? "de"
@@ -2019,7 +2010,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleMembershipButtonInteraction(
         interaction: ButtonInteraction
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId || !interaction.guild) {
             await interaction.reply({
                 content: fallbackMessages.membership.serverOnly,
@@ -2099,7 +2090,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (prereq.assignment) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages(membershipLanguage).membership
+                    getMembershipMessages(membershipLanguage).membership
                         .alreadyInClan,
                 flags: MessageFlags.Ephemeral,
             })
@@ -2108,7 +2099,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (prereq.hasOpenApplication) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages(membershipLanguage).membership
+                    getMembershipMessages(membershipLanguage).membership
                         .openApplicationExists,
                 flags: MessageFlags.Ephemeral,
             })
@@ -2122,7 +2113,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             const reuseMessage = new ContainerBuilder().setAccentColor(0x5865f2)
             reuseMessage.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
-                    `# ${getClanDiscordMessages(membershipLanguage).membership.modalTitle}\n${reuseCopy.prompt}`
+                    `# ${getMembershipMessages(membershipLanguage).membership.modalTitle}\n${reuseCopy.prompt}`
                 )
             )
             reuseMessage.addActionRowComponents(
@@ -2200,7 +2191,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             interaction.user.id,
             gameId
         )
-        const messages = getClanDiscordMessages(prereq?.config.defaultLanguage)
+        const messages = getMembershipMessages(prereq?.config.defaultLanguage)
         if (!prereq?.config.membershipSettings?.enabled || prereq.assignment) {
             await interaction.update({
                 content: prereq?.assignment
@@ -2318,7 +2309,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             ) {
                 await interaction.reply({
                     content:
-                        getClanDiscordMessages(language).platformFlow
+                        getMembershipMessages(language).platformFlow
                             ?.invalidPlatformId ?? "Invalid platform.",
                     flags: MessageFlags.Ephemeral,
                 })
@@ -2331,7 +2322,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     context.categoryId,
                     context.gameId
                 )
-                const messages = getClanDiscordMessages(
+                const messages = getMembershipMessages(
                     categoryContext?.config.defaultLanguage ?? language
                 )
                 if (!categoryContext?.config.membershipSettings?.enabled) {
@@ -2420,7 +2411,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             ) {
                 await interaction.reply({
                     content:
-                        getClanDiscordMessages(language).platformFlow
+                        getMembershipMessages(language).platformFlow
                             ?.invalidPlatformId ?? "Invalid platform.",
                     flags: MessageFlags.Ephemeral,
                 })
@@ -2463,7 +2454,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     interaction.user.id,
                     context.gameId
                 )
-                const messages = getClanDiscordMessages(
+                const messages = getMembershipMessages(
                     prereq?.config.defaultLanguage ?? language
                 )
                 if (!prereq?.config.membershipSettings?.enabled) {
@@ -2539,7 +2530,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleMembershipModalSubmit(
         interaction: ModalSubmitInteraction
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId) {
             await interaction.reply({
                 content: fallbackMessages.membership.serverOnly,
@@ -2558,7 +2549,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             categoryId,
             gameId
         )
-        const messages = getClanDiscordMessages(context?.config.defaultLanguage)
+        const messages = getMembershipMessages(context?.config.defaultLanguage)
         if (!context?.config.membershipSettings?.enabled) {
             await interaction.reply({
                 content: messages.membership.unavailable,
@@ -2598,7 +2589,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const platformId = interaction.fields
             .getTextInputValue("platformId")
             .trim()
-        const messages = getClanDiscordMessages(language)
+        const messages = getMembershipMessages(language)
         if (!platformId || /\s/.test(platformId)) {
             await interaction.reply({
                 content:
@@ -2632,8 +2623,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             )
             if (!prereq) {
                 await interaction.reply({
-                    content:
-                        getClanDiscordMessages("en").membership.unavailable,
+                    content: getMembershipMessages("en").membership.unavailable,
                     flags: MessageFlags.Ephemeral,
                 })
                 return
@@ -2740,7 +2730,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         const platformId = interaction.fields
             .getTextInputValue("platformId")
             .trim()
-        const messages = getClanDiscordMessages(language)
+        const messages = getMembershipMessages(language)
         if (!platformId || /\s/.test(platformId)) {
             await interaction.reply({
                 content:
@@ -2797,7 +2787,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             parsed.categoryId,
             parsed.gameId
         )
-        const messages = getClanDiscordMessages(language)
+        const messages = getMembershipMessages(language)
         if (!context) {
             await interaction.reply({
                 content: messages.membership.unavailable,
@@ -2995,7 +2985,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         prereq: MembershipPrereq,
         gameId?: GameId
     ) {
-        const messages = getClanDiscordMessages(prereq.config.defaultLanguage)
+        const messages = getMembershipMessages(prereq.config.defaultLanguage)
         if (prereq.category.modalQuestions.length) {
             await interaction.showModal(
                 buildMembershipQuestionsModal(
@@ -3082,8 +3072,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         title?: string
     ) {
         const messages =
-            getClanDiscordMessages(language).platformFlow ??
-            getClanDiscordMessages("en").platformFlow!
+            getMembershipMessages(language).platformFlow ??
+            getMembershipMessages("en").platformFlow!
         const label = messages.guides[platform].label
 
         return new ModalBuilder()
@@ -3185,7 +3175,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         category: TicketCategory,
         answers: TicketAnswer[]
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId || !interaction.guild) {
             await interaction.reply({
                 content: fallbackMessages.ticket.serverOnly,
@@ -3203,7 +3193,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             category.id
         )
         const ticketSettings = categoryContext?.config.ticketSettings
-        const messages = getClanDiscordMessages(
+        const messages = getMembershipMessages(
             categoryContext?.config.defaultLanguage
         )
         if (!categoryContext || !ticketSettings?.ticketParentChannelId) {
@@ -3468,7 +3458,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         answers: MembershipAnswer[],
         gameId?: GameId
     ) {
-        const fallbackMessages = getClanDiscordMessages("en")
+        const fallbackMessages = getMembershipMessages("en")
         if (!interaction.guildId || !interaction.guild) {
             await interaction.reply({
                 content: fallbackMessages.membership.serverOnly,
@@ -3487,7 +3477,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             gameId
         )
         const membershipSettings = categoryContext?.config.membershipSettings
-        const messages = getClanDiscordMessages(
+        const messages = getMembershipMessages(
             categoryContext?.config.defaultLanguage
         )
         if (
@@ -3870,7 +3860,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         ) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages("en").ticket.closeCommandThreadOnly,
+                    getMembershipMessages("en").ticket.closeCommandThreadOnly,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -3888,7 +3878,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             ticket: TicketThreadRecord
             category: TicketCategory | null
         } | null
-        const messages = getClanDiscordMessages(context?.config.defaultLanguage)
+        const messages = getMembershipMessages(context?.config.defaultLanguage)
 
         if (!context) {
             await interaction.editReply({ content: messages.ticket.notTracked })
@@ -4012,7 +4002,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         ) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages("en").membership
+                    getMembershipMessages("en").membership
                         .closeCommandThreadOnly,
                 flags: MessageFlags.Ephemeral,
             })
@@ -4023,7 +4013,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         if (!guild) {
             await interaction.reply({
                 content:
-                    getClanDiscordMessages("en").membership.guildUnavailable,
+                    getMembershipMessages("en").membership.guildUnavailable,
                 flags: MessageFlags.Ephemeral,
             })
             return
@@ -4048,7 +4038,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             } | null
             category: MembershipCategory | null
         } | null
-        const messages = getClanDiscordMessages(context?.config.defaultLanguage)
+        const messages = getMembershipMessages(context?.config.defaultLanguage)
 
         if (!context) {
             await interaction.editReply({

@@ -8,9 +8,9 @@ import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { summarizeRosterUpdates } from "@/lib/roster-update-summary"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { getUsersByIds } from "@/lib/server-user-management"
-import { getClanDiscordMessages } from "@/lib/clan-language"
 import { sendDiscordBotDm } from "@/lib/discord"
 import { getDiscordBotToken } from "@/lib/env"
 import type { Roster } from "@/types/domain"
@@ -86,7 +86,7 @@ async function postDiscordChannelMessage(
 
 function formatAnnouncementMessage(input: {
     eventName: string
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getEventMessages>
     summary: ReturnType<typeof summarizeRosterUpdates>
     rosterUrl?: string
 }) {
@@ -127,7 +127,7 @@ function formatAnnouncementMessage(input: {
 function formatDmMessage(input: {
     eventName: string
     playerName: string
-    messages: ReturnType<typeof getClanDiscordMessages>
+    messages: ReturnType<typeof getEventMessages>
     userId: string
     summary: ReturnType<typeof summarizeRosterUpdates>
     rosterUrl?: string
@@ -200,7 +200,7 @@ async function notifyRosterUpdate(input: {
         return { ok: true, hasChanges: false, dmSentUserIds: [] }
     }
 
-    const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
+    const messages = getEventMessages(discordConfig?.defaultLanguage)
     const channelIds = resolveRosterUpdateChannelIds({
         eventAnnouncementChannelId: event.announcementChannelId,
         eventInfoChannelId: event.eventInfoChannelId,

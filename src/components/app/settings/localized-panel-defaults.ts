@@ -1,4 +1,4 @@
-import type { ClanLanguage } from "@/lib/clan-language"
+import type { ClanLanguage } from "@/lib/clan-language/core"
 import { getDictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
 

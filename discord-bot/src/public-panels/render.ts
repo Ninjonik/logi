@@ -30,7 +30,7 @@ import { factionEmblem } from "../../../src/domain/discord-messages/faction-embl
 import type { WarconRead } from "../../../src/domain/game-data/warcon-contracts"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import { playerLeaders } from "../../../src/domain/game-data/player-leaders"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import { hllMapArtwork } from "../../../src/domain/game-data/hll-live"
 import { isGameId } from "../../../src/domain/games/game"
 import { panelCopy, type PanelCopy } from "./copy"
@@ -336,7 +336,7 @@ export function renderResult(
     language?: string
 ): MessageCreateOptions {
     const copy = panelCopy(language)
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     const result = event.result
     const card = event.card ?? null
     const look = resolvePanelPresentation(panel)

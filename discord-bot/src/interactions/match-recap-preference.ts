@@ -5,7 +5,7 @@ import {
     MessageFlags,
     type ButtonInteraction,
 } from "discord.js"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 
@@ -13,7 +13,7 @@ export function buildMatchRecapPreferenceUpdate(
     enabled: boolean,
     language: string
 ) {
-    const messages = getClanDiscordMessages(language).matchRecap
+    const messages = getEventMessages(language).matchRecap
     return {
         content: enabled ? messages.subscribed : messages.unsubscribed,
         components: [
@@ -42,7 +42,7 @@ export async function handleMatchRecapPreference(
               : null
     if (enabled === null) {
         await interaction.reply({
-            content: getClanDiscordMessages(interaction.locale).matchRecap
+            content: getEventMessages(interaction.locale).matchRecap
                 .invalidAction,
             flags: MessageFlags.Ephemeral,
         })

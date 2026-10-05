@@ -4,8 +4,8 @@ import {
     MESSAGE_ICON_DENSITIES,
     normalizeAccentColor,
 } from "@/domain/discord-messages/message-style"
+import { supportedClanLanguages } from "@/lib/clan-language/core"
 import { supportedTimezones } from "@/lib/discord-timezones"
-import { supportedClanLanguages } from "@/lib/clan-language"
 
 const discordIdField = z
     .string()

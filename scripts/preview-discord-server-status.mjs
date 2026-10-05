@@ -4,7 +4,7 @@ import {
     projectHealth,
 } from "../src/domain/game-data/policy.ts"
 import { buildServerStatusReply } from "../discord-bot/src/interactions/server-status.ts"
-import { getClanDiscordMessages } from "../src/lib/clan-language.ts"
+import { getCommandMessages } from "../src/lib/clan-language/commands.ts"
 import { createServer } from "node:http"
 
 const now = Date.parse("2026-09-29T12:00:00Z")
@@ -95,7 +95,7 @@ function markdown(value, locale) {
 }
 function render(locale) {
     const settings = { sources: [], connections: [wdg, hll, disabled] }
-    const copy = getClanDiscordMessages(locale).serverStatus
+    const copy = getCommandMessages(locale).serverStatus
     function card(label, game, data) {
         const embed = buildServerStatusReply(
             locale,

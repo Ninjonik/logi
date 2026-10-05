@@ -21,7 +21,7 @@ import {
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { EventSignupActions } from "@/components/app/event-signup-actions"
 import type { CalendarDisplayEntry } from "@/lib/calendar-entries"
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { getSignupDisplayLabel } from "@/lib/event-signup"
 import { EmojiValue } from "@/components/app/emoji-value"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -62,7 +62,7 @@ export function CalendarEntryDialog({
                   (signup) => signup.userId === currentUserId
               )
             : undefined
-    const signupMessages = getClanDiscordMessages(signupLanguage)
+    const signupMessages = getEventMessages(signupLanguage)
     const detailPath =
         entry.kind === "event"
             ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`

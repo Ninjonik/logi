@@ -1,11 +1,11 @@
 import type { ClanLanguage, EventRecord } from "../../../discord-bot/src/types"
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getEventMessages } from "@/lib/clan-language/events"
 
 export function buildScheduledEventDescription(
     event: EventRecord,
     language: ClanLanguage
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     const lines = [
         event.description?.trim(),
         event.notes?.trim(),

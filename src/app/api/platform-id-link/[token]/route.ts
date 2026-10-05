@@ -6,7 +6,7 @@ import {
     editDiscordInteractionOriginalResponse,
     sendDiscordBotDm,
 } from "@/lib/discord"
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getMembershipMessages } from "@/lib/clan-language/membership"
 import { parsePlatformIdsInput } from "@/lib/platform-ids"
 import { getInternalAuthSecret } from "@/lib/env"
 
@@ -78,7 +78,7 @@ export async function POST(
             interactionApplicationId?: string
         }
 
-        const messages = getClanDiscordMessages(result.language)
+        const messages = getMembershipMessages(result.language)
         const applicationMessageUrl = result.applyMessageUrl
 
         if (result.completionMode === "membership" && applicationMessageUrl) {

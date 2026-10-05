@@ -6,10 +6,8 @@ import {
 } from "discord.js"
 import type { Client } from "discord.js"
 
-import {
-    getClanDiscordMessages,
-    type ClanLanguage,
-} from "../../../src/lib/clan-language"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
+import { type ClanLanguage } from "../../../src/lib/clan-language/core"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 
@@ -37,7 +35,7 @@ function replaceValues(template: string, values: Record<string, string>) {
 }
 
 export function buildMatchRecapCopy(language: ClanLanguage, recap: MatchRecap) {
-    const messages = getClanDiscordMessages(language).matchRecap
+    const messages = getEventMessages(language).matchRecap
     const comparison = recap.previousTen?.matches
         ? replaceValues(messages.comparisonWithPrevious, {
               matches: String(recap.previousTen.matches),

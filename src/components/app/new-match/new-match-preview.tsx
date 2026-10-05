@@ -13,7 +13,7 @@ import {
 } from "@/domain/discord-publications/panel-presentation"
 import { resolveMessageAccentColor } from "@/domain/discord-messages/format"
 import type { NewMatchStep } from "@/domain/events/new-match-flow"
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { getEventMessages } from "@/lib/clan-language/events"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { cn } from "@/lib/utils"
 
@@ -128,7 +128,7 @@ export function NewMatchPreview({
 }) {
     const isBrowser = useIsBrowser()
     const text = dictionary.newMatch.preview
-    const messages = getClanDiscordMessages(model.language)
+    const messages = getEventMessages(model.language)
     const intl = messages.locale
     const valid = (iso: string | null): iso is string =>
         Boolean(iso && Number.isFinite(Date.parse(iso)))

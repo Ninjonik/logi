@@ -10,7 +10,7 @@ import {
     dataGameSchema,
     gameDataSettingsSchema,
 } from "../../../src/domain/game-data/contracts"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { getCommandMessages } from "../../../src/lib/clan-language/commands"
 import { convex, references } from "../convex"
 import { withTimeout } from "../utils"
 import { env } from "../environment"
@@ -37,13 +37,13 @@ function displayText(value: string) {
 }
 
 export function buildServerStatusCommand() {
-    const messages = getClanDiscordMessages("en").serverStatus
+    const messages = getCommandMessages("en").serverStatus
     return new SlashCommandBuilder()
         .setName("server-status")
         .setDescription(messages.description)
         .setDescriptionLocalizations({
-            cs: getClanDiscordMessages("cs").serverStatus.description,
-            de: getClanDiscordMessages("de").serverStatus.description,
+            cs: getCommandMessages("cs").serverStatus.description,
+            de: getCommandMessages("de").serverStatus.description,
         })
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .setDMPermission(false)
@@ -52,8 +52,8 @@ export function buildServerStatusCommand() {
                 .setName("game")
                 .setDescription(messages.gameOption)
                 .setDescriptionLocalizations({
-                    cs: getClanDiscordMessages("cs").serverStatus.gameOption,
-                    de: getClanDiscordMessages("de").serverStatus.gameOption,
+                    cs: getCommandMessages("cs").serverStatus.gameOption,
+                    de: getCommandMessages("de").serverStatus.gameOption,
                 })
                 .setRequired(true)
                 .addChoices(
@@ -69,7 +69,7 @@ export function buildServerStatusReply(
     game: Game,
     settings: Settings
 ) {
-    const messages = getClanDiscordMessages(language).serverStatus
+    const messages = getCommandMessages(language).serverStatus
     const connections = settings.connections.filter(
         ({ snapshot }) =>
             snapshot.guildId === guildId && snapshot.gameId === game
@@ -110,7 +110,7 @@ export function buildServerStatusReply(
 export async function handleServerStatusCommand(
     interaction: ChatInputCommandInteraction
 ) {
-    const messages = getClanDiscordMessages(interaction.locale).serverStatus
+    const messages = getCommandMessages(interaction.locale).serverStatus
     if (
         !interaction.guildId ||
         !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
