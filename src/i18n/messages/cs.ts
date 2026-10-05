@@ -3185,6 +3185,30 @@ export const csMessages = {
             result: "Výsledek",
         },
         openInDiscord: "Zobrazit v Discordu",
+        tabSignups: "Přihlášky",
+        moreActions: "Další akce",
+        backLabel: "Zpět na zápasy",
+        stepOf: "Krok {current} z {total} · {label}",
+        actions: {
+            edit: "Upravit zápas",
+            openRoster: "Otevřít stránku soupisky",
+            signupHistory: "Historie přihlášek",
+        },
+        reminders: {
+            remind: "Připomenout",
+            sending: "Posílám…",
+            queued: "Připomínka jde {count} hráčům do DM.",
+            nobody: "Není komu připomínat.",
+            rateLimited: "Připomínku jde znovu poslat v {time}.",
+            unavailable: {
+                concluded: "Zápas je uzavřený.",
+                draft: "Koncept se hráčům neposílá.",
+                signups_closed: "Přihlášky jsou uzavřené.",
+                no_roster: "Soupiska zatím není.",
+                roster_unpublished: "Soupiska není zveřejněná.",
+                meeting_started: "Sraz už začal.",
+            },
+        },
         scheduleLine: "{date} · sraz {meeting} · start {start}",
         playedLine: "Odehráno {date} ve {time}",
         phases: {
@@ -3203,6 +3227,7 @@ export const csMessages = {
             createdAt: "vytvořeno {date}",
             opensAt: "otevře se {date}",
             closesAt: "do {date}",
+            closedAt: "uzavřeno {date}",
             signedUp: "{count} přihlášeno",
             rosterMissing: "zatím není",
             rosterDraft: "zveřejněte do srazu",
@@ -3234,6 +3259,15 @@ export const csMessages = {
             pickPlayer: "Vybrat hráče",
             reservesCount: "{count} · přihlášení bez místa",
             notAttendingCount: "{count}",
+            noResponse: "Bez odpovědi: {count} členů",
+            dropHere: "Pustit sem: {name}",
+            removeFromSlot: "Odebrat {name} ze slotu",
+            occupied: "{assigned}/{total} obsazeno",
+            moreActions: "Další akce soupisky",
+            playerActions: "Akce pro {name}",
+            autoFill: "Automaticky doplnit",
+            save: "Uložit",
+            meetingTime: "Čas srazu",
         },
         attendance: {
             summaryLabel: "Shrnutí docházky",
@@ -3281,12 +3315,12 @@ export const csMessages = {
                 acknowledged: "Potvrdil účast",
                 pending: "Nepotvrdil",
                 reserve: "Záloha",
-                notice: "Omluvenka: „{reason}“",
+                notice: "Zpoždění: „{reason}“",
                 declined: "Odmítl",
                 noResponse: "Neodpověděl",
             },
             excusedHelp:
-                "Omluven může být jen hráč, který poslal omluvenku přes Discord.",
+                "Hráč poslal přes Discord zpoždění, proto zůstává aspoň omluvený.",
             unsavedChanges: "Neuložené změny: {count}",
             save: "Uložit docházku",
             saved: "Docházka uložena.",
@@ -3299,6 +3333,9 @@ export const csMessages = {
             noRosterDescription:
                 "Docházka se zapisuje do soupisky. Nejdřív soupisku vytvořte.",
             empty: "V tomto seznamu nikdo není.",
+            lastLoaded: "Naposledy ve {time}: {count} hráčů v kanálu {channel}",
+            fromVoice: "z hlasového kanálu",
+            noResponseHint: "{count} hráčů zatím na přihlášku neodpovědělo.",
         },
         close: {
             title: "Uzavřít zápas a připsat body?",
@@ -3392,6 +3429,27 @@ export const csMessages = {
             notYetTitle: "Výsledek zatím není",
             notYetDescription:
                 "Výsledek se tu zkontroluje, až se zápas odehraje.",
+            outcome: {
+                win: "Výhra",
+                loss: "Prohra",
+                draw: "Remíza",
+            },
+            afterConfirm: "Po potvrzení",
+            effectResultsChannel: "Výsledek se objeví v #{channel}.",
+            effectNoResultsChannel:
+                "Panel výsledků v Discordu není nastavený, výsledek zůstane v Logi a v API klanu.",
+            effectRecaps:
+                "Hráči dostanou osobní shrnutí do DM. Dnes chodí už při importu.",
+            showPlayers: "Zobrazit hráče",
+            effectCompetition:
+                "U ligového zápasu se zapíše i do tabulky soutěže.",
+            correctionNoteUpdates:
+                "Potvrzený výsledek jde opravit jen s důvodem. Oprava se zapíše sem a upraví {targets}.",
+            correctionTargets: {
+                discord: "zprávu v Discordu",
+                competition: "tabulku soutěže",
+                and: " i ",
+            },
         },
         stats: {
             killTypes: {

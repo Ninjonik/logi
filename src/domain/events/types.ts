@@ -30,6 +30,8 @@ export type EventNotice = {
     userId: string
     reason: string
     createdAt: string
+    /** The clan admin who excused the player; absent for late notices. */
+    excusedBy?: string
 }
 
 export type EventResult = {

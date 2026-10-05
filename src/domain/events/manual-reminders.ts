@@ -72,13 +72,110 @@ function rosterUserIds(roster: ManualReminderRoster | null) {
     return ids
 }
 
+function unansweredUserIds(
+    event: ManualReminderEvent,
+    roster: ManualReminderRoster | null,
+    assignments: readonly ManualReminderAssignment[]
+) {
+    const answered = new Set([
+        ...event.participants.map((participant) => participant.userId),
+        ...rosterUserIds(roster),
+    ])
+    const allowed = new Set<SignupMembershipStatus>(
+        event.allowedSignupStatuses?.length
+            ? event.allowedSignupStatuses
+            : DEFAULT_ALLOWED_SIGNUP_STATUSES
+    )
+    const userIds = new Set<string>()
+    for (const assignment of assignments) {
+        if (assignment.paused || answered.has(assignment.userId)) continue
+        if (!matchesGameScope(assignment.gameId, event.gameId)) continue
+        const status = getResolvedMemberStatus(
+            assignment.type,
+            assignment.status
+        )
+        if (status === "pending" || !allowed.has(status)) continue
+        userIds.add(assignment.userId)
+    }
+    return [...userIds]
+}
+
+function unconfirmedUserIds(roster: ManualReminderRoster | null) {
+    const userIds = new Set<string>()
+    for (const squad of roster?.squads ?? []) {
+        for (const player of squad.players) {
+            if (player.id && !player.ack) userIds.add(player.id)
+        }
+    }
+    const acknowledgedReserves = new Set(
+        (roster?.reserveAttendances ?? [])
+            .filter((attendance) => attendance.ack)
+            .map((attendance) => attendance.userId)
+    )
+    for (const userId of roster?.reservePlayerIds ?? []) {
+        if (!acknowledgedReserves.has(userId)) userIds.add(userId)
+    }
+    return [...userIds]
+}
+
+function unavailableReason(input: {
+    audience: ManualReminderAudience
+    event: ManualReminderEvent
+    roster: ManualReminderRoster | null
+    now: Date
+}): ManualReminderUnavailable | null {
+    const { event } = input
+    if (event.status === "concluded") return "concluded"
+    if (event.isDraft) return "draft"
+    if (input.audience === "unanswered") {
+        return canAcceptSignups(
+            {
+                kind: event.kind,
+                registrationEnd: event.registrationEnd,
+                status: event.status,
+            },
+            input.now
+        )
+            ? null
+            : "signups_closed"
+    }
+    if (!input.roster) return "no_roster"
+    if (!input.roster.published) return "roster_unpublished"
+    const meetingStart = new Date(event.meetingStart).getTime()
+    return Number.isFinite(meetingStart) && input.now.getTime() < meetingStart
+        ? null
+        : "meeting_started"
+}
+
 /**
- * The players a manual reminder reaches right now. Unanswered: members of the
- * match's game who may sign up, are not paused, have not answered and are not
- * already placed on the roster; only while sign-ups are open. Unconfirmed:
- * roster players and reserves of a published roster who have not confirmed,
- * until the meeting starts.
+ * Who an audience covers and whether a reminder can go to them now, for the
+ * counts next to the "Remind" buttons. Unanswered: members of the match's
+ * game who may sign up, are not paused, have not answered and are not
+ * already placed on the roster; reminders only while sign-ups are open.
+ * Unconfirmed: roster players and reserves who have not confirmed;
+ * reminders only for a published roster before the meeting.
  */
+export function describeManualReminderAudience(input: {
+    audience: ManualReminderAudience
+    event: ManualReminderEvent
+    roster: ManualReminderRoster | null
+    assignments: readonly ManualReminderAssignment[]
+    now: Date
+}): { userIds: string[]; unavailable: ManualReminderUnavailable | null } {
+    return {
+        userIds:
+            input.audience === "unanswered"
+                ? unansweredUserIds(
+                      input.event,
+                      input.roster,
+                      input.assignments
+                  )
+                : unconfirmedUserIds(input.roster),
+        unavailable: unavailableReason(input),
+    }
+}
+
+/** The players a manual reminder reaches right now, or why it cannot be sent. */
 export function resolveManualReminderRecipients(input: {
     audience: ManualReminderAudience
     event: ManualReminderEvent
@@ -86,68 +183,10 @@ export function resolveManualReminderRecipients(input: {
     assignments: readonly ManualReminderAssignment[]
     now: Date
 }): ManualReminderRecipients {
-    const { event } = input
-    if (event.status === "concluded") return { ok: false, reason: "concluded" }
-    if (event.isDraft) return { ok: false, reason: "draft" }
-
-    if (input.audience === "unanswered") {
-        if (
-            !canAcceptSignups(
-                {
-                    kind: event.kind,
-                    registrationEnd: event.registrationEnd,
-                    status: event.status,
-                },
-                input.now
-            )
-        ) {
-            return { ok: false, reason: "signups_closed" }
-        }
-        const answered = new Set([
-            ...event.participants.map((participant) => participant.userId),
-            ...rosterUserIds(input.roster),
-        ])
-        const allowed = new Set<SignupMembershipStatus>(
-            event.allowedSignupStatuses?.length
-                ? event.allowedSignupStatuses
-                : DEFAULT_ALLOWED_SIGNUP_STATUSES
-        )
-        const userIds = new Set<string>()
-        for (const assignment of input.assignments) {
-            if (assignment.paused || answered.has(assignment.userId)) continue
-            if (!matchesGameScope(assignment.gameId, event.gameId)) continue
-            const status = getResolvedMemberStatus(
-                assignment.type,
-                assignment.status
-            )
-            if (status === "pending" || !allowed.has(status)) continue
-            userIds.add(assignment.userId)
-        }
-        return { ok: true, userIds: [...userIds] }
-    }
-
-    if (!input.roster) return { ok: false, reason: "no_roster" }
-    if (!input.roster.published)
-        return { ok: false, reason: "roster_unpublished" }
-    const meetingStart = new Date(event.meetingStart).getTime()
-    if (!Number.isFinite(meetingStart) || input.now.getTime() >= meetingStart) {
-        return { ok: false, reason: "meeting_started" }
-    }
-    const userIds = new Set<string>()
-    for (const squad of input.roster.squads) {
-        for (const player of squad.players) {
-            if (player.id && !player.ack) userIds.add(player.id)
-        }
-    }
-    const acknowledgedReserves = new Set(
-        (input.roster.reserveAttendances ?? [])
-            .filter((attendance) => attendance.ack)
-            .map((attendance) => attendance.userId)
-    )
-    for (const userId of input.roster.reservePlayerIds) {
-        if (!acknowledgedReserves.has(userId)) userIds.add(userId)
-    }
-    return { ok: true, userIds: [...userIds] }
+    const { userIds, unavailable } = describeManualReminderAudience(input)
+    return unavailable
+        ? { ok: false, reason: unavailable }
+        : { ok: true, userIds }
 }
 
 export type ManualReminderRequestState = {

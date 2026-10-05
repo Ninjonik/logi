@@ -3189,6 +3189,30 @@ export const enMessages = {
             result: "Result",
         },
         openInDiscord: "View in Discord",
+        tabSignups: "Sign-ups",
+        moreActions: "More actions",
+        backLabel: "Back to matches",
+        stepOf: "Step {current} of {total} · {label}",
+        actions: {
+            edit: "Edit match",
+            openRoster: "Open the roster page",
+            signupHistory: "Sign-up history",
+        },
+        reminders: {
+            remind: "Remind",
+            sending: "Sending…",
+            queued: "A reminder is on its way to {count} players by DM.",
+            nobody: "Nobody to remind.",
+            rateLimited: "You can send the reminder again at {time}.",
+            unavailable: {
+                concluded: "The match is closed.",
+                draft: "A draft is not sent to players.",
+                signups_closed: "Sign-ups are closed.",
+                no_roster: "There is no roster yet.",
+                roster_unpublished: "The roster is not published.",
+                meeting_started: "The meeting has started.",
+            },
+        },
         scheduleLine: "{date} · meeting {meeting} · start {start}",
         playedLine: "Played {date} at {time}",
         phases: {
@@ -3207,6 +3231,7 @@ export const enMessages = {
             createdAt: "created {date}",
             opensAt: "opens {date}",
             closesAt: "until {date}",
+            closedAt: "closed {date}",
             signedUp: "{count} signed up",
             rosterMissing: "not created yet",
             rosterDraft: "publish before the meeting",
@@ -3238,6 +3263,15 @@ export const enMessages = {
             pickPlayer: "Pick player",
             reservesCount: "{count} · signed up without a slot",
             notAttendingCount: "{count}",
+            noResponse: "No response: {count} members",
+            dropHere: "Drop here: {name}",
+            removeFromSlot: "Remove {name} from the slot",
+            occupied: "{assigned}/{total} filled",
+            moreActions: "More roster actions",
+            playerActions: "Actions for {name}",
+            autoFill: "Auto-fill",
+            save: "Save",
+            meetingTime: "Meeting time",
         },
         attendance: {
             summaryLabel: "Attendance summary",
@@ -3285,12 +3319,12 @@ export const enMessages = {
                 acknowledged: "Confirmed attendance",
                 pending: "Not confirmed",
                 reserve: "Reserve",
-                notice: "Absence notice: “{reason}”",
+                notice: "Running late: “{reason}”",
                 declined: "Declined",
                 noResponse: "No answer",
             },
             excusedHelp:
-                "Excused needs an absence notice, which players send in Discord.",
+                "The player sent a running-late notice in Discord, so they stay excused at least.",
             unsavedChanges: "Unsaved changes: {count}",
             save: "Save attendance",
             saved: "Attendance saved.",
@@ -3304,6 +3338,10 @@ export const enMessages = {
             noRosterDescription:
                 "Attendance is recorded on the roster. Create the roster first.",
             empty: "Nobody in this list.",
+            lastLoaded: "Last read at {time}: {count} players in {channel}",
+            fromVoice: "from the voice channel",
+            noResponseHint:
+                "{count} players have not answered the sign-up yet.",
         },
         close: {
             title: "Close match and award points?",
@@ -3398,6 +3436,27 @@ export const enMessages = {
             notYetTitle: "No result yet",
             notYetDescription:
                 "The result is reviewed here once the match has been played.",
+            outcome: {
+                win: "Win",
+                loss: "Loss",
+                draw: "Draw",
+            },
+            afterConfirm: "After confirmation",
+            effectResultsChannel: "The result appears in #{channel}.",
+            effectNoResultsChannel:
+                "No Discord results panel is set up, so the result stays in Logi and the clan API.",
+            effectRecaps:
+                "Players get a personal summary by DM. Today it is already sent at import.",
+            showPlayers: "Show players",
+            effectCompetition:
+                "For a league match it is also written to the competition table.",
+            correctionNoteUpdates:
+                "A confirmed result can only be corrected with a reason. The correction is recorded here and updates {targets}.",
+            correctionTargets: {
+                discord: "the Discord message",
+                competition: "the competition table",
+                and: " and ",
+            },
         },
         stats: {
             killTypes: {

@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
     decideManualReminder,
+    describeManualReminderAudience,
     MANUAL_REMINDER_COOLDOWN_MS,
     remainingManualReminderRecipients,
     resolveManualReminderRecipients,
@@ -161,6 +162,32 @@ test("unconfirmed reminders need a published roster before the meeting", () => {
             now,
         }),
         { ok: false, reason: "meeting_started" }
+    )
+})
+
+test("the audience count stays visible while a reminder cannot be sent", () => {
+    assert.deepEqual(
+        describeManualReminderAudience({
+            audience: "unanswered",
+            event: { ...event, status: "closed" },
+            roster,
+            assignments,
+            now,
+        }),
+        { userIds: ["quiet", "recruit"], unavailable: "signups_closed" }
+    )
+    assert.deepEqual(
+        describeManualReminderAudience({
+            audience: "unconfirmed",
+            event,
+            roster: { ...roster, published: false },
+            assignments,
+            now,
+        }),
+        {
+            userIds: ["slot-pending", "reserve-pending"],
+            unavailable: "roster_unpublished",
+        }
     )
 })
 

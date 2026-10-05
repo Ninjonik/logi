@@ -147,6 +147,10 @@ attempt instead of continuing with stale Discord permissions.
 - `src/sync.ts` runs the polling loop and guild/event sync
 - `src/interactions.ts` handles signup and attendance button actions
 - `src/message-builders.ts` builds embeds, buttons, and reminder components
+- `src/manual-reminders.ts` watches the reminders managers ask for from the
+  match page (`eventReminders:listPending`), claims one at a time and sends the
+  sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
+  players who answered or confirmed in the meantime are skipped
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data

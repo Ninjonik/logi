@@ -1,7 +1,12 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { buildMatchAttendance, setRosterPresence } from "./match-attendance"
+import {
+    applyAttendanceExcuses,
+    buildMatchAttendance,
+    planAttendanceChanges,
+    setRosterPresence,
+} from "./match-attendance"
 import type { RosterLike } from "./types"
 
 const roster: RosterLike = {
@@ -86,6 +91,83 @@ test("works without a roster", () => {
     })
     assert.deepEqual(attendance.entries, [])
     assert.deepEqual(attendance.noResponseUserIds, ["b"])
+})
+
+test("an admin excuse makes a player excused without a late notice to show", () => {
+    const attendance = buildMatchAttendance({
+        roster,
+        participants: [{ userId: "at", status: "attending" }],
+        notices: [
+            { userId: "at", reason: "", excusedBy: "admin-1" },
+            { userId: "cmd", reason: "Late, 20:20" },
+        ],
+        memberIds: [],
+    })
+    const at = attendance.entries.find((entry) => entry.userId === "at")
+    assert.equal(at?.mark, "excused")
+    assert.equal(at?.adminExcused, true)
+    assert.equal(at?.hasNotice, false)
+    assert.deepEqual(at?.before, { kind: "pending" })
+    const cmd = attendance.entries.find((entry) => entry.userId === "cmd")
+    assert.equal(cmd?.hasNotice, true)
+    assert.equal(cmd?.adminExcused, false)
+})
+
+test("planAttendanceChanges splits marks into presence and admin excuses", () => {
+    const { entries } = buildMatchAttendance({
+        roster,
+        participants: [],
+        notices: [
+            { userId: "cmd", reason: "Late" },
+            { userId: "res2", reason: "", excusedBy: "admin-1" },
+        ],
+        memberIds: [],
+    })
+    const plan = planAttendanceChanges({
+        entries,
+        marks: new Map([
+            ["at", "excused"],
+            ["sl", "absent"],
+            ["cmd", "absent"],
+            ["res2", "present"],
+            ["res1", "present"],
+        ] as const),
+    })
+    assert.deepEqual(
+        [...plan.presence],
+        [
+            ["sl", false],
+            ["res2", true],
+        ]
+    )
+    assert.deepEqual(
+        [...plan.excuses],
+        [
+            ["at", true],
+            ["res2", false],
+        ]
+    )
+})
+
+test("applyAttendanceExcuses adds and lifts only admin excuses", () => {
+    const notices = applyAttendanceExcuses({
+        notices: [
+            { userId: "cmd", reason: "Late", createdAt: "t0" },
+            { userId: "res2", reason: "", createdAt: "t0", excusedBy: "a" },
+        ],
+        excuses: new Map([
+            ["at", true],
+            ["res2", false],
+            ["cmd", false],
+            ["sl", false],
+        ]),
+        actorId: "admin-2",
+        now: "t1",
+    })
+    assert.deepEqual(notices, [
+        { userId: "cmd", reason: "Late", createdAt: "t0" },
+        { userId: "at", reason: "", createdAt: "t1", excusedBy: "admin-2" },
+    ])
 })
 
 test("setRosterPresence confirms and clears presence, keeping acknowledgements", () => {

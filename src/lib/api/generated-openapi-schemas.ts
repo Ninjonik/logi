@@ -452,6 +452,9 @@ export const generatedOpenApiSchemas = {
                         },
                         "createdAt": {
                             "type": "string"
+                        },
+                        "excusedBy": {
+                            "type": "string"
                         }
                     },
                     "required": [
@@ -687,7 +690,8 @@ export const generatedOpenApiSchemas = {
                 {
                     "userId": "string",
                     "reason": "string",
-                    "createdAt": "string"
+                    "createdAt": "string",
+                    "excusedBy": "string"
                 }
             ],
             "matchTeams": [

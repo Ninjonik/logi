@@ -301,6 +301,18 @@ Result confirmation, score corrections, roster edits, Discord role writes,
 server controls, publication and destructive event deletion are intentionally
 excluded. Their existing dedicated lifecycle remains authoritative.
 
+Manual reminder DMs (`POST /api/servers/{serverId}/events/{eventId}/reminders`
+with `{"audience": "unanswered" | "unconfirmed"}`, answering `{queued}`) and
+post-match admin excuses (`POST .../events/{eventId}/excuses`) are dashboard
+only. A reminder sends Discord DMs to clan members, so an API key must not be
+able to trigger it; excuses only change scoring, which the API does not do.
+Both are deliberately excluded from `/api/v1`. Excuses stay visible to API
+readers: an excused player has an `absenceNotices` entry with an empty reason
+and `excusedBy` set to the admin's Discord ID, and a roster read includes
+`meetingAttendance` (when attendance was last read from the meeting voice
+channel, the channel, how many people were in it and which roster players were
+found).
+
 ## Verification and limits
 
 Automated source tests cover domain validation; strict HTTP envelopes and

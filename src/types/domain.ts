@@ -371,6 +371,8 @@ export type EventRecord = {
         userId: string
         reason: string
         createdAt: Timestamp
+        /** The clan admin who excused the player; absent for late notices. */
+        excusedBy?: string
     }[]
     createdAt: Timestamp
     updatedAt: Timestamp

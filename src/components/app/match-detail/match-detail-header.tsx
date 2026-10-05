@@ -1,4 +1,9 @@
-import { Check, ChevronRight, ExternalLink } from "lucide-react"
+import {
+    ArrowLeft,
+    ChevronRight,
+    CircleCheck,
+    ExternalLink,
+} from "lucide-react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 
@@ -8,7 +13,6 @@ import type {
 } from "@/domain/events/match-phase"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
-import { GameBadge } from "@/components/app/game-badge"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { EventRecord } from "@/types/domain"
 import { Button } from "@/components/ui/button"
@@ -72,6 +76,11 @@ function phaseDetailText(
                 "{date}",
                 formatDayTime(detail.at, locale, timeZone)
             )
+        case "closedAt":
+            return t.closedAt.replace(
+                "{date}",
+                formatDayTime(detail.at, locale, timeZone)
+            )
         case "signedUp":
             return t.signedUp.replace("{count}", String(detail.count))
         case "rosterMissing":
@@ -92,10 +101,22 @@ function phaseDetailText(
     }
 }
 
+/** A step that waits for the admin, such as a result to confirm. */
+function needsAttention(phase: MatchPhaseStep) {
+    return (
+        phase.state === "current" &&
+        phase.detail.kind === "result" &&
+        (phase.detail.state === "imported" ||
+            phase.detail.state === "provisional")
+    )
+}
+
 /**
- * The shared top of a match (designs D3, E2, E3): title, game, map and time,
- * the Discord link, the five-step progress and the section tabs. Tabs are
- * links, so every section is its own server-rendered page state.
+ * The shared top of a match (designs D3, E2, E3 and the phone screens):
+ * breadcrumb, title with game, map and time, the Discord link and the "⋯"
+ * menu, the five-step progress and the section tabs. On phones the top
+ * shrinks to a back arrow, the name and the current step. Tabs are links,
+ * so every section is its own server-rendered page state.
  */
 export function MatchDetailHeader({
     event,
@@ -107,6 +128,8 @@ export function MatchDetailHeader({
     activeTab,
     tabHref,
     tabCounts,
+    played,
+    showProgress = true,
     discordHref,
     actions,
 }: {
@@ -119,15 +142,19 @@ export function MatchDetailHeader({
     activeTab: MatchDetailTab
     tabHref: (tab: MatchDetailTab) => string
     tabCounts?: Partial<Record<MatchDetailTab, number>>
+    /** After the match the sign-ups tab is about attendance as well. */
+    played: boolean
+    showProgress?: boolean
     discordHref?: string
+    /** The "⋯" menu; it also carries the Discord link on phones. */
     actions?: ReactNode
 }) {
     const t = dictionary.matchDetail
     const gameId: GameId = event.gameId ?? "hell_let_loose"
     const map = formatHllPresetLabel(event.map) ?? event.map
-    const mapLine = [map, event.side].filter(Boolean).join(" · ")
-    const concluded = event.status === "concluded"
-    const timeLine = concluded
+    // The board's meta line is game, map and time; the side is on the roster.
+    const mapLine = map ?? ""
+    const timeLine = played
         ? t.playedLine
               .replace("{date}", formatDay(event.gameStart, locale, timeZone))
               .replace("{time}", formatClock(event.gameStart, locale, timeZone))
@@ -141,12 +168,53 @@ export function MatchDetailHeader({
                   "{start}",
                   formatClock(event.gameStart, locale, timeZone)
               )
+    const currentIndex = phases.findIndex((phase) => phase.state === "current")
+    const stepIndex = currentIndex >= 0 ? currentIndex : phases.length - 1
+    const stepLine = t.stepOf
+        .replace("{current}", String(stepIndex + 1))
+        .replace("{total}", String(phases.length))
+        .replace("{label}", t.phases[phases[stepIndex]?.id ?? "result"])
+    // Phones always say "Sign-ups" (Mobile board); wider screens name
+    // attendance once the match has been played (E2, E3).
+    const tabLabel = (tab: MatchDetailTab) =>
+        tab === "attendance" ? (
+            played ? (
+                <>
+                    <span className="sm:hidden">{t.tabSignups}</span>
+                    <span className="hidden sm:inline">{t.tabs[tab]}</span>
+                </>
+            ) : (
+                t.tabSignups
+            )
+        ) : (
+            t.tabs[tab]
+        )
 
     return (
         <div className="flex flex-col gap-4 px-4 lg:px-6">
+            {/* Phone: back arrow, name and the current step (Mobile board). */}
+            <div className="flex items-center gap-3 sm:hidden">
+                <Link
+                    href={listHref}
+                    aria-label={t.backLabel}
+                    className="hover:bg-muted -ml-1 flex size-9 shrink-0 items-center justify-center rounded-xl"
+                >
+                    <ArrowLeft className="size-5" />
+                </Link>
+                <div className="min-w-0 flex-1">
+                    <h1 className="truncate text-base font-semibold">
+                        {event.name}
+                    </h1>
+                    <p className="text-muted-foreground truncate text-xs">
+                        {stepLine}
+                    </p>
+                </div>
+                {actions}
+            </div>
+
             <nav
                 aria-label={t.breadcrumbLabel}
-                className="text-muted-foreground hidden items-center gap-1 text-xs sm:flex"
+                className="text-muted-foreground hidden items-center gap-1 text-sm sm:flex"
             >
                 <Link href={listHref} className="hover:text-foreground">
                     {t.backToMatches}
@@ -156,18 +224,13 @@ export function MatchDetailHeader({
                     {event.name}
                 </span>
             </nav>
-            <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 space-y-1.5">
-                    <h1 className="text-xl font-semibold tracking-tight break-words xl:text-2xl">
+            <header className="hidden items-start justify-between gap-3 sm:flex">
+                <div className="min-w-0 space-y-2">
+                    <h1 className="text-2xl font-semibold tracking-tight break-words">
                         {event.name}
                     </h1>
                     <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                        <span className="inline-flex items-center gap-1.5">
-                            <GameBadge
-                                gameId={gameId}
-                                dictionary={dictionary}
-                                className="size-4"
-                            />
+                        <span className="border-border/80 text-foreground/80 rounded-md border px-2 py-0.5 text-xs">
                             {GAME_LABELS[gameId]}
                         </span>
                         {mapLine ? <span>{mapLine}</span> : null}
@@ -175,7 +238,7 @@ export function MatchDetailHeader({
                         <span>{timeLine}</span>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                     {discordHref ? (
                         <Button
                             asChild
@@ -195,60 +258,71 @@ export function MatchDetailHeader({
                     {actions}
                 </div>
             </header>
-            <ol
-                aria-label={t.progressLabel}
-                className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0"
-            >
-                {phases.map((phase) => (
-                    <li
-                        key={phase.id}
-                        aria-current={
-                            phase.state === "current" ? "step" : undefined
-                        }
-                        className={cn(
-                            "relative flex min-w-36 shrink-0 items-start gap-2 rounded-xl border px-3 py-2 sm:min-w-0",
-                            phase.state === "current"
-                                ? "border-primary bg-primary/5"
-                                : "border-border/60",
-                            phase.state === "upcoming" &&
-                                "text-muted-foreground"
-                        )}
-                    >
-                        <span
-                            aria-hidden="true"
-                            className={cn(
-                                "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-                                phase.state === "done" &&
-                                    "border-primary bg-primary text-primary-foreground",
-                                phase.state === "current" &&
-                                    "border-primary border-[5px]",
-                                phase.state === "upcoming" &&
-                                    "border-muted-foreground/40"
-                            )}
+            {showProgress ? (
+                <ol
+                    aria-label={t.progressLabel}
+                    className="border-border/70 bg-card hidden grid-cols-5 gap-4 rounded-2xl border px-5 py-4 sm:grid"
+                >
+                    {phases.map((phase) => (
+                        <li
+                            key={phase.id}
+                            aria-current={
+                                phase.state === "current" ? "step" : undefined
+                            }
+                            className="flex min-w-0 items-start gap-2.5"
                         >
                             {phase.state === "done" ? (
-                                <Check className="size-3" />
-                            ) : null}
-                        </span>
-                        <span className="flex min-w-0 flex-col">
-                            <span className="text-sm font-medium">
-                                {t.phases[phase.id]}
-                                <span className="sr-only">
-                                    {` (${t.phaseState[phase.state]})`}
+                                <CircleCheck
+                                    aria-hidden="true"
+                                    className="mt-0.5 size-[18px] shrink-0 text-emerald-600 dark:text-emerald-400"
+                                />
+                            ) : (
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        "mt-0.5 size-[18px] shrink-0 rounded-full",
+                                        phase.state === "current"
+                                            ? "border-foreground border-[5px]"
+                                            : "border-muted-foreground/40 border-[1.5px]"
+                                    )}
+                                />
+                            )}
+                            <span className="flex min-w-0 flex-col">
+                                <span
+                                    className={cn(
+                                        "text-sm",
+                                        phase.state === "current"
+                                            ? "font-semibold"
+                                            : phase.state === "upcoming"
+                                              ? "text-foreground/80"
+                                              : undefined
+                                    )}
+                                >
+                                    {t.phases[phase.id]}
+                                    <span className="sr-only">
+                                        {` (${t.phaseState[phase.state]})`}
+                                    </span>
+                                </span>
+                                <span
+                                    className={cn(
+                                        "truncate text-xs",
+                                        needsAttention(phase)
+                                            ? "text-amber-700 dark:text-amber-400"
+                                            : "text-muted-foreground"
+                                    )}
+                                >
+                                    {phaseDetailText(
+                                        phase.detail,
+                                        dictionary,
+                                        locale,
+                                        timeZone
+                                    )}
                                 </span>
                             </span>
-                            <span className="text-muted-foreground truncate text-xs">
-                                {phaseDetailText(
-                                    phase.detail,
-                                    dictionary,
-                                    locale,
-                                    timeZone
-                                )}
-                            </span>
-                        </span>
-                    </li>
-                ))}
-            </ol>
+                        </li>
+                    ))}
+                </ol>
+            ) : null}
             <nav
                 aria-label={t.tabsLabel}
                 className="border-border/70 -mx-4 overflow-x-auto border-b px-4 lg:mx-0 lg:px-0"
@@ -256,23 +330,32 @@ export function MatchDetailHeader({
                 <ul className="flex min-w-max gap-1">
                     {MATCH_DETAIL_TABS.map((tab) => {
                         const active = tab === activeTab
-                        const count = tabCounts?.[tab]
+                        const count = played ? undefined : tabCounts?.[tab]
                         return (
-                            <li key={tab}>
+                            <li
+                                key={tab}
+                                // The phone board leaves Discord out; its
+                                // messages are a desktop concern.
+                                className={cn(
+                                    tab === "discord" &&
+                                        !active &&
+                                        "hidden sm:block"
+                                )}
+                            >
                                 <Link
                                     href={tabHref(tab)}
                                     aria-current={active ? "page" : undefined}
                                     scroll={false}
                                     className={cn(
-                                        "-mb-px inline-flex h-10 items-center gap-1.5 border-b-2 px-3 text-sm whitespace-nowrap transition-colors",
+                                        "-mb-px inline-flex h-11 items-center gap-1.5 border-b-2 px-3 text-sm whitespace-nowrap transition-colors",
                                         active
                                             ? "border-foreground text-foreground font-semibold"
                                             : "text-muted-foreground hover:text-foreground border-transparent"
                                     )}
                                 >
-                                    {t.tabs[tab]}
+                                    {tabLabel(tab)}
                                     {count !== undefined ? (
-                                        <span className="bg-muted text-muted-foreground rounded-full px-1.5 text-[11px] font-medium tabular-nums">
+                                        <span className="bg-muted text-muted-foreground rounded-md px-1.5 text-[11px] font-medium tabular-nums">
                                             {count}
                                         </span>
                                     ) : null}

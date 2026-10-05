@@ -484,6 +484,9 @@ const eventNotice = v.object({
     userId: v.string(),
     reason: v.string(),
     createdAt: v.string(),
+    // Set when a clan admin excused the player after the match; the player's
+    // own late notice has no admin.
+    excusedBy: v.optional(v.string()),
 })
 
 const rosterSquad = v.object({
