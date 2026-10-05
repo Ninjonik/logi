@@ -110,9 +110,15 @@ export function CalendarEntryDialog({
                             <DialogTitle className="break-words">
                                 {entry.title}
                             </DialogTitle>
-                            <DialogDescription className="break-words">
-                                {entry.description ||
-                                    dictionary.event.listDescription}
+                            {/* Without a description, screen readers hear the title instead of filler text. */}
+                            <DialogDescription
+                                className={
+                                    entry.description
+                                        ? "break-words"
+                                        : "sr-only"
+                                }
+                            >
+                                {entry.description || entry.title}
                             </DialogDescription>
                         </div>
                         {detailPath ? (

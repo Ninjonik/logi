@@ -28,6 +28,19 @@ verified account or changing membership invalidates website synchronization.
 
 The **Members** page lists people known to the workspace. Managers can view a person, create a record where the workflow allows it, and manage server-specific assignments. Carefully distinguish the person’s identity from their roles and groups in this one server.
 
+When you type platform IDs for a member, Logi checks each comma-separated ID as
+you type. A long number that is not a 17-digit SteamID64 starting with 7656119,
+a malformed `epic:` ID, an ID longer than 64 characters, or an ID already linked
+to another player is marked under the field and blocks saving. An ID listed
+twice is saved once. Write Xbox and PlayStation IDs as `xbox:…` or `psn:…`.
+
+**Make admin** and **Remove admin access** on a member's page change who can
+manage the clan in the dashboard; both ask for confirmation first. Admin access
+granted by a Discord role is not removed this way. **Remove assignment** also
+asks first: it deletes the member's assignment, groups and membership status in
+this clan and removes the Discord roles Logi manages for them, while their match
+history stays.
+
 The available maintenance actions can include importing Discord members, linking missing Discord IDs, linking platform IDs, merging duplicate records, and cleaning duplicate player statistics. Use these only after checking the affected records: they change or combine real server data.
 
 <Callout type="warning">
@@ -140,7 +153,9 @@ event's sign-up groups. Only groups from the event's game are available; a
 group from another game is never offered. A group can also have an optional
 Discord emoji for its sign-up option.
 
-When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself.
+When deleting a group, Logi removes that group from affected primary and secondary assignments before deleting the group. It does not delete the Discord role itself. **Delete group** asks for confirmation first and says how many players have the group as their primary or additional group. Rosters and past events keep the group name they copied.
+
+To create a group, choose the game first; the form appears once a game is picked.
 
 Group-linked roles may overlap other configured Discord roles. Logi does not reject
 shared role selections.

@@ -60,7 +60,20 @@ it by itself.
 
 Stratmaps are tactical map resources associated with an event or available in the workspace. Use a clear name and organise information so a player can understand the plan quickly. Select only the maps that are relevant to the event; an overloaded briefing is harder to use under time pressure.
 
-Public stratmap links open in a full-screen editor without the usual Logi header or footer. The browser page itself does not scroll; use the map controls and editor panels within that viewport.
+Public stratmap links open in a full-screen editor without the usual Logi header or footer. The browser page itself does not scroll; use the map controls and editor panels within that viewport. On a phone the side panels start closed so the map fills the screen; the buttons in the map's top corners open the details-and-slides panel or the tools panel over the map, and tapping the map closes it again.
+
+The Stratmaps list is paginated and searchable like the other dashboard tables,
+and shows the last change in the clan time zone.
+
+### Deleting a stratmap
+
+A manager deletes a stratmap from its editor page with **Delete stratmap**.
+The confirmation lists the events that link the stratmap; Logi removes the
+stratmap from those events and then deletes it with all its slides. This cannot
+be undone. Its public link stops working, including where it was already posted
+in a Discord event forum, and uploaded slide or icon images stay in storage.
+The website API cannot delete stratmaps; see
+[Clan settings](/wiki/configuration/settings).
 
 The editor includes the Maps Let Loose blue, red, orange, yellow, green, purple, white, and grey palette. Select a swatch for the standard tactical colours, or use the final colour control to choose any custom colour. Imported Maps Let Loose green markings use the standard `#00ff00` palette green, while icons retain their friendly blue or enemy red appearance.
 
