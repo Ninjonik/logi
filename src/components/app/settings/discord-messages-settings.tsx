@@ -37,7 +37,6 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
-import { DiscordPublicPanelsForm } from "@/components/app/discord-public-panels-form"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { DEFAULT_MESSAGE_ACCENT_COLOR } from "@/domain/discord-messages/format"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
@@ -65,7 +64,7 @@ type Draft = {
     iconDensity: MessageIconDensity
 } & Partial<Record<ChannelField, string>>
 
-type Editor = ChannelField | "panels-live" | "panels-results"
+type Editor = ChannelField
 
 /** Saved public panels, as `GET …/discord-public-panels` lists them. */
 type PanelSummary = {
@@ -152,17 +151,21 @@ function MessageRow({
  */
 export function DiscordMessagesSettings({
     serverId,
-    gameId,
     config,
     enabledGames,
     hrefs,
     dictionary,
 }: {
     serverId: string
-    gameId?: GameId
     config: DiscordConfig | null
     enabledGames: readonly GameId[]
-    hrefs: { channels: string; league: string; matchTemplates: string }
+    hrefs: {
+        channels: string
+        league: string
+        matchTemplates: string
+        /** "Panely v Discordu", where live and results panels are edited. */
+        panels: string
+    }
     dictionary: Dictionary
 }) {
     const text = dictionary.settingsHub.messagesPage
@@ -334,16 +337,6 @@ export function DiscordMessagesSettings({
     const results = panels?.find(
         (panel) => panel.enabled && panel.kind === "results"
     )
-    const panelEditor = (editor: Editor) =>
-        open === editor ? (
-            <div id={`${ids}-${editor}`}>
-                <DiscordPublicPanelsForm
-                    serverId={serverId}
-                    gameId={gameId}
-                    dictionary={dictionary}
-                />
-            </div>
-        ) : null
     const swatch = accentColor ?? DEFAULT_HEX
 
     return (
@@ -547,10 +540,8 @@ export function DiscordMessagesSettings({
                                       )
                                 : text.liveScoreOff
                         }
-                        action={editButton("panels-live")}
-                    >
-                        {panelEditor("panels-live")}
-                    </MessageRow>
+                        action={linkButton(hrefs.panels)}
+                    />
                     <MessageRow
                         icon={Trophy}
                         title={text.results}
@@ -559,10 +550,8 @@ export function DiscordMessagesSettings({
                                 ? `${channelLabel(results.channelId) ?? text.channelUnknown} · ${text.resultsDetail}`
                                 : `${text.off} · ${text.resultsDetail}`
                         }
-                        action={editButton("panels-results")}
-                    >
-                        {panelEditor("panels-results")}
-                    </MessageRow>
+                        action={linkButton(hrefs.panels)}
+                    />
                     {enabledGames.includes("wardogs") ? (
                         <MessageRow
                             icon={CalendarDays}

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
+import { Plus } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -22,6 +23,7 @@ import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-
 import { DiscordMessagesSettings } from "@/components/app/settings/discord-messages-settings"
 import { MatchTemplatesSettings } from "@/components/app/settings/match-templates-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
+import { DiscordPanelsPage } from "@/components/app/discord-panels/discord-panels-page"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
 import { PublicInviteSettings } from "@/components/app/settings/public-invite-settings"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
@@ -36,6 +38,7 @@ import { GameDataConnections } from "@/components/app/game-data-connections"
 import { getPanelGraphicsPageData } from "@/lib/read-models/panel-graphics"
 import { TicketSettingsForm } from "@/components/app/ticket-settings-form"
 import { LeagueTrackingForm } from "@/components/app/league-tracking-form"
+import { panelCompetitions } from "@/lib/read-models/panel-competitions"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
@@ -44,6 +47,7 @@ import { WebhookManager } from "@/components/app/webhook-manager"
 import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 import { getSiteUrl } from "@/lib/env"
 
@@ -91,6 +95,9 @@ export default async function ServerSettingsSectionPage({
 
     let content: ReactNode
     let legend: ReactNode
+    let headerActions: ReactNode
+    // "Panely v Discordu" and its pages are clan-wide, not per game.
+    const panelsHref = settingsHref(locale, serverId, "discord-panels")
     switch (section) {
         case "profile":
             content = (
@@ -165,7 +172,6 @@ export default async function ServerSettingsSectionPage({
             content = (
                 <DiscordMessagesSettings
                     serverId={serverId}
-                    gameId={gameId}
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
                     hrefs={{
@@ -187,6 +193,7 @@ export default async function ServerSettingsSectionPage({
                             "match-templates",
                             gameId
                         ),
+                        panels: panelsHref,
                     }}
                     dictionary={dictionary}
                 />
@@ -209,6 +216,46 @@ export default async function ServerSettingsSectionPage({
                 />
             )
             break
+        case "discord-panels":
+            headerActions = (
+                <Button asChild className="w-full rounded-lg sm:w-auto">
+                    <Link href={`${panelsHref}/new`}>
+                        <Plus className="size-4" aria-hidden="true" />
+                        {dictionary.discordPanelsPage.newPanel}
+                    </Link>
+                </Button>
+            )
+            content = (
+                <DiscordPanelsPage
+                    serverId={serverId}
+                    guildId={server.discordId}
+                    hrefs={{
+                        panels: panelsHref,
+                        gameServers: settingsHref(
+                            locale,
+                            serverId,
+                            "game-servers"
+                        ),
+                        seed: settingsHref(locale, serverId, "discord-seed"),
+                    }}
+                    categories={(server.eventCategories ?? []).map(
+                        (category) => ({
+                            id: category.id,
+                            label: category.label,
+                        })
+                    )}
+                    competitions={await panelCompetitions(
+                        snapshot.enabledGames
+                    )}
+                    dictionary={dictionary}
+                />
+            )
+            break
+        case "discord-seed":
+            // The seed plan page (board P3) is built by the seed workstream;
+            // this section is its place under "Panely v Discordu".
+            content = null
+            break
         case "panel-graphics": {
             const graphics = await getPanelGraphicsPageData(server.discordId)
             content = graphics ? (
@@ -216,13 +263,8 @@ export default async function ServerSettingsSectionPage({
                     serverId={serverId}
                     locale={locale}
                     data={graphics}
-                    // The panel editor, where one panel gets its own style.
-                    editorHref={settingsHref(
-                        locale,
-                        serverId,
-                        "messages",
-                        gameId
-                    )}
+                    // "Panely v Discordu": each panel's editor sets its own style.
+                    editorHref={panelsHref}
                     gameServersHref={settingsHref(
                         locale,
                         serverId,
@@ -421,15 +463,16 @@ export default async function ServerSettingsSectionPage({
             enabledGames={server.enabledGames}
             dictionary={dictionary}
             legend={legend}
+            headerActions={headerActions}
             ownHeader={
                 section === "tickets" ||
                 section === "game-servers" ||
                 section === "commands"
             }
-            breadcrumbParent={
-                section === "panel-graphics"
-                    ? dictionary.panelGraphicsPage.breadcrumbParent
-                    : undefined
+            mobileBreadcrumb={
+                section === "discord-panels" ||
+                section === "panel-graphics" ||
+                section === "discord-seed"
             }
         >
             {content}

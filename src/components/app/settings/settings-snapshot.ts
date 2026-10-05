@@ -1,4 +1,5 @@
 import {
+    settingsSectionParent,
     visibleSettingsSections,
     settingsSectionStatus,
     type SettingsSnapshot,
@@ -24,9 +25,12 @@ export function settingsSnapshot(
 export function settingsNavSections(
     snapshot: SettingsSnapshot
 ): SettingsNavSection[] {
-    return visibleSettingsSections(snapshot.enabledGames).map((section) => ({
-        id: section.id,
-        group: section.group,
-        state: settingsSectionStatus(section.id, snapshot).state,
-    }))
+    // Sub-pages are reached from their parent; the menu marks the parent.
+    return visibleSettingsSections(snapshot.enabledGames)
+        .filter((section) => !settingsSectionParent(section.id))
+        .map((section) => ({
+            id: section.id,
+            group: section.group,
+            state: settingsSectionStatus(section.id, snapshot).state,
+        }))
 }

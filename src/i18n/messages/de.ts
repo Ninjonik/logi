@@ -3573,6 +3573,16 @@ export const deMessages = {
                     description:
                         "Wohin der Bot Ankündigungen, Events und Fehler schickt. Zeitzone und Sprache.",
                 },
+                "discord-panels": {
+                    title: "Panels in Discord",
+                    description:
+                        "Live-Server, Ergebnisse, Liga und Kalender, die der Bot aktuell hält.",
+                },
+                "discord-seed": {
+                    title: "Server-Seeding",
+                    description:
+                        "Spieler auf einen leeren Server rufen, Plan und Seed-Verlauf.",
+                },
                 "panel-graphics": {
                     title: "Panel-Grafik",
                     description:
@@ -4062,6 +4072,16 @@ export const deMessages = {
                 title: "Kanäle und Sprache",
                 description:
                     "Wohin der Bot Nachrichten schickt und in welcher Sprache er schreibt.",
+            },
+            "discord-panels": {
+                title: "Panels in Discord",
+                description:
+                    "Nachrichten, die der Bot aktuell hält: Live-Server, Ergebnisse, die Liga, der Kalender und die Steuerung für Admins. Sie werden alle 60 s aktualisiert.",
+            },
+            "discord-seed": {
+                title: "Server-Seeding",
+                description:
+                    "Wenn ein Server leer ist, ruft Logi Spieler zusammen: Es sendet einen Aufruf, erwähnt die Seed-Rolle und zeigt im Panel, wie viele Spieler fehlen. Starten dürfen es nur Logi-Admins.",
             },
             "panel-graphics": {
                 title: "Panel-Grafik",
@@ -6411,6 +6431,665 @@ export const deMessages = {
                 "Live-Daten sind gerade nicht verfügbar; das Panel zeigt die zuletzt gesammelten Daten.",
             attach_files_missing:
                 "Dem Bot fehlt die Berechtigung Dateien anhängen, daher hat das Panel kein Bild.",
+        },
+    },
+    discordPanelsPage: {
+        newPanel: "Neues Panel",
+        time: {
+            today: "heute um {time}",
+            yesterday: "gestern um {time}",
+            date: "{date} um {time}",
+            now: "jetzt",
+        },
+        bot: {
+            online: "Bot online",
+            version: "Version {version} · letzter Kontakt {ago}",
+            refreshEvery: "Panels werden alle 60 s aktualisiert",
+            offlineTitle: "Der Bot antwortet nicht · letzter Kontakt {ago}.",
+            offlineBody:
+                "Panels werden gerade nicht aktualisiert und neue nicht gesendet. Prüfen Sie, ob der Bot läuft; starten Sie ihn nach einem Update neu.",
+            outdatedTitle: "Der Bot läuft mit der älteren Version {version}.",
+            outdatedBody:
+                "Discord-Panels brauchen eine neuere Bot-Version. Starten Sie den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
+            unknownTitle: "Der Bot hat sich noch nicht gemeldet.",
+            unknownBody:
+                "Panels werden nicht aktualisiert und neue nicht gesendet, bis der Bot läuft. Starten Sie den Bot; sein Zustand erscheint hier innerhalb von 30 s.",
+            notInServer:
+                "Der Bot hat sich auf diesem Discord-Server seit über 3 Minuten nicht gemeldet. Prüfen Sie, ob der Logi-Bot auf den Server eingeladen ist; bis dahin werden keine Panels gesendet.",
+        },
+        sources: {
+            title: "Datenquellen",
+            link: "Spielserver",
+            collecting: "Sammelt · letzte Daten {ago}",
+            collectingNoData: "Sammelt · noch keine Daten",
+            notCollecting:
+                "Sammelt nicht · Sammeln unter Spielserver einschalten",
+            stale: "Ältere Daten · letzte Daten {ago}",
+            unavailable: "Antwortet nicht · letzte Daten {ago}",
+            liveOk: "Live-Daten ✓",
+            liveLimited: "Live-Daten gerade eingeschränkt",
+            empty: "Es gibt noch keinen Spielserver. Fügen Sie ihn unter Spielserver hinzu.",
+            providers: { hll_crcon: "CRCON", wardogs_warcon: "Warcon" },
+        },
+        games: { hell_let_loose: "HLL", wardogs: "Wardogs" },
+        gameNames: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+        list: {
+            title: "Panels",
+            count: {
+                one: "{count} Panel",
+                few: "{count} Panels",
+                many: "{count} Panels",
+                other: "{count} Panels",
+            },
+            states: {
+                published: {
+                    one: "{count} veröffentlicht",
+                    few: "{count} veröffentlicht",
+                    many: "{count} veröffentlicht",
+                    other: "{count} veröffentlicht",
+                },
+                error: {
+                    one: "{count} Fehler",
+                    few: "{count} Fehler",
+                    many: "{count} Fehler",
+                    other: "{count} Fehler",
+                },
+                waiting: {
+                    one: "{count} wartet auf den Bot",
+                    few: "{count} warten auf den Bot",
+                    many: "{count} warten auf den Bot",
+                    other: "{count} warten auf den Bot",
+                },
+                unsent: {
+                    one: "{count} nicht gesendet",
+                    few: "{count} nicht gesendet",
+                    many: "{count} nicht gesendet",
+                    other: "{count} nicht gesendet",
+                },
+                paused: {
+                    one: "{count} pausiert",
+                    few: "{count} pausiert",
+                    many: "{count} pausiert",
+                    other: "{count} pausiert",
+                },
+            },
+            empty: "Es gibt noch keine Panels. Beginnen Sie mit Neues Panel.",
+            loading: "Panels werden geladen…",
+            loadFailed:
+                "Die Panels konnten nicht geladen werden. Prüfen Sie die Verbindung und laden Sie die Seite neu.",
+            groups: {
+                live: { title: "Live-Server", hint: "ein Panel pro Server" },
+                combined: {
+                    title: "Unsere Server",
+                    hint: "mehrere Server in einer Nachricht",
+                },
+                control: {
+                    title: "Serversteuerung",
+                    hint: "privater Admin-Kanal",
+                },
+                results: { title: "Ergebnisse", hint: "" },
+                league: {
+                    title: "WD League",
+                    hint: "zwei Nachrichten untereinander in einem Kanal",
+                },
+                calendar: { title: "Kalender", hint: "" },
+                competition: {
+                    title: "Wettbewerbe",
+                    hint: "Tabelle nach jedem bestätigten Ergebnis",
+                },
+            },
+            titles: {
+                results: "Ergebnisse {game}",
+                leagueTable: "WD League · Tabelle",
+                leagueFixtures: "WD League · nächste Spiele",
+                calendar: "Kalender",
+                combined: "Unsere Server",
+                control: "Serversteuerung",
+                competition: "Wettbewerbstabelle",
+                unknownServer: "Server ohne Namen",
+            },
+            meta: {
+                publicChannel: "öffentlicher Kanal",
+                privateChannel: "privater Kanal",
+                privateWithPassword: "privater Kanal, mit Passwort",
+                unknownChannel: "unbekannter Kanal",
+                results: "bestätigte Spiele des Clans",
+                leagueTable: "ganze Liga, Punkte nach den Ligaregeln",
+                leagueFixtures: {
+                    one: "{count} nächstes Spiel und letzte Ergebnisse",
+                    few: "{count} nächste Spiele und letzte Ergebnisse",
+                    many: "{count} nächste Spiele und letzte Ergebnisse",
+                    other: "{count} nächste Spiele und letzte Ergebnisse",
+                },
+                leagueFixturesOnly: {
+                    one: "{count} nächstes Spiel",
+                    few: "{count} nächste Spiele",
+                    many: "{count} nächste Spiele",
+                    other: "{count} nächste Spiele",
+                },
+                leagueRecentOnly: "letzte Ergebnisse",
+                calendarAll: "Clan-Events, alle Kategorien",
+                calendarCategories: "Clan-Events, Kategorien {categories}",
+                and: "und",
+                control: "nur Logi-Admins",
+                competition: "Wettbewerb {name}",
+            },
+            timing: {
+                updated: "Aktualisiert {ago}",
+                nextRefresh: "nächste Aktualisierung {in}",
+                lastAttempt: "Letzter Versuch {ago}",
+                nextRetry: "nächster Versuch {in}",
+                notInDiscord: "die Nachricht ist noch nicht in Discord",
+                requested: "Zur Veröffentlichung gesendet {ago}",
+                pickup: "der Bot übernimmt es innerhalb von 15 s",
+                firstPass:
+                    "Der Bot übernimmt es beim nächsten Durchlauf, innerhalb von 15 s",
+                saved: "Gespeichert {when}",
+                notSentYet: "noch nicht an Discord gesendet",
+                pausedBy: "Pausiert von {name} · {when}",
+                pausedAt: "Pausiert {when}",
+                pausedKeeps: "die Nachricht bleibt und wird nicht aktualisiert",
+                lastResult: "Letztes Ergebnis {when}",
+                noResultYet: "Noch kein bestätigtes Ergebnis",
+                resultsInChannel: {
+                    one: "{count} Ergebnis im Kanal",
+                    few: "{count} Ergebnisse im Kanal",
+                    many: "{count} Ergebnisse im Kanal",
+                    other: "{count} Ergebnisse im Kanal",
+                },
+                resultsBackfill:
+                    "hat beim Erstellen die letzten 5 bestätigten gesendet",
+                controlButtons:
+                    "Schaltflächen Seed, Aktualisieren und Pausieren",
+                open: "Nachricht öffnen",
+            },
+            buttons: {
+                edit: "Bearbeiten",
+                refresh: "Jetzt aktualisieren",
+                pause: "Pausieren",
+                resume: "Fortsetzen",
+                publish: "In den Kanal senden",
+                fix: "Beheben",
+                retry: "Erneut versuchen",
+            },
+            rowActions: "Aktionen des Panels {name}",
+        },
+        actions: {
+            accepted: {
+                publish:
+                    "Zur Veröffentlichung gesendet. Der Bot übernimmt es innerhalb von 15 s.",
+                refresh:
+                    "Aktualisierung angefordert. Der Bot zeichnet das Panel innerhalb von 15 s neu.",
+                pause: "Das Panel ist pausiert. Die Nachricht bleibt und wird nicht aktualisiert.",
+                resume: "Das Panel läuft wieder. Der Bot zeichnet es innerhalb von 15 s neu.",
+                retry: "Wir versuchen es innerhalb von 15 s erneut.",
+                delete: "Die Nachricht wird innerhalb von 15 s aus Discord entfernt. Das Panel bleibt als nicht gesendet gespeichert.",
+                remove: "Das Panel wird mit seinen Discord-Nachrichten entfernt.",
+                control:
+                    "Der Bot zeichnet die Nachricht Serversteuerung innerhalb von 15 s neu.",
+            },
+            failed: "Die Aktion hat nicht funktioniert. Versuchen Sie es erneut.",
+            notSent: "Das Panel ist noch nicht in Discord.",
+            removing: "Das Panel wird gerade entfernt.",
+            notFound: "Das Panel existiert nicht mehr.",
+        },
+        editor: {
+            back: "Panels in Discord",
+            newTitle: "Neues Panel",
+            newStatus: "Neues Panel · noch nicht in Discord",
+            statusChannel: "in {channel}",
+            statusUpdated: "aktualisiert {ago}",
+            statusNext: "nächste Aktualisierung {in}",
+            openInDiscord: "Nachricht in Discord öffnen",
+            notFound:
+                "Panel nicht gefunden. Vielleicht wurde es inzwischen entfernt. Kehren Sie zur Panel-Liste zurück.",
+            loading: "Panel wird geladen…",
+            steps: {
+                type: "Panel-Typ",
+                server: "Server",
+                servers: "Server",
+                game: "Spiel",
+                calendar: "Events",
+                competition: "Wettbewerb",
+                channel: "Kanal",
+                content: "Inhalt",
+                contentLeague: "Inhalt · WD League",
+                look: "Aussehen",
+                refresh: "Aktualisierung",
+            },
+            edit: "Bearbeiten",
+            collapse: "Schließen",
+            types: {
+                server: {
+                    title: "Live-Server",
+                    text: "Ein Server: Karte, Spieler, Punktestand.",
+                },
+                servers: {
+                    title: "Unsere Server",
+                    text: "Mehrere Server in einer Nachricht.",
+                },
+                results: {
+                    title: "Ergebnisse",
+                    text: "Eine Karte nach jedem bestätigten Spiel.",
+                },
+                league: {
+                    title: "WD League",
+                    text: "Tabelle und nächste Spiele der Liga.",
+                },
+                calendar: {
+                    title: "Kalender",
+                    text: "Die nächsten Clan-Events.",
+                },
+                competition: {
+                    title: "Wettbewerbstabelle",
+                    text: "Gruppentabellen eines Logi-Wettbewerbs.",
+                },
+            },
+            typeLocked:
+                "Der Typ eines gesendeten Panels lässt sich nicht ändern. Erstellen Sie für einen anderen Typ ein neues Panel.",
+            typeTaken:
+                "Der Clan hat diesen Typ schon; bearbeiten Sie dieses Panel.",
+            server: {
+                label: "Spielserver",
+                placeholder: "Server wählen",
+                empty: "Es gibt noch keinen Spielserver. Fügen Sie ihn hinzu unter",
+                emptyLink: "Spielserver",
+                healthCollecting: "Sammelt · letzte Daten {ago}",
+                healthNoData: "Sammelt · noch keine Daten",
+                healthNotCollecting: "Sammelt nicht",
+                liveOk: "Live-Daten ✓",
+                liveLimited:
+                    "Live-Daten gerade eingeschränkt, siehe Serverdaten",
+            },
+            servers: {
+                order: "In dieser Reihenfolge in der Nachricht. Ziehen Sie, um die Reihenfolge zu ändern.",
+                moveUp: "{server} nach oben",
+                moveDown: "{server} nach unten",
+                drag: "{server} ziehen",
+            },
+            game: {
+                label: "Spiel",
+                help: "Ergebnisse eines Spiels. Jedes Spiel hat höchstens ein Ergebnis-Panel; beim Erstellen sendet es die letzten 5 bestätigten.",
+            },
+            calendar: {
+                label: "Event-Kategorien",
+                help: "Ohne Auswahl zeigt das Panel alle Clan-Events.",
+            },
+            competition: {
+                label: "Wettbewerb",
+                placeholder: "Wettbewerb wählen",
+                empty: "Der Clan spielt noch keinen Logi-Wettbewerb.",
+            },
+            channel: {
+                label: "Panel-Kanal",
+                placeholder: "Kanal wählen",
+                verify: "Prüfen",
+                verifying: "Wird geprüft…",
+                has: "Hat:",
+                missing: "Fehlt:",
+                attachHint:
+                    "Ohne sie sendet das Panel nur Text, ohne Kartenbilder.",
+                public: "Alle (@everyone) sehen den Kanal. Das Serverpasswort kann hier nicht angezeigt werden.",
+                private: "Der Kanal ist privat ✓",
+                privateRoles: "· nur {roles} und Admins sehen ihn.",
+                privateAdmins: "· nur Admins sehen ihn.",
+                privatePassword:
+                    "· @everyone sieht ihn nicht, das Passwort wird angezeigt.",
+                role: "die Rolle {name}",
+                unsupported:
+                    "In diesen Kanal kann keine Nachricht gesendet werden. Wählen Sie einen Text- oder Ankündigungskanal.",
+                timedOut:
+                    "Der Bot hat auf dem Server ein Timeout und kann nicht schreiben. Heben Sie es in Discord auf.",
+                failed: "Der Kanal konnte nicht geprüft werden. Versuchen Sie es erneut.",
+                unverified:
+                    "Wählen Sie Prüfen: Logi prüft die Berechtigungen des Bots und ob alle den Kanal sehen.",
+            },
+            content: {
+                show: "Was angezeigt wird",
+                score: {
+                    label: "Punktestand",
+                    help: "Alliierte : Achse nach Sektoren.",
+                },
+                leaders: {
+                    label: "Beste Spieler",
+                    help: "Kills; der ganze Kanal sieht die Namen.",
+                },
+                nextMap: { label: "Nächste Karte", help: "" },
+                queue: {
+                    label: "Warteschlange",
+                    help: "Nur wenn der Server sie meldet.",
+                },
+                connection: "Beitreten",
+                address: {
+                    label: "IP:Port anzeigen",
+                    help: "{address} aus Spielserver.",
+                    helpCombined: "Bei HLL-Servern.",
+                    missing: "Die Serveradresse ist noch nicht gespeichert.",
+                    field: "IP:Port · {server}",
+                    placeholder: "203.0.113.24:7777",
+                },
+                joinCode: {
+                    label: "Join-Code anzeigen",
+                    help: "Bei Wardogs-Servern.",
+                    field: "Join-Code · {server}",
+                },
+                joinButton: {
+                    label: "Schaltfläche Beitreten (über Logi)",
+                    help: "Öffnet {url}, die Steam startet.",
+                    helpWardogs: "Öffnet {url} mit dem Join-Code.",
+                    helpCombined:
+                        "Bei HLL-Servern; Wardogs tritt mit einem Code bei.",
+                },
+                password: {
+                    label: "Serverpasswort anzeigen",
+                    field: "Serverpasswort",
+                    fieldServer: "Passwort · {server}",
+                    help: "Wird verschlüsselt gespeichert. Logi zeigt es nur in einem privaten Kanal.",
+                    stored: "Ein Passwort ist verschlüsselt gespeichert. Ein neues ersetzt es.",
+                    clear: "Gespeichertes Passwort löschen",
+                    publicTitle:
+                        "Alle sehen den Kanal, das Passwort kann nicht angezeigt werden.",
+                    publicFix:
+                        "Wählen Sie einen Kanal, den @everyone nicht sieht.",
+                    unverified:
+                        "Das Passwort kann nur in einem Kanal angezeigt werden, den @everyone nicht sieht. Wählen Sie beim Kanal Prüfen.",
+                    combined:
+                        "Die Nachricht Unsere Server zeigt das Passwort nie; nur das eigene Panel des Servers zeigt es in einem privaten Kanal.",
+                },
+                buttons: "Schaltflächen",
+                players: {
+                    label: "Spieler anzeigen",
+                    help: "Die Spielerliste sieht nur, wer klickt.",
+                },
+                report: {
+                    label: "Spieler melden",
+                    help: "Öffnet einen privaten Thread für die Admins.",
+                    category: "Ticket-Kategorie",
+                    categoryPlaceholder: "Kategorie wählen",
+                    note: "Kanal und Support stellen Sie ein unter",
+                    noCategories:
+                        "Tickets haben noch keine Kategorie mit privatem Kanal. Richten Sie sie ein unter",
+                    provider:
+                        "Meldungen gibt es nur bei CRCON- und Warcon-Servern.",
+                },
+                ticketsLink: "Tickets",
+                seed: "Seed",
+                seedProgress: {
+                    label: "Seed-Fortschritt anzeigen",
+                    help: "Während ein Seed läuft, zeigt das Panel die Spieler bis zum Live-Spiel.",
+                    helpCombined: "Beim Server, auf dem gerade ein Seed läuft.",
+                },
+                seedNote:
+                    "Die Schaltfläche Seed gibt es nur in der Nachricht Serversteuerung für Admins.",
+                seedPlan: "Seed-Plan",
+                noContent:
+                    "Dieser Panel-Typ hat keine weiteren Inhaltsschalter.",
+            },
+            league: {
+                table: {
+                    label: "Tabelle",
+                    help: "Rangliste aller Ligateams. Logi berechnet die Punkte aus den Ergebnissen nach den Ligaregeln.",
+                },
+                fixtures: {
+                    label: "Nächste Spiele",
+                    help: "Teams, Fraktionen, Karte, Gastgeber und wie weit die Vorbereitung ist.",
+                },
+                recent: {
+                    label: "Letzte Ergebnisse",
+                    help: "Unter den nächsten Spielen.",
+                },
+                count: {
+                    label: "Anzahl der Spiele",
+                    help: "Wie viele nächste Spiele die Nachricht zeigt.",
+                },
+                note: "Alle Spiele der Liga, nicht nur unsere. Tabelle und nächste Spiele sind zwei Nachrichten untereinander in {channel} und werden alle 60 s aktualisiert. Eigene Ligakarten pro Spiel gibt es nicht mehr.",
+                channelFallback: "einem Kanal",
+            },
+            look: {
+                title: {
+                    label: "Name",
+                    help: "Wird als Titel der Nachricht angezeigt.",
+                },
+                description: {
+                    label: "Beschreibung",
+                    help: "Optional. Ein kurzer Satz unter dem Titel.",
+                },
+                banner: {
+                    label: "Banner",
+                    upload: "Banner hochladen",
+                    choose: "Hochgeladenes wählen",
+                    hide: "Hochgeladene ausblenden",
+                    remove: "Entfernen",
+                    help: "Kein Banner. Es ersetzt das Kartenbild. PNG, JPEG oder WebP bis 2 MiB.",
+                    set: "Eigenes Banner. Es ersetzt das Kartenbild. PNG, JPEG oder WebP bis 2 MiB.",
+                    uploading: "Banner wird hochgeladen…",
+                    uploaded: "Banner hochgeladen.",
+                    selected: "Banner gewählt.",
+                    libraryLoading: "Hochgeladene Banner werden geladen…",
+                    libraryEmpty: "Es wurden noch keine Banner hochgeladen.",
+                    libraryError:
+                        "Die hochgeladenen Banner konnten nicht geladen werden.",
+                    library: "Hochgeladene Banner",
+                    libraryItem:
+                        "Banner {width} × {height}, hochgeladen {date}",
+                    preview: "Banner-Vorschau",
+                },
+                accent: {
+                    label: "Balkenfarbe",
+                    clan: "Clanfarbe",
+                    custom: "Eigene Farbe",
+                    customHelp: "Nur für dieses Panel",
+                    picker: "Balkenfarbe wählen",
+                    field: "Balkenfarbe des Panels",
+                    invalid: "Geben Sie eine Farbe als #RRGGBB ein.",
+                },
+                style: {
+                    label: "Panel-Stil",
+                    clan: "Wie in Panel-Grafik",
+                    clanHelp: "Jetzt {style}",
+                    help: "Den Standardstil aller Panels stellen Sie ein unter",
+                    link: "Panel-Grafik",
+                },
+                summary: {
+                    title: "Name {title}",
+                    titleDefault: "Name vom Server",
+                    description: "Beschreibung ausgefüllt",
+                    noDescription: "ohne Beschreibung",
+                    banner: "eigenes Banner",
+                    noBanner: "ohne Banner",
+                    accentClan: "Clanfarbe",
+                    accentCustom: "eigene Farbe {color}",
+                    style: "{style}",
+                },
+            },
+            refresh: {
+                locked: "Alle 60 s · gleich für alle Panels",
+                footer: {
+                    label: "In der Fußzeile anzeigen",
+                    help: "„Aktualisiert vor 6 s · wird alle 60 s aktualisiert“",
+                },
+                summaryFooter: "Alle 60 s · in der Fußzeile",
+                summaryNoFooter: "Alle 60 s · ohne Fußzeile",
+            },
+            preview: {
+                title: "Vorschau in {channel} · echte Daten von {server}",
+                titleCombined:
+                    "Vorschau in {channel} · echte Daten von {count} Servern",
+                titleLeague:
+                    "Vorschau in {channel} · zwei Nachrichten untereinander",
+                titlePlain: "Vorschau in {channel}",
+                noChannel: "dem Kanal",
+                author: "heute um {time}",
+                pending:
+                    "Die Vorschau erscheint, sobald die Serverdaten geladen sind.",
+                noServer:
+                    "Wählen Sie einen Server, dann erscheint die Vorschau.",
+                loading: "Serverdaten werden geladen…",
+                leagueLoading: "Ligadaten werden geladen…",
+                leagueFailed: "Die Ligadaten konnten nicht geladen werden.",
+                resultsEmpty:
+                    "Die Karte erscheint nach dem ersten bestätigten Ergebnis. Die Vorschau zeigt das letzte Spiel mit Ergebnis.",
+                resultsNone: "Der Clan hat noch kein Spiel mit Ergebnis.",
+                calendarNote:
+                    "Vorschau aus den Events in Logi; die Links zu den Ankündigungen ergänzt der Bot.",
+                competitionNote:
+                    "Die Gruppentabellen erstellt der Bot nach dem Speichern.",
+            },
+            joinPage: {
+                title: "Nach Klick auf Beitreten · Logi-Seite",
+                players: "{game} · {map} · {players} / {capacity} Spieler",
+                open: "In Steam öffnen",
+                fallback:
+                    "Steam hat sich nicht geöffnet? Wählen Sie im Spiel Über IP beitreten und geben Sie {address} ein.",
+                joinCode:
+                    "Im Spiel den Beitritt öffnen und den Code {code} eingeben.",
+                noAddress:
+                    "Ohne Adresse sagt die Seite nur, dass der Spieler einen Admin fragen soll.",
+                caption:
+                    "Discord erlaubt in einer Schaltfläche nur http(s)-Links. Diese Seite öffnet sofort steam://connect und zeigt sonst die IP.",
+            },
+            data: {
+                title: "Serverdaten",
+                load: "Daten vom Server laden",
+                loading: "Wird geladen…",
+                help: "Derselbe Abruf, den der Bot macht.",
+                loadedAgo: "Daten geladen {ago}.",
+                result: "Daten geladen {ago} · {map} · {players}/{capacity}",
+                perServer:
+                    "{server} · geladen {ago} · {map} · {players}/{capacity}",
+                score: "Punktestand {score}",
+                timeLeft: "noch {minutes} min",
+                queue: "Warteschlange {count}",
+                inStats: "{count} Spieler in der Statistik",
+                nextMap: "nächste Karte {map}",
+                seed: "Seed läuft · {players} von {liveFrom}",
+                stale: "Der Server hat ältere Daten gesendet.",
+                unavailable:
+                    "Der Server antwortet nicht. Das Panel zeigt die zuletzt gesammelten Daten.",
+                busy: "Ein anderer Abruf des Servers läuft. Versuchen Sie es in {seconds} s erneut.",
+                denied: "Der Schlüssel darf keine Live-Daten lesen. Ersetzen Sie ihn unter Spielserver.",
+                failed: "Der Abruf ist fehlgeschlagen. Das Panel zeigt die zuletzt gesammelten Daten und versucht es erneut.",
+                rateLimited:
+                    "{server} · {provider} lehnt gerade weitere Anfragen ab (Limit 429).",
+                rateLimitedBody:
+                    "Das Panel zeigt die Daten von {ago} und versucht es in {seconds} s erneut. Dauert es über eine Stunde, erhöhen Sie das Limit des Schlüssels {providerIn} oder ersetzen Sie ihn unter Spielserver → {server}.",
+                providerIn: {
+                    hll_crcon: "in CRCON",
+                    wardogs_warcon: "in Warcon",
+                },
+                snapshot:
+                    "Dieser Server hat keinen Live-Abruf; gezeigt werden die gesammelten Daten.",
+                notCollecting: "Logi sammelt von diesem Server keine Daten.",
+                requestFailed:
+                    "Die Daten konnten nicht geladen werden. Versuchen Sie es erneut.",
+                notServerKind:
+                    "Serverdaten werden nur bei Server-Panels gelesen.",
+            },
+            source: {
+                title: "Quelle · {server}",
+                link: "Spielserver",
+                collection: "Datensammlung",
+                live: "Live-Daten",
+                liveOk: "✓ letzter Abruf {ago}",
+                liveNone: "noch nicht gelesen",
+                liveLimited: "eingeschränkt, siehe Serverdaten",
+                key: "Schlüssel",
+                keySet: "verschlüsselt gespeichert",
+                keyVerified: "geprüft {date}",
+                keyNotVerified: "nicht geprüft",
+                keyMissing: "fehlt",
+                keyNotRequired: "nicht nötig",
+                keyEnvironment: "vom Logi-Betreiber gesetzt",
+                address: "Adresse",
+                addressValue: "{origin} · Server {id}",
+            },
+            delivery: {
+                title: "Zustellung",
+                saved: "Gespeichert",
+                claimed: "Bot übernommen",
+                sent: "Gesendet",
+                lastRefresh: "Letzte Aktualisierung",
+                notYet: "noch nicht",
+                none: "—",
+                savedBy: "{when} · {name}",
+                sentIn: "Nachricht in {channel}",
+                refreshValue: "{ago} · nächste {in}",
+                hint: "Nach In den Kanal senden werden die Schritte abgehakt, meist innerhalb von 15 s. Die Seite aktualisiert sich selbst.",
+                lastError: "Letzter Fehler:",
+                recovered: "Der nächste Versuch {after} später ging durch.",
+                stuck: {
+                    title: "Wenn die Zustellung hängt",
+                    lead: "Senden nicht bestätigt.",
+                    body: "Discord hat nicht bestätigt, dass es die Nachricht erhalten hat, und in {channel} haben wir sie nicht gefunden. Erneut versuchen sendet sie noch einmal.",
+                },
+            },
+            bar: {
+                editsMessage:
+                    "Speichern bearbeitet die Nachricht in {channel}; es wird keine neue gesendet.",
+                notInDiscord: "Das Panel ist noch nicht in Discord.",
+                pausedNote:
+                    "Das Panel ist pausiert; Speichern setzt es nicht fort.",
+                delete: "Nachricht löschen",
+                deleteConfirm:
+                    "Die Nachricht aus Discord löschen? Das Panel bleibt als nicht gesendet gespeichert.",
+                removePanel: "Panel entfernen",
+                removeConfirm:
+                    "Panel entfernen? Seine Nachrichten verschwinden aus Discord und die Einstellungen werden gelöscht.",
+                pause: "Pausieren",
+                resume: "Fortsetzen",
+                refresh: "Jetzt aktualisieren",
+                save: "Speichern",
+                publish: "In den Kanal senden",
+                saving: "Wird gespeichert…",
+                discard: "Verwerfen",
+                actions: "Panel-Aktionen",
+            },
+            saved: "Gespeichert.",
+            savedSent:
+                "Gespeichert und zur Veröffentlichung gesendet. Der Bot übernimmt es innerhalb von 15 s.",
+            problems: {
+                channel: "Wählen Sie einen Kanal.",
+                server: "Wählen Sie einen Spielserver.",
+                servers: "Wählen Sie mindestens einen Server.",
+                reportCategory: "Wählen Sie eine Ticket-Kategorie.",
+                accentColor: "Geben Sie eine Farbe als #RRGGBB ein.",
+                competition: "Wählen Sie einen Wettbewerb.",
+                fixtureCount: "Die Anzahl der Spiele muss 1 bis 10 sein.",
+            },
+            errors: {
+                not_found: "Das Panel existiert nicht mehr.",
+                conflict:
+                    "Jemand anderes hat das Panel inzwischen geändert. Laden Sie die Seite neu.",
+                kind_locked:
+                    "Der Typ eines gesendeten Panels lässt sich nicht ändern.",
+                removing: "Das Panel wird gerade entfernt.",
+                source_not_found: "Der Spielserver ist nicht mehr in Logi.",
+                game_mismatch: "Der Server gehört nicht zum Spiel des Panels.",
+                report_destination_missing:
+                    "Die Ticket-Kategorie hat keinen privaten Kanal. Richten Sie sie unter Tickets ein.",
+                report_provider:
+                    "Meldungen gibt es nur bei CRCON- und Warcon-Servern.",
+                duplicate_channel:
+                    "Dieser Server hat in diesem Kanal schon ein Panel.",
+                results_exists: "Dieses Spiel hat schon ein Ergebnis-Panel.",
+                league_exists: "Der Clan hat schon ein WD-League-Panel.",
+                calendar_exists: "Der Clan hat schon ein Kalender-Panel.",
+                competition_not_found: "Der Wettbewerb existiert nicht mehr.",
+                panel_limit: "Ein Clan kann höchstens 20 Panels haben.",
+                asset_unavailable:
+                    "Das Banner ist nicht mehr verfügbar. Laden Sie es erneut hoch.",
+                invalid_settings: "Eine Einstellung ist ungültig.",
+                unavailable:
+                    "Das Speichern ist fehlgeschlagen. Versuchen Sie es erneut.",
+                address:
+                    "Die Adresse muss IP:Port sein, zum Beispiel 203.0.113.24:7777.",
+                joinCode:
+                    "Ein Join-Code darf nur Buchstaben, Ziffern und Bindestriche enthalten.",
+                password:
+                    "Ein Passwort hat 1 bis 64 Zeichen ohne Steuerzeichen.",
+                encryption_unavailable:
+                    "Das Passwort kann gerade nicht gespeichert werden: Die Verschlüsselung ist nicht aktiviert. Bitten Sie den Logi-Betreiber, den Schlüssel einzurichten.",
+            },
         },
     },
 } as const

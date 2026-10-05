@@ -468,7 +468,12 @@ function Block({
                         <Media
                             key={index}
                             media={item}
-                            className="aspect-video w-full rounded-md"
+                            // Discord shows a single image at its own aspect
+                            // ratio (the 1200 × 400 score image, P7-07).
+                            className={cn(
+                                "w-full rounded-md",
+                                block.items.length > 1 && "aspect-video"
+                            )}
                         />
                     ))}
                 </div>

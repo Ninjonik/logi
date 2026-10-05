@@ -26,6 +26,7 @@ import { getServerContextUncached } from "@/lib/read-models/server-context"
 import type { CredentialEnvelope } from "@/domain/game-data/credentials"
 import { getCredentialKeyring, getInternalAuthSecret } from "@/lib/env"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import type { LeagueOverview } from "@/domain/wardogs-league/panels"
 import type { DashboardActor } from "../../../convex/dashboardActor"
 
 /**
@@ -73,6 +74,16 @@ const serverMutation = makeFunctionReference<
     },
     PanelServerSaveResult
 >("discordPanels:setServer")
+const leaguePreviewQuery = makeFunctionReference<
+    "query",
+    ActorArgs & { fixtureCount: number },
+    LeagueOverview
+>("discordPanels:leaguePreview")
+const refreshControlMutation = makeFunctionReference<
+    "mutation",
+    ActorArgs & { connectionId: string },
+    { status: "accepted" } | { status: "not_found" }
+>("discordPanels:refreshControl")
 const testAction = makeFunctionReference<
     "action",
     ActorArgs & { connectionId: string; panelId: string | null },
@@ -123,6 +134,28 @@ export async function testDiscordPanelFetch(
     input: { connectionId: string; panelId: string | null }
 ) {
     return await fetchAction(testAction, { ...actorArgs(access), ...input })
+}
+
+/** The WD League messages' data for the editor preview (P2-54, P2-55). */
+export async function readLeaguePanelPreview(
+    access: DiscordPanelsAccess,
+    fixtureCount: number
+) {
+    return await fetchQuery(leaguePreviewQuery, {
+        ...actorArgs(access),
+        fixtureCount,
+    })
+}
+
+/** "Obnovit teď" of a seed control message (P1-18). */
+export async function refreshDiscordPanelControl(
+    access: DiscordPanelsAccess,
+    connectionId: string
+) {
+    return await fetchMutation(refreshControlMutation, {
+        ...actorArgs(access),
+        connectionId,
+    })
 }
 
 export async function checkDiscordPanelChannel(

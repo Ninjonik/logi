@@ -4,6 +4,8 @@ import Link from "next/link"
 
 import {
     SETTINGS_SECTIONS,
+    settingsMenuSection,
+    settingsSectionParent,
     type SettingsSectionId,
     type SettingsSnapshot,
 } from "@/domain/workspaces/settings-sections"
@@ -44,7 +46,8 @@ export function SettingsSectionFrame({
     headerActions,
     legend,
     ownHeader = false,
-    breadcrumbParent,
+    crumb,
+    mobileBreadcrumb = false,
     children,
 }: {
     locale: string
@@ -60,38 +63,124 @@ export function SettingsSectionFrame({
     legend?: ReactNode
     /** The page renders its own `SettingsSectionHeader` because its title action is part of its form. */
     ownHeader?: boolean
-    /** A page that belongs under another one adds that page to the breadcrumb. */
-    breadcrumbParent?: string
+    /**
+     * An item of the page, such as one panel in "Panely v Discordu": the
+     * breadcrumb then links the page and ends with this name.
+     */
+    crumb?: string
+    /**
+     * On phones the row shows "Sekce" and the short breadcrumb
+     * ("Discord › Panely v Discordu", board P1-23) instead of the way back.
+     */
+    mobileBreadcrumb?: boolean
     children: ReactNode
 }) {
     const hub = dictionary.settingsHub
     const text = hub.sections[section]
     const group = SETTINGS_SECTIONS.find((item) => item.id === section)!.group
     const overviewHref = settingsHref(locale, serverId, undefined, gameId)
+    // A sub-page ("Grafika panelů") sits under its parent in the breadcrumb
+    // and marks the parent in the menu.
+    const parent = settingsSectionParent(section)
+    const trail: Array<{ label: string; href?: string }> = [
+        ...(parent
+            ? [
+                  {
+                      label: hub.sections[parent].title,
+                      href: settingsHref(locale, serverId, parent, gameId),
+                  },
+              ]
+            : []),
+        ...(crumb
+            ? [
+                  {
+                      label: text.title,
+                      href: settingsHref(locale, serverId, section, gameId),
+                  },
+                  { label: crumb },
+              ]
+            : [{ label: text.title }]),
+    ]
     const navProps = {
         locale,
         serverId,
         gameId,
         sections: settingsNavSections(snapshot),
-        active: section,
+        active: settingsMenuSection(section),
         dictionary,
     }
+    const crumbs = (items: typeof trail) =>
+        items.map((item, index) => (
+            <span key={index} className="contents">
+                {item.href && index < items.length - 1 ? (
+                    <Link href={item.href} className="hover:text-foreground">
+                        {item.label}
+                    </Link>
+                ) : (
+                    <span
+                        aria-current={
+                            index === items.length - 1 ? "page" : undefined
+                        }
+                        className={
+                            index === items.length - 1
+                                ? "text-foreground min-w-0 truncate"
+                                : undefined
+                        }
+                    >
+                        {item.label}
+                    </span>
+                )}
+                {index < items.length - 1 ? (
+                    <ChevronRight
+                        className="size-3.5 shrink-0"
+                        aria-hidden="true"
+                    />
+                ) : null}
+            </span>
+        ))
     return (
         <div className="px-4 pb-8 lg:px-6">
-            <div className="flex items-center justify-between gap-3 lg:hidden">
-                <Link
-                    href={overviewHref}
-                    className="text-muted-foreground hover:text-foreground inline-flex min-h-9 items-center gap-1.5 text-sm"
-                >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    {hub.overview.title}
-                </Link>
-                <SettingsNavSheet label={hub.menu} title={hub.overview.title}>
-                    <nav aria-label={hub.sectionNavLabel}>
-                        <SettingsNavGroups {...navProps} />
+            {mobileBreadcrumb ? (
+                <div className="flex items-center gap-3 lg:hidden">
+                    <SettingsNavSheet
+                        label={hub.menu}
+                        title={hub.overview.title}
+                    >
+                        <nav aria-label={hub.sectionNavLabel}>
+                            <SettingsNavGroups {...navProps} />
+                        </nav>
+                    </SettingsNavSheet>
+                    <nav
+                        aria-label={hub.breadcrumbLabel}
+                        className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm"
+                    >
+                        <span className="shrink-0">{hub.groups[group]}</span>
+                        <ChevronRight
+                            className="size-3.5 shrink-0"
+                            aria-hidden="true"
+                        />
+                        {crumbs(trail.slice(-1))}
                     </nav>
-                </SettingsNavSheet>
-            </div>
+                </div>
+            ) : (
+                <div className="flex items-center justify-between gap-3 lg:hidden">
+                    <Link
+                        href={overviewHref}
+                        className="text-muted-foreground hover:text-foreground inline-flex min-h-9 items-center gap-1.5 text-sm"
+                    >
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        {hub.overview.title}
+                    </Link>
+                    <SettingsNavSheet
+                        label={hub.menu}
+                        title={hub.overview.title}
+                    >
+                        <nav aria-label={hub.sectionNavLabel}>
+                            <SettingsNavGroups {...navProps} />
+                        </nav>
+                    </SettingsNavSheet>
+                </div>
+            )}
             <nav
                 aria-label={hub.breadcrumbLabel}
                 className="text-muted-foreground hidden items-center gap-1.5 text-sm lg:flex"
@@ -102,15 +191,7 @@ export function SettingsSectionFrame({
                 <ChevronRight className="size-3.5" aria-hidden="true" />
                 <span>{hub.groups[group]}</span>
                 <ChevronRight className="size-3.5" aria-hidden="true" />
-                {breadcrumbParent ? (
-                    <>
-                        <span>{breadcrumbParent}</span>
-                        <ChevronRight className="size-3.5" aria-hidden="true" />
-                    </>
-                ) : null}
-                <span aria-current="page" className="text-foreground">
-                    {text.title}
-                </span>
+                {crumbs(trail)}
             </nav>
             <div className="mt-4 grid gap-8 lg:mt-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]">
                 <div className="hidden lg:sticky lg:top-4 lg:block lg:self-start">

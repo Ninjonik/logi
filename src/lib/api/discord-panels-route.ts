@@ -5,10 +5,15 @@ import {
     serverAddressSchema,
     serverPasswordSchema,
 } from "@/domain/discord-publications/server-join"
+import {
+    panelImageRequestSchema,
+    type PanelImageRequest,
+} from "@/domain/discord-publications/panel-image-model"
 import type { PanelActionResult } from "@/application/discord-publications/panel-actions"
 import type { PanelSaveResult } from "@/application/discord-publications/save-panel"
 import { PANEL_ACTIONS } from "@/domain/discord-publications/panel-delivery"
 import { panelSaveSchema } from "@/domain/discord-publications/settings"
+import { PANEL_WINDOW } from "@/domain/wardogs-league/all-fixtures"
 import { readBoundedJson } from "@/lib/api/request-json"
 
 /**
@@ -19,7 +24,10 @@ import { readBoundedJson } from "@/lib/api/request-json"
  * - `POST /{panelId}/actions` a live action;
  * - `POST /test-fetch` the provider test read with the rendered preview;
  * - `POST /channel-check` the channel's permissions and privacy;
- * - `PUT /servers/{connectionId}` a server's address, join code and password.
+ * - `PUT /servers/{connectionId}` a server's address, join code and password;
+ * - `GET /league-preview?count=` the WD League data of the editor preview;
+ * - `POST /controls/{connectionId}` "Obnovit teď" of a seed control message;
+ * - `POST /preview-image` the editor's style A score image or style B banner.
  * Clan admins only; writes only from the dashboard origin, checked before
  * the body is read. Live Discord actions are deliberately not in `/api/v1`.
  */
@@ -45,6 +53,21 @@ export const panelTestRequestSchema = z.strictObject({
 export const panelChannelRequestSchema = z.strictObject({
     channelId: snowflake,
 })
+export const panelControlRequestSchema = z.strictObject({
+    action: z.literal("refresh"),
+})
+/**
+ * The style A score image or style B banner of the editor preview. Only
+ * Logi's built-in map art may be the background: an uploaded asset is the
+ * bot's to resolve, so the dashboard cannot be used to fetch one by ID.
+ */
+export const panelPreviewImageSchema = panelImageRequestSchema.refine(
+    (request) =>
+        request.model.background === null ||
+        request.model.background.kind === "builtin",
+    "Only built-in backgrounds."
+)
+
 /** Absent keeps a value; `null` or "" clears it. */
 export const panelServerRequestSchema = z.strictObject({
     address: z.union([serverAddressSchema, z.literal(""), z.null()]).optional(),
@@ -90,6 +113,15 @@ export type DiscordPanelsRoutePorts<A extends DiscordPanelsAccess> = {
             password?: string | null
         }
     ): Promise<{ status: string } & Record<string, unknown>>
+    /** The WD League messages' current data for the editor preview (P2-54, P2-55). */
+    leaguePreview(access: A, fixtureCount: number): Promise<unknown>
+    /** "Obnovit teď" of a seed control message (P1-18). */
+    refreshControl(
+        access: A,
+        connectionId: string
+    ): Promise<{ status: "accepted" } | { status: "not_found" }>
+    /** PNG of a preview score image or banner. */
+    renderPreviewImage(request: PanelImageRequest): Promise<Uint8Array>
 }
 
 const SAVE_STATUS: Record<string, number> = {
@@ -205,6 +237,65 @@ export function discordPanelsRoutes<A extends DiscordPanelsAccess>(
                 )
             } catch {
                 return json({ error: "verification_unavailable" }, 503)
+            }
+        },
+
+        async leaguePreview(request: Request, params: { serverId: string }) {
+            const access = await ports.access(params.serverId).catch(() => null)
+            if (!access) return json({ error: "forbidden" }, 403)
+            const count = Number(
+                new URL(request.url).searchParams.get("count") ?? 6
+            )
+            if (!Number.isInteger(count) || count < 1 || count > PANEL_WINDOW)
+                return json({ error: "invalid_request" }, 400)
+            try {
+                return json(await ports.leaguePreview(access, count))
+            } catch {
+                return json({ error: "unavailable" }, 503)
+            }
+        },
+
+        async control(
+            request: Request,
+            params: { serverId: string; connectionId: string }
+        ) {
+            const access = await writeAccess(request, params.serverId)
+            if (!access) return json({ error: "forbidden" }, 403)
+            if (!reference.safeParse(params.connectionId).success)
+                return json({ error: "not_found" }, 404)
+            const parsed = await body(request, panelControlRequestSchema, 256)
+            if (!parsed.success) return json({ error: "invalid_request" }, 400)
+            try {
+                const result = await ports.refreshControl(
+                    access,
+                    params.connectionId
+                )
+                return result.status === "accepted"
+                    ? json(result, 202)
+                    : json({ error: "not_found" }, 404)
+            } catch {
+                return json({ error: "unavailable" }, 503)
+            }
+        },
+
+        async previewImage(request: Request, params: { serverId: string }) {
+            const access = await writeAccess(request, params.serverId)
+            if (!access) return json({ error: "forbidden" }, 403)
+            const parsed = await body(request, panelPreviewImageSchema, 16_384)
+            if (!parsed.success) return json({ error: "invalid_request" }, 400)
+            try {
+                const image = await ports.renderPreviewImage(parsed.data)
+                const bytes = new Uint8Array(image.byteLength)
+                bytes.set(image)
+                return new Response(bytes.buffer, {
+                    headers: {
+                        "Content-Type": "image/png",
+                        "Cache-Control": "private, no-store",
+                        "X-Content-Type-Options": "nosniff",
+                    },
+                })
+            } catch {
+                return json({ error: "render_failed" }, 503)
             }
         },
 
