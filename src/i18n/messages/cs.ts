@@ -3470,10 +3470,10 @@ export const csMessages = {
                     description:
                         "Klanová role a role, která smí spravovat Logi.",
                 },
-                stats: {
-                    title: "Příkaz /stats",
+                commands: {
+                    title: "Příkazy",
                     description:
-                        "Statistiky hráčů v Discordu: pro které hry a kam se sdílí.",
+                        "Které příkazy bot nabízí, kdo je smí použít a kde.",
                 },
                 membership: {
                     title: "Členství",
@@ -3671,32 +3671,148 @@ export const csMessages = {
             unknownMember: "Člen bez účtu v Logi",
             moreManagers: "a další: {count}",
         },
-        statsPage: {
-            enable: "Povolit /stats",
-            on: "Zapnuto",
-            off: "Vypnuto",
-            gamesTitle: "Hry a zdroj dat",
-            hllSource:
-                "Z veřejných profilů HLL Records podle Steam účtu hráče.",
-            wardogsSource: "Z her uložených z vašich",
-            gameServersLink: "herních serverů",
-            shareTitle: "Sdílení",
-            defaultChannel: "Výchozí kanál",
-            defaultChannelHelp:
-                "Tlačítko Sdílet nabídne tento kanál jako první.",
-            noChannel: "Bez výchozího kanálu",
-            legacyTitle: "Stará připojení ke stats serverům · {count}",
-            legacyHelp:
-                "Zadaná tokenem a adresou v nastavení bota. Nová připojení patří do Herních serverů, kde se klíč ukládá šifrovaně a dá se otestovat.",
-            openGameServers: "Otevřít Herní servery",
-            previewTitle: "Náhled odpovědi v Discordu",
-            previewExample: "Ukázková data",
-            previewEphemeral: "Vidíš jen ty · Zahodit",
-            previewPlayer: "Ukázkový hráč",
-            previewNote:
-                "Čísla jsou jen ukázka. Skutečná odpověď ukáže statistiky hráče z vašich herních serverů.",
-            showConnections: "Zobrazit připojení",
-            hideConnections: "Skrýt připojení",
+        commandsPage: {
+            title: "Příkazy v Discordu",
+            description:
+                "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
+            registration: {
+                title: "Registrace příkazů",
+                phoneTitle: "Příkazy jsou zaregistrované",
+                registered:
+                    "Zaregistrováno {when} · {count} na serveru {server}. Po uložení změn je bot zaregistruje znovu sám; Discord je ukáže do minuty.",
+                registeredShort: "{when} · {count}",
+                count: {
+                    one: "{count} příkaz",
+                    few: "{count} příkazy",
+                    other: "{count} příkazů",
+                },
+                today: "dnes v {time}",
+                yesterday: "včera v {time}",
+                neverTitle: "Příkazy zatím nejsou zaregistrované",
+                never: "Bot je zaregistruje, jakmile poběží a uvidí tento server. Po uložení změn je zaregistruje znovu sám.",
+                pending: "Bot příkazy zaregistruje znovu do minuty.",
+                failedTitle: "Registrace příkazů se nepovedla",
+                failed: "{reason} Zkontrolujte, že bot je na serveru a má oprávnění pro příkazy, a zkuste to znovu.",
+                failures: {
+                    forbidden: "Discord botovi registraci nepovolil.",
+                    rate_limited: "Discord dočasně omezil požadavky.",
+                    unavailable: "Discord neodpověděl.",
+                },
+                reregister: "Znovu zaregistrovat",
+                requested: "Bot příkazy zaregistruje znovu do minuty.",
+                requestFailed: "Požadavek se nepodařilo odeslat.",
+            },
+            legacy: {
+                title: "Stará připojení ke stats serverům · {count}",
+                help: "Používá je jen hledání hráče v /link a v přihlášce do klanu, /stats ne. Po převodu do Herních serverů se klíč uloží šifrovaně a dá se otestovat.",
+                convert: "Převést do Herních serverů",
+                show: "Zobrazit připojení",
+                hide: "Skrýt připojení",
+                converted:
+                    "Převedeno: {converted}. Otestujte je v Herních serverech; stará připojení pak můžete odebrat.",
+                nothingToConvert:
+                    "Všechna připojení už v Herních serverech jsou, nebo se převést nedají.",
+                skipped:
+                    "Nepřevedeno: {count} (nejsou přes https, nemají klíč nebo patří jiné hře).",
+                encryptionUnavailable:
+                    "Šifrování klíčů teď není dostupné, převod se nespustil.",
+                failed: "Převod se nepodařil.",
+            },
+            commands: {
+                title: "Příkazy",
+                intro: "Logi ověří oprávnění při každém použití, čerstvě z Discordu. Nabídka po napsání „/“ je pro všechny stejná; kdo příkaz použít nesmí, dostane krátké vysvětlení a /help mu ho nenabídne.",
+                members: "Pro členy",
+                staff: "Pro správce",
+                new: "Nový",
+                on: "Zapnuto",
+                off: "Vypnuto",
+                who: "Kdo smí použít",
+                reply: "Odpověď",
+                where: "Kde jde použít",
+                audiences: {
+                    everyone: {
+                        label: "Všichni na serveru",
+                        description: "Každý člen Discord serveru",
+                    },
+                    clanMembers: {
+                        label: "Členové klanu",
+                        description: "S klanovou rolí z Role a přístup",
+                    },
+                    logiAdmins: {
+                        label: "Správci Logi",
+                        description: "Administrator nebo Role správců",
+                    },
+                },
+                rolesHint: "K tomu můžete přidat konkrétní role.",
+                audienceWithRoles: "{group} a k tomu role {roles}.",
+                addRole: "Role",
+                addRoleAria: "Přidat roli k {command}",
+                removeRole: "Odebrat roli {role}",
+                searchRoles: "Hledat roli",
+                noRoles: "Žádná další role",
+                replies: {
+                    private: "Jen autor příkazu",
+                    privateShare: "Jen autor, s tlačítkem Sdílet",
+                },
+                fixedWho: {
+                    help: "Všichni na serveru · každý uvidí jen své příkazy",
+                    link: "Všichni na serveru · potřebují ho i uchazeči o vstup",
+                    notice: "Přihlášení na akci, která ještě nezačala",
+                },
+                allChannels: "Všechny kanály",
+                someChannels: "Jen vybrané kanály",
+                addChannel: "Kanál",
+                addChannelAria: "Přidat kanál k {command}",
+                removeChannel: "Odebrat kanál {channel}",
+                searchChannels: "Hledat kanál",
+                noChannels: "Žádný další kanál",
+                channelsHint: "Jinde bot odpoví, kde příkaz jde použít.",
+                playerShareHint:
+                    "Sdílet pošle profil do kanálu, kde padl příkaz.",
+                whoLabel: "Kdo smí použít {command}",
+                replyLabel: "Odpověď {command}",
+                whereLabel: "Kde jde použít {command}",
+                closeTicket: {
+                    toggle: "zapíná se s Tickety",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Tickety",
+                    reply: "Potvrzení autorovi příkazu, shrnutí ve vlákně, DM autorovi ticketu",
+                    where: "Jen ve vláknech ticketů",
+                },
+                closeApplication: {
+                    toggle: "zapíná se s Členstvím",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Členství",
+                    reply: "Potvrzení autorovi příkazu, rozhodnutí ve vlákně, DM uchazeči",
+                    where: "Jen ve vláknech přihlášek",
+                },
+            },
+            stats: {
+                gamesTitle: "Hry a zdroj dat",
+                gameSwitch: "Statistiky {game}",
+                hllSource:
+                    "Z veřejných profilů HLL Records podle Steam účtu hráče.",
+                wardogsSource: "Z her uložených z vašich",
+                gameServersLink: "herních serverů",
+                shareChannel: "Kanál pro Sdílet",
+                shareChannelHelp:
+                    "Sdílet pošle kartu rovnou sem. Bez kanálu se bot hráče zeptá, kam.",
+                noShareChannel: "Bez kanálu",
+                previewTitle: "Náhled odpovědi · ukázková data",
+                previewPlayer: "Hráč 17",
+            },
+            descriptions: {
+                title: "Popisy příkazů v Discordu",
+                intro: "Discord ukáže popis v jazyce klanu všem členům, bez ohledu na jazyk jejich aplikace. Jazyk klanu je {language}; při změně v {channels} bot příkazy zaregistruje znovu. Dovětek „(pro správce)“ bot přidá jen příkazům, které smí jen Správci Logi.",
+                channelsLink: "Kanály a jazyk",
+                languages: { cs: "čeština", en: "angličtina", de: "němčina" },
+                command: "Příkaz",
+                clanLanguage: "jazyk klanu",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote: "Po uložení bot příkazy znovu zaregistruje.",
+            saved: "Nastavení příkazů je uložené. Bot je zaregistruje znovu.",
+            saveError: "Nastavení příkazů se nepodařilo uložit.",
         },
         messagesPage: {
             lookTitle: "Vzhled všech zpráv",
@@ -3831,10 +3947,10 @@ export const csMessages = {
                 title: "Role a přístup",
                 description: "Role klanu a role, která otevírá správu v Logi.",
             },
-            stats: {
-                title: "Příkaz /stats",
+            commands: {
+                title: "Příkazy",
                 description:
-                    "Pro které hry /stats odpovídá, kam se výsledky sdílejí a ze kterých serverů čte statistiky.",
+                    "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
             },
             membership: {
                 title: "Členství",

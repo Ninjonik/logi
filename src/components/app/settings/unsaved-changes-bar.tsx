@@ -31,12 +31,15 @@ export function UnsavedChangesBar({
     onDiscard,
     onSave,
     dictionary,
+    note,
 }: {
     changes: number
     saving: boolean
     onDiscard: () => void
     onSave: () => void
     dictionary: Dictionary
+    /** What saving also does, after the count on wider screens. */
+    note?: string
 }) {
     const locale = useLocale()
     const text = dictionary.settingsHub.saveBar
@@ -54,6 +57,12 @@ export function UnsavedChangesBar({
                 }
             >
                 {unsavedChangesLabel(changes, locale, text)}
+                {note && changes ? (
+                    <span className="text-muted-foreground font-normal max-sm:hidden">
+                        {" · "}
+                        {note}
+                    </span>
+                ) : null}
             </span>
             <div className="flex gap-2">
                 {changes ? (

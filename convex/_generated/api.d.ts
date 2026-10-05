@@ -26,6 +26,8 @@ import type * as crons from "../crons.js";
 import type * as dashboardActor from "../dashboardActor.js";
 import type * as dashboardSessionStore from "../dashboardSessionStore.js";
 import type * as dashboardSessions from "../dashboardSessions.js";
+import type * as discordCommandTable from "../discordCommandTable.js";
+import type * as discordCommands from "../discordCommands.js";
 import type * as discordConfig from "../discordConfig.js";
 import type * as discordMemberAccessStore from "../discordMemberAccessStore.js";
 import type * as discordMembership from "../discordMembership.js";
@@ -167,6 +169,8 @@ declare const fullApi: ApiFromModules<{
   dashboardActor: typeof dashboardActor;
   dashboardSessionStore: typeof dashboardSessionStore;
   dashboardSessions: typeof dashboardSessions;
+  discordCommandTable: typeof discordCommandTable;
+  discordCommands: typeof discordCommands;
   discordConfig: typeof discordConfig;
   discordMemberAccessStore: typeof discordMemberAccessStore;
   discordMembership: typeof discordMembership;

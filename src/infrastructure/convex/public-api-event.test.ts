@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
+import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -306,6 +307,7 @@ const PANEL_GRAPHICS_DEFAULT = {
 }
 
 test("settings responses carry the feature slices and refuse unknown slices", async () => {
+    const sliceKeys = CLAN_SETTINGS_SLICES.map((slice) => slice.key).sort()
     const db = new FakeDb()
     db.tables.discordConfigs.set("config-a", {
         _id: "config-a",
@@ -323,6 +325,8 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         { db },
         { secret: "dev-internal-auth-secret", keyHash: "key" }
     )) as { slices: unknown; discordConfig: Record<string, unknown> }
+    // Every registered slice answers, also for a clan that saved nothing.
+    assert.deepEqual(Object.keys(read.slices as object).sort(), sliceKeys)
     // Every registered slice is present; panel graphics defaults to style A.
     assert.deepEqual(
         (read.slices as Record<string, unknown>).panelGraphics,
@@ -360,6 +364,10 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         }
     )
     assert.equal(updated?.status, 200)
+    assert.deepEqual(
+        Object.keys(JSON.parse(updated!.body).data.slices).sort(),
+        sliceKeys
+    )
     assert.deepEqual(
         JSON.parse(updated!.body).data.slices.panelGraphics,
         PANEL_GRAPHICS_DEFAULT

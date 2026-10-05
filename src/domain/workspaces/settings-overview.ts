@@ -160,11 +160,6 @@ export function settingsTileBadge(
             return snapshot.clanRoleId
                 ? { tone: "ready", kind: "done" }
                 : { tone: "attention", kind: "notSet" }
-        case "stats":
-            return {
-                tone: "neutral",
-                kind: snapshot.statsEnabled ? "on" : "off",
-            }
         case "game-servers":
             if (facts.failingServers)
                 return {

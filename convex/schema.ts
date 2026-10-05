@@ -32,6 +32,10 @@ import {
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
 import {
+    commandSettingsValidator,
+    discordCommandRegistrations,
+} from "./discordCommandTable"
+import {
     discordApplicationEmoji,
     discordPanelGraphics,
 } from "./discordPanelGraphicsTable"
@@ -755,6 +759,8 @@ export default defineSchema({
         // Clan colour and icon density of every bot message (Discord messages
         // settings). Missing means Logi amber and the sparse look.
         messageStyle: v.optional(messageStyle),
+        // Per-command settings of the "Příkazy" page (Discord redesign N3).
+        commandSettings: v.optional(commandSettingsValidator),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -2148,4 +2154,6 @@ export default defineSchema({
     discordSeedPlans,
     discordSeedRuns,
     discordSeedMessages,
+    // Slash-command registrations per Discord server (Discord redesign N3).
+    discordCommandRegistrations,
 })

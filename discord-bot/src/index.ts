@@ -9,6 +9,10 @@ import {
     syncGuildMemberAccessMember,
     invalidateMembershipGuild,
 } from "./sync/member-access"
+import {
+    registerJoinedGuild,
+    startCommandRegistration,
+} from "./commands/runtime"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
@@ -167,17 +171,13 @@ client.once(Events.ClientReady, async (readyClient) => {
             guildCount: readyClient.guilds.cache.size,
         })
 
-        for (const guild of readyClient.guilds.cache.values()) {
+        for (const guild of readyClient.guilds.cache.values())
             await invalidateMembershipGuild(guild.id)
-            await interactionHandler
-                .registerGuildCommands(guild)
-                .catch((error) => {
-                    logError("bot", "Failed to register guild commands", {
-                        guildId: guild.id,
-                        error,
-                    })
-                })
-        }
+        // Slash commands in every server, then again whenever the clan
+        // language or the command settings change (M1-17, M1-19, M1-B01).
+        await startCommandRegistration(readyClient).catch((error) =>
+            logError("bot", "Failed to register guild commands", { error })
+        )
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
@@ -233,6 +233,16 @@ client.on(Events.InteractionCreate, (interaction) =>
             await interactionHandler.handleChatInputCommand(interaction)
     })
 )
+
+// A server that adds the bot gets the commands at once (M1-18).
+client.on(Events.GuildCreate, (guild) => {
+    void registerJoinedGuild(client, guild).catch((error) =>
+        logError("bot", "Failed to register guild commands", {
+            guildId: guild.id,
+            error,
+        })
+    )
+})
 
 registerMembershipInvalidationEvents(client, {
     invalidate: invalidateMembershipGuild,

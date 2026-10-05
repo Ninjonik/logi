@@ -8,6 +8,7 @@ import {
 } from "discord.js"
 import { createInteractionHandler } from "../interactions"
 import { ConvexReactClient } from "convex/react"
+import { getFunctionName } from "convex/server"
 import { closeConvexClient } from "../convex"
 import test, { afterEach } from "node:test"
 import assert from "node:assert/strict"
@@ -200,10 +201,32 @@ test("notice submit acknowledges before persistence and cache revalidation", asy
     let acknowledged = false,
         writes = 0,
         edited = false
-    t.mock.method(ConvexReactClient.prototype, "query", async () => {
-        assert.equal(acknowledged, true)
-        return { defaultLanguage: "en" }
-    })
+    const gameStart = "2099-01-01T18:00:00Z"
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "query",
+        async (reference: Parameters<typeof getFunctionName>[0]) => {
+            assert.equal(acknowledged, true)
+            switch (getFunctionName(reference)) {
+                case "discordSync:getEventInteractionContext":
+                    return {
+                        event: {
+                            guildId,
+                            name: "Synthetic match",
+                            gameStart,
+                            status: "scheduled",
+                        },
+                        config: { defaultLanguage: "en", timezone: "UTC" },
+                    }
+                case "events:findNoticeTarget":
+                    return [
+                        { id: "event-id", name: "Synthetic match", gameStart },
+                    ]
+                default:
+                    return []
+            }
+        }
+    )
     t.mock.method(
         ConvexReactClient.prototype,
         "mutation",
@@ -224,9 +247,16 @@ test("notice submit acknowledges before persistence and cache revalidation", asy
         guildId,
         user: { id: actorId },
         fields: { getTextInputValue: () => "Synthetic delay" },
-        deferReply: async (v: { flags: number }) => {
+        deferred: false,
+        ephemeral: null,
+        deferReply: async function (
+            this: { deferred: boolean; ephemeral: boolean | null },
+            v: { flags: number }
+        ) {
             assert.equal(v.flags, MessageFlags.Ephemeral)
             acknowledged = true
+            this.deferred = true
+            this.ephemeral = true
         },
         editReply: async () => {
             edited = true
