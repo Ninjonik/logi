@@ -104,9 +104,12 @@ export function acceptFixtureRead(
     const { now } = context
     const selected = selectTrackedSnapshot(state.snapshot, read.snapshot)
     const snapshot = selected.snapshot
+    // Another reader refreshing the same page is not a failure of ours.
     const error: LeagueErrorCode | null = selected.rejected
         ? "invalid_html"
-        : read.error
+        : read.error === "refresh_in_progress" && snapshot
+          ? null
+          : read.error
     const changes =
         snapshot && snapshot !== state.snapshot
             ? fixtureChanges(state.snapshot, snapshot)

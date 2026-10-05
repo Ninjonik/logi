@@ -188,6 +188,23 @@ test("placements create, keep and correct the stored result; losing them is reje
     assert.deepEqual(orphan.result, { kind: "remove" })
 })
 
+test("a page another reader is refreshing is used without marking the fixture failed", () => {
+    const busy: LeagueRead = {
+        ...leagueReadOf(fresh(), now, "refresh_in_progress"),
+        nextRefreshAt: new Date(now + 20_000).toISOString(),
+    }
+    const outcome = acceptFixtureRead(state(), busy, { now, inWindow: true })
+    assert.equal(outcome.error, null)
+    assert.deepEqual(outcome.changes, ["discovered"])
+    assert.equal(outcome.nextRefreshAt, now + 60_000)
+    const empty = acceptFixtureRead(
+        state(),
+        { ...busy, snapshot: null },
+        { now, inWindow: true }
+    )
+    assert.equal(empty.error, "refresh_in_progress")
+})
+
 test("old cancelled and long-settled fixtures are not read again", () => {
     const cancelled = acceptFixtureRead(
         state({ firstSeenAt: now - 30 * 86_400_000 }),
