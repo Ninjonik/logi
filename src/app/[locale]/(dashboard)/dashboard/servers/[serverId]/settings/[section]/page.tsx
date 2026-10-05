@@ -168,6 +168,7 @@ export default async function ServerSettingsSectionPage({
                     gameId={gameId}
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
+                    siteUrl={getSiteUrl()}
                     hrefs={{
                         channels: settingsHref(
                             locale,
@@ -187,6 +188,32 @@ export default async function ServerSettingsSectionPage({
                             "match-templates",
                             gameId
                         ),
+                        commands: settingsHref(
+                            locale,
+                            serverId,
+                            "commands",
+                            gameId
+                        ),
+                        membership: settingsHref(
+                            locale,
+                            serverId,
+                            "membership",
+                            gameId
+                        ),
+                        tickets: settingsHref(
+                            locale,
+                            serverId,
+                            "tickets",
+                            gameId
+                        ),
+                        // "Změnit znaky" opens the fixed signs on "Grafika panelů" (P8).
+                        factionSigns: `${settingsHref(
+                            locale,
+                            serverId,
+                            "panel-graphics",
+                            gameId
+                        )}#panel-graphics-factions`,
+                        accountMessages: `/${locale}/dashboard/settings/user#zpravy-od-bota`,
                     }}
                     dictionary={dictionary}
                 />
@@ -424,7 +451,8 @@ export default async function ServerSettingsSectionPage({
             ownHeader={
                 section === "tickets" ||
                 section === "game-servers" ||
-                section === "commands"
+                section === "commands" ||
+                section === "messages"
             }
             breadcrumbParent={
                 section === "panel-graphics"

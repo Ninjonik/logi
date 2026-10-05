@@ -174,6 +174,18 @@ test("without a fixed now, relative times show the absolute time so renders stay
     assert.match(textOf(html), /Aktualizováno 11\. října 2026 v 20:00/)
 })
 
+test("the message text above the card follows the author line", () => {
+    const text = textOf(
+        render({
+            view: frame,
+            author: { time: "dnes v 18:02" },
+            content: "@Klan",
+        })
+    )
+    assert.ok(text.indexOf("dnes v 18:02") < text.indexOf("@Klan"))
+    assert.ok(text.indexOf("@Klan") < text.indexOf("Vlci #1"))
+})
+
 test("the header subtitle renders under the title with its mentions", () => {
     const html = render({
         view: {

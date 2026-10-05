@@ -89,13 +89,17 @@ test("each requirement points at the page that fixes it", () => {
     assert.equal(settingsSectionForRequirement("enabledGames"), "games")
 })
 
-test("the Matches group holds templates, presets and Discord messages in menu order", () => {
+test("the Matches group holds templates and presets; messages follow channels under Discord (N1-01)", () => {
     assert.deepEqual(
         SETTINGS_SECTIONS.filter((section) => section.group === "matches").map(
             (section) => section.id
         ),
-        ["match-templates", "presets", "messages"]
+        ["match-templates", "presets"]
     )
+    const discord = SETTINGS_SECTIONS.filter(
+        (section) => section.group === "discord"
+    ).map((section) => section.id)
+    assert.equal(discord.indexOf("messages"), discord.indexOf("channels") + 1)
     assert.ok(isSettingsSectionId("event-categories"))
     assert.equal(
         SETTINGS_SECTIONS.find((section) => section.id === "event-categories")

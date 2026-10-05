@@ -57,6 +57,8 @@ export type DiscordMessagePreviewProps = {
     author?: { name?: string; time?: string; edited?: boolean }
     /** The "<name> použil(a) /<command>" line above a command reply. */
     invokedBy?: { user: string; command: string }
+    /** The message's text above the card, e.g. the role ping "@Klan". */
+    content?: string
     className?: string
 }
 
@@ -527,6 +529,7 @@ export function DiscordMessagePreview({
     mentions,
     author,
     invokedBy,
+    content,
     className,
 }: DiscordMessagePreviewProps) {
     const copy = getSystemMessages(language).kit
@@ -606,6 +609,13 @@ export function DiscordMessagePreview({
                                 </span>
                             )}
                         </p>
+                    )}
+                    {content?.trim() && (
+                        <MarkdownText
+                            markdown={content.trim()}
+                            context={context}
+                            className="text-[#c9cdfb]"
+                        />
                     )}
                     <article
                         className="flex min-w-0 flex-col gap-2.5 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5 [overflow-wrap:anywhere]"

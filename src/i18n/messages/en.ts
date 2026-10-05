@@ -3463,9 +3463,9 @@ export const enMessages = {
                         "Squad and role layouts for rosters, topics for the match forum.",
                 },
                 messages: {
-                    title: "Discord messages",
+                    title: "Messages and panels",
                     description:
-                        "Announcements, rosters, reminders, live scores and results.",
+                        "How bot messages look, what the bot sends and an overview of the panels.",
                 },
                 channels: {
                     title: "Channels and language",
@@ -3826,56 +3826,254 @@ export const enMessages = {
             saveError: "The command settings could not be saved.",
         },
         messagesPage: {
+            title: "Messages and panels in Discord",
+            description:
+                "Everything the bot sends: where, whether at all and how it looks. It writes in the clan language and with the clan colour.",
             lookTitle: "Look of all messages",
-            language: "Language",
-            languages: { en: "English", cs: "Czech", de: "German" },
-            languageLink: "Channels and language",
-            listTitle: "Messages",
-            edit: "Edit",
-            close: "Close",
-            channelNotSet: "No channel set",
-            channelOff: "Off · no channel set",
-            channelUnknown: "channel set",
-            announcement: "Match announcement",
-            announcementDetail: "with sign-up buttons",
-            eventInfo: "Roster and assignments",
-            eventInfoDetail: "after the roster is published",
-            reminders: "Reminders",
-            remindersDetail:
-                "DM · sign-up reminders daily until registration closes, attendance 24, 18, 12 and 6 h before the meeting",
-            league: "League cards",
-            leagueDetail: "Wardogs League matches",
-            errors: "Bot errors",
-            errorsDetail: "managers only",
+            lookIntro:
+                "Applies to announcements, panels, DMs and command replies. Bot errors for managers have a grey bar.",
             clanColor: "Clan colour",
-            clanColorHelp: "Events with a category use the category's colour.",
+            clanColorHelp:
+                "The bar of every message. A panel can have its own colour in the panel editor.",
             clanColorPicker: "Pick a colour",
             clanColorInvalid: "Enter the colour as #E8A33D.",
             clanColorDefault:
-                "Without a colour of your own, messages use Logi orange.",
+                "Logi's default colour. An event category shows as a label and does not change the bar.",
+            clanColorCustom:
+                "An event category shows as a label and does not change the bar.",
             icons: "Icons in messages",
-            iconsHelp: "Factions always keep their sign.",
+            iconsHelp: "In every message, not only in announcements.",
             iconsSparse: "Sparse",
             iconsRich: "Emoji on every line",
+            factions: "Faction signs",
+            factionsHelp:
+                "The same in announcements, results, panels and /stats.",
+            factionNames: {
+                allies: "Allies",
+                axis: "Axis",
+                valkyra: "Valkyra",
+                manticore: "Manticore",
+                lonestar: "Lonestar",
+            },
+            factionsDefault: "Logi's default signs",
+            factionsChange: "Change signs",
+            language: "Language",
+            languages: { en: "English", cs: "Czech", de: "German" },
             languageFrom: "From",
-            languageScope: ", applies to every message",
-            channel: "Channel",
-            noChannel: "No channel",
-            gameException: "{game} has its own channel {channel}.",
-            announcementHelp:
-                "Applies to all games. New matches keep the channel they were created with.",
-            eventInfoHelp:
-                "The bot posts the roster and assignments here once the roster is published. It works only together with the announcement channel.",
-            errorsHelp:
-                "The bot reports permission and channel problems here. Only managers should see it.",
-            liveScore: "Live score",
-            liveScoreDetail: "{channel} · refreshes every {refresh}",
-            liveScoreOff: "Off · a panel from your game servers",
-            seconds: "{count} s",
-            minutes: "{count} min",
-            results: "Results",
-            resultsDetail: "after a match result is confirmed",
-            off: "Off",
+            languageLink: "Channels and language",
+            languageScope:
+                "Every message and command reply, whatever language a member's app uses.",
+            livePreview: "Live preview",
+            livePreviewLabel: "Live preview of the look",
+            livePreviewSparse:
+                "A match announcement with sparse icons. It changes with the colour and icons on the left.",
+            livePreviewRich:
+                "A match announcement with an emoji on every line. It changes with the colour and icons on the left.",
+            previewTime: "today at 18:02",
+            listTitle: "What the bot sends",
+            listIntro:
+                "Every channel is edited in one place. A channel with a lock belongs to another page, and the link takes you there. A channel with a picker is edited right here.",
+            groups: {
+                matches: "Matches",
+                direct: "Private messages",
+                directNote: "DMs and replies only one person sees",
+                panels: "Panels",
+                membership: "Membership and tickets",
+                system: "System",
+            },
+            preview: "Preview",
+            close: "Close",
+            edit: "Edit",
+            fromPage: "from",
+            newChip: "New",
+            previewRegion: "Preview of {message}",
+            channelUnknown: "channel set",
+            notSet: "not set",
+            category: "category {name}",
+            threadsUnder: "threads under {channel}",
+            pages: {
+                channels: "Channels and language",
+                matchTemplates: "Match templates",
+                commands: "Commands",
+                membership: "Membership",
+                tickets: "Tickets",
+                panels: "Panels in Discord",
+                league: "Wardogs League",
+            },
+            rows: {
+                announcement: {
+                    title: "Match announcement",
+                    detail: "New match or training · sign-ups and the role ping from the template",
+                },
+                roster: {
+                    title: "Roster",
+                    detail: "The roster photo under the header with View assignment and Open roster · only the player sees the assignment and password",
+                    variantLabel: "Default look",
+                    variants: {
+                        photo_text: "Photo and text",
+                        photo: "Photo only",
+                    },
+                    variantNote:
+                        "Can be changed when publishing. Otherwise: {other}.",
+                },
+                rosterChanges: {
+                    title: "Roster changes",
+                    detail: "On the next publish · the default choice in the Publish dialog",
+                    target: "to the roster channel",
+                    switchLabel: "Pre-select roster changes",
+                },
+                forum: {
+                    title: "Match forum",
+                    detail: "A thread with the information and briefing topics · turned on by the match template",
+                },
+                debrief: {
+                    title: "Debrief in the forum",
+                    detail: "Into the forum thread after the match",
+                    target: "match forum thread",
+                    switchLabel: "Debrief in the forum",
+                },
+                notices: {
+                    title: "Absences and late notices in the match thread",
+                    detail: "After /notice, Running late and Can't make it: who, late or absent and the arrival time · only the leaders see the reason, on the web",
+                    target: "match forum thread",
+                    switchLabel:
+                        "Absences and late notices in the match thread",
+                },
+                scheduledEvent: {
+                    title: "Discord event",
+                    detail: "A scheduled server event with the meeting and a link to the match",
+                    switchLabel: "Discord event",
+                },
+                squadRoles: {
+                    title: "Squad roles and voice channels",
+                    detail: "Players and Reserves roles for every match, squad channels from the roster · turned on by the template",
+                },
+                signupReminder: {
+                    title: "Sign-up reminder",
+                    detail: "To those who have not answered · daily until sign-ups close · recipients: from the template",
+                    target: "DM to members",
+                },
+                attendanceReminder: {
+                    title: "Attendance reminder",
+                    detail: "To rostered players who have not confirmed · the match sets how many hours before",
+                    target: "DM to players",
+                },
+                recap: {
+                    title: "Match recap",
+                    detail: "Own statistics after a confirmed match · the player can turn it off",
+                    target: "DM to players",
+                    switchLabel: "Match recap",
+                    previewTitle:
+                        "Preview · DM to a player after the match · sample data",
+                    whoTitle: "Who gets it",
+                    who: "Rostered players whose Logi account is matched with the match statistics.",
+                    whoOff: "A player turns the recap off with the button in the message or in {link}.",
+                    whoLink: "My account → Bot DMs",
+                },
+                trainingResult: {
+                    title: "Training result",
+                    detail: "To the participants after the training is closed",
+                    target: "DM to participants",
+                    switchLabel: "Training result",
+                },
+                rosterChangeDm: {
+                    title: "Assignment change",
+                    detail: "To players whose squad or role changed · the default choice in the Publish dialog",
+                    target: "DM to players",
+                    switchLabel: "Pre-select assignment changes",
+                },
+                teamRequest: {
+                    title: "Team request",
+                    detail: "The decision of Logi's global administrators: approved, merged or rejected",
+                    target: "DM to the requester",
+                },
+                buttonReplies: {
+                    title: "Button replies",
+                    detail: "Sign up, Edit sign-up, View assignment, Running late, Can't come · only the person who clicked sees them",
+                    target: "private reply",
+                },
+                commandReplies: {
+                    title: "Command replies",
+                    detail: "/help, /stats, /player, /link, /notice, /server-status · /stats shares to #statistiky, /player where the command was used",
+                },
+                recruitmentPanel: {
+                    title: "Recruitment panel",
+                    detail: "The Apply button",
+                },
+                application: {
+                    title: "Clan application",
+                    detail: "The guide for applicants and a private thread with recruitment",
+                },
+                applicationClose: {
+                    title: "Application closed",
+                    detail: "A result card in the thread · a DM to the applicant with the result and reason",
+                    target: "thread and DM to the applicant",
+                    switchLabel:
+                        "DM to the applicant when the application is closed",
+                },
+                ticketPanel: {
+                    title: "Ticket panel",
+                    detail: "The ticket category buttons",
+                },
+                ticket: {
+                    title: "Ticket",
+                    detail: "A form and a private thread with support",
+                },
+                ticketClose: {
+                    title: "Ticket closed",
+                    detail: "A card in the thread · a DM to the author with the reason",
+                    target: "thread and DM to the author",
+                    switchLabel: "DM to the author when the ticket is closed",
+                },
+                playerReport: {
+                    title: "Player report",
+                    detail: "From the button in the live score · a private thread for managers",
+                },
+                errors: {
+                    title: "Bot errors",
+                    detail: "What the bot could not do and how to fix it · managers only · grey bar",
+                    selectLabel: "Channel for bot errors",
+                    noChannel: "No channel",
+                },
+            },
+            panels: {
+                intro: "You manage every panel on the {link} page. This is only an overview.",
+                add: "Add panel",
+                liveDetail:
+                    "Live server · refreshes every {seconds} s · Join, View players and Report player buttons",
+                privateDetail:
+                    "Live server in a private channel · also shows the server password",
+                combinedTitle: "Our servers",
+                combinedDetail: "{servers} in one message",
+                controlTitle: "Server control",
+                controlDetail: "Seed, Refresh and Pause · Logi managers only",
+                resultsTitle: "{game} results",
+                resultsDetail:
+                    "After a result is confirmed in Logi · only results confirmed since the panel was turned on",
+                leagueTitle: "WD League",
+                leagueDetail:
+                    "Two messages: the table and the league's next matches · refresh every 60 s",
+                calendarTitle: "Calendar",
+                calendarDetail:
+                    "The clan's upcoming events, categories {categories}",
+                calendarAll: "all",
+                chips: {
+                    error: "Error",
+                    unsent: "Not sent",
+                    paused: "Paused",
+                },
+                switchLabel: "Panel {name}",
+                controlSwitch: "Server control",
+                leagueSwitch: "WD League panels",
+                calendarSwitch: "Calendar panel",
+                calendarHint:
+                    "The calendar channel is set on the Channels and language page.",
+                errorFallback: "The last delivery failed.",
+                loading: "Loading panels…",
+                unavailable: "The panels could not be loaded.",
+                none: "No panel yet.",
+                editorTitle: "Panels",
+            },
         },
         panelsForm: {
             regionLabel: "Public Discord panels",
@@ -3943,9 +4141,9 @@ export const enMessages = {
                     "Roster shapes and briefing topics that matches copy.",
             },
             messages: {
-                title: "Discord messages",
+                title: "Messages and panels",
                 description:
-                    "Public panels, live scoreboards and how bot messages look.",
+                    "Everything the bot sends: where, whether at all and how it looks. It writes in the clan language and with the clan colour.",
             },
             channels: {
                 title: "Channels and language",
@@ -4597,7 +4795,8 @@ export const enMessages = {
         publishedTraining: "Training published.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
-            not_found: "This draft no longer exists. Someone may have deleted it.",
+            not_found:
+                "This draft no longer exists. Someone may have deleted it.",
             not_draft: "This match has already been published.",
             forbidden:
                 "Only clan managers can create matches. If your session expired, sign in again.",
@@ -4639,14 +4838,28 @@ export const enMessages = {
             map: "Map",
             timeOfDay: "Time of day",
             strongpoint: "Middle point",
-            timesOfDay: { day: "Day", morning: "Morning", dusk: "Dusk", evening: "Evening", night: "Night", rain: "Rain", overcast: "Overcast" },
+            timesOfDay: {
+                day: "Day",
+                morning: "Morning",
+                dusk: "Dusk",
+                evening: "Evening",
+                night: "Night",
+                rain: "Rain",
+                overcast: "Overcast",
+            },
             choose: "Choose",
             name: "Name",
-            nameHint: "Filled in from the teams and template. You can change it.",
+            nameHint:
+                "Filled in from the teams and template. You can change it.",
             category: "Category",
             noCategory: "No category",
             mode: "Mode",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the hill" },
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the hill",
+            },
             storedMap: "Saved map: {map}. Choose a map only to change it.",
             otherTeam: "Another team",
             addTeam: "Add another team",
@@ -4677,7 +4890,8 @@ export const enMessages = {
             duration: "Duration",
             minutes: "min",
             repeat: "Repeat every week",
-            repeatHint: "The next matches are created automatically two weeks ahead.",
+            repeatHint:
+                "The next matches are created automatically two weeks ahead.",
         },
         signups: {
             fromTemplate: "From the {name} template",
@@ -4690,7 +4904,8 @@ export const enMessages = {
             },
             noLimit: "no limit",
             max: "max {count}",
-            noGroups: "This game has no sign-up groups; players sign up without choosing one.",
+            noGroups:
+                "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -4701,11 +4916,13 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote: "Every clan member signs up for a training with one button.",
+            trainingNote:
+                "Every clan member signs up for a training with one button.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
-            capHint: "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
+            capHint:
+                "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
             reminderOptions: {
                 off: "Nobody",
                 member: "Members",
@@ -4713,13 +4930,16 @@ export const enMessages = {
                 all: "Members, recruits and reserves",
             },
             attendanceReminders: "Attendance reminders",
-            attendanceHint: "A DM to roster players who have not confirmed, before the meeting.",
+            attendanceHint:
+                "A DM to roster players who have not confirmed, before the meeting.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "A change reschedules the reminders that have not been sent yet.",
+            attendanceEditHint:
+                "A change reschedules the reminders that have not been sent yet.",
             squadPreset: "Squad preset",
             squadPresetNone: "No preset",
             squadPresetHint: "The roster starts from it once you create it.",
-            squadPresetRosterExists: "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
+            squadPresetRosterExists:
+                "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
             requiredRoles: "Roles needed to sign up",
             rewardRoles: "Roles for passing",
             rolesPlaceholder: "Choose roles",
@@ -4740,18 +4960,23 @@ export const enMessages = {
             password: "Password",
             passwordHint: "Only players on the roster see the password.",
             defaultChannel: "Default channel",
-            channelsLocked: "Channels stay as they were when the match was published; the bot manages its messages there.",
+            channelsLocked:
+                "Channels stay as they were when the match was published; the bot manages its messages there.",
             meetingChannel: "Meeting voice channel",
             meetingChannelDefault: "Clan default",
-            meetingChannelHint: "Logi reads attendance at the meeting from this channel.",
+            meetingChannelHint:
+                "Logi reads attendance at the meeting from this channel.",
             voiceCategory: "Category for the voice channels",
             voiceCategoryDefault: "Clan default",
             topicPreset: "Forum topics",
             topicPresetNone: "No topics",
             participantRoles: "Attendee and reserve roles",
-            participantRolesHint: "The bot gives the players a role of this match.",
-            participantRolesOffHint: "When you switch it off, the bot deletes the roles it created.",
-            forumMissing: "The clan has no forum category set, so no forum will be created.",
+            participantRolesHint:
+                "The bot gives the players a role of this match.",
+            participantRolesOffHint:
+                "When you switch it off, the bot deletes the roles it created.",
+            forumMissing:
+                "The clan has no forum category set, so no forum will be created.",
             openChannelSettings: "Set up channels",
         },
         review: {
@@ -4775,7 +5000,8 @@ export const enMessages = {
             missing: "Missing",
             changes: "What changes",
             noChanges: "You have not changed anything yet.",
-            noticeEdit: "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
+            noticeEdit:
+                "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
         },
         preview: {
             title: "Discord preview",
@@ -4802,9 +5028,11 @@ export const enMessages = {
             title: "More options",
             summary: "Description, pictures, notes and tactical maps",
             description: "Description",
-            descriptionHint: "Shown in the Discord announcement when there are no notes.",
+            descriptionHint:
+                "Shown in the Discord announcement when there are no notes.",
             notes: "Notes",
-            notesHint: "Shown in the Discord announcement instead of the description.",
+            notesHint:
+                "Shown in the Discord announcement instead of the description.",
             thumbnail: "Thumbnail",
             image: "Picture",
             upload: "Upload",
@@ -4816,7 +5044,8 @@ export const enMessages = {
         edit: {
             title: "Edit match",
             titleTraining: "Edit training",
-            description: "Saved changes go straight into the announcement in Discord.",
+            description:
+                "Saved changes go straight into the announcement in Discord.",
             breadcrumb: "Edit",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Saved times",
@@ -4831,17 +5060,22 @@ export const enMessages = {
             leavePrompt: "You have unsaved changes. Leave anyway?",
             series: "This match belongs to a weekly series. Changes apply to this date only.",
             seriesEdit: "Edit the series",
-            seriesSource: "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
+            seriesSource:
+                "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
             stopHint: "Switch repeating off to stop the series.",
             lockedTitle: "This match can no longer be edited",
             lockedTrainingTitle: "This training can no longer be edited",
-            lockedDescription: "The match is closed. You find the result and attendance on the match page.",
-            lockedTrainingDescription: "The training is closed. You find attendance on the training page.",
+            lockedDescription:
+                "The match is closed. You find the result and attendance on the match page.",
+            lockedTrainingDescription:
+                "The training is closed. You find attendance on the training page.",
             backToMatch: "Back to the match",
             backToTraining: "Back to the training",
             notFoundTitle: "Match not found",
-            notFoundDescription: "It may have been deleted, or it belongs to another clan.",
-            invalidSchedule: "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
+            notFoundDescription:
+                "It may have been deleted, or it belongs to another clan.",
+            invalidSchedule:
+                "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
             fields: {
                 name: "Name",
                 category: "Category",
@@ -4890,8 +5124,10 @@ export const enMessages = {
         },
         overview: {
             title: "Overview",
-            description: "How the match is set up and how players see it in Discord.",
-            descriptionTraining: "How the training is set up and how players see it in Discord.",
+            description:
+                "How the match is set up and how players see it in Discord.",
+            descriptionTraining:
+                "How the training is set up and how players see it in Discord.",
             edit: "Edit",
             readOnly: "Only clan managers can change the match.",
             stratmaps: "Tactical maps",

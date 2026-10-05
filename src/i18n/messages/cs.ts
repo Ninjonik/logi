@@ -3451,9 +3451,9 @@ export const csMessages = {
                         "Rozložení čet a rolí pro soupisky, témata pro fórum zápasu.",
                 },
                 messages: {
-                    title: "Zprávy v Discordu",
+                    title: "Zprávy a panely",
                     description:
-                        "Ohlášení, soupisky, připomínky, živé skóre a výsledky.",
+                        "Vzhled zpráv bota, co bot posílá a přehled panelů.",
                 },
                 channels: {
                     title: "Kanály a jazyk",
@@ -3815,56 +3815,250 @@ export const csMessages = {
             saveError: "Nastavení příkazů se nepodařilo uložit.",
         },
         messagesPage: {
+            title: "Zprávy a panely v Discordu",
+            description:
+                "Všechno, co bot posílá: kam, jestli vůbec a jak to vypadá. Píše v jazyce klanu a s barvou klanu.",
             lookTitle: "Vzhled všech zpráv",
-            language: "Jazyk",
-            languages: { en: "Angličtina", cs: "Čeština", de: "Němčina" },
-            languageLink: "Kanály a jazyk",
-            listTitle: "Zprávy",
-            edit: "Upravit",
-            close: "Zavřít",
-            channelNotSet: "Kanál není nastavený",
-            channelOff: "Vypnuto · kanál není nastavený",
-            channelUnknown: "nastavený kanál",
-            announcement: "Ohlášení zápasu",
-            announcementDetail: "s tlačítky pro přihlášení",
-            eventInfo: "Soupiska a zařazení",
-            eventInfoDetail: "po zveřejnění soupisky",
-            reminders: "Připomínky",
-            remindersDetail:
-                "DM · přihlášky denně do konce registrace, docházka 24, 18, 12 a 6 h před srazem",
-            league: "Ligové karty",
-            leagueDetail: "zápasy Wardogs League",
-            errors: "Chyby bota",
-            errorsDetail: "jen pro správce",
+            lookIntro:
+                "Platí pro ohlášení, panely, DM i odpovědi příkazů. Chyby bota pro správce mají šedý pruh.",
             clanColor: "Barva klanu",
-            clanColorHelp: "Akce s kategorií použijí barvu kategorie.",
+            clanColorHelp:
+                "Pruh u každé zprávy. Panel může mít vlastní barvu v editoru panelu.",
             clanColorPicker: "Vybrat barvu",
             clanColorInvalid: "Zadejte barvu ve tvaru #E8A33D.",
             clanColorDefault:
-                "Bez vlastní barvy mají zprávy oranžovou barvu Logi.",
+                "Výchozí barva Logi. Kategorie akce se ukáže jako štítek, pruh nemění.",
+            clanColorCustom:
+                "Kategorie akce se ukáže jako štítek, pruh nemění.",
             icons: "Ikony ve zprávách",
-            iconsHelp: "Frakce mají vždy svůj znak.",
+            iconsHelp: "Ve všech zprávách, ne jen v ohlášení.",
             iconsSparse: "Střídmé",
             iconsRich: "Emoji u každého řádku",
+            factions: "Znaky frakcí",
+            factionsHelp: "Stejné v ohlášení, výsledcích, panelech i /stats.",
+            factionNames: {
+                allies: "Spojenci",
+                axis: "Osa",
+                valkyra: "Valkyra",
+                manticore: "Manticore",
+                lonestar: "Lonestar",
+            },
+            factionsDefault: "Výchozí znaky Logi",
+            factionsChange: "Změnit znaky",
+            language: "Jazyk",
+            languages: { en: "Angličtina", cs: "Čeština", de: "Němčina" },
             languageFrom: "Z",
-            languageScope: ", platí pro všechny zprávy",
-            channel: "Kanál",
-            noChannel: "Bez kanálu",
-            gameException: "{game} má vlastní kanál {channel}.",
-            announcementHelp:
-                "Platí pro všechny hry. Nové zápasy si kanál uloží při vytvoření.",
-            eventInfoHelp:
-                "Sem bot pošle soupisku a zařazení po zveřejnění soupisky. Funguje jen spolu s kanálem pro ohlášení.",
-            errorsHelp:
-                "Sem bot hlásí problémy s oprávněními a kanály. Vidět by ho měli jen správci.",
-            liveScore: "Živé skóre",
-            liveScoreDetail: "{channel} · obnovuje se každých {refresh}",
-            liveScoreOff: "Vypnuto · panel z vašich herních serverů",
-            seconds: "{count} s",
-            minutes: "{count} min",
-            results: "Výsledky",
-            resultsDetail: "po potvrzení výsledku zápasu",
-            off: "Vypnuto",
+            languageLink: "Kanály a jazyk",
+            languageScope:
+                "Všechny zprávy a odpovědi příkazů, bez ohledu na jazyk aplikace člena.",
+            livePreview: "Živý náhled",
+            livePreviewLabel: "Živý náhled vzhledu",
+            livePreviewSparse:
+                "Ohlášení zápasu se střídmými ikonami. Mění se s barvou a ikonami vlevo.",
+            livePreviewRich:
+                "Ohlášení zápasu s emoji u každého řádku. Mění se s barvou a ikonami vlevo.",
+            previewTime: "dnes v 18:02",
+            listTitle: "Co bot posílá",
+            listIntro:
+                "Každý kanál se upravuje na jednom místě. Kanál se zámkem patří jiné stránce, odkaz vás tam dovede. Kanál s výběrem upravíte rovnou tady.",
+            groups: {
+                matches: "Zápasy",
+                direct: "Soukromé zprávy",
+                directNote: "DM a odpovědi, které vidí jen jeden člověk",
+                panels: "Panely",
+                membership: "Členství a tickety",
+                system: "Systém",
+            },
+            preview: "Náhled",
+            close: "Zavřít",
+            edit: "Upravit",
+            fromPage: "z",
+            newChip: "Nové",
+            previewRegion: "Náhled zprávy {message}",
+            channelUnknown: "nastavený kanál",
+            notSet: "nenastaveno",
+            category: "kategorie {name}",
+            threadsUnder: "vlákna pod {channel}",
+            pages: {
+                channels: "Kanály a jazyk",
+                matchTemplates: "Šablony zápasů",
+                commands: "Příkazy",
+                membership: "Členství",
+                tickets: "Tickety",
+                panels: "Panely v Discordu",
+                league: "Wardogs League",
+            },
+            rows: {
+                announcement: {
+                    title: "Ohlášení zápasu",
+                    detail: "Nový zápas nebo trénink · přihlášky a ping role podle šablony",
+                },
+                roster: {
+                    title: "Soupiska",
+                    detail: "Fotka soupisky pod hlavičkou s tlačítky Zobrazit zařazení a Otevřít soupisku · zařazení a heslo vidí jen hráč",
+                    variantLabel: "Výchozí podoba",
+                    variants: {
+                        photo_text: "Fotka a text",
+                        photo: "Jen fotka",
+                    },
+                    variantNote: "Při publikování jde změnit. Jinak: {other}.",
+                },
+                rosterChanges: {
+                    title: "Změny soupisky",
+                    detail: "Při dalším zveřejnění · výchozí volba v dialogu Zveřejnit",
+                    target: "do kanálu soupisky",
+                    switchLabel: "Změny soupisky předvolit",
+                },
+                forum: {
+                    title: "Fórum zápasu",
+                    detail: "Vlákno s informacemi a tématy briefingu · zapíná šablona zápasu",
+                },
+                debrief: {
+                    title: "Debrief ve fóru",
+                    detail: "Po skončení zápasu do vlákna fóra",
+                    target: "vlákno fóra zápasu",
+                    switchLabel: "Debrief ve fóru",
+                },
+                notices: {
+                    title: "Omluvy a zpoždění ve vlákně zápasu",
+                    detail: "Po /notice, Přijdu později a Nemůžu: kdo, zpoždění nebo absence a čas příchodu · důvod vidí jen velení na webu",
+                    target: "vlákno fóra zápasu",
+                    switchLabel: "Omluvy a zpoždění ve vlákně zápasu",
+                },
+                scheduledEvent: {
+                    title: "Událost na Discordu",
+                    detail: "Plánovaná událost serveru se srazem a odkazem na zápas",
+                    switchLabel: "Událost na Discordu",
+                },
+                squadRoles: {
+                    title: "Role a hlasové kanály čet",
+                    detail: "Role Účastníci a Zálohy pro každý zápas, kanály čet podle soupisky · zapíná šablona",
+                },
+                signupReminder: {
+                    title: "Připomínka přihlášky",
+                    detail: "Těm, kdo neodpověděli · denně do konce přihlášek · komu: podle šablony",
+                    target: "DM členům",
+                },
+                attendanceReminder: {
+                    title: "Připomínka docházky",
+                    detail: "Hráčům na soupisce, kteří nepotvrdili · kolik hodin předem určí zápas",
+                    target: "DM hráčům",
+                },
+                recap: {
+                    title: "Shrnutí zápasu",
+                    detail: "Vlastní statistiky po potvrzeném zápase · hráč si je může vypnout",
+                    target: "DM hráčům",
+                    switchLabel: "Shrnutí zápasu",
+                    previewTitle: "Náhled · DM hráči po zápase · ukázková data",
+                    whoTitle: "Kdo ji dostane",
+                    who: "Hráči ze soupisky, jejichž účet Logi spáruje se statistikami zápasu.",
+                    whoOff: "Hráč si shrnutí vypne tlačítkem ve zprávě nebo v {link}.",
+                    whoLink: "Můj účet → Zprávy od bota do DM",
+                },
+                trainingResult: {
+                    title: "Výsledek tréninku",
+                    detail: "Účastníkům po uzavření tréninku",
+                    target: "DM účastníkům",
+                    switchLabel: "Výsledek tréninku",
+                },
+                rosterChangeDm: {
+                    title: "Změna zařazení",
+                    detail: "Hráčům, kterým se změnila četa nebo role · výchozí volba v dialogu Zveřejnit",
+                    target: "DM hráčům",
+                    switchLabel: "Změna zařazení předvolit",
+                },
+                teamRequest: {
+                    title: "Žádost o tým",
+                    detail: "Rozhodnutí globálních správců Logi: schváleno, sloučeno nebo zamítnuto",
+                    target: "DM žadateli",
+                },
+                buttonReplies: {
+                    title: "Odpovědi na tlačítka",
+                    detail: "Přihlásit se, Upravit přihlášku, Zobrazit zařazení, Přijdu později, Nepřijdu · vidí jen ten, kdo klikl",
+                    target: "soukromá odpověď",
+                },
+                commandReplies: {
+                    title: "Odpovědi příkazů",
+                    detail: "/help, /stats, /player, /link, /notice, /server-status · /stats sdílí do #statistiky, /player tam, kde padl příkaz",
+                },
+                recruitmentPanel: {
+                    title: "Panel náboru",
+                    detail: "Tlačítko Podat přihlášku",
+                },
+                application: {
+                    title: "Přihláška do klanu",
+                    detail: "Průvodce pro žadatele a soukromé vlákno s náborem",
+                },
+                applicationClose: {
+                    title: "Uzavření přihlášky",
+                    detail: "Karta s výsledkem ve vlákně · DM žadateli s výsledkem a důvodem",
+                    target: "vlákno a DM žadateli",
+                    switchLabel: "DM žadateli po uzavření přihlášky",
+                },
+                ticketPanel: {
+                    title: "Panel ticketů",
+                    detail: "Tlačítka kategorií ticketů",
+                },
+                ticket: {
+                    title: "Ticket",
+                    detail: "Formulář a soukromé vlákno s podporou",
+                },
+                ticketClose: {
+                    title: "Uzavření ticketu",
+                    detail: "Karta ve vlákně · DM autorovi s důvodem",
+                    target: "vlákno a DM autorovi",
+                    switchLabel: "DM autorovi po uzavření ticketu",
+                },
+                playerReport: {
+                    title: "Nahlášení hráče",
+                    detail: "Z tlačítka v živém skóre · soukromé vlákno pro správce",
+                },
+                errors: {
+                    title: "Chyby bota",
+                    detail: "Co bot nemohl udělat a jak to opravit · jen pro správce · šedý pruh",
+                    selectLabel: "Kanál pro chyby bota",
+                    noChannel: "Bez kanálu",
+                },
+            },
+            panels: {
+                intro: "Všechny panely spravujete na stránce {link}. Tady je jen přehled.",
+                add: "Přidat panel",
+                liveDetail:
+                    "Živý server · obnovuje se každých {seconds} s · tlačítka Připojit se, Zobrazit hráče a Nahlásit hráče",
+                privateDetail:
+                    "Živý server v soukromém kanálu · ukazuje i heslo serveru",
+                combinedTitle: "Naše servery",
+                combinedDetail: "{servers} v jedné zprávě",
+                controlTitle: "Ovládání serveru",
+                controlDetail:
+                    "Seed, Obnovit a Pozastavit · smí jen Správci Logi",
+                resultsTitle: "Výsledky {game}",
+                resultsDetail:
+                    "Po potvrzení výsledku v Logi · jen potvrzené od zapnutí panelu",
+                leagueTitle: "WD League",
+                leagueDetail:
+                    "Dvě zprávy pod sebou: tabulka a nejbližší zápasy celé ligy · obnovují se každých 60 s",
+                calendarTitle: "Kalendář",
+                calendarDetail:
+                    "Nadcházející akce klanu, kategorie {categories}",
+                calendarAll: "všechny",
+                chips: {
+                    error: "Chyba",
+                    unsent: "Neodesláno",
+                    paused: "Pozastaveno",
+                },
+                switchLabel: "Panel {name}",
+                controlSwitch: "Ovládání serveru",
+                leagueSwitch: "Panely WD League",
+                calendarSwitch: "Panel Kalendář",
+                calendarHint:
+                    "Kanál kalendáře se nastavuje na stránce Kanály a jazyk.",
+                errorFallback: "Poslední odeslání se nepovedlo.",
+                loading: "Načítám panely…",
+                unavailable: "Panely se nenačetly.",
+                none: "Zatím žádný panel.",
+                editorTitle: "Panely",
+            },
         },
         panelsForm: {
             regionLabel: "Veřejné panely v Discordu",
@@ -3931,8 +4125,9 @@ export const csMessages = {
                     "Podoby soupisek a témata briefingu, které zápasy kopírují.",
             },
             messages: {
-                title: "Zprávy v Discordu",
-                description: "Veřejné panely, živé skóre a vzhled zpráv bota.",
+                title: "Zprávy a panely",
+                description:
+                    "Všechno, co bot posílá: kam, jestli vůbec a jak to vypadá. Píše v jazyce klanu a s barvou klanu.",
             },
             channels: {
                 title: "Kanály a jazyk",
@@ -4619,15 +4814,29 @@ export const csMessages = {
             map: "Mapa",
             timeOfDay: "Denní doba",
             strongpoint: "Střední bod",
-            timesOfDay: { day: "Den", morning: "Ráno", dusk: "Soumrak", evening: "Večer", night: "Noc", rain: "Déšť", overcast: "Zataženo" },
+            timesOfDay: {
+                day: "Den",
+                morning: "Ráno",
+                dusk: "Soumrak",
+                evening: "Večer",
+                night: "Noc",
+                rain: "Déšť",
+                overcast: "Zataženo",
+            },
             choose: "Zvolit",
             name: "Název",
             nameHint: "Doplněno z týmů a šablony. Můžete změnit.",
             category: "Kategorie",
             noCategory: "Bez kategorie",
             mode: "Režim",
-            modes: { warfare: "Warfare", offensive: "Ofenziva", skirmish: "Skirmish", koth: "Král kopce" },
-            storedMap: "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Ofenziva",
+                skirmish: "Skirmish",
+                koth: "Král kopce",
+            },
+            storedMap:
+                "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
             otherTeam: "Další tým",
             addTeam: "Přidat další tým",
             otherSide: "Strana dalšího týmu",
@@ -4670,7 +4879,8 @@ export const csMessages = {
             },
             noLimit: "bez limitu",
             max: "max {count}",
-            noGroups: "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
+            noGroups:
+                "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
             general: "Přihlášení bez volby skupiny",
             generalOn: "povoleno",
             reminder: "Připomínka přihlášky",
@@ -4686,7 +4896,8 @@ export const csMessages = {
             groupOffered: "Nabídnout skupinu {name}",
             capLabel: "Limit skupiny {name}",
             capPlaceholder: "bez limitu",
-            capHint: "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
+            capHint:
+                "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
             reminderOptions: {
                 off: "Nikomu",
                 member: "Členům",
@@ -4694,13 +4905,16 @@ export const csMessages = {
                 all: "Členům, rekrutům a záložníkům",
             },
             attendanceReminders: "Připomínky docházky",
-            attendanceHint: "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
+            attendanceHint:
+                "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Změna přeplánuje připomínky, které ještě neodešly.",
+            attendanceEditHint:
+                "Změna přeplánuje připomínky, které ještě neodešly.",
             squadPreset: "Předvolba čet",
             squadPresetNone: "Bez předvolby",
             squadPresetHint: "Soupiska z ní začne, až ji založíte.",
-            squadPresetRosterExists: "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
+            squadPresetRosterExists:
+                "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
             requiredRoles: "Role potřebné k přihlášení",
             rewardRoles: "Role za úspěšné splnění",
             rolesPlaceholder: "Vybrat role",
@@ -4721,7 +4935,8 @@ export const csMessages = {
             password: "Heslo",
             passwordHint: "Heslo uvidí jen hráči na soupisce.",
             defaultChannel: "Výchozí kanál",
-            channelsLocked: "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
+            channelsLocked:
+                "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
             meetingChannel: "Hlasový kanál srazu",
             meetingChannelDefault: "Výchozí kanál klanu",
             meetingChannelHint: "Z tohoto kanálu Logi čte docházku na srazu.",
@@ -4731,8 +4946,10 @@ export const csMessages = {
             topicPresetNone: "Bez témat",
             participantRoles: "Role účastníků a záložníků",
             participantRolesHint: "Bot dá hráčům roli tohoto zápasu.",
-            participantRolesOffHint: "Po vypnutí bot role, které vytvořil, smaže.",
-            forumMissing: "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
+            participantRolesOffHint:
+                "Po vypnutí bot role, které vytvořil, smaže.",
+            forumMissing:
+                "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
             openChannelSettings: "Nastavit kanály",
         },
         review: {
@@ -4756,7 +4973,8 @@ export const csMessages = {
             missing: "Chybí",
             changes: "Co se změní",
             noChanges: "Zatím jste nic nezměnili.",
-            noticeEdit: "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
+            noticeEdit:
+                "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
         },
         preview: {
             title: "Náhled v Discordu",
@@ -4783,7 +5001,8 @@ export const csMessages = {
             title: "Další možnosti",
             summary: "Popis, obrázky, poznámky a taktické mapy",
             description: "Popis",
-            descriptionHint: "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
+            descriptionHint:
+                "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
             notes: "Poznámky",
             notesHint: "Zobrazí se v ohlášení v Discordu místo popisu.",
             thumbnail: "Miniatura",
@@ -4797,7 +5016,8 @@ export const csMessages = {
         edit: {
             title: "Upravit zápas",
             titleTraining: "Upravit trénink",
-            description: "Uložené změny se hned propíšou do ohlášení v Discordu.",
+            description:
+                "Uložené změny se hned propíšou do ohlášení v Discordu.",
             breadcrumb: "Upravit",
             breadcrumbTrainings: "Tréninky",
             savedTimes: "Uložené časy",
@@ -4812,17 +5032,21 @@ export const csMessages = {
             leavePrompt: "Máte neuložené změny. Opravdu odejít?",
             series: "Zápas patří do týdenní série. Změny platí jen pro tento termín.",
             seriesEdit: "Upravit sérii",
-            seriesSource: "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
+            seriesSource:
+                "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
             stopHint: "Vypnutím opakování sérii zastavíte.",
             lockedTitle: "Zápas už nejde upravit",
             lockedTrainingTitle: "Trénink už nejde upravit",
-            lockedDescription: "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
-            lockedTrainingDescription: "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
+            lockedDescription:
+                "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
+            lockedTrainingDescription:
+                "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
             backToMatch: "Zpět na zápas",
             backToTraining: "Zpět na trénink",
             notFoundTitle: "Zápas nenalezen",
             notFoundDescription: "Možná byl smazán, nebo patří jinému klanu.",
-            invalidSchedule: "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
+            invalidSchedule:
+                "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
             fields: {
                 name: "Název",
                 category: "Kategorie",
@@ -4871,8 +5095,10 @@ export const csMessages = {
         },
         overview: {
             title: "Přehled",
-            description: "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
-            descriptionTraining: "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
+            description:
+                "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
+            descriptionTraining:
+                "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
             edit: "Upravit",
             readOnly: "Zápas mohou měnit jen správci klanu.",
             stratmaps: "Taktické mapy",

@@ -1,3 +1,4 @@
+import type { SettingsPreviewSamples } from "../../domain/discord-messages/settings-previews"
 import type { TeamRequestDmCopy } from "../../domain/discord-messages/team-request-dm"
 import type { ServiceStatusCopy } from "../../domain/discord-messages/service-status"
 import type { MessageKitCopy } from "../../domain/discord-messages/message-layout"
@@ -33,6 +34,316 @@ export type SystemMessages = {
     errorsChannel: BotErrorsCopy
     /** "Stav služeb Logi" and its thread "Změny stavu" (L5 1.2). */
     serviceStatus: ServiceStatusCopy
+    /**
+     * Sample data of the "Náhled" previews on "Zprávy a panely" (N1-B07),
+     * with the board's words for the cards whose builders are not shared yet.
+     */
+    previews: SettingsPreviewSamples
+}
+
+const csPreviews: SettingsPreviewSamples = {
+    clan: "Vlci",
+    clanCode: "VLK",
+    opponentCode: "ROG",
+    category: "Přátelák",
+    map: "Foy · den",
+    recapMap: "Carentan",
+    players: ["Hráč 17", "Hráč 21", "Hráč 23", "Hráč 02", "Hráč 05", "Hráč 31"],
+    leader: "Hráč 02",
+    squads: ["Able", "Baker"],
+    role: "Medic",
+    meetingChannel: "Sraz",
+    trainingTitle: "Trénink · komunikace a souhra",
+    rewardRole: "Pěchota",
+    memberRole: "Člen",
+    announcement: {
+        mention: "@Klan",
+        signUp: "Přihlásit se",
+        editSignup: "Upravit přihlášku",
+        decline: "Nepřijdu",
+        signedUp: "**Přihlášeno 23** · Pěchota 15 · Tanky 6/6 · Recon 2/2",
+        facts: "{map} · sraz {meeting} · přihlášky do {deadline}",
+    },
+    recruitmentPanel: {
+        title: "Přidej se ke klanu {clan}",
+        body: "Vyber, jak s námi chceš hrát. Přihláška zabere pár minut a když ještě nemáš propojený herní účet, provedeme tě tím.",
+        categories: [
+            "Hlavní člen · Hell Let Loose · zápasy každý týden",
+            "Záloha · Hell Let Loose · hraješ, když se uvolní místo",
+            "Žoldák · Wardogs · výpomoc na jednotlivé zápasy",
+        ],
+        button: "Podat přihlášku",
+    },
+    application: {
+        intro: "Ahoj @Hráč 17, díky za přihlášku. @Nábor se ti brzy ozve.",
+        label: "Přihláška #42 · Hell Let Loose",
+        title: "Hráč 17 · Hlavní člen",
+        chip: "Čeká na rozhodnutí",
+        submitted: "Podáno {date} · Steam 76561198000000017",
+        answers: [
+            ["Specializace", "Pěchota"],
+            ["Kolik hodin týdně hraješ?", "10–15 hodin"],
+            ["Proč chceš hrát s námi?", "Hledám klan na pravidelné zápasy."],
+        ],
+        footer: "Rozhodnutí zapíše nábor příkazem /close_application",
+    },
+    applicationClose: {
+        label: "Klan {clan} · Přihláška #42",
+        title: "Vítej v klanu, jsi Člen",
+        body: "Nábor přijal tvoji přihlášku do Hell Let Loose. Role Klan a Člen dostaneš na serveru během minuty.",
+        reason: "Pohovor proběhl, vítej mezi námi.",
+        openThread: "Otevřít vlákno",
+    },
+    ticketPanel: {
+        title: "Potřebuješ pomoc?",
+        body: "Vyber, s čím potřebuješ pomoct. Otevře se soukromé vlákno, které vidíš jen ty a správci.",
+        categories: [
+            ["Nahlásit hráče", "chování na serveru"],
+            ["Žádost o roli", "tank, recon, velení"],
+            ["Problém s botem", "něco nefunguje"],
+            ["Jiné", "cokoli dalšího"],
+        ],
+    },
+    ticket: {
+        label: "Ticket #12 · Nahlásit hráče",
+        title: "Hráč 17 nahlašuje hráče",
+        chip: "Otevřený",
+        opened: "Otevřeno {date}",
+        answers: [
+            ["Kdo? Jméno ve hře", "xX_Sniper_Xx"],
+            ["Kde a kdy?", "Vlci #1, kolem 20:20"],
+            ["Co se stalo?", "Opakovaně zabíjí spoluhráče na spawnu."],
+        ],
+        footer: "Ticket uzavře podpora příkazem /close_ticket",
+    },
+    ticketClose: {
+        label: "Klan {clan} · Ticket #12",
+        title: "Tvůj ticket je vyřešený",
+        line: "Nahlásit hráče · zavřel Hráč 02",
+        reason: "Hráč dostal ban na 7 dní. Díky za nahlášení.",
+        openThread: "Otevřít vlákno",
+    },
+    playerReport: {
+        label: "Hlášení hráče #17 · K prověření",
+        title: "Hans_88 · Osa",
+        lines: [
+            "Jméno z dat serveru, účet v Discordu neověřený",
+            "Vlci #1 · Foy · nahlásil Ořech",
+        ],
+        reason: "Opakovaně zabíjí spoluhráče na spawnu.",
+        footer: "Hlášení k prověření, ne prokázané porušení. Uzavřete ho příkazem /close_ticket s důvodem.",
+    },
+    teamRequest: { game: "Hell Let Loose", team: "Vlci", code: "VLK" },
+}
+
+const enPreviews: SettingsPreviewSamples = {
+    clan: "Wolves",
+    clanCode: "VLK",
+    opponentCode: "ROG",
+    category: "Friendly",
+    map: "Foy · day",
+    recapMap: "Carentan",
+    players: [
+        "Player 17",
+        "Player 21",
+        "Player 23",
+        "Player 02",
+        "Player 05",
+        "Player 31",
+    ],
+    leader: "Player 02",
+    squads: ["Able", "Baker"],
+    role: "Medic",
+    meetingChannel: "Meeting",
+    trainingTitle: "Training · communication and teamwork",
+    rewardRole: "Infantry",
+    memberRole: "Member",
+    announcement: {
+        mention: "@Clan",
+        signUp: "Sign up",
+        editSignup: "Edit sign-up",
+        decline: "Can't come",
+        signedUp: "**Signed up 23** · Infantry 15 · Tanks 6/6 · Recon 2/2",
+        facts: "{map} · meeting {meeting} · sign-ups until {deadline}",
+    },
+    recruitmentPanel: {
+        title: "Join the {clan} clan",
+        body: "Pick how you want to play with us. The application takes a few minutes, and if your game account is not linked yet, we will walk you through it.",
+        categories: [
+            "Main member · Hell Let Loose · matches every week",
+            "Reserve · Hell Let Loose · you play when a spot opens",
+            "Mercenary · Wardogs · help out in single matches",
+        ],
+        button: "Apply",
+    },
+    application: {
+        intro: "Hi @Player 17, thanks for applying. @Recruitment will get back to you soon.",
+        label: "Application #42 · Hell Let Loose",
+        title: "Player 17 · Main member",
+        chip: "Awaiting decision",
+        submitted: "Submitted {date} · Steam 76561198000000017",
+        answers: [
+            ["Specialization", "Infantry"],
+            ["How many hours a week do you play?", "10–15 hours"],
+            [
+                "Why do you want to play with us?",
+                "Looking for a clan with regular matches.",
+            ],
+        ],
+        footer: "Recruitment records the decision with /close_application",
+    },
+    applicationClose: {
+        label: "Clan {clan} · Application #42",
+        title: "Welcome to the clan, you are a Member",
+        body: "Recruitment accepted your Hell Let Loose application. You will get the Clan and Member roles on the server within a minute.",
+        reason: "The interview went well, welcome aboard.",
+        openThread: "Open thread",
+    },
+    ticketPanel: {
+        title: "Need help?",
+        body: "Pick what you need help with. A private thread opens that only you and the admins can see.",
+        categories: [
+            ["Report a player", "behaviour on the server"],
+            ["Role request", "tank, recon, command"],
+            ["Bot problem", "something doesn't work"],
+            ["Other", "anything else"],
+        ],
+    },
+    ticket: {
+        label: "Ticket #12 · Report a player",
+        title: "Player 17 reports a player",
+        chip: "Open",
+        opened: "Opened {date}",
+        answers: [
+            ["Who? In-game name", "xX_Sniper_Xx"],
+            ["Where and when?", "Wolves #1, around 20:20"],
+            ["What happened?", "Keeps killing teammates at spawn."],
+        ],
+        footer: "Support closes the ticket with /close_ticket",
+    },
+    ticketClose: {
+        label: "Clan {clan} · Ticket #12",
+        title: "Your ticket is resolved",
+        line: "Report a player · closed by Player 02",
+        reason: "The player got a 7-day ban. Thanks for reporting.",
+        openThread: "Open thread",
+    },
+    playerReport: {
+        label: "Player report #17 · To review",
+        title: "Hans_88 · Axis",
+        lines: [
+            "Name from the server data, Discord account not verified",
+            "Wolves #1 · Foy · reported by Nut",
+        ],
+        reason: "Keeps killing teammates at spawn.",
+        footer: "A report to review, not a proven violation. Close it with /close_ticket and a reason.",
+    },
+    teamRequest: { game: "Hell Let Loose", team: "Wolves", code: "VLK" },
+}
+
+const dePreviews: SettingsPreviewSamples = {
+    clan: "Wölfe",
+    clanCode: "VLK",
+    opponentCode: "ROG",
+    category: "Freundschaftsspiel",
+    map: "Foy · Tag",
+    recapMap: "Carentan",
+    players: [
+        "Spieler 17",
+        "Spieler 21",
+        "Spieler 23",
+        "Spieler 02",
+        "Spieler 05",
+        "Spieler 31",
+    ],
+    leader: "Spieler 02",
+    squads: ["Able", "Baker"],
+    role: "Medic",
+    meetingChannel: "Treffpunkt",
+    trainingTitle: "Training · Kommunikation und Zusammenspiel",
+    rewardRole: "Infanterie",
+    memberRole: "Mitglied",
+    announcement: {
+        mention: "@Clan",
+        signUp: "Anmelden",
+        editSignup: "Anmeldung ändern",
+        decline: "Kann nicht",
+        signedUp: "**Angemeldet 23** · Infanterie 15 · Panzer 6/6 · Recon 2/2",
+        facts: "{map} · Treffen {meeting} · Anmeldung bis {deadline}",
+    },
+    recruitmentPanel: {
+        title: "Tritt dem Clan {clan} bei",
+        body: "Wähl, wie du mit uns spielen willst. Die Bewerbung dauert ein paar Minuten, und wenn dein Spielkonto noch nicht verknüpft ist, führen wir dich durch.",
+        categories: [
+            "Hauptmitglied · Hell Let Loose · jede Woche Matches",
+            "Reserve · Hell Let Loose · du spielst, wenn ein Platz frei wird",
+            "Söldner · Wardogs · Aushilfe bei einzelnen Matches",
+        ],
+        button: "Bewerbung abschicken",
+    },
+    application: {
+        intro: "Hallo @Spieler 17, danke für deine Bewerbung. @Recruiting meldet sich bald.",
+        label: "Bewerbung #42 · Hell Let Loose",
+        title: "Spieler 17 · Hauptmitglied",
+        chip: "Wartet auf Entscheidung",
+        submitted: "Eingereicht {date} · Steam 76561198000000017",
+        answers: [
+            ["Spezialisierung", "Infanterie"],
+            ["Wie viele Stunden spielst du pro Woche?", "10–15 Stunden"],
+            [
+                "Warum willst du mit uns spielen?",
+                "Ich suche einen Clan mit regelmäßigen Matches.",
+            ],
+        ],
+        footer: "Das Recruiting trägt die Entscheidung mit /close_application ein",
+    },
+    applicationClose: {
+        label: "Clan {clan} · Bewerbung #42",
+        title: "Willkommen im Clan, du bist Mitglied",
+        body: "Das Recruiting hat deine Bewerbung für Hell Let Loose angenommen. Die Rollen Clan und Mitglied bekommst du innerhalb einer Minute auf dem Server.",
+        reason: "Das Gespräch lief gut, willkommen bei uns.",
+        openThread: "Thread öffnen",
+    },
+    ticketPanel: {
+        title: "Brauchst du Hilfe?",
+        body: "Wähl, wobei du Hilfe brauchst. Es öffnet sich ein privater Thread, den nur du und die Admins sehen.",
+        categories: [
+            ["Spieler melden", "Verhalten auf dem Server"],
+            ["Rollenanfrage", "Panzer, Recon, Führung"],
+            ["Problem mit dem Bot", "etwas funktioniert nicht"],
+            ["Sonstiges", "alles andere"],
+        ],
+    },
+    ticket: {
+        label: "Ticket #12 · Spieler melden",
+        title: "Spieler 17 meldet einen Spieler",
+        chip: "Offen",
+        opened: "Geöffnet {date}",
+        answers: [
+            ["Wer? Name im Spiel", "xX_Sniper_Xx"],
+            ["Wo und wann?", "Wölfe #1, gegen 20:20"],
+            ["Was ist passiert?", "Tötet am Spawn wiederholt Mitspieler."],
+        ],
+        footer: "Der Support schließt das Ticket mit /close_ticket",
+    },
+    ticketClose: {
+        label: "Clan {clan} · Ticket #12",
+        title: "Dein Ticket ist erledigt",
+        line: "Spieler melden · geschlossen von Spieler 02",
+        reason: "Der Spieler hat 7 Tage Bann bekommen. Danke für die Meldung.",
+        openThread: "Thread öffnen",
+    },
+    playerReport: {
+        label: "Spielermeldung #17 · Zu prüfen",
+        title: "Hans_88 · Achse",
+        lines: [
+            "Name aus den Serverdaten, Discord-Konto nicht verifiziert",
+            "Wölfe #1 · Foy · gemeldet von Nuss",
+        ],
+        reason: "Tötet am Spawn wiederholt Mitspieler.",
+        footer: "Eine Meldung zur Prüfung, kein bewiesener Verstoß. Schließt sie mit /close_ticket und einem Grund.",
+    },
+    teamRequest: { game: "Hell Let Loose", team: "Wölfe", code: "VLK" },
 }
 
 const systemMessages: Record<ClanLanguage, SystemMessages> = {
@@ -273,6 +584,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
             },
             and: "and",
         },
+        previews: enPreviews,
     },
     cs: {
         teamRequests: {
@@ -530,6 +842,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
             },
             and: "a",
         },
+        previews: csPreviews,
     },
     de: {
         teamRequests: {
@@ -785,6 +1098,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
             },
             and: "und",
         },
+        previews: dePreviews,
     },
 }
 
