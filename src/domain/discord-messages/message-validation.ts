@@ -181,6 +181,9 @@ export function validateMessageView(
                     code: "select-values",
                     detail: `${min}..${max} of ${select.options.length}`,
                 })
+        } else if (block.kind === "fields") {
+            for (const item of block.items)
+                if (item.thumbnail) checkMedia(item.thumbnail, issues)
         } else if (block.kind === "gallery") {
             if (!block.items.length || block.items.length > LIMITS.galleryItems)
                 issues.push({

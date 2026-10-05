@@ -4718,7 +4718,8 @@ export const deMessages = {
         publishedTraining: "Training veröffentlicht.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
-            not_found: "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
+            not_found:
+                "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
             not_draft: "Dieses Match ist schon veröffentlicht.",
             forbidden:
                 "Nur Clan-Verwalter können Matches anlegen. Wenn deine Sitzung abgelaufen ist, melde dich neu an.",
@@ -4760,15 +4761,29 @@ export const deMessages = {
             map: "Karte",
             timeOfDay: "Tageszeit",
             strongpoint: "Mittelpunkt",
-            timesOfDay: { day: "Tag", morning: "Morgen", dusk: "Dämmerung", evening: "Abend", night: "Nacht", rain: "Regen", overcast: "Bewölkt" },
+            timesOfDay: {
+                day: "Tag",
+                morning: "Morgen",
+                dusk: "Dämmerung",
+                evening: "Abend",
+                night: "Nacht",
+                rain: "Regen",
+                overcast: "Bewölkt",
+            },
             choose: "Wählen",
             name: "Name",
             nameHint: "Aus Teams und Vorlage ergänzt. Du kannst ihn ändern.",
             category: "Kategorie",
             noCategory: "Keine Kategorie",
             mode: "Modus",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the Hill" },
-            storedMap: "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the Hill",
+            },
+            storedMap:
+                "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
             otherTeam: "Weiteres Team",
             addTeam: "Weiteres Team hinzufügen",
             otherSide: "Seite des weiteren Teams",
@@ -4798,7 +4813,8 @@ export const deMessages = {
             duration: "Dauer",
             minutes: "Min.",
             repeat: "Jede Woche wiederholen",
-            repeatHint: "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
+            repeatHint:
+                "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
         },
         signups: {
             fromTemplate: "Aus der Vorlage {name}",
@@ -4811,7 +4827,8 @@ export const deMessages = {
             },
             noLimit: "ohne Limit",
             max: "max. {count}",
-            noGroups: "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
+            noGroups:
+                "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
             generalOn: "erlaubt",
             reminder: "Anmeldeerinnerung",
@@ -4827,7 +4844,8 @@ export const deMessages = {
             groupOffered: "Gruppe {name} anbieten",
             capLabel: "Limit der Gruppe {name}",
             capPlaceholder: "ohne Limit",
-            capHint: "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
+            capHint:
+                "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
             reminderOptions: {
                 off: "Niemandem",
                 member: "Mitgliedern",
@@ -4835,13 +4853,17 @@ export const deMessages = {
                 all: "Mitgliedern, Rekruten und Reservisten",
             },
             attendanceReminders: "Anwesenheitserinnerungen",
-            attendanceHint: "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
+            attendanceHint:
+                "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
+            attendanceEditHint:
+                "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
             squadPreset: "Trupp-Vorlage",
             squadPresetNone: "Keine Vorlage",
-            squadPresetHint: "Der Kader startet mit ihr, sobald du ihn anlegst.",
-            squadPresetRosterExists: "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
+            squadPresetHint:
+                "Der Kader startet mit ihr, sobald du ihn anlegst.",
+            squadPresetRosterExists:
+                "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
             requiredRoles: "Rollen für die Anmeldung",
             rewardRoles: "Rollen für das Bestehen",
             rolesPlaceholder: "Rollen wählen",
@@ -4862,18 +4884,23 @@ export const deMessages = {
             password: "Passwort",
             passwordHint: "Das Passwort sehen nur Spieler in der Aufstellung.",
             defaultChannel: "Standardkanal",
-            channelsLocked: "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
+            channelsLocked:
+                "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
             meetingChannel: "Sprachkanal für das Treffen",
             meetingChannelDefault: "Clan-Standard",
-            meetingChannelHint: "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
+            meetingChannelHint:
+                "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
             voiceCategory: "Kategorie für die Sprachkanäle",
             voiceCategoryDefault: "Clan-Standard",
             topicPreset: "Forenthemen",
             topicPresetNone: "Keine Themen",
             participantRoles: "Teilnehmer- und Reserverollen",
-            participantRolesHint: "Der Bot gibt den Spielern eine Rolle dieses Matches.",
-            participantRolesOffHint: "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
-            forumMissing: "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
+            participantRolesHint:
+                "Der Bot gibt den Spielern eine Rolle dieses Matches.",
+            participantRolesOffHint:
+                "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
+            forumMissing:
+                "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
             openChannelSettings: "Kanäle einrichten",
         },
         review: {
@@ -4897,7 +4924,8 @@ export const deMessages = {
             missing: "Fehlt",
             changes: "Was sich ändert",
             noChanges: "Du hast noch nichts geändert.",
-            noticeEdit: "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
+            noticeEdit:
+                "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
         },
         preview: {
             title: "Vorschau in Discord",
@@ -4924,9 +4952,11 @@ export const deMessages = {
             title: "Weitere Optionen",
             summary: "Beschreibung, Bilder, Notizen und Taktikkarten",
             description: "Beschreibung",
-            descriptionHint: "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
+            descriptionHint:
+                "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
             notes: "Notizen",
-            notesHint: "Stehen in der Discord-Ankündigung statt der Beschreibung.",
+            notesHint:
+                "Stehen in der Discord-Ankündigung statt der Beschreibung.",
             thumbnail: "Vorschaubild",
             image: "Bild",
             upload: "Hochladen",
@@ -4938,7 +4968,8 @@ export const deMessages = {
         edit: {
             title: "Match bearbeiten",
             titleTraining: "Training bearbeiten",
-            description: "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
+            description:
+                "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
             breadcrumb: "Bearbeiten",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Gespeicherte Zeiten",
@@ -4948,22 +4979,30 @@ export const deMessages = {
             save: "Änderungen speichern",
             saved: "Änderungen gespeichert.",
             leaveTitle: "Ungespeicherte Änderungen verwerfen?",
-            leaveDescription: "Deine Änderungen an diesem Match werden nicht gespeichert.",
+            leaveDescription:
+                "Deine Änderungen an diesem Match werden nicht gespeichert.",
             leaveConfirm: "Änderungen verwerfen",
-            leavePrompt: "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
+            leavePrompt:
+                "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
             series: "Dieses Match gehört zu einer wöchentlichen Serie. Änderungen gelten nur für diesen Termin.",
             seriesEdit: "Serie bearbeiten",
-            seriesSource: "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
+            seriesSource:
+                "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
             stopHint: "Schalte die Wiederholung aus, um die Serie zu beenden.",
             lockedTitle: "Dieses Match kann nicht mehr bearbeitet werden",
-            lockedTrainingTitle: "Dieses Training kann nicht mehr bearbeitet werden",
-            lockedDescription: "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
-            lockedTrainingDescription: "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
+            lockedTrainingTitle:
+                "Dieses Training kann nicht mehr bearbeitet werden",
+            lockedDescription:
+                "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
+            lockedTrainingDescription:
+                "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
             backToMatch: "Zurück zum Match",
             backToTraining: "Zurück zum Training",
             notFoundTitle: "Match nicht gefunden",
-            notFoundDescription: "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
-            invalidSchedule: "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
+            notFoundDescription:
+                "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
+            invalidSchedule:
+                "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
             fields: {
                 name: "Name",
                 category: "Kategorie",
@@ -5012,8 +5051,10 @@ export const deMessages = {
         },
         overview: {
             title: "Übersicht",
-            description: "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
-            descriptionTraining: "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
+            description:
+                "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
+            descriptionTraining:
+                "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
             edit: "Bearbeiten",
             readOnly: "Nur Clan-Manager können das Match ändern.",
             stratmaps: "Taktikkarten",
@@ -6252,6 +6293,125 @@ export const deMessages = {
         unknownUser: "Benutzer",
         unknownRole: "Rolle",
         unknownChannel: "Kanal",
+    },
+    joinPage: {
+        metaTitle: "{name} beitreten",
+        metaDescription: "Tritt dem Spielserver {name} bei.",
+        opening: "Öffne {game}…",
+        players: "{players} / {capacity} Spieler",
+        map: "Karte {map}",
+        steamPrompt:
+            "Steam fragt, ob der Link geöffnet werden soll. Bestätige Öffnen.",
+        openAgain: "Erneut öffnen",
+        manualTitle: "Manuell beitreten",
+        addressLabel: "Serveradresse",
+        copy: "Kopieren",
+        copied: "Kopiert",
+        copyFailed:
+            "Kopieren fehlgeschlagen. Markiere die Adresse und kopiere sie selbst.",
+        steamInstructions:
+            "In Steam: Ansicht → Spielserver → Favoriten → Server hinzufügen und die Adresse einfügen.",
+        backToDiscord: "Zurück zu Discord",
+        joinCodeTitle: "Beitrittscode",
+        joinCodeLabel: "Code zum Beitreten des Spiels",
+        joinCodeHelp:
+            "Öffne im Spiel den Spielbeitritt und gib diesen Code ein.",
+        noAddress:
+            "Die Serveradresse ist noch nicht eingestellt. Frag einen Clan-Admin.",
+        noJoinCode:
+            "Der Beitrittscode ist noch nicht eingestellt. Frag einen Clan-Admin.",
+        notFoundTitle: "Server nicht gefunden",
+    },
+    discordPanelStatus: {
+        states: {
+            published: "Veröffentlicht",
+            error: "Fehler",
+            waiting: "Wartet auf den Bot",
+            unsent: "Nicht gesendet",
+            paused: "Pausiert",
+        },
+        botOnline: "Bot online",
+        botVersion: "Version {version} · letzter Kontakt {ago}",
+        refreshEvery: "Panels werden alle 60 s aktualisiert",
+        botOffline:
+            "Der Bot antwortet nicht · letzter Kontakt {ago}. Panels werden nicht aktualisiert und neue nicht gesendet. Prüft, ob der Bot läuft; startet ihn nach einem Update neu.",
+        botNeverSeen:
+            "Der Bot hat sich noch nicht gemeldet. Panels werden erst aktualisiert und gesendet, wenn der Bot läuft.",
+        botOutdated:
+            "Der Bot läuft mit der älteren Version {version}. Discord-Panels brauchen eine neuere Version. Startet den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
+        permissions: {
+            view_channel: "Kanal ansehen",
+            send_messages: "Nachrichten senden",
+            embed_links: "Links einbetten",
+            attach_files: "Dateien anhängen",
+            read_message_history: "Nachrichtenverlauf lesen",
+        },
+        errors: {
+            bot_not_in_server: {
+                title: "Der Bot ist nicht auf dem Discord-Server.",
+                fix: "Ladet den Logi-Bot erneut auf den Server ein und klickt dann Erneut versuchen.",
+            },
+            channel_missing: {
+                title: "Der Kanal {channel} existiert nicht mehr oder der Bot sieht ihn nicht.",
+                fix: "Wählt im Editor einen anderen Kanal und speichert.",
+            },
+            channel_type: {
+                title: "In {channel} können keine Nachrichten gesendet werden.",
+                fix: "Wählt im Editor einen Text- oder Ankündigungskanal.",
+            },
+            missing_permissions: {
+                title: "Dem Bot fehlt die Berechtigung {permissions} in {channel}.",
+                fix: "Öffnet in Discord Kanal bearbeiten → Berechtigungen → Logi und aktiviert {permissions}. Klickt dann Erneut versuchen.",
+            },
+            delivery_uncertain: {
+                title: "Discord hat nicht bestätigt, ob die Nachricht angekommen ist.",
+                fix: "Der Bot findet die Nachricht bei der nächsten Aktualisierung oder sendet sie erneut. Nichts zu tun.",
+            },
+            discord_unavailable: {
+                title: "Discord antwortet gerade nicht.",
+                fix: "Der Bot versucht es selbst erneut. Dauert es lange, klickt Erneut versuchen.",
+            },
+            source_missing: {
+                title: "Der Spielserver des Panels ist nicht mehr in Logi.",
+                fix: "Wählt im Editor einen anderen Server oder löscht das Panel.",
+            },
+            source_not_collecting: {
+                title: "Logi sammelt keine Daten vom Spielserver.",
+                fix: "Aktiviert die Sammlung unter Spielserver und klickt dann Erneut versuchen.",
+            },
+            provider_unreachable: {
+                title: "Der Spielserver antwortet nicht.",
+                fix: "Das Panel zeigt die letzten Daten. Prüft Adresse und Schlüssel unter Spielserver.",
+            },
+            provider_rate_limited: {
+                title: "Der Datenanbieter lehnt gerade weitere Anfragen ab.",
+                fix: "Das Panel zeigt die letzten Daten und versucht es erneut. Dauert es über eine Stunde, erhöht das Limit des Schlüssels oder ersetzt ihn unter Spielserver.",
+            },
+            render_failed: {
+                title: "Das Panel konnte nicht erstellt werden.",
+                fix: "Kürzt Titel oder Beschreibung des Panels. Bleibt der Fehler, meldet ihn dem Logi-Support.",
+            },
+            unsupported_kind: {
+                title: "Der Bot kann diese Panelart noch nicht.",
+                fix: "Aktualisiert den Bot und startet ihn neu.",
+            },
+            competition_missing: {
+                title: "Der Wettbewerb des Panels existiert nicht mehr.",
+                fix: "Wählt im Editor einen anderen Wettbewerb oder löscht das Panel.",
+            },
+            unknown: {
+                title: "Die Nachricht konnte nicht gesendet werden.",
+                fix: "Klickt Erneut versuchen. Bleibt der Fehler, meldet ihn dem Logi-Support.",
+            },
+        },
+        warnings: {
+            password_hidden_public_channel:
+                "Der Kanal ist jetzt öffentlich, deshalb wurde das Passwort aus dem Panel entfernt. Verschiebt das Panel in einen privaten Kanal, damit es wieder erscheint.",
+            live_data_unavailable:
+                "Live-Daten sind gerade nicht verfügbar; das Panel zeigt die zuletzt gesammelten Daten.",
+            attach_files_missing:
+                "Dem Bot fehlt die Berechtigung Dateien anhängen, daher hat das Panel kein Bild.",
+        },
     },
 } as const
 

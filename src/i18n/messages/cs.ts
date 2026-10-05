@@ -4619,15 +4619,29 @@ export const csMessages = {
             map: "Mapa",
             timeOfDay: "Denní doba",
             strongpoint: "Střední bod",
-            timesOfDay: { day: "Den", morning: "Ráno", dusk: "Soumrak", evening: "Večer", night: "Noc", rain: "Déšť", overcast: "Zataženo" },
+            timesOfDay: {
+                day: "Den",
+                morning: "Ráno",
+                dusk: "Soumrak",
+                evening: "Večer",
+                night: "Noc",
+                rain: "Déšť",
+                overcast: "Zataženo",
+            },
             choose: "Zvolit",
             name: "Název",
             nameHint: "Doplněno z týmů a šablony. Můžete změnit.",
             category: "Kategorie",
             noCategory: "Bez kategorie",
             mode: "Režim",
-            modes: { warfare: "Warfare", offensive: "Ofenziva", skirmish: "Skirmish", koth: "Král kopce" },
-            storedMap: "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Ofenziva",
+                skirmish: "Skirmish",
+                koth: "Král kopce",
+            },
+            storedMap:
+                "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
             otherTeam: "Další tým",
             addTeam: "Přidat další tým",
             otherSide: "Strana dalšího týmu",
@@ -4670,7 +4684,8 @@ export const csMessages = {
             },
             noLimit: "bez limitu",
             max: "max {count}",
-            noGroups: "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
+            noGroups:
+                "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
             general: "Přihlášení bez volby skupiny",
             generalOn: "povoleno",
             reminder: "Připomínka přihlášky",
@@ -4686,7 +4701,8 @@ export const csMessages = {
             groupOffered: "Nabídnout skupinu {name}",
             capLabel: "Limit skupiny {name}",
             capPlaceholder: "bez limitu",
-            capHint: "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
+            capHint:
+                "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
             reminderOptions: {
                 off: "Nikomu",
                 member: "Členům",
@@ -4694,13 +4710,16 @@ export const csMessages = {
                 all: "Členům, rekrutům a záložníkům",
             },
             attendanceReminders: "Připomínky docházky",
-            attendanceHint: "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
+            attendanceHint:
+                "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Změna přeplánuje připomínky, které ještě neodešly.",
+            attendanceEditHint:
+                "Změna přeplánuje připomínky, které ještě neodešly.",
             squadPreset: "Předvolba čet",
             squadPresetNone: "Bez předvolby",
             squadPresetHint: "Soupiska z ní začne, až ji založíte.",
-            squadPresetRosterExists: "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
+            squadPresetRosterExists:
+                "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
             requiredRoles: "Role potřebné k přihlášení",
             rewardRoles: "Role za úspěšné splnění",
             rolesPlaceholder: "Vybrat role",
@@ -4721,7 +4740,8 @@ export const csMessages = {
             password: "Heslo",
             passwordHint: "Heslo uvidí jen hráči na soupisce.",
             defaultChannel: "Výchozí kanál",
-            channelsLocked: "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
+            channelsLocked:
+                "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
             meetingChannel: "Hlasový kanál srazu",
             meetingChannelDefault: "Výchozí kanál klanu",
             meetingChannelHint: "Z tohoto kanálu Logi čte docházku na srazu.",
@@ -4731,8 +4751,10 @@ export const csMessages = {
             topicPresetNone: "Bez témat",
             participantRoles: "Role účastníků a záložníků",
             participantRolesHint: "Bot dá hráčům roli tohoto zápasu.",
-            participantRolesOffHint: "Po vypnutí bot role, které vytvořil, smaže.",
-            forumMissing: "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
+            participantRolesOffHint:
+                "Po vypnutí bot role, které vytvořil, smaže.",
+            forumMissing:
+                "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
             openChannelSettings: "Nastavit kanály",
         },
         review: {
@@ -4756,7 +4778,8 @@ export const csMessages = {
             missing: "Chybí",
             changes: "Co se změní",
             noChanges: "Zatím jste nic nezměnili.",
-            noticeEdit: "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
+            noticeEdit:
+                "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
         },
         preview: {
             title: "Náhled v Discordu",
@@ -4783,7 +4806,8 @@ export const csMessages = {
             title: "Další možnosti",
             summary: "Popis, obrázky, poznámky a taktické mapy",
             description: "Popis",
-            descriptionHint: "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
+            descriptionHint:
+                "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
             notes: "Poznámky",
             notesHint: "Zobrazí se v ohlášení v Discordu místo popisu.",
             thumbnail: "Miniatura",
@@ -4797,7 +4821,8 @@ export const csMessages = {
         edit: {
             title: "Upravit zápas",
             titleTraining: "Upravit trénink",
-            description: "Uložené změny se hned propíšou do ohlášení v Discordu.",
+            description:
+                "Uložené změny se hned propíšou do ohlášení v Discordu.",
             breadcrumb: "Upravit",
             breadcrumbTrainings: "Tréninky",
             savedTimes: "Uložené časy",
@@ -4812,17 +4837,21 @@ export const csMessages = {
             leavePrompt: "Máte neuložené změny. Opravdu odejít?",
             series: "Zápas patří do týdenní série. Změny platí jen pro tento termín.",
             seriesEdit: "Upravit sérii",
-            seriesSource: "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
+            seriesSource:
+                "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
             stopHint: "Vypnutím opakování sérii zastavíte.",
             lockedTitle: "Zápas už nejde upravit",
             lockedTrainingTitle: "Trénink už nejde upravit",
-            lockedDescription: "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
-            lockedTrainingDescription: "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
+            lockedDescription:
+                "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
+            lockedTrainingDescription:
+                "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
             backToMatch: "Zpět na zápas",
             backToTraining: "Zpět na trénink",
             notFoundTitle: "Zápas nenalezen",
             notFoundDescription: "Možná byl smazán, nebo patří jinému klanu.",
-            invalidSchedule: "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
+            invalidSchedule:
+                "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
             fields: {
                 name: "Název",
                 category: "Kategorie",
@@ -4871,8 +4900,10 @@ export const csMessages = {
         },
         overview: {
             title: "Přehled",
-            description: "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
-            descriptionTraining: "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
+            description:
+                "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
+            descriptionTraining:
+                "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
             edit: "Upravit",
             readOnly: "Zápas mohou měnit jen správci klanu.",
             stratmaps: "Taktické mapy",
@@ -6083,6 +6114,123 @@ export const csMessages = {
         unknownUser: "uživatel",
         unknownRole: "role",
         unknownChannel: "kanál",
+    },
+    joinPage: {
+        metaTitle: "Připojit se na {name}",
+        metaDescription: "Připoj se na herní server {name}.",
+        opening: "Otevírám {game}…",
+        players: "{players} / {capacity} hráčů",
+        map: "mapa {map}",
+        steamPrompt: "Steam se zeptá, jestli odkaz otevřít. Potvrď Otevřít.",
+        openAgain: "Otevřít znovu",
+        manualTitle: "Připojit ručně",
+        addressLabel: "Adresa serveru",
+        copy: "Kopírovat",
+        copied: "Zkopírováno",
+        copyFailed:
+            "Kopírování se nepovedlo. Označ adresu a zkopíruj ji ručně.",
+        steamInstructions:
+            "Ve Steamu: Zobrazit → Herní servery → Oblíbené → Přidat server a vložit adresu.",
+        backToDiscord: "Zpět do Discordu",
+        joinCodeTitle: "Kód pro připojení",
+        joinCodeLabel: "Kód pro připojení do hry",
+        joinCodeHelp: "Ve hře otevři připojení ke hře a zadej tento kód.",
+        noAddress:
+            "Adresa serveru zatím není nastavená. Zeptej se správce klanu.",
+        noJoinCode:
+            "Kód pro připojení zatím není nastavený. Zeptej se správce klanu.",
+        notFoundTitle: "Server nenalezen",
+    },
+    discordPanelStatus: {
+        states: {
+            published: "Zveřejněno",
+            error: "Chyba",
+            waiting: "Čeká na bota",
+            unsent: "Neodesláno",
+            paused: "Pozastaveno",
+        },
+        botOnline: "Bot online",
+        botVersion: "verze {version} · poslední kontakt {ago}",
+        refreshEvery: "Panely se obnovují každých 60 s",
+        botOffline:
+            "Bot neodpovídá · poslední kontakt {ago}. Panely se teď neobnovují a nové se neodešlou. Zkontrolujte, že bot běží; po aktualizaci ho restartujte.",
+        botNeverSeen:
+            "Bot se zatím neozval. Panely se neobnovují a nové se neodešlou, dokud bot neběží.",
+        botOutdated:
+            "Bot běží starší verzi {version}. Panely v Discordu potřebují novější verzi. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
+        permissions: {
+            view_channel: "Zobrazit kanál",
+            send_messages: "Posílat zprávy",
+            embed_links: "Vkládat odkazy",
+            attach_files: "Přikládat soubory",
+            read_message_history: "Číst historii zpráv",
+        },
+        errors: {
+            bot_not_in_server: {
+                title: "Bot není na Discord serveru.",
+                fix: "Pozvěte bota Logi znovu na server a pak klikněte Zkusit znovu.",
+            },
+            channel_missing: {
+                title: "Kanál {channel} už neexistuje nebo ho bot nevidí.",
+                fix: "V editoru vyberte jiný kanál a uložte.",
+            },
+            channel_type: {
+                title: "Do kanálu {channel} nejde poslat zprávu.",
+                fix: "V editoru vyberte textový kanál nebo kanál s oznámeními.",
+            },
+            missing_permissions: {
+                title: "Bot nemá oprávnění {permissions} v {channel}.",
+                fix: "Na Discordu otevřete Upravit kanál → Oprávnění → Logi a zapněte {permissions}. Pak klikněte Zkusit znovu.",
+            },
+            delivery_uncertain: {
+                title: "Discord nepotvrdil, jestli zprávu přijal.",
+                fix: "Bot zprávu při další obnově najde, nebo ji pošle znovu. Nic nemusíte dělat.",
+            },
+            discord_unavailable: {
+                title: "Discord teď neodpovídá.",
+                fix: "Bot to zkusí znovu sám. Když to trvá dlouho, klikněte Zkusit znovu.",
+            },
+            source_missing: {
+                title: "Herní server panelu už v Logi není.",
+                fix: "V editoru vyberte jiný server, nebo panel odstraňte.",
+            },
+            source_not_collecting: {
+                title: "Logi z herního serveru nesbírá data.",
+                fix: "Zapněte sběr dat v Herní servery a pak klikněte Zkusit znovu.",
+            },
+            provider_unreachable: {
+                title: "Herní server neodpovídá.",
+                fix: "Panel ukazuje poslední data. Zkontrolujte adresu a klíč v Herní servery.",
+            },
+            provider_rate_limited: {
+                title: "Poskytovatel dat teď odmítá další dotazy.",
+                fix: "Panel ukazuje poslední data a zkusí to znovu. Když to trvá přes hodinu, zvyšte limit klíče, nebo ho vyměňte v Herní servery.",
+            },
+            render_failed: {
+                title: "Panel se nepodařilo sestavit.",
+                fix: "Zkraťte název nebo popis panelu. Když chyba trvá, nahlaste ji podpoře Logi.",
+            },
+            unsupported_kind: {
+                title: "Bot tento druh panelu ještě neumí.",
+                fix: "Aktualizujte bota a restartujte ho.",
+            },
+            competition_missing: {
+                title: "Soutěž panelu už neexistuje.",
+                fix: "V editoru vyberte jinou soutěž, nebo panel odstraňte.",
+            },
+            unknown: {
+                title: "Zprávu se nepodařilo odeslat.",
+                fix: "Klikněte Zkusit znovu. Když chyba trvá, nahlaste ji podpoře Logi.",
+            },
+        },
+        warnings: {
+            password_hidden_public_channel:
+                "Kanál je teď veřejný, proto jsme heslo z panelu odebrali. Přesuňte panel do soukromého kanálu a heslo se znovu ukáže.",
+            live_data_unavailable:
+                "Živá data teď nejsou dostupná; panel ukazuje poslední sebraná data.",
+            attach_files_missing:
+                "Bot nemá oprávnění Přikládat soubory, panel je bez obrázku.",
+        },
     },
 } as const
 

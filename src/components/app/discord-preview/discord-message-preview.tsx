@@ -371,8 +371,8 @@ function Field({
     field: MessageField
     context: RenderContext
 }) {
-    return (
-        <div className="flex min-w-0 flex-col gap-1">
+    const body = (
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-[#f2f3f5]">
                     {field.title}
@@ -387,6 +387,17 @@ function Field({
                 />
             )}
         </div>
+    )
+    return field.thumbnail ? (
+        <div className="flex min-w-0 items-start gap-3">
+            {body}
+            <Media
+                media={field.thumbnail}
+                className="size-16 shrink-0 rounded-md"
+            />
+        </div>
+    ) : (
+        body
     )
 }
 

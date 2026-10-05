@@ -74,7 +74,10 @@ const view = panelFrame({
 - **Blocks:** `text` (markdown), `meta` (lines whose icons follow the clan's icon
   density: `{ text, line: "start" }` or `{ text, icon, iconAlways }`), `list`
   (`marker: "number" | "bullet" | "none"`), `fields` (title, chip, text, as the
-  `/server-status` rows), `separator`, `gallery`, `buttons` (one row), `select`.
+  `/server-status` rows; an optional `thumbnail` makes the row a section with
+  the image on the right, as the server rows of "Naše servery"; each such row
+  costs three of the 40 components), `separator`, `gallery`, `buttons` (one
+  row), `select`.
 - **Plain vs markdown:** titles, labels, chip labels and field titles are plain
   and get escaped. Everything else is markdown: escape user data with
   `escapeMarkdownText`. Timestamps: `discordTimestamp(iso, "R")` from
@@ -311,3 +314,12 @@ in `docs/integrations/website/configuration-coverage.md`.
 - Preview markup: `src/components/app/discord-preview/discord-message-preview.test.ts`
   (`renderToStaticMarkup`).
 - Settings slices: `src/domain/api/settings-slices.test.ts`.
+- A view laid out with the real clan copy (text, buttons, validation):
+  `renderedView(view, language)` in `src/infrastructure/testing/message-views.ts`.
+
+## 11. Panels
+
+Panels (live servers, "Naše servery", results, calendar, competition tables)
+are built on `panelFrame` and documented, with their dashboard routes, Convex
+functions, bot worker and the hand-offs to W3, W4 and W5, in
+[PANELS-API.md](PANELS-API.md).

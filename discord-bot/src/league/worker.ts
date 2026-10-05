@@ -7,11 +7,14 @@ import {
     type Snowflake,
 } from "discord.js"
 import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
+import { panelFrame } from "../../../src/domain/discord-messages/message-view"
 import { humanLeagueInput, leagueCardCopy, renderLeagueCard } from "./render"
+import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import { panelArtwork, factionAssets } from "../public-panels/assets"
 import { clanLanguageForGuild } from "../runtime/clan-language"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
+import { messagePayload } from "../ui/message-kit"
 import { env } from "../environment"
 import { convex } from "../convex"
 type GuildTracking = {
@@ -29,11 +32,34 @@ async function data(guildId: string): Promise<GuildTracking | null> {
         { secret: env.internalSecret, guildId }
     )
 }
+/**
+ * The League card while its fixture cannot be read: the shared panel frame
+ * with the "Nedostupný" state instead of a bare text line (L3-02).
+ */
+export function leagueUnavailableView(
+    title: string,
+    chip: string,
+    now: number
+) {
+    return panelFrame({
+        label: "WD League",
+        title,
+        state: { chip: { label: chip, tone: "danger" } },
+        updatedAt: now,
+    })
+}
 export function startLeagueWorker(client: Client) {
     let stopped = false,
         running = false,
         iconsAt = 0,
         icons: Record<string, string> = {}
+    // A stable time keeps the unavailable card from being re-edited each tick.
+    const unavailable = new Map<string, number>()
+    const unavailableSince = (id: string) => {
+        const since = unavailable.get(id) ?? Date.now()
+        unavailable.set(id, since)
+        return since
+    }
     const tick = async () => {
         if (running || stopped) return
         running = true
@@ -63,6 +89,7 @@ export function startLeagueWorker(client: Client) {
                     : undefined
                 for (const row of tracking?.records ?? []) {
                     try {
+                        if (row.fixture) unavailable.delete(row.id)
                         const art = row.fixture
                             ? await panelArtwork(
                                   "wardogs",
@@ -76,12 +103,16 @@ export function startLeagueWorker(client: Client) {
                                   icons,
                                   language
                               )
-                            : {
-                                  content:
+                            : messagePayload(
+                                  leagueUnavailableView(
                                       leagueCardCopy(language)
                                           .fixtureUnavailable,
-                                  allowedMentions: { parse: [] as never[] },
-                              }
+                                      getPanelMessages(language).live.state
+                                          .offline,
+                                      unavailableSince(row.id)
+                                  ),
+                                  { language }
+                              )
                         await publishManagedMessage(client, {
                             guildId: guild.id,
                             key: `league:${row.id}`,

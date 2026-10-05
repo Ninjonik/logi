@@ -102,7 +102,13 @@ export type MessageMetaLine = {
 }
 
 /** A row of a field block: a bold title, an optional chip and a markdown line below. */
-export type MessageField = { title: string; chip?: MessageChip; text?: string }
+export type MessageField = {
+    title: string
+    chip?: MessageChip
+    text?: string
+    /** An image on the right of this row (a section), e.g. a server's map (P7-B09). */
+    thumbnail?: MessageMedia
+}
 
 export type MessageBlock =
     | { kind: "text"; markdown: string }

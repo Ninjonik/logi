@@ -19,6 +19,7 @@ import {
     MAX_LEAGUE_FIXTURES,
 } from "../src/domain/wardogs-league/all-fixtures"
 import { leagueCollectionWanted } from "../src/application/wardogs-league/tracking"
+import { isPanelPaused } from "../src/domain/discord-publications/settings"
 import { leagueReadSchema } from "../src/domain/wardogs-league/contracts"
 import { internalMutation, internalQuery } from "./_generated/server"
 import { leagueSeason } from "../src/domain/wardogs-league/results"
@@ -38,7 +39,17 @@ export const status = internalQuery({
             .query("leagueTrackingSettings")
             .withIndex("enabled", (q) => q.eq("enabled", true))
             .take(1)
-        return { wanted: leagueCollectionWanted(enabled) }
+        // A sent, running WD League panel keeps the League-wide collection on.
+        const leaguePanels = enabled.length
+            ? 0
+            : (await ctx.db.query("discordPublicPanels").take(5000)).filter(
+                  (panel) =>
+                      panel.kind === "league" &&
+                      !panel.draft &&
+                      !panel.removing &&
+                      !isPanelPaused(panel)
+              ).length
+        return { wanted: leagueCollectionWanted(enabled, leaguePanels) }
     },
 })
 

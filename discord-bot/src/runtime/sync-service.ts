@@ -132,6 +132,13 @@ export class DiscordSyncService {
         this.queueEventSync(eventId)
     }
 
+    /** Redraws one workspace's calendar panel now (a panel request). */
+    async refreshCalendar(guildId: string) {
+        if (!this.guildCache.get(guildId)?.config)
+            throw new Error("Workspace configuration not loaded yet.")
+        await this.syncGuildCalendar(guildId, true)
+    }
+
     getGuildConfig(guildId: string) {
         return this.guildCache.get(guildId)?.config
     }
@@ -469,9 +476,12 @@ export class DiscordSyncService {
         })) as EventSyncContext | null
     }
 
-    private async syncGuildCalendar(guildId: string) {
+    private async syncGuildCalendar(guildId: string, requested = false) {
         const runtime = this.guildCache.get(guildId)
-        if (!runtime?.config || !hasConfiguredClanDiscordTarget(runtime)) {
+        if (
+            !runtime?.config ||
+            (!requested && !hasConfiguredClanDiscordTarget(runtime))
+        ) {
             return
         }
 

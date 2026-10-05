@@ -2,6 +2,7 @@ import { commandFeatures } from "../commands/features"
 import { attendanceReplyInteractions } from "./attendance-replies"
 import { matchRecapInteractions } from "./match-recap-preference"
 import { rosterInteractions } from "./roster-assignment"
+import { panelInteractions } from "../public-panels/interactions"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -16,4 +17,5 @@ export const interactionFeatures: readonly InteractionFeature[] = [
     rosterInteractions,
     attendanceReplyInteractions,
     matchRecapInteractions,
+    panelInteractions,
 ]

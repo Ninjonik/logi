@@ -29,6 +29,21 @@ export const hllLiveSchema = z.strictObject({
                 )
                 .max(2),
             timeRemainingSeconds: metric,
+            /**
+             * Optional CRCON facts (P4-02, P4-B03): shown only when the
+             * server reports them; older cached reads have none.
+             */
+            environment: text.nullable().optional(),
+            queueCount: count.nullable().optional(),
+            nextMap: z
+                .strictObject({
+                    name: text,
+                    layerId: text.nullable(),
+                    mode: text.nullable(),
+                    environment: text.nullable(),
+                })
+                .nullable()
+                .optional(),
         })
         .nullable(),
     players: z

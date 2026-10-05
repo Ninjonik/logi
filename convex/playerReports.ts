@@ -4,6 +4,10 @@ import {
     resolveReportPlayer,
 } from "../src/domain/player-reports/report"
 import {
+    isPanelPaused,
+    normalizePanelKind,
+} from "../src/domain/discord-publications/settings"
+import {
     query,
     mutation,
     type QueryCtx,
@@ -37,8 +41,12 @@ async function context(
     guard(args)
     const panel = await ctx.db.get(args.panelId)
     if (
-        !panel?.enabled ||
-        panel.kind === "results" ||
+        !panel ||
+        isPanelPaused(panel) ||
+        panel.draft ||
+        panel.removing ||
+        normalizePanelKind(panel.kind) !== "server" ||
+        !panel.connectionId ||
         panel.guildId !== args.guildId ||
         panel.revision !== args.revision ||
         panel.channelId !== args.channelId ||
@@ -262,10 +270,16 @@ export const submit = mutation({
             throw new Error(
                 "Three reports are already open. Use the existing private tickets."
             )
+        // Reserve the ticket number now: the thread is named by it (L3-68).
+        const reportNumber = (value.access.config.ticketCounter ?? 0) + 1
+        await ctx.db.patch(value.access.config._id, {
+            ticketCounter: reportNumber,
+        })
         return String(
             await ctx.db.insert("playerReports", {
                 guildId: args.guildId,
                 reporterId: args.reporterId,
+                reportNumber,
                 draftId: args.draftId,
                 panelId: value.draft.panelId,
                 revision: value.draft.revision,
@@ -339,6 +353,8 @@ export const claim = mutation({
             fence,
             threadId: report.threadId ?? null,
             marker: `report-${report._id}`,
+            reportNumber: report.reportNumber ?? null,
+            language: access.config.defaultLanguage ?? "en",
             createdAt: report.createdAt,
             contextJson: report.contextJson,
             ...access.policy,
@@ -387,7 +403,9 @@ export const complete = mutation({
             .withIndex("threadId", (q) => q.eq("threadId", report.threadId!))
             .unique()
         if (existing) throw new Error("Thread is already tracked.")
-        const number = (access.config.ticketCounter ?? 0) + 1,
+        // Older reports reserve their number only now.
+        const number =
+                report.reportNumber ?? (access.config.ticketCounter ?? 0) + 1,
             iso = new Date().toISOString(),
             contextValue = JSON.parse(report.contextJson) as { reason: string }
         const ticketId = await ctx.db.insert("ticketThreads", {
@@ -411,7 +429,8 @@ export const complete = mutation({
             createdAt: iso,
             updatedAt: iso,
         })
-        await ctx.db.patch(access.config._id, { ticketCounter: number })
+        if (report.reportNumber === undefined)
+            await ctx.db.patch(access.config._id, { ticketCounter: number })
         await ctx.db.patch(report._id, {
             state: "open",
             ticketId,

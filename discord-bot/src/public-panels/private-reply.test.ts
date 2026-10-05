@@ -1,9 +1,12 @@
 import type { InteractionEditReplyOptions } from "discord.js"
-import { completePrivatePlayerReply } from "./private-reply"
 import assert from "node:assert/strict"
-import { panelCopy } from "./copy"
 import test from "node:test"
-test("a deferred player response resolves to a private error on rejection or timeout instead of spinning", async () => {
+
+import { completePrivatePlayerReply } from "./private-reply"
+
+const fallback: InteractionEditReplyOptions = { content: "fallback card" }
+
+test("a deferred player reply ends with the fallback card on rejection or timeout instead of spinning", async () => {
     for (const load of [
         async () => {
             throw Error("private provider diagnostic")
@@ -16,39 +19,37 @@ test("a deferred player response resolves to a private error on rejection or tim
                 replies.push(reply)
             },
             load,
-            2
+            2,
+            fallback
         )
-        assert.equal(replies.length, 1)
-        assert.match(String(replies[0].content), /unavailable/)
-        assert.ok(!String(replies[0].content).includes("diagnostic"))
+        assert.deepEqual(replies, [fallback])
+        assert.ok(!JSON.stringify(replies).includes("diagnostic"))
     }
 })
-test("a rejected render payload is replaced with a plain-text fallback", async () => {
-    let calls = 0
+
+test("a reply Discord rejects is replaced with the fallback card", async () => {
+    const replies: InteractionEditReplyOptions[] = []
     await completePrivatePlayerReply(
         async (reply) => {
-            calls++
-            if (calls === 1) throw Error("Discord rejected components")
-            assert.match(String(reply.content), /unavailable/)
+            replies.push(reply)
+            if (replies.length === 1) throw Error("Discord rejected components")
         },
-        async () => ({ content: "players" })
+        async () => ({ content: "players" }),
+        1000,
+        fallback
     )
-    assert.equal(calls, 2)
+    assert.deepEqual(replies, [{ content: "players" }, fallback])
 })
-test("the private fallback can use the clan language", async () => {
+
+test("a reply in time is delivered once", async () => {
     const replies: InteractionEditReplyOptions[] = []
     await completePrivatePlayerReply(
         async (reply) => {
             replies.push(reply)
         },
-        async () => {
-            throw Error("provider down")
-        },
-        2,
-        panelCopy("cs").detailsUnavailable
+        async () => ({ content: "players" }),
+        1000,
+        fallback
     )
-    assert.equal(
-        replies[0]?.content,
-        "Podrobnosti o hráčích teď nejsou k dispozici. Zkus to prosím později."
-    )
+    assert.deepEqual(replies, [{ content: "players" }])
 })
