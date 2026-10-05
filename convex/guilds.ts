@@ -5,10 +5,9 @@ import {
 } from "./identity"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
 import { mutation, query } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 export const DEFAULT_ROSTER_SCORE_SETTINGS = {
     noCategory: 0,
     declined: -1,
@@ -20,7 +19,7 @@ export const DEFAULT_ROSTER_SCORE_SETTINGS = {
 } as const
 
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }

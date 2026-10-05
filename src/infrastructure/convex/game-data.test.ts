@@ -318,8 +318,6 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
         cursor: null,
         limit: 25,
     }
-    // Existing publicApi captures its trusted internal secret at module load.
-    input.secret = "dev-internal-auth-secret"
     const page = (await handler(publicApi.getClanResourcePage)(ctx, input)) as {
         items: Array<Record<string, unknown>>
     }

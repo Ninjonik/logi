@@ -1,15 +1,13 @@
 import type { MutationCtx } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import type { Doc } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -197,7 +195,7 @@ async function schedulePerformanceHistoryRefresh(
         0,
         internal.performanceHistory.refreshInBackground,
         {
-            secret: INTERNAL_AUTH_SECRET,
+            secret: internalAuthSecret(),
             guildId: event.guildId,
             gameId: event.gameId ?? "hell_let_loose",
         }

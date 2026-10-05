@@ -5,13 +5,12 @@ import {
     resolveSignupReminderStatuses,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
+import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 function assertSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
+    if (secret !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 const EVENT_CONCLUSION_RESERVE_MS = 15 * 60 * 1000
 

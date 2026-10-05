@@ -3,10 +3,10 @@ import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
 import { validateWebhookUrl } from "../src/domain/webhooks/url"
+import { internalAuthSecret } from "./discord_shared"
 
-const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 const assertSecret = (value: string) => {
-    if (value !== secret) throw new Error("Unauthorized.")
+    if (value !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 
 const eventTypes = v.array(v.string())

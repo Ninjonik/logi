@@ -1,8 +1,8 @@
 import { mutation, query } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
-const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 const check = (value: string) => {
-    if (value !== secret) throw new Error("Unauthorized.")
+    if (value !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 export const list = query({
     args: { secret: v.string(), guildId: v.string() },

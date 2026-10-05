@@ -60,13 +60,12 @@ import { currentEventStatus } from "../src/domain/events/status"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
+import { internalAuthSecret } from "./discord_shared"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { getGuildByDiscordId } from "./identity"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
+    if (secret !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 
 export const createKey = mutation({
