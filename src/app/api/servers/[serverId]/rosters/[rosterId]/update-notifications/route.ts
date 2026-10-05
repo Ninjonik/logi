@@ -1,17 +1,21 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
-import { NextRequest, NextResponse } from "next/server"
 import { makeFunctionReference } from "convex/server"
 
+import { rosterUpdateNotificationsHandler } from "@/lib/api/roster-update-notifications-route"
 import { resolveRosterUpdateChannelIds } from "@/domain/rosters/roster-update-channel"
+import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
+import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { summarizeRosterUpdates } from "@/lib/roster-update-summary"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { getClanDiscordMessages } from "@/lib/clan-language"
-import { getInternalAuthSecret } from "@/lib/env"
 import { sendDiscordBotDm } from "@/lib/discord"
 import { getDiscordBotToken } from "@/lib/env"
 import type { Roster } from "@/types/domain"
+
+export const runtime = "nodejs"
 
 const getEventSyncContextReference = makeFunctionReference<"query">(
     "discordSync:getEventSyncContext"
@@ -19,13 +23,6 @@ const getEventSyncContextReference = makeFunctionReference<"query">(
 const updateRosterUpdateMessageReference = makeFunctionReference<"mutation">(
     "discordSync:updateRosterUpdateMessage"
 )
-
-type UpdateNotificationBody = {
-    previousRoster: Roster
-    nextRoster: Roster
-    postAnnouncement?: boolean
-    notifyPlayers?: boolean
-}
 
 class DiscordChannelMessageError extends Error {
     constructor(
@@ -59,6 +56,8 @@ async function postDiscordChannelMessage(
             },
             body: JSON.stringify({
                 flags: 32768,
+                // Squad and role names are free text; they must never ping.
+                allowed_mentions: { parse: [] },
                 components: [
                     {
                         type: 17,
@@ -160,35 +159,33 @@ function formatDmMessage(input: {
     return lines.join("\n")
 }
 
-export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ serverId: string; rosterId: string }> }
-) {
-    const { serverId } = await params
-    const body = (await request.json()) as UpdateNotificationBody
+async function notifyRosterUpdate(input: {
+    serverId: string
+    previousRoster: Roster
+    roster: Roster
+    memberIds: ReadonlySet<string>
+    postAnnouncement: boolean
+    notifyPlayers: boolean
+}) {
+    const { serverId, previousRoster, roster: nextRoster, memberIds } = input
 
     const [guild, event, discordConfig] = await Promise.all([
         getGuildMetadata(serverId),
-        getEventMetadata(body.nextRoster.eventId),
+        getEventMetadata(nextRoster.eventId),
         getDiscordConfigByGuild(serverId),
     ])
 
-    if (!guild || !event) {
-        return NextResponse.json(
-            { error: "Roster context not found." },
-            { status: 404 }
-        )
-    }
+    if (!guild || !event) throw new Error("Roster context not found.")
 
     const changedUserIds = [
         ...new Set([
-            ...body.previousRoster.squads.flatMap(
+            ...previousRoster.squads.flatMap(
                 (squad) =>
                     squad.players
                         .map((player) => player.id)
                         .filter(Boolean) as string[]
             ),
-            ...body.nextRoster.squads.flatMap(
+            ...nextRoster.squads.flatMap(
                 (squad) =>
                     squad.players
                         .map((player) => player.id)
@@ -197,18 +194,10 @@ export async function POST(
         ]),
     ]
     const users = await getUsersByIds(changedUserIds, guild.discordId)
-    const summary = summarizeRosterUpdates(
-        body.previousRoster,
-        body.nextRoster,
-        users
-    )
+    const summary = summarizeRosterUpdates(previousRoster, nextRoster, users)
 
     if (!summary.hasChanges) {
-        return NextResponse.json({
-            ok: true,
-            hasChanges: false,
-            dmSentUserIds: [],
-        })
+        return { ok: true, hasChanges: false, dmSentUserIds: [] }
     }
 
     const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
@@ -241,6 +230,7 @@ export async function POST(
         rosterChannelId && rosterMessageId
             ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}`
             : undefined
+    // Only the clan's members are ever sent a direct message.
     const changedRecipients = [
         ...new Set([
             ...summary.addedUserIds,
@@ -248,12 +238,12 @@ export async function POST(
             ...summary.movedUserIds,
             ...summary.roleChangedUserIds,
         ]),
-    ]
+    ].filter((userId) => memberIds.has(userId))
     const usersById = new Map(users.map((user) => [user.discordId, user]))
     const dmSentUserIds: string[] = []
     const dmFailedUserIds: string[] = []
 
-    if (body.notifyPlayers !== false)
+    if (input.notifyPlayers)
         await Promise.all(
             changedRecipients.map(async (userId) => {
                 const user = usersById.get(userId)
@@ -278,7 +268,7 @@ export async function POST(
         )
 
     const rosterUpdateChannelId = channelIds.rosterUpdateChannelId
-    if (body.postAnnouncement && rosterUpdateChannelId) {
+    if (input.postAnnouncement && rosterUpdateChannelId) {
         const existingDigestId =
             syncContext?.syncState?.rosterUpdateChannelId ===
             rosterUpdateChannelId
@@ -321,13 +311,41 @@ export async function POST(
         })
     }
 
-    return NextResponse.json({
+    return {
         ok: true,
         hasChanges: true,
         dmSentUserIds,
         dmFailedUserIds,
         postedAnnouncement: Boolean(
-            body.postAnnouncement && rosterUpdateChannelId
+            input.postAnnouncement && rosterUpdateChannelId
         ),
-    })
+    }
+}
+
+const handler = rosterUpdateNotificationsHandler({
+    origin: new URL(getSiteUrl()).origin,
+    access: async (serverId, rosterId) => {
+        const [context, actor] = await Promise.all([
+            getServerContextUncached(serverId),
+            currentDashboardActor(),
+        ])
+        if (!context?.canAdmin || !actor) return null
+        const roster = context.rosters.find((item) => item.id === rosterId)
+        if (!roster) return "not_found"
+        return {
+            roster,
+            memberIds: new Set(
+                context.assignments.map((assignment) => assignment.userId)
+            ),
+        }
+    },
+    notify: notifyRosterUpdate,
+})
+
+/** Tells players about changes to a published roster; clan admins only. */
+export async function POST(
+    request: Request,
+    context: { params: Promise<{ serverId: string; rosterId: string }> }
+) {
+    return handler(request, await context.params)
 }

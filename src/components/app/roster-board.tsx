@@ -1359,23 +1359,21 @@ export function RosterBoard({
                         {
                             method: "POST",
                             headers: { "content-type": "application/json" },
+                            // The server reads the saved roster itself.
                             body: JSON.stringify({
-                                previousRoster,
-                                nextRoster: {
-                                    ...board,
-                                    id: nextRosterId,
-                                    reservePlayerIds: cleanReservePlayerIds,
-                                    reserveAttendances: (
-                                        board.reserveAttendances ?? []
-                                    ).filter((attendance) =>
-                                        cleanReservePlayerIds.includes(
-                                            attendance.userId
-                                        )
+                                previousRoster: {
+                                    eventId: previousRoster.eventId,
+                                    squads: previousRoster.squads.map(
+                                        (squad) => ({
+                                            name: squad.name,
+                                            players: squad.players.map(
+                                                (player) => ({
+                                                    id: player.id,
+                                                    roleName: player.roleName,
+                                                })
+                                            ),
+                                        })
                                     ),
-                                    notAttendingPlayerIds:
-                                        cleanNotAttendingPlayerIds,
-                                    squads: saveSquads,
-                                    published: true,
                                 },
                                 postAnnouncement:
                                     options?.postAnnouncement ?? false,
