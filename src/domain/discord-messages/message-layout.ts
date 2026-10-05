@@ -140,6 +140,7 @@ export function headerLines(
         )
     if (header.title?.trim())
         lines.push(`### ${escapeMarkdownText(header.title.trim())}`)
+    if (header.subtitle?.trim()) lines.push(header.subtitle.trim())
     const state = headerState(header, options.copy)
     const parts = [
         ...state.chips.map((chip) => chipText(chip, options.chipIcons)),

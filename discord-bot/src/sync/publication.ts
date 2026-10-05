@@ -6,6 +6,13 @@ import {
     type MessageCreateOptions,
 } from "discord.js"
 import {
+    botErrorSummary,
+    classifyDiscordFailure,
+    type BotErrorFacts,
+    type BotErrorSource,
+    type BotPermission,
+} from "../../../src/domain/discord-messages/bot-errors"
+import {
     findPublicationMessage,
     PUBLICATION_RENDER_VERSION,
     publicationCreatePayload,
@@ -18,6 +25,7 @@ import { publicationFiles, componentAttachments } from "./publication-files"
 import { getSystemMessages } from "../../../src/lib/clan-language/system"
 import { clanLanguageForGuild } from "../runtime/clan-language"
 import { fetchOwnedPublicationMessage } from "./owned-message"
+import { discordFailureOf } from "../error-reporting"
 import { makeFunctionReference } from "convex/server"
 import { createHash } from "node:crypto"
 import { env } from "../environment"
@@ -69,19 +77,79 @@ export function publicationHash(message: MessageCreateOptions) {
 const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
 
 /**
- * The last delivery error stored for the dashboard, in the clan language:
- * an uncertain create (never re-sent) or a failed delivery. No internal
+ * The publication channel lacks permissions the message needs. It is a
+ * `PublicationChannelError` ("missing_permissions") for the panel and seed
+ * classifiers, and names the channel for the errors channel (L5).
+ */
+export class PublicationPermissionError extends PublicationChannelError {
+    constructor(
+        readonly missing: BotPermission[],
+        readonly channelName: string
+    ) {
+        super("missing_permissions", missing)
+        this.name = "PublicationPermissionError"
+    }
+}
+
+/** What a managed message is, by its key, for the stored error's title. */
+export function publicationSource(key: string | undefined): BotErrorSource {
+    if (key?.startsWith("event:"))
+        return /:roster(-changes)?$/.test(key) ? "roster" : "announcement"
+    if (key === "ticket") return "ticketPanel"
+    if (key === "membership") return "applicationPanel"
+    if (key === "calendar") return "calendarPanel"
+    return "publicPanel"
+}
+
+/**
+ * The last delivery error stored for the dashboard, in the clan language
+ * (board L5-44): an uncertain create (never re-sent) or the errors
+ * channel's title, "Proč" and "Co udělat" for the failure. No internal
  * error text reaches the clan.
  */
 export function publicationDeliveryError(
     language: string | null | undefined,
-    error: unknown
+    error: unknown,
+    key?: string
 ) {
-    const copy = getSystemMessages(language).publication
-    return error instanceof Error &&
+    const copy = getSystemMessages(language)
+    if (
+        error instanceof Error &&
         error.message.startsWith("Delivery uncertain")
-        ? copy.deliveryUncertain
-        : copy.deliveryFailed
+    )
+        return copy.publication.deliveryUncertain
+    const wrapped =
+        error instanceof PublicationNotSent && "deliveryCause" in error
+            ? (error as { deliveryCause: unknown }).deliveryCause
+            : undefined
+    const cause = wrapped ?? error
+    const facts: BotErrorFacts =
+        cause instanceof PublicationPermissionError
+            ? {
+                  failure: "missingPermission",
+                  missingPermissions: cause.missing,
+                  channel: `#${cause.channelName}`,
+              }
+            : { failure: classifyDiscordFailure(discordFailureOf(cause)) }
+    return botErrorSummary(
+        copy.errorsChannel,
+        copy.locale,
+        publicationSource(key),
+        facts
+    )
+}
+
+/** The permissions a managed message needs in its channel. */
+function publicationPermissions(
+    message: MessageCreateOptions
+): BotPermission[] {
+    return [
+        "ViewChannel",
+        "ReadMessageHistory",
+        "SendMessages",
+        ...(message.embeds?.length ? (["EmbedLinks"] as const) : []),
+        ...(message.files?.length ? (["AttachFiles"] as const) : []),
+    ]
 }
 const ref = (name: string) =>
     makeFunctionReference<"mutation">(`discordPublications:${name}`)
@@ -116,25 +184,12 @@ export async function publishManagedMessage(
             throw new PublicationChannelError("channel_type")
         const me = await guild.members.fetchMe({ force: true })
         // Only demand what this message needs; text-only panels must not fail on Attach Files.
-        const missing =
-            found
-                .permissionsFor(me)
-                ?.missing([
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.ReadMessageHistory,
-                    PermissionFlagsBits.SendMessages,
-                    ...(input.message.embeds?.length
-                        ? [PermissionFlagsBits.EmbedLinks]
-                        : []),
-                    ...(input.message.files?.length
-                        ? [PermissionFlagsBits.AttachFiles]
-                        : []),
-                ]) ?? []
-        if (missing.length || !found.permissionsFor(me))
-            throw new PublicationChannelError(
-                "missing_permissions",
-                missing.length ? missing : ["ViewChannel"]
-            )
+        const granted = found.permissionsFor(me)
+        const missing = publicationPermissions(input.message).filter(
+            (permission) => !granted?.has(PermissionFlagsBits[permission])
+        )
+        if (missing.length)
+            throw new PublicationPermissionError(missing, found.name)
         return found
     }
     const owned = async (id: string, messageId: string) => {
@@ -186,7 +241,8 @@ export async function publishManagedMessage(
                         ? {
                               error: publicationDeliveryError(
                                   await clanLanguageForGuild(input.guildId),
-                                  error
+                                  error,
+                                  input.key
                               ),
                           }
                         : {}),
@@ -208,11 +264,13 @@ export async function publishManagedMessage(
             create: async (id, marker) => {
                 const destination = await channel(id).catch(
                     (error: unknown) => {
+                        // `cause` for the panel and seed classifiers,
+                        // `deliveryCause` for the stored error (L5-44).
                         throw Object.assign(
                             new PublicationNotSent(
                                 "Channel unavailable before send."
                             ),
-                            { cause: error }
+                            { cause: error, deliveryCause: error }
                         )
                     }
                 )

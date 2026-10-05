@@ -52,10 +52,13 @@ type Exceptions = Record<
     GameExceptionChannelField,
     Partial<Record<GameId, string>>
 >
+/**
+ * The errors channel moved to "Zprávy a panely" (board N1-47), where it is
+ * edited next to the error messages themselves.
+ */
 type Values = {
     timezone: string
     defaultLanguage: ClanLanguage
-    errorsChannelId?: string
     calendarChannelId?: string
 } & Record<GameExceptionChannelField, string | undefined>
 
@@ -164,7 +167,6 @@ export function DiscordChannelSettingsForm({
         () => ({
             timezone: config?.timezone ?? "UTC",
             defaultLanguage: config?.defaultLanguage ?? "en",
-            errorsChannelId: config?.errorsChannelId,
             calendarChannelId: config?.calendarChannelId,
             announcementsChannelId: config?.announcementsChannelId,
             eventInfoChannelId: config?.eventInfoChannelId,
@@ -209,8 +211,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function picker(
-        field:
-            GameExceptionChannelField | "errorsChannelId" | "calendarChannelId",
+        field: GameExceptionChannelField | "calendarChannelId",
         kind: ChannelKind,
         value: string | undefined,
         onChange: (value?: string) => void,
@@ -359,7 +360,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function clanWideRow(
-        field: "errorsChannelId" | "calendarChannelId",
+        field: "calendarChannelId",
         label: string,
         help: string
     ) {
@@ -397,7 +398,6 @@ export function DiscordChannelSettingsForm({
             defaultLanguage: values.defaultLanguage,
             announcementsChannelId: clearableId(values.announcementsChannelId),
             eventInfoChannelId: clearableId(values.eventInfoChannelId),
-            errorsChannelId: clearableId(values.errorsChannelId),
             calendarChannelId: clearableId(values.calendarChannelId),
             forumCategoryId: clearableId(values.forumCategoryId),
             meetingChannelId: clearableId(values.meetingChannelId),
@@ -544,7 +544,6 @@ export function DiscordChannelSettingsForm({
                     text.calendar,
                     text.calendarHelp
                 )}
-                {clanWideRow("errorsChannelId", text.errors, text.errorsHelp)}
                 {routingRow("forumCategoryId", text.forum, text.forumHelp)}
             </Card>
 

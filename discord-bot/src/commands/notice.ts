@@ -63,6 +63,12 @@ export type NoticePorts = {
     save(eventId: string, userId: string, reason: string): Promise<void>
     /** After a save: refresh the web and the match's Discord messages. */
     saved(guildId: string, eventId: string): Promise<void>
+    /**
+     * After the confirmation: the optional "přijde později" post in the
+     * match thread, without the reason (board L5-43, N1-15). It checks the
+     * clan's switch itself and never throws.
+     */
+    announce?(eventId: string, userId: string): Promise<void>
     now?: () => number
 }
 
@@ -296,6 +302,7 @@ export async function handleNoticeModalSubmit(
         }),
         options
     )
+    await ports.announce?.(eventId, interaction.user.id).catch(() => undefined)
 }
 
 /** Routes `/notice`, its autocomplete, the window and the reminder button. */

@@ -920,6 +920,10 @@ test("decision DMs are leased, retried with backoff and marked failed after the 
             requestedName: "Lonestar",
             teamName: null,
             reason: "Duplicate of an existing team",
+            teamCode: null,
+            clanName: "Workspace A",
+            serverId: "guilds:admin",
+            accentColor: null,
         },
     ])
     // The lease hides the claim from a second pass.

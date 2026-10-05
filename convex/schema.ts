@@ -805,6 +805,14 @@ export default defineSchema({
         rosterChangesPostDefault: v.optional(v.boolean()),
         rosterChangesDmDefault: v.optional(v.boolean()),
         attendanceNoticesInThread: v.optional(v.boolean()),
+        // Per-message switches of "Zprávy a panely" (board N1, see
+        // notification-settings.ts). Missing means on (N1-B06).
+        debriefPostEnabled: v.optional(v.boolean()),
+        scheduledEventEnabled: v.optional(v.boolean()),
+        matchRecapDmEnabled: v.optional(v.boolean()),
+        trainingResultDmEnabled: v.optional(v.boolean()),
+        applicationCloseDmEnabled: v.optional(v.boolean()),
+        ticketCloseDmEnabled: v.optional(v.boolean()),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -814,7 +822,14 @@ export default defineSchema({
         statusMessageId: v.optional(v.string()),
         statusUpdatesThreadId: v.optional(v.string()),
         serviceStates: v.optional(
-            v.array(v.object({ name: v.string(), online: v.boolean() }))
+            v.array(
+                v.object({
+                    name: v.string(),
+                    online: v.boolean(),
+                    // When the service last changed state (board L5-37).
+                    since: v.optional(v.string()),
+                })
+            )
         ),
         updatedAt: v.string(),
     }).index("workspaceGuildId", ["workspaceGuildId"]),

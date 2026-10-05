@@ -25,6 +25,7 @@ import {
     getRosterImageVersion,
     withTimeout,
 } from "../utils"
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
@@ -636,7 +637,11 @@ async function syncEvent(
     }
 
     const scheduledLifecycle = deriveScheduledEventLifecycle(event)
-    if (payload.config.meetingChannelId) {
+    // "Událost na Discordu" is a clan switch (N1-16); off cancels it below.
+    if (
+        payload.config.meetingChannelId &&
+        isMessageEnabled(payload.config, "scheduledEvent")
+    ) {
         try {
             const meetingChannel = await guild.channels
                 .fetch(payload.config.meetingChannelId)

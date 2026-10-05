@@ -38,6 +38,26 @@ const enKit: MessageKitCopy = {
 const cs: MessageLayoutOptions = { copy: csKit, locale: "cs-CZ" }
 const updatedAt = "2026-10-11T18:00:00Z"
 
+test("a header subtitle sits between the title and the chips", () => {
+    assert.deepEqual(
+        headerLines(
+            {
+                label: "Chyba bota · Zápas",
+                title: "Ohlášení zápasu se neodeslalo",
+                subtitle: "VLK vs ROG · Přátelák",
+                chips: [{ label: "Zkusí se znovu po opravě", tone: "warning" }],
+            },
+            cs
+        ),
+        [
+            "-# **CHYBA BOTA · ZÁPAS**",
+            "### Ohlášení zápasu se neodeslalo",
+            "VLK vs ROG · Přátelák",
+            "🟡 **Zkusí se znovu po opravě**",
+        ]
+    )
+})
+
 test("the panel frame lays out as the board's anatomy", () => {
     const layout = layoutMessageView(
         panelFrame({

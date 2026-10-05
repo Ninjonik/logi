@@ -9,4 +9,5 @@ export default {
     tickets: "Tickets",
     "membership-applications": "Clan applications",
     "panel-graphics": "Panel graphics",
+    "server-seeding": "Server seeding",
 }

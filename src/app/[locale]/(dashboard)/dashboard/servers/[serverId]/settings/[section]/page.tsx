@@ -24,6 +24,7 @@ import { MatchTemplatesSettings } from "@/components/app/settings/match-template
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
 import { PublicInviteSettings } from "@/components/app/settings/public-invite-settings"
+import { SeedSettingsPage } from "@/components/app/discord-seed/seed-settings-page"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
 import { settingsHref } from "@/components/app/settings/settings-section-meta"
@@ -68,10 +69,10 @@ export default async function ServerSettingsSectionPage({
     searchParams,
 }: {
     params: Params
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string; server?: string }>
 }) {
     const { locale, serverId, section } = await params
-    const { game } = await searchParams
+    const { game, server: serverTab } = await searchParams
     const gameId = isGameId(game) ? game : undefined
     const merged = mergedSettingsSection(section)
     if (merged) redirect(settingsHref(locale, serverId, merged, gameId))
@@ -168,6 +169,7 @@ export default async function ServerSettingsSectionPage({
                     gameId={gameId}
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
+                    siteUrl={getSiteUrl()}
                     hrefs={{
                         channels: settingsHref(
                             locale,
@@ -187,6 +189,32 @@ export default async function ServerSettingsSectionPage({
                             "match-templates",
                             gameId
                         ),
+                        commands: settingsHref(
+                            locale,
+                            serverId,
+                            "commands",
+                            gameId
+                        ),
+                        membership: settingsHref(
+                            locale,
+                            serverId,
+                            "membership",
+                            gameId
+                        ),
+                        tickets: settingsHref(
+                            locale,
+                            serverId,
+                            "tickets",
+                            gameId
+                        ),
+                        // "Změnit znaky" opens the fixed signs on "Grafika panelů" (P8).
+                        factionSigns: `${settingsHref(
+                            locale,
+                            serverId,
+                            "panel-graphics",
+                            gameId
+                        )}#panel-graphics-factions`,
+                        accountMessages: `/${locale}/dashboard/settings/user#zpravy-od-bota`,
                     }}
                     dictionary={dictionary}
                 />
@@ -237,6 +265,17 @@ export default async function ServerSettingsSectionPage({
             )
             break
         }
+        case "discord-seed":
+            content = (
+                <SeedSettingsPage
+                    serverId={serverId}
+                    locale={locale}
+                    server={serverTab}
+                    context={context}
+                    dictionary={dictionary}
+                />
+            )
+            break
         case "roles":
             content = (
                 <DiscordRoleSettingsForm
@@ -430,14 +469,18 @@ export default async function ServerSettingsSectionPage({
                 section === "tickets" ||
                 section === "game-servers" ||
                 section === "commands" ||
+                section === "discord-seed" ||
+                section === "messages" ||
                 section === "membership"
             }
             breadcrumbParent={
                 section === "panel-graphics"
                     ? dictionary.panelGraphicsPage.breadcrumbParent
-                    : section === "membership"
-                      ? dictionary.membershipApplication.breadcrumbParent
-                      : undefined
+                    : section === "discord-seed"
+                      ? dictionary.seedPage.breadcrumbParent
+                      : section === "membership"
+                        ? dictionary.membershipApplication.breadcrumbParent
+                        : undefined
             }
             breadcrumbCurrent={
                 section === "membership"

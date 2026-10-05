@@ -20,13 +20,11 @@ import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
 
 /**
- * Pages that edit the selected game show which game they apply to. Channels
- * and `/stats` are clan-wide with per-field game exceptions, so they do not.
+ * Pages that edit the selected game show which game they apply to. Channels,
+ * messages and `/stats` are clan-wide with per-field game exceptions, so
+ * they do not.
  */
-const GAME_SCOPED: ReadonlySet<SettingsSectionId> = new Set([
-    "messages",
-    "imports",
-])
+const GAME_SCOPED: ReadonlySet<SettingsSectionId> = new Set(["imports"])
 
 /**
  * One settings page (design A2): breadcrumb, the settings menu on the left and

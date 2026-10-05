@@ -269,6 +269,13 @@ export type DiscordConfig = {
     rosterChangesPostDefault?: boolean
     rosterChangesDmDefault?: boolean
     attendanceNoticesInThread?: boolean
+    /** Per-message switches of "Zprávy a panely" (board N1); missing is on. */
+    debriefPostEnabled?: boolean
+    scheduledEventEnabled?: boolean
+    matchRecapDmEnabled?: boolean
+    trainingResultDmEnabled?: boolean
+    applicationCloseDmEnabled?: boolean
+    ticketCloseDmEnabled?: boolean
     createdAt: Timestamp
     updatedAt: Timestamp
 }

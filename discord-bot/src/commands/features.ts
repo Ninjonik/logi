@@ -9,6 +9,7 @@ import { noticeInteractions, type NoticeTarget } from "./notice"
 import { statsInteractions } from "../interactions/stats-live"
 import { guildCommandConfigs, workspaceOf } from "./runtime"
 import type { EventInteractionContext } from "../types"
+import { postAttendanceNotice } from "../forum"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { client } from "../discord-client"
@@ -102,6 +103,20 @@ export const noticeFeature: InteractionFeature = noticeInteractions(
             }).catch(() => undefined)
             context.enqueueEventSync(eventId)
             context.triggerPollSoon()
+        },
+        // The optional post in the match thread (L5-42..43): only when the
+        // clan turned it on; postAttendanceNotice checks the switch.
+        announce: async (eventId, userId) => {
+            const found = (await convex.query(
+                references.getEventInteractionContext,
+                { secret: secret(), eventId: eventId as never }
+            )) as EventInteractionContext | null
+            if (found)
+                await postAttendanceNotice(client, {
+                    context: found,
+                    userId,
+                    kind: "late",
+                })
         },
     })
 )

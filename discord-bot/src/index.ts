@@ -162,6 +162,7 @@ import { startAnnouncementMigration } from "./events/announcement-migration"
 import { startPublicPanelWorker } from "./public-panels/worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
+import { startSeedWorker } from "./seed/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
     startApplicationWebSubmissionWorker(client)
@@ -171,6 +172,8 @@ client.once(Events.ClientReady, async (readyClient) => {
         refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
     })
     startManagedRoleWorker(client)
+    // Seed calls, control messages and intros (board P5).
+    startSeedWorker(client)
     startTeamRequestNotificationWorker(client)
     startApplicationEmojiProvisioning(client)
     try {

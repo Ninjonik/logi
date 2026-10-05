@@ -26,6 +26,19 @@ export const seedPlanRequestSchema = z.strictObject({
     verifyOnly: z.boolean().optional(),
 })
 
+const snowflake = z.string().regex(/^\d{17,20}$/)
+
+/**
+ * What `verifyOnly` checks: the channels and the role. The page checks them
+ * while the admin edits, so the rest of the plan may still be unfinished.
+ */
+export const seedChannelCheckSchema = z.object({
+    seedChannelId: snowflake.nullable(),
+    controlChannelId: snowflake.nullable(),
+    seedRoleId: snowflake.nullable(),
+    roleSelfService: z.boolean(),
+})
+
 /** `POST` body: the live actions "Seed teď" and "Ukončit seed". */
 export const seedActionRequestSchema = z.discriminatedUnion("action", [
     z.strictObject({
@@ -54,7 +67,7 @@ export type DiscordSeedRoutePorts<A extends DiscordSeedAccess> = {
     ): Promise<SeedPlanSaveView>
     verifyChannels(
         access: A,
-        settings: SeedPlanSettings
+        settings: z.infer<typeof seedChannelCheckSchema>
     ): Promise<SeedChannelReport>
     start(
         access: A,
@@ -94,7 +107,7 @@ function actionResponse(result: SeedActionResult, now: number): Response {
  * The seed page's routes under `/api/servers/{serverId}/discord-seed`:
  * - `GET ?server={connectionId}`: tabs, plan, status and 30-day history;
  * - `PUT /{connectionId}`: save the plan after checking its Discord channels
- *   (`verifyOnly` checks without saving);
+ *   (`verifyOnly` checks only the channels and role, without saving);
  * - `POST /{connectionId}`: `{"action":"start","requestKey":…}` or
  *   `{"action":"stop"}`, live Discord actions outside `/api/v1`.
  * Clan admins only; writes only from the dashboard origin, checked before the
@@ -134,16 +147,32 @@ export function discordSeedRoutes<A extends DiscordSeedAccess>(
                 await readBoundedJson(request, 8192)
             )
             if (!body.success) return json({ error: "invalid_request" }, 400)
+            const verify = async (
+                settings: z.infer<typeof seedChannelCheckSchema>
+            ) => {
+                try {
+                    return await ports.verifyChannels(access, settings)
+                } catch {
+                    return null
+                }
+            }
+            if (body.data.verifyOnly) {
+                const subset = seedChannelCheckSchema.safeParse(
+                    body.data.settings
+                )
+                if (!subset.success)
+                    return json({ error: "invalid_request" }, 400)
+                const channels = await verify(subset.data)
+                return channels
+                    ? json({ channels })
+                    : json({ error: "verification_unavailable" }, 503)
+            }
             const plan = parseSeedPlanSettings(body.data.settings)
             if (!plan.ok)
                 return json({ error: "invalid_plan", issues: plan.issues }, 400)
-            let channels: SeedChannelReport
-            try {
-                channels = await ports.verifyChannels(access, plan.plan)
-            } catch {
+            const channels = await verify(plan.plan)
+            if (!channels)
                 return json({ error: "verification_unavailable" }, 503)
-            }
-            if (body.data.verifyOnly) return json({ channels })
             if (channels.problems.length)
                 return json({ error: "channels", channels }, 400)
             try {

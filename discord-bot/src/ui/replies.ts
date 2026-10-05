@@ -23,11 +23,14 @@ import {
     type MessageKitOptions,
 } from "./message-kit"
 import {
+    reportClanDiscordError,
+    type ClanErrorReportInput,
+} from "../error-reporting"
+import {
     cachedClanLanguage,
     clanLanguageForGuild,
 } from "../runtime/clan-language"
 import { getSystemMessages } from "../../../src/lib/clan-language/system"
-import { reportClanDiscordError } from "../error-reporting"
 import { logWarn } from "../log"
 
 /** The parts of a repliable interaction the kit needs; real interactions fit. */
@@ -70,23 +73,22 @@ export async function replyPrivately(
     else await interaction.reply(payload)
 }
 
-/** What the errors channel needs to explain an admin-fixable failure. */
-export type ErrorsChannelReport = {
-    error: unknown
-    /** What the bot was doing, e.g. "Create a report thread". */
-    action: string
-    /** The feature, e.g. "Player reports". */
-    location: string
-    scope: string
-    target?: string
-    details?: Record<string, string | undefined>
-}
+/**
+ * What the errors channel needs to explain an admin-fixable failure: the
+ * error and, preferably, its `source` ("ticketOpen", "playerReport", …)
+ * with what it concerns. The older free-text `action`/`location`/`scope`
+ * still work; they are only read to recognise the source.
+ */
+export type ErrorsChannelReport = Omit<
+    ClanErrorReportInput,
+    "client" | "guildId"
+>
 
 export type ErrorsChannelReporter = typeof reportClanDiscordError
 
 /**
- * Posts an admin-fixable failure to the clan's errors channel (L5). The
- * channel keeps its current look until W9 restyles it; a failed report is
+ * Posts an admin-fixable failure to the clan's errors channel (board L5:
+ * grey card, what failed, "Proč" and "Co udělat"); a failed report is
  * logged and never breaks the reply to the person.
  */
 export async function reportToErrorsChannel(
@@ -97,7 +99,7 @@ export async function reportToErrorsChannel(
     await reporter({ ...input, guildId: input.guildId }).catch((error) =>
         logWarn("ui", "Failed to report an admin-fixable error", {
             guildId: input.guildId,
-            scope: input.scope,
+            source: input.source ?? input.scope,
             error,
         })
     )
