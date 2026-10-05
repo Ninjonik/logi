@@ -96,10 +96,24 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   coalitions). Watched League team codes remain separate from the catalogue.
 - **Match templates and preset deletion (API parity):** Settings → Match
   templates stores create-form defaults on the clan (`guilds.matchTemplates`,
-  written by `guilds:saveMatchTemplates`). They only pre-fill the dashboard
-  create form; stored events, the bot and `/api/v1` event writes never read
+  written by `matchTemplates:save`; the older `guilds:saveMatchTemplates` keeps
+  its arguments for older dashboards). They only pre-fill the dashboard
+  new-match flow; stored events, the bot and `/api/v1` event writes never read
   them, so there is deliberately no `/api/v1` operation for them: API clients
-  send every event field explicitly. Squad and topic presets can now be deleted
+  send every event field explicitly. The creation-only event fields a template
+  gives (`signupGroupLimits`, `attendanceReminderHours`,
+  `createParticipantRoles`, `squadPresetId`) are returned by `/api/v1` event
+  reads but are not accepted by `/api/v1` event writes yet; that needs a new
+  idempotent mutation beside `publicApi:mutateClanEvent`, whose arguments must
+  not change.
+- **Match drafts (deliberate API exclusion):** the new-match flow autosaves
+  drafts (`events.isDraft`) through `/api/servers/[serverId]/event-drafts`.
+  Drafts are dashboard-only work in progress for clan managers: every `/api/v1`
+  read (event lists and documents, event/match/result summaries, match by event,
+  meta counts) leaves them out and every `/api/v1` write (event updates,
+  sign-ups, stratmap event references) treats them as not found. There is
+  deliberately no `/api/v1` draft operation; an API client creates the published
+  event directly. Squad and topic presets can now be deleted
   in the dashboard, while `/api/v1/clan/squad-presets/{id}` and
   `/api/v1/clan/topic-presets/{id}` still offer create and update only. A v1
   `DELETE` needs a new idempotent Convex mutation beside

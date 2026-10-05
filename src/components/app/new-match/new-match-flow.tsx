@@ -478,10 +478,20 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const draftIdRef = useRef(draftId)
     draftIdRef.current = draftId
 
-    const update = useCallback((patch: Partial<FlowValues>) => {
-        setValues((current) => ({ ...current, ...patch }))
+    // Counts edits so a save only clears "dirty" for the values it sent.
+    const edits = useRef(0)
+    const markDirty = useCallback(() => {
+        edits.current += 1
         setDirty(true)
     }, [])
+
+    const update = useCallback(
+        (patch: Partial<FlowValues>) => {
+            setValues((current) => ({ ...current, ...patch }))
+            markDirty()
+        },
+        [markDirty]
+    )
 
     useEffect(() => {
         fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -838,6 +848,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         async (manual: boolean) => {
             if (!schedule) return
             setSaveState({ kind: "saving" })
+            const sentEdits = edits.current
             const run = write(false)
             saving.current = run
             try {
@@ -845,7 +856,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 if (result.ok && result.body?.eventId) {
                     rememberDraft(result.body.eventId)
                     setSaveState({ kind: "saved", at: new Date() })
-                    setDirty(false)
+                    if (edits.current === sentEdits) setDirty(false)
                     if (manual) toast.success(t.draftSaved)
                 } else {
                     setSaveState({ kind: "failed" })
@@ -954,14 +965,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 ? applyTemplateValues(next, keep, groups, channelDefaults)
                 : { ...next, templateId: null }
         )
-        setDirty(true)
+        markDirty()
     }
 
     function pickTemplate(entry: MatchTemplate) {
         setValues((current) =>
             applyTemplateValues(current, entry, groups, channelDefaults)
         )
-        setDirty(true)
+        markDirty()
     }
 
     function setOwnSide(side: string | null) {
@@ -1043,9 +1054,19 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         {
             step: "match",
             text: [
-                name || t.untitled,
                 teamsText,
-                mapLine,
+                selectedMap
+                    ? [
+                          selectedMap.name,
+                          values.timeOfDay
+                              ? timeLabel(values.timeOfDay).toLocaleLowerCase(
+                                    intl
+                                )
+                              : null,
+                      ]
+                          .filter(Boolean)
+                          .join(", ")
+                    : null,
                 template
                     ? fill(t.review.template, { name: template.name })
                     : null,
@@ -1061,9 +1082,13 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                           isMatch ? schedule.gameStart : schedule.meetingStart
                       ),
                       isMatch
-                          ? `${t.time.meeting.toLocaleLowerCase(intl)} ${formatTimeOnly(schedule.meetingStart)}`
+                          ? fill(t.review.reviewMeeting, {
+                                time: formatTimeOnly(schedule.meetingStart),
+                            })
                           : null,
-                      `${t.time.registrationEnd.toLocaleLowerCase(intl)} ${formatAt(schedule.registrationEnd)}`,
+                      fill(t.review.reviewSignupsUntil, {
+                          date: formatAt(schedule.registrationEnd),
+                      }),
                       values.repeatWeekly && isMatch ? t.review.repeats : null,
                   ]
                       .filter(Boolean)
@@ -1343,7 +1368,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     <div
                                         role="radiogroup"
                                         aria-labelledby="nm-template"
-                                        className="grid grid-cols-[repeat(auto-fit,minmax(min(150px,100%),1fr))] gap-2"
+                                        className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-2"
                                     >
                                         {offeredTemplates.map((entry) => {
                                             const checked =
@@ -1402,7 +1427,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         {t.match.teams}
                                     </FieldLabel>
                                     <div className="border-border flex flex-wrap items-center gap-2 rounded-[10px] border px-3 py-2.5">
-                                        {ownTeam ? (
+                                        {ownTeam?.logoUrl ? (
                                             <TeamLogo
                                                 name={ownTeam.name}
                                                 shortCode={ownTeam.shortCode}
@@ -1538,7 +1563,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 </div>
                             ) : null}
                             {isMatch ? (
-                                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(140px,100%),1fr))] gap-3">
+                                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))] gap-3">
                                     <div className="flex flex-col gap-1.5">
                                         <FieldLabel htmlFor="nm-map">
                                             {t.match.map}
@@ -1772,7 +1797,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     >
                                         {editingTimes
                                             ? t.time.doneEditing
-                                            : t.time.editHere}
+                                            : isMatch
+                                              ? t.time.editHere
+                                              : t.time.editHereTraining}
                                     </button>
                                 </div>
                                 {editingTimes ? (

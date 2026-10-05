@@ -139,7 +139,12 @@ export default async function ServerSettingsSectionPage({
                     categories={server.eventCategories ?? []}
                     groups={context.groups}
                     topicPresets={context.topicPresets}
+                    squadPresets={context.squadPresets}
                     enabledGames={snapshot.enabledGames}
+                    announcementChannelId={
+                        discordConfig?.announcementsChannelId
+                    }
+                    channelsHref={settingsHref(locale, serverId, "channels")}
                     locale={locale}
                     dictionary={dictionary}
                 />

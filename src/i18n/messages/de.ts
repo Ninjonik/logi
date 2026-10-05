@@ -3764,6 +3764,7 @@ export const deMessages = {
             fromTemplate: "Nach der Vorlage {name}",
             defaults: "Standardzeiten",
             editHere: "Nur für dieses Match ändern",
+            editHereTraining: "Nur für dieses Training ändern",
             doneEditing: "Fertig",
             announcement: "Ankündigung",
             onPublish: "sofort nach dem Veröffentlichen",
@@ -3836,6 +3837,8 @@ export const deMessages = {
             forum: "Forum",
             voice: "Sprachkanäle",
             and: "und",
+            reviewMeeting: "Treffpunkt {time}",
+            reviewSignupsUntil: "Anmeldung bis {date}",
             repeats: "jede Woche",
             notice: "Nach dem Veröffentlichen postet der Bot die Ankündigung in {channel}{forum}. Die Aufstellung erstellst du nach dem Anmeldeschluss{preset}.",
             noticeForum: " und legt das Forum an",
@@ -3980,18 +3983,65 @@ export const deMessages = {
             who: "Wer sich anmelden kann",
             whoHint: "Nach dem Status aus den Mitgliedschaftseinstellungen.",
             groups: "Gruppen",
-            groupsHint: "Was ein Spieler bei der Anmeldung wählt.",
+            groupsHint:
+                "Was ein Spieler bei der Anmeldung wählt. Neu sind Limits: Ist eine Gruppe voll, wird ein Reserveplatz angeboten.",
             noGroups: "Dieses Spiel hat noch keine Anmeldegruppen.",
             groupsAllGames:
                 "Eine Vorlage für alle Spiele bietet alle Anmeldegruppen des Spiels des Matches an. Wähle ein Spiel, um Gruppen auszuwählen.",
             general: "Anmeldung ohne Gruppenwahl",
             reminder: "Anmeldeerinnerung",
+            noLimit: "ohne Limit",
+            max: "max.",
+            limitFor: "Limit für {group}",
+            setLimit: "Limit für {group} festlegen",
+            reminderHint: "DM an alle, die noch nicht geantwortet haben.",
+            reminderDaily: "Einmal täglich",
+            reminderOff: "Aus",
+            audienceLabel: "An wen",
+            audience: {
+                member: "Mitglieder",
+                memberRecruit: "Mitglieder und Rekruten",
+                all: "Mitglieder, Rekruten und Reserve",
+            },
         },
         discord: {
             title: "Discord",
             ping: "Ping bei der Ankündigung",
             create: "Automatisch erstellen",
             forum: "Match-Forum",
+            forumHint: "Briefing, Themen und Nachbesprechung nach dem Match.",
+            voice: "Sprachkanäle der Trupps",
+            voiceHint:
+                "Beim Treffpunkt in der Kategorie Trupps, nach dem Match gelöscht.",
+            roles: "Rollen für Teilnehmer und Reserve",
+            rolesHint:
+                "Spieler in der Aufstellung und die Reserve erhalten eine Match-Rolle, die ihnen das Forum öffnet. Nach dem Match wird sie gelöscht.",
+            channel: "Kanal für Anmeldungen",
+            channelHint: "Kommt aus Kanäle und Sprache.",
+            channelMissing: "Ankündigungskanal fehlt",
+            channelSet: "Einrichten",
+            pingNone: "Niemanden",
+            pingClan: "Clan-Rolle",
+            pingRoles: "Gewählte Rollen",
+            password: "Serverpasswort",
+            passwordHint: "Öffentliche Nachrichten zeigen das Passwort nie.",
+            passwordRoster: "Nur Spielern in der Aufstellung",
+            passwordRosterHint:
+                "Der Knopf Meine Einteilung und die Anwesenheitserinnerung",
+        },
+        roster: {
+            title: "Aufstellung",
+            preset: "Trupp-Vorlage",
+            presetHint:
+                "Nach dem Anmeldeschluss beginnst du die Aufstellung mit dieser Vorlage.",
+            presetNone: "Keine Vorlage",
+            presetAllGames:
+                "Wähle für die Vorlage ein Spiel, um eine Trupp-Vorlage auszuwählen.",
+            attendance: "Anwesenheitserinnerungen",
+            attendanceHint:
+                "DM an Spieler der Aufstellung, die nicht bestätigt haben.",
+            hours: "{count} h",
+            beforeMeeting: "vor dem Treffpunkt",
         },
         appliesToNew:
             "Gilt für neue Matches. Bereits angelegte Matches ändern sich nicht.",
@@ -4000,7 +4050,7 @@ export const deMessages = {
         removeDescription:
             "Die Vorlage verschwindet beim Speichern. Matches, die daraus entstanden sind, bleiben unverändert.",
         discard: "Verwerfen",
-        save: "Vorlagen speichern",
+        save: "Vorlage speichern",
         presets: {
             squadDescription:
                 "Die Ausgangsform einer Aufstellung: Squads, Rollen und Plätze. Neue Aufstellungen übernehmen sie.",
