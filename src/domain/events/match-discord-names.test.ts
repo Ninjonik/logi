@@ -5,6 +5,7 @@ import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
 
 import {
     matchRoleNames,
+    squadCategoryName,
     squadKindOf,
     squadVoiceChannelName,
 } from "./match-discord-names"
@@ -24,6 +25,20 @@ test("match roles carry the clan-language suffix (L1-145)", () => {
         }
     )
     assert.equal(matchRoleNames("x".repeat(200), cs).players.length, 100)
+})
+
+test("squad voice channels sit in the match's own category (L1-144)", () => {
+    assert.equal(squadCategoryName("VLK vs ROG", cs), "Čety · VLK vs ROG")
+    assert.equal(
+        squadCategoryName("VLK vs ROG", getAnnouncementMessages("en")),
+        "Squads · VLK vs ROG"
+    )
+    assert.equal(
+        squadCategoryName("VLK vs ROG", getAnnouncementMessages("de")),
+        "Trupps · VLK vs ROG"
+    )
+    assert.equal(squadCategoryName("Liga\n kolo 3", cs), "Čety · Liga kolo 3")
+    assert.equal(squadCategoryName("x".repeat(200), cs).length, 100)
 })
 
 test("squad voice channels say what the squad is (L1-144)", () => {

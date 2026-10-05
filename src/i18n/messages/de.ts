@@ -3286,7 +3286,7 @@ export const deMessages = {
             forumHelp: "Wo der Bot Threads zu Events anlegt.",
             squadVoice: "Kategorie für Squad-Sprachkanäle",
             squadVoiceHelp:
-                "Hier legt der Bot vor einem Event die Squad-Kanäle an.",
+                "Jedes Match bekommt für seine Squad-Kanäle eine eigene Kategorie direkt unter dieser, mit denselben Berechtigungen.",
             meeting: "Treffpunkt-Kanal",
             meetingHelp: "Wo sich die Spieler vor einem Event treffen.",
             addChannelException: "Anderer Kanal für ein Spiel",

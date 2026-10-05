@@ -1,17 +1,19 @@
 /**
  * The Discord resources around a match in the clan language (board L1 1.14):
  * the scheduled event's name and description, the match roles "VLK vs ROG ·
- * Hráči"/"· Zálohy" and the squad voice channels "F1 · Pěchota".
+ * Hráči"/"· Zálohy" and the squad voice channels "F1 · Pěchota" in the
+ * category "Čety · VLK vs ROG".
  */
 
+import {
+    matchRoleNames,
+    squadCategoryName,
+    squadVoiceChannelName,
+} from "../../../src/domain/events/match-discord-names"
 import {
     matchCardFullTitle,
     matchCardTitle,
 } from "../../../src/domain/discord-messages/match-announcement"
-import {
-    matchRoleNames,
-    squadVoiceChannelName,
-} from "../../../src/domain/events/match-discord-names"
 import { buildScheduledEventContent } from "../../../src/application/discord-sync/scheduled-event-content"
 import { panelFactionOf } from "../../../src/domain/discord-publications/panel-presentation"
 import { getAnnouncementMessages } from "../../../src/lib/clan-language/announcements"
@@ -81,6 +83,20 @@ export function matchRoleNamesFor(
         categories: payload.guild.eventCategories,
     })
     return matchRoleNames(matchCardTitle(card, copy), copy)
+}
+
+/** "Čety · VLK vs ROG": the category of the squad voice channels (L1-144). */
+export function squadCategoryNameFor(
+    payload: Pick<SyncPayload, "config" | "guild">,
+    event: EventRecord
+) {
+    const copy = getAnnouncementMessages(payload.config.defaultLanguage)
+    const card = matchCardEventOf({
+        config: payload.config,
+        event,
+        categories: payload.guild.eventCategories,
+    })
+    return squadCategoryName(matchCardTitle(card, copy), copy)
 }
 
 /** "F1 · Pěchota" (L1-144). */

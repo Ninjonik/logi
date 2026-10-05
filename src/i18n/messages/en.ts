@@ -3191,7 +3191,7 @@ export const enMessages = {
             forumHelp: "Where the bot opens threads for events.",
             squadVoice: "Category for squad voice channels",
             squadVoiceHelp:
-                "The bot creates squad channels here before an event.",
+                "Each match gets its own category for its squad channels, right below this one and with the same permissions.",
             meeting: "Meeting channel",
             meetingHelp: "Where players gather before an event.",
             addChannelException: "Different channel for a game",

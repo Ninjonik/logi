@@ -262,6 +262,8 @@ export type MatchAnnouncementCopy = {
         /** Match role suffixes: "{match} · Hráči", "{match} · Zálohy". */
         players: string
         reserves: string
+        /** The category of the squad voice channels: "Čety · {match}". */
+        squads: string
         squadKinds: {
             command: string
             infantry: string

@@ -161,10 +161,13 @@ events) and a 15-minute reserve before automatic conclusion. Managers may
 conclude an event at any time after its meeting start. An event can also create
 one temporary voice channel for each non-empty roster squad at meeting start,
 named after the squad and what it is in the clan language (for example
-**F1 · Infantry**, **T1 · Tanks**, **R1 · Recon**, **CMD · Command**). Enable
-this per event and select a category there, or leave the category empty to use
-the server's default squad-voice category. Those channels are removed when the
-event concludes.
+**F1 · Infantry**, **T1 · Tanks**, **R1 · Recon**, **CMD · Command**). The
+channels sit in the match's own category, **Squads · VLK vs ROG**, which the bot
+creates right below the selected category with the same permissions; when it
+cannot create a category, the channels go into the selected category itself.
+Enable this per event and select a category there, or leave the category empty
+to use the server's default squad-voice category. The channels and the match's
+category are removed when the event concludes.
 
 ### What the Discord messages show
 

@@ -241,6 +241,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
         discord: {
             players: "Hráči",
             reserves: "Zálohy",
+            squads: "Čety",
             squadKinds: {
                 command: "Velení",
                 infantry: "Pěchota",
@@ -459,6 +460,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
         discord: {
             players: "Players",
             reserves: "Reserves",
+            squads: "Squads",
             squadKinds: {
                 command: "Command",
                 infantry: "Infantry",
@@ -694,6 +696,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
         discord: {
             players: "Spieler",
             reserves: "Reserve",
+            squads: "Trupps",
             squadKinds: {
                 command: "Führung",
                 infantry: "Infanterie",

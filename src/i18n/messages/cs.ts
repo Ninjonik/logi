@@ -3186,7 +3186,8 @@ export const csMessages = {
             forum: "Kategorie pro fóra akcí",
             forumHelp: "Kde bot zakládá vlákna k akcím.",
             squadVoice: "Kategorie pro hlasové kanály čet",
-            squadVoiceHelp: "Sem bot vytváří kanály čet před akcí.",
+            squadVoiceHelp:
+                "Každý zápas dostane pro kanály čet vlastní kategorii hned pod touto, se stejnými oprávněními.",
             meeting: "Kanál pro sraz",
             meetingHelp: "Kam se hráči sejdou před akcí.",
             addChannelException: "Jiný kanál pro hru",

@@ -16,6 +16,7 @@ import {
 import {
     matchRoleNamesFor,
     scheduledEventContentFor,
+    squadCategoryNameFor,
     squadVoiceChannelNameFor,
 } from "../events/match-discord"
 import {
@@ -36,6 +37,7 @@ import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { publishManagedMessage, isUnknownMessage } from "./publication"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
 import { syncAnnouncement } from "../events/announcement-sync"
+import { syncSquadVoiceChannels } from "../events/squad-voice"
 import { reportClanDiscordError } from "../error-reporting"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
@@ -280,63 +282,6 @@ async function retireEventMessage(
     })
 }
 
-async function syncSquadVoiceChannels(
-    guild: Guild,
-    event: EventRecord,
-    roster: Roster | undefined,
-    defaultCategoryId: string | undefined,
-    existingIds: string[],
-    language: SyncPayload["config"]["defaultLanguage"]
-) {
-    if (event.status === "concluded") {
-        await Promise.all(
-            existingIds.map(async (id) => {
-                const channel = await guild.channels.fetch(id).catch(() => null)
-                await channel
-                    ?.delete(`Event concluded: ${event.name}`)
-                    .catch(() => null)
-            })
-        )
-        return []
-    }
-
-    const categoryId = event.squadVoiceCategoryId ?? defaultCategoryId
-    const meetingStart = new Date(event.meetingStart).getTime()
-    if (
-        !event.createSquadVoiceChannels ||
-        !categoryId ||
-        !Number.isFinite(meetingStart) ||
-        Date.now() < meetingStart ||
-        !roster
-    ) {
-        return existingIds
-    }
-
-    const createdIds = [...existingIds]
-    for (const squad of roster.squads.filter(
-        (squad) => squad.players.length > 0
-    )) {
-        const name = squadVoiceChannelNameFor(squad, language)
-        const alreadyExists = await Promise.all(
-            createdIds.map((id) => guild.channels.fetch(id).catch(() => null))
-        ).then((channels) =>
-            channels.some(
-                (channel) =>
-                    channel?.name === name || channel?.name === squad.name
-            )
-        )
-        if (alreadyExists) continue
-        const channel = await guild.channels.create({
-            name,
-            type: ChannelType.GuildVoice,
-            parent: categoryId,
-            reason: `Squad voice channel for ${event.name}`,
-        })
-        createdIds.push(channel.id)
-    }
-    return createdIds
-}
-
 export async function syncPayloadEvents(
     client: Client,
     queuedEventIds: Set<string>,
@@ -501,14 +446,18 @@ async function syncEvent(
     let infoMessageId = state?.infoMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
     let squadVoiceChannelIds = state?.squadVoiceChannelIds ?? []
-    squadVoiceChannelIds = await syncSquadVoiceChannels(
+    squadVoiceChannelIds = await syncSquadVoiceChannels({
         guild,
         event,
         roster,
-        payload.config.squadVoiceCategoryId,
-        squadVoiceChannelIds,
-        payload.config.defaultLanguage
-    )
+        defaultCategoryId: payload.config.squadVoiceCategoryId,
+        existingIds: squadVoiceChannelIds,
+        names: {
+            category: squadCategoryNameFor(payload, event),
+            squad: (squad) =>
+                squadVoiceChannelNameFor(squad, payload.config.defaultLanguage),
+        },
+    })
 
     const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
 
