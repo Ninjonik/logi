@@ -44,6 +44,77 @@ export function SettingsPanel({
     )
 }
 
+/**
+ * A choice between a few options shown side by side (design D4 "Střídmé /
+ * Emoji u každého řádku"). Arrow keys move the choice like native radios.
+ */
+export function SegmentedControl<T extends string>({
+    label,
+    labelledBy,
+    value,
+    options,
+    onChange,
+    className,
+}: {
+    label?: string
+    labelledBy?: string
+    value: T
+    options: ReadonlyArray<{ value: T; label: string }>
+    onChange: (value: T) => void
+    className?: string
+}) {
+    function move(step: number) {
+        const index = options.findIndex((option) => option.value === value)
+        const next = options[(index + step + options.length) % options.length]
+        if (next) onChange(next.value)
+    }
+    return (
+        <div
+            role="radiogroup"
+            aria-label={label}
+            aria-labelledby={labelledBy}
+            className={cn(
+                "bg-muted grid auto-cols-fr grid-flow-col gap-1 rounded-xl p-1",
+                className
+            )}
+            onKeyDown={(event) => {
+                if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                    event.preventDefault()
+                    move(1)
+                } else if (
+                    event.key === "ArrowLeft" ||
+                    event.key === "ArrowUp"
+                ) {
+                    event.preventDefault()
+                    move(-1)
+                }
+            }}
+        >
+            {options.map((option) => {
+                const checked = option.value === value
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={checked}
+                        tabIndex={checked ? 0 : -1}
+                        onClick={() => onChange(option.value)}
+                        className={cn(
+                            "focus-visible:ring-ring/50 min-h-9 rounded-lg px-3 py-1.5 text-sm transition outline-none focus-visible:ring-[3px]",
+                            checked
+                                ? "bg-background font-semibold shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        {option.label}
+                    </button>
+                )
+            })}
+        </div>
+    )
+}
+
 /** A setting with its label and help on the left and the control on the right. */
 export function SettingsField({
     label,

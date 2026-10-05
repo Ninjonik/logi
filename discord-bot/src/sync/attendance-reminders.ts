@@ -138,6 +138,7 @@ export async function processAttendanceReminders(
         const messages = getClanDiscordMessages(payload.config.defaultLanguage)
         const matchType = event.matchType?.trim().toLowerCase()
         const accentColor = resolveMessageAccentColor({
+            messageStyle: payload.config.messageStyle,
             categoryColor: matchType
                 ? payload.guild.eventCategories?.find(
                       (category) =>

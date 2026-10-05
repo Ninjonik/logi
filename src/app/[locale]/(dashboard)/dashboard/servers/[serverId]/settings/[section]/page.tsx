@@ -31,6 +31,7 @@ import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { SettingsStep } from "@/components/app/settings/settings-step"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
+import { getRoleAccessOverview } from "@/lib/read-models/role-access"
 import { CustomLoginLink } from "@/components/app/custom-login-link"
 import { SsoApplications } from "@/components/app/sso-applications"
 import { WebhookManager } from "@/components/app/webhook-manager"
@@ -173,8 +174,24 @@ export default async function ServerSettingsSectionPage({
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
                     hrefs={{
-                        channels: `/${locale}/dashboard/servers/${serverId}/settings/channels${gameId ? `?game=${gameId}` : ""}`,
-                        league: `/${locale}/dashboard/servers/${serverId}/settings/league${gameId ? `?game=${gameId}` : ""}`,
+                        channels: settingsHref(
+                            locale,
+                            serverId,
+                            "channels",
+                            gameId
+                        ),
+                        league: settingsHref(
+                            locale,
+                            serverId,
+                            "league",
+                            gameId
+                        ),
+                        matchTemplates: settingsHref(
+                            locale,
+                            serverId,
+                            "match-templates",
+                            gameId
+                        ),
                     }}
                     dictionary={dictionary}
                 />
@@ -196,6 +213,8 @@ export default async function ServerSettingsSectionPage({
                     serverId={serverId}
                     dictionary={dictionary}
                     config={discordConfig}
+                    access={await getRoleAccessOverview(serverId)}
+                    now={new Date()}
                 />
             )
             break

@@ -3059,15 +3059,32 @@ export const deMessages = {
             noResults: "Keine passende Rolle.",
             rolesUnavailable:
                 "Die Discord-Rollen konnten nicht geladen werden. Deine Einstellungen sind unverändert; lade die Seite neu, um es erneut zu versuchen.",
-            resyncTitle: "Zugriff aus Discord",
             resyncHelp:
-                "Neu laden, wenn sich die Verwaltungsrolle in Discord geändert hat und Logi es noch nicht weiß.",
+                "Wenn sich Rollen geändert haben und Logi es noch nicht weiß.",
             resyncNeedsRole:
                 "Wähle und speichere zuerst eine Verwaltungsrolle.",
             resync: "Aus Discord neu laden",
             resynced: "Verwaltungszugriff aus Discord neu geladen.",
             resyncError:
                 "Der Verwaltungszugriff konnte nicht neu geladen werden.",
+            holders: {
+                one: "{count} Person hat diese Rolle",
+                few: "{count} Personen haben diese Rolle",
+                many: "{count} Personen haben diese Rolle",
+                other: "{count} Personen haben diese Rolle",
+            },
+            accessNow: "Wer gerade Zugriff hat",
+            updated: "aktualisiert {time}",
+            accessUnavailable:
+                "Die Zugriffsübersicht konnte gerade nicht geladen werden. Du kannst die Rollen trotzdem ändern.",
+            noManagers:
+                "Noch niemand. Speichere eine Verwalterrolle oder gib jemandem in Discord die Administrator-Berechtigung.",
+            reasonAdministrator: "Administrator-Berechtigung",
+            reasonRole: "Rolle {role}",
+            reasonManagerRole: "Verwalterrolle",
+            reasonGranted: "in Logi hinzugefügt",
+            unknownMember: "Mitglied ohne Logi-Konto",
+            moreManagers: "und {count} weitere",
         },
         statsPage: {
             enable: "/stats erlauben",
@@ -3087,12 +3104,18 @@ export const deMessages = {
             legacyHelp:
                 "Mit Token und Adresse in den Bot-Einstellungen eingetragen. Neue Verbindungen gehören zu den Spielservern, wo der Schlüssel verschlüsselt gespeichert und getestet werden kann.",
             openGameServers: "Spielserver öffnen",
+            previewTitle: "Vorschau der Antwort in Discord",
+            previewExample: "Beispieldaten",
+            previewEphemeral: "Nur du kannst das sehen · Verwerfen",
+            previewPlayer: "Beispielspieler",
+            previewNote:
+                "Die Zahlen sind ein Beispiel. Die echte Antwort zeigt die Statistiken des Spielers von deinen Spielservern.",
+            showConnections: "Verbindungen anzeigen",
+            hideConnections: "Verbindungen ausblenden",
         },
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",
             language: "Sprache",
-            languageHelp:
-                "Wird unter Kanäle und Sprache festgelegt und gilt für alle Bot-Nachrichten.",
             languages: { en: "Englisch", cs: "Tschechisch", de: "Deutsch" },
             languageLink: "Kanäle und Sprache",
             listTitle: "Nachrichten",
@@ -3103,19 +3126,45 @@ export const deMessages = {
             channelUnknown: "festgelegter Kanal",
             announcement: "Match-Ankündigung",
             announcementDetail: "mit Anmeldeschaltflächen",
-            eventInfo: "Match-Informationen",
-            eventInfoDetail: "eigene Nachricht neben der Ankündigung",
+            eventInfo: "Aufstellung und Einteilung",
+            eventInfoDetail: "nach Veröffentlichung der Aufstellung",
             reminders: "Erinnerungen",
             remindersDetail:
                 "DM · Anmeldung täglich bis Anmeldeschluss, Anwesenheit 24, 18, 12 und 6 h vor dem Treffen",
-            remindersNote: "Wird bei jedem Match gewählt",
-            panels: "Live-Ergebnis und Ergebnisse",
-            panelsDetail:
-                "Panels deiner Spielserver; Ergebnisse nach der Bestätigung in Logi",
             league: "Liga-Karten",
             leagueDetail: "Wardogs-League-Matches",
             errors: "Bot-Fehler",
             errorsDetail: "nur für die Verwaltung",
+            clanColor: "Clanfarbe",
+            clanColorHelp:
+                "Events mit Kategorie nutzen die Farbe der Kategorie.",
+            clanColorPicker: "Farbe auswählen",
+            clanColorInvalid: "Gib die Farbe als #E8A33D ein.",
+            clanColorDefault:
+                "Ohne eigene Farbe nutzen Nachrichten das Logi-Orange.",
+            icons: "Symbole in Nachrichten",
+            iconsHelp: "Fraktionen behalten immer ihr Zeichen.",
+            iconsSparse: "Sparsam",
+            iconsRich: "Emoji in jeder Zeile",
+            languageFrom: "Aus",
+            languageScope: ", gilt für alle Nachrichten",
+            channel: "Kanal",
+            noChannel: "Kein Kanal",
+            gameException: "{game} hat einen eigenen Kanal {channel}.",
+            announcementHelp:
+                "Gilt für alle Spiele. Neue Matches behalten den Kanal, mit dem sie erstellt wurden.",
+            eventInfoHelp:
+                "Hier postet der Bot Aufstellung und Einteilung, sobald die Aufstellung veröffentlicht ist. Funktioniert nur zusammen mit dem Ankündigungskanal.",
+            errorsHelp:
+                "Hier meldet der Bot Probleme mit Rechten und Kanälen. Nur Verwalter sollten ihn sehen.",
+            liveScore: "Live-Punktestand",
+            liveScoreDetail: "{channel} · aktualisiert alle {refresh}",
+            liveScoreOff: "Aus · ein Panel von deinen Spielservern",
+            seconds: "{count} s",
+            minutes: "{count} min",
+            results: "Ergebnisse",
+            resultsDetail: "nach Bestätigung eines Match-Ergebnisses",
+            off: "Aus",
         },
         panelsForm: {
             regionLabel: "Öffentliche Discord-Panels",
@@ -4230,8 +4279,8 @@ export const deMessages = {
         rosterMissing: "Noch keine Aufstellung",
         rosterFill: "Aufstellung {filled} von {total} Plätzen",
         rosterFillLabel: "Belegte Plätze der Aufstellung",
-        signedUp: "Angemeldet: {count}",
-        unanswered: "Ohne Antwort: {count}",
+        signedUp: "{count} angemeldet",
+        unanswered: "{count} ohne Antwort",
         finishRoster: "Aufstellung fertigstellen",
         createRoster: "Aufstellung erstellen",
         showRoster: "Aufstellung ansehen",
@@ -4253,14 +4302,24 @@ export const deMessages = {
                 "Ohne ihn kann der Bot keine neuen Events ankündigen.",
             clanRole: "Daran erkennt Logi die Clanmitglieder.",
         },
-        applications: "Offene Mitgliedsanträge: {count}",
+        applications: {
+            one: "{count} Mitgliedsantrag wartet",
+            few: "{count} Mitgliedsanträge warten",
+            many: "{count} Mitgliedsanträge warten",
+            other: "{count} Mitgliedsanträge warten",
+        },
         applicationsOldest: "der älteste seit {date}",
         nothingWaiting: "Nichts wartet. Alles ist erledigt.",
         setupProgress: "Clan-Einrichtung: {done} von {total} erledigt",
         weekTitle: "Diese Woche",
         todayLabel: "heute",
         formTitle: "Form · letzte 10 Matches",
-        wins: "Siege: {count}",
+        wins: {
+            one: "{count} Sieg",
+            few: "{count} Siege",
+            many: "{count} Siege",
+            other: "{count} Siege",
+        },
         formListLabel: "Ergebnisse, älteste zuerst",
         outcomeLetters: { victory: "S", defeat: "N", draw: "U" },
         outcomes: {
@@ -4270,10 +4329,41 @@ export const deMessages = {
         },
         outcomePending: "{outcome}, wartet auf Bestätigung",
         formLegend: "S = Sieg, N = Niederlage, U = Unentschieden.",
-        formPendingLegend: "Ein gestricheltes Ergebnis wartet auf Bestätigung.",
+        formPendingLegend:
+            "Ergebnisse mit gestricheltem Rahmen warten auf Bestätigung.",
         formEmptyTitle: "Noch keine Ergebnisse",
         formEmptyDescription:
             "Ergebnisse erscheinen hier, sobald ein Matchergebnis importiert oder eingetragen wurde.",
+        formLastPendingLegend: "Das letzte Ergebnis wartet auf Bestätigung.",
+        remind: {
+            button: {
+                one: "{count} Spieler erinnern",
+                few: "{count} Spieler erinnern",
+                many: "{count} Spieler erinnern",
+                other: "{count} Spieler erinnern",
+            },
+            confirmTitle: "Erinnerung senden?",
+            confirmDescription:
+                "Der Bot schickt allen Mitgliedern, die sich noch nicht an- oder abgemeldet haben, eine Direktnachricht in Discord.",
+            confirm: "Erinnerung senden",
+            cancel: "Abbrechen",
+            sent: {
+                one: "Erinnerung an {count} Spieler gesendet.",
+                few: "Erinnerung an {count} Spieler gesendet.",
+                many: "Erinnerung an {count} Spieler gesendet.",
+                other: "Erinnerung an {count} Spieler gesendet.",
+            },
+            nobody: "Alle haben schon geantwortet, eine Erinnerung war nicht nötig.",
+            failed: "Die Erinnerung konnte nicht gesendet werden. Versuch es noch einmal.",
+            rateLimited:
+                "Vor Kurzem wurde schon erinnert. Versuch es später noch einmal.",
+            done: "Erinnerung gesendet",
+        },
+        pointsTitle: "Meiste Anwesenheitspunkte · {month}",
+        pointsEmpty:
+            "Diesen Monat hat noch niemand Anwesenheitspunkte bekommen.",
+        pointsUnknownMember: "Mitglied ohne Logi-Konto",
+        statsTitle: "Clan-Statistiken",
     },
     clan: {
         overviewMeta: "Übersicht",

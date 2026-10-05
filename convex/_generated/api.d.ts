@@ -94,6 +94,7 @@ import type * as publicPreviews from "../publicPreviews.js";
 import type * as publicProfiles from "../publicProfiles.js";
 import type * as publicStats from "../publicStats.js";
 import type * as resultValidators from "../resultValidators.js";
+import type * as roleAccess from "../roleAccess.js";
 import type * as rosterSync from "../rosterSync.js";
 import type * as rosterWriterAccess from "../rosterWriterAccess.js";
 import type * as rosters from "../rosters.js";
@@ -214,6 +215,7 @@ declare const fullApi: ApiFromModules<{
   publicProfiles: typeof publicProfiles;
   publicStats: typeof publicStats;
   resultValidators: typeof resultValidators;
+  roleAccess: typeof roleAccess;
   rosterSync: typeof rosterSync;
   rosterWriterAccess: typeof rosterWriterAccess;
   rosters: typeof rosters;

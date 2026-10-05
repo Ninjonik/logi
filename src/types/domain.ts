@@ -1,6 +1,7 @@
 export type Timestamp = string
 
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { MatchTemplate } from "@/domain/events/match-templates"
 import type { GameId } from "@/domain/games/game"
@@ -235,6 +236,8 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
     createdAt: Timestamp
     updatedAt: Timestamp
 }

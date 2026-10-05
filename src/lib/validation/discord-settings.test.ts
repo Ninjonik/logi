@@ -149,6 +149,34 @@ test("Discord settings accept /stats command switches and drop a blank default r
     )
 })
 
+test("the message style takes a hex clan colour and an icon density", () => {
+    assert.deepEqual(
+        discordSettingsPatchSchema.parse({
+            messageStyle: { accentColor: " #e8a33d ", iconDensity: "rich" },
+        }),
+        { messageStyle: { accentColor: "#E8A33D", iconDensity: "rich" } }
+    )
+    // A blank or null colour means Logi amber.
+    for (const accentColor of ["", null, undefined])
+        assert.deepEqual(
+            discordSettingsPatchSchema.parse({
+                messageStyle: { accentColor, iconDensity: "sparse" },
+            }).messageStyle,
+            { accentColor: undefined, iconDensity: "sparse" }
+        )
+    for (const messageStyle of [
+        { accentColor: "orange", iconDensity: "sparse" },
+        { accentColor: "#fff", iconDensity: "sparse" },
+        { accentColor: "#E8A33D", iconDensity: "loud" },
+        { accentColor: "#E8A33D" },
+        { accentColor: "#E8A33D", iconDensity: "rich", font: "serif" },
+    ])
+        assert.ok(
+            !discordSettingsPatchSchema.safeParse({ messageStyle }).success,
+            JSON.stringify(messageStyle)
+        )
+})
+
 test("a settings page can submit only its own settings", () => {
     const parsed = discordSettingsPatchSchema.parse({
         ticketSettings: {

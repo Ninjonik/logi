@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
 import { useTransition } from "react"
 import { toast } from "sonner"
@@ -18,6 +19,7 @@ export function ResyncDashboardAdminsButton({
     disabled?: boolean
 }) {
     const text = dictionary.settingsHub.rolesPage
+    const router = useRouter()
     const [isPending, startTransition] = useTransition()
 
     return (
@@ -37,6 +39,8 @@ export function ResyncDashboardAdminsButton({
                         return
                     }
                     toast.success(text.resynced)
+                    // Shows the rebuilt list of people with access.
+                    router.refresh()
                 })
             }}
         >

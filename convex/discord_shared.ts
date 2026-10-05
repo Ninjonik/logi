@@ -134,6 +134,11 @@ export const statsSettingsValidator = v.object({
     defaultShareChannelId: v.optional(v.string()),
 })
 
+export const messageStyleValidator = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
+})
+
 export const playerStatsServerValidator = v.object({
     token: v.string(),
     url: v.string(),
