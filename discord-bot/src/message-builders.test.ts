@@ -3,7 +3,6 @@ import test from "node:test"
 
 import {
     buildAnnouncementV2Message,
-    buildAttendanceReminderComponents,
     buildCalendarPanelEmbed,
     buildEventComponents,
     buildEventEmbed,
@@ -1326,29 +1325,6 @@ test("published roster cards list meeting, squads with counts and reserves", () 
     assert.match(card, /Celá soupiska na webu/)
     // The roster card is only the roster: no facts, sign-ups or calendar.
     assert.doesNotMatch(card, /Přihlášeno|Do kalendáře|Competitive/)
-})
-
-test("reminder DMs offer confirm, running late and can't make it", () => {
-    const buttons = buildAttendanceReminderComponents("event-1", "cs")
-        .flatMap((row) => row.toJSON().components)
-        .map((button) => ({
-            label: "label" in button ? button.label : undefined,
-            style: button.style,
-            customId: "custom_id" in button ? button.custom_id : undefined,
-        }))
-    assert.deepEqual(buttons, [
-        { label: "Potvrdím", style: 3, customId: "attendance:event-1:ack" },
-        {
-            label: "Přijdu později",
-            style: 2,
-            customId: "attendance-late:event-1",
-        },
-        {
-            label: "Nemůžu",
-            style: 4,
-            customId: "attendance-decline:event-1",
-        },
-    ])
 })
 
 test("the announcement ping sits above the card", () => {

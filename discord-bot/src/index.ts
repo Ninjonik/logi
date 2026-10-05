@@ -9,6 +9,7 @@ import {
     syncGuildMemberAccessMember,
     invalidateMembershipGuild,
 } from "./sync/member-access"
+import { RosterChangeRequestService } from "./rosters/roster-change-service"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
@@ -24,6 +25,10 @@ const meetingAttendanceRequestService = new MeetingAttendanceRequestService(
     client
 )
 const manualReminderRequestService = new ManualReminderRequestService(
+    client,
+    (eventId) => syncService.loadEventPayload(eventId)
+)
+const rosterChangeRequestService = new RosterChangeRequestService(
     client,
     (eventId) => syncService.loadEventPayload(eventId)
 )
@@ -185,6 +190,12 @@ client.once(Events.ClientReady, async (readyClient) => {
         // bot from starting; reminders then simply wait for the deploy.
         await manualReminderRequestService.start().catch((error) =>
             logError("bot", "Manual reminder requests failed to start", {
+                error,
+            })
+        )
+        // The roster change digest and DMs the dashboard asks for (W6b).
+        await rosterChangeRequestService.start().catch((error) =>
+            logError("bot", "Roster change requests failed to start", {
                 error,
             })
         )

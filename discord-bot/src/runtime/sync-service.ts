@@ -453,11 +453,7 @@ export class DiscordSyncService {
                 new Set([eventId])
             )
         }
-        await processMatchRecaps(
-            this.client,
-            eventId,
-            runtime.config.defaultLanguage
-        )
+        await processMatchRecaps(this.client, eventId)
         if (
             context.syncState?.lastCalendarSyncVersion !==
             getCalendarSyncVersion(context.event)

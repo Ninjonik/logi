@@ -32,7 +32,9 @@ import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { publishManagedMessage, isUnknownMessage } from "./publication"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
+import { buildRosterMessage } from "../events/roster-message"
 import { reportClanDiscordError } from "../error-reporting"
+import { memberNames } from "../events/match-context"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
 import { getCalendarSyncVersion } from "./work"
@@ -324,6 +326,94 @@ async function syncEventMessage(
     )
 }
 
+/**
+ * The published roster message in the roster channel (board L1 1.11): the
+ * roster photo uploaded with the message, as the old bot did, and the text
+ * roster under it unless the publish chose the photo only. One managed
+ * message, edited in place on every re-publish.
+ */
+async function syncRosterMessage(
+    channel: TextChannel,
+    messageId: string | undefined,
+    payload: SyncPayload,
+    event: EventRecord,
+    roster: Roster,
+    guild: Guild
+) {
+    const identity = eventMessageIdentity({
+        eventId: event.id,
+        kind: "info",
+        destination: channel.id,
+        messageId,
+    })
+    if (event.status === "concluded") {
+        await retireEventMessage(
+            guild.client,
+            payload,
+            event,
+            "info",
+            identity.legacyChannelId,
+            messageId
+        )
+        return undefined
+    }
+    let attachment:
+        | Awaited<ReturnType<typeof buildPublishedRosterImageAttachment>>
+        | undefined
+    try {
+        attachment = await buildPublishedRosterImageAttachment(event, roster)
+    } catch (error) {
+        // The public image URL still renders; the upload is only more reliable.
+        logWarn("event-sync", "Roster image attachment failed", {
+            eventId: event.id,
+            guildId: payload.config.guildId,
+            error,
+        })
+    }
+    const rosterUserIds = [
+        ...roster.squads.flatMap((squad) =>
+            squad.players.flatMap((player) => (player.id ? [player.id] : []))
+        ),
+        ...roster.reservePlayerIds,
+        ...(roster.notAttendingPlayerIds ?? []),
+    ]
+    const message = buildRosterMessage({
+        payload,
+        event,
+        roster,
+        names: await memberNames(
+            guild,
+            rosterUserIds,
+            payload.userDisplayNames
+        ),
+        image: {
+            url:
+                attachment?.mediaUrl ??
+                buildRosterImageUrl(
+                    event.id,
+                    getRosterImageVersion(event, roster.updatedAt)
+                ),
+            description: event.name,
+        },
+    })
+    return (
+        (await publishManagedMessage(guild.client, {
+            guildId: guild.id,
+            ...identity,
+            revision: Math.max(
+                Date.parse(payload.config.updatedAt),
+                Date.parse(event.updatedAt),
+                Date.parse(roster.updatedAt) || 0
+            ),
+            channelId: channel.id,
+            message: {
+                ...message,
+                files: attachment ? [attachment.attachment] : [],
+            },
+        })) ?? messageId
+    )
+}
+
 async function retireEventMessage(
     client: Client,
     payload: SyncPayload,
@@ -543,7 +633,12 @@ async function syncEvent(
 
     const roster = payload.rosters.find((item) => item.eventId === event.id)
     const eventRoles = options.syncRoles
-        ? await syncEventRoles(guild, event, roster ?? null)
+        ? await syncEventRoles(
+              guild,
+              event,
+              roster ?? null,
+              payload.config.defaultLanguage
+          )
         : {
               attendeeRoleId: event.attendeeRoleId,
               reserveRoleId: event.reserveRoleId,
@@ -587,6 +682,7 @@ async function syncEvent(
                 topicPreset,
                 attendeeRoleId: eventRoles.attendeeRoleId,
                 reserveRoleId: eventRoles.reserveRoleId,
+                categories: payload.guild.eventCategories,
             })
 
             forumChannelId = forumSyncResult.forumChannelId
@@ -718,15 +814,13 @@ async function syncEvent(
         const registrationText = registrationChannel as TextChannel
         const infoText = infoChannel as TextChannel
         if (roster?.published) {
-            eventInfoMessageId = await syncEventMessage(
+            eventInfoMessageId = await syncRosterMessage(
                 infoText,
                 eventInfoMessageId,
                 payload,
                 event,
                 roster,
-                guild,
-                false,
-                forumChannelId
+                guild
             )
         } else {
             await retireEventMessage(

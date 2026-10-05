@@ -41,7 +41,6 @@ import { getMembershipMessages } from "../../src/lib/clan-language/membership"
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { getPanelMessages } from "../../src/lib/clan-language/panels"
 import { getEventMessages } from "../../src/lib/clan-language/events"
-import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
 import { expandCalendarItems } from "../../src/lib/calendar-items"
 import { canAcceptSignups } from "../../src/domain/events/status"
 import { formatMapLabel } from "./map-label"
@@ -61,11 +60,9 @@ import type {
     TicketThreadRecord,
 } from "./types"
 import {
-    buildForumThreadName,
     getRosterImageVersion,
     buildRosterImageUrl,
     formatEventStatus,
-    formatInTimezone,
     generateCalendarUrl,
     buildPublicRosterUrl,
     pickButtonStyle,
@@ -1008,172 +1005,6 @@ export function buildEventComponents(
         ),
     ]
 }
-
-export function buildForumInfoEmbed(
-    config: DiscordConfig,
-    event: EventRecord,
-    stratmapLinks: string[] = []
-) {
-    const messages = getEventMessages(config.defaultLanguage)
-    const embed = new EmbedBuilder()
-        .setTitle(event.name)
-        .setDescription(
-            formatDiscordMarkdown(
-                event.notes ||
-                    event.description ||
-                    messages.forum.matchInformation
-            )
-        )
-        .setFooter({
-            text: `${messages.forum.managedFooter} ${config.timezone}`,
-        })
-
-    if (event.thumbnailUrl) {
-        embed.setThumbnail(event.thumbnailUrl)
-    }
-
-    if (event.kind === "match" && event.imageUrl) {
-        embed.setImage(event.imageUrl)
-    }
-
-    if (event.kind === "match") {
-        embed.addFields(
-            {
-                name: messages.forum.map,
-                value: event.map
-                    ? (formatHllPresetLabel(event.map) ?? event.map)
-                    : messages.forum.notSet,
-                inline: true,
-            },
-            {
-                name: messages.forum.side,
-                value: event.side ?? messages.forum.notSet,
-                inline: true,
-            },
-            {
-                name: messages.forum.cap,
-                value: event.cap ?? messages.forum.notSet,
-                inline: true,
-            },
-            {
-                name: messages.forum.server,
-                value: event.server ?? messages.forum.notSet,
-                inline: true,
-            },
-            {
-                // Forum channels inherit their category's permissions, so the
-                // password stays in the private "My assignment" reply.
-                name: messages.forum.serverPassword,
-                value: event.serverPassword?.trim()
-                    ? messages.forum.passwordInAssignment
-                    : messages.forum.notSet,
-                inline: true,
-            },
-            {
-                name: messages.forum.gameStart,
-                value:
-                    discordTimestamp(event.gameStart, "F") ??
-                    formatInTimezone(
-                        event.gameStart,
-                        config.timezone,
-                        config.defaultLanguage
-                    ),
-                inline: true,
-            }
-        )
-        if (stratmapLinks.length) {
-            embed.addFields({
-                name: "Stratmaps",
-                value: stratmapLinks.join("\n").slice(0, 1024),
-                inline: false,
-            })
-        }
-    } else {
-        const meetingChannelId = event.meetingChannelId?.trim()
-        embed.addFields({
-            name: messages.embed.meeting,
-            value: [
-                discordTimestamp(event.meetingStart, "F") ??
-                    formatInTimezone(
-                        event.meetingStart,
-                        config.timezone,
-                        config.defaultLanguage
-                    ),
-                // A channel mention shows the channel name, never a raw ID.
-                meetingChannelId ? `<#${meetingChannelId}>` : undefined,
-            ]
-                .filter(Boolean)
-                .join(" · "),
-            inline: true,
-        })
-    }
-
-    return embed
-}
-
-export function buildForumInfoV2Message(
-    config: DiscordConfig,
-    event: EventRecord,
-    stratmapLinks: string[] = []
-) {
-    const embed = buildForumInfoEmbed(config, event, stratmapLinks).toJSON()
-    const container = new ContainerBuilder().setAccentColor(
-        toDiscordColor(resolveEventCategoryColor([], event))
-    )
-    container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-            `# ${event.name}\n${embed.description ?? ""}`.slice(0, 4000)
-        )
-    )
-    const details = (embed.fields ?? [])
-        .map((field) => `**${field.name}:** ${field.value}`)
-        .join("\n")
-    if (details) {
-        container.addSeparatorComponents(new SeparatorBuilder())
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(details.slice(0, 4000))
-        )
-    }
-    if (embed.image?.url) {
-        container.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems({
-                media: { url: embed.image.url },
-                description: `${event.name} briefing`,
-            })
-        )
-    }
-    return { components: [container] }
-}
-
-/**
- * Reminder DM controls: confirm, running late, and "Can't make it", which
- * opens a short reason form. The decline button has its own prefix so an
- * older bot never treats it as a confirmation.
- */
-export function buildAttendanceReminderComponents(
-    eventId: string,
-    language: ClanLanguage
-) {
-    const messages = getEventMessages(language)
-    return [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`attendance:${eventId}:ack`)
-                .setStyle(ButtonStyle.Success)
-                .setLabel(messages.buttons.confirmShort),
-            new ButtonBuilder()
-                .setCustomId(`attendance-late:${eventId}`)
-                .setStyle(ButtonStyle.Secondary)
-                .setLabel(messages.embed.runningLate),
-            new ButtonBuilder()
-                .setCustomId(`attendance-decline:${eventId}`)
-                .setStyle(ButtonStyle.Danger)
-                .setLabel(messages.buttons.cannotCome)
-        ),
-    ]
-}
-
-export { buildForumThreadName }
 
 export function buildTicketPanelEmbed(config: DiscordConfig) {
     const ticketSettings = config.ticketSettings

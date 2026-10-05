@@ -193,6 +193,9 @@ export type DirectMessageCopy = {
         notPublishedBody: string
         unavailableTitle: string
         unavailableBody: string
+        /** Confirming before the attendance window opens (a day before the meeting). */
+        confirmNotOpenTitle: string
+        confirmNotOpenBody: string
         /** The reason a declined player left when they typed none. */
         defaultDeclineReason: string
     }

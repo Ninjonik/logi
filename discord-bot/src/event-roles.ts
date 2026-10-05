@@ -1,18 +1,32 @@
 import type { Guild } from "discord.js"
 
+import { matchTitle } from "../../src/domain/discord-messages/match-text"
+import { fillTemplate } from "../../src/domain/discord-messages/format"
+import { getRosterMessages } from "../../src/lib/clan-language/rosters"
 import { reportClanDiscordError } from "./error-reporting"
 import type { EventRecord, Roster } from "./types"
 import { convex, references } from "./convex"
 import { env } from "./environment"
 
-function roleName(event: EventRecord, kind: "Attendees" | "Reserves") {
-    return `${event.name} — ${kind}`.slice(0, 100)
+/**
+ * The match roles "VLK vs ROG · Hráči" and "VLK vs ROG · Zálohy", named
+ * after the match title with the suffix in the clan language (L1-145).
+ */
+export function eventRoleName(
+    event: Pick<EventRecord, "name" | "matchTeams">,
+    kind: "players" | "reserves",
+    language?: string
+) {
+    return fillTemplate(getRosterMessages(language).roles[kind], {
+        match: matchTitle(event),
+    }).slice(0, 100)
 }
 
 export async function syncEventRoles(
     guild: Guild,
     event: EventRecord,
-    roster: Roster | null
+    roster: Roster | null,
+    language?: string
 ) {
     let attendeeRoleId = event.attendeeRoleId
     let reserveRoleId = event.reserveRoleId
@@ -45,7 +59,7 @@ export async function syncEventRoles(
         )
             attendeeRoleId = (
                 await guild.roles.create({
-                    name: roleName(event, "Attendees"),
+                    name: eventRoleName(event, "players", language),
                     reason: `Event attendees for ${event.name}`,
                 })
             ).id
@@ -55,7 +69,7 @@ export async function syncEventRoles(
         )
             reserveRoleId = (
                 await guild.roles.create({
-                    name: roleName(event, "Reserves"),
+                    name: eventRoleName(event, "reserves", language),
                     reason: `Event reserves for ${event.name}`,
                 })
             ).id
@@ -89,6 +103,15 @@ export async function syncEventRoles(
         const reserveRole = await guild.roles
             .fetch(reserveRoleId!)
             .catch(() => null)
+        // Roles created before the redesign get the clan-language names.
+        for (const [role, kind] of [
+            [attendeeRole, "players"],
+            [reserveRole, "reserves"],
+        ] as const) {
+            const name = eventRoleName(event, kind, language)
+            if (role && role.name !== name)
+                await role.setName(name).catch(() => null)
+        }
         const relevantMemberIds = new Set([
             ...attendeeIds,
             ...reserveIds,

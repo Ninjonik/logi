@@ -6,6 +6,7 @@ import {
 } from "../src/domain/discord-messages/clan-result"
 import { isDraftEvent } from "../src/domain/events/drafts"
 import { assertInternalSecret } from "./discord_shared"
+import { getGuildByDiscordId } from "./identity"
 import { query } from "./_generated/server"
 
 /**
@@ -41,12 +42,28 @@ export const forumContext = query({
                   }
                 : null,
         })
+        const guild = await getGuildByDiscordId(ctx, event.guildId)
+        const matchType = event.matchType?.trim().toLowerCase()
+        const category =
+            (event.kind ?? "match") === "match" && matchType
+                ? guild?.eventCategories?.find(
+                      (item) => item.id.trim().toLowerCase() === matchType
+                  )
+                : undefined
         return {
             stratmaps,
             result: summary,
             provider: resultProviderName(event.reviewedResult ?? null) ?? null,
             // The public match page exists only for matches with linked stats.
             publicMatch: Boolean(stats && stats.eventId === event._id),
+            // The clan's dashboard ID, for links to the match page.
+            serverId: guild ? String(guild._id) : null,
+            clanName: guild?.name ?? null,
+            category: category
+                ? { label: category.label, color: category.color }
+                : matchType && (event.kind ?? "match") === "match"
+                  ? { label: event.matchType!.trim(), color: null }
+                  : null,
         }
     },
 })

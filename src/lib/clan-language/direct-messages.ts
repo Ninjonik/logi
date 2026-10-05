@@ -63,6 +63,9 @@ const directMessages: Record<ClanLanguage, DirectMessages> = {
                 "Velení ji zveřejní před srazem. Pak ti přijde připomínka docházky.",
             unavailableTitle: "Zápas už není k dispozici",
             unavailableBody: "Velení ho mezitím zrušilo nebo smazalo.",
+            confirmNotOpenTitle: "Potvrdit půjde den před srazem",
+            confirmNotOpenBody:
+                "Pak ti přijde připomínka docházky. Jestli nepřijdeš, dej vědět tlačítkem Nemůžu.",
             defaultDeclineReason: "Bez důvodu",
         },
         rosterChange: {
@@ -167,6 +170,9 @@ const directMessages: Record<ClanLanguage, DirectMessages> = {
             unavailableTitle: "This match is no longer available",
             unavailableBody:
                 "The leaders cancelled or deleted it in the meantime.",
+            confirmNotOpenTitle: "You can confirm the day before the meeting",
+            confirmNotOpenBody:
+                "You'll get an attendance reminder then. If you can't come, tell us with Can't make it.",
             defaultDeclineReason: "No reason given",
         },
         rosterChange: {
@@ -273,6 +279,9 @@ const directMessages: Record<ClanLanguage, DirectMessages> = {
             unavailableTitle: "Dieses Match gibt es nicht mehr",
             unavailableBody:
                 "Die Führung hat es inzwischen abgesagt oder gelöscht.",
+            confirmNotOpenTitle: "Bestätigen geht einen Tag vor dem Treffpunkt",
+            confirmNotOpenBody:
+                "Dann bekommst du eine Anwesenheitserinnerung. Wenn du nicht kommst, sag es mit Ich kann nicht.",
             defaultDeclineReason: "Kein Grund angegeben",
         },
         rosterChange: {
