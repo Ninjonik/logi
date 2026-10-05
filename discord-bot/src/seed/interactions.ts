@@ -70,8 +70,12 @@ export type SeedButtonPorts = {
     }): Promise<PanelActResult>
     /** One delivery pass now; answers the call message of each run it drew. */
     refresh(guildId: string): Promise<{ calls: Map<string, string | null> }>
-    /** The P3 page ("Naplánovat v Logi"). */
-    planUrl(guildId: string, language: string): Promise<string | null>
+    /** The P3 page at this server's tab ("Naplánovat v Logi"). */
+    planUrl(
+        guildId: string,
+        language: string,
+        connectionId: string
+    ): Promise<string | null>
     roleOffer(
         guildId: string,
         roleId: string
@@ -132,7 +136,7 @@ async function handleControl(
                     ? `<#${server.panel.channelId}>`
                     : null,
                 callUrl,
-                planUrl: await ports.planUrl(guildId, language),
+                planUrl: await ports.planUrl(guildId, language, connectionId),
                 cooldownMinutes: server?.settings.cooldownMinutes ?? 120,
                 liveFrom: server?.settings.liveFrom ?? 40,
                 now: ports.now(),
@@ -353,11 +357,15 @@ export const defaultSeedButtonPorts: SeedButtonPorts = {
     stop: (input) => mutation("discordSeedBot:stopFromDiscord", input),
     panel: (input) => mutation("discordPanelBot:act", input),
     refresh: refreshSeedGuild,
-    planUrl: async (guildId, language) => {
+    planUrl: async (guildId, language, connectionId) => {
         const workspace = await workspaceOf(guildId)
-        return workspace
-            ? `${env.appSiteUrl.replace(/\/+$/, "")}/${language}/dashboard/servers/${workspace.workspaceId}/settings/seed`
-            : null
+        if (!workspace) return null
+        const url = new URL(
+            `/${language}/dashboard/servers/${encodeURIComponent(workspace.workspaceId)}/settings/discord-seed`,
+            env.appSiteUrl
+        )
+        url.searchParams.set("server", connectionId)
+        return url.toString()
     },
     roleOffer: (guildId, roleId) =>
         query("discordSeedBot:roleOffer", { guildId, roleId }),

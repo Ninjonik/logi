@@ -83,7 +83,7 @@ function ports(overrides: Partial<SeedButtonPorts> = {}) {
             return { calls: new Map([["run-1", "999999999999999999"]]) }
         },
         planUrl: async () =>
-            "https://logi.app/cs/dashboard/servers/s/settings/seed",
+            "https://logi.app/cs/dashboard/servers/s/settings/discord-seed",
         roleOffer: async () => ({ offered: true, seedChannelId: SEED }),
         now: () => NOW,
         ...overrides,

@@ -18,11 +18,12 @@ import {
     initialSeedPlanState,
     type SeedPlanState,
 } from "../src/domain/discord-seed/plan"
+import type { SeedServerTab } from "../src/application/discord-seed/read-dashboard"
 import { resolveClanTimeZone } from "../src/domain/discord-seed/clock"
+import { resolveSource, workspaceSources } from "./gameDataCatalog"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
-import { resolveSource } from "./gameDataCatalog"
 
 /**
  * Convex adapters of the seed ports. Every read is scoped by the clan's
@@ -275,6 +276,36 @@ export async function seedServerSnapshot(
         name: source?.row?.displayName ?? snapshot.displayName,
         gameId: row.gameId,
     }
+}
+
+/** The clan's configured game servers: the tabs of the P3 page and the API slice. */
+export async function seedServers(
+    ctx: Reader,
+    guildId: string
+): Promise<SeedServerTab[]> {
+    const [rows, sources] = await Promise.all([
+        ctx.db
+            .query("gameDataConnections")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .collect(),
+        workspaceSources(ctx, guildId),
+    ])
+    const aliases = new Map(
+        sources.map((entry) => [
+            entry.source.ref,
+            entry.row?.displayName ?? null,
+        ])
+    )
+    return rows
+        .filter((row) => aliases.has(row.sourceRef))
+        .map((row) => ({
+            connectionId: String(row._id),
+            gameId: row.gameId,
+            name:
+                aliases.get(row.sourceRef) ??
+                row.observation?.displayName ??
+                null,
+        }))
 }
 
 /** The server's live panel ("Obnovit panel", "Pozastavit panel"), if it has one. */

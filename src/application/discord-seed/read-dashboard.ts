@@ -41,10 +41,23 @@ export type SeedServerTab = {
     name: string | null
 }
 
-/** The page's data: the tabs and the selected server with its role size ("@Seed · 34 členů"). */
+/**
+ * The page's data: the tabs and the selected server with its role size
+ * ("@Seed · 34 členů") and its public server panel, which the control message
+ * refreshes and pauses (null without one).
+ */
 export type SeedDashboardResponse = {
     servers: SeedServerTab[]
-    selected: (SeedDashboardView & { roleMembers: number | null }) | null
+    selected:
+        | (SeedDashboardView & {
+              roleMembers: number | null
+              panel: {
+                  channelId: string
+                  paused: boolean
+                  sent: boolean
+              } | null
+          })
+        | null
 }
 
 export type SeedDashboardView = {

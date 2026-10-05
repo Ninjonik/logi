@@ -401,7 +401,8 @@ const reply = (
             server: "Vlci #1",
             panelChannel: "<#555555555555555555>",
             callUrl: "https://discord.com/channels/1/2/3",
-            planUrl: "https://logi.app/cs/dashboard/servers/s/settings/seed",
+            planUrl:
+                "https://logi.app/cs/dashboard/servers/s/settings/discord-seed",
             cooldownMinutes: 120,
             liveFrom: 40,
             now: Date.parse("2026-10-10T17:05:00Z"),

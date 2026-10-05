@@ -239,6 +239,7 @@ test("an admin reads the tabs, saves a revision-fenced plan and sees role member
     assert.equal(after.selected.configured, true)
     assert.equal(after.selected.revision, 1)
     assert.equal(after.selected.roleMembers, 2)
+    assert.equal(after.selected.panel, null, "no public server panel yet")
     assert.equal(
         after.selected.status.nextScheduledAt,
         "2026-10-06T15:00:00.000Z"
