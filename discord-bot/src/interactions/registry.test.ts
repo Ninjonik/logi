@@ -95,15 +95,18 @@ test("anything not registered falls through to the existing dispatch unchanged",
     let answer: { content?: string; flags?: unknown } | undefined
     await handler.handleChatInputCommand(
         fake<ChatInputCommandInteraction>({
-            commandName: "link",
+            // Still answered by the old dispatch (/link moved to link.ts).
+            commandName: "close_application",
             guildId: null,
+            inGuild: () => false,
+            channel: null,
             reply: async (value: { content?: string; flags?: unknown }) => {
                 answer = value
             },
         })
     )
     assert.equal(routed, false)
-    assert.ok(answer, "the existing /link dispatch answered")
+    assert.ok(answer, "the existing /close_application dispatch answered")
     assert.equal(
         Number(answer.flags) & MessageFlags.Ephemeral,
         MessageFlags.Ephemeral

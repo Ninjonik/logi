@@ -108,7 +108,15 @@ for (const scenario of [
             },
             client: { users: { fetch: async () => null } },
             options: { getString: () => "synthetic closure" },
-            deferReply: noop,
+            deferred: false,
+            replied: false,
+            deferReply: async function (this: {
+                deferred: boolean
+                ephemeral: boolean
+            }) {
+                this.deferred = true
+                this.ephemeral = true
+            },
             editReply: noop,
         } as unknown as ChatInputCommandInteraction)
         assert.equal(writes, scenario === "current-admin" ? 1 : 0)
@@ -163,9 +171,17 @@ for (const missing of [false, true]) {
                 },
             },
             options: { getString: () => "synthetic closure" },
-            deferReply: async () => {},
-            editReply: async (v: { content: string }) => {
-                answer = v.content
+            deferred: false,
+            replied: false,
+            deferReply: async function (this: {
+                deferred: boolean
+                ephemeral: boolean
+            }) {
+                this.deferred = true
+                this.ephemeral = true
+            },
+            editReply: async (v: unknown) => {
+                answer = JSON.stringify(v)
             },
         } as unknown as ChatInputCommandInteraction
         await handler().handleChatInputCommand(command)
@@ -186,9 +202,16 @@ test("link acknowledges privately before database and emoji reads", async (t) =>
         commandName: "link",
         guildId,
         user: { id: actorId },
-        deferReply: async (v: { flags: number }) => {
+        deferred: false,
+        replied: false,
+        deferReply: async function (
+            this: { deferred: boolean; ephemeral: boolean },
+            v: { flags: number }
+        ) {
             assert.equal(v.flags, MessageFlags.Ephemeral)
             acknowledged = true
+            this.deferred = true
+            this.ephemeral = true
         },
         editReply: async () => {
             edited = true

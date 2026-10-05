@@ -3329,70 +3329,6 @@ export const deMessages = {
         themeDark: "Dunkel",
         themeSystem: "System",
     },
-    platformIdLink: {
-        title: "Verknüpfe deine Plattform-ID",
-        description:
-            "Wähle zuerst deine Plattform. Wir zeigen dir dann genau, was du kopieren musst und wo du es findest.",
-        userPrefix: "Einreichung für",
-        expired:
-            "Dieser Link ist nicht mehr gültig. Gehe zurück zu Discord und klicke erneut auf den Clan-Bewerbungs-Button, um einen frischen Link zu erhalten.",
-        platformLabel: "Plattform",
-        platformPlaceholder: "Wähle deine Plattform",
-        submit: "Plattform-ID einreichen",
-        success:
-            "Plattform-ID gespeichert. Du kannst diese Seite jetzt schließen und zu Discord zurückkehren.",
-        closePage: "Du kannst diese Seite jetzt schließen.",
-        genericError: "Plattform-ID konnte nicht gespeichert werden.",
-        guideLabel: "Anleitung öffnen",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64-ID",
-            placeholder: "7656119...",
-            guideLabel: "Steam-Anleitung öffnen",
-            help: "Du brauchst die lange Steam-Nummer für dein Konto.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Folge den Bildern, bis du deine Steam64-ID siehst.",
-                "Kopiere diese lange Nummer und füge sie hier ein.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic-Account-ID",
-            placeholder: "Epic-Account-ID",
-            guideLabel: "Epic-Anleitung öffnen",
-            help: "Du brauchst deine Epic-Account-ID.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne deine Epic-Kontoseite.",
-                "Kopiere die angezeigte Account-ID und füge sie hier ein.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox-Gamertag / Account-ID",
-            placeholder: "Xbox-Gamertag oder Account-ID",
-            guideLabel: "Xbox-Anleitung öffnen",
-            help: "Nutze die Xbox-Identität, mit der du Spiel spielst. Meist ist das dein Gamertag.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne dein Xbox-Profil.",
-                "Kopiere den Gamertag oder Account-Wert, den du im Spiel nutzt, und füge ihn hier ein.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation-Online-ID",
-            placeholder: "PlayStation-Online-ID",
-            guideLabel: "PlayStation-Anleitung öffnen",
-            help: "Du brauchst deine PlayStation-Online-ID.",
-            steps: [
-                "Öffne die Anleitung unten.",
-                "Öffne deine PlayStation-Profil-Einstellungen.",
-                "Kopiere deine Online-ID und füge sie hier ein.",
-            ],
-        },
-    },
     calendarPage: {
         title: "Kalender",
         description:
@@ -4718,7 +4654,8 @@ export const deMessages = {
         publishedTraining: "Training veröffentlicht.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
-            not_found: "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
+            not_found:
+                "Diesen Entwurf gibt es nicht mehr. Vielleicht hat ihn jemand gelöscht.",
             not_draft: "Dieses Match ist schon veröffentlicht.",
             forbidden:
                 "Nur Clan-Verwalter können Matches anlegen. Wenn deine Sitzung abgelaufen ist, melde dich neu an.",
@@ -4760,15 +4697,29 @@ export const deMessages = {
             map: "Karte",
             timeOfDay: "Tageszeit",
             strongpoint: "Mittelpunkt",
-            timesOfDay: { day: "Tag", morning: "Morgen", dusk: "Dämmerung", evening: "Abend", night: "Nacht", rain: "Regen", overcast: "Bewölkt" },
+            timesOfDay: {
+                day: "Tag",
+                morning: "Morgen",
+                dusk: "Dämmerung",
+                evening: "Abend",
+                night: "Nacht",
+                rain: "Regen",
+                overcast: "Bewölkt",
+            },
             choose: "Wählen",
             name: "Name",
             nameHint: "Aus Teams und Vorlage ergänzt. Du kannst ihn ändern.",
             category: "Kategorie",
             noCategory: "Keine Kategorie",
             mode: "Modus",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the Hill" },
-            storedMap: "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the Hill",
+            },
+            storedMap:
+                "Gespeicherte Karte: {map}. Wähle nur eine Karte, wenn du sie ändern willst.",
             otherTeam: "Weiteres Team",
             addTeam: "Weiteres Team hinzufügen",
             otherSide: "Seite des weiteren Teams",
@@ -4798,7 +4749,8 @@ export const deMessages = {
             duration: "Dauer",
             minutes: "Min.",
             repeat: "Jede Woche wiederholen",
-            repeatHint: "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
+            repeatHint:
+                "Die nächsten Matches werden zwei Wochen im Voraus automatisch angelegt.",
         },
         signups: {
             fromTemplate: "Aus der Vorlage {name}",
@@ -4811,7 +4763,8 @@ export const deMessages = {
             },
             noLimit: "ohne Limit",
             max: "max. {count}",
-            noGroups: "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
+            noGroups:
+                "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
             generalOn: "erlaubt",
             reminder: "Anmeldeerinnerung",
@@ -4827,7 +4780,8 @@ export const deMessages = {
             groupOffered: "Gruppe {name} anbieten",
             capLabel: "Limit der Gruppe {name}",
             capPlaceholder: "ohne Limit",
-            capHint: "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
+            capHint:
+                "Ein niedrigeres Limit meldet niemanden ab: Wer schon einen Platz hat, behält ihn, nur neue Anmeldungen kommen in die Reserve.",
             reminderOptions: {
                 off: "Niemandem",
                 member: "Mitgliedern",
@@ -4835,13 +4789,17 @@ export const deMessages = {
                 all: "Mitgliedern, Rekruten und Reservisten",
             },
             attendanceReminders: "Anwesenheitserinnerungen",
-            attendanceHint: "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
+            attendanceHint:
+                "Eine DM vor dem Treffen an Spieler im Kader, die nicht bestätigt haben.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
+            attendanceEditHint:
+                "Eine Änderung plant die noch nicht gesendeten Erinnerungen neu.",
             squadPreset: "Trupp-Vorlage",
             squadPresetNone: "Keine Vorlage",
-            squadPresetHint: "Der Kader startet mit ihr, sobald du ihn anlegst.",
-            squadPresetRosterExists: "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
+            squadPresetHint:
+                "Der Kader startet mit ihr, sobald du ihn anlegst.",
+            squadPresetRosterExists:
+                "Der Kader existiert schon, die Vorlage ändert ihn nicht. Die Trupps bearbeitest du im Kader.",
             requiredRoles: "Rollen für die Anmeldung",
             rewardRoles: "Rollen für das Bestehen",
             rolesPlaceholder: "Rollen wählen",
@@ -4862,18 +4820,23 @@ export const deMessages = {
             password: "Passwort",
             passwordHint: "Das Passwort sehen nur Spieler in der Aufstellung.",
             defaultChannel: "Standardkanal",
-            channelsLocked: "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
+            channelsLocked:
+                "Die Kanäle bleiben wie bei der Veröffentlichung; dort verwaltet der Bot seine Nachrichten.",
             meetingChannel: "Sprachkanal für das Treffen",
             meetingChannelDefault: "Clan-Standard",
-            meetingChannelHint: "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
+            meetingChannelHint:
+                "Aus diesem Kanal liest Logi die Anwesenheit beim Treffen.",
             voiceCategory: "Kategorie für die Sprachkanäle",
             voiceCategoryDefault: "Clan-Standard",
             topicPreset: "Forenthemen",
             topicPresetNone: "Keine Themen",
             participantRoles: "Teilnehmer- und Reserverollen",
-            participantRolesHint: "Der Bot gibt den Spielern eine Rolle dieses Matches.",
-            participantRolesOffHint: "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
-            forumMissing: "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
+            participantRolesHint:
+                "Der Bot gibt den Spielern eine Rolle dieses Matches.",
+            participantRolesOffHint:
+                "Schaltest du es aus, löscht der Bot die Rollen, die er angelegt hat.",
+            forumMissing:
+                "Der Clan hat keine Forenkategorie, daher wird kein Forum angelegt.",
             openChannelSettings: "Kanäle einrichten",
         },
         review: {
@@ -4897,7 +4860,8 @@ export const deMessages = {
             missing: "Fehlt",
             changes: "Was sich ändert",
             noChanges: "Du hast noch nichts geändert.",
-            noticeEdit: "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
+            noticeEdit:
+                "Nach dem Speichern aktualisiert der Bot die Ankündigung in {channel}. Wer schon angemeldet ist, bleibt angemeldet.",
         },
         preview: {
             title: "Vorschau in Discord",
@@ -4924,9 +4888,11 @@ export const deMessages = {
             title: "Weitere Optionen",
             summary: "Beschreibung, Bilder, Notizen und Taktikkarten",
             description: "Beschreibung",
-            descriptionHint: "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
+            descriptionHint:
+                "Steht in der Discord-Ankündigung, wenn es keine Notizen gibt.",
             notes: "Notizen",
-            notesHint: "Stehen in der Discord-Ankündigung statt der Beschreibung.",
+            notesHint:
+                "Stehen in der Discord-Ankündigung statt der Beschreibung.",
             thumbnail: "Vorschaubild",
             image: "Bild",
             upload: "Hochladen",
@@ -4938,7 +4904,8 @@ export const deMessages = {
         edit: {
             title: "Match bearbeiten",
             titleTraining: "Training bearbeiten",
-            description: "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
+            description:
+                "Gespeicherte Änderungen landen sofort in der Ankündigung in Discord.",
             breadcrumb: "Bearbeiten",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Gespeicherte Zeiten",
@@ -4948,22 +4915,30 @@ export const deMessages = {
             save: "Änderungen speichern",
             saved: "Änderungen gespeichert.",
             leaveTitle: "Ungespeicherte Änderungen verwerfen?",
-            leaveDescription: "Deine Änderungen an diesem Match werden nicht gespeichert.",
+            leaveDescription:
+                "Deine Änderungen an diesem Match werden nicht gespeichert.",
             leaveConfirm: "Änderungen verwerfen",
-            leavePrompt: "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
+            leavePrompt:
+                "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
             series: "Dieses Match gehört zu einer wöchentlichen Serie. Änderungen gelten nur für diesen Termin.",
             seriesEdit: "Serie bearbeiten",
-            seriesSource: "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
+            seriesSource:
+                "Dieses Match startet eine wöchentliche Serie. Änderungen gelten auch für Termine, die später angelegt werden; bereits angelegte bleiben, wie sie sind.",
             stopHint: "Schalte die Wiederholung aus, um die Serie zu beenden.",
             lockedTitle: "Dieses Match kann nicht mehr bearbeitet werden",
-            lockedTrainingTitle: "Dieses Training kann nicht mehr bearbeitet werden",
-            lockedDescription: "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
-            lockedTrainingDescription: "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
+            lockedTrainingTitle:
+                "Dieses Training kann nicht mehr bearbeitet werden",
+            lockedDescription:
+                "Das Match ist abgeschlossen. Ergebnis und Anwesenheit findest du auf der Match-Seite.",
+            lockedTrainingDescription:
+                "Das Training ist abgeschlossen. Die Anwesenheit findest du auf der Trainingsseite.",
             backToMatch: "Zurück zum Match",
             backToTraining: "Zurück zum Training",
             notFoundTitle: "Match nicht gefunden",
-            notFoundDescription: "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
-            invalidSchedule: "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
+            notFoundDescription:
+                "Es wurde vielleicht gelöscht oder gehört zu einem anderen Clan.",
+            invalidSchedule:
+                "Die Zeiten passen nicht: Die Anmeldung muss vor dem Treffen enden und das Treffen vor dem Start liegen.",
             fields: {
                 name: "Name",
                 category: "Kategorie",
@@ -5012,8 +4987,10 @@ export const deMessages = {
         },
         overview: {
             title: "Übersicht",
-            description: "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
-            descriptionTraining: "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
+            description:
+                "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
+            descriptionTraining:
+                "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
             edit: "Bearbeiten",
             readOnly: "Nur Clan-Manager können das Match ändern.",
             stratmaps: "Taktikkarten",

@@ -29,7 +29,7 @@ import {
     type ApiFromModules,
 } from "convex/server"
 import { deliverPlayerReport } from "../../src/application/player-reports/deliver-report"
-import { listReportMembers } from "./interactions/report-members"
+import { listReportMembers } from "./interactions/tickets-report-members"
 import { readReportObservation } from "./public-panels/worker"
 import type * as reports from "../../convex/playerReports"
 import { env } from "./environment"

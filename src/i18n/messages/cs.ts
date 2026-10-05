@@ -3220,70 +3220,6 @@ export const csMessages = {
         themeDark: "Tmavý",
         themeSystem: "Podle systému",
     },
-    platformIdLink: {
-        title: "Propojte své platform ID",
-        description:
-            "Nejdřív vyberte platformu. Pak vám přesně ukážeme, co zkopírovat a kde to najít.",
-        userPrefix: "Odesíláte za",
-        expired:
-            "Tento odkaz už není platný. Vraťte se na Discord a klikněte znovu na tlačítko klanové přihlášky, aby se vytvořil nový odkaz.",
-        platformLabel: "Platforma",
-        platformPlaceholder: "Vyberte svou platformu",
-        submit: "Odeslat platform ID",
-        success:
-            "Platform ID bylo uloženo. Tuto stránku můžete zavřít a vrátit se na Discord.",
-        closePage: "Tuto stránku můžete nyní zavřít.",
-        genericError: "Platform ID se nepodařilo uložit.",
-        guideLabel: "Otevřít návod",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64 ID",
-            placeholder: "7656119...",
-            guideLabel: "Otevřít Steam návod",
-            help: "Potřebujete dlouhé číselné Steam ID svého účtu.",
-            steps: [
-                "Otevřete návod níže.",
-                "Postupujte podle obrázků, dokud neuvidíte své Steam64 ID.",
-                "Zkopírujte to dlouhé číslo a vložte ho sem.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic Account ID",
-            placeholder: "Epic account ID",
-            guideLabel: "Otevřít Epic návod",
-            help: "Potřebujete své Epic Account ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete stránku svého Epic účtu.",
-                "Zkopírujte zobrazené Account ID a vložte ho sem.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox gamertag / account ID",
-            placeholder: "Xbox gamertag nebo account ID",
-            guideLabel: "Otevřít Xbox návod",
-            help: "Použijte Xbox identitu, pod kterou hrajete hru. Ve většině případů je to váš gamertag.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete svůj Xbox profil.",
-                "Zkopírujte gamertag nebo účetní hodnotu, kterou používáte ve hře, a vložte ji sem.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation online ID",
-            placeholder: "PlayStation online ID",
-            guideLabel: "Otevřít PlayStation návod",
-            help: "Potřebujete své PlayStation online ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete nastavení svého PlayStation profilu.",
-                "Zkopírujte své online ID a vložte ho sem.",
-            ],
-        },
-    },
     calendarPage: {
         title: "Kalendář",
         description:
@@ -4619,15 +4555,29 @@ export const csMessages = {
             map: "Mapa",
             timeOfDay: "Denní doba",
             strongpoint: "Střední bod",
-            timesOfDay: { day: "Den", morning: "Ráno", dusk: "Soumrak", evening: "Večer", night: "Noc", rain: "Déšť", overcast: "Zataženo" },
+            timesOfDay: {
+                day: "Den",
+                morning: "Ráno",
+                dusk: "Soumrak",
+                evening: "Večer",
+                night: "Noc",
+                rain: "Déšť",
+                overcast: "Zataženo",
+            },
             choose: "Zvolit",
             name: "Název",
             nameHint: "Doplněno z týmů a šablony. Můžete změnit.",
             category: "Kategorie",
             noCategory: "Bez kategorie",
             mode: "Režim",
-            modes: { warfare: "Warfare", offensive: "Ofenziva", skirmish: "Skirmish", koth: "Král kopce" },
-            storedMap: "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
+            modes: {
+                warfare: "Warfare",
+                offensive: "Ofenziva",
+                skirmish: "Skirmish",
+                koth: "Král kopce",
+            },
+            storedMap:
+                "Uložená mapa: {map}. Mapu vyberte, jen pokud ji chcete změnit.",
             otherTeam: "Další tým",
             addTeam: "Přidat další tým",
             otherSide: "Strana dalšího týmu",
@@ -4670,7 +4620,8 @@ export const csMessages = {
             },
             noLimit: "bez limitu",
             max: "max {count}",
-            noGroups: "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
+            noGroups:
+                "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
             general: "Přihlášení bez volby skupiny",
             generalOn: "povoleno",
             reminder: "Připomínka přihlášky",
@@ -4686,7 +4637,8 @@ export const csMessages = {
             groupOffered: "Nabídnout skupinu {name}",
             capLabel: "Limit skupiny {name}",
             capPlaceholder: "bez limitu",
-            capHint: "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
+            capHint:
+                "Snížení limitu nikoho neodhlásí: kdo už místo má, zůstává, a do zálohy půjdou jen nové přihlášky.",
             reminderOptions: {
                 off: "Nikomu",
                 member: "Členům",
@@ -4694,13 +4646,16 @@ export const csMessages = {
                 all: "Členům, rekrutům a záložníkům",
             },
             attendanceReminders: "Připomínky docházky",
-            attendanceHint: "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
+            attendanceHint:
+                "DM hráčům na soupisce, kteří nepotvrdili účast, před srazem.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "Změna přeplánuje připomínky, které ještě neodešly.",
+            attendanceEditHint:
+                "Změna přeplánuje připomínky, které ještě neodešly.",
             squadPreset: "Předvolba čet",
             squadPresetNone: "Bez předvolby",
             squadPresetHint: "Soupiska z ní začne, až ji založíte.",
-            squadPresetRosterExists: "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
+            squadPresetRosterExists:
+                "Soupiska už existuje, předvolba ji nezmění. Čety upravíte přímo v soupisce.",
             requiredRoles: "Role potřebné k přihlášení",
             rewardRoles: "Role za úspěšné splnění",
             rolesPlaceholder: "Vybrat role",
@@ -4721,7 +4676,8 @@ export const csMessages = {
             password: "Heslo",
             passwordHint: "Heslo uvidí jen hráči na soupisce.",
             defaultChannel: "Výchozí kanál",
-            channelsLocked: "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
+            channelsLocked:
+                "Kanály zůstávají, jak byly při zveřejnění; bot v nich spravuje své zprávy.",
             meetingChannel: "Hlasový kanál srazu",
             meetingChannelDefault: "Výchozí kanál klanu",
             meetingChannelHint: "Z tohoto kanálu Logi čte docházku na srazu.",
@@ -4731,8 +4687,10 @@ export const csMessages = {
             topicPresetNone: "Bez témat",
             participantRoles: "Role účastníků a záložníků",
             participantRolesHint: "Bot dá hráčům roli tohoto zápasu.",
-            participantRolesOffHint: "Po vypnutí bot role, které vytvořil, smaže.",
-            forumMissing: "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
+            participantRolesOffHint:
+                "Po vypnutí bot role, které vytvořil, smaže.",
+            forumMissing:
+                "Klan nemá nastavenou kategorii pro fóra, fórum se nevytvoří.",
             openChannelSettings: "Nastavit kanály",
         },
         review: {
@@ -4756,7 +4714,8 @@ export const csMessages = {
             missing: "Chybí",
             changes: "Co se změní",
             noChanges: "Zatím jste nic nezměnili.",
-            noticeEdit: "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
+            noticeEdit:
+                "Po uložení bot upraví ohlášení v {channel}. Kdo je už přihlášený, zůstává přihlášený.",
         },
         preview: {
             title: "Náhled v Discordu",
@@ -4783,7 +4742,8 @@ export const csMessages = {
             title: "Další možnosti",
             summary: "Popis, obrázky, poznámky a taktické mapy",
             description: "Popis",
-            descriptionHint: "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
+            descriptionHint:
+                "Zobrazí se v ohlášení v Discordu, pokud nejsou poznámky.",
             notes: "Poznámky",
             notesHint: "Zobrazí se v ohlášení v Discordu místo popisu.",
             thumbnail: "Miniatura",
@@ -4797,7 +4757,8 @@ export const csMessages = {
         edit: {
             title: "Upravit zápas",
             titleTraining: "Upravit trénink",
-            description: "Uložené změny se hned propíšou do ohlášení v Discordu.",
+            description:
+                "Uložené změny se hned propíšou do ohlášení v Discordu.",
             breadcrumb: "Upravit",
             breadcrumbTrainings: "Tréninky",
             savedTimes: "Uložené časy",
@@ -4812,17 +4773,21 @@ export const csMessages = {
             leavePrompt: "Máte neuložené změny. Opravdu odejít?",
             series: "Zápas patří do týdenní série. Změny platí jen pro tento termín.",
             seriesEdit: "Upravit sérii",
-            seriesSource: "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
+            seriesSource:
+                "Tento zápas zakládá týdenní sérii. Změny platí i pro termíny, které se teprve založí; už založené zůstávají.",
             stopHint: "Vypnutím opakování sérii zastavíte.",
             lockedTitle: "Zápas už nejde upravit",
             lockedTrainingTitle: "Trénink už nejde upravit",
-            lockedDescription: "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
-            lockedTrainingDescription: "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
+            lockedDescription:
+                "Zápas je uzavřený. Výsledek a docházku najdete v detailu zápasu.",
+            lockedTrainingDescription:
+                "Trénink je uzavřený. Docházku najdete v detailu tréninku.",
             backToMatch: "Zpět na zápas",
             backToTraining: "Zpět na trénink",
             notFoundTitle: "Zápas nenalezen",
             notFoundDescription: "Možná byl smazán, nebo patří jinému klanu.",
-            invalidSchedule: "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
+            invalidSchedule:
+                "Časy nesedí: přihlášky musí skončit před srazem a sraz musí být před startem.",
             fields: {
                 name: "Název",
                 category: "Kategorie",
@@ -4871,8 +4836,10 @@ export const csMessages = {
         },
         overview: {
             title: "Přehled",
-            description: "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
-            descriptionTraining: "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
+            description:
+                "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
+            descriptionTraining:
+                "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
             edit: "Upravit",
             readOnly: "Zápas mohou měnit jen správci klanu.",
             stratmaps: "Taktické mapy",

@@ -150,6 +150,8 @@ export type TicketCategory = {
     description?: string
     supportRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
+    /** The thread card's title, e.g. "{author} nahlašuje hráče". */
+    threadTitle?: string
 }
 
 export type MembershipCategory = {
@@ -175,6 +177,8 @@ export type TicketSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour (`#RRGGBB`); missing means the clan colour. */
+    panelAccentColor?: string
     categories: TicketCategory[]
 }
 

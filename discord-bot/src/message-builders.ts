@@ -11,7 +11,6 @@ import {
     TextDisplayBuilder,
     ThumbnailBuilder,
     escapeMarkdown,
-    type APIEmbedField,
 } from "discord.js"
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
@@ -56,8 +55,6 @@ import type {
     MembershipCategory,
     Roster,
     SyncPayload,
-    TicketCategory,
-    TicketThreadRecord,
 } from "./types"
 import {
     getRosterImageVersion,
@@ -1006,95 +1003,6 @@ export function buildEventComponents(
     ]
 }
 
-export function buildTicketPanelEmbed(config: DiscordConfig) {
-    const ticketSettings = config.ticketSettings
-    if (!ticketSettings) {
-        return null
-    }
-
-    const messages = getMembershipMessages(config.defaultLanguage)
-    const embed = new EmbedBuilder()
-        .setTitle(ticketSettings.panelTitle.slice(0, 256))
-        .setDescription(
-            formatDiscordMarkdown(ticketSettings.panelDescription, 4096)
-        )
-        .setColor("#3B82F6")
-        .setFooter({ text: messages.panels.ticketManagedFooter })
-
-    if (ticketSettings.panelImageUrl) {
-        embed.setThumbnail(ticketSettings.panelImageUrl)
-    }
-
-    const categoryFieldValue = ticketSettings.categories
-        .map((category) => {
-            const heading = [
-                category.emoji?.trim(),
-                category.label?.trim() || category.id,
-            ]
-                .filter(Boolean)
-                .join(" ")
-            const description = category.description?.trim()
-            return description
-                ? `${heading}: ${formatDiscordMarkdown(description)}`
-                : heading
-        })
-        .join("\n")
-        .slice(0, 1024)
-
-    const fields: APIEmbedField[] = []
-    if (categoryFieldValue) {
-        fields.push({
-            name: messages.panels.ticketCategories,
-            value: categoryFieldValue,
-            inline: false,
-        })
-    }
-
-    if (fields.length) {
-        embed.addFields(fields)
-    }
-
-    return embed
-}
-
-export function buildTicketPanelComponents(config: DiscordConfig) {
-    const ticketSettings = config.ticketSettings
-    if (!ticketSettings?.categories.length) {
-        return []
-    }
-
-    const buttons = ticketSettings.categories.map((category) => {
-        const button = new ButtonBuilder()
-            .setCustomId(`ticket:${category.id}`)
-            .setStyle(ButtonStyle.Primary)
-
-        const label = category.label?.trim()
-        const emoji = category.emoji?.trim()
-
-        if (emoji) {
-            button.setEmoji(emoji)
-        }
-        if (label) {
-            button.setLabel(label.slice(0, 80))
-        } else if (!emoji) {
-            button.setLabel(category.id.slice(0, 80))
-        }
-
-        return button
-    })
-
-    const rows: Array<ActionRowBuilder<ButtonBuilder>> = []
-    for (let index = 0; index < buttons.length; index += 5) {
-        rows.push(
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                buttons.slice(index, index + 5)
-            )
-        )
-    }
-
-    return rows
-}
-
 export function buildMembershipPanelEmbed(config: DiscordConfig) {
     const membershipSettings = config.membershipSettings
     if (!membershipSettings) {
@@ -1566,48 +1474,6 @@ export function buildCalendarPanelEmbed(
 
     embed.setDescription(descriptionLines.join("\n").slice(0, 4096))
 
-    return embed
-}
-
-export function buildTicketThreadEmbed(input: {
-    language: ClanLanguage
-    category: TicketCategory
-    ticket: Pick<
-        TicketThreadRecord,
-        "ticketNumber" | "categoryLabel" | "creatorId"
-    >
-    answers: Array<{ label: string; value: string }>
-    creatorTag: string
-}) {
-    const messages = getMembershipMessages(input.language)
-    const embed = new EmbedBuilder()
-        .setTitle(
-            messages.ticket.threadTitle.replace(
-                "{number}",
-                String(input.ticket.ticketNumber)
-            )
-        )
-        .setDescription(
-            `${messages.ticket.category}: ${input.ticket.categoryLabel}\n${messages.ticket.createdBy}: <@${input.ticket.creatorId}>`
-        )
-        .setColor("#F59E0B")
-
-    if (input.answers.length) {
-        embed.addFields(
-            input.answers.slice(0, 25).map((answer) => ({
-                name: answer.label.slice(0, 256),
-                value: answer.value.slice(0, 1024) || "-",
-                inline: false,
-            }))
-        )
-    }
-
-    embed.setFooter({
-        text: messages.ticket.openedBy.replace(
-            "{creatorTag}",
-            input.creatorTag
-        ),
-    })
     return embed
 }
 

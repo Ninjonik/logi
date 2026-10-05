@@ -61,7 +61,6 @@ import {
     formatTemplate,
     getOutcomeLabel,
     loadMembershipCategoryContext,
-    loadTicketCategoryContext,
     resolveSupportMemberIds,
     rollbackMembershipApplicationSetup,
 } from "./interactions/shared"
@@ -77,13 +76,6 @@ import {
     handleEventSignupPickerInteraction,
     handleRosterAssignmentInteraction,
 } from "./interactions/event-buttons"
-import type {
-    EventInteractionContext,
-    MembershipApplicationThreadRecord,
-    MembershipCategory,
-    TicketCategory,
-    TicketThreadRecord,
-} from "./types"
 import {
     createInteractionRegistry,
     type InteractionFeatureContext,
@@ -93,16 +85,18 @@ import {
     buildMembershipCategorySelectionMessage,
     buildMembershipGameSelectionMessage,
 } from "./message-builders"
+import type {
+    EventInteractionContext,
+    MembershipApplicationThreadRecord,
+    MembershipCategory,
+} from "./types"
 import {
     detectPlatformFromStatsId,
     extractPlayerSearchResults,
 } from "./interactions/player-search"
-import {
-    buildMembershipApplicationThreadEmbed,
-    buildTicketThreadEmbed,
-} from "./message-builders"
 import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
 import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
+import { buildMembershipApplicationThreadEmbed } from "./message-builders"
 import { checkCloseAuthority } from "./interactions/close-authority"
 import { interactionFeatures } from "./interactions/features"
 import { reportClanDiscordError } from "./error-reporting"
@@ -198,38 +192,6 @@ function formatDiscordTimestamp(date: Date) {
     return `<t:${Math.floor(date.getTime() / 1000)}:F>`
 }
 
-function buildTicketCloseEmbed(input: {
-    messages: ReturnType<typeof getMembershipMessages>
-    ticketNumber: number
-    closerId: string
-    closedAt: Date
-    reason?: string
-}) {
-    const { messages, ticketNumber, closerId, closedAt, reason } = input
-    const embed = new EmbedBuilder()
-        .setColor(0x5865f2)
-        .setTitle(`${messages.ticket.closeEmbedTitle} #${ticketNumber}`)
-        .addFields(
-            {
-                name: messages.ticket.closedByLabel,
-                value: `<@${closerId}>`,
-                inline: true,
-            },
-            {
-                name: messages.ticket.closedAtLabel,
-                value: formatDiscordTimestamp(closedAt),
-                inline: true,
-            }
-        )
-        .setTimestamp(closedAt)
-
-    if (reason) {
-        embed.addFields({ name: messages.ticket.reasonLabel, value: reason })
-    }
-
-    return embed
-}
-
 export function buildMembershipApplicationCloseEmbed(input: {
     messages: ReturnType<typeof getMembershipMessages>
     applicationNumber: number
@@ -318,11 +280,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 return
             }
 
-            if (interaction.customId.startsWith("ticket:")) {
-                await handleTicketButtonInteraction(interaction)
-                return
-            }
-
             if (interaction.customId.startsWith("membership:")) {
                 await handleMembershipButtonInteraction(interaction)
                 return
@@ -360,9 +317,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleModalSubmit(interaction: ModalSubmitInteraction) {
             if (await registry.routeModal(interaction)) return
             if (await handlePlayerReport(interaction)) return
-            if (interaction.customId.startsWith("ticket-modal:")) {
-                await handleTicketModalSubmit(interaction)
-            } else if (interaction.customId.startsWith("membership-modal:")) {
+            if (interaction.customId.startsWith("membership-modal:")) {
                 await handleMembershipModalSubmit(interaction)
             } else if (
                 interaction.customId.startsWith("membership-flow-modal:")
@@ -391,12 +346,8 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
             if (await registry.routeCommand(interaction)) return
-            if (interaction.commandName === "close_ticket") {
-                await handleCloseTicketCommand(interaction)
-            } else if (interaction.commandName === "close_application") {
+            if (interaction.commandName === "close_application") {
                 await handleCloseApplicationCommand(interaction)
-            } else if (interaction.commandName === "link") {
-                await handleLinkCommand(interaction)
             }
         },
 
@@ -405,149 +356,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         ) {
             await registry.routeChannelSelect(interaction)
         },
-    }
-
-    async function handleTicketButtonInteraction(
-        interaction: ButtonInteraction
-    ) {
-        const fallbackMessages = getMembershipMessages("en")
-        if (!interaction.guildId || !interaction.guild) {
-            await interaction.reply({
-                content: fallbackMessages.ticket.serverOnly,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        const categoryId = interaction.customId.replace("ticket:", "")
-        const context = await loadTicketCategoryContext(
-            interaction.guildId,
-            categoryId
-        )
-        const messages = getMembershipMessages(context?.config.defaultLanguage)
-        if (!context?.config.ticketSettings?.enabled) {
-            await interaction.reply({
-                content: messages.ticket.unavailable,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        if (context.category.modalQuestions.length) {
-            const modal = new ModalBuilder()
-                .setCustomId(`ticket-modal:${categoryId}`)
-                .setTitle(
-                    (
-                        context.category.label?.trim() ||
-                        messages.ticket.modalTitle
-                    ).slice(0, 45)
-                )
-
-            for (const question of context.category.modalQuestions.slice(
-                0,
-                5
-            )) {
-                const input = new TextInputBuilder()
-                    .setCustomId(question.id)
-                    .setLabel(question.label.slice(0, 45))
-                    .setStyle(
-                        question.style === "paragraph"
-                            ? TextInputStyle.Paragraph
-                            : TextInputStyle.Short
-                    )
-                    .setRequired(question.required)
-                    .setMaxLength(question.style === "paragraph" ? 1000 : 400)
-
-                if (question.placeholder) {
-                    input.setPlaceholder(question.placeholder.slice(0, 100))
-                }
-
-                modal.addComponents(
-                    new ActionRowBuilder<TextInputBuilder>().addComponents(
-                        input
-                    )
-                )
-            }
-
-            await interaction.showModal(modal)
-            return
-        }
-
-        await createDiscordTicket(interaction, context.category, [])
-    }
-
-    async function handleLinkCommand(interaction: ChatInputCommandInteraction) {
-        const fallbackMessages = getMembershipMessages("en")
-        if (!interaction.guildId) {
-            await interaction.reply({
-                content: fallbackMessages.membership.serverOnly,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-        const guildConfig = (await convex
-            .query(references.getConfigByDiscordGuildId, {
-                secret: env.internalSecret,
-                guildId: interaction.guildId,
-            })
-            .catch(() => null)) as {
-            defaultLanguage?: "en" | "cs" | "de"
-        } | null
-        const language = guildConfig?.defaultLanguage ?? "en"
-        const linkState = await loadDiscordPlatformLinkState(
-            interaction.user.id
-        )
-        const emojis = await getPlatformEmojis()
-        await interaction.editReply({
-            ...(linkState?.platformIds?.length
-                ? buildPlatformLinkManageMessage({
-                      language,
-                      platformIds: linkState.platformIds,
-                      emojis,
-                  })
-                : buildPlatformSelectMessageWithEmojis({
-                      language,
-                      context: { mode: "link" },
-                      emojis,
-                  })),
-        })
-    }
-
-    async function handleTicketModalSubmit(
-        interaction: ModalSubmitInteraction
-    ) {
-        const fallbackMessages = getMembershipMessages("en")
-        if (!interaction.guildId) {
-            await interaction.reply({
-                content: fallbackMessages.ticket.serverOnly,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        const categoryId = interaction.customId.replace("ticket-modal:", "")
-        const context = await loadTicketCategoryContext(
-            interaction.guildId,
-            categoryId
-        )
-        const messages = getMembershipMessages(context?.config.defaultLanguage)
-        if (!context?.config.ticketSettings?.enabled) {
-            await interaction.reply({
-                content: messages.ticket.unavailable,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        const answers = context.category.modalQuestions.map((question) => ({
-            questionId: question.id,
-            label: question.label,
-            value: interaction.fields.getTextInputValue(question.id).trim(),
-        }))
-
-        await createDiscordTicket(interaction, context.category, answers)
     }
 
     async function getMembershipFlowDraft(
@@ -2302,285 +2110,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         return `${platform}:${platformId.trim()}`
     }
 
-    async function createDiscordTicket(
-        interaction: ButtonInteraction | ModalSubmitInteraction,
-        category: TicketCategory,
-        answers: TicketAnswer[]
-    ) {
-        const fallbackMessages = getMembershipMessages("en")
-        if (!interaction.guildId || !interaction.guild) {
-            await interaction.reply({
-                content: fallbackMessages.ticket.serverOnly,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-        }
-
-        const categoryContext = await loadTicketCategoryContext(
-            interaction.guildId,
-            category.id
-        )
-        const ticketSettings = categoryContext?.config.ticketSettings
-        const messages = getMembershipMessages(
-            categoryContext?.config.defaultLanguage
-        )
-        if (!categoryContext || !ticketSettings?.ticketParentChannelId) {
-            await interaction.editReply({
-                content: messages.ticket.setupIncomplete,
-            })
-            return
-        }
-
-        const parentChannel = await interaction.guild.channels
-            .fetch(ticketSettings.ticketParentChannelId)
-            .catch(() => null)
-        if (!parentChannel || parentChannel.type !== ChannelType.GuildText) {
-            await interaction.editReply({
-                content: messages.ticket.parentChannelNotText,
-            })
-            return
-        }
-
-        await interaction.guild.members.fetch().catch(() => null)
-
-        const thread = await (parentChannel as TextChannel).threads
-            .create({
-                name: `${slugifyTicketLabel(category.label?.trim() || category.id)}-pending`.slice(
-                    0,
-                    100
-                ),
-                autoArchiveDuration: 10080,
-                type: ChannelType.PrivateThread,
-                invitable: false,
-                reason: `Ticket ${category.id} opened by ${interaction.user.tag}`,
-            })
-            .catch(async (error) => {
-                logError("interaction", "Failed to create ticket thread", {
-                    guildId: interaction.guildId,
-                    userId: interaction.user.id,
-                    categoryId: category.id,
-                    error,
-                })
-                await reportClanDiscordError({
-                    client,
-                    guildId: interaction.guildId!,
-                    error,
-                    action: "Create a ticket thread",
-                    location: "Ticket system",
-                    scope: "interaction",
-                    target: category.label?.trim() || category.id,
-                    details: {
-                        user: interaction.user.tag,
-                        categoryId: category.id,
-                    },
-                })
-                await interaction
-                    .editReply({
-                        content: messages.ticket.createThreadFailed,
-                    })
-                    .catch(() => null)
-                return null
-            })
-        if (!thread) {
-            return
-        }
-
-        const supportMemberIds = resolveSupportMemberIds(
-            interaction.guild,
-            category.supportRoleIds
-        )
-        const participantIds = [
-            ...new Set([interaction.user.id, ...supportMemberIds]),
-        ]
-
-        for (const memberId of participantIds) {
-            await thread.members.add(memberId).catch((error) => {
-                logWarn("interaction", "Failed to add ticket thread member", {
-                    guildId: interaction.guildId,
-                    threadId: thread.id,
-                    memberId,
-                    error,
-                })
-                void reportClanDiscordError({
-                    client,
-                    guildId: interaction.guildId!,
-                    error,
-                    action: "Add a participant to a ticket thread",
-                    location: "Ticket system",
-                    scope: "interaction",
-                    target: thread.name,
-                    details: {
-                        threadId: thread.id,
-                        memberId,
-                    },
-                })
-                return null
-            })
-        }
-
-        const recordResponse = (await convex
-            .mutation(references.createTicketThread, {
-                secret: env.internalSecret,
-                guildId: interaction.guildId,
-                threadId: thread.id,
-                parentChannelId: parentChannel.id,
-                creatorId: interaction.user.id,
-                categoryId: category.id,
-                answers,
-            })
-            .catch(async (error) => {
-                logError(
-                    "interaction",
-                    "Failed to create ticket thread record",
-                    {
-                        guildId: interaction.guildId,
-                        threadId: thread.id,
-                        userId: interaction.user.id,
-                        categoryId: category.id,
-                        error,
-                    }
-                )
-                return null
-            })) as {
-            ticket: Pick<
-                TicketThreadRecord,
-                "ticketNumber" | "categoryLabel" | "threadId"
-            >
-            category: TicketCategory
-        } | null
-        if (!recordResponse) {
-            await cleanupThread(thread, "Ticket record creation failed")
-            await interaction
-                .editReply({
-                    content: messages.ticket.recordFailed,
-                })
-                .catch(() => null)
-            return
-        }
-
-        const mentions = [
-            `<@${interaction.user.id}>`,
-            ...category.supportRoleIds.map((roleId) => `<@&${roleId}>`),
-        ].join(" ")
-
-        const starter = await thread
-            .send({
-                content: mentions,
-                embeds: [
-                    buildTicketThreadEmbed({
-                        language: categoryContext.config.defaultLanguage,
-                        category,
-                        ticket: {
-                            ticketNumber: recordResponse.ticket.ticketNumber,
-                            categoryLabel: recordResponse.ticket.categoryLabel,
-                            creatorId: interaction.user.id,
-                        },
-                        answers: answers.map((answer) => ({
-                            label: answer.label,
-                            value: answer.value,
-                        })),
-                        creatorTag: interaction.user.tag,
-                    }),
-                ],
-            })
-            .catch(async (error) => {
-                logError(
-                    "interaction",
-                    "Failed to send ticket starter message",
-                    {
-                        guildId: interaction.guildId,
-                        threadId: thread.id,
-                        userId: interaction.user.id,
-                        error,
-                    }
-                )
-                await reportClanDiscordError({
-                    client,
-                    guildId: interaction.guildId!,
-                    error,
-                    action: "Send the first ticket message",
-                    location: "Ticket system",
-                    scope: "interaction",
-                    target: thread.name,
-                    details: {
-                        threadId: thread.id,
-                        user: interaction.user.tag,
-                    },
-                })
-                return null
-            })
-        if (!starter) {
-            const ticketUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`
-            await interaction
-                .editReply({
-                    content: formatTemplate(messages.ticket.introFailed, {
-                        url: ticketUrl,
-                    }),
-                })
-                .catch(() => null)
-            return
-        }
-
-        await convex
-            .mutation(references.updateTicketTranscriptMessage, {
-                secret: env.internalSecret,
-                threadId: thread.id,
-                transcriptMessageId: starter.id,
-            })
-            .catch((error) => {
-                logWarn(
-                    "interaction",
-                    "Failed to store ticket transcript message id",
-                    {
-                        guildId: interaction.guildId,
-                        threadId: thread.id,
-                        messageId: starter.id,
-                        error,
-                    }
-                )
-                return null
-            })
-
-        await thread
-            .setName(
-                `${slugifyTicketLabel(recordResponse.ticket.categoryLabel)}-${recordResponse.ticket.ticketNumber}`.slice(
-                    0,
-                    100
-                )
-            )
-            .catch((error) => {
-                logWarn("interaction", "Failed to rename ticket thread", {
-                    guildId: interaction.guildId,
-                    threadId: thread.id,
-                    error,
-                })
-                void reportClanDiscordError({
-                    client,
-                    guildId: interaction.guildId!,
-                    error,
-                    action: "Rename a ticket thread",
-                    location: "Ticket system",
-                    scope: "interaction",
-                    target: thread.name,
-                    details: {
-                        threadId: thread.id,
-                    },
-                })
-                return null
-            })
-
-        const ticketUrl = `https://discord.com/channels/${interaction.guildId}/${thread.id}`
-        await interaction.editReply({
-            content: formatTemplate(messages.ticket.created, {
-                url: ticketUrl,
-            }),
-        })
-    }
-
     async function createDiscordMembershipApplication(
         interaction:
             | ButtonInteraction
@@ -2992,131 +2521,6 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         } catch {
             return undefined
         }
-    }
-
-    async function handleCloseTicketCommand(
-        interaction: ChatInputCommandInteraction
-    ) {
-        if (
-            !interaction.inGuild() ||
-            !interaction.channel?.isThread() ||
-            !interaction.guildId
-        ) {
-            await interaction.reply({
-                content: getMembershipMessages(
-                    await interactionLanguage(interaction.guildId)
-                ).ticket.closeCommandThreadOnly,
-                flags: MessageFlags.Ephemeral,
-            })
-            return
-        }
-
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-        const context = (await convex.query(references.getTicketThreadContext, {
-            secret: env.internalSecret,
-            threadId: interaction.channelId,
-        })) as {
-            config: EventInteractionContext["config"]
-            ticket: TicketThreadRecord
-            category: TicketCategory | null
-        } | null
-        const messages = getMembershipMessages(context?.config.defaultLanguage)
-        const guildName =
-            (await resolveGuildName(interaction)) ??
-            messages.ticket.serverFallback
-
-        if (!context) {
-            await interaction.editReply({ content: messages.ticket.notTracked })
-            return
-        }
-
-        if (context.ticket.status === "closed") {
-            await interaction.editReply({
-                content: messages.ticket.alreadyClosed,
-            })
-            return
-        }
-
-        // Same fresh check as /close_application (M3-04).
-        const authority = await checkCloseAuthority(
-            interaction.guild,
-            interaction.user.id,
-            {
-                dashboardAdminRoleId: context.config.dashboardAdminRoleId,
-                supportRoleIds: context.category?.supportRoleIds,
-            }
-        )
-        if (authority !== "allowed") {
-            await interaction.editReply({
-                content:
-                    authority === "denied"
-                        ? messages.ticket.noClosePermission
-                        : messages.ticket.unableToVerifyPermissions,
-            })
-            return
-        }
-
-        const reason =
-            interaction.options.getString("reason")?.trim() || undefined
-        const closedAt = new Date()
-
-        await convex.mutation(references.closeTicketThread, {
-            secret: env.internalSecret,
-            threadId: interaction.channelId,
-            closedByUserId: interaction.user.id,
-            closeReason: reason,
-        })
-
-        const creator = await interaction.client.users
-            .fetch(context.ticket.creatorId)
-            .catch(() => null)
-        if (creator) {
-            const dmLines = [
-                formatTemplate(messages.ticket.closeDmClosed, {
-                    number: String(context.ticket.ticketNumber),
-                    guildName,
-                }),
-                reason
-                    ? `${messages.ticket.reasonLabel}: ${reason}`
-                    : messages.ticket.noCloseReasonProvided,
-            ]
-            await creator
-                .send({ content: dmLines.join("\n") })
-                .catch(() => null)
-        }
-
-        await interaction.channel
-            .send({
-                embeds: [
-                    buildTicketCloseEmbed({
-                        messages,
-                        ticketNumber: context.ticket.ticketNumber,
-                        closerId: interaction.user.id,
-                        closedAt,
-                        reason,
-                    }),
-                ],
-            })
-            .catch(() => null)
-
-        await interaction.channel
-            .setName(`closed-${context.ticket.ticketNumber}`.slice(0, 100))
-            .catch(() => null)
-        await interaction.channel
-            .setLocked(true, reason ?? messages.ticket.closeAuditReason)
-            .catch(() => null)
-        await interaction.channel
-            .setArchived(true, reason ?? messages.ticket.closeAuditReason)
-            .catch(() => null)
-
-        await interaction.editReply({
-            content: reason
-                ? formatTemplate(messages.ticket.closeReplyWithReason, {
-                      reason,
-                  })
-                : messages.ticket.closeReply,
-        })
     }
 
     async function handleCloseApplicationCommand(

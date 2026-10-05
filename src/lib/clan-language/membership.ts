@@ -1,23 +1,13 @@
 import { clanCopy, type ClanLanguage } from "./core"
 
-/** Tickets, membership applications, their panels and the platform account linking flow. */
+/** Membership applications, their panel and the account step of the application (`platformFlow`). */
 export type MembershipMessages = {
     panels: {
-        ticketManagedFooter: string
-        ticketCategories: string
         membershipManagedFooter: string
         membershipApplications: string
         membershipApply: string
         membershipChooseGame: string
         membershipChooseCategory: string
-    }
-    platformLink: {
-        button: string
-        dmIntro: string
-        dmInstruction: string
-        readyDm: string
-        readyInteraction: string
-        successPage: string
     }
     platformFlow?: {
         title: string
@@ -93,37 +83,6 @@ export type MembershipMessages = {
         }
     }
     platformFlowCsFallback?: NonNullable<MembershipMessages["platformFlow"]>
-    ticket: {
-        serverOnly: string
-        unavailable: string
-        modalTitle: string
-        setupIncomplete: string
-        parentChannelNotText: string
-        createThreadFailed: string
-        recordFailed: string
-        introFailed: string
-        created: string
-        closeCommandThreadOnly: string
-        notTracked: string
-        alreadyClosed: string
-        unableToVerifyPermissions: string
-        noClosePermission: string
-        closeDmClosed: string
-        /** Stands in for `{guildName}` when the server name cannot be read. */
-        serverFallback: string
-        noCloseReasonProvided: string
-        closeEmbedTitle: string
-        closedByLabel: string
-        closedAtLabel: string
-        reasonLabel: string
-        closeAuditReason: string
-        closeReply: string
-        closeReplyWithReason: string
-        threadTitle: string
-        category: string
-        createdBy: string
-        openedBy: string
-    }
     membership: {
         serverOnly: string
         unavailable: string
@@ -178,24 +137,11 @@ export type MembershipMessages = {
 const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
     en: {
         panels: {
-            ticketManagedFooter: "Managed by Logi tickets",
-            ticketCategories: "Categories",
             membershipManagedFooter: "Managed by Logi memberships",
             membershipApplications: "Applications",
             membershipApply: "Sign up",
             membershipChooseGame: "Choose the game you want to join.",
             membershipChooseCategory: "Choose a membership category.",
-        },
-        platformLink: {
-            button: "Submit platform ID",
-            dmIntro:
-                "Before we can continue, we need a platform ID we can match to the game.",
-            dmInstruction:
-                "Use the button below to open the one-time submission page. When it says successful, you can close it.",
-            readyDm: "Your platform ID has been linked successfully.",
-            readyInteraction: "Your platform ID has been linked successfully.",
-            successPage:
-                "Platform ID linked successfully. You can close this page now.",
         },
         platformFlow: {
             title: "Link your platform ID",
@@ -364,43 +310,6 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 },
             },
         },
-        ticket: {
-            serverOnly: "Tickets can only be opened inside a server.",
-            unavailable: "Ticket setup is not available right now.",
-            modalTitle: "Ticket details",
-            setupIncomplete: "Ticket setup is incomplete.",
-            parentChannelNotText:
-                "Ticket parent channel is not a text channel.",
-            createThreadFailed:
-                "I couldn't create the ticket thread. Check the bot's permissions for the ticket parent channel.",
-            recordFailed:
-                "The ticket could not be recorded, so the thread was closed. Please try again.",
-            introFailed:
-                "Your ticket thread was created, but I couldn't post the intro message: {url}",
-            created: "Your ticket has been created: {url}",
-            closeCommandThreadOnly: "Use this command inside a ticket thread.",
-            notTracked: "This thread is not tracked as a ticket.",
-            alreadyClosed: "This ticket is already closed.",
-            unableToVerifyPermissions:
-                "Unable to verify your permissions for this ticket.",
-            noClosePermission:
-                "You do not have permission to close this ticket.",
-            closeDmClosed:
-                "Your ticket #{number} in **{guildName}** has been closed.",
-            serverFallback: "Discord",
-            noCloseReasonProvided: "No close reason was provided.",
-            closeEmbedTitle: "Ticket closed",
-            closedByLabel: "Closed by",
-            closedAtLabel: "Closed at",
-            reasonLabel: "Reason",
-            closeAuditReason: "Ticket closed",
-            closeReply: "Ticket closed.",
-            closeReplyWithReason: "Ticket closed. Reason: {reason}",
-            threadTitle: "Ticket #{number}",
-            category: "Category",
-            createdBy: "Created by",
-            openedBy: "Opened by {creatorTag}",
-        },
         membership: {
             serverOnly: "Applications can only be opened inside a server.",
             unavailable:
@@ -472,60 +381,11 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
     },
     cs: {
         panels: {
-            ticketManagedFooter: "Spravováno přes Logi tickety",
-            ticketCategories: "Kategorie",
             membershipManagedFooter: "Spravováno přes Logi přihlášky",
             membershipApplications: "Přihlášky",
             membershipApply: "Přihlásit se",
             membershipChooseGame: "Vyberte hru, do které se chcete přihlásit.",
             membershipChooseCategory: "Vyberte členskou kategorii.",
-        },
-        platformLink: {
-            button: "Zadat platform ID",
-            dmIntro:
-                "Než budeme moci pokračovat, potřebujeme platform ID, které můžeme spárovat s hrou.",
-            dmInstruction:
-                "Použijte tlačítko níže pro otevření jednorázové stránky pro odeslání. Až uvidíte úspěšné potvrzení, můžete ji zavřít.",
-            readyDm: "Vaše platform ID bylo úspěšně propojeno.",
-            readyInteraction: "Vaše platform ID bylo úspěšně propojeno.",
-            successPage:
-                "Platform ID bylo úspěšně propojeno. Tuto stránku teď můžete zavřít.",
-        },
-        ticket: {
-            serverOnly: "Tickety lze otevřít pouze uvnitř serveru.",
-            unavailable: "Nastavení ticketů aktuálně není povolené.",
-            modalTitle: "Detaily ticketu",
-            setupIncomplete: "Nastavení ticketů není kompletní.",
-            parentChannelNotText: "Nadřazený ticket kanál není textový kanál.",
-            createThreadFailed:
-                "Nepodařilo se vytvořit ticket vlákno. Zkontrolujte oprávnění bota pro nadřazený ticket kanál.",
-            recordFailed:
-                "Ticket se nepodařilo uložit, takže bylo vlákno uzavřeno. Zkuste to prosím znovu.",
-            introFailed:
-                "Vaše ticket vlákno bylo vytvořeno, ale nepodařilo se odeslat úvodní zprávu: {url}",
-            created: "Váš ticket byl vytvořen: {url}",
-            closeCommandThreadOnly:
-                "Tento příkaz použijte uvnitř ticket vlákna.",
-            notTracked: "Toto vlákno není evidováno jako ticket.",
-            alreadyClosed: "Tento ticket je už uzavřen.",
-            unableToVerifyPermissions:
-                "Nepodařilo se ověřit vaše oprávnění pro tento ticket.",
-            noClosePermission: "Nemáte oprávnění tento ticket uzavřít.",
-            closeDmClosed:
-                "Váš ticket #{number} v **{guildName}** byl uzavřen.",
-            serverFallback: "Discordu",
-            noCloseReasonProvided: "Nebyl uveden důvod uzavření.",
-            closeEmbedTitle: "Ticket uzavřen",
-            closedByLabel: "Uzavřel",
-            closedAtLabel: "Uzavřeno",
-            reasonLabel: "Důvod",
-            closeAuditReason: "Ticket uzavřen",
-            closeReply: "Ticket uzavřen.",
-            closeReplyWithReason: "Ticket uzavřen. Důvod: {reason}",
-            threadTitle: "Ticket #{number}",
-            category: "Kategorie",
-            createdBy: "Vytvořil",
-            openedBy: "Otevřel {creatorTag}",
         },
         membership: {
             serverOnly: "Přihlášky lze otevřít pouze uvnitř serveru.",
@@ -594,24 +454,11 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
     },
     de: {
         panels: {
-            ticketManagedFooter: "Verwaltet via Logi-Tickets",
-            ticketCategories: "Kategorien",
             membershipManagedFooter: "Verwaltet via Logi-Mitgliedschaften",
             membershipApplications: "Bewerbungen",
             membershipApply: "Anmelden",
             membershipChooseGame: "Wähle das Spiel, dem du beitreten möchtest.",
             membershipChooseCategory: "Wähle eine Mitgliedschaftskategorie.",
-        },
-        platformLink: {
-            button: "Platform ID einreichen",
-            dmIntro:
-                "Bevor wir fortfahren können, benötigen wir eine Platform ID, die wir Spiel zuordnen können.",
-            dmInstruction:
-                "Nutzen Sie den Button unten, um die einmalige Einreichungsseite zu öffnen. Wenn dort erfolgreich steht, können Sie sie schließen.",
-            readyDm: "Ihre Platform ID wurde erfolgreich verknüpft.",
-            readyInteraction: "Ihre Platform ID wurde erfolgreich verknüpft.",
-            successPage:
-                "Platform ID erfolgreich verknüpft. Sie können diese Seite jetzt schließen.",
         },
         platformFlow: {
             title: "Verknüpfen Sie Ihre Platform ID",
@@ -705,45 +552,6 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                         "Fügen Sie diese Kennung in den nächsten Schritt ein.",
                 },
             },
-        },
-        ticket: {
-            serverOnly:
-                "Tickets können nur innerhalb eines Servers geöffnet werden.",
-            unavailable: "Das Ticket-Setup ist derzeit nicht verfügbar.",
-            modalTitle: "Ticket-Details",
-            setupIncomplete: "Das Ticket-Setup ist unvollständig.",
-            parentChannelNotText:
-                "Der Ticket-Eltern-Channel ist kein Text-Channel.",
-            createThreadFailed:
-                "Ich konnte den Ticket-Thread nicht erstellen. Prüfen Sie die Berechtigungen des Bots für den Ticket-Eltern-Channel.",
-            recordFailed:
-                "Das Ticket konnte nicht gespeichert werden, daher wurde der Thread geschlossen. Bitte versuchen Sie es erneut.",
-            introFailed:
-                "Ihr Ticket-Thread wurde erstellt, aber ich konnte die Intro-Nachricht nicht posten: {url}",
-            created: "Ihr Ticket wurde erstellt: {url}",
-            closeCommandThreadOnly:
-                "Nutzen Sie diesen Befehl innerhalb eines Ticket-Threads.",
-            notTracked: "Dieser Thread wird nicht als Ticket geführt.",
-            alreadyClosed: "Dieses Ticket ist bereits geschlossen.",
-            unableToVerifyPermissions:
-                "Ihre Berechtigungen für dieses Ticket konnten nicht geprüft werden.",
-            noClosePermission:
-                "Sie haben keine Berechtigung, dieses Ticket zu schließen.",
-            closeDmClosed:
-                "Ihr Ticket #{number} in **{guildName}** wurde geschlossen.",
-            serverFallback: "Discord",
-            noCloseReasonProvided: "Es wurde kein Schließungsgrund angegeben.",
-            closeEmbedTitle: "Ticket geschlossen",
-            closedByLabel: "Geschlossen von",
-            closedAtLabel: "Geschlossen am",
-            reasonLabel: "Grund",
-            closeAuditReason: "Ticket geschlossen",
-            closeReply: "Ticket geschlossen.",
-            closeReplyWithReason: "Ticket geschlossen. Grund: {reason}",
-            threadTitle: "Ticket #{number}",
-            category: "Kategorie",
-            createdBy: "Erstellt von",
-            openedBy: "Geöffnet von {creatorTag}",
         },
         membership: {
             serverOnly:

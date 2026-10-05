@@ -3231,70 +3231,6 @@ export const enMessages = {
         themeDark: "Dark",
         themeSystem: "System",
     },
-    platformIdLink: {
-        title: "Link your platform ID",
-        description:
-            "Pick your platform first. We will then show you exactly what to copy and where to find it.",
-        userPrefix: "Submitting for",
-        expired:
-            "This link is no longer valid. Go back to Discord and click the clan application button again to get a fresh link.",
-        platformLabel: "Platform",
-        platformPlaceholder: "Select your platform",
-        submit: "Submit platform ID",
-        success:
-            "Platform ID saved. You can close this page now and return to Discord.",
-        closePage: "You can close this page now.",
-        genericError: "Unable to save platform ID.",
-        guideLabel: "Open guide",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64 ID",
-            placeholder: "7656119...",
-            guideLabel: "Open Steam guide",
-            help: "You need the long Steam number for your account.",
-            steps: [
-                "Open the guide below.",
-                "Follow the pictures until you see your Steam64 ID.",
-                "Copy that long number and paste it here.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic Account ID",
-            placeholder: "Epic account ID",
-            guideLabel: "Open Epic guide",
-            help: "You need your Epic Account ID.",
-            steps: [
-                "Open the guide below.",
-                "Open your Epic account page.",
-                "Copy the Account ID it shows and paste it here.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox gamertag / account ID",
-            placeholder: "Xbox gamertag or account ID",
-            guideLabel: "Open Xbox guide",
-            help: "Use the Xbox identity you play the game with. In most cases this is your gamertag.",
-            steps: [
-                "Open the guide below.",
-                "Open your Xbox profile.",
-                "Copy the gamertag or account value you use in game and paste it here.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation online ID",
-            placeholder: "PlayStation online ID",
-            guideLabel: "Open PlayStation guide",
-            help: "You need your PlayStation online ID.",
-            steps: [
-                "Open the guide below.",
-                "Open your PlayStation profile settings.",
-                "Copy your online ID and paste it here.",
-            ],
-        },
-    },
     calendarPage: {
         title: "Calendar",
         description:
@@ -4597,7 +4533,8 @@ export const enMessages = {
         publishedTraining: "Training published.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
-            not_found: "This draft no longer exists. Someone may have deleted it.",
+            not_found:
+                "This draft no longer exists. Someone may have deleted it.",
             not_draft: "This match has already been published.",
             forbidden:
                 "Only clan managers can create matches. If your session expired, sign in again.",
@@ -4639,14 +4576,28 @@ export const enMessages = {
             map: "Map",
             timeOfDay: "Time of day",
             strongpoint: "Middle point",
-            timesOfDay: { day: "Day", morning: "Morning", dusk: "Dusk", evening: "Evening", night: "Night", rain: "Rain", overcast: "Overcast" },
+            timesOfDay: {
+                day: "Day",
+                morning: "Morning",
+                dusk: "Dusk",
+                evening: "Evening",
+                night: "Night",
+                rain: "Rain",
+                overcast: "Overcast",
+            },
             choose: "Choose",
             name: "Name",
-            nameHint: "Filled in from the teams and template. You can change it.",
+            nameHint:
+                "Filled in from the teams and template. You can change it.",
             category: "Category",
             noCategory: "No category",
             mode: "Mode",
-            modes: { warfare: "Warfare", offensive: "Offensive", skirmish: "Skirmish", koth: "King of the hill" },
+            modes: {
+                warfare: "Warfare",
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "King of the hill",
+            },
             storedMap: "Saved map: {map}. Choose a map only to change it.",
             otherTeam: "Another team",
             addTeam: "Add another team",
@@ -4677,7 +4628,8 @@ export const enMessages = {
             duration: "Duration",
             minutes: "min",
             repeat: "Repeat every week",
-            repeatHint: "The next matches are created automatically two weeks ahead.",
+            repeatHint:
+                "The next matches are created automatically two weeks ahead.",
         },
         signups: {
             fromTemplate: "From the {name} template",
@@ -4690,7 +4642,8 @@ export const enMessages = {
             },
             noLimit: "no limit",
             max: "max {count}",
-            noGroups: "This game has no sign-up groups; players sign up without choosing one.",
+            noGroups:
+                "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -4701,11 +4654,13 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote: "Every clan member signs up for a training with one button.",
+            trainingNote:
+                "Every clan member signs up for a training with one button.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
-            capHint: "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
+            capHint:
+                "Lowering a cap signs nobody out: players already in keep their place, only new sign-ups go to the reserve.",
             reminderOptions: {
                 off: "Nobody",
                 member: "Members",
@@ -4713,13 +4668,16 @@ export const enMessages = {
                 all: "Members, recruits and reserves",
             },
             attendanceReminders: "Attendance reminders",
-            attendanceHint: "A DM to roster players who have not confirmed, before the meeting.",
+            attendanceHint:
+                "A DM to roster players who have not confirmed, before the meeting.",
             attendanceHour: "{hours} h",
-            attendanceEditHint: "A change reschedules the reminders that have not been sent yet.",
+            attendanceEditHint:
+                "A change reschedules the reminders that have not been sent yet.",
             squadPreset: "Squad preset",
             squadPresetNone: "No preset",
             squadPresetHint: "The roster starts from it once you create it.",
-            squadPresetRosterExists: "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
+            squadPresetRosterExists:
+                "The roster already exists, so the preset does not change it. Edit its squads on the roster.",
             requiredRoles: "Roles needed to sign up",
             rewardRoles: "Roles for passing",
             rolesPlaceholder: "Choose roles",
@@ -4740,18 +4698,23 @@ export const enMessages = {
             password: "Password",
             passwordHint: "Only players on the roster see the password.",
             defaultChannel: "Default channel",
-            channelsLocked: "Channels stay as they were when the match was published; the bot manages its messages there.",
+            channelsLocked:
+                "Channels stay as they were when the match was published; the bot manages its messages there.",
             meetingChannel: "Meeting voice channel",
             meetingChannelDefault: "Clan default",
-            meetingChannelHint: "Logi reads attendance at the meeting from this channel.",
+            meetingChannelHint:
+                "Logi reads attendance at the meeting from this channel.",
             voiceCategory: "Category for the voice channels",
             voiceCategoryDefault: "Clan default",
             topicPreset: "Forum topics",
             topicPresetNone: "No topics",
             participantRoles: "Attendee and reserve roles",
-            participantRolesHint: "The bot gives the players a role of this match.",
-            participantRolesOffHint: "When you switch it off, the bot deletes the roles it created.",
-            forumMissing: "The clan has no forum category set, so no forum will be created.",
+            participantRolesHint:
+                "The bot gives the players a role of this match.",
+            participantRolesOffHint:
+                "When you switch it off, the bot deletes the roles it created.",
+            forumMissing:
+                "The clan has no forum category set, so no forum will be created.",
             openChannelSettings: "Set up channels",
         },
         review: {
@@ -4775,7 +4738,8 @@ export const enMessages = {
             missing: "Missing",
             changes: "What changes",
             noChanges: "You have not changed anything yet.",
-            noticeEdit: "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
+            noticeEdit:
+                "After saving, the bot updates the announcement in {channel}. Players who already signed up stay signed up.",
         },
         preview: {
             title: "Discord preview",
@@ -4802,9 +4766,11 @@ export const enMessages = {
             title: "More options",
             summary: "Description, pictures, notes and tactical maps",
             description: "Description",
-            descriptionHint: "Shown in the Discord announcement when there are no notes.",
+            descriptionHint:
+                "Shown in the Discord announcement when there are no notes.",
             notes: "Notes",
-            notesHint: "Shown in the Discord announcement instead of the description.",
+            notesHint:
+                "Shown in the Discord announcement instead of the description.",
             thumbnail: "Thumbnail",
             image: "Picture",
             upload: "Upload",
@@ -4816,7 +4782,8 @@ export const enMessages = {
         edit: {
             title: "Edit match",
             titleTraining: "Edit training",
-            description: "Saved changes go straight into the announcement in Discord.",
+            description:
+                "Saved changes go straight into the announcement in Discord.",
             breadcrumb: "Edit",
             breadcrumbTrainings: "Trainings",
             savedTimes: "Saved times",
@@ -4831,17 +4798,22 @@ export const enMessages = {
             leavePrompt: "You have unsaved changes. Leave anyway?",
             series: "This match belongs to a weekly series. Changes apply to this date only.",
             seriesEdit: "Edit the series",
-            seriesSource: "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
+            seriesSource:
+                "This match starts a weekly series. Changes also apply to dates that are created later; dates already created stay as they are.",
             stopHint: "Switch repeating off to stop the series.",
             lockedTitle: "This match can no longer be edited",
             lockedTrainingTitle: "This training can no longer be edited",
-            lockedDescription: "The match is closed. You find the result and attendance on the match page.",
-            lockedTrainingDescription: "The training is closed. You find attendance on the training page.",
+            lockedDescription:
+                "The match is closed. You find the result and attendance on the match page.",
+            lockedTrainingDescription:
+                "The training is closed. You find attendance on the training page.",
             backToMatch: "Back to the match",
             backToTraining: "Back to the training",
             notFoundTitle: "Match not found",
-            notFoundDescription: "It may have been deleted, or it belongs to another clan.",
-            invalidSchedule: "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
+            notFoundDescription:
+                "It may have been deleted, or it belongs to another clan.",
+            invalidSchedule:
+                "The times do not add up: sign-ups must close before the meeting, and the meeting must be before the start.",
             fields: {
                 name: "Name",
                 category: "Category",
@@ -4890,8 +4862,10 @@ export const enMessages = {
         },
         overview: {
             title: "Overview",
-            description: "How the match is set up and how players see it in Discord.",
-            descriptionTraining: "How the training is set up and how players see it in Discord.",
+            description:
+                "How the match is set up and how players see it in Discord.",
+            descriptionTraining:
+                "How the training is set up and how players see it in Discord.",
             edit: "Edit",
             readOnly: "Only clan managers can change the match.",
             stratmaps: "Tactical maps",
