@@ -33,12 +33,12 @@ import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
+import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
-import { assertInternalSecret } from "./discord_shared"
 import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { matchTeamInput } from "./teamValidators"
@@ -47,9 +47,6 @@ import { mutation } from "./integrationMutation"
 import { eventTeamSides } from "./competitions"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 
 const attendanceReminder = v.object({
     userId: v.string(),
@@ -171,7 +168,7 @@ export const upsert = mutation({
     handler: async (ctx, args) => {
         const eventId = await handleUpsertEvent({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 ...args,
                 serverId: String(args.serverId),
@@ -241,7 +238,7 @@ export const findNoticeTarget = query({
         query: v.string(),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
+        if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
         const guild = await getGuildByDiscordId(ctx, args.guildId)
         if (guild && getGuildDiscordId(guild) !== args.guildId) return []
@@ -294,7 +291,7 @@ export const toggleSignUp = mutation({
     handler: async (ctx, args) => {
         return await handleToggleSignup({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 eventId: String(args.eventId),
                 userId: args.userId,
@@ -320,7 +317,7 @@ export const reconcileStatuses = mutation({
     handler: async (ctx, args) => {
         return await handleReconcileStatuses({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 cursor: args.cursor ?? null,
                 limit: args.limit ?? 25,
@@ -347,7 +344,7 @@ export const applyEventScore = mutation({
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET) {
+        if (args.secret !== internalAuthSecret()) {
             throw new Error("Unauthorized.")
         }
 
@@ -372,7 +369,7 @@ export const conclude = mutation({
     handler: async (ctx, args) => {
         return await handleConcludeEvent({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             createUseCase: () =>
                 new ConcludeEventUseCase(
@@ -401,7 +398,7 @@ export const completeTraining = mutation({
         ),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET) {
+        if (args.secret !== internalAuthSecret()) {
             throw new Error("Unauthorized.")
         }
 
@@ -428,7 +425,7 @@ export const appendAttendanceReminderLog = mutation({
     handler: async (ctx, args) => {
         return await handleAppendAttendanceReminderLog({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             reminders: args.reminders,
             getEventById: async (eventId) =>
@@ -449,7 +446,7 @@ export const upsertNotice = mutation({
     handler: async (ctx, args) => {
         return await handleUpsertNotice({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 eventId: String(args.eventId),
                 userId: args.userId,
@@ -472,7 +469,7 @@ export const setDiscordEventRoles = mutation({
         reserveRoleId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
+        if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
         await ctx.db.patch(args.eventId, {
             attendeeRoleId: args.attendeeRoleId,
@@ -491,7 +488,7 @@ export const setResult = mutation({
     handler: async (ctx, args) => {
         const result = await handleSetEventResult({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             eventResult: args.eventResult,
             getEventById: async (eventId) =>

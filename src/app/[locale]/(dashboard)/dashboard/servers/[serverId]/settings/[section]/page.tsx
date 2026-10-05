@@ -10,11 +10,6 @@ import {
 import { DiscordChannelSettingsForm } from "@/components/app/settings/discord-channel-settings-form"
 import { StatsCommandSettingsForm } from "@/components/app/settings/stats-command-settings-form"
 import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
-import {
-    DEFAULT_GAME_ID,
-    isGameId,
-    withGameOverrides,
-} from "@/domain/games/game"
 import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-settings-form"
 import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
@@ -35,6 +30,7 @@ import { CustomLoginLink } from "@/components/app/custom-login-link"
 import { SsoApplications } from "@/components/app/sso-applications"
 import { WebhookManager } from "@/components/app/webhook-manager"
 import { ApiKeyManager } from "@/components/app/api-key-manager"
+import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
@@ -103,9 +99,6 @@ export default async function ServerSettingsSectionPage({
     )
         notFound()
     const guildLoginUrl = `${getSiteUrl()}/${locale}/guild-login/${server.discordId}`
-    const scopedConfig = discordConfig
-        ? withGameOverrides(discordConfig, discordConfig.gameOverrides, gameId)
-        : null
 
     let content: ReactNode
     switch (section) {
@@ -140,12 +133,10 @@ export default async function ServerSettingsSectionPage({
         case "channels":
             content = (
                 <DiscordChannelSettingsForm
-                    key={gameId ?? "clan"}
                     serverId={serverId}
                     dictionary={dictionary}
-                    config={scopedConfig}
-                    baseConfig={discordConfig}
-                    gameId={gameId}
+                    config={discordConfig}
+                    enabledGames={snapshot.enabledGames}
                 />
             )
             break
@@ -161,12 +152,10 @@ export default async function ServerSettingsSectionPage({
         case "stats":
             content = (
                 <StatsCommandSettingsForm
-                    key={gameId ?? "clan"}
                     serverId={serverId}
                     dictionary={dictionary}
-                    config={scopedConfig}
-                    baseConfig={discordConfig}
-                    gameId={gameId}
+                    config={discordConfig}
+                    enabledGames={snapshot.enabledGames}
                 />
             )
             break

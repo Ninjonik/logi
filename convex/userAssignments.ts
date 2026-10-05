@@ -19,6 +19,7 @@ import { enqueueManagedRoles, roleActorValidator } from "./memberRoleOperations"
 import type { Doc, Id } from "./_generated/dataModel";
 import type { RoleActor } from "../src/domain/membership/managed-roles";
 import { resolveGameScope } from "../src/domain/games/game";
+import { internalAuthSecret } from "./discord_shared";
 
 async function queueRoleChange(ctx: MutationCtx, actor: RoleActor | undefined, before: Doc<"userAssignments"> | null, after: Doc<"userAssignments"> | null) {
   if (!actor) return;
@@ -30,14 +31,11 @@ async function queueRoleChange(ctx: MutationCtx, actor: RoleActor | undefined, b
   await enqueueManagedRoles(ctx, { guildId: source.serverId, gameId: resolveGameScope(source.gameId), userId: source.userId, actor, before });
 }
 
-const INTERNAL_AUTH_SECRET =
-  process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
-
 type AssignmentType = "member" | "reserve_member" | "mercenary";
 type AssignmentStatus = "pending" | "recruit" | "active";
 
 function assertInternalSecret(secret: string) {
-  if (secret !== INTERNAL_AUTH_SECRET) {
+  if (secret !== internalAuthSecret()) {
     throw new Error("Unauthorized.");
   }
 }

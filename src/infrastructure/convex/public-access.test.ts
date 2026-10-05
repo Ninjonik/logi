@@ -9,6 +9,7 @@ import * as rosters from "../../../convex/serverRosters"
 import { invoke, testContext } from "./testing/database"
 import * as stratmaps from "../../../convex/stratmaps"
 import { issueClientGrant } from "@/lib/client-grants"
+import { readdirSync, readFileSync } from "node:fs"
 import * as guilds from "../../../convex/guilds"
 import * as users from "../../../convex/users"
 import assert from "node:assert/strict"
@@ -247,9 +248,30 @@ test("grants are refused when the internal secret is not configured", async () =
             }),
             /Unauthorized/
         )
+        // Modules with their own check share the same fail-closed secret.
+        await assert.rejects(
+            invoke(serverContext.getServerContext, ctx, {
+                secret: "dev-internal-auth-secret",
+                userId: ADMIN,
+                serverId: "guilds:a",
+            }),
+            /Unauthorized/
+        )
     } finally {
         process.env.INTERNAL_AUTH_SECRET = secret
     }
+})
+
+test("no Convex module falls back to the public development secret", () => {
+    const directory = new URL("../../../convex/", import.meta.url)
+    for (const name of readdirSync(directory).filter((file) =>
+        file.endsWith(".ts")
+    ))
+        assert.doesNotMatch(
+            readFileSync(new URL(name, directory), "utf8"),
+            /dev-internal-auth-secret/,
+            name
+        )
 })
 
 test("members get the clan context without drafts or manager secrets", async () => {

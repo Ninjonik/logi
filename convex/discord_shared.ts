@@ -8,12 +8,18 @@ import {
 } from "../src/infrastructure/convex/server-read-model"
 
 /**
- * Fails closed: without a configured secret nothing is accepted, rather than
- * the development default that is public in this repository.
+ * The configured internal secret. Fails closed: without one nothing is
+ * accepted, rather than the development default that is public in this
+ * repository.
  */
-export function assertInternalSecret(secret: string) {
+export function internalAuthSecret() {
     const expected = process.env.INTERNAL_AUTH_SECRET
-    if (!expected || secret !== expected) {
+    if (!expected) throw new Error("Unauthorized.")
+    return expected
+}
+
+export function assertInternalSecret(secret: string) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }

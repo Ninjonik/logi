@@ -580,6 +580,7 @@ export const deMessages = {
         openSettings: "Clan-Einstellungen offnen",
     },
     publicNavigation: {
+        menu: "Menü",
         wiki: "Wiki",
         discordSupport: "Discord-Support",
         restartTour: "Tour neu starten",
@@ -917,7 +918,8 @@ export const deMessages = {
         tableContext: "Kontext",
         noServerTitle: "Noch keine Clans",
         noServerDescription:
-            "Sobald ein Discord-Konto verbunden ist, erscheinen deine Clans hier.",
+            "Deine Clans erscheinen hier, sobald der Logi-Bot auf ihrem Discord-Server ist. Bitte den Admin deines Clans, ihn hinzuzufügen, oder richte ihn auf deinem eigenen Server ein.",
+        noServerSetupGuide: "So richtest du den Logi-Bot ein",
     },
     sidebar: {
         home: "Start",
@@ -1789,7 +1791,14 @@ export const deMessages = {
         discordId: "Discord-ID",
         avatar: "Avatar",
         preferredLanguage: "Bevorzugte Sprache",
-        english: "Englisch",
+        preferredLanguageHelp:
+            "Ändert die Sprache von Dashboard und Website auf diesem Gerät.",
+        profileSaved: "Profil gespeichert.",
+        matchRecapsSaved: "Einstellung für Spielzusammenfassungen gespeichert.",
+        erasureConfirmTitle: "Löschung des Kontos beantragen?",
+        erasureConfirmDescription:
+            "Das Logi-Team bearbeitet deine Anfrage. Danach werden dein Konto und die oben beschriebenen Daten gelöscht und können nicht wiederhergestellt werden.",
+        erasureConfirm: "Löschung beantragen",
         notLinked: "Nicht verknüpft",
         streamerMode: "Streamer-Modus",
         enabled: "Aktiviert",
@@ -2404,8 +2413,14 @@ export const deMessages = {
         backToOverview: "Alle Einstellungen",
         sectionNavLabel: "Bereiche der Einstellungen",
         openSection: "Öffnen",
-        clanWideFieldsNote:
-            "Zeitzone, Sprache sowie Fehler- und Kalenderkanal gelten für den ganzen Clan. Nur die Kanäle unten können für dieses Spiel abweichen.",
+        gameExceptionsNote:
+            "Diese Einstellungen gelten für den ganzen Clan. Braucht ein Spiel einen anderen Kanal, füge unter der Einstellung eine Ausnahme für dieses Spiel hinzu.",
+        gameExceptionAdd: "Für ein Spiel abweichend",
+        gameExceptionRemove: "Ausnahme für {game} entfernen",
+        gameExceptionPlaceholder: "Für {game} wählen",
+        statsServersPerGame: "Server für ein einzelnes Spiel",
+        statsServersPerGameHelp:
+            "Jedes Spiel liest die Server oben, außer es hat hier eine eigene Liste.",
         clanWideOnly: "Diese Einstellungen gelten für den ganzen Clan.",
         resyncHelp:
             "Ein Superadministrator kann den Dashboard-Zugriff anhand der aktuellen Mitglieder der Dashboard-Rolle neu laden.",

@@ -60,7 +60,9 @@ export function LocaleSwitcher({
                     <span className="text-base leading-none">
                         {active.flag}
                     </span>
-                    <span>{active.label}</span>
+                    <span className={cn(compact && "hidden sm:inline")}>
+                        {active.label}
+                    </span>
                     <ChevronDown className="text-muted-foreground size-3.5" />
                 </button>
             </DropdownMenuTrigger>

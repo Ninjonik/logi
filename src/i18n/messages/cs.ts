@@ -556,6 +556,7 @@ export const csMessages = {
         openSettings: "Otevrit nastaveni klanu",
     },
     publicNavigation: {
+        menu: "Menu",
         wiki: "Wiki",
         discordSupport: "Podpora na Discordu",
         restartTour: "Spustit průvodce znovu",
@@ -893,7 +894,8 @@ export const csMessages = {
         tableContext: "Kontext",
         noServerTitle: "Zatím žádné klany",
         noServerDescription:
-            "Jakmile propojíte Discord účet, vaše klany se zobrazí zde.",
+            "Vaše klany se tu zobrazí, jakmile bude bot Logi na jejich Discord serveru. Požádejte správce klanu o jeho přidání, nebo ho nastavte na vlastním serveru.",
+        noServerSetupGuide: "Jak nastavit bota Logi",
     },
     sidebar: {
         home: "Domů",
@@ -1721,7 +1723,14 @@ export const csMessages = {
         discordId: "Discord ID",
         avatar: "Avatar",
         preferredLanguage: "Preferovaný jazyk",
-        english: "Angličtina",
+        preferredLanguageHelp:
+            "Změní jazyk dashboardu a webu na tomto zařízení.",
+        profileSaved: "Profil byl uložen.",
+        matchRecapsSaved: "Nastavení rekapitulací zápasů bylo uloženo.",
+        erasureConfirmTitle: "Požádat o smazání účtu?",
+        erasureConfirmDescription:
+            "Žádost zpracuje tým Logi. Po zpracování se váš účet a výše popsané záznamy smažou a nepůjde je obnovit.",
+        erasureConfirm: "Požádat o smazání",
         notLinked: "Nepropojeno",
         streamerMode: "Streamerský režim",
         enabled: "Zapnuto",
@@ -2327,8 +2336,14 @@ export const csMessages = {
         backToOverview: "Všechna nastavení",
         sectionNavLabel: "Části nastavení",
         openSection: "Otevřít",
-        clanWideFieldsNote:
-            "Časové pásmo, jazyk a kanály pro chyby a kalendář platí pro celý klan. Pro tuto hru se mohou lišit jen kanály níže.",
+        gameExceptionsNote:
+            "Tato nastavení platí pro celý klan. Když jedna hra potřebuje jiný kanál, přidejte pod nastavením výjimku pro tuto hru.",
+        gameExceptionAdd: "Jinak pro hru",
+        gameExceptionRemove: "Odebrat výjimku pro {game}",
+        gameExceptionPlaceholder: "Vyberte pro {game}",
+        statsServersPerGame: "Servery pro jednu hru",
+        statsServersPerGameHelp:
+            "Každá hra čte servery výše, pokud tu nemá vlastní seznam.",
         clanWideOnly: "Tato nastavení platí pro celý klan.",
         resyncHelp:
             "Superadministrátor může znovu načíst přístup do správy podle aktuálních členů role pro správu.",

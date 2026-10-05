@@ -4,13 +4,11 @@ import { v } from "convex/values"
 
 import { calculateMatchRecapBaseline } from "../src/domain/match-results/match-recap-baseline"
 import { canReceiveMatchRecap } from "../src/domain/match-results/match-recap-notifications"
+import { internalAuthSecret } from "./discord_shared"
 import { getUserByIdentifier } from "./identity"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
+    if (secret !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 
 async function currentRecipient(ctx: QueryCtx, recap: Doc<"matchRecaps">) {

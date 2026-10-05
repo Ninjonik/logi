@@ -44,10 +44,13 @@ export function ThemeSwitcher() {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="outline"
+                    aria-label={activeOption.label}
                     className="h-8 rounded-lg px-2 text-xs font-medium"
                 >
-                    <ActiveIcon className="mr-1.5 size-3.5" />
-                    <span>{activeOption.label}</span>
+                    <ActiveIcon className="size-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">
+                        {activeOption.label}
+                    </span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">

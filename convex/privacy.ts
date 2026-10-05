@@ -1,9 +1,7 @@
 import { publicPlatformLink } from "./platformIdentityStore"
 import { mutation, query } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
-
-const internalSecret =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 
 export const request = mutation({
     args: {
@@ -14,7 +12,8 @@ export const request = mutation({
         type: v.union(v.literal("export"), v.literal("erasure")),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== internalSecret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         const existing = await ctx.db
             .query("privacyRequests")
             .withIndex("userId", (q) => q.eq("userId", args.userId))
@@ -39,7 +38,8 @@ export const request = mutation({
 export const exportForUser = query({
     args: { secret: v.string(), userId: v.string() },
     handler: async (ctx, args) => {
-        if (args.secret !== internalSecret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         const user = (await ctx.db.query("users").collect()).find(
             (candidate) =>
                 candidate.id === args.userId ||

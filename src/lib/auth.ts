@@ -296,8 +296,9 @@ export async function clearPlatformIdsForCurrentPlayer() {
     })
 }
 
+/** Omitted fields keep their stored values; empty platform IDs clear them. */
 export async function updateCurrentPlayerProfile(input: {
-    avatar: string
+    avatar?: string
     platformIds?: string | string[]
     matchRecapNotificationsEnabled?: boolean
     defaultWorkspaceId?: string
@@ -307,12 +308,14 @@ export async function updateCurrentPlayerProfile(input: {
         throw new Error("You must be signed in.")
     }
 
-    await fetchMutation(syncDiscordProfileReference, {
-        secret: getInternalAuthSecret(),
-        id: session.sub,
-        name: session.name,
-        avatar: input.avatar,
-    })
+    if (input.avatar !== undefined) {
+        await fetchMutation(syncDiscordProfileReference, {
+            secret: getInternalAuthSecret(),
+            id: session.sub,
+            name: session.name,
+            avatar: input.avatar,
+        })
+    }
 
     if (input.matchRecapNotificationsEnabled !== undefined) {
         await fetchMutation(setMatchRecapNotificationsReference, {
@@ -329,6 +332,8 @@ export async function updateCurrentPlayerProfile(input: {
             workspaceId: input.defaultWorkspaceId || undefined,
         })
     }
+
+    if (input.platformIds === undefined) return session.sub
 
     const normalizedPlatformIds = parsePlatformIdsInput(input.platformIds)
     if (normalizedPlatformIds.length > 0) {

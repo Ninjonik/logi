@@ -560,6 +560,7 @@ export const enMessages = {
         openSettings: "Open clan settings",
     },
     publicNavigation: {
+        menu: "Menu",
         wiki: "Wiki",
         discordSupport: "Discord support server",
         restartTour: "Restart tour",
@@ -896,7 +897,8 @@ export const enMessages = {
         tableContext: "Context",
         noServerTitle: "No clans yet",
         noServerDescription:
-            "Once a Discord account is connected, your clans will appear here.",
+            "Your clans appear here once the Logi bot is on their Discord server. Ask your clan's admin to add it, or set it up on your own server.",
+        noServerSetupGuide: "How to set up the Logi bot",
     },
     sidebar: {
         home: "Home",
@@ -1724,7 +1726,14 @@ export const enMessages = {
         discordId: "Discord ID",
         avatar: "Avatar",
         preferredLanguage: "Preferred language",
-        english: "English",
+        preferredLanguageHelp:
+            "Changes the language of the dashboard and website on this device.",
+        profileSaved: "Profile saved.",
+        matchRecapsSaved: "Match recap setting saved.",
+        erasureConfirmTitle: "Request account erasure?",
+        erasureConfirmDescription:
+            "The Logi team will process your request. Once processed, your account and the records described above are removed and cannot be restored.",
+        erasureConfirm: "Request erasure",
         notLinked: "Not linked",
         streamerMode: "Streamer mode",
         enabled: "Enabled",
@@ -2330,8 +2339,14 @@ export const enMessages = {
         backToOverview: "All settings",
         sectionNavLabel: "Settings sections",
         openSection: "Open",
-        clanWideFieldsNote:
-            "Time zone, language and the error and calendar channels apply to the whole clan. Only the channels below can differ for this game.",
+        gameExceptionsNote:
+            "These settings apply to the whole clan. Where one game needs a different channel, add an exception for that game under the setting.",
+        gameExceptionAdd: "Different for a game",
+        gameExceptionRemove: "Remove the {game} exception",
+        gameExceptionPlaceholder: "Choose for {game}",
+        statsServersPerGame: "Servers for a single game",
+        statsServersPerGameHelp:
+            "Every game reads the servers above unless it has its own list here.",
         clanWideOnly: "These settings apply to the whole clan.",
         resyncHelp:
             "A super administrator can reload dashboard access from the current members of the dashboard role.",

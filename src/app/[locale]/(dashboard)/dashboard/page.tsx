@@ -1,6 +1,7 @@
+import { Bot, BookOpen } from "lucide-react"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
-import { Bot } from "lucide-react"
+import Link from "next/link"
 
 import {
     getCurrentPlayer,
@@ -12,9 +13,11 @@ import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-butt
 import { BotInviteButton } from "@/components/app/bot-invite-button"
 import { ServerCard } from "@/components/app/server-card"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { buildDiscordBotInviteUrl } from "@/lib/discord"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
 function requiresBotRoleHierarchySetup(
@@ -104,6 +107,24 @@ export default async function DashboardHomePage({
                 description={dictionary.dashboard.description}
             />
             <div className="space-y-8 px-4 lg:px-6">
+                {!managedServers.length && !mercenaryServers.length ? (
+                    <EmptyState
+                        title={dictionary.dashboard.noServerTitle}
+                        description={dictionary.dashboard.noServerDescription}
+                        actions={
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <Link href="/wiki/discord-bot-setup">
+                                    <BookOpen className="size-4" />
+                                    {dictionary.dashboard.noServerSetupGuide}
+                                </Link>
+                            </Button>
+                        }
+                    />
+                ) : null}
                 {managedServers.length ? (
                     <section className="space-y-4">
                         <div className="border-border/60 bg-card/50 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">

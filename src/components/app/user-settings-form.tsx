@@ -31,6 +31,9 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
+import type { UserSettingsPatch } from "@/lib/validation/user-settings"
+import { LocaleSwitcher } from "@/components/app/locale-switcher"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { formatPlatformIds } from "@/lib/platform-ids"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -73,29 +76,47 @@ export function UserSettingsForm({
     const [defaultWorkspaceId, setDefaultWorkspaceId] = useState(
         user.defaultWorkspaceId ?? "automatic"
     )
+    const [isSavingMatchRecaps, setIsSavingMatchRecaps] = useState(false)
 
-    async function handleSave() {
+    /** Saves only the given settings; the API keeps every omitted one. */
+    async function saveSettings(patch: UserSettingsPatch) {
         const response = await fetch("/api/user/settings", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-                avatar,
-                platformIds,
-                matchRecapNotificationsEnabled,
-                defaultWorkspaceId:
-                    defaultWorkspaceId === "automatic"
-                        ? ""
-                        : defaultWorkspaceId,
-            }),
+            body: JSON.stringify(patch),
         })
-        const body = await response.json()
-        if (!response.ok) {
-            toast.error(body.error ?? dictionary.common.error)
-            return
-        }
+        if (response.ok) return true
+        const body = await response.json().catch(() => null)
+        toast.error(body?.error ?? dictionary.common.error)
+        return false
+    }
 
-        toast.success(dictionary.common.save)
+    async function handleSave() {
+        const saved = await saveSettings({
+            avatar,
+            platformIds,
+            defaultWorkspaceId:
+                defaultWorkspaceId === "automatic" ? "" : defaultWorkspaceId,
+        })
+        if (!saved) return
+        toast.success(dictionary.userSettings.profileSaved)
         startTransition(() => router.refresh())
+    }
+
+    async function handleMatchRecapsChange(enabled: boolean) {
+        setMatchRecapNotificationsEnabled(enabled)
+        setIsSavingMatchRecaps(true)
+        try {
+            if (
+                await saveSettings({ matchRecapNotificationsEnabled: enabled })
+            ) {
+                toast.success(dictionary.userSettings.matchRecapsSaved)
+                return
+            }
+            setMatchRecapNotificationsEnabled(!enabled)
+        } finally {
+            setIsSavingMatchRecaps(false)
+        }
     }
 
     async function requestPrivacy(type: "export" | "erasure") {
@@ -121,9 +142,9 @@ export function UserSettingsForm({
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ type }),
         })
-        const body = await response.json()
         if (!response.ok) {
-            toast.error(body.error ?? dictionary.common.error)
+            const body = await response.json().catch(() => null)
+            toast.error(body?.error ?? dictionary.common.error)
             return
         }
         toast.success(dictionary.userSettings.requestSubmitted)
@@ -154,10 +175,18 @@ export function UserSettingsForm({
                         label={dictionary.userSettings.discordId}
                         value={user.discordId}
                     />
-                    <Field
-                        label={dictionary.userSettings.preferredLanguage}
-                        value={dictionary.userSettings.english}
-                    />
+                    <div>
+                        <div className="mb-2 text-sm font-medium">
+                            {dictionary.userSettings.preferredLanguage}
+                        </div>
+                        <LocaleSwitcher
+                            locale={locale}
+                            dictionary={dictionary}
+                        />
+                        <p className="text-muted-foreground mt-2 text-sm">
+                            {dictionary.userSettings.preferredLanguageHelp}
+                        </p>
+                    </div>
                     <Field
                         label={dictionary.userSettings.streamerMode}
                         value={
@@ -310,8 +339,8 @@ export function UserSettingsForm({
                         </div>
                         <Switch
                             checked={matchRecapNotificationsEnabled}
-                            onCheckedChange={setMatchRecapNotificationsEnabled}
-                            disabled={isPending}
+                            onCheckedChange={handleMatchRecapsChange}
+                            disabled={isPending || isSavingMatchRecaps}
                             aria-label={
                                 dictionary.userSettings.matchRecapsEnabled
                             }
@@ -378,14 +407,27 @@ export function UserSettingsForm({
                                 <p>{dictionary.userSettings.erasureWarning}</p>
                             </div>
                         </div>
-                        <Button
-                            variant="destructive"
-                            className="w-full rounded-xl"
-                            disabled={isPending}
-                            onClick={() => requestPrivacy("erasure")}
-                        >
-                            {dictionary.userSettings.requestErasure}
-                        </Button>
+                        <ConfirmActionDialog
+                            trigger={
+                                <Button
+                                    variant="destructive"
+                                    className="w-full rounded-xl"
+                                    disabled={isPending}
+                                >
+                                    {dictionary.userSettings.requestErasure}
+                                </Button>
+                            }
+                            title={dictionary.userSettings.erasureConfirmTitle}
+                            description={
+                                dictionary.userSettings
+                                    .erasureConfirmDescription
+                            }
+                            confirmLabel={
+                                dictionary.userSettings.erasureConfirm
+                            }
+                            cancelLabel={dictionary.common.cancel}
+                            onConfirm={() => requestPrivacy("erasure")}
+                        />
                     </CardContent>
                 </Card>
             </div>

@@ -7,8 +7,7 @@ import { systemClock } from "../src/domain/shared/clock";
 import { handleEnableGame } from "../src/infrastructure/convex/guild-game-handlers";
 import { ConvexGuildGameRepository } from "../src/infrastructure/convex/guild-game-repository";
 import { getGuildById, getGuildDiscordId } from "./identity";
-
-const INTERNAL_AUTH_SECRET = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret";
+import { internalAuthSecret } from "./discord_shared";
 
 export const enable = mutation({
   args: {
@@ -18,7 +17,7 @@ export const enable = mutation({
   },
   handler: async (ctx, args) => await handleEnableGame({
     secret: args.secret,
-    expectedSecret: INTERNAL_AUTH_SECRET,
+    expectedSecret: internalAuthSecret(),
     args: {
       secret: args.secret,
       serverId: String(args.serverId),
