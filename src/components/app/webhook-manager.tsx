@@ -1,7 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Webhook } from "lucide-react"
 
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
+import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,6 +44,7 @@ export function WebhookManager({
     dictionary: Dictionary
 }) {
     const labels = dictionary.clan.webhookUi
+    const copy = dictionary.integrationSettings.webhooks
     const [hooks, setHooks] = useState<Hook[]>([])
     const [url, setUrl] = useState("")
     const [secret, setSecret] = useState<string | null>(null)
@@ -54,14 +58,10 @@ export function WebhookManager({
         setLoading(true)
         try {
             const response = await fetch(`/api/servers/${serverId}/webhooks`)
-            if (!response.ok) throw new Error("Unable to load webhooks.")
+            if (!response.ok) throw new Error(copy.loadFailed)
             setHooks((await response.json()).data)
-        } catch (value) {
-            setError(
-                value instanceof Error
-                    ? value.message
-                    : "Unable to load webhooks."
-            )
+        } catch {
+            setError(copy.loadFailed)
         } finally {
             setLoading(false)
         }
@@ -76,9 +76,9 @@ export function WebhookManager({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url, eventTypes }),
         })
-        const payload = await response.json()
+        const payload = await response.json().catch(() => null)
         if (!response.ok) {
-            setError(payload.error ?? "Unable to create webhook.")
+            setError(payload?.error ?? copy.createFailed)
             return
         }
         setSecret(payload.signingSecret)
@@ -90,16 +90,22 @@ export function WebhookManager({
         method: "PATCH" | "POST" | "DELETE",
         body?: object
     ) => {
-        await fetch(`/api/servers/${serverId}/webhooks/${hook.id}`, {
-            method,
-            ...(body
-                ? {
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(body),
-                  }
-                : {}),
-        })
+        setError(null)
+        const response = await fetch(
+            `/api/servers/${serverId}/webhooks/${hook.id}`,
+            {
+                method,
+                ...(body
+                    ? {
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(body),
+                      }
+                    : {}),
+            }
+        ).catch(() => null)
+        if (!response?.ok) setError(copy.actionFailed)
         await load()
+        return Boolean(response?.ok)
     }
     const rotate = async (hook: Hook) => {
         setError(null)
@@ -111,9 +117,9 @@ export function WebhookManager({
                 body: JSON.stringify({ rotateSecret: true }),
             }
         )
-        const payload = await response.json()
+        const payload = await response.json().catch(() => null)
         if (!response.ok) {
-            setError(payload.error ?? "Unable to rotate the signing secret.")
+            setError(payload?.error ?? copy.rotateFailed)
             return
         }
         setSecret(payload.signingSecret)
@@ -123,9 +129,9 @@ export function WebhookManager({
         const response = await fetch(
             `/api/servers/${serverId}/webhooks/${hook.id}/deliveries`
         )
-        const payload = await response.json()
+        const payload = await response.json().catch(() => null)
         if (!response.ok) {
-            setError(payload.error ?? "Unable to load delivery history.")
+            setError(payload?.error ?? copy.historyFailed)
             return
         }
         setHistory({ webhookId: hook.id, deliveries: payload.data })
@@ -159,12 +165,19 @@ export function WebhookManager({
                     {labels.loading}
                 </p>
             ) : null}
+            {!loading && !error && hooks.length === 0 ? (
+                <EmptyState
+                    icon={Webhook}
+                    title={copy.emptyTitle}
+                    description={copy.emptyDescription}
+                />
+            ) : null}
             {hooks.map((hook) => (
                 <div
                     key={hook.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm"
                 >
-                    <div>
+                    <div className="min-w-0">
                         <p className="font-medium break-all">{hook.url}</p>
                         <p className="text-muted-foreground">
                             {hook.enabled ? labels.enabled : labels.disabled} ·{" "}
@@ -177,7 +190,7 @@ export function WebhookManager({
                             {hook.lastFailureAt ?? labels.never}
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button
                             variant="outline"
                             size="sm"
@@ -210,13 +223,21 @@ export function WebhookManager({
                         >
                             {labels.history}
                         </Button>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => void send(hook, "DELETE")}
-                        >
-                            {labels.delete}
-                        </Button>
+                        <ConfirmActionDialog
+                            trigger={
+                                <Button variant="destructive" size="sm">
+                                    {labels.delete}
+                                </Button>
+                            }
+                            title={copy.deleteTitle}
+                            description={copy.deleteDescription.replace(
+                                "{url}",
+                                hook.url
+                            )}
+                            confirmLabel={copy.deleteConfirm}
+                            cancelLabel={dictionary.integrationSettings.cancel}
+                            onConfirm={() => send(hook, "DELETE")}
+                        />
                     </div>
                 </div>
             ))}

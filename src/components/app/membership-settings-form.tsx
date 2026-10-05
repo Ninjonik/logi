@@ -218,15 +218,19 @@ export function MembershipSettingsForm({
         missingMembershipParts.push(
             dictionary.membershipSettings.categoriesTitle
         )
-    const memberCategoriesMissingRecruitRole = settings.categories.filter(
-        (category) =>
-            (category.assignmentType === "member" ||
-                category.assignmentType === "reserve_member") &&
-            category.recruitRoleIds.length === 0
-    ).length
-    const categoriesMissingFinalRole = settings.categories.filter(
-        (category) => category.finalRoleIds.length === 0
-    ).length
+    const categoryName = (category: MembershipCategory) =>
+        category.label?.trim() || category.id
+    const categoriesMissingRecruitRole = settings.categories
+        .filter(
+            (category) =>
+                (category.assignmentType === "member" ||
+                    category.assignmentType === "reserve_member") &&
+                category.recruitRoleIds.length === 0
+        )
+        .map(categoryName)
+    const categoriesMissingFinalRole = settings.categories
+        .filter((category) => category.finalRoleIds.length === 0)
+        .map(categoryName)
 
     function patchSettings(patch: Partial<MembershipSettings>) {
         setSettings((current) => ({ ...current, ...patch }))
@@ -364,59 +368,25 @@ export function MembershipSettingsForm({
                 </ConfigNotice>
                 {settings.enabled &&
                 (!config?.clanRoleId ||
-                    memberCategoriesMissingRecruitRole > 0 ||
-                    categoriesMissingFinalRole > 0) ? (
+                    categoriesMissingRecruitRole.length > 0 ||
+                    categoriesMissingFinalRole.length > 0) ? (
                     <ConfigNotice
                         title={dictionary.membershipSettings.rolesMissingTitle}
                     >
                         {!config?.clanRoleId
                             ? dictionary.membershipSettings.rolesMissingClanRole
                             : ""}
-                        {memberCategoriesMissingRecruitRole > 0
-                            ? dictionary.membershipSettings.rolesMissingRecruitRole
-                                  .replace(
-                                      "{count}",
-                                      String(memberCategoriesMissingRecruitRole)
-                                  )
-                                  .replace(
-                                      "{noun}",
-                                      memberCategoriesMissingRecruitRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleCategory
-                                          : dictionary.membershipSettings
-                                                .multipleCategories
-                                  )
-                                  .replace(
-                                      "{verb}",
-                                      memberCategoriesMissingRecruitRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleIs
-                                          : dictionary.membershipSettings
-                                                .pluralAre
-                                  )
+                        {categoriesMissingRecruitRole.length
+                            ? dictionary.membershipSettings.rolesMissingRecruitRole.replace(
+                                  "{categories}",
+                                  categoriesMissingRecruitRole.join(", ")
+                              )
                             : ""}
-                        {categoriesMissingFinalRole > 0
-                            ? dictionary.membershipSettings.rolesMissingFinalRole
-                                  .replace(
-                                      "{count}",
-                                      String(categoriesMissingFinalRole)
-                                  )
-                                  .replace(
-                                      "{noun}",
-                                      categoriesMissingFinalRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleCategory
-                                          : dictionary.membershipSettings
-                                                .multipleCategories
-                                  )
-                                  .replace(
-                                      "{verb}",
-                                      categoriesMissingFinalRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleIs
-                                          : dictionary.membershipSettings
-                                                .pluralAre
-                                  )
+                        {categoriesMissingFinalRole.length
+                            ? dictionary.membershipSettings.rolesMissingFinalRole.replace(
+                                  "{categories}",
+                                  categoriesMissingFinalRole.join(", ")
+                              )
                             : ""}
                         {dictionary.membershipSettings.rolesMissingSummary}
                     </ConfigNotice>

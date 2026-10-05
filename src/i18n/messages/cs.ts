@@ -288,9 +288,12 @@ export const csMessages = {
                 remove: "Odebrat server",
             },
             confirm: {
+                removeKeyTitle: "Odebrat klíč pro {name}?",
+                removeTitle: "Odebrat {name}?",
+                cancel: "Zpět",
                 removeKey:
-                    "Odebrat uložený klíč pro {name}? Sběr, který klíč potřebuje, se zastaví.",
-                remove: "Odebrat {name}? Sběr se zastaví a uložený klíč se smaže. Nasbíraná historie zůstane.",
+                    "Sběr, který klíč potřebuje, se zastaví, dokud nezadáte nový klíč.",
+                remove: "Sběr se zastaví a uložený klíč se smaže. Nasbíraná historie zůstane.",
             },
             key: {
                 set: "Klíč uložen šifrovaně",
@@ -430,6 +433,13 @@ export const csMessages = {
         },
     },
     apiKeys: {
+        revokeTitle: "Zrušit klíč {name}?",
+        revokeDescription:
+            "Vše, co klíč používá, třeba váš web, hned přestane dostávat data z Logi. Nejde to vrátit; přístup obnoví jen nový klíč.",
+        revokeConfirm: "Zrušit klíč",
+        emptyTitle: "Zatím žádný API klíč",
+        emptyDescription:
+            "Vytvořte klíč pro server svého webu. Vyberte jen data a hry, které potřebuje.",
         description:
             "Vytvořte klíč pro integraci a uchovávejte ho na svém serveru. Vyberte jen potřebná data a hry.",
         name: "Název klíče",
@@ -1870,6 +1880,124 @@ export const csMessages = {
         accessBackend:
             "Pozdější backendové úpravy propojí tato pravidla s rolemi na Discordu a Convex dotazy.",
     },
+    integrationSettings: {
+        cancel: "Zpět",
+        web: {
+            stepKey: "API klíč pro web",
+            stepLogin: "Přihlášení přes Logi",
+            stepMembers: "Co smí web dělat za členy",
+            newKey: "Nový klíč",
+            closeForm: "Zavřít",
+            keyShownOnce:
+                "Klíč se ukáže jen jednou, hned po vytvoření. Uložte ho na server svého webu.",
+            loginPage: "Přihlašovací stránka klanu",
+            ssoApps: "Aplikace pro jednotné přihlášení",
+            addApplication: "Přidat aplikaci",
+            membersTitle: "Zjistit, kdo je člen",
+            membersHelp:
+                "Přes klíč jen pro čtení s přístupem k členství v Discordu. Web uvidí jen členy s jednou z vybraných rolí.",
+            eventsTitle: "Zakládat a upravovat akce",
+            eventsHelp:
+                "Přes aplikaci pro jednotné přihlášení a její klíč. Jen lidé s jednou z vybraných rolí.",
+            footer: "Klíče a aplikace se ukládají hned. Role se uloží tlačítkem u každého klíče.",
+            rolesPlaceholder: "Vyberte role",
+            rolesUnavailable:
+                "Role z Discordu se nenačetly. Zkuste stránku obnovit.",
+        },
+        sso: {
+            emptyTitle: "Zatím žádná přihlašovací aplikace",
+            emptyDescription:
+                "Přidejte svůj web jako aplikaci a členové se na něj budou moct přihlásit účtem Discordu přes Logi.",
+            redirects: "Adresy pro návrat po přihlášení: {count}",
+            clientId: "Client ID",
+            removeTitle: "Odebrat {name}?",
+            removeDescription:
+                "Členové se na {website} přes Logi už nepřihlásí. Client ID a tajný klíč aplikace přestanou platit a zastaví se i akce, které přes ni web zakládá. Nejde to vrátit.",
+            removeConfirm: "Odebrat aplikaci",
+        },
+        webhooks: {
+            emptyTitle: "Zatím žádný webhook",
+            emptyDescription:
+                "Zadejte HTTPS adresu a Logi na ni bude posílat změny akcí, soupisek, článků a nastavení, podepsané tajným klíčem.",
+            deleteTitle: "Smazat tento webhook?",
+            deleteDescription:
+                "Logi hned přestane posílat změny na {url} a jeho podpisový klíč přestane platit. Nejde to vrátit.",
+            deleteConfirm: "Smazat webhook",
+            loadFailed:
+                "Webhooky se nenačetly. Obnovte stránku a zkuste to znovu.",
+            createFailed:
+                "Webhook se nepovedlo vytvořit. Zkontrolujte adresu a zkuste to znovu.",
+            actionFailed: "Změna se neuložila. Zkuste to znovu.",
+            rotateFailed: "Podpisový klíč se nepovedlo vyměnit.",
+            historyFailed: "Historie doručení se nenačetla.",
+        },
+        calendar: {
+            emptyTitle: "Zatím žádný odkaz na kalendář",
+            emptyDescription:
+                "Vytvořte soukromý odkaz a přidejte ho do Kalendáře Google nebo jiné aplikace. Kdo má odkaz, uvidí akce klanu.",
+            rotateTitle: "Vytvořit nový odkaz na kalendář?",
+            rotateDescription:
+                "Současný odkaz přestane fungovat. Každý, kdo ho odebírá, si musí přidat nový odkaz.",
+            rotateConfirm: "Vytvořit nový odkaz",
+        },
+        league: {
+            title: "Sledování Wardogs League",
+            cadence:
+                "Nové zápasy kontrolujeme po {scan} minutách, sledované detaily po {refresh} minutách. Web i Discord používají stejný záznam.",
+            enable: "Sledovat zápasy a posílat karty do Discordu",
+            teamCodes: "Kódy sledovaných týmů (oddělené čárkou)",
+            scanEvery: "Hledat nové zápasy každých",
+            refreshEvery: "Obnovovat sledované detaily každých",
+            minutes: "{minutes} minut",
+            scanNote:
+                "Společné procházení seznamu běží v nejkratším intervalu, který si některý zapnutý klan přeje; tento klan převezme nový seznam až po uplynutí vlastního intervalu. Omezení zdroje může intervaly prodloužit.",
+            intakeChannel: "Kanál, kam lidé posílají odkazy",
+            intakePlaceholder: "Vyberte kanál pro odkazy",
+            outputChannel: "Kanál pro karty zápasů",
+            outputPlaceholder: "Vyberte kanál pro karty",
+            intakeNote:
+                "Zprávy botů ignorujeme. Automatické čtení zpráv lidí musí provozovatel bota zapnout (Message Content). Procházení seznamu a ruční přidání fungují i bez toho.",
+            save: "Uložit nastavení",
+            saved: "Uloženo.",
+            saveFailed:
+                "Uložení selhalo. Ověřte oprávnění, odkaz a nastavení kanálů.",
+            loadFailed: "Nastavení sledování se nenačetlo.",
+            lastScan: "Poslední úspěšné procházení",
+            nextScan: "Další procházení",
+            incomplete: "Seznam není úplný; chybějící zápas přidejte ručně.",
+            queueFull:
+                "Fronta automaticky nalezených zápasů je plná. Existující zápasy se dál obnovují; zbývající místa jsou vyhrazená ručnímu přidání.",
+            sourceError:
+                "Zdroj je nedostupný. Zachováváme poslední platná data.",
+            addByUrl: "Přidat zápas podle odkazu z League",
+            preview: "Načíst náhled",
+            previewFailed: "Náhled není dostupný. Zkontrolujte odkaz.",
+            track: "Přidat do sledování",
+            createNative: "Založit vlastní zápas v Logim",
+            states: {
+                pending: "Čeká na načtení",
+                tracked: "Sledováno",
+                paused: "Pozastaveno",
+                ignored: "Ignorováno",
+                archived: "Archiv",
+                unmatched: "Mimo filtr",
+            },
+            refreshOnce: "Znovu načíst",
+            resume: "Obnovit",
+            pause: "Pozastavit",
+            ignore: "Ignorovat",
+            staleData: "Starší data, naposledy načteno {time}",
+            linkedEvent: "Zápas v Logim k tomuto utkání",
+            notLinked: "Nepropojeno",
+            unknownEvent: "Propojený zápas, který už v seznamu není",
+            noEvents:
+                "V Logim zatím není žádný zápas Wardogs. Založte ho a pak ho tu propojte.",
+            saveLink: "Uložit propojení",
+            emptyTitle: "Zatím žádný sledovaný zápas",
+            emptyDescription:
+                "Zápasy sledovaných týmů se tu objeví po dalším procházení. Zápas můžete přidat i odkazem výše.",
+        },
+    },
     ticketSettings: {
         title: "Nastavení ticketů",
         pageDescription:
@@ -2042,14 +2170,10 @@ export const csMessages = {
         rosterScoreExcusedAbsence: "Zareagoval, chyběl, ale měl notice",
         rolesMissingTitle: "Některé membership role nejsou nastavené",
         rolesMissingClanRole: "Základní klanová role není nastavená. ",
-        rolesMissingRecruitRole: "{count} {noun} {verb} bez recruit role. ",
-        rolesMissingFinalRole: "{count} {noun} {verb} bez finální role. ",
+        rolesMissingRecruitRole: "Chybí role rekruta: {categories}. ",
+        rolesMissingFinalRole: "Chybí konečná role: {categories}. ",
         rolesMissingSummary:
             "V takových případech bude Logi stav přihlášky dál sledovat, ale změny Discord rolí budou částečné nebo se přeskočí.",
-        singleCategory: "kategorie",
-        multipleCategories: "kategorií",
-        singleIs: "chybí",
-        pluralAre: "chybí",
         save: "Uložit nastavení členství",
         saved: "Nastavení členství bylo uloženo.",
         saveError: "Nastavení členství se nepodařilo uložit.",

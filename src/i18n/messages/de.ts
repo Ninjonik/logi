@@ -298,9 +298,12 @@ export const deMessages = {
                 remove: "Server entfernen",
             },
             confirm: {
+                removeKeyTitle: "Schlüssel für {name} entfernen?",
+                removeTitle: "{name} entfernen?",
+                cancel: "Abbrechen",
                 removeKey:
-                    "Den gespeicherten Schlüssel für {name} entfernen? Sammeln, das den Schlüssel braucht, stoppt.",
-                remove: "{name} entfernen? Das Sammeln stoppt und der gespeicherte Schlüssel wird gelöscht. Gesammelter Verlauf bleibt erhalten.",
+                    "Sammeln, das den Schlüssel braucht, stoppt, bis ein neuer Schlüssel eingegeben wird.",
+                remove: "Das Sammeln stoppt und der gespeicherte Schlüssel wird gelöscht. Gesammelter Verlauf bleibt erhalten.",
             },
             key: {
                 set: "Schlüssel verschlüsselt gespeichert",
@@ -448,6 +451,13 @@ export const deMessages = {
         },
     },
     apiKeys: {
+        revokeTitle: "Schlüssel {name} widerrufen?",
+        revokeDescription:
+            "Alles, was diesen Schlüssel nutzt, etwa deine Website, bekommt sofort keine Daten mehr von Logi. Das lässt sich nicht rückgängig machen; für neuen Zugriff erstellst du einen neuen Schlüssel.",
+        revokeConfirm: "Schlüssel widerrufen",
+        emptyTitle: "Noch kein API-Schlüssel",
+        emptyDescription:
+            "Erstelle einen Schlüssel für den Server deiner Website. Wähle nur die Daten und Spiele, die sie braucht.",
         description:
             "Erstelle einen Integrationsschlüssel und bewahre ihn auf deinem Server auf. Wähle nur die benötigten Daten und Spiele.",
         name: "Schlüsselname",
@@ -1939,6 +1949,127 @@ export const deMessages = {
         accessBackend:
             "Spätere Backend-Arbeit kann diese Regeln mit Discord-Rollen und Convex-Queries verbinden.",
     },
+    integrationSettings: {
+        cancel: "Abbrechen",
+        web: {
+            stepKey: "API-Schlüssel für die Website",
+            stepLogin: "Anmelden mit Logi",
+            stepMembers: "Was die Website für Mitglieder tun darf",
+            newKey: "Neuer Schlüssel",
+            closeForm: "Schließen",
+            keyShownOnce:
+                "Ein Schlüssel wird nur einmal angezeigt, direkt nach dem Erstellen. Bewahre ihn auf dem Server deiner Website auf.",
+            loginPage: "Anmeldeseite des Clans",
+            ssoApps: "Anwendungen für Single Sign-on",
+            addApplication: "Anwendung hinzufügen",
+            membersTitle: "Herausfinden, wer Mitglied ist",
+            membersHelp:
+                "Über einen Nur-Lese-Schlüssel mit Zugriff auf die Discord-Mitgliedschaft. Die Website sieht nur Mitglieder mit einer der gewählten Rollen.",
+            eventsTitle: "Events anlegen und bearbeiten",
+            eventsHelp:
+                "Über eine Single-Sign-on-Anwendung und ihren Schlüssel. Nur Personen mit einer der gewählten Rollen.",
+            footer: "Schlüssel und Anwendungen werden sofort gespeichert. Rollen speicherst du mit dem Button des jeweiligen Schlüssels.",
+            rolesPlaceholder: "Rollen wählen",
+            rolesUnavailable:
+                "Die Discord-Rollen konnten nicht geladen werden. Lade die Seite neu.",
+        },
+        sso: {
+            emptyTitle: "Noch keine Anmelde-Anwendung",
+            emptyDescription:
+                "Füge deine Website als Anwendung hinzu, damit sich Mitglieder dort über Logi mit ihrem Discord-Konto anmelden können.",
+            redirects: "Rücksprungadressen nach der Anmeldung: {count}",
+            clientId: "Client-ID",
+            removeTitle: "{name} entfernen?",
+            removeDescription:
+                "Mitglieder können sich auf {website} nicht mehr mit Logi anmelden. Client-ID und Secret der Anwendung werden ungültig, und Event-Befehle der Website über diese Anwendung funktionieren nicht mehr. Das lässt sich nicht rückgängig machen.",
+            removeConfirm: "Anwendung entfernen",
+        },
+        webhooks: {
+            emptyTitle: "Noch keine Webhooks",
+            emptyDescription:
+                "Gib eine HTTPS-Adresse an, und Logi sendet Änderungen an Events, Aufstellungen, Artikeln und Einstellungen dorthin, signiert mit einem Secret.",
+            deleteTitle: "Diesen Webhook löschen?",
+            deleteDescription:
+                "Logi sendet sofort keine Änderungen mehr an {url}, und das Signatur-Secret wird ungültig. Das lässt sich nicht rückgängig machen.",
+            deleteConfirm: "Webhook löschen",
+            loadFailed:
+                "Webhooks konnten nicht geladen werden. Lade neu und versuche es erneut.",
+            createFailed:
+                "Der Webhook konnte nicht erstellt werden. Prüfe die Adresse und versuche es erneut.",
+            actionFailed:
+                "Die Änderung wurde nicht gespeichert. Versuche es erneut.",
+            rotateFailed: "Das Signatur-Secret konnte nicht erneuert werden.",
+            historyFailed: "Der Zustellverlauf konnte nicht geladen werden.",
+        },
+        calendar: {
+            emptyTitle: "Noch kein Kalenderlink",
+            emptyDescription:
+                "Erstelle einen privaten Link und füge ihn in Google Kalender oder einer anderen Kalender-App hinzu. Wer den Link hat, sieht die Events des Clans.",
+            rotateTitle: "Neuen Kalenderlink erstellen?",
+            rotateDescription:
+                "Der aktuelle Link funktioniert dann nicht mehr. Alle, die ihn abonniert haben, müssen den neuen Link hinzufügen.",
+            rotateConfirm: "Neuen Link erstellen",
+        },
+        league: {
+            title: "Wardogs League verfolgen",
+            cadence:
+                "Neue Spiele werden alle {scan} Minuten gesucht, verfolgte Details alle {refresh} Minuten aktualisiert. Website und Discord nutzen denselben Eintrag.",
+            enable: "Spiele verfolgen und Discord-Karten posten",
+            teamCodes: "Kürzel der verfolgten Teams (durch Komma getrennt)",
+            scanEvery: "Neue Spiele suchen alle",
+            refreshEvery: "Verfolgte Details aktualisieren alle",
+            minutes: "{minutes} Minuten",
+            scanNote:
+                "Der gemeinsame Index-Scan läuft im kürzesten Intervall, das ein aktivierter Clan wünscht; dieser Clan übernimmt einen neuen Index erst nach seinem eigenen Intervall. Begrenzungen der Quelle können die Intervalle verlängern.",
+            intakeChannel: "Kanal, in dem Leute Links posten",
+            intakePlaceholder: "Kanal für Links wählen",
+            outputChannel: "Kanal für Spielkarten",
+            outputPlaceholder: "Kanal für Karten wählen",
+            intakeNote:
+                "Nachrichten von Bots werden ignoriert. Damit Nachrichten von Leuten automatisch gelesen werden, muss der Betreiber des Bots Message Content aktivieren. Scan und manuelles Hinzufügen funktionieren auch ohne.",
+            save: "Einstellungen speichern",
+            saved: "Gespeichert.",
+            saveFailed:
+                "Speichern fehlgeschlagen. Prüfe Berechtigungen, Link und Kanaleinstellungen.",
+            loadFailed:
+                "Die Einstellungen zum Verfolgen konnten nicht geladen werden.",
+            lastScan: "Letzter erfolgreicher Scan",
+            nextScan: "Nächster Scan",
+            incomplete:
+                "Die Liste ist unvollständig; füge ein fehlendes Spiel manuell hinzu.",
+            queueFull:
+                "Die automatische Suche ist voll. Bestehende Spiele werden weiter aktualisiert; die restlichen Plätze bleiben für manuelles Hinzufügen frei.",
+            sourceError:
+                "Die Quelle ist nicht erreichbar. Die letzten gültigen Daten bleiben erhalten.",
+            addByUrl: "Spiel über seinen League-Link hinzufügen",
+            preview: "Vorschau laden",
+            previewFailed: "Keine Vorschau verfügbar. Prüfe den Link.",
+            track: "Dieses Spiel verfolgen",
+            createNative: "Eigenes Spiel in Logi anlegen",
+            states: {
+                pending: "Wartet aufs Laden",
+                tracked: "Wird verfolgt",
+                paused: "Pausiert",
+                ignored: "Ignoriert",
+                archived: "Archiviert",
+                unmatched: "Außerhalb des Filters",
+            },
+            refreshOnce: "Erneut laden",
+            resume: "Fortsetzen",
+            pause: "Pausieren",
+            ignore: "Ignorieren",
+            staleData: "Ältere Daten, zuletzt geladen {time}",
+            linkedEvent: "Logi-Spiel zu dieser Begegnung",
+            notLinked: "Nicht verknüpft",
+            unknownEvent: "Verknüpftes Spiel, das nicht mehr gelistet ist",
+            noEvents:
+                "In Logi gibt es noch kein Wardogs-Spiel. Lege eins an und verknüpfe es dann hier.",
+            saveLink: "Verknüpfung speichern",
+            emptyTitle: "Noch kein verfolgtes Spiel",
+            emptyDescription:
+                "Spiele der verfolgten Teams erscheinen hier nach dem nächsten Scan. Du kannst oben auch eins über seinen Link hinzufügen.",
+        },
+    },
     ticketSettings: {
         title: "Ticket-Einstellungen",
         pageDescription:
@@ -2112,15 +2243,10 @@ export const deMessages = {
         rosterScoreExcusedAbsence: "Reagiert, abwesend, aber entschuldigt",
         rolesMissingTitle: "Manche Mitgliedsrollen sind nicht konfiguriert",
         rolesMissingClanRole: "Die Basis-Clan-Rolle ist nicht gesetzt. ",
-        rolesMissingRecruitRole:
-            "{count} Mitglied {noun} {verb} keine Rekruten-Rolle. ",
-        rolesMissingFinalRole: "{count} {noun} {verb} keine finale Rolle. ",
+        rolesMissingRecruitRole: "Rekrutenrolle fehlt: {categories}. ",
+        rolesMissingFinalRole: "Endgültige Rolle fehlt: {categories}. ",
         rolesMissingSummary:
             "In diesen Fällen verfolgt Logi den Bewerbungsstatus weiter, aber Discord-Rollenänderungen werden teilweise oder gar nicht durchgeführt.",
-        singleCategory: "Kategorie",
-        multipleCategories: "Kategorien",
-        singleIs: "hat",
-        pluralAre: "haben",
         save: "Mitgliedschaftseinstellungen speichern",
         saved: "Mitgliedschaftseinstellungen gespeichert.",
         saveError:

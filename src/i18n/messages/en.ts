@@ -288,9 +288,12 @@ export const enMessages = {
                 remove: "Remove server",
             },
             confirm: {
+                removeKeyTitle: "Remove the key for {name}?",
+                removeTitle: "Remove {name}?",
+                cancel: "Cancel",
                 removeKey:
-                    "Remove the stored key for {name}? Collection that needs the key stops.",
-                remove: "Remove {name}? Collection stops and its stored key is deleted. Collected history is kept.",
+                    "Collection that needs the key stops until a new key is entered.",
+                remove: "Collection stops and the stored key is deleted. Collected history is kept.",
             },
             key: {
                 set: "Key stored encrypted",
@@ -432,6 +435,13 @@ export const enMessages = {
         },
     },
     apiKeys: {
+        revokeTitle: "Revoke the key {name}?",
+        revokeDescription:
+            "Everything that uses this key, such as your website, stops getting data from Logi immediately. This cannot be undone; to restore access, create a new key.",
+        revokeConfirm: "Revoke key",
+        emptyTitle: "No API key yet",
+        emptyDescription:
+            "Create a key for your website's server. Choose only the data and games it needs.",
         description:
             "Create an integration key and keep it on your server. Choose only the data and games the integration needs.",
         name: "Key name",
@@ -1872,6 +1882,123 @@ export const enMessages = {
         accessBackend:
             "Later backend work can connect these rules to Discord roles and Convex queries.",
     },
+    integrationSettings: {
+        cancel: "Cancel",
+        web: {
+            stepKey: "API key for the website",
+            stepLogin: "Sign in with Logi",
+            stepMembers: "What the website may do for members",
+            newKey: "New key",
+            closeForm: "Close",
+            keyShownOnce:
+                "A key is shown only once, right after it is created. Keep it on your website's server.",
+            loginPage: "Clan sign-in page",
+            ssoApps: "Single sign-on applications",
+            addApplication: "Add application",
+            membersTitle: "Find out who is a member",
+            membersHelp:
+                "Through a read-only key with the Discord membership grant. The website sees only members with one of the chosen roles.",
+            eventsTitle: "Create and edit events",
+            eventsHelp:
+                "Through a single sign-on application and its key. Only people with one of the chosen roles.",
+            footer: "Keys and applications are saved immediately. Roles are saved with the button of each key.",
+            rolesPlaceholder: "Choose roles",
+            rolesUnavailable:
+                "Discord roles could not be loaded. Refresh the page to try again.",
+        },
+        sso: {
+            emptyTitle: "No sign-in application yet",
+            emptyDescription:
+                "Add your website as an application so members can sign in to it with their Discord account through Logi.",
+            redirects: "Return addresses after sign-in: {count}",
+            clientId: "Client ID",
+            removeTitle: "Remove {name}?",
+            removeDescription:
+                "Members can no longer sign in to {website} with Logi. The application's client ID and secret stop working, and website event commands bound to it stop too. This cannot be undone.",
+            removeConfirm: "Remove application",
+        },
+        webhooks: {
+            emptyTitle: "No webhooks yet",
+            emptyDescription:
+                "Add an HTTPS address and Logi will send event, roster, article and settings changes to it, signed with a secret.",
+            deleteTitle: "Delete this webhook?",
+            deleteDescription:
+                "Logi stops sending changes to {url} immediately and its signing secret stops working. This cannot be undone.",
+            deleteConfirm: "Delete webhook",
+            loadFailed: "Unable to load webhooks. Refresh and try again.",
+            createFailed:
+                "Unable to create the webhook. Check the address and try again.",
+            actionFailed: "The change was not saved. Try again.",
+            rotateFailed: "Unable to rotate the signing secret.",
+            historyFailed: "Unable to load the delivery history.",
+        },
+        calendar: {
+            emptyTitle: "No calendar link yet",
+            emptyDescription:
+                "Create a private link and add it to Google Calendar or another calendar app. Anyone with the link can see the clan's events.",
+            rotateTitle: "Create a new calendar link?",
+            rotateDescription:
+                "The current link stops working. Everyone who subscribed with it has to add the new link again.",
+            rotateConfirm: "Create new link",
+        },
+        league: {
+            title: "Wardogs League tracking",
+            cadence:
+                "New matches are checked every {scan} minutes and tracked details every {refresh} minutes. The website and Discord use the same record.",
+            enable: "Track matches and post Discord cards",
+            teamCodes: "Codes of tracked teams (comma separated)",
+            scanEvery: "Look for new matches every",
+            refreshEvery: "Refresh tracked details every",
+            minutes: "{minutes} minutes",
+            scanNote:
+                "The shared index scan runs at the fastest interval any enabled clan asks for; this clan takes a fresh index only after its own interval. Limits at the source can stretch the intervals.",
+            intakeChannel: "Channel where people post links",
+            intakePlaceholder: "Choose the intake channel",
+            outputChannel: "Channel for match cards",
+            outputPlaceholder: "Choose the card channel",
+            intakeNote:
+                "Bot messages are ignored. Reading people's messages automatically needs Message Content enabled for the bot by its operator. Scanning and manual additions work without it.",
+            save: "Save settings",
+            saved: "Saved.",
+            saveFailed:
+                "Saving failed. Check permissions, the link and the channel settings.",
+            loadFailed: "Tracking settings could not be loaded.",
+            lastScan: "Last successful scan",
+            nextScan: "Next scan",
+            incomplete: "The list is incomplete; add a missing match manually.",
+            queueFull:
+                "Automatic discovery is full. Existing matches still refresh; the remaining slots are kept for manual additions.",
+            sourceError:
+                "The source is unavailable. The last valid data is kept.",
+            addByUrl: "Add a match by its League URL",
+            preview: "Load preview",
+            previewFailed: "Preview unavailable. Check the match URL.",
+            track: "Track this match",
+            createNative: "Create your own match in Logi",
+            states: {
+                pending: "Waiting to load",
+                tracked: "Tracking",
+                paused: "Paused",
+                ignored: "Ignored",
+                archived: "Archived",
+                unmatched: "Outside the filter",
+            },
+            refreshOnce: "Load again",
+            resume: "Resume",
+            pause: "Pause",
+            ignore: "Ignore",
+            staleData: "Older data, last loaded {time}",
+            linkedEvent: "Logi match for this fixture",
+            notLinked: "Not linked",
+            unknownEvent: "Linked match that is no longer listed",
+            noEvents:
+                "There is no Wardogs match in Logi yet. Create one, then link it here.",
+            saveLink: "Save link",
+            emptyTitle: "No tracked match yet",
+            emptyDescription:
+                "Matches of the tracked teams appear here after the next scan. You can also add one by its URL above.",
+        },
+    },
     ticketSettings: {
         title: "Ticket settings",
         pageDescription:
@@ -2046,15 +2173,10 @@ export const enMessages = {
         rosterScoreExcusedAbsence: "Reacted, absent, but had notice",
         rolesMissingTitle: "Some membership roles are not configured",
         rolesMissingClanRole: "The base clan role is not set. ",
-        rolesMissingRecruitRole:
-            "{count} member {noun} {verb} missing a recruit role. ",
-        rolesMissingFinalRole: "{count} {noun} {verb} missing a final role. ",
+        rolesMissingRecruitRole: "Recruit role missing: {categories}. ",
+        rolesMissingFinalRole: "Final role missing: {categories}. ",
         rolesMissingSummary:
             "In those cases, Logi will still track the application state, but Discord role changes will be partial or skipped.",
-        singleCategory: "category",
-        multipleCategories: "categories",
-        singleIs: "is",
-        pluralAre: "are",
         save: "Save membership settings",
         saved: "Membership settings saved.",
         saveError: "Unable to save membership settings.",

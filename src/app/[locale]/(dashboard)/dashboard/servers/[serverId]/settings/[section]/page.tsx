@@ -188,7 +188,24 @@ export default async function ServerSettingsSectionPage({
         case "league":
             content = (
                 <div className="space-y-6">
-                    <LeagueTrackingForm serverId={serverId} />
+                    <LeagueTrackingForm
+                        serverId={serverId}
+                        dictionary={dictionary}
+                        events={context.events
+                            .filter(
+                                (event) =>
+                                    event.gameId === "wardogs" &&
+                                    event.kind === "match"
+                            )
+                            .sort((a, b) =>
+                                b.gameStart.localeCompare(a.gameStart)
+                            )
+                            .map((event) => ({
+                                id: event.id,
+                                name: event.name,
+                                startsAt: event.gameStart,
+                            }))}
+                    />
                     <WardogsLeaguePreview serverId={serverId} />
                 </div>
             )
