@@ -149,6 +149,7 @@ import {
     startPublicPanelWorker,
     handlePublicPanelButton,
 } from "./public-panels/worker"
+import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
@@ -158,6 +159,7 @@ client.once(Events.ClientReady, async (readyClient) => {
     startPublicPanelWorker(client)
     startManagedRoleWorker(client)
     startTeamRequestNotificationWorker(client)
+    startApplicationEmojiProvisioning(client)
     try {
         logInfo("bot", "Discord bot ready", {
             user: readyClient.user.tag,
