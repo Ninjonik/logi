@@ -10,18 +10,19 @@ import {
     type TeamAdminErrorCode,
 } from "@/lib/teams-admin/team-admin-client"
 import {
+    TEAM_CATALOGUE_STATES,
+    TEAM_USAGE_IDS_MAX,
+    teamCatalogueState,
+    type TeamCatalogueState,
+    type TeamUsage,
+} from "@/domain/teams/team-usage"
+import {
     appendUnique,
     catalogueRowFacts,
     fillTemplate,
     removeById,
     type WorkspaceOption,
 } from "@/lib/teams-admin/team-admin-list"
-import {
-    TEAM_CATALOGUE_STATES,
-    teamCatalogueState,
-    type TeamCatalogueState,
-    type TeamUsage,
-} from "@/domain/teams/team-usage"
 import {
     TEAM_GAMES,
     TEAM_PAGE_DEFAULT,
@@ -30,14 +31,11 @@ import {
     type TeamRecord,
 } from "@/domain/teams/team"
 import {
-    TeamCatalogueDetail,
-    type TeamUsageState,
-} from "@/components/app/team-catalogue-detail"
-import {
     AdminPageHeader,
     adminAccent,
 } from "@/components/app/admin-page-header"
 import { TeamCatalogueDialog } from "@/components/app/team-catalogue-dialog"
+import { TeamCatalogueDetail } from "@/components/app/team-catalogue-detail"
 import type { TeamCatalogLabels } from "@/components/app/team-fields-editor"
 import { TeamMergeDialog } from "@/components/app/team-merge-dialog"
 import { Loader2, Plus, Search, UsersRound } from "lucide-react"
@@ -167,7 +165,7 @@ export function TeamCatalogueAdmin({
     useEffect(() => {
         if (!missingKey) return
         const controller = new AbortController()
-        const teamIds = missingKey.split(",").slice(0, TEAM_PAGE_DEFAULT)
+        const teamIds = missingKey.split(",").slice(0, TEAM_USAGE_IDS_MAX)
         fetchAdminTeamUsage(teamIds, { signal: controller.signal })
             .then((rows) =>
                 setUsage((known) => {
@@ -296,12 +294,6 @@ export function TeamCatalogueAdmin({
     }
 
     const searching = term.length > 0
-    const usageOf = (teamId: string): TeamUsageState =>
-        usage.has(teamId)
-            ? { status: "ready", usage: usage.get(teamId) ?? null }
-            : usageFailed.has(teamId)
-              ? { status: "error" }
-              : { status: "loading" }
     const requestHref = (requestId: string) =>
         `/${locale}/dashboard/team-requests?${new URLSearchParams({
             request: requestId,
@@ -481,7 +473,6 @@ export function TeamCatalogueAdmin({
                                 labels={labels}
                                 locale={locale}
                                 team={selected}
-                                usage={usageOf(selected.id)}
                                 workspaces={workspaces}
                                 requestHref={requestHref}
                                 lifecycleBusy={pendingId === selected.id}

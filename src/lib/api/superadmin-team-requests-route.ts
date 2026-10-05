@@ -10,7 +10,7 @@ import {
     superadminCommandResponse,
     SUPERADMIN_JSON_LIMIT,
 } from "./superadmin-route"
-import { TEAM_USAGE_IDS_MAX } from "@/domain/teams/team-usage"
+import { TEAM_REQUEST_CONTEXT_MAX } from "@/domain/teams/team-usage"
 import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 
@@ -57,7 +57,7 @@ export function parseTeamRequestQueueQuery(
         const parsed = z
             .array(requestIdSchema)
             .min(1)
-            .max(TEAM_USAGE_IDS_MAX)
+            .max(TEAM_REQUEST_CONTEXT_MAX)
             .safeParse(context.split(","))
         return parsed.success
             ? { kind: "context", requestIds: [...new Set(parsed.data)] }

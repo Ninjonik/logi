@@ -1,18 +1,19 @@
 "use client"
 
 import {
+    fetchAdminTeam,
+    fetchAdminTeamUsage,
+    sendAdminTeamCommand,
+    uploadPlatformTeamLogo,
+    type TeamAdminErrorCode,
+} from "@/lib/teams-admin/team-admin-client"
+import {
     catalogueFormCommand,
     editorValuesFromTeam,
     rebaseCatalogueForm,
     type TeamEditorField,
     type TeamEditorValues,
 } from "@/lib/teams-admin/team-editor"
-import {
-    fetchAdminTeam,
-    sendAdminTeamCommand,
-    uploadPlatformTeamLogo,
-    type TeamAdminErrorCode,
-} from "@/lib/teams-admin/team-admin-client"
 import {
     fillTemplate,
     formatAdminDay,
@@ -42,9 +43,9 @@ import { Archive, ChevronDown, GitMerge, Inbox, Loader2 } from "lucide-react"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { TeamCatalogLabels } from "@/components/app/team-fields-editor"
 import { adminAccent, adminTone } from "@/components/app/admin-page-header"
+import { useEffect, useId, useRef, useState, type FormEvent } from "react"
 import { formatImageUploadMessage } from "@/lib/image-asset-upload"
 import { IMAGE_INPUT_TYPES } from "@/domain/assets/image-asset"
-import { useId, useRef, useState, type FormEvent } from "react"
 import { TeamLogo } from "@/components/app/team-logo"
 import { Textarea } from "@/components/ui/textarea"
 import { GAME_LABELS } from "@/domain/games/game"
@@ -64,7 +65,7 @@ const STALE: ReadonlySet<TeamAdminErrorCode> = new Set([
 const NO_WORKSPACE = "__none"
 const ACCEPT = IMAGE_INPUT_TYPES.join(",")
 
-export type TeamUsageState =
+type TeamUsageState =
     | { status: "loading" }
     | { status: "ready"; usage: TeamUsage | null }
     | { status: "error" }
@@ -79,7 +80,6 @@ export function TeamCatalogueDetail({
     labels,
     locale,
     team,
-    usage,
     workspaces,
     requestHref,
     lifecycleBusy,
@@ -92,7 +92,6 @@ export function TeamCatalogueDetail({
     labels: TeamCatalogLabels
     locale: string
     team: TeamRecord
-    usage: TeamUsageState
     workspaces: readonly WorkspaceOption[]
     /** Link to the moderation queue for a request id. */
     requestHref(requestId: string): string
@@ -119,6 +118,19 @@ export function TeamCatalogueDetail({
     const [moreOpen, setMoreOpen] = useState(
         () => Boolean(team.description) || team.links.length > 0
     )
+    // This team's usage with fixture counts, re-read after each stored change.
+    const [usage, setUsage] = useState<TeamUsageState>({ status: "loading" })
+    useEffect(() => {
+        const controller = new AbortController()
+        fetchAdminTeamUsage([team.id], { signal: controller.signal })
+            .then((rows) =>
+                setUsage({ status: "ready", usage: rows[0] ?? null })
+            )
+            .catch(() => {
+                if (!controller.signal.aborted) setUsage({ status: "error" })
+            })
+        return () => controller.abort()
+    }, [team.id, team.revision])
 
     // A newer stored record arrived (a lifecycle change or a reload): fields
     // the administrator has not touched follow it, edits are kept.
@@ -710,11 +722,13 @@ function TeamUsageBox({
                             {[
                                 `${competition.name} ${competition.season}`.trim(),
                                 competition.division,
-                                pluralize(
-                                    locale,
-                                    competition.fixtures,
-                                    labels.usageFixtures
-                                ),
+                                competition.fixtures === null
+                                    ? null
+                                    : pluralize(
+                                          locale,
+                                          competition.fixtures,
+                                          labels.usageFixtures
+                                      ),
                                 competition.withdrawn
                                     ? labels.usageWithdrawn
                                     : null,

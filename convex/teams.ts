@@ -241,24 +241,32 @@ export const adminListState = query({
     },
 })
 
-/** Registrations, fixtures and pending requests of one team; every read is indexed and bounded. */
+/** Fixtures read per side for one team's detail; enough for every realistic season history. */
+const USAGE_FIXTURES_PER_SIDE = 1000
+
+/**
+ * Registrations and pending requests of one team, and with `withFixtures`
+ * its fixture count per competition; every read is indexed and bounded.
+ */
 async function teamUsageOf(
     ctx: Db,
-    teamId: Id<"teamDirectory">
+    teamId: Id<"teamDirectory">,
+    withFixtures: boolean
 ): Promise<TeamUsage> {
     const registrations = await ctx.db
         .query("competitionTeams")
         .withIndex("teamId", (q) => q.eq("teamId", teamId))
         .take(100)
     const fixtures = new Map<string, number>()
-    for (const side of ["sideATeamId", "sideBTeamId"] as const)
-        for (const fixture of await ctx.db
-            .query("competitionFixtures")
-            .withIndex(side, (q) => q.eq(side, teamId))
-            .take(2000)) {
-            const key = String(fixture.competitionId)
-            fixtures.set(key, (fixtures.get(key) ?? 0) + 1)
-        }
+    if (withFixtures)
+        for (const side of ["sideATeamId", "sideBTeamId"] as const)
+            for (const fixture of await ctx.db
+                .query("competitionFixtures")
+                .withIndex(side, (q) => q.eq(side, teamId))
+                .take(USAGE_FIXTURES_PER_SIDE)) {
+                const key = String(fixture.competitionId)
+                fixtures.set(key, (fixtures.get(key) ?? 0) + 1)
+            }
     const competitions = []
     for (const registration of registrations.slice(
         0,
@@ -276,7 +284,9 @@ async function teamUsageOf(
             name: competition.name,
             season: competition.season,
             division: division?.name ?? null,
-            fixtures: fixtures.get(String(competition._id)) ?? 0,
+            fixtures: withFixtures
+                ? (fixtures.get(String(competition._id)) ?? 0)
+                : null,
             withdrawn: registration.withdrawn,
         })
     }
@@ -297,7 +307,8 @@ async function teamUsageOf(
 
 /**
  * Where catalogue teams are used (design I1 "Kde se tým používá" and the
- * request marker): global administrators only. Unknown IDs are skipped.
+ * request marker): global administrators only. Fixture counts come only
+ * with a single team (its detail). Unknown IDs are skipped.
  */
 export const adminUsage = query({
     args: { ...platformAccess, teamIds: v.array(v.string()) },
@@ -306,10 +317,11 @@ export const adminUsage = query({
         if (args.teamIds.length > TEAM_USAGE_IDS_MAX)
             throw new Error("Too many teams.")
         const items: TeamUsage[] = []
-        for (const raw of new Set(args.teamIds)) {
+        const teamIds = new Set(args.teamIds)
+        for (const raw of teamIds) {
             const id = ctx.db.normalizeId("teamDirectory", raw)
             if (id && (await ctx.db.get(id)))
-                items.push(await teamUsageOf(ctx, id))
+                items.push(await teamUsageOf(ctx, id, teamIds.size === 1))
         }
         return { items }
     },

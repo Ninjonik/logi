@@ -7,8 +7,13 @@ import { z } from "zod"
  * workspace requests still waiting for it.
  */
 
-/** Teams one usage read may ask about (one catalogue page). */
-export const TEAM_USAGE_IDS_MAX = 50
+/**
+ * Teams one usage read may ask about. Fixture counts are read only when one
+ * team is asked about (its detail), which keeps every read small.
+ */
+export const TEAM_USAGE_IDS_MAX = 25
+/** Requests one moderation-context read may ask about (one queue page). */
+export const TEAM_REQUEST_CONTEXT_MAX = 50
 /** Competitions listed per team; more are counted in `competitionCount`. */
 export const TEAM_USAGE_COMPETITIONS_MAX = 20
 
@@ -17,7 +22,8 @@ export const teamUsageCompetitionSchema = z.strictObject({
     name: z.string(),
     season: z.string(),
     division: z.string().nullable(),
-    fixtures: z.number().int().min(0),
+    /** Fixtures of the team in the competition; null when not counted (list reads). */
+    fixtures: z.number().int().min(0).nullable(),
     withdrawn: z.boolean(),
 })
 export type TeamUsageCompetition = z.infer<typeof teamUsageCompetitionSchema>
@@ -160,5 +166,5 @@ export const teamRequestContextSchema = z.strictObject({
 })
 export type TeamRequestContext = z.infer<typeof teamRequestContextSchema>
 export const teamRequestContextListSchema = z.strictObject({
-    items: z.array(teamRequestContextSchema).max(TEAM_USAGE_IDS_MAX),
+    items: z.array(teamRequestContextSchema).max(TEAM_REQUEST_CONTEXT_MAX),
 })

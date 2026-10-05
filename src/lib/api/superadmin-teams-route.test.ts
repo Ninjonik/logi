@@ -145,7 +145,7 @@ test("parses lifecycle states and usage reads", () => {
         "game=wardogs&state=deleted",
         "usage=",
         "usage=t1,,t2",
-        `usage=${Array.from({ length: 51 }, (_, i) => `t${i}`).join(",")}`,
+        `usage=${Array.from({ length: 26 }, (_, i) => `t${i}`).join(",")}`,
         `usage=${"x".repeat(65)}`,
     ])
         assert.equal(parseSuperadminTeamsQuery(params(query)), null, query)

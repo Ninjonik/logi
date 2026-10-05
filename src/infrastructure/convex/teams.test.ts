@@ -416,19 +416,18 @@ test("administration lists teams by state and reports where each team is used", 
         ...platform,
         teamIds: [rog, def, "teamDirectory:missing", rog],
     })
+    const ecl = {
+        id: "competitions:ecl",
+        name: "ECL",
+        season: "2026",
+        division: "Division 2",
+        fixtures: null,
+        withdrawn: false,
+    }
     assert.deepEqual(usage.items, [
         {
             teamId: rog,
-            competitions: [
-                {
-                    id: "competitions:ecl",
-                    name: "ECL",
-                    season: "2026",
-                    division: "Division 2",
-                    fixtures: 2,
-                    withdrawn: false,
-                },
-            ],
+            competitions: [ecl],
             competitionCount: 1,
             pendingRequests: 1,
             pendingRequestId: pending.requestId,
@@ -441,10 +440,16 @@ test("administration lists teams by state and reports where each team is used", 
             pendingRequestId: null,
         },
     ])
+    // One team's detail also counts its fixtures per competition.
+    const detail = await invoke(teams.adminUsage, ctx, {
+        ...platform,
+        teamIds: [rog],
+    })
+    assert.deepEqual(detail.items[0].competitions, [{ ...ecl, fixtures: 2 }])
     await assert.rejects(
         invoke(teams.adminUsage, ctx, {
             ...platform,
-            teamIds: Array.from({ length: 51 }, (_, i) => `t${i}`),
+            teamIds: Array.from({ length: 26 }, (_, i) => `t${i}`),
         })
     )
     await assert.rejects(

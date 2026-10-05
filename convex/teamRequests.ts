@@ -21,7 +21,7 @@ import {
 import {
     changedTeamFields,
     similarTeams,
-    TEAM_USAGE_IDS_MAX,
+    TEAM_REQUEST_CONTEXT_MAX,
     type TeamRequestContext,
 } from "../src/domain/teams/team-usage"
 import {
@@ -246,7 +246,7 @@ export const queueContext = query({
     args: { ...platformAccess, requestIds: v.array(v.string()) },
     handler: async (ctx, args): Promise<{ items: TeamRequestContext[] }> => {
         await authorizePlatformAdmin(ctx, args)
-        if (args.requestIds.length > TEAM_USAGE_IDS_MAX)
+        if (args.requestIds.length > TEAM_REQUEST_CONTEXT_MAX)
             throw new Error("Too many requests.")
         const items: TeamRequestContext[] = []
         for (const raw of new Set(args.requestIds)) {
