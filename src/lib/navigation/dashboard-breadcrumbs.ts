@@ -10,6 +10,12 @@ export type DashboardCrumbLabels = {
     globalSegments: Readonly<Record<string, string>>
     /** Labels of the settings topics (`…/settings/<section>`). */
     settingsSections: Readonly<Record<string, string>>
+    /**
+     * The group a settings topic belongs to ("Discord" for channels), shown
+     * between Settings and the topic and linking to that group on the
+     * settings overview (`anchor` is the group's element ID there).
+     */
+    settingsGroups?: Readonly<Record<string, { label: string; anchor: string }>>
     /** Label of a record ID, by the segment it follows (`events` → "Event"). */
     records: Readonly<Record<string, string>>
     /** Label of any other record ID or unknown segment. */
@@ -21,7 +27,7 @@ const STRUCTURAL = new Set(["dashboard", "servers"])
 /** Global segments without a page, skipped so no crumb links to a 404. */
 const GLOBAL_STRUCTURAL = new Set(["settings"])
 
-const own = (record: Readonly<Record<string, string>>, key: string) =>
+const own = <T>(record: Readonly<Record<string, T>>, key: string) =>
     Object.prototype.hasOwnProperty.call(record, key) ? record[key] : undefined
 
 /**
@@ -48,12 +54,22 @@ export function buildDashboardBreadcrumbs({
     let href = `/${locale}`
 
     segments.forEach((raw, index) => {
+        const parentHref = href
         href += `/${raw}`
         const segment = safeDecode(raw)
         const previous = index > 0 ? safeDecode(segments[index - 1]) : ""
         if (STRUCTURAL.has(segment) && index <= 1) return
         if (!inWorkspace && index === 1 && GLOBAL_STRUCTURAL.has(segment))
             return
+        const group =
+            inWorkspace && previous === "settings" && labels.settingsGroups
+                ? own(labels.settingsGroups, segment)
+                : undefined
+        if (group)
+            crumbs.push({
+                label: group.label,
+                href: `${parentHref}#${group.anchor}`,
+            })
         crumbs.push({
             label: labelFor({
                 segment,
@@ -121,4 +137,29 @@ function safeDecode(segment: string): string {
     } catch {
         return segment
     }
+}
+
+/** What the dashboard frame shows for a page: its trail and the way back. */
+export type DashboardPageTrail = {
+    /** The trail shown above the page; empty on top-level pages. */
+    crumbs: DashboardCrumb[]
+    /** The page one level up, for the back button on phones. */
+    parent?: DashboardCrumb
+    /** The page itself. */
+    current?: DashboardCrumb
+}
+
+/**
+ * The trail as the dashboard shows it (designs A2, D3): the clan is already
+ * named in the sidebar, so a clan page's trail starts at its section, and a
+ * section's own page (Matches, Settings) needs no trail at all.
+ */
+export function dashboardPageTrail(
+    crumbs: DashboardCrumb[],
+    { inWorkspace }: { inWorkspace: boolean }
+): DashboardPageTrail {
+    const trail = inWorkspace ? crumbs.slice(1) : crumbs
+    const current = trail.at(-1)
+    if (trail.length < 2) return { crumbs: [], current }
+    return { crumbs: trail, parent: trail.at(-2), current }
 }

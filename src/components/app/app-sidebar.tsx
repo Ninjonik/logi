@@ -9,9 +9,9 @@ import {
     Swords,
     UserCog,
     ListTodo,
+    ListChecks,
     CalendarIcon,
     Map,
-    Radio,
     Globe,
     Ticket,
 } from "lucide-react"
@@ -31,7 +31,6 @@ import { globalAdminHref, isGlobalAdminPath } from "@/lib/global-admin-routes"
 import { NavMain, NavMenuItems, type NavItem } from "@/components/nav-main"
 import { globalAdminSection } from "@/lib/navigation/global-admin-routes"
 import { ServerSwitcher } from "@/components/app/server-switcher"
-import { GameSwitcher } from "@/components/app/game-switcher"
 import { AdminSidebar } from "@/components/app/admin-sidebar"
 import { canAdminWorkspace } from "@/lib/workspace-admin"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -103,6 +102,8 @@ export function AppSidebar({
         ? `?workspace=${encodeURIComponent(resolvedServerId)}`
         : ""
     const t = dictionary.sidebar
+    const within = (segment: string) =>
+        Boolean(pathname?.startsWith(`${base}/${segment}`))
 
     const navGroups: Array<{ label: string; id?: string; items: NavItem[] }> =
         resolvedServerId && workspaceEnabled
@@ -119,94 +120,72 @@ export function AppSidebar({
                               title: t.calendar,
                               url: `${base}/calendar`,
                               icon: CalendarDays,
+                              isActive: within("calendar"),
                           },
                           {
                               title: t.articles,
                               url: `${base}/articles`,
                               icon: ClipboardList,
+                              isActive: within("articles"),
                           },
                       ],
                   },
                   {
                       label: t.operations,
                       id: "onboarding-sidebar-operations",
-                      items: resolvedCanAdmin
-                          ? [
-                                {
-                                    title: t.matches,
-                                    url: `${base}/matches`,
-                                    icon: CalendarIcon,
-                                    items: [
-                                        {
-                                            title: t.topicPresets,
-                                            url: `${base}/topic-presets`,
-                                        },
-                                    ],
-                                },
-                                {
-                                    title: t.trainings,
-                                    url: `${base}/trainings`,
-                                    icon: Shield,
-                                },
-                                {
-                                    title: t.signupActivity,
-                                    url: `${base}/signup-activity`,
-                                    icon: ListTodo,
-                                },
-                                {
-                                    title: t.rosters,
-                                    url: `${base}/rosters`,
-                                    icon: ClipboardList,
-                                    items: [
-                                        {
-                                            title: t.squadPresets,
-                                            url: `${base}/squad-presets`,
-                                        },
-                                    ],
-                                },
-                                {
-                                    title: t.stratmaps,
-                                    url: `${base}/stratmaps`,
-                                    icon: Map,
-                                },
-                            ]
-                          : [
-                                {
-                                    title: t.events,
-                                    url: `${base}/events`,
-                                    icon: ListTodo,
-                                },
-                                {
-                                    title: t.matches,
-                                    url: `${base}/matches`,
-                                    icon: CalendarIcon,
-                                },
-                                {
-                                    title: t.trainings,
-                                    url: `${base}/trainings`,
-                                    icon: Shield,
-                                },
-                                {
-                                    title: t.signupActivity,
-                                    url: `${base}/signup-activity`,
-                                    icon: ListTodo,
-                                },
-                                {
-                                    title: t.rosters,
-                                    url: `${base}/rosters`,
-                                    icon: ClipboardList,
-                                },
-                                {
-                                    title: t.stratmaps,
-                                    url: `${base}/stratmaps`,
-                                    icon: Map,
-                                },
-                                {
-                                    title: t.users,
-                                    url: `${base}/users`,
-                                    icon: UserCog,
-                                },
-                            ],
+                      items: [
+                          // Members see every event in one list; managers
+                          // work from matches and trainings.
+                          ...(resolvedCanAdmin
+                              ? []
+                              : [
+                                    {
+                                        title: t.events,
+                                        url: `${base}/events`,
+                                        icon: ListTodo,
+                                        isActive: within("events"),
+                                    },
+                                ]),
+                          {
+                              title: t.matches,
+                              url: `${base}/matches`,
+                              icon: CalendarIcon,
+                              isActive: within("matches"),
+                          },
+                          {
+                              title: t.trainings,
+                              url: `${base}/trainings`,
+                              icon: Shield,
+                              isActive: within("trainings"),
+                          },
+                          {
+                              title: t.signupActivity,
+                              url: `${base}/signup-activity`,
+                              icon: ListChecks,
+                          },
+                          {
+                              title: t.rosters,
+                              url: `${base}/rosters`,
+                              icon: ClipboardList,
+                              isActive: within("rosters"),
+                          },
+                          {
+                              title: t.stratmaps,
+                              url: `${base}/stratmaps`,
+                              icon: Map,
+                              isActive: within("stratmaps"),
+                          },
+                          ...(resolvedCanAdmin
+                              ? []
+                              : [
+                                    {
+                                        title: t.users,
+                                        url: `${base}/users`,
+                                        icon: UserCog,
+                                        isActive: within("users"),
+                                    },
+                                ]),
+                      ],
                   },
                   ...(resolvedCanAdmin
                       ? [
@@ -218,13 +197,13 @@ export function AppSidebar({
                                         title: t.members,
                                         url: `${base}/users`,
                                         icon: UserCog,
-                                        isActive: pathname?.startsWith(
-                                            `${base}/users`
-                                        ),
+                                        isActive: within("users"),
+                                        // Listed under Members while that part is open.
                                         items: [
                                             {
                                                 title: t.groups,
                                                 url: `${base}/groups`,
+                                                isActive: within("groups"),
                                             },
                                         ],
                                     },
@@ -232,19 +211,24 @@ export function AppSidebar({
                                         title: t.teams,
                                         url: `${base}/teams`,
                                         icon: Swords,
+                                        isActive: within("teams"),
                                     },
                                     {
                                         title: t.tickets,
                                         url: `${base}/tickets`,
                                         icon: Ticket,
+                                        isActive: within("tickets"),
                                     },
                                     {
                                         title: t.settings,
                                         url: `${base}/settings`,
                                         icon: Settings,
-                                        isActive: pathname?.startsWith(
-                                            `${base}/settings`
-                                        ),
+                                        // Presets open from Settings > Presets.
+                                        isActive:
+                                            within("settings") ||
+                                            within("system") ||
+                                            within("topic-presets") ||
+                                            within("squad-presets"),
                                         badge: {
                                             count: settingsAttention,
                                             label: t.settingsAttention.replace(
@@ -260,74 +244,23 @@ export function AppSidebar({
               ]
             : []
 
-    // Global administration is reachable from the "Global administration"
-    // entry below; on its pages the AdminSidebar replaces this sidebar.
-    const onGlobalAdminPage = isGlobalAdminPath(pathname)
-    const footerItems: NavItem[] = [
-        {
-            title: t.logiComms,
-            url: `/${locale}/dashboard/logicomms${superadminWorkspaceQuery}`,
-            icon: Radio,
-        },
-        ...(isSuperadmin
-            ? [
-                  {
-                      title: t.globalAdmin,
-                      url: globalAdminHref(
-                          locale,
-                          "teams",
-                          superadminWorkspaceQuery
-                      ),
-                      icon: Globe,
-                      isActive: onGlobalAdminPage,
-                      items: [
-                          {
-                              title: t.competitions,
-                              url: globalAdminHref(
-                                  locale,
-                                  "competitions",
-                                  superadminWorkspaceQuery
-                              ),
-                          },
-                          {
-                              title: t.teamCatalog,
-                              url: globalAdminHref(
-                                  locale,
-                                  "teams",
-                                  superadminWorkspaceQuery
-                              ),
-                          },
-                          {
-                              title: t.teamRequests,
-                              url: globalAdminHref(
-                                  locale,
-                                  "team-requests",
-                                  superadminWorkspaceQuery
-                              ),
-                          },
-                          {
-                              title: t.bot,
-                              url: globalAdminHref(
-                                  locale,
-                                  "bot",
-                                  superadminWorkspaceQuery
-                              ),
-                          },
-                          {
-                              title: t.platformSettings,
-                              url: globalAdminHref(
-                                  locale,
-                                  "platform-settings",
-                                  superadminWorkspaceQuery
-                              ),
-                          },
-                      ],
-                  },
-              ]
-            : []),
-    ]
-    const expandLabel = (title: string) =>
-        t.showSubpages.replace("{item}", title)
+    // Global administration has its own sidebar (AdminSidebar); this entry
+    // leads there and is shown to Logi's administrators only.
+    const footerItems: NavItem[] = isSuperadmin
+        ? [
+              {
+                  title: t.globalAdmin,
+                  url: globalAdminHref(
+                      locale,
+                      "teams",
+                      superadminWorkspaceQuery
+                  ),
+                  icon: Globe,
+                  isActive: isGlobalAdminPath(pathname),
+                  note: t.adminNav.adminsOnly,
+              },
+          ]
+        : []
 
     if (adminSection)
         return (
@@ -344,14 +277,14 @@ export function AppSidebar({
 
     return (
         <Sidebar id="onboarding-sidebar" {...props}>
-            <SidebarHeader className="gap-2 p-2">
+            <SidebarHeader className="p-2 pb-0">
                 <ServerSwitcher
                     locale={locale}
                     servers={servers}
                     activeServerId={resolvedServerId}
+                    enabledGames={resolvedServer?.enabledGames}
                     labels={{
                         selectWorkspace: dictionary.workspace.selectWorkspace,
-                        activeWorkspace: dictionary.workspace.activeWorkspace,
                         noWorkspaceSelected:
                             dictionary.workspace.noWorkspaceSelected,
                         searchWorkspace: dictionary.workspace.searchWorkspace,
@@ -360,44 +293,37 @@ export function AppSidebar({
                             dictionary.workspace.missingWorkspaceHelp,
                         showAllResults: dictionary.workspace.showAllResults,
                         allClans: dictionary.workspace.allClans,
+                        allGames: dictionary.workspace.allGames,
+                        gameHeading: dictionary.workspace.gameHeading,
+                        clanHeading: dictionary.workspace.clanHeading,
                     }}
                 />
-                {resolvedServerId ? (
-                    <GameSwitcher
-                        enabledGames={resolvedServer?.enabledGames}
-                        dictionary={dictionary}
-                    />
-                ) : null}
             </SidebarHeader>
             <SidebarContent
                 role="navigation"
                 aria-label={dictionary.appStates.mainNavigation}
+                // The account follows the menu directly, as in the design.
+                className="flex-initial gap-0"
             >
                 {navGroups.map((group) => (
                     <div key={group.label} id={group.id}>
-                        <NavMain
-                            label={group.label}
-                            items={group.items}
-                            expandLabel={expandLabel}
-                        />
+                        <NavMain label={group.label} items={group.items} />
                     </div>
                 ))}
             </SidebarContent>
-            <SidebarFooter
-                id="onboarding-account-menu"
-                className="border-sidebar-border gap-1 border-t p-2"
-            >
-                <SidebarMenu className="gap-0.5">
-                    <NavMenuItems
-                        items={footerItems}
-                        expandLabel={expandLabel}
+            <SidebarFooter id="onboarding-account-menu" className="p-2 pt-0">
+                <div className="border-sidebar-border flex flex-col gap-0.5 border-t pt-2">
+                    {footerItems.length ? (
+                        <SidebarMenu className="gap-0.5">
+                            <NavMenuItems items={footerItems} />
+                        </SidebarMenu>
+                    ) : null}
+                    <NavUser
+                        user={{ name: user.name, avatar: user.avatar }}
+                        locale={locale}
+                        dictionary={dictionary}
                     />
-                </SidebarMenu>
-                <NavUser
-                    user={{ name: user.name, avatar: user.avatar }}
-                    locale={locale}
-                    dictionary={dictionary}
-                />
+                </div>
             </SidebarFooter>
         </Sidebar>
     )
