@@ -1,8 +1,9 @@
-import { commandFeatures } from "../commands/features"
 import { attendanceReplyInteractions } from "./attendance-replies"
+import { panelInteractions } from "../public-panels/interactions"
 import { matchRecapInteractions } from "./match-recap-preference"
 import { rosterInteractions } from "./roster-assignment"
-import { panelInteractions } from "../public-panels/interactions"
+import { seedInteractions } from "../seed/interactions"
+import { commandFeatures } from "../commands/features"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -18,4 +19,6 @@ export const interactionFeatures: readonly InteractionFeature[] = [
     attendanceReplyInteractions,
     matchRecapInteractions,
     panelInteractions,
+    // "Zvát mě na seed" and the "Ovládání serveru" buttons (board P5).
+    seedInteractions,
 ]

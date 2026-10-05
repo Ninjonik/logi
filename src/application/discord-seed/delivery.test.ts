@@ -9,18 +9,13 @@ import {
     createSeedTestPorts,
     seedReading,
 } from "@/infrastructure/testing/in-memory-seed"
-import {
-    PublicationNotSent,
-    type Publication,
-    type PublicationStore,
-} from "@/application/discord-publications/publish"
 
 import {
     deliverSeedCall,
     recordSeedCallPosted,
     reportSeedCallFailed,
     seedCallTarget,
-    type SeedCallDiscordPort,
+    type SeedCallPublisher,
 } from "./delivery"
 import { startSeedManually } from "./start-seed"
 import type { StoredSeedRun } from "./ports"
@@ -43,46 +38,22 @@ async function startedRun(settings = boardSeedSettings()) {
     return { env, run: result.run }
 }
 
-function discord(messageExists = false) {
+class Permanent extends Error {}
+
+function discord(answer: () => Promise<string | null | undefined>) {
     const calls: string[] = []
-    const port: SeedCallDiscordPort = {
-        exists: async () => messageExists,
-        recover: async () => null,
-        create: async (channel) => {
-            calls.push(`create:${channel}`)
-            return "message-1"
+    const port: SeedCallPublisher = {
+        publish: async (channelId) => {
+            calls.push(`publish:${channelId}`)
+            return answer()
         },
-        edit: async (channel, id) => {
-            calls.push(`edit:${channel}:${id}`)
-        },
-        remove: async (channel, id) => {
-            calls.push(`remove:${channel}:${id}`)
-        },
+        isPermanentFailure: (error) => error instanceof Permanent,
         roleMemberCount: async (roleId) => {
             calls.push(`count:${roleId}`)
             return 34
         },
     }
     return { port, calls }
-}
-function publications(initial: Partial<Publication> = {}) {
-    let state: Publication = {
-        id: "seed-call",
-        fence: 1,
-        channelId: null,
-        messageId: null,
-        pending: null,
-        hash: null,
-        ...initial,
-    }
-    const store: PublicationStore = {
-        claim: async () => structuredClone(state),
-        save: async (next) => {
-            state = structuredClone(next)
-        },
-        finish: async () => {},
-    }
-    return { store, current: () => state }
 }
 function reports() {
     const calls: unknown[] = []
@@ -140,19 +111,15 @@ test("the call goes to the run's channel while seeding and only edits after the 
 
 test("the first post reports the pinged role members once", async () => {
     const { run } = await startedRun()
-    const transport = discord()
+    const transport = discord(async () => "message-1")
     const recorded = reports()
     const result = await deliverSeedCall(
-        { run, hasMessage: false, hash: "h1" },
-        {
-            store: publications().store,
-            discord: transport.port,
-            reports: recorded.reports,
-        }
+        { run, hasMessage: false },
+        { discord: transport.port, reports: recorded.reports }
     )
     assert.deepEqual(result, { kind: "delivered", messageId: "message-1" })
     assert.deepEqual(transport.calls, [
-        `create:${SEED_TEST_CHANNEL}`,
+        `publish:${SEED_TEST_CHANNEL}`,
         `count:${SEED_TEST_ROLE}`,
     ])
     assert.deepEqual(recorded.calls, [
@@ -162,35 +129,28 @@ test("the first post reports the pinged role members once", async () => {
 
 test("a silent call reports no members and later edits report nothing", async () => {
     const { run } = await startedRun(boardSeedSettings({ seedRoleId: null }))
-    const transport = discord()
+    const transport = discord(async () => "message-1")
     const recorded = reports()
     await deliverSeedCall(
-        { run, hasMessage: false, hash: "h1" },
-        {
-            store: publications().store,
-            discord: transport.port,
-            reports: recorded.reports,
-        }
+        { run, hasMessage: false },
+        { discord: transport.port, reports: recorded.reports }
     )
     assert.deepEqual(recorded.calls, [
         { posted: { runId: run.id, pingedMembers: null } },
     ])
+    assert.equal(
+        transport.calls.some((call) => call.startsWith("count:")),
+        false
+    )
     const posted: StoredSeedRun = { ...run, callPostedAt: NOW.getTime() }
-    const edit = discord(true)
     const again = reports()
     await deliverSeedCall(
-        { run: posted, hasMessage: true, hash: "h2" },
+        { run: posted, hasMessage: true },
         {
-            store: publications({
-                channelId: SEED_TEST_CHANNEL,
-                messageId: "message-1",
-                hash: "h1",
-            }).store,
-            discord: edit.port,
+            discord: discord(async () => "message-1").port,
             reports: again.reports,
         }
     )
-    assert.deepEqual(edit.calls, [`edit:${SEED_TEST_CHANNEL}:message-1`])
     assert.deepEqual(again.calls, [])
 })
 
@@ -202,77 +162,88 @@ test("reaching the threshold with 'Smazat zprávu' deletes the call", async () =
         endedAt: NOW.getTime(),
         callPostedAt: NOW.getTime(),
     }
-    const transport = discord(true)
+    const transport = discord(async () => null)
     const result = await deliverSeedCall(
-        { run: live, hasMessage: true, hash: "h" },
-        {
-            store: publications({
-                channelId: SEED_TEST_CHANNEL,
-                messageId: "message-1",
-                hash: "h0",
-            }).store,
-            discord: transport.port,
-            reports: reports().reports,
-        }
+        { run: live, hasMessage: true },
+        { discord: transport.port, reports: reports().reports }
     )
     assert.deepEqual(result, { kind: "delivered", messageId: null })
-    assert.deepEqual(transport.calls, [`remove:${SEED_TEST_CHANNEL}:message-1`])
+    assert.deepEqual(transport.calls, ["publish:null"])
 })
 
-test("an ended seed without a call is skipped, never posted late", async () => {
+test("an ended seed without a call is skipped, never posted late; a busy lease skips", async () => {
     const { run } = await startedRun()
-    const transport = discord()
+    const transport = discord(async () => "late")
     assert.deepEqual(
         await deliverSeedCall(
-            { run: { ...run, status: "failed" }, hasMessage: false, hash: "h" },
-            {
-                store: publications().store,
-                discord: transport.port,
-                reports: reports().reports,
-            }
+            { run: { ...run, status: "failed" }, hasMessage: false },
+            { discord: transport.port, reports: reports().reports }
         ),
         { kind: "skipped" }
     )
     assert.deepEqual(transport.calls, [])
+    const busy = reports()
+    assert.deepEqual(
+        await deliverSeedCall(
+            { run, hasMessage: false },
+            {
+                discord: discord(async () => undefined).port,
+                reports: busy.reports,
+            }
+        ),
+        { kind: "skipped" }
+    )
+    assert.deepEqual(busy.calls, [])
 })
 
-test("a call Discord refuses fails the run; other errors leave it to retry", async () => {
+test("a call Discord refuses for good fails the run; other errors leave it to retry", async () => {
     const { run } = await startedRun()
-    const refusing = discord()
-    refusing.port.create = async () => {
-        throw new PublicationNotSent("Missing Permissions")
-    }
     const recorded = reports()
     await assert.rejects(
         deliverSeedCall(
-            { run, hasMessage: false, hash: "h" },
+            { run, hasMessage: false },
             {
-                store: publications().store,
-                discord: refusing.port,
+                discord: discord(async () => {
+                    throw new Permanent("Missing Permissions")
+                }).port,
                 reports: recorded.reports,
             }
         ),
-        PublicationNotSent
+        Permanent
     )
     assert.deepEqual(recorded.calls, [
         { failed: { runId: run.id, reason: "channel_unavailable" } },
     ])
-    const flaky = discord()
-    flaky.port.create = async () => {
-        throw new Error("socket hang up")
-    }
     const untouched = reports()
     await assert.rejects(
         deliverSeedCall(
-            { run, hasMessage: false, hash: "h" },
+            { run, hasMessage: false },
             {
-                store: publications().store,
-                discord: flaky.port,
+                discord: discord(async () => {
+                    throw new Error("socket hang up")
+                }).port,
                 reports: untouched.reports,
             }
         )
     )
     assert.deepEqual(untouched.calls, [])
+    const existing = reports()
+    await assert.rejects(
+        deliverSeedCall(
+            { run, hasMessage: true },
+            {
+                discord: discord(async () => {
+                    throw new Permanent("Missing Permissions")
+                }).port,
+                reports: existing.reports,
+            }
+        )
+    )
+    assert.deepEqual(
+        existing.calls,
+        [],
+        "a posted call that cannot be edited does not end the seed"
+    )
 })
 
 test("the bot's reports update the run once and stay inside the clan", async () => {

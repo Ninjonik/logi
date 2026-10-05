@@ -1,9 +1,3 @@
-import {
-    PublicationNotSent,
-    publish,
-    type PublicationStore,
-    type PublicationTransport,
-} from "@/application/discord-publications/publish"
 import { applySeedRunEvent, type SeedFailure } from "@/domain/discord-seed/run"
 
 import type { SeedPorts, StoredSeedRun } from "./ports"
@@ -31,11 +25,18 @@ export function seedCallTarget(
 }
 
 /**
- * The Discord side of one seed call, implemented by the bot: the transport's
- * `create` posts the call with the role ping when the run pings (and only
- * then), every `edit` re-renders without pinging, and `remove` deletes it.
+ * The Discord side of one seed call, implemented by the bot with its durable
+ * managed-message publisher (lease, invisible marker recovery, edit in
+ * place): `publish(channelId)` posts or edits the call and answers the
+ * message ID; `publish(null)` deletes it. The bot's payload carries the role
+ * ping, which Discord delivers only when the message is created, so edits
+ * ping nobody (P5-03, P5-12).
  */
-export type SeedCallDiscordPort = PublicationTransport & {
+export type SeedCallPublisher = {
+    /** Undefined when another worker holds the message right now. */
+    publish(channelId: string | null): Promise<string | null | undefined>
+    /** Discord refused the channel for good (missing, wrong type, permissions). */
+    isPermanentFailure(error: unknown): boolean
     /** Members holding the Seed role now ("34 · @Seed"); null when unknown. */
     roleMemberCount(roleId: string): Promise<number | null>
 }
@@ -49,28 +50,21 @@ export type SeedCallReports = {
 }
 
 /**
- * Delivers one call through the managed-publication algorithm (lease, marker
- * recovery, edit in place), then reports the first post or a permanent
- * failure so the run and its history stay true.
+ * Delivers one call, then reports the first post (with the pinged member
+ * count for the history) or a permanent channel failure, so the run fails
+ * at once instead of waiting for its delivery deadline.
  */
 export async function deliverSeedCall(
-    input: { run: StoredSeedRun; hasMessage: boolean; hash: string },
-    ports: {
-        store: PublicationStore
-        discord: SeedCallDiscordPort
-        reports: SeedCallReports
-    }
+    input: { run: StoredSeedRun; hasMessage: boolean },
+    ports: { discord: SeedCallPublisher; reports: SeedCallReports }
 ): Promise<
     { kind: "delivered"; messageId: string | null } | { kind: "skipped" }
 > {
     const target = seedCallTarget(input.run, input.hasMessage)
     if (target.action === "none") return { kind: "skipped" }
     try {
-        const messageId = await publish(
-            ports.store,
-            ports.discord,
-            target.action === "show" ? target.channelId : null,
-            input.hash
+        const messageId = await ports.discord.publish(
+            target.action === "show" ? target.channelId : null
         )
         if (messageId === undefined) return { kind: "skipped" }
         if (messageId && input.run.callPostedAt === null)
@@ -86,9 +80,9 @@ export async function deliverSeedCall(
         return { kind: "delivered", messageId }
     } catch (error) {
         if (
-            error instanceof PublicationNotSent &&
             input.run.status === "seeding" &&
-            !input.hasMessage
+            !input.hasMessage &&
+            ports.discord.isPermanentFailure(error)
         )
             await ports.reports.failed({
                 runId: input.run.id,

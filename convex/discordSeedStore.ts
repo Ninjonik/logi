@@ -256,6 +256,49 @@ export function seedStore(ctx: Writer, now: () => number): SeedStore {
     }
 }
 
+/**
+ * The collected snapshot of a server the panels read, with the admin's
+ * server alias; null for a connection of another clan or none at all.
+ */
+export async function seedServerSnapshot(
+    ctx: Reader,
+    server: SeedServerRef,
+    now: number
+) {
+    const id = ctx.db.normalizeId("gameDataConnections", server.connectionId)
+    const row = id ? await ctx.db.get(id) : null
+    if (!row || row.guildId !== server.guildId) return null
+    const snapshot = projectSnapshot({ ...row, id: String(row._id) }, now)
+    const source = await resolveSource(ctx, row.guildId, row.sourceRef)
+    return {
+        snapshot,
+        name: source?.row?.displayName ?? snapshot.displayName,
+        gameId: row.gameId,
+    }
+}
+
+/** The server's live panel ("Obnovit panel", "Pozastavit panel"), if it has one. */
+export async function seedServerPanel(ctx: Reader, server: SeedServerRef) {
+    const panel = (
+        await ctx.db
+            .query("discordPublicPanels")
+            .withIndex("guildId", (q) => q.eq("guildId", server.guildId))
+            .collect()
+    ).find(
+        (row) =>
+            normalizePanelKind(row.kind) === "server" &&
+            row.connectionId === server.connectionId &&
+            !row.removing
+    )
+    return panel
+        ? {
+              channelId: panel.channelId,
+              paused: isPanelPaused(panel),
+              sent: !panel.draft,
+          }
+        : null
+}
+
 /** The collected snapshot the panels read, with the admin's server alias. */
 export function seedPlayerCounts(
     ctx: Reader,
@@ -263,20 +306,12 @@ export function seedPlayerCounts(
 ): SeedPlayerCountPort {
     return {
         async read(server): Promise<SeedServerReading | null> {
-            const id = ctx.db.normalizeId(
-                "gameDataConnections",
-                server.connectionId
-            )
-            const row = id ? await ctx.db.get(id) : null
-            if (!row || row.guildId !== server.guildId) return null
-            const snapshot = projectSnapshot(
-                { ...row, id: String(row._id) },
-                now()
-            )
-            const source = await resolveSource(ctx, row.guildId, row.sourceRef)
+            const found = await seedServerSnapshot(ctx, server, now())
+            if (!found) return null
+            const { snapshot } = found
             return {
-                name: source?.row?.displayName ?? snapshot.displayName,
-                gameId: row.gameId,
+                name: found.name,
+                gameId: found.gameId,
                 players: snapshot.players,
                 capacity: snapshot.capacity,
                 map: snapshot.map,
@@ -296,8 +331,8 @@ export function seedPlayerCounts(
 }
 
 /**
- * Records each request as a growing revision of the matching managed
- * message, so the bot's delivery wakes up and stale lease holders lose.
+ * Records each request as a growing revision of the matching seed message,
+ * so the bot's delivery redraws it at once (see `discordSeedMessages`).
  */
 export function seedMessageOutbox(
     ctx: Writer,
@@ -318,7 +353,6 @@ export function seedMessageOutbox(
         if (row)
             await ctx.db.patch(row._id, {
                 revision: row.revision + 1,
-                retryAt: 0,
                 updatedAt: at,
             })
         else
@@ -328,16 +362,6 @@ export function seedMessageOutbox(
                 key,
                 revision: 1,
                 deliveredRevision: 0,
-                claimedRevision: 0,
-                channelId: null,
-                messageId: null,
-                pending: null,
-                hash: null,
-                fence: 0,
-                leaseUntil: 0,
-                retryAt: 0,
-                lastSuccessAt: null,
-                error: null,
                 updatedAt: at,
             })
     }

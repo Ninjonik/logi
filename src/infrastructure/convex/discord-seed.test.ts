@@ -139,7 +139,7 @@ test("every seed function refuses a caller without the internal secret", async (
         ],
         [bot.deliveryState, { secret: wrong, guildId: GUILD }],
         [
-            bot.claimMessage,
+            bot.recordDelivery,
             {
                 secret: wrong,
                 guildId: GUILD,
@@ -148,22 +148,7 @@ test("every seed function refuses a caller without the internal secret", async (
                 revision: 1,
             },
         ],
-        [
-            bot.saveMessage,
-            {
-                secret: wrong,
-                id: "discordSeedMessages:1",
-                fence: 1,
-                channelId: null,
-                messageId: null,
-                pending: null,
-                hash: null,
-            },
-        ],
-        [
-            bot.finishMessage,
-            { secret: wrong, id: "discordSeedMessages:1", fence: 1 },
-        ],
+        [bot.roleOffer, { secret: wrong, guildId: GUILD, roleId: ROLE }],
         [
             bot.recordCallPosted,
             { secret: wrong, guildId: GUILD, runId: "x", pingedMembers: 1 },
@@ -394,26 +379,49 @@ test("the cron fans out per plan and a scheduled seed starts exactly once", asyn
     )
 })
 
-test("a disabled server panel pauses scheduled seeds", async (t) => {
-    const { ctx } = setup(t, 11)
+test("the panel's own pause flag pauses scheduled seeds; legacy rows read their switch", async (t) => {
+    const cases: Array<[Record<string, unknown>, boolean]> = [
+        [{ enabled: true, paused: true }, true],
+        [{ enabled: false, paused: false }, false],
+        [{ enabled: false }, true],
+        [{ enabled: true }, false],
+        [{ enabled: true, paused: true, draft: true }, false],
+        [{ enabled: true, paused: true, removing: true }, false],
+        [{ enabled: true, paused: true, kind: "results" }, false],
+        [{ enabled: true, paused: true, kind: "scoreboard" }, true],
+    ]
+    for (const [panel, paused] of cases) {
+        const { ctx } = setup(t, 11)
+        await savedPlan(ctx)
+        ctx.db.seed("discordPublicPanels", {
+            _id: "discordPublicPanels:vlci1",
+            guildId: GUILD,
+            connectionId: CONNECTION,
+            kind: "server",
+            ...panel,
+        })
+        const planId = ctx.db.tables.discordSeedPlans[0]._id
+        const result = await invoke(tick.evaluatePlan, ctx, { planId })
+        assert.equal(
+            result.kind === "skipped" && result.reason === "paused",
+            paused,
+            JSON.stringify(panel)
+        )
+    }
+})
+
+test("the bot gets everything to draw the call, the control message and the intro", async (t) => {
+    const { ctx, advance } = setup(t, 11)
     await savedPlan(ctx)
     ctx.db.seed("discordPublicPanels", {
         _id: "discordPublicPanels:vlci1",
         guildId: GUILD,
         connectionId: CONNECTION,
         kind: "server",
-        enabled: false,
+        channelId: "555555555555555555",
+        enabled: true,
+        paused: false,
     })
-    const planId = ctx.db.tables.discordSeedPlans[0]._id
-    assert.deepEqual(await invoke(tick.evaluatePlan, ctx, { planId }), {
-        kind: "skipped",
-        reason: "paused",
-    })
-})
-
-test("the bot delivers the call under a fenced lease, records the post and the panel links it", async (t) => {
-    const { ctx, advance } = setup(t, 11)
-    await savedPlan(ctx)
     const planId = ctx.db.tables.discordSeedPlans[0]._id
     await invoke(tick.evaluatePlan, ctx, { planId })
     const runId = ctx.db.tables.discordSeedRuns[0]._id
@@ -423,63 +431,54 @@ test("the bot delivers the call under a fenced lease, records the post and the p
         guildId: GUILD,
     })
     assert.equal(state.servers.length, 1)
-    assert.equal(state.servers[0].activeRun.id, runId)
-    assert.equal(state.servers[0].status, "below_start")
+    const server = state.servers[0]
+    assert.equal(server.activeRun.id, runId)
+    assert.equal(server.status, "below_start")
+    assert.equal(server.name, "Vlci #1 · Public")
+    assert.equal(server.gameId, "hell_let_loose")
+    assert.equal(server.snapshot.map, "Foy")
+    assert.deepEqual(server.panel, {
+        channelId: "555555555555555555",
+        paused: false,
+        sent: true,
+    })
+    assert.deepEqual(server.control.outbox, {
+        revision: 2,
+        deliveredRevision: 0,
+    })
+    assert.equal(server.control.message, null)
     assert.equal(state.calls.length, 1)
-    const call = state.calls[0]
-    assert.equal(call.run.id, runId)
-    assert.equal(call.message.revision, 1)
-    assert.deepEqual(state.intros, [
-        {
-            channelId: settings.seedChannelId,
-            show: true,
-            roleId: ROLE,
-            message: state.intros[0].message,
-        },
+    assert.equal(state.calls[0].run.id, runId)
+    assert.deepEqual(state.calls[0].outbox, {
+        revision: 1,
+        deliveredRevision: 0,
+    })
+    assert.equal(state.intros.length, 1)
+    assert.equal(state.intros[0].channelId, settings.seedChannelId)
+    assert.equal(state.intros[0].show, true)
+    assert.equal(state.intros[0].roleId, ROLE)
+    assert.deepEqual(state.intros[0].servers, [
+        { name: "Vlci #1 · Public", schedule: settings.schedule },
     ])
 
-    const claimArgs = {
-        secret,
+    // The bot published the call through the shared managed publications.
+    ctx.db.seed("discordPublications", {
+        _id: "discordPublications:call",
         guildId: GUILD,
-        kind: "call",
-        key: runId,
-        revision: call.message.revision,
-    }
-    const lease = await invoke(bot.claimMessage, ctx, claimArgs)
-    assert.equal(lease.messageId, null)
-    assert.equal(await invoke(bot.claimMessage, ctx, claimArgs), null)
-    await invoke(bot.saveMessage, ctx, {
-        secret,
-        id: lease.id,
-        fence: lease.fence,
+        key: `seed:call:${runId}`,
         channelId: settings.seedChannelId,
         messageId: "999999999999999999",
-        pending: null,
-        hash: "h1",
     })
-    await assert.rejects(
-        invoke(bot.saveMessage, ctx, {
+    assert.equal(
+        await invoke(bot.recordDelivery, ctx, {
             secret,
-            id: lease.id,
-            fence: lease.fence - 1,
-            channelId: null,
-            messageId: null,
-            pending: null,
-            hash: null,
+            guildId: GUILD,
+            kind: "call",
+            key: runId,
+            revision: 1,
         }),
-        /lease/
+        true
     )
-    await invoke(bot.finishMessage, ctx, {
-        secret,
-        id: lease.id,
-        fence: lease.fence,
-    })
-    const row = ctx.db.tables.discordSeedMessages.find(
-        (entry) => entry.key === runId
-    )!
-    assert.equal(row.deliveredRevision, 1)
-    assert.equal(row.leaseUntil, 0)
-
     assert.equal(
         await invoke(bot.recordCallPosted, ctx, {
             secret,
@@ -506,7 +505,8 @@ test("the bot delivers the call under a fenced lease, records the post and the p
         ]
     )
 
-    // Live at 41 players: the run ends and the final edit is requested.
+    // Live at 41 players: the run ends and the final edit stays requested
+    // until the bot records it.
     advance(30, 41)
     const live = await invoke(tick.evaluatePlan, ctx, { planId })
     assert.equal(live.status, "live")
@@ -515,14 +515,89 @@ test("the bot delivers the call under a fenced lease, records the post and the p
         guildId: GUILD,
     })
     assert.equal(after.servers[0].activeRun, null)
+    assert.equal(after.calls.length, 1)
     assert.equal(after.calls[0].run.status, "live")
-    assert.ok(
-        after.calls[0].message.revision >
-            after.calls[0].message.deliveredRevision
-    )
+    assert.deepEqual(after.calls[0].message, {
+        channelId: settings.seedChannelId,
+        messageId: "999999999999999999",
+    })
+    await invoke(bot.recordDelivery, ctx, {
+        secret,
+        guildId: GUILD,
+        kind: "call",
+        key: runId,
+        revision: after.calls[0].outbox.revision,
+    })
+    const done = await invoke(bot.deliveryState, ctx, {
+        secret,
+        guildId: GUILD,
+    })
+    assert.deepEqual(done.calls, [])
     assert.deepEqual(
         await invoke(bot.panelStates, ctx, { secret, guildId: GUILD }),
         []
+    )
+    assert.equal(
+        await invoke(bot.recordDelivery, ctx, {
+            secret,
+            guildId: GUILD,
+            kind: "call",
+            key: "unknown",
+            revision: 1,
+        }),
+        false
+    )
+})
+
+test("a failed delivery attempt is kept for the retry, not marked delivered", async (t) => {
+    const { ctx } = setup(t, 11)
+    await savedPlan(ctx)
+    await invoke(bot.recordDelivery, ctx, {
+        secret,
+        guildId: GUILD,
+        kind: "control",
+        key: CONNECTION,
+        revision: 1,
+        error: "Missing Permissions",
+    })
+    const row = ctx.db.tables.discordSeedMessages.find(
+        (entry) => entry.kind === "control"
+    )!
+    assert.equal(row.deliveredRevision, 0)
+    assert.equal(row.error, "Missing Permissions")
+})
+
+test("Zvát mě na seed works only for a role a plan offers", async (t) => {
+    const { ctx } = setup(t)
+    await savedPlan(ctx)
+    assert.deepEqual(
+        await invoke(bot.roleOffer, ctx, {
+            secret,
+            guildId: GUILD,
+            roleId: ROLE,
+        }),
+        { offered: true, seedChannelId: settings.seedChannelId }
+    )
+    for (const [guildId, roleId] of [
+        ["guild-b", ROLE],
+        [GUILD, "444444444444444444"],
+        [GUILD, "not-a-role"],
+    ])
+        assert.equal(
+            (await invoke(bot.roleOffer, ctx, { secret, guildId, roleId }))
+                .offered,
+            false
+        )
+    ctx.db.tables.discordSeedPlans[0].settings.roleSelfService = false
+    assert.equal(
+        (
+            await invoke(bot.roleOffer, ctx, {
+                secret,
+                guildId: GUILD,
+                roleId: ROLE,
+            })
+        ).offered,
+        false
     )
 })
 
