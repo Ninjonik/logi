@@ -299,11 +299,26 @@ export const findNoticeTarget = query({
             })
         )
 
-        return handleFindNoticeTarget({
+        const targets = handleFindNoticeTarget({
             events: eventsWithReserves,
             userId: args.userId,
             query: args.query.trim(),
             now: new Date(),
+        })
+        // The match category ("Přátelák", "Liga") labels /notice's choices.
+        const byId = new Map(events.map((event) => [String(event._id), event]))
+        return targets.map((target) => {
+            const event = byId.get(target.id)
+            const categoryId =
+                event?.kind === "training"
+                    ? undefined
+                    : event?.matchType?.trim() || undefined
+            const label = categoryId
+                ? (guild?.eventCategories?.find(
+                      (category) => category.id === categoryId
+                  )?.label ?? categoryId)
+                : undefined
+            return label ? { ...target, categoryLabel: label } : target
         })
     },
 })

@@ -8,7 +8,10 @@ import {
     assertClanSettingsSlices,
     type AnyClanSettingsSlice,
 } from "./settings-slices"
+import { commandsSettingsSlice } from "./commands-settings-slice"
 
-export const CLAN_SETTINGS_SLICES: readonly AnyClanSettingsSlice[] = []
+export const CLAN_SETTINGS_SLICES: readonly AnyClanSettingsSlice[] = [
+    commandsSettingsSlice as AnyClanSettingsSlice,
+]
 
 assertClanSettingsSlices(CLAN_SETTINGS_SLICES)

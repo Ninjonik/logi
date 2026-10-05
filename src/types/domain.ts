@@ -1,5 +1,6 @@
 export type Timestamp = string
 
+import type { StoredCommandSettings } from "@/domain/discord-commands/command-settings"
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
@@ -233,6 +234,8 @@ export type DiscordConfig = {
     playerStatsServers?: PlayerStatsServer[]
     /** `/stats` command availability and default sharing room. */
     statsSettings?: StatsCommandSettings
+    /** Per-command settings of the "Příkazy" page (who, reply, where). */
+    commandSettings?: StoredCommandSettings
     gameOverrides?: Partial<Record<GameId, GameDiscordOverrides>>
     ticketSettings?: TicketSettings
     membershipSettings?: MembershipSettings

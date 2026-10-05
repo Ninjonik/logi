@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
+import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -299,6 +300,7 @@ test("settings API queues the documented settings payload", async () => {
 })
 
 test("settings responses carry the feature slices and refuse unknown slices", async () => {
+    const sliceKeys = CLAN_SETTINGS_SLICES.map((slice) => slice.key).sort()
     const db = new FakeDb()
     db.tables.discordConfigs.set("config-a", {
         _id: "config-a",
@@ -316,8 +318,8 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         { db },
         { secret: "dev-internal-auth-secret", keyHash: "key" }
     )) as { slices: unknown; discordConfig: Record<string, unknown> }
-    // No redesign slice is registered yet; the key is always present.
-    assert.deepEqual(read.slices, {})
+    // Every registered slice answers, also for a clan that saved nothing.
+    assert.deepEqual(Object.keys(read.slices as object).sort(), sliceKeys)
     assert.equal("playerStatsServers" in read.discordConfig, false)
 
     const refused = await handler(publicApi.mutateClanSettings)(
@@ -350,7 +352,10 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         }
     )
     assert.equal(updated?.status, 200)
-    assert.deepEqual(JSON.parse(updated!.body).data.slices, {})
+    assert.deepEqual(
+        Object.keys(JSON.parse(updated!.body).data.slices).sort(),
+        sliceKeys
+    )
 })
 
 test("event signup queues a roster update through the shared queue", async () => {
