@@ -124,7 +124,7 @@ export function VerifiedPlatformLinks({
 
     return (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t py-3.5">
-            <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-0.5">
+            <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-0.5">
                 <span className="text-sm font-medium">Steam</span>
                 {data === null && !error ? (
                     <Skeleton className="h-4 w-56 max-w-full" />

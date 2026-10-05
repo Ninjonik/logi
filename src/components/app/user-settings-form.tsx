@@ -459,7 +459,7 @@ export function UserSettingsForm({
                     initialCallbackFailed={steamCallbackFailed}
                 />
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t py-3.5">
-                    <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-0.5">
+                    <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-0.5">
                         <span className="text-sm font-medium">
                             {t.manualIdsTitle}
                         </span>
@@ -527,7 +527,7 @@ export function UserSettingsForm({
 
             <Section title={t.privacyTitle} className="pb-4">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t py-3.5">
-                    <span className="flex-[1_1_220px] text-sm">
+                    <span className="flex-[1_1_260px] text-sm">
                         {t.downloadAllData}
                     </span>
                     <Button
@@ -566,7 +566,7 @@ export function UserSettingsForm({
                             aria-describedby={ids.erasure}
                             placeholder={user.name}
                             autoComplete="off"
-                            className="border-status-danger-border bg-background text-foreground h-9 min-w-0 flex-[1_1_180px] rounded-lg"
+                            className="border-status-danger-border bg-background text-foreground h-9 min-w-0 flex-[1_1_220px] rounded-lg"
                         />
                         <Button
                             type="submit"
