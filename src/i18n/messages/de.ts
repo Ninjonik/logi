@@ -2756,7 +2756,7 @@ export const deMessages = {
             title: "Wardogs League verfolgen",
             cadence:
                 "Neue Spiele werden alle {scan} Minuten gesucht, verfolgte Details alle {refresh} Minuten aktualisiert. Website und Discord nutzen denselben Eintrag.",
-            enable: "Spiele verfolgen und Discord-Karten posten",
+            enable: "Wardogs League und Spiel-Links verfolgen",
             teamCodes: "Kürzel der verfolgten Teams (durch Komma getrennt)",
             scanEvery: "Neue Spiele suchen alle",
             refreshEvery: "Verfolgte Details aktualisieren alle",
@@ -2765,8 +2765,8 @@ export const deMessages = {
                 "Der gemeinsame Index-Scan läuft im kürzesten Intervall, das ein aktivierter Clan wünscht; dieser Clan übernimmt einen neuen Index erst nach seinem eigenen Intervall. Begrenzungen der Quelle können die Intervalle verlängern.",
             intakeChannel: "Kanal, in dem Leute Links posten",
             intakePlaceholder: "Kanal für Links wählen",
-            outputChannel: "Kanal für Spielkarten",
-            outputPlaceholder: "Kanal für Karten wählen",
+            panelsNote:
+                "Tabelle und nächste Spiele der ganzen Liga gehen als Panel WD League unter Einstellungen → Panels in Discord in den Discord. Karten für einzelne Spiele werden nicht mehr gepostet. Wenn ihr das Verfolgen ausschaltet, löscht der Bot die Nachrichten des Panels.",
             intakeNote:
                 "Nachrichten von Bots werden ignoriert. Damit Nachrichten von Leuten automatisch gelesen werden, muss der Betreiber des Bots Message Content aktivieren. Scan und manuelles Hinzufügen funktionieren auch ohne.",
             save: "Einstellungen speichern",
@@ -6398,6 +6398,10 @@ export const deMessages = {
             competition_missing: {
                 title: "Der Wettbewerb des Panels existiert nicht mehr.",
                 fix: "Wählt im Editor einen anderen Wettbewerb oder löscht das Panel.",
+            },
+            league_disabled: {
+                title: "Wardogs League ist in den Einstellungen ausgeschaltet, daher hat der Bot die Nachrichten des Panels gelöscht.",
+                fix: "Schaltet Wardogs League unter Einstellungen → Wardogs League ein; der Bot sendet dann beide Nachrichten neu.",
             },
             unknown: {
                 title: "Die Nachricht konnte nicht gesendet werden.",

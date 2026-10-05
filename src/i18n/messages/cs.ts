@@ -2661,7 +2661,7 @@ export const csMessages = {
             title: "Sledování Wardogs League",
             cadence:
                 "Nové zápasy kontrolujeme po {scan} minutách, sledované detaily po {refresh} minutách. Web i Discord používají stejný záznam.",
-            enable: "Sledovat zápasy a posílat karty do Discordu",
+            enable: "Sledovat Wardogs League a odkazy na zápasy",
             teamCodes: "Kódy sledovaných týmů (oddělené čárkou)",
             scanEvery: "Hledat nové zápasy každých",
             refreshEvery: "Obnovovat sledované detaily každých",
@@ -2670,8 +2670,8 @@ export const csMessages = {
                 "Společné procházení seznamu běží v nejkratším intervalu, který si některý zapnutý klan přeje; tento klan převezme nový seznam až po uplynutí vlastního intervalu. Omezení zdroje může intervaly prodloužit.",
             intakeChannel: "Kanál, kam lidé posílají odkazy",
             intakePlaceholder: "Vyberte kanál pro odkazy",
-            outputChannel: "Kanál pro karty zápasů",
-            outputPlaceholder: "Vyberte kanál pro karty",
+            panelsNote:
+                "Tabulku a nejbližší zápasy celé ligy posílá do Discordu panel WD League v Nastavení → Panely v Discordu. Karty jednotlivých zápasů se už neposílají. Když sledování vypnete, bot zprávy panelu smaže.",
             intakeNote:
                 "Zprávy botů ignorujeme. Automatické čtení zpráv lidí musí provozovatel bota zapnout (Message Content). Procházení seznamu a ruční přidání fungují i bez toho.",
             save: "Uložit nastavení",
@@ -6217,6 +6217,10 @@ export const csMessages = {
             competition_missing: {
                 title: "Soutěž panelu už neexistuje.",
                 fix: "V editoru vyberte jinou soutěž, nebo panel odstraňte.",
+            },
+            league_disabled: {
+                title: "Wardogs League je v Nastavení vypnutá, bot zprávy panelu smazal.",
+                fix: "Zapněte Wardogs League v Nastavení → Wardogs League, bot pak obě zprávy pošle znovu.",
             },
             unknown: {
                 title: "Zprávu se nepodařilo odeslat.",

@@ -31,6 +31,7 @@ import type { HllServed } from "../../../src/application/game-data/read-hll-live
 import { createPanelImageSource, webPanelImageRequest } from "./score-image"
 import { everyoneCanView } from "../../../src/domain/discord-seed/channels"
 import { getPanelMessages } from "../../../src/lib/clan-language/panels"
+import { runLeaguePanels, type LeaguePanelData } from "../league/panels"
 import { applicationEmoji } from "../runtime/application-emoji"
 import { publishManagedMessage } from "../sync/publication"
 import { reportToErrorsChannel } from "../ui/replies"
@@ -238,7 +239,7 @@ export function startPublicPanelWorker(
         now: Date.now,
     })
 
-    const portsFor = (guild: Guild, pass: GuildPass): PanelRunPorts => ({
+    const basePortsFor = (guild: Guild, pass: GuildPass): PanelRunPorts => ({
         publish: (input) =>
             publishManagedMessage(client, {
                 guildId: guild.id,
@@ -328,6 +329,26 @@ export function startPublicPanelWorker(
             })
         },
     })
+
+    // W5: the two WD League messages read the shared League data of this guild.
+    const portsFor = (guild: Guild, pass: GuildPass): PanelRunPorts => {
+        const ports = basePortsFor(guild, pass)
+        return {
+            ...ports,
+            league: (panel, leaguePass) =>
+                runLeaguePanels(panel, leaguePass, {
+                    ...ports,
+                    data: (options) =>
+                        query<LeaguePanelData>(
+                            "leagueDiscoveryPanels:forGuild",
+                            {
+                                guildId: guild.id,
+                                options,
+                            }
+                        ),
+                }),
+        }
+    }
 
     const report = (
         guildId: string,

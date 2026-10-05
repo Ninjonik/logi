@@ -2671,7 +2671,7 @@ export const enMessages = {
             title: "Wardogs League tracking",
             cadence:
                 "New matches are checked every {scan} minutes and tracked details every {refresh} minutes. The website and Discord use the same record.",
-            enable: "Track matches and post Discord cards",
+            enable: "Track Wardogs League and match links",
             teamCodes: "Codes of tracked teams (comma separated)",
             scanEvery: "Look for new matches every",
             refreshEvery: "Refresh tracked details every",
@@ -2680,8 +2680,8 @@ export const enMessages = {
                 "The shared index scan runs at the fastest interval any enabled clan asks for; this clan takes a fresh index only after its own interval. Limits at the source can stretch the intervals.",
             intakeChannel: "Channel where people post links",
             intakePlaceholder: "Choose the intake channel",
-            outputChannel: "Channel for match cards",
-            outputPlaceholder: "Choose the card channel",
+            panelsNote:
+                "The table and the next matches of the whole league go to Discord as the WD League panel in Settings → Discord panels. Cards for single matches are no longer posted. When you turn tracking off, the bot deletes the panel's messages.",
             intakeNote:
                 "Bot messages are ignored. Reading people's messages automatically needs Message Content enabled for the bot by its operator. Scanning and manual additions work without it.",
             save: "Save settings",
@@ -6238,6 +6238,10 @@ export const enMessages = {
             competition_missing: {
                 title: "The panel's competition no longer exists.",
                 fix: "Choose another competition in the editor, or delete the panel.",
+            },
+            league_disabled: {
+                title: "Wardogs League is turned off in Settings, so the bot deleted the panel's messages.",
+                fix: "Turn Wardogs League on in Settings → Wardogs League; the bot then posts both messages again.",
             },
             unknown: {
                 title: "The message could not be sent.",

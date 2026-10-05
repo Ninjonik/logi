@@ -18,8 +18,12 @@ import {
     type LeagueRead,
     type LeagueSnapshot,
 } from "@/domain/wardogs-league/contracts"
+import {
+    resultRecordFromSnapshot,
+    type LeagueResultRecord,
+} from "@/domain/wardogs-league/results"
 import type { LeaguePanelSource } from "@/application/wardogs-league/league-panels"
-import type { LeagueResultRecord } from "@/domain/wardogs-league/results"
+import type { StoredLeagueFixture } from "@/domain/wardogs-league/panels"
 
 type Team = NonNullable<LeagueSnapshot["teams"]>[number]
 const team = (
@@ -359,4 +363,119 @@ export class InMemoryLeagueStore {
             }),
         }
     }
+}
+
+type BoardCode = keyof typeof LEAGUE_TEAMS
+/** The board's recent results #33–#37 (P6-18) as stored results. */
+export function boardLeagueResults(): LeagueResultRecord[] {
+    const rows: Array<
+        [number, string, [BoardCode, BoardCode, BoardCode], string]
+    > = [
+        [33, "2026-10-03T18:00:00.000Z", ["ROG", "VLK", "DEF"], "League"],
+        [34, "2026-10-04T18:00:00.000Z", ["OSP", "BAMC", "MNT"], "League"],
+        [35, "2026-10-06T18:00:00.000Z", ["ROG", "HAV", "KOS"], "League"],
+        [36, "2026-10-07T18:00:00.000Z", ["VLK", "MNT", "TRN"], "Friendly"],
+        [37, "2026-10-08T18:00:00.000Z", ["BAMC", "OSP", "DEF"], "League"],
+    ]
+    return rows.map(([fixtureNumber, scheduledAt, podium, type]) => {
+        const record = resultRecordFromSnapshot(
+            completedLeagueSnapshot({
+                id: `m${fixtureNumber}`,
+                fixtureNumber,
+                scheduledAt,
+                podium,
+                type,
+            }),
+            scheduledAt
+        )
+        if (!record) throw new Error("Synthetic result missing.")
+        return record
+    })
+}
+
+/** The board's upcoming fixtures #38–#43 (P6-22..29), read a minute before `now`. */
+export function boardLeagueFixtures(now: number): StoredLeagueFixture[] {
+    const fixture = (
+        fixtureNumber: number,
+        scheduledAt: string,
+        codes: [BoardCode, BoardCode, BoardCode],
+        type: string,
+        extra: Partial<LeagueSnapshot> = {}
+    ): StoredLeagueFixture => ({
+        matchId: `f${fixtureNumber}`,
+        phase: "upcoming",
+        stale: false,
+        revision: fixtureNumber,
+        snapshot: leagueSnapshotFixture({
+            id: `f${fixtureNumber}`,
+            sourceUrl: `https://wardogsleague.net/matches/f${fixtureNumber}`,
+            fixtureNumber,
+            type,
+            scheduledAt,
+            teams: codes.map((code) => LEAGUE_TEAMS[code]),
+            hosting: { mode: "Self-hosted", teamCode: codes[0] },
+            mapVote: {
+                status: "Open",
+                closesAt: new Date(now + 15 * 3600_000).toISOString(),
+                ballots: null,
+            },
+            fetchedAt: new Date(now - 60_000).toISOString(),
+            ...extra,
+        }),
+    })
+    const quiet = { map: null, mapVote: null }
+    return [
+        fixture(
+            38,
+            "2026-10-10T18:30:00.000Z",
+            ["VLK", "ROG", "BAMC"],
+            "Friendly"
+        ),
+        fixture(
+            39,
+            "2026-10-11T16:00:00.000Z",
+            ["OSP", "KOS", "TRN"],
+            "League",
+            {
+                map: null,
+                moderator: "Kowalski",
+                rules: { summary: "2 of 3 picked", choices: null },
+            }
+        ),
+        fixture(
+            40,
+            "2026-10-11T19:00:00.000Z",
+            ["MNT", "DEF", "HAV"],
+            "League",
+            {
+                map: null,
+                mapVote: { status: "Not open", closesAt: null, ballots: null },
+                rules: { summary: "1 of 3 picked", choices: null },
+            }
+        ),
+        fixture(
+            41,
+            "2026-10-13T18:00:00.000Z",
+            ["ROG", "HAV", "TRN"],
+            "Friendly",
+            quiet
+        ),
+        fixture(
+            42,
+            "2026-10-15T18:00:00.000Z",
+            ["VLK", "MNT", "OSP"],
+            "League",
+            {
+                ...quiet,
+                hosting: { mode: "Self-hosted", teamCode: "MNT" },
+            }
+        ),
+        fixture(
+            43,
+            "2026-10-17T17:00:00.000Z",
+            ["BAMC", "DEF", "KOS"],
+            "League",
+            quiet
+        ),
+    ]
 }

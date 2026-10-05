@@ -250,7 +250,11 @@ test("the panels query: fixtures ship, the table waits, then fills from results;
             fixtureCount: 6,
         },
     })
-    assert.deepEqual(none, { standings: null, fixtures: null })
+    assert.deepEqual(none, {
+        enabled: true,
+        standings: null,
+        fixtures: null,
+    })
     await assert.rejects(
         invoke(forGuild, ctx, {
             secret,

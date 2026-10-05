@@ -10,6 +10,14 @@ export type TrackingState =
  * WD League panel. Disabling everywhere stops collection (L3-55); stored
  * fixtures and results stay readable.
  */
+/**
+ * Whether a workspace's WD League panels may show (L3-55): turning Wardogs
+ * League off in its settings deletes the panel messages; a workspace that
+ * never saved the settings keeps the panel it created.
+ */
+export function leaguePanelsOn(settings: { enabled: boolean } | null) {
+    return settings?.enabled ?? true
+}
 export function leagueCollectionWanted(
     workspaces: ReadonlyArray<{ enabled: boolean }>,
     activeLeaguePanels = 0
