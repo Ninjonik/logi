@@ -113,12 +113,14 @@ export function ClanStatsSection({
                     dictionary={dictionary}
                     kind="combat"
                 />
-                <PerformanceHistoryChart
-                    title={text.points}
-                    matches={performance}
-                    dictionary={dictionary}
-                    kind="points"
-                />
+                <div className="xl:col-span-2">
+                    <PerformanceHistoryChart
+                        title={text.points}
+                        matches={performance}
+                        dictionary={dictionary}
+                        kind="points"
+                    />
+                </div>
             </div>
             <section
                 aria-labelledby="overview-recent-games"
