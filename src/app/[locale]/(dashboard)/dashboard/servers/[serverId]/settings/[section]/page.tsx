@@ -17,6 +17,7 @@ import { MatchTemplatesSettings } from "@/components/app/settings/match-template
 import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
+import { PublicInviteSettings } from "@/components/app/settings/public-invite-settings"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
 import { settingsHref } from "@/components/app/settings/settings-section-meta"
@@ -111,13 +112,21 @@ export default async function ServerSettingsSectionPage({
     switch (section) {
         case "profile":
             content = (
-                <ServerFrontendSettingsForm
-                    server={server}
-                    dictionary={dictionary}
-                    guildLoginUrl={guildLoginUrl}
-                    showLoginLink={false}
-                    part="profile"
-                />
+                <div className="space-y-6">
+                    <ServerFrontendSettingsForm
+                        server={server}
+                        dictionary={dictionary}
+                        guildLoginUrl={guildLoginUrl}
+                        showLoginLink={false}
+                        part="profile"
+                    />
+                    <PublicInviteSettings
+                        serverId={serverId}
+                        publicPageHref={`/${locale}/clans/${server.discordId}`}
+                        inviteUrl={server.publicInviteUrl ?? null}
+                        dictionary={dictionary}
+                    />
+                </div>
             )
             break
         case "event-categories":

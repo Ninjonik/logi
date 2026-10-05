@@ -66,7 +66,7 @@ export default async function PublicMatchPage({ params }: Props) {
     const match = await getPublicMatch(eventId)
     if (!match) notFound()
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} current="community">
             <PublicPage>
                 <div className="space-y-6">
                     <PublicBreadcrumbs

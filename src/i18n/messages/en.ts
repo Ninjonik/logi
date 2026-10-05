@@ -555,6 +555,21 @@ export const enMessages = {
         recorded: "Recorded",
         noMatches: "No public match results have been posted yet.",
         loadMore: "Load more",
+        inviteSettings: {
+            title: "Discord invite",
+            description:
+                "The Join on Discord button on the clan's public page opens this invite.",
+            label: "Invite link",
+            help: "Only discord.gg or discord.com/invite links. Leave it empty to hide the button.",
+            invalid:
+                "That is not a Discord invite. Copy the link from Discord (Invite People).",
+            save: "Save invite",
+            saving: "Saving…",
+            saved: "Invite saved.",
+            removed: "Invite removed.",
+            saveError: "The invite could not be saved.",
+            viewPublicPage: "View public page",
+        },
     },
     app: {
         name: "Logi",
@@ -1552,11 +1567,53 @@ export const enMessages = {
             emptyTitle: "No public competitions yet",
             emptyDescription:
                 "Competitions appear here once Logi's administrators publish them.",
+            matchesColumn: "Played",
+            winsColumn: "Won",
+            pointsColumn: "Points",
+            standingsNoteFor:
+                "Points follow the {name} rules. Clans confirm results; corrections appear here within a few minutes.",
+            round: "Round {round}",
+            resultsSuffix: "results",
+            thisWeekend: "this weekend",
+            thisWeek: "this week",
+            nextWeek: "next week",
+            undated: "Date to be confirmed",
+            noFixturesTitle: "No matches yet",
+            noFixturesDescription:
+                "The schedule appears here once the organisers publish it.",
+            divisionsIn: {
+                one: "in {count} division",
+                few: "in {count} divisions",
+                many: "in {count} divisions",
+                other: "in {count} divisions",
+            },
+            rules: "Rules",
+            statistics: "Statistics",
+            moreRounds: "More rounds ({count})",
         },
         clan: {
             noMatchesTitle: "No recorded matches yet",
             noMatchesDescription:
                 "Matches appear here once the clan publishes results in Logi.",
+            joinDiscord: "Join on Discord",
+            activeMembers: {
+                one: "{count} active member",
+                few: "{count} active members",
+                many: "{count} active members",
+                other: "{count} active members",
+            },
+            statsLabel: "Clan statistics",
+            competition: "Competition",
+            place: "Place {place}",
+            upcoming: "Upcoming",
+            noUpcoming: "The clan has not announced another match yet.",
+            recent: "Recent matches",
+            versus: "vs {opponent}",
+            outcomeShort: {
+                victory: "W",
+                defeat: "L",
+                draw: "D",
+            },
         },
     },
     competition: {

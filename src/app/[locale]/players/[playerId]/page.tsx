@@ -89,7 +89,7 @@ export default async function PublicPlayerPage({ params }: Props) {
     )
 
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} current="community">
             <PublicPage>
                 <div className="space-y-6">
                     <PublicBreadcrumbs

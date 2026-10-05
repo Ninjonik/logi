@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation"
-import { connection } from "next/server"
-import { Swords } from "lucide-react"
 import type { Metadata } from "next"
-import { Suspense } from "react"
-import Image from "next/image"
-import Link from "next/link"
 
+import {
+    getPublicClanPageDetails,
+    profileOnlyDetails,
+} from "@/lib/read-models/public-clan-page"
 import {
     getPublicImageDimensions,
     getPublicImageVersion,
@@ -14,32 +13,16 @@ import {
     PublicPage,
     PublicSiteShell,
 } from "@/components/public/public-site-shell"
-import { PerformanceHistoryChart } from "@/components/app/performance-history-chart"
+import { DynamicMetadataMarker } from "@/components/public/dynamic-metadata-marker"
 import { getGuildPerformanceHistory } from "@/lib/read-models/performance-history"
-import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { getPublicPreviewMetadata } from "@/lib/public-preview-metadata"
+import { PublicClanView } from "@/components/public/public-clan-view"
 import { getPublicClan } from "@/lib/read-models/public-profiles"
-import { PublicStat } from "@/components/public/public-stat"
-import { EmptyState } from "@/components/app/empty-state"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLocalizedCanonical } from "@/lib/seo"
 import { isLocale } from "@/i18n/config"
 
 type Props = { params: Promise<{ locale: string; guildId: string }> }
-
-async function ConnectionMarker() {
-    await connection()
-    return null
-}
-function DynamicMetadataMarker() {
-    return (
-        <Suspense>
-            <ConnectionMarker />
-        </Suspense>
-    )
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, guildId } = await params
@@ -70,168 +53,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicClanPage({ params }: Props) {
     const { locale, guildId } = await params
     const resolvedLocale = isLocale(locale) ? locale : "en"
-    const dictionary = getDictionary(resolvedLocale)
     const clan = await getPublicClan(guildId)
     if (!clan) notFound()
-    const performanceHistory = await getGuildPerformanceHistory(guildId)
+    const [details, performanceHistory] = await Promise.all([
+        getPublicClanPageDetails(guildId),
+        getGuildPerformanceHistory(guildId),
+    ])
 
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} current="community">
             <PublicPage>
-                <div className="space-y-6">
-                    <PublicBreadcrumbs
-                        items={[
-                            {
-                                label: dictionary.app.name,
-                                href: `/${resolvedLocale}`,
-                            },
-                            {
-                                label: dictionary.publicProfiles.communityTitle,
-                                href: `/${resolvedLocale}/community`,
-                            },
-                            { label: clan.name },
-                        ]}
-                    />
-                    <section className="bg-card flex flex-col gap-5 rounded-3xl border p-6 sm:flex-row sm:items-center">
-                        <Image
-                            src={clan.avatar}
-                            alt=""
-                            width={96}
-                            height={96}
-                            className="size-20 rounded-2xl object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                            <h1 className="text-3xl font-semibold">
-                                {clan.name}
-                            </h1>
-                            {clan.description ? (
-                                <p className="text-muted-foreground mt-1">
-                                    {clan.description}
-                                </p>
-                            ) : null}
-                            <p className="text-muted-foreground mt-3 text-sm">
-                                {clan.memberCount}{" "}
-                                {dictionary.publicProfiles.activeMembers}
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-3 gap-5 text-center">
-                            <PublicStat
-                                label={dictionary.publicProfiles.matches}
-                                value={String(clan.stats.matches)}
-                            />
-                            <PublicStat
-                                label={dictionary.publicProfiles.wins}
-                                value={String(clan.stats.wins)}
-                            />
-                            <PublicStat
-                                label={dictionary.publicProfiles.winRate}
-                                value={`${Math.round(clan.stats.winRate * 100)}%`}
-                            />
-                        </div>
-                    </section>
-                    {performanceHistory.length ? (
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between gap-4">
-                                <CardTitle>
-                                    {dictionary.clan.performanceTrend}
-                                </CardTitle>
-                                <PlayerTrendIndicators
-                                    matches={performanceHistory}
-                                    dictionary={dictionary}
-                                />
-                            </CardHeader>
-                        </Card>
-                    ) : null}
-                    <div className="grid gap-6 xl:grid-cols-2">
-                        <PerformanceHistoryChart
-                            title={dictionary.clan.performanceTrend}
-                            matches={performanceHistory}
-                            dictionary={dictionary}
-                            kind="effectiveness"
-                        />
-                        <PerformanceHistoryChart
-                            title={dictionary.clan.kd}
-                            matches={performanceHistory}
-                            dictionary={dictionary}
-                            kind="combat"
-                        />
-                        <PerformanceHistoryChart
-                            title={dictionary.clan.points}
-                            matches={performanceHistory}
-                            dictionary={dictionary}
-                            kind="points"
-                        />
-                    </div>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>
-                                {dictionary.publicProfiles.recentMatches}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            {clan.recentMatches.length === 0 ? (
-                                <EmptyState
-                                    icon={Swords}
-                                    title={
-                                        dictionary.publicSite.clan
-                                            .noMatchesTitle
-                                    }
-                                    description={
-                                        dictionary.publicSite.clan
-                                            .noMatchesDescription
-                                    }
-                                />
-                            ) : null}
-                            {clan.recentMatches.map((match) => (
-                                <Link
-                                    key={match.eventId}
-                                    href={`/${resolvedLocale}/matches/${match.eventId}`}
-                                    className="hover:bg-muted flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
-                                >
-                                    <div>
-                                        <p className="font-medium">
-                                            {match.name}
-                                        </p>
-                                        <p className="text-muted-foreground text-sm">
-                                            {[match.category, match.mapName]
-                                                .filter(Boolean)
-                                                .join(" · ")}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${match.outcome === "victory" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : match.outcome === "defeat" ? "bg-red-500/15 text-red-700 dark:text-red-300" : "bg-muted text-muted-foreground"}`}
-                                        >
-                                            {outcomeLabel(
-                                                match.outcome,
-                                                dictionary
-                                            )}
-                                        </span>
-                                        <p className="text-lg font-semibold tabular-nums">
-                                            {match.score.allied} –{" "}
-                                            {match.score.axis}
-                                        </p>
-                                    </div>
-                                </Link>
-                            ))}
-                        </CardContent>
-                    </Card>
-                    <DynamicMetadataMarker />
-                </div>
+                <PublicClanView
+                    clan={clan}
+                    details={details ?? profileOnlyDetails(clan)}
+                    performanceHistory={performanceHistory}
+                    locale={resolvedLocale}
+                    dictionary={getDictionary(resolvedLocale)}
+                />
+                <DynamicMetadataMarker />
             </PublicPage>
         </PublicSiteShell>
     )
-}
-
-function outcomeLabel(
-    outcome: string | undefined,
-    dictionary: ReturnType<typeof getDictionary>
-) {
-    return outcome === "victory"
-        ? dictionary.event.resultVictory
-        : outcome === "defeat"
-          ? dictionary.event.resultDefeat
-          : outcome === "draw"
-            ? dictionary.event.resultDraw
-            : dictionary.shared.notSet
 }
