@@ -56,7 +56,10 @@ export function ModalQuestionsEditor({
     return (
         <section aria-labelledby={`${id}-title`} className="space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 id={`${id}-title`} className="text-sm font-semibold">
+                <h3
+                    id={`${id}-title`}
+                    className="text-muted-foreground text-xs font-semibold tracking-wide uppercase"
+                >
                     {t.questionsTitle}
                 </h3>
                 <span className="text-muted-foreground text-xs">

@@ -3,8 +3,9 @@
 import { Button } from "@/components/ui/button"
 
 /**
- * The save bar at the bottom of a settings form: what saving touches, discard
- * and save. It stays in view while the form scrolls.
+ * The save bar at the bottom of a settings form (designs F1, F2, G5): what
+ * saving touches, discard and save. It stays in view while the form scrolls;
+ * on phones it is a bar at the bottom of the screen (design K2).
  */
 export function SettingsSaveBar({
     note,
@@ -26,20 +27,32 @@ export function SettingsSaveBar({
     onSave(): void
 }) {
     return (
-        <div className="border-border/60 bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 -mx-1 flex flex-col gap-3 rounded-2xl border p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted-foreground text-sm" aria-live="polite">
+        <div
+            data-mobile-action-bar=""
+            className="bg-muted/95 supports-[backdrop-filter]:bg-muted/80 max-sm:bg-background z-30 flex items-center justify-between gap-3 backdrop-blur max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:border-t max-sm:px-3.5 max-sm:pt-3 max-sm:pb-[max(1.125rem,env(safe-area-inset-bottom))] sm:sticky sm:bottom-0 sm:rounded-2xl sm:border sm:px-4 sm:py-3"
+        >
+            <p className="text-sm" aria-live="polite">
                 {dirty ? (
-                    <span className="text-foreground font-medium">
-                        {unsavedLabel} ·{" "}
+                    <span className="font-medium">
+                        {unsavedLabel}
+                        <span className="max-sm:hidden"> · </span>
                     </span>
                 ) : null}
-                {note}
+                <span
+                    className={
+                        dirty
+                            ? "text-muted-foreground max-sm:hidden"
+                            : "text-muted-foreground"
+                    }
+                >
+                    {note}
+                </span>
             </p>
             <div className="flex shrink-0 gap-2">
                 <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 rounded-xl sm:flex-none"
+                    className="bg-background rounded-xl max-sm:hidden"
                     disabled={!dirty || saving}
                     onClick={onDiscard}
                 >
@@ -47,7 +60,7 @@ export function SettingsSaveBar({
                 </Button>
                 <Button
                     type="button"
-                    className="flex-1 rounded-xl sm:flex-none"
+                    className="rounded-xl max-sm:h-11 max-sm:px-6"
                     disabled={saving}
                     onClick={onSave}
                 >

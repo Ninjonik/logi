@@ -8,13 +8,14 @@ import {
     mergedSettingsSection,
     visibleSettingsSections,
 } from "@/domain/workspaces/settings-sections"
-import { DiscordChannelSettingsForm } from "@/components/app/settings/discord-channel-settings-form"
+import {
+    ChannelScopeLegend,
+    DiscordChannelSettingsForm,
+} from "@/components/app/settings/discord-channel-settings-form"
 import { StatsCommandSettingsForm } from "@/components/app/settings/stats-command-settings-form"
-import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-settings-form"
 import { DiscordMessagesSettings } from "@/components/app/settings/discord-messages-settings"
 import { MatchTemplatesSettings } from "@/components/app/settings/match-templates-settings"
-import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
@@ -23,19 +24,16 @@ import { settingsHref } from "@/components/app/settings/settings-section-meta"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
 import { WardogsLeaguePreview } from "@/components/app/wardogs-league-preview"
 import { CalendarFeedSettings } from "@/components/app/calendar-feed-settings"
+import { WebsiteSettings } from "@/components/app/settings/website-settings"
 import { PresetsOverview } from "@/components/app/settings/presets-overview"
 import { GameDataConnections } from "@/components/app/game-data-connections"
 import { TicketSettingsForm } from "@/components/app/ticket-settings-form"
 import { LeagueTrackingForm } from "@/components/app/league-tracking-form"
 import { HelperDataActions } from "@/components/app/helper-data-actions"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
-import { SettingsStep } from "@/components/app/settings/settings-step"
 import { GameSettingsForm } from "@/components/app/game-settings-form"
 import { getRoleAccessOverview } from "@/lib/read-models/role-access"
-import { CustomLoginLink } from "@/components/app/custom-login-link"
-import { SsoApplications } from "@/components/app/sso-applications"
 import { WebhookManager } from "@/components/app/webhook-manager"
-import { ApiKeyManager } from "@/components/app/api-key-manager"
 import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -56,30 +54,6 @@ export async function generateMetadata({
             ? dictionary.settingsHub.sections[section].title
             : dictionary.settingsHub.title,
     }
-}
-
-function Block({
-    title,
-    description,
-    children,
-}: {
-    title: string
-    description?: string
-    children: ReactNode
-}) {
-    return (
-        <section className="space-y-3">
-            <div className="space-y-1">
-                <h3 className="text-sm font-semibold">{title}</h3>
-                {description ? (
-                    <p className="text-muted-foreground text-sm">
-                        {description}
-                    </p>
-                ) : null}
-            </div>
-            {children}
-        </section>
-    )
 }
 
 export default async function ServerSettingsSectionPage({
@@ -109,6 +83,7 @@ export default async function ServerSettingsSectionPage({
     const guildLoginUrl = `${getSiteUrl()}/${locale}/guild-login/${server.discordId}`
 
     let content: ReactNode
+    let legend: ReactNode
     switch (section) {
         case "profile":
             content = (
@@ -198,6 +173,13 @@ export default async function ServerSettingsSectionPage({
             )
             break
         case "channels":
+            legend =
+                snapshot.enabledGames.length > 1 ? (
+                    <ChannelScopeLegend
+                        dictionary={dictionary}
+                        exampleGame={snapshot.enabledGames[1]!}
+                    />
+                ) : undefined
             content = (
                 <DiscordChannelSettingsForm
                     serverId={serverId}
@@ -281,72 +263,15 @@ export default async function ServerSettingsSectionPage({
                 </div>
             )
             break
-        case "website": {
-            const web = dictionary.integrationSettings.web
+        case "website":
             content = (
-                <div className="space-y-6">
-                    <SettingsStep
-                        id="website-key"
-                        number={1}
-                        title={web.stepKey}
-                    >
-                        <ApiKeyManager
-                            serverId={serverId}
-                            dictionary={dictionary}
-                        />
-                    </SettingsStep>
-                    <SettingsStep
-                        id="website-login"
-                        number={2}
-                        title={web.stepLogin}
-                    >
-                        <CustomLoginLink
-                            url={guildLoginUrl}
-                            label={web.loginPage}
-                            dictionary={dictionary}
-                        />
-                        <p className="text-muted-foreground text-sm">
-                            {dictionary.serverSettings.ssoDescription}
-                        </p>
-                        <SsoApplications
-                            serverId={serverId}
-                            dictionary={dictionary}
-                            title={web.ssoApps}
-                        />
-                    </SettingsStep>
-                    <SettingsStep
-                        id="website-members"
-                        number={3}
-                        title={web.stepMembers}
-                    >
-                        <div className="space-y-8">
-                            <Block
-                                title={web.membersTitle}
-                                description={web.membersHelp}
-                            >
-                                <MembershipIntegrationSettings
-                                    serverId={serverId}
-                                    dictionary={dictionary}
-                                />
-                            </Block>
-                            <Block
-                                title={web.eventsTitle}
-                                description={web.eventsHelp}
-                            >
-                                <WebsiteEventPolicySettings
-                                    serverId={serverId}
-                                    dictionary={dictionary}
-                                />
-                            </Block>
-                        </div>
-                    </SettingsStep>
-                    <p className="text-muted-foreground text-sm">
-                        {web.footer}
-                    </p>
-                </div>
+                <WebsiteSettings
+                    serverId={serverId}
+                    dictionary={dictionary}
+                    guildLoginUrl={guildLoginUrl}
+                />
             )
             break
-        }
         case "calendar":
             content = (
                 <CalendarFeedSettings
@@ -411,6 +336,8 @@ export default async function ServerSettingsSectionPage({
             snapshot={snapshot}
             enabledGames={server.enabledGames}
             dictionary={dictionary}
+            legend={legend}
+            ownHeader={section === "tickets" || section === "game-servers"}
         >
             {content}
         </SettingsSectionFrame>

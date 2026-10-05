@@ -11,15 +11,22 @@ Clan settings belong to the active workspace. Only managers should change them, 
 
 ## How settings are organised
 
-**Settings** in the sidebar opens an overview. While the clan still lacks a
-required setting, **First setup** at the top shows the remaining steps (the
-games the clan plays, the announcements channel and the clan role) and
-**Continue** opens the next one. Below it every settings page is a card with a
-short description and its state: **Set up**, **Needs attention** when a required
-setting is missing, or **Off** for an optional feature that is not switched on.
+**Settings** in the sidebar opens an overview. A search field at the top
+filters the pages by name and description (for example _channel_, _role_ or
+_API key_). While a required step is unfinished, **Workspace setup** shows six
+steps with how many are done: the bot on Discord, the games, the clan profile
+(name, logo and description), the channels, roles and access, and, optionally,
+a game server that collects data. The first unfinished step is highlighted and
+**Continue setup** opens it. Below it every settings page is a tile with a
+short description and its state, for example **Done**, **1 channel missing**,
+**Not set**, **On**/**Off**, the number of games, templates or collecting
+servers. A state that cannot be read is left out rather than guessed.
 
-Each card opens its own page with the settings menu beside it (above it on a
-phone). Every page saves only its own settings, so saving one page never resets
+Each tile opens its own page. On a computer the settings menu is on the left,
+with a warning sign next to pages that miss a required setting, and the
+breadcrumb above shows where you are. On a phone **Settings** at the top leads
+back and **Sections** opens the menu; the save bar sits at the bottom of the
+screen. Every page saves only its own settings, so saving one page never resets
 another.
 
 | Group                    | Page                     | What it contains                                                                                                                           |
@@ -58,10 +65,13 @@ the change is clan-wide. Confirm that scope before saving settings, ticket
 panels, membership workflows, or maintenance tools.
 
 **Channels and language** and **/stats command** always show the clan-wide
-settings, whichever game is selected. When one game needs a different
+settings, whichever game is selected. On **Channels and language** the fields
+are grouped into **Language and time**, **Text channels** and **Voice
+channels**; a lock marks a value that is always clan-wide, and a missing
+announcements channel is called out at the top. When one game needs a different
 announcement, event info, forum, squad voice or meeting room, or its own stats
-servers, add an exception for that game under the setting with **Different for a
-game**. A game without an exception uses the clan-wide value; removing the
+servers, add an exception for that game under the setting with **Different
+channel for a game** (or **Different for a game** on /stats). A game without an exception uses the clan-wide value; removing the
 exception, or leaving it empty, returns the game to it when you save.
 Exceptions are offered when the clan plays more than one game. An exception
 stored earlier stays visible, so it can be removed, even after the clan is down
@@ -141,9 +151,15 @@ create and deploy a replacement key before revoking one used by a live site.
 #### Read-only integration keys
 
 In **Settings → Clan website and sign-in → API key for the website**, press **New key** (the form is already open while the clan has no key). It starts with **Read-only** access and
-only **Event summaries** and **Match summaries** selected. Choose the required
-games explicitly; an empty resource or game selection cannot create a restricted
-key. Review the selection, enter a name and press **Create read-only key**.
+the **Matches** area selected. Access is chosen by area instead of one box per
+resource: **Matches** (events, matches, their summaries and strat maps),
+**Rosters**, **Results** (confirmed results, player statistics and game
+history), **Members**, **Game servers** (live server data, Warcon, HLL and
+connection health) and **League and teams**. Choose the required
+games explicitly; an empty area or game selection cannot create a restricted
+key. Each key is listed as one line, for example _read only · matches, members ·
+every game_; keys created before areas existed show an area they cover only in
+part as _(part)_. Review the selection, enter a name and press **Create read-only key**.
 Copy the revealed key before hiding it or leaving the workspace. It is never
 available from the existing-key list.
 
@@ -472,20 +488,27 @@ subscription; add the newly generated URL in Google Calendar afterward.
 
 In **Settings → Game servers**, workspace administrators connect their own game
 servers with **Connect server** (the form is already open while no server is
-connected). For each server enter a name, the game, the
-provider, the HTTPS address without a path, the server ID at the provider (the
+connected). For each server enter a name, choose the **server type** (CRCON,
+Warcon, RCON or the public Wardog Servers list; the game follows from the type),
+the HTTPS address without a path, the server ID at the provider (the
 CRCON server number, usually `1`, or the Warcon panel's server UUID) and the API
 key. **Test connection** makes one read-only request and checks that the key
-works for exactly that server. **Save server** stores the key encrypted; with
-**Start collecting after a successful test** checked, collection starts only if
-the test passes, otherwise the server is saved as a disabled draft. The Wardog
+works for exactly that server. **Save and start collecting** becomes available
+only after a test of exactly the entered values passed; changing a field asks
+for a new test. Saving stores the key encrypted and starts collection. The Wardog
 Servers directory needs no key; a CRCON key is optional and, without one, Logi
 reads only public data. A CRCON key's user needs permission to view connection
 information.
 
-A saved key is never shown again and cannot be exported. Each server shows
-whether a key is stored, when it was changed, whether it passed its last test,
-whether collection is running and when it last succeeded. **Change key** tests
+A saved key is never shown again and cannot be exported. Each server card
+shows its state (**Collecting**, **Collection stopped**, **Not collecting**),
+whether a key is stored and when it was changed, the last test and how long
+ago it ran, and the **last game**: the map the collector last saw and when. A
+stopped server says what to do instead, for example to create a new CRCON key
+that may read server information and enter it with **Change key**. For a
+collecting Warcon server, **Live score** in the **…** menu opens the live
+scoreboard. **Keep played games** sets how long history is kept and **Browse
+played games** opens the retained history. **Change key** tests
 the new key first and replaces the old one only if the test passes, unless you
 explicitly save it as unverified, which stops collection until a test passes.
 **Test saved key** re-checks the stored key. **Rename**, **Remove key** and

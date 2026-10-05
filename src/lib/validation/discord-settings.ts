@@ -161,6 +161,7 @@ const membershipCategorySchema = ticketCategorySchema.extend({
         )
         .max(25),
     assignmentType: z.enum(["member", "reserve_member", "mercenary"]),
+    autoAssignRecruitOnApply: z.boolean().optional(),
 })
 
 const ticketSettingsSchema = z
@@ -280,6 +281,7 @@ const membershipSettingsSchema = z
             .optional()
             .transform((value) => value || undefined),
         autoAssignRecruitOnApply: z.boolean(),
+        roleSyncEnabled: z.boolean().optional(),
         inviteSupportMembersIndividually: z.boolean().optional(),
         rosterScoreSettings: rosterScoreSettingsSchema.optional(),
         categories: z

@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -19,34 +20,37 @@ export type SettingsNavSection = {
     state: SettingsSectionState
 }
 
-const itemClass =
-    "flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-
-function NavGroups({
-    locale,
-    serverId,
-    gameId,
-    sections,
-    active,
-    dictionary,
-}: {
+type NavProps = {
     locale: string
     serverId: string
     gameId?: GameId
     sections: SettingsNavSection[]
     active: SettingsSectionId
     dictionary: Dictionary
-}) {
+}
+
+const itemClass =
+    "flex min-h-8 items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+
+/** The settings pages by group, with a warning on pages that miss a required setting. */
+export function SettingsNavGroups({
+    locale,
+    serverId,
+    gameId,
+    sections,
+    active,
+    dictionary,
+}: NavProps) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             {SETTINGS_GROUPS.map((group) => {
                 const items = sections.filter(
                     (section) => section.group === group
                 )
                 if (!items.length) return null
                 return (
-                    <div key={group} className="space-y-1">
-                        <p className="text-muted-foreground px-2.5 text-xs font-medium">
+                    <div key={group} className="space-y-0.5">
+                        <p className="text-muted-foreground flex h-8 items-center px-2 text-xs font-medium">
                             {dictionary.settingsHub.groups[group]}
                         </p>
                         <ul className="space-y-0.5">
@@ -68,11 +72,11 @@ function NavGroups({
                                             className={cn(
                                                 itemClass,
                                                 current &&
-                                                    "bg-accent text-accent-foreground font-medium"
+                                                    "bg-accent text-accent-foreground font-semibold"
                                             )}
                                         >
                                             <Icon
-                                                className="text-muted-foreground size-4 shrink-0"
+                                                className="size-4 shrink-0"
                                                 aria-hidden="true"
                                             />
                                             <span className="min-w-0 flex-1">
@@ -83,8 +87,8 @@ function NavGroups({
                                                 }
                                             </span>
                                             {section.state === "attention" ? (
-                                                <span
-                                                    className="size-2 shrink-0 rounded-full bg-amber-500"
+                                                <TriangleAlert
+                                                    className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
                                                     role="img"
                                                     aria-label={
                                                         dictionary.settingsHub
@@ -104,44 +108,11 @@ function NavGroups({
     )
 }
 
-/**
- * Settings menu beside each settings page. On narrow screens it folds into a
- * disclosure above the page so the form stays first.
- */
-export function SettingsNav(props: {
-    locale: string
-    serverId: string
-    gameId?: GameId
-    sections: SettingsNavSection[]
-    active: SettingsSectionId
-    dictionary: Dictionary
-}) {
-    const { dictionary } = props
+/** Settings menu beside each settings page (design A2). */
+export function SettingsNav(props: NavProps) {
     return (
-        <nav aria-label={dictionary.settingsHub.sectionNavLabel}>
-            <Link
-                href={settingsHref(
-                    props.locale,
-                    props.serverId,
-                    undefined,
-                    props.gameId
-                )}
-                className="text-muted-foreground hover:text-foreground mb-3 inline-flex items-center gap-1 px-2.5 text-sm"
-            >
-                <span aria-hidden="true">←</span>
-                {dictionary.settingsHub.backToOverview}
-            </Link>
-            <details className="border-border/60 rounded-xl border p-2 lg:hidden">
-                <summary className="cursor-pointer px-2.5 py-1.5 text-sm font-medium">
-                    {dictionary.settingsHub.sections[props.active].title}
-                </summary>
-                <div className="pt-3">
-                    <NavGroups {...props} />
-                </div>
-            </details>
-            <div className="hidden lg:block">
-                <NavGroups {...props} />
-            </div>
+        <nav aria-label={props.dictionary.settingsHub.sectionNavLabel}>
+            <SettingsNavGroups {...props} />
         </nav>
     )
 }
