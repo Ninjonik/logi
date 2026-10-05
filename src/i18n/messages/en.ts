@@ -560,6 +560,7 @@ export const enMessages = {
         openSettings: "Open clan settings",
     },
     publicNavigation: {
+        menu: "Menu",
         wiki: "Wiki",
         discordSupport: "Discord support server",
         restartTour: "Restart tour",
@@ -896,7 +897,8 @@ export const enMessages = {
         tableContext: "Context",
         noServerTitle: "No clans yet",
         noServerDescription:
-            "Once a Discord account is connected, your clans will appear here.",
+            "Your clans appear here once the Logi bot is on their Discord server. Ask your clan's admin to add it, or set it up on your own server.",
+        noServerSetupGuide: "How to set up the Logi bot",
     },
     sidebar: {
         home: "Home",
@@ -1724,7 +1726,14 @@ export const enMessages = {
         discordId: "Discord ID",
         avatar: "Avatar",
         preferredLanguage: "Preferred language",
-        english: "English",
+        preferredLanguageHelp:
+            "Changes the language of the dashboard and website on this device.",
+        profileSaved: "Profile saved.",
+        matchRecapsSaved: "Match recap setting saved.",
+        erasureConfirmTitle: "Request account erasure?",
+        erasureConfirmDescription:
+            "The Logi team will process your request. Once processed, your account and the records described above are removed and cannot be restored.",
+        erasureConfirm: "Request erasure",
         notLinked: "Not linked",
         streamerMode: "Streamer mode",
         enabled: "Enabled",

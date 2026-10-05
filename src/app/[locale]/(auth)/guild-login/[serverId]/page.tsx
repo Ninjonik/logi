@@ -61,15 +61,15 @@ export default async function GuildLoginPage({ params }: GuildLoginPageProps) {
     return (
         <PublicSiteShell locale={safeLocale}>
             <PublicPage className="flex max-w-sm items-center">
-                <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
+                <Card className="border-border/60 bg-card text-card-foreground w-full max-w-sm rounded-2xl shadow-2xl shadow-black/10">
                     <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
-                        <Avatar className="size-28 rounded-2xl border border-white/10 bg-black/20">
+                        <Avatar className="bg-muted size-28 rounded-2xl border">
                             <AvatarImage
                                 src={guild.avatar}
                                 alt={guild.name}
                                 className="object-cover"
                             />
-                            <AvatarFallback className="rounded-2xl bg-black/30 text-3xl text-white">
+                            <AvatarFallback className="bg-muted text-muted-foreground rounded-2xl text-3xl">
                                 {guild.name.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>

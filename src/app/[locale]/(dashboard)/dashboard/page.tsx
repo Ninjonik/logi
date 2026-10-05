@@ -1,6 +1,7 @@
+import { Bot, BookOpen } from "lucide-react"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
-import { Bot } from "lucide-react"
+import Link from "next/link"
 
 import {
     getCurrentPlayer,
@@ -15,6 +16,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { buildDiscordBotInviteUrl } from "@/lib/discord"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
 function requiresBotRoleHierarchySetup(
@@ -104,6 +106,26 @@ export default async function DashboardHomePage({
                 description={dictionary.dashboard.description}
             />
             <div className="space-y-8 px-4 lg:px-6">
+                {!managedServers.length && !mercenaryServers.length ? (
+                    <section className="border-border/60 bg-card/50 flex flex-col items-start gap-3 rounded-2xl border p-6">
+                        <h2 className="text-lg font-semibold">
+                            {dictionary.dashboard.noServerTitle}
+                        </h2>
+                        <p className="text-muted-foreground max-w-prose text-sm">
+                            {dictionary.dashboard.noServerDescription}
+                        </p>
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <Link href="/wiki/discord-bot-setup">
+                                <BookOpen className="size-4" />
+                                {dictionary.dashboard.noServerSetupGuide}
+                            </Link>
+                        </Button>
+                    </section>
+                ) : null}
                 {managedServers.length ? (
                     <section className="space-y-4">
                         <div className="border-border/60 bg-card/50 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">

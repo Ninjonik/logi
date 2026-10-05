@@ -580,6 +580,7 @@ export const deMessages = {
         openSettings: "Clan-Einstellungen offnen",
     },
     publicNavigation: {
+        menu: "Menü",
         wiki: "Wiki",
         discordSupport: "Discord-Support",
         restartTour: "Tour neu starten",
@@ -917,7 +918,8 @@ export const deMessages = {
         tableContext: "Kontext",
         noServerTitle: "Noch keine Clans",
         noServerDescription:
-            "Sobald ein Discord-Konto verbunden ist, erscheinen deine Clans hier.",
+            "Deine Clans erscheinen hier, sobald der Logi-Bot auf ihrem Discord-Server ist. Bitte den Admin deines Clans, ihn hinzuzufügen, oder richte ihn auf deinem eigenen Server ein.",
+        noServerSetupGuide: "So richtest du den Logi-Bot ein",
     },
     sidebar: {
         home: "Start",
@@ -1789,7 +1791,14 @@ export const deMessages = {
         discordId: "Discord-ID",
         avatar: "Avatar",
         preferredLanguage: "Bevorzugte Sprache",
-        english: "Englisch",
+        preferredLanguageHelp:
+            "Ändert die Sprache von Dashboard und Website auf diesem Gerät.",
+        profileSaved: "Profil gespeichert.",
+        matchRecapsSaved: "Einstellung für Spielzusammenfassungen gespeichert.",
+        erasureConfirmTitle: "Löschung des Kontos beantragen?",
+        erasureConfirmDescription:
+            "Das Logi-Team bearbeitet deine Anfrage. Danach werden dein Konto und die oben beschriebenen Daten gelöscht und können nicht wiederhergestellt werden.",
+        erasureConfirm: "Löschung beantragen",
         notLinked: "Nicht verknüpft",
         streamerMode: "Streamer-Modus",
         enabled: "Aktiviert",

@@ -1,4 +1,4 @@
-import { BookOpen, Github } from "lucide-react"
+import { BookOpen, Github, Menu, X } from "lucide-react"
 import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
@@ -14,6 +14,34 @@ import { Logo } from "@/components/logo"
 
 const githubHref = "https://github.com/ninjonik/logi"
 
+type NavigationItem = { href: string; label: string; external?: boolean }
+
+function NavigationLink({
+    item,
+    className,
+}: {
+    item: NavigationItem
+    className: string
+}) {
+    if (!item.external)
+        return (
+            <Link href={item.href} className={className}>
+                {item.label}
+            </Link>
+        )
+    return (
+        <a
+            href={item.href}
+            target="_blank"
+            rel="noreferrer"
+            className={className}
+        >
+            <SiDiscord aria-hidden="true" className="size-3.5" />
+            {item.label}
+        </a>
+    )
+}
+
 export async function PublicSiteShell({
     children,
     locale,
@@ -26,6 +54,19 @@ export async function PublicSiteShell({
     const dictionary = getDictionary(locale)
     const status = await getLogiStatus()
     const discordSupportUrl = getDiscordSupportUrl()
+    const navigation: NavigationItem[] = [
+        { href: `/${locale}/community`, label: dictionary.home.community },
+        {
+            href: `/${locale}/competitions`,
+            label: dictionary.home.competitions,
+        },
+        { href: "/wiki", label: dictionary.publicNavigation.wiki },
+        {
+            href: discordSupportUrl,
+            label: dictionary.publicNavigation.discordSupport,
+            external: true,
+        },
+    ]
 
     return (
         <div className="bg-background text-foreground flex min-h-dvh flex-col">
@@ -33,50 +74,32 @@ export async function PublicSiteShell({
                 <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                     <Link
                         href={`/${locale}`}
+                        aria-label={dictionary.app.name}
                         className="inline-flex items-center gap-2.5 text-sm font-semibold tracking-wide"
                     >
                         <span className="bg-card flex size-9 items-center justify-center rounded-lg border">
                             <Logo size={19} />
                         </span>
-                        {dictionary.app.name}
+                        <span className="hidden sm:inline">
+                            {dictionary.app.name}
+                        </span>
                     </Link>
                     <nav
                         aria-label="Main navigation"
-                        className="text-muted-foreground hidden items-center gap-5 text-sm md:flex"
+                        className="text-muted-foreground hidden items-center gap-5 text-sm lg:flex"
                     >
-                        <Link
-                            href={`/${locale}/community`}
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.home.community}
-                        </Link>
-                        <Link
-                            href={`/${locale}/competitions`}
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.home.competitions}
-                        </Link>
-                        <Link
-                            href="/wiki"
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.publicNavigation.wiki}
-                        </Link>
-                        <a
-                            href={discordSupportUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
-                        >
-                            <SiDiscord
-                                aria-hidden="true"
-                                className="size-3.5"
+                        {navigation.map((item) => (
+                            <NavigationLink
+                                key={item.href}
+                                item={item}
+                                className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
                             />
-                            {dictionary.publicNavigation.discordSupport}
-                        </a>
+                        ))}
                     </nav>
                     <div className="flex items-center gap-2">
-                        <LogiStatusLink status={status} showLabel={false} />
+                        <span className="hidden sm:inline-flex">
+                            <LogiStatusLink status={status} showLabel={false} />
+                        </span>
                         <ThemeSwitcher />
                         <LocaleSwitcher
                             locale={locale}
@@ -90,6 +113,28 @@ export async function PublicSiteShell({
                                 {dictionary.home.openApp}
                             </Link>
                         </Button>
+                        {/* Below lg the links fold into this menu; <details> needs no client script. */}
+                        <details className="group relative lg:hidden">
+                            <summary
+                                aria-label={dictionary.publicNavigation.menu}
+                                className="hover:bg-muted flex size-9 cursor-pointer list-none items-center justify-center rounded-lg border [&::-webkit-details-marker]:hidden"
+                            >
+                                <Menu className="size-4 group-open:hidden" />
+                                <X className="hidden size-4 group-open:block" />
+                            </summary>
+                            <nav
+                                aria-label="Main navigation"
+                                className="bg-popover text-popover-foreground absolute top-full right-0 z-40 mt-2 flex w-60 flex-col gap-1 rounded-xl border p-2 text-sm shadow-lg"
+                            >
+                                {navigation.map((item) => (
+                                    <NavigationLink
+                                        key={item.href}
+                                        item={item}
+                                        className="hover:bg-muted flex items-center gap-2 rounded-md px-3 py-2"
+                                    />
+                                ))}
+                            </nav>
+                        </details>
                     </div>
                 </div>
             </header>
@@ -99,7 +144,7 @@ export async function PublicSiteShell({
                     <span>
                         &copy; {new Date().getFullYear()} {dictionary.app.name}
                     </span>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <LogiStatusLink status={status} />
                         <a
                             href={discordSupportUrl}

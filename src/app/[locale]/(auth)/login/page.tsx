@@ -41,9 +41,9 @@ export default async function LoginPage({
     return (
         <PublicSiteShell locale={safeLocale}>
             <PublicPage className="flex max-w-sm items-center">
-                <Card className="w-full max-w-sm rounded-2xl border-white/10 bg-white/6 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
+                <Card className="border-border/60 bg-card text-card-foreground w-full max-w-sm rounded-2xl shadow-2xl shadow-black/10">
                     <CardContent className="flex flex-col items-center gap-7 p-8 text-center">
-                        <div className="flex size-28 items-center justify-center rounded-2xl border border-white/10 bg-black/20">
+                        <div className="bg-muted flex size-28 items-center justify-center rounded-2xl border">
                             <Logo size={64} />
                         </div>
                         <div className="w-full space-y-3">
