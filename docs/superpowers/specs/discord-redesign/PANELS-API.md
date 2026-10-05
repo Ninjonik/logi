@@ -53,21 +53,33 @@ is read. Bodies are bounded JSON validated with Zod
 admin right on every call. Responses are `Cache-Control: no-store`. Backend
 failures are a plain `503 {"error":"unavailable"}`.
 
-| Method and path               | Body                                                                                           | Answer                                                                                                                                |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /`                       | —                                                                                              | `PanelOverviewResponse` (§3)                                                                                                          |
-| `POST /`                      | `{ panelId: string \| null, settings, send?: boolean, expectedRevision?: number \| null }`     | `200 { status: "saved", id, revision, sent }`; `400 { error: "invalid_settings", issues }`; `400/404/409 { error: PanelSaveError }`   |
-| `POST /{panelId}/actions`     | `{ action: "publish" \| "refresh" \| "pause" \| "resume" \| "retry" \| "delete" \| "remove" }` | `202 { status: "accepted", action, requestedAt }`; `404`; `409 { error: "not_sent" \| "removing" }`                                   |
-| `POST /test-fetch`            | `{ connectionId, panelId?: string \| null }`                                                   | `PanelTestResponse` (§4); `404`                                                                                                       |
-| `POST /channel-check`         | `{ channelId }`                                                                                | `PanelChannelCheck { channelId, supported, permissions, everyoneCanView, timedOut }`                                                  |
-| `PUT /servers/{connectionId}` | `{ address?, joinCode?, password? }` (absent keeps, `null` or `""` clears)                     | `200 { status: "saved", slug, joinUrl }`; `400 { error: "invalid_request", field }`; `404`; `503 { error: "encryption_unavailable" }` |
+| Method and path                 | Body                                                                                           | Answer                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`                         | —                                                                                              | `PanelOverviewResponse` (§3)                                                                                                          |
+| `POST /`                        | `{ panelId: string \| null, settings, send?: boolean, expectedRevision?: number \| null }`     | `200 { status: "saved", id, revision, sent }`; `400 { error: "invalid_settings", issues }`; `400/404/409 { error: PanelSaveError }`   |
+| `POST /{panelId}/actions`       | `{ action: "publish" \| "refresh" \| "pause" \| "resume" \| "retry" \| "delete" \| "remove" }` | `202 { status: "accepted", action, requestedAt }`; `404`; `409 { error: "not_sent" \| "removing" }`                                   |
+| `POST /test-fetch`              | `{ connectionId, panelId?: string \| null }`                                                   | `PanelTestResponse` (§4); `404`                                                                                                       |
+| `POST /channel-check`           | `{ channelId }`                                                                                | `PanelChannelCheck { channelId, supported, permissions, everyoneCanView, timedOut }`                                                  |
+| `PUT /servers/{connectionId}`   | `{ address?, joinCode?, password? }` (absent keeps, `null` or `""` clears)                     | `200 { status: "saved", slug, joinUrl }`; `400 { error: "invalid_request", field }`; `404`; `503 { error: "encryption_unavailable" }` |
+| `GET /league-preview?count=n`   | — (`n` 1–10, default 6; W3)                                                                    | The WD League messages' current data for the editor preview: `LeagueOverview` `{ standings, fixtures }` (`loadLeaguePanels`)          |
+| `POST /preview-image`           | `panelImageRequestSchema` with a built-in or no background (W3)                                | `image/png` of the style A score image or style B banner; `503 { error: "render_failed" }`                                            |
+| `POST /controls/{connectionId}` | `{ action: "refresh" }` (W3)                                                                   | `202 { status: "accepted" }` (the seed control message is redrawn, P1-18); `404`                                                      |
 
 `settings` is `panelSaveSchema` (kind, `channelId`, the kind's source fields,
 `title` ≤ 80, `description` ≤ 300, `showPlayers`, `showLeaders`,
 `reportCategoryId` (live server only), `artwork`, `content`, `presentation`,
 `league`, `calendarCategories`, `competitionId`). `content` holds the switches
-of P2: `nextMap`, `queue`, `address` (IP:port or join code), `joinButton`,
-`password` (default **off**), `seedProgress`, `footerTiming`.
+of P2: `nextMap`, `queue`, `address` (HLL IP:port), `joinCode` (Wardogs join
+code; W3, absent on old rows reads as `address`), `joinButton`, `password`
+(default **off**), `seedProgress`, `footerTiming`. The editor always saves
+`presentation.factionEmoji` as `{}`: per-panel faction emoji are gone (P8-B06),
+the signs are fixed.
+
+`POST /channel-check` also answers `viewerRoleIds`, the roles a channel
+overwrite lets view it ("vidí ho jen role @Klan a správci", P2-37). The preview
+image route accepts only Logi's built-in map art as a background, so the
+dashboard cannot be used to fetch an uploaded asset by ID; the editor draws a
+banner it cannot render server-side as an image link.
 
 `PanelSaveError`: `not_found`, `conflict` (409, `expectedRevision` is older),
 `kind_locked` (409, a sent panel keeps its kind), `removing` (409),
@@ -89,9 +101,15 @@ before it reaches Convex. Without a keyring the route answers
 the overview only says `hasPassword`.
 
 **`/api/v1`**: live Discord actions (send, refresh, pause, delete, retry, test
-fetch, channel check, password) are a deliberate exclusion, recorded in
-`docs/integrations/website/configuration-coverage.md`. Exposing panel settings
-in `GET/PATCH clan/settings` (P1-B10) is left to W3 with the UI.
+fetch, channel check, password, the editor's league preview and preview image,
+and "Obnovit teď" of a control message) are a deliberate exclusion, recorded in
+`docs/integrations/website/configuration-coverage.md`. The panel settings are
+the `discordPanels` slice of `GET/PATCH /api/v1/clan/settings` (P1-B10, W3):
+`src/domain/api/discord-panels-settings-slice.ts`, store `discordPanels` in
+`convex/clanSettingsStores.ts`, use-case
+`src/application/discord-publications/panel-settings-api.ts`. PATCH runs
+`savePanel` for every entry against a dry run first, so one refused entry
+writes nothing; new panels are saved not sent.
 
 ## 3. Overview (`GET /`)
 
@@ -116,6 +134,16 @@ type PanelOverviewResponse = {
     panels: PanelOverviewItem[]
     sources: PanelSourceHealth[] // "Zdroje dat": collecting, lastDataAt, freshness, errorCategory
     servers: PanelServerInfo[] // slug, joinUrl, address, joinCode, hasPassword
+    // W3: "Ovládání serveru" rows, one per server whose seed plan has a control channel
+    controls: Array<{
+        connectionId
+        channelId
+        state // published | error | waiting
+        lastUpdateAt
+        failed
+        message: { channelId; messageId } | null
+    }>
+    people: Record<string, string> // Discord ID -> display name for savedBy / pausedBy
 }
 type PanelOverviewItem = {
     id
@@ -157,6 +185,11 @@ type PanelOverviewItem = {
     message: { channelId; messageId } | null // "Otevřít zprávu"
     messages: number
     style: "a" | "b" | "c"
+    // W3
+    lastError: { code; at; permissions?; category? } | null // kept after a later success
+    recoveredAt: number | null // first success after lastError ("Další pokus … prošel")
+    sent: boolean // a message reached Discord once: the kind is locked
+    channelPrivate: boolean | null // @everyone cannot view, as the bot last saw it
 }
 ```
 
@@ -216,11 +249,15 @@ type PanelTestResponse = {
         playersInStats
     }
     preview: MessageView | null // the live panel as the bot would post it now, without a password
+    facts: LiveServerFacts | null // W3: what the preview is drawn from, roster Steam IDs removed
+    timeZone: string // W3: the clan's time zone for the preview's footer
 }
 ```
 
 Render `preview` with the dashboard's Discord preview component; it is the
-same `liveServerPanelView` the bot posts. No key, provider address or password
+same `liveServerPanelView` the bot posts. The editor redraws it from `facts`
+with its unsaved draft (title, switches, style, accent) on every change, so the
+preview follows the form without another read. No key, provider address or password
 is ever part of the answer.
 
 ## 5. Bot side
@@ -249,6 +286,13 @@ Convex functions for the bot (internal secret):
 | `discordPanelBot:joinPage`                    | The public join page read (§6)                                                             |
 | `discordPanelSecrets:serverPassword` (action) | The decrypted password, asked only after the bot confirmed a private channel               |
 
+**Pass report (W3).** `panelAttemptSchema` carries an optional
+`channelPrivate`; `discordPanelStatus` keeps `lastError`, `recoveredAt` and
+`channelPrivate` (all optional, additive) so the list can say "Poslední chyba
+… Další pokus … prošel" and whether a password can be shown. "Naše servery"
+rows carry the address (HLL), the join code (Wardogs) and the seed bar, and
+the panel's switches decide the score, next map and queue lines.
+
 **Password (P4-B06).** Shown only on a server's own panel, only with the switch
 on, only while `@everyone` cannot view the channel, checked on every refresh.
 When the channel turns public the password is left out, the errors channel gets
@@ -265,16 +309,21 @@ clan-only panels. All are registered through the interaction feature
 
 ### Hand-offs
 
-- **W3 (dashboard UI)**: build P1/P2 on §2–§4 and the `discordPanelStatus` and
-  `joinPage` message namespaces. "Ověřit" is `POST /channel-check`; the password
-  field writes `PUT /servers/{connectionId}`.
+- **W3 (dashboard UI)**: done. "Panely v Discordu"
+  (`settings/discord-panels`) lists every panel with the bot, sources and
+  control messages; the editor is `settings/discord-panels/new` and
+  `settings/discord-panels/<panelId>`
+  (`src/components/app/discord-panels/`). "Ověřit" is `POST /channel-check`;
+  the password field writes `PUT /servers/{connectionId}`.
 - **W4 (seed control message)**: "Obnovit panel" / "Pozastavit panel" /
   "Pokračovat" call `discordPanelBot:act` with `connectionId` after the bot's own
   fresh admin-role check. The live panel reads running seeds from
   `discordSeedBot:panelStates` and draws "Seedujeme" with the progress bar.
 - **W5 (WD League)**: implement `PanelRunPorts.league(panel, pass)` returning the
   number of messages it owns, keyed `panel:<id>:…`. Until then a League panel
-  reports `unsupported_kind`.
+  reports `unsupported_kind`. The editor's League preview is drawn by the
+  interim `src/domain/discord-publications/league-panel-preview.ts` from
+  `GET /league-preview`; swap it for the W5 views when they land.
 
 ## 6. Join page
 
