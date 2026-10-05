@@ -378,6 +378,7 @@ export const adminGet = query({
                                 ? String(row.divisionId)
                                 : null,
                             phase: row.phase,
+                            round: row.round ?? null,
                             sideA: await view(sideA),
                             sideB: await view(sideB),
                             scheduledAt: row.scheduledAt ?? null,
@@ -390,6 +391,8 @@ export const adminGet = query({
                                       name: event.name,
                                       gameStart: event.gameStart,
                                       workspace: workspace?.name ?? null,
+                                      hasResult: Boolean(event.eventResult),
+                                      reviewed: Boolean(event.reviewedResult),
                                   }
                                 : null,
                         }
@@ -899,6 +902,7 @@ export const createFixture = mutation({
             competitionId: competition._id,
             ...write.fields,
             phase: write.fixture.phase,
+            round: write.fixture.round ?? undefined,
             scheduledAt: write.fixture.scheduledAt ?? undefined,
             scoreA: write.fixture.scoreA ?? undefined,
             scoreB: write.fixture.scoreB ?? undefined,
@@ -911,7 +915,7 @@ export const createFixture = mutation({
     },
 })
 
-/** Replaces a fixture's teams, division, phase, schedule, score and status; its event link stays. */
+/** Replaces a fixture's teams, division, phase, round, schedule, score and status; its event link stays. */
 export const updateFixture = mutation({
     args: { ...platformAccess, fixtureId: v.string(), input: v.any() },
     handler: async (ctx, args): Promise<Ok | Failure> => {
@@ -934,6 +938,10 @@ export const updateFixture = mutation({
             teamAId: undefined,
             teamBId: undefined,
             phase: write.fixture.phase,
+            // A write without `round` keeps the stored one.
+            ...(write.fixture.round !== undefined
+                ? { round: write.fixture.round ?? undefined }
+                : {}),
             scheduledAt: write.fixture.scheduledAt ?? undefined,
             scoreA: write.fixture.scoreA ?? undefined,
             scoreB: write.fixture.scoreB ?? undefined,

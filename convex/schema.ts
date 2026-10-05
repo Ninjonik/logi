@@ -930,6 +930,8 @@ export default defineSchema({
         teamAId: v.optional(v.id("guilds")),
         teamBId: v.optional(v.id("guilds")),
         scheduledAt: v.optional(v.string()),
+        // Round number within the phase; missing on fixtures saved before rounds.
+        round: v.optional(v.number()),
         scoreA: v.optional(v.number()),
         scoreB: v.optional(v.number()),
         status: v.union(

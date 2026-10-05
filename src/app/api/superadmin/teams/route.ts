@@ -19,15 +19,35 @@ const handlers = superadminTeamsHandlers({
             ...access,
             teamId,
         }),
-    list: async (access, query) =>
-        await fetchQuery(makeFunctionReference<"query">("teams:adminList"), {
+    usage: async (access, teamIds) =>
+        await fetchQuery(makeFunctionReference<"query">("teams:adminUsage"), {
             ...access,
-            gameId: query.gameId,
-            archived: query.archived,
-            ...(query.search ? { search: query.search } : {}),
-            cursor: query.cursor,
-            limit: query.limit,
+            teamIds,
         }),
+    list: async (access, query) =>
+        query.state
+            ? await fetchQuery(
+                  makeFunctionReference<"query">("teams:adminListState"),
+                  {
+                      ...access,
+                      gameId: query.gameId,
+                      state: query.state,
+                      ...(query.search ? { search: query.search } : {}),
+                      cursor: query.cursor,
+                      limit: query.limit,
+                  }
+              )
+            : await fetchQuery(
+                  makeFunctionReference<"query">("teams:adminList"),
+                  {
+                      ...access,
+                      gameId: query.gameId,
+                      archived: query.archived,
+                      ...(query.search ? { search: query.search } : {}),
+                      cursor: query.cursor,
+                      limit: query.limit,
+                  }
+              ),
     command: async (access, mutation, payload) =>
         await fetchMutation(makeFunctionReference<"mutation">(mutation), {
             ...access,
@@ -35,7 +55,7 @@ const handlers = superadminTeamsHandlers({
         }),
 })
 
-/** `?teamId=` reads one catalogue record; otherwise `?game=` pages one game's catalogue. */
+/** `?teamId=` reads one catalogue record, `?usage=` where teams are used; otherwise `?game=` pages one game's catalogue. */
 export async function GET(request: Request) {
     return handlers.GET(request)
 }

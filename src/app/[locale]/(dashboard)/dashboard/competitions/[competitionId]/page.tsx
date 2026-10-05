@@ -1,20 +1,14 @@
 import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
-import Link from "next/link"
 
 import {
     competitionAdminAccess,
     getCompetitionForAdmin,
 } from "@/lib/gateways/competition-admin"
+import { CompetitionAdminHeader } from "@/components/app/competition-admin-header"
 import { CompetitionManager } from "@/components/app/competition-manager"
 import { getCurrentPlayer, isCurrentUserSuperadmin } from "@/lib/auth"
-import { PageHeader } from "@/components/app/page-header"
-import { GameBadge } from "@/components/app/game-badge"
-import { ArrowLeft, ExternalLink } from "lucide-react"
 import { getDictionary } from "@/i18n/dictionaries"
-import { GAME_LABELS } from "@/domain/games/game"
-import { Button } from "@/components/ui/button"
-import { pluralize } from "@/i18n/plural"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
@@ -33,7 +27,6 @@ export default async function CompetitionManagementPage({
     const { workspace } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const t = dictionary.competitionAdmin
     if (!(await getCurrentPlayer()) || !(await isCurrentUserSuperadmin()))
         redirect(`/${safeLocale}/dashboard`)
     const access = await competitionAdminAccess()
@@ -43,65 +36,18 @@ export default async function CompetitionManagementPage({
     const query = workspace ? `?workspace=${encodeURIComponent(workspace)}` : ""
 
     return (
-        <div className="space-y-6">
-            <PageHeader
-                title={`${view.competition.name} ${view.competition.season}`}
-                description={[
-                    GAME_LABELS[view.competition.gameId],
-                    pluralize(
-                        safeLocale,
-                        view.divisions.length,
-                        t.countDivisions
-                    ),
-                    pluralize(
-                        safeLocale,
-                        view.registrations.length,
-                        t.countTeams
-                    ),
-                ].join(" · ")}
-                badge={
-                    view.competition.published ? t.publishedBadge : t.draftBadge
-                }
-                badges={
-                    <GameBadge
-                        gameId={view.competition.gameId}
-                        dictionary={dictionary}
-                    />
-                }
-                actions={
-                    <div className="flex flex-wrap gap-2">
-                        <Button asChild variant="outline">
-                            <Link
-                                href={`/${safeLocale}/dashboard/competitions${query}`}
-                            >
-                                <ArrowLeft className="size-4" aria-hidden />
-                                {t.back}
-                            </Link>
-                        </Button>
-                        {view.competition.published ? (
-                            <Button asChild variant="outline">
-                                <Link
-                                    href={`/${safeLocale}/competitions/${view.competition.slug}`}
-                                    target="_blank"
-                                >
-                                    {t.openPublic}
-                                    <ExternalLink
-                                        className="size-4"
-                                        aria-hidden
-                                    />
-                                </Link>
-                            </Button>
-                        ) : null}
-                    </div>
-                }
+        <div className="flex flex-col gap-5 px-4 lg:px-6">
+            <CompetitionAdminHeader
+                view={view}
+                dictionary={dictionary}
+                locale={safeLocale}
+                listHref={`/${safeLocale}/dashboard/competitions${query}`}
             />
-            <div className="px-4 lg:px-6">
-                <CompetitionManager
-                    view={view}
-                    dictionary={dictionary}
-                    locale={safeLocale}
-                />
-            </div>
+            <CompetitionManager
+                view={view}
+                dictionary={dictionary}
+                locale={safeLocale}
+            />
         </div>
     )
 }

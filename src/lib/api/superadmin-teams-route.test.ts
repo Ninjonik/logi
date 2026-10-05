@@ -67,6 +67,7 @@ function fakePorts(overrides: Partial<SuperadminTeamsPorts<Access>> = {}) {
         access: async () => ({ secret: "s" }),
         get: async (_access, teamId) =>
             teamId === "team-1" ? { id: "team-1" } : null,
+        usage: async (_access, teamIds) => ({ items: [], teamIds }),
         list: async (_access, query) => ({ items: [], query }),
         command: async (_access, mutation, payload) => {
             calls.push({ mutation, payload })
@@ -122,6 +123,58 @@ test("GET reads one team, a page, a 404 and a 400", async () => {
     const bad = await handlers.GET(new Request(url("?game=chess")))
     assert.equal(bad.status, 400)
     assert.deepEqual(await bad.json(), { error: "invalid_query" })
+})
+
+test("parses lifecycle states and usage reads", () => {
+    assert.deepEqual(
+        parseSuperadminTeamsQuery(params("game=wardogs&state=merged")),
+        {
+            kind: "list",
+            gameId: "wardogs",
+            archived: false,
+            state: "merged",
+            cursor: null,
+            limit: 50,
+        }
+    )
+    assert.deepEqual(parseSuperadminTeamsQuery(params("usage=t1,t2,t1")), {
+        kind: "usage",
+        teamIds: ["t1", "t2"],
+    })
+    for (const query of [
+        "game=wardogs&state=deleted",
+        "usage=",
+        "usage=t1,,t2",
+        `usage=${Array.from({ length: 26 }, (_, i) => `t${i}`).join(",")}`,
+        `usage=${"x".repeat(65)}`,
+    ])
+        assert.equal(parseSuperadminTeamsQuery(params(query)), null, query)
+})
+
+test("GET reads usage for superadmins only", async () => {
+    let read = false
+    const denied = superadminTeamsHandlers(
+        fakePorts({
+            access: async () => null,
+            usage: async () => {
+                read = true
+                return {}
+            },
+        }).ports
+    )
+    assert.equal((await denied.GET(new Request(url("?usage=t1")))).status, 403)
+    assert.equal(read, false)
+    const handlers = superadminTeamsHandlers(fakePorts().ports)
+    const usage = await handlers.GET(new Request(url("?usage=t1,t2")))
+    assert.equal(usage.status, 200)
+    assert.deepEqual(await usage.json(), { items: [], teamIds: ["t1", "t2"] })
+    const page = await handlers.GET(
+        new Request(url("?game=wardogs&state=archived"))
+    )
+    assert.equal(
+        ((await page.json()) as { query: { state: string } }).query.state,
+        "archived"
+    )
 })
 
 test("GET answers 503 when Convex throws", async () => {

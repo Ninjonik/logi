@@ -51,6 +51,8 @@ export type CompetitionFixtureView = {
     id: string
     divisionId: string | null
     phase: FixturePhase
+    /** Round number; null for fixtures saved without one. */
+    round: number | null
     sideA: CompetitionTeamView
     sideB: CompetitionTeamView
     scheduledAt: string | null
@@ -62,6 +64,10 @@ export type CompetitionFixtureView = {
         name: string
         gameStart: string
         workspace: string | null
+        /** The clan's event carries an imported result. */
+        hasResult: boolean
+        /** The clan confirmed (reviewed) that result. */
+        reviewed: boolean
     } | null
 }
 

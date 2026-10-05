@@ -40,6 +40,8 @@ export function fromLocalDateTimeInput(value: string): string | null {
 export type FixtureFormValues = {
     divisionId: string
     phase: FixturePhase
+    /** Round number as typed; blank means no round. */
+    round: string
     sideATeamId: string
     sideBTeamId: string
     scheduledAt: string
@@ -50,12 +52,14 @@ export type FixtureFormValues = {
 
 export function fixtureFormValues(
     fixture: CompetitionFixtureView | null,
-    divisionId: string
+    divisionId: string,
+    defaults: { phase?: FixturePhase; round?: number | null } = {}
 ): FixtureFormValues {
     if (!fixture)
         return {
             divisionId,
-            phase: "league",
+            phase: defaults.phase ?? "league",
+            round: defaults.round ? String(defaults.round) : "",
             sideATeamId: "",
             sideBTeamId: "",
             scheduledAt: "",
@@ -66,6 +70,7 @@ export function fixtureFormValues(
     return {
         divisionId: fixture.divisionId ?? divisionId,
         phase: fixture.phase,
+        round: fixture.round ? String(fixture.round) : "",
         sideATeamId: fixture.sideA.legacy ? "" : fixture.sideA.id,
         sideBTeamId: fixture.sideB.legacy ? "" : fixture.sideB.id,
         scheduledAt: toLocalDateTimeInput(fixture.scheduledAt),
@@ -93,6 +98,7 @@ export function fixtureFormInput(
         status: values.status,
         scoreA: values.status === "scheduled" ? null : score(values.scoreA),
         scoreB: values.status === "scheduled" ? null : score(values.scoreB),
+        round: score(values.round),
     })
     return parsed.success ? parsed.data : null
 }

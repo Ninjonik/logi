@@ -535,6 +535,63 @@ test("fixtures need registered teams, keep league games in one division and clea
     )
 })
 
+test("fixture rounds are stored, kept when a write leaves them out, cleared with null and read by administration", async () => {
+    const ctx = setup()
+    const { competitionId, d1 } = await competitionWithDivisions(ctx)
+    await register(ctx, competitionId, "teamDirectory:omen", d1)
+    await register(ctx, competitionId, "teamDirectory:circle", d1)
+    const input = {
+        divisionId: d1,
+        phase: "league",
+        sideATeamId: "teamDirectory:omen",
+        sideBTeamId: "teamDirectory:circle",
+        status: "scheduled",
+    }
+    const created = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input: { ...input, round: 3 },
+    })
+    assert.equal(created.ok, true)
+    const stored = () =>
+        ctx.db.tables.competitionFixtures.find(
+            (row) => row._id === created.fixtureId
+        )!
+    assert.equal(stored().round, 3)
+    const update = (patch: Record<string, unknown>) =>
+        invoke(competitions.updateFixture, ctx, {
+            ...platform,
+            fixtureId: created.fixtureId,
+            input: { ...input, ...patch },
+        })
+    assert.equal((await update({})).ok, true)
+    assert.equal(stored().round, 3)
+    assert.equal((await update({ round: 4 })).ok, true)
+    assert.equal(stored().round, 4)
+    assert.deepEqual(await update({ round: 0 }), {
+        error: "invalid_competition",
+    })
+    const view = await invoke(competitions.adminGet, ctx, {
+        ...platform,
+        competitionId,
+    })
+    assert.equal(view.fixtures[0].round, 4)
+    assert.equal(view.fixtures[0].event, null)
+    assert.equal((await update({ round: null })).ok, true)
+    assert.equal(stored().round, undefined)
+    const unnumbered = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input,
+    })
+    assert.equal(
+        ctx.db.tables.competitionFixtures.find(
+            (row) => row._id === unnumbered.fixtureId
+        )!.round,
+        undefined
+    )
+})
+
 test("public competitions carry global team IDs, short codes and logos, with legacy rows still readable", async () => {
     const ctx = setup()
     const { competitionId, d1 } = await competitionWithDivisions(ctx)

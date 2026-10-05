@@ -9,8 +9,8 @@ import {
 import { CompetitionCreateDialog } from "@/components/app/competition-create-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentPlayer, isCurrentUserSuperadmin } from "@/lib/auth"
+import { AdminPageHeader } from "@/components/app/admin-page-header"
 import { ConfigNotice } from "@/components/app/config-notice"
-import { PageHeader } from "@/components/app/page-header"
 import { EmptyState } from "@/components/app/empty-state"
 import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -53,7 +53,8 @@ export default async function CompetitionsDashboard({
 
     return (
         <div className="space-y-6">
-            <PageHeader
+            <AdminPageHeader
+                eyebrow={dictionary.sidebar.adminNav.title}
                 title={dictionary.competition.title}
                 description={t.listDescription}
                 actions={
