@@ -752,7 +752,7 @@ const de: Copy = {
         },
     },
     panel: {
-        apply: "Bewerbung abschicken",
+        apply: "Jetzt bewerben",
         applyOnWeb: "Bewerbung im Web ausfüllen",
         windowsNote: {
             two: "Die Bewerbung hat zwei kurze Fenster und dauert etwa 2 Minuten.",
@@ -886,11 +886,11 @@ const de: Copy = {
     },
     cancelled: {
         title: "Bewerbung abgebrochen",
-        body: "Es wurde nichts gesendet. Eine neue startest du mit Bewerbung abschicken in {channel}.",
+        body: "Es wurde nichts gesendet. Eine neue startest du mit Jetzt bewerben in {channel}.",
     },
     expired: {
         title: "Diese Bewerbung ist abgelaufen",
-        body: "Angefangene Antworten wurden nicht gespeichert. Starte neu mit Bewerbung abschicken in {channel}.",
+        body: "Angefangene Antworten wurden nicht gespeichert. Starte neu mit Jetzt bewerben in {channel}.",
     },
     windowExpired: {
         title: "Das Fenster wurde geschlossen, bevor du es abgeschickt hast",

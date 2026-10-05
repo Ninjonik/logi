@@ -1,9 +1,6 @@
 import type { Client } from "discord.js"
 
-import {
-    EMPTY_APPLICATION_ANSWERS,
-    planApplication,
-} from "../../../src/domain/membership/application-plan"
+import { applicationWindowCount } from "../../../src/domain/membership/application-plan"
 import { resolveApplicationForm } from "../../../src/domain/membership/application-form"
 import { applicationPanelView } from "../../../src/domain/membership/application-views"
 import { getApplicationMessages } from "../../../src/lib/clan-language/application"
@@ -31,24 +28,14 @@ export function panelWindowCount(config: DiscordConfig): 2 | 3 {
     const settings = config.membershipSettings
     if (!settings) return 2
     const copy = getApplicationMessages(config.defaultLanguage)
-    const form = resolveApplicationForm(
-        settings.applicationForm,
-        settings.categories,
-        copy.defaultForm
+    return applicationWindowCount(
+        resolveApplicationForm(
+            settings.applicationForm,
+            settings.categories,
+            copy.defaultForm
+        ),
+        settings.categories
     )
-    return settings.categories.some(
-        (category) =>
-            planApplication({
-                form,
-                categories: settings.categories,
-                answers: {
-                    ...EMPTY_APPLICATION_ANSWERS,
-                    categoryId: category.id,
-                },
-            }).totalSteps === 3
-    )
-        ? 3
-        : 2
 }
 
 export function buildMembershipPanelPayload(config: DiscordConfig) {

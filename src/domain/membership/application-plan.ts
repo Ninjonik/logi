@@ -507,3 +507,26 @@ export function submittedAnswers(
         })
     )
 }
+
+/**
+ * The windows of the longest application, for the panel's note "Přihláška
+ * má tři krátká okna…": three when any category gets clan questions.
+ */
+export function applicationWindowCount(
+    form: ApplicationForm,
+    categories: readonly ApplicationCategory[]
+): 2 | 3 {
+    return categories.some(
+        (category) =>
+            planApplication({
+                form,
+                categories,
+                answers: {
+                    ...EMPTY_APPLICATION_ANSWERS,
+                    categoryId: category.id,
+                },
+            }).totalSteps === 3
+    )
+        ? 3
+        : 2
+}
