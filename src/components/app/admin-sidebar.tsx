@@ -31,7 +31,6 @@ import {
 } from "@/lib/navigation/global-admin-routes"
 import { fetchTeamRequestQueue } from "@/lib/teams-admin/team-admin-client"
 import { TEAM_REQUEST_PAGE_MAX } from "@/domain/teams/team-request"
-import { getPrimaryDisplayedScore } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { AppUser, Guild } from "@/types/domain"
 import { NavUser } from "@/components/nav-user"
@@ -217,11 +216,7 @@ export function AdminSidebar({
             </SidebarContent>
             <SidebarFooter className="border-sidebar-border/70 border-t p-1.5 2xl:p-2">
                 <NavUser
-                    user={{
-                        name: user.name,
-                        email: `${getPrimaryDisplayedScore(user)} ${dictionary.navUser.scoreSuffix}`,
-                        avatar: user.avatar,
-                    }}
+                    user={{ name: user.name, avatar: user.avatar }}
                     locale={locale}
                     dictionary={dictionary}
                 />
