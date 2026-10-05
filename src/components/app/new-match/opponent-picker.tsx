@@ -31,6 +31,7 @@ export function OpponentPicker({
     excludeIds,
     onPick,
     dictionary,
+    label,
 }: {
     serverId: string
     gameId: TeamGame
@@ -38,6 +39,8 @@ export function OpponentPicker({
     excludeIds: string[]
     onPick(team: TeamRecord): void
     dictionary: Dictionary
+    /** The button text; "Choose opponent" by default. */
+    label?: string
 }) {
     const t = dictionary.newMatch.match
     const [open, setOpen] = useState(false)
@@ -90,7 +93,7 @@ export function OpponentPicker({
                     className="h-auto min-h-[54px] w-full justify-between rounded-[10px] px-3 py-2.5 font-normal"
                 >
                     <span className="text-muted-foreground">
-                        {t.chooseOpponent}
+                        {label ?? t.chooseOpponent}
                     </span>
                     <ChevronsUpDown className="size-4 opacity-50" />
                 </Button>

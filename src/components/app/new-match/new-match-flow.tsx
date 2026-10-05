@@ -4,10 +4,16 @@ import {
     ArrowLeft,
     ArrowRight,
     Check,
+    ChevronDown,
+    ChevronRight,
     CircleCheck,
     EyeOff,
     Info,
+    Loader2,
+    RefreshCw,
+    Repeat,
     Send,
+    TriangleAlert,
     X,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -18,24 +24,10 @@ import Link from "next/link"
 import {
     NEW_MATCH_STEPS,
     reminderAudience,
-    splitLocalDateTime,
-    suggestedEventName,
-    teamChipCode,
+    reminderStatusesFor,
     type NewMatchStep,
+    type ReminderAudience,
 } from "@/domain/events/new-match-flow"
-import {
-    templateSchedule,
-    templatesFor,
-    type MatchTemplate,
-    type TemplateReminderStatus,
-    type TemplateSignupStatus,
-} from "@/domain/events/match-templates"
-import {
-    getHllModeOptions,
-    getHllTimeOptions,
-    inferHllSelection,
-    resolveHllPresetCode,
-} from "@/lib/hll-map-presets"
 import {
     Select,
     SelectContent,
@@ -44,98 +36,103 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
-    fromDateTimeLocalInTimeZone,
-    toDateTimeLocalInTimeZone,
-} from "@/lib/timezone-datetime"
+    templatesFor,
+    type MatchTemplate,
+    type TemplateSignupStatus,
+} from "@/domain/events/match-templates"
+import {
+    formatHllPresetLabel,
+    getHllModeOptions,
+    getHllTimeOptions,
+} from "@/lib/hll-map-presets"
 import type {
     EventCategory,
     EventRecord,
     Group,
     SquadPreset,
 } from "@/types/domain"
+import {
+    matchTeamSaveErrorCode,
+    requestMatchTeamRefresh,
+} from "@/lib/teams/team-client"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
 import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
-import { matchTeamSides, type MatchTeamInput } from "@/domain/teams/match-teams"
-import { NewMatchPreview, type NewMatchPreviewModel } from "./new-match-preview"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
-import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
+import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import { TeamRequestDialog } from "@/components/app/team-request-dialog"
 import { matchTeamGame } from "@/lib/teams/match-team-selection"
+import { eventWriteErrorMessage } from "@/lib/event-write-error"
 import type { TeamDto, TeamRecord } from "@/domain/teams/team"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
+import { AvatarPicker } from "@/components/app/avatar-picker"
+import { matchTeamSides } from "@/domain/teams/match-teams"
+import { getStratmapMaps } from "@/lib/game-stratmaps"
 import { TeamLogo } from "@/components/app/team-logo"
 import type { Dictionary } from "@/i18n/dictionaries"
-import { OpponentPicker } from "./opponent-picker"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-const STATUSES: TemplateSignupStatus[] = [
-    "member",
-    "recruit",
-    "reserve_member",
-    "mercenary",
-]
+import {
+    applyTemplateValues,
+    defaultTimeOfDay,
+    effectiveReminderHours,
+    flowEditPayload,
+    flowEventPayload,
+    flowSchedule,
+    flowValuesFromEvent,
+    FLOW_SIGNUP_STATUSES,
+    gameGroups,
+    newFlowValues,
+    scheduleIsCoherent,
+    type ChannelDefaults,
+    type FlowValues,
+} from "./flow-values"
+import {
+    fill,
+    flowChanges,
+    flowFacts,
+    flowPreviewModel,
+    flowReviewRows,
+    formatAt,
+    formatTimeOnly,
+    sideLabel as flowSideLabel,
+    type FlowSummaryContext,
+} from "./flow-summary"
+import { NewMatchPreview, type NewMatchPreviewModel } from "./new-match-preview"
+import { OpponentPicker } from "./opponent-picker"
+
 const NO_SIDE = "__none"
 const NONE = "__none"
 const AUTOSAVE_DELAY_MS = 2500
-const HOUR_MS = 60 * 60 * 1000
-const MINUTE_MS = 60 * 1000
-
-type Opponent = {
-    teamId: string
-    name: string
-    shortCode: string | null
-    logoUrl: string | null
-}
-
-type FlowValues = {
-    kind: "match" | "training"
-    gameId: GameId
-    templateId: string | null
-    opponent: Opponent | null
-    ownSide: string | null
-    opponentSide: string | null
-    mapId: string
-    timeOfDay: string
-    cap: string
-    name: string
-    nameTouched: boolean
-    date: string
-    time: string
-    announcementHours: number | null
-    registrationHours: number
-    meetingMinutes: number
-    durationMinutes: number
-    repeatWeekly: boolean
-    allowedSignupStatuses: TemplateSignupStatus[]
-    signupGroupIds: string[]
-    signupGroupLimits: Array<{ groupId: string; max: number }>
-    useGeneralSignup: boolean
-    signupReminderStatuses: TemplateReminderStatus[]
-    announcementChannelId: string
-    eventInfoChannelId: string
-    pingMode: "none" | "clan" | "roles"
-    pingRoleIds: string[]
-    createForumChannel: boolean
-    createSquadVoiceChannels: boolean
-    server: string
-    serverPassword: string
-    matchType?: string
-    topicPresetId?: string
-    attendanceReminderHours?: number[]
-    createParticipantRoles?: boolean
-    squadPresetId?: string
-    description?: string
-    notes?: string
-}
 
 type Metadata = {
     roles: DiscordSelectOption[]
     channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
+}
+
+/** What edit mode needs besides the stored event (design D2 in edit mode). */
+export type NewMatchEditContext = {
+    event: EventRecord
+    /** The match or training page the flow returns to. */
+    detailHref: string
+    listHref: string
+    /** The step `?step=` opens. */
+    initialStep: NewMatchStep
+    /** A weekly series: this match carries it, or is one of its dates. */
+    series:
+        | { kind: "source" }
+        | { kind: "occurrence"; sourceEditHref: string | null }
+        | null
+    /** A roster exists, so a new squad preset no longer applies. */
+    rosterExists: boolean
+    /** Current sign-ups, for the preview. */
+    signups: NonNullable<NewMatchPreviewModel["signups"]>
 }
 
 export type NewMatchFlowProps = {
@@ -152,222 +149,21 @@ export type NewMatchFlowProps = {
     groups: Group[]
     squadPresets: SquadPreset[]
     eventCategories: EventCategory[]
+    topicPresets: Array<{ id: string; name: string }>
+    stratmaps: Array<{ id: string; title: string; gameId?: GameId }>
     timezone: string
     clan: { name: string }
     linkedTeams: TeamDto[]
     /** Default announcement and roster channels per game. */
-    channelDefaults: Partial<
-        Record<
-            GameId,
-            { announcementChannelId?: string; eventInfoChannelId?: string }
-        >
-    >
+    channelDefaults: ChannelDefaults
     clanRoleId?: string
+    /** Whether the clan has a forum category, without which no forum is made. */
+    forumCategoryConfigured: boolean
     /** The clan's message style, so the preview has the bot's colour and icons. */
     messageStyle?: MessageStyle
     draft: EventRecord | null
-}
-
-function gameGroups(groups: Group[], gameId: GameId) {
-    return groups
-        .filter((group) => (group.gameId ?? "hell_let_loose") === gameId)
-        .sort((left, right) => left.order - right.order)
-}
-
-function defaultStart(timezone: string) {
-    const tomorrow = new Date(Date.now() + 24 * HOUR_MS)
-    const { date } = splitLocalDateTime(
-        toDateTimeLocalInTimeZone(tomorrow.toISOString(), timezone)
-    )
-    return { date, time: "20:00" }
-}
-
-function applyTemplateValues(
-    values: FlowValues,
-    template: MatchTemplate,
-    groups: Group[],
-    channelDefaults: NewMatchFlowProps["channelDefaults"]
-): FlowValues {
-    const offered = gameGroups(groups, values.gameId).map((group) => group.id)
-    const isMatch = template.kind === "match"
-    return {
-        ...values,
-        kind: template.kind,
-        templateId: template.id,
-        announcementHours: template.announcementHoursBeforeStart ?? null,
-        registrationHours: template.registrationHoursBeforeMeeting,
-        meetingMinutes: isMatch ? template.meetingMinutesBeforeStart : 0,
-        durationMinutes: template.durationMinutes,
-        allowedSignupStatuses: template.allowedSignupStatuses,
-        signupGroupIds: isMatch
-            ? (template.signupGroupIds ?? offered).filter((id) =>
-                  offered.includes(id)
-              )
-            : [],
-        signupGroupLimits: template.signupGroupLimits ?? [],
-        useGeneralSignup: template.useGeneralSignup,
-        signupReminderStatuses: template.signupReminderStatuses,
-        pingMode: template.pingMode,
-        pingRoleIds: template.pingRoleIds,
-        createForumChannel: isMatch && template.createForumChannel,
-        createSquadVoiceChannels: template.createSquadVoiceChannels,
-        matchType: template.categoryId ?? values.matchType,
-        topicPresetId: template.topicPresetId,
-        attendanceReminderHours: template.attendanceReminderHours,
-        createParticipantRoles: template.createParticipantRoles,
-        squadPresetId: template.squadPresetId,
-        eventInfoChannelId: isMatch
-            ? values.eventInfoChannelId ||
-              channelDefaults[values.gameId]?.eventInfoChannelId ||
-              ""
-            : "",
-        // Trainings have no opponent or map.
-        ...(isMatch
-            ? {}
-            : {
-                  opponent: null,
-                  opponentSide: null,
-                  mapId: "",
-                  timeOfDay: "",
-                  cap: "",
-              }),
-    }
-}
-
-function initialValues(props: NewMatchFlowProps): FlowValues {
-    const { draft, timezone, channelDefaults } = props
-    if (draft) {
-        const gameId = draft.gameId ?? "hell_let_loose"
-        const start =
-            draft.kind === "training" ? draft.meetingStart : draft.gameStart
-        const { date, time } = splitLocalDateTime(
-            toDateTimeLocalInTimeZone(start, timezone)
-        )
-        const meeting = Date.parse(draft.meetingStart)
-        const opponent = draft.matchTeams?.find((team) => team.slot === "b")
-        const own = draft.matchTeams?.find((team) => team.slot === "a")
-        const selection = inferHllSelection(draft.map, gameId)
-        return {
-            kind: draft.kind,
-            gameId,
-            templateId: null,
-            opponent: opponent
-                ? {
-                      teamId: opponent.teamId,
-                      name: opponent.snapshot.name,
-                      shortCode: opponent.snapshot.shortCode,
-                      logoUrl: opponent.snapshot.logoUrl,
-                  }
-                : null,
-            ownSide: own?.side ?? draft.side ?? null,
-            opponentSide: opponent?.side ?? null,
-            mapId: selection?.mapId ?? "",
-            timeOfDay: selection?.time ?? "",
-            cap: draft.cap ?? "",
-            name: draft.name,
-            nameTouched: Boolean(draft.name),
-            date,
-            time,
-            announcementHours: draft.registrationStart
-                ? Math.max(
-                      0,
-                      Math.round(
-                          (Date.parse(start) -
-                              Date.parse(draft.registrationStart)) /
-                              HOUR_MS
-                      )
-                  )
-                : null,
-            registrationHours: Math.max(
-                0,
-                Math.round(
-                    (meeting - Date.parse(draft.registrationEnd)) / HOUR_MS
-                )
-            ),
-            meetingMinutes:
-                draft.kind === "training"
-                    ? 0
-                    : Math.max(
-                          0,
-                          Math.round(
-                              (Date.parse(draft.gameStart) - meeting) /
-                                  MINUTE_MS
-                          )
-                      ),
-            durationMinutes: Math.max(
-                1,
-                Math.round(
-                    (Date.parse(draft.gameEnd) - Date.parse(start)) / MINUTE_MS
-                ) ||
-                    draft.durationMinutes ||
-                    90
-            ),
-            repeatWeekly: draft.recurrence?.frequency === "weekly",
-            allowedSignupStatuses: draft.allowedSignupStatuses ?? [],
-            signupGroupIds: draft.signupGroupIds ?? [],
-            signupGroupLimits: draft.signupGroupLimits ?? [],
-            useGeneralSignup: draft.useGeneralSignup ?? false,
-            signupReminderStatuses: draft.signupReminderStatuses ?? ["member"],
-            announcementChannelId: draft.announcementChannelId ?? "",
-            eventInfoChannelId: draft.eventInfoChannelId ?? "",
-            pingMode: draft.pingMode ?? (draft.pingClan ? "clan" : "none"),
-            pingRoleIds: draft.pingRoleIds ?? [],
-            createForumChannel: draft.createForumChannel,
-            createSquadVoiceChannels: draft.createSquadVoiceChannels ?? false,
-            server: draft.server ?? "",
-            serverPassword: draft.serverPassword ?? "",
-            matchType: draft.matchType,
-            topicPresetId: draft.topicPresetId,
-            attendanceReminderHours: draft.attendanceReminderHours,
-            createParticipantRoles: draft.createParticipantRoles,
-            squadPresetId: draft.squadPresetId,
-            description: draft.description,
-            notes: draft.notes,
-        }
-    }
-    const gameId = props.initialGameId
-    const base: FlowValues = {
-        kind: props.initialKind,
-        gameId,
-        templateId: null,
-        opponent: null,
-        ownSide: null,
-        opponentSide: null,
-        mapId: "",
-        timeOfDay: "",
-        cap: "",
-        name: "",
-        nameTouched: false,
-        ...defaultStart(timezone),
-        announcementHours: null,
-        registrationHours: 24,
-        meetingMinutes: props.initialKind === "match" ? 30 : 0,
-        durationMinutes: 90,
-        repeatWeekly: false,
-        allowedSignupStatuses: [],
-        signupGroupIds: gameGroups(props.groups, gameId).map(
-            (group) => group.id
-        ),
-        signupGroupLimits: [],
-        useGeneralSignup: false,
-        signupReminderStatuses: ["member"],
-        announcementChannelId:
-            channelDefaults[gameId]?.announcementChannelId ?? "",
-        eventInfoChannelId:
-            props.initialKind === "match"
-                ? (channelDefaults[gameId]?.eventInfoChannelId ?? "")
-                : "",
-        pingMode: "clan",
-        pingRoleIds: [],
-        createForumChannel: props.initialKind === "match",
-        createSquadVoiceChannels: false,
-        server: "",
-        serverPassword: "",
-    }
-    const template = templatesFor(props.templates, props.initialKind, gameId)[0]
-    return template
-        ? applyTemplateValues(base, template, props.groups, channelDefaults)
-        : base
+    /** Edit mode: the published event to change. */
+    edit?: NewMatchEditContext
 }
 
 function SegmentedControl<T extends string>({
@@ -376,17 +172,20 @@ function SegmentedControl<T extends string>({
     options,
     onChange,
     size = "md",
+    disabled = false,
 }: {
     label: string
     value: T
     options: Array<{ value: T; label: string }>
     onChange(value: T): void
     size?: "md" | "sm"
+    disabled?: boolean
 }) {
     return (
         <div
             role="radiogroup"
             aria-label={label}
+            aria-disabled={disabled || undefined}
             className="bg-muted flex gap-0.5 rounded-[10px] p-[3px]"
         >
             {options.map((option) => {
@@ -397,9 +196,10 @@ function SegmentedControl<T extends string>({
                         type="button"
                         role="radio"
                         aria-checked={checked}
+                        disabled={disabled && !checked}
                         onClick={() => onChange(option.value)}
                         className={cn(
-                            "flex-1 rounded-lg px-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                            "flex-1 rounded-lg px-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50",
                             size === "md" ? "h-[34px]" : "h-8 text-[13px]",
                             checked
                                 ? "bg-background text-foreground font-semibold shadow-sm"
@@ -434,18 +234,104 @@ function FieldLabel({
     )
 }
 
-function fill(template: string, values: Record<string, string | number>) {
-    return Object.entries(values).reduce(
-        (text, [key, value]) => text.split(`{${key}}`).join(String(value)),
-        template
+function Hint({
+    id,
+    children,
+    tone = "muted",
+}: {
+    id?: string
+    children: React.ReactNode
+    tone?: "muted" | "warning"
+}) {
+    return (
+        <span
+            id={id}
+            className={cn(
+                "text-xs leading-[18px]",
+                tone === "warning"
+                    ? "inline-flex items-start gap-1.5 text-amber-700 dark:text-amber-400"
+                    : "text-muted-foreground"
+            )}
+        >
+            {tone === "warning" ? (
+                <TriangleAlert
+                    className="mt-px size-3.5 shrink-0"
+                    aria-hidden
+                />
+            ) : null}
+            <span>{children}</span>
+        </span>
     )
+}
+
+/**
+ * Asks before leaving with unsaved changes: the browser's own prompt for a
+ * reload or a closed tab, and a confirmation for links inside the app.
+ */
+function useLeaveGuard(active: boolean, message: string) {
+    useEffect(() => {
+        if (!active) return
+        const beforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault()
+            event.returnValue = ""
+        }
+        const click = (event: MouseEvent) => {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+            )
+                return
+            const anchor = (event.target as Element | null)?.closest?.(
+                "a[href]"
+            )
+            if (!(anchor instanceof HTMLAnchorElement)) return
+            if (anchor.target && anchor.target !== "_self") return
+            const url = new URL(anchor.href, window.location.href)
+            if (url.origin !== window.location.origin) return
+            if (
+                url.pathname === window.location.pathname &&
+                url.search === window.location.search
+            )
+                return
+            if (!window.confirm(message)) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+        }
+        window.addEventListener("beforeunload", beforeUnload)
+        document.addEventListener("click", click, true)
+        return () => {
+            window.removeEventListener("beforeunload", beforeUnload)
+            document.removeEventListener("click", click, true)
+        }
+    }, [active, message])
+}
+
+function startingValues(props: NewMatchFlowProps): FlowValues {
+    const stored = props.edit?.event ?? props.draft
+    if (stored) return flowValuesFromEvent(stored, props.timezone)
+    return newFlowValues({
+        kind: props.initialKind,
+        gameId: props.initialGameId,
+        timezone: props.timezone,
+        groups: props.groups,
+        templates: props.templates,
+        channelDefaults: props.channelDefaults,
+        now: new Date(),
+    })
 }
 
 /**
  * The new-match flow (design D2): five steps (match, time, sign-ups,
  * Discord, review) with the Discord preview beside them. Work in progress is
  * autosaved as a draft that only managers see; publishing turns the draft
- * into the match the bot announces.
+ * into the match the bot announces. In edit mode the same steps start from
+ * the published event, every step is open, nothing is autosaved, the review
+ * lists what changes and saving updates the event and its announcement.
  */
 export function NewMatchFlow(props: NewMatchFlowProps) {
     const {
@@ -458,10 +344,18 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         linkedTeams,
         channelDefaults,
     } = props
+    const edit = props.edit ?? null
+    const isEdit = edit !== null
     const t = dictionary.newMatch
     const router = useRouter()
-    const [values, setValues] = useState<FlowValues>(() => initialValues(props))
-    const [step, setStep] = useState<NewMatchStep>("match")
+    const [initial, setInitial] = useState<FlowValues>(() =>
+        startingValues(props)
+    )
+    const [values, setValues] = useState<FlowValues>(initial)
+    // Saved team assignments; a snapshot refresh saves at once and updates them.
+    const [storedTeams, setStoredTeams] = useState(edit?.event.matchTeams)
+    const [refreshing, setRefreshing] = useState<string | null>(null)
+    const [step, setStep] = useState<NewMatchStep>(edit?.initialStep ?? "match")
     const [draftId, setDraftId] = useState<string | null>(
         props.draft?.id ?? null
     )
@@ -472,11 +366,13 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         | { kind: "saved"; at: Date }
         | { kind: "failed" }
     >({ kind: "idle" })
-    const [busy, setBusy] = useState<"publish" | "draft" | null>(null)
-    const [editingTimes, setEditingTimes] = useState(false)
+    const [busy, setBusy] = useState<"publish" | "draft" | "save" | null>(null)
+    const [editingTimes, setEditingTimes] = useState(isEdit)
+    const [moreOpen, setMoreOpen] = useState(false)
     const [metadata, setMetadata] = useState<Metadata | null>(null)
     const [requestOpen, setRequestOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
+    const [leaveOpen, setLeaveOpen] = useState(false)
     const saving = useRef<Promise<unknown> | null>(null)
     const draftIdRef = useRef(draftId)
     draftIdRef.current = draftId
@@ -512,9 +408,20 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const ownTeam = teamGame
         ? (linkedTeams.find((team) => team.gameId === teamGame) ?? null)
         : null
-    const sides = teamGame ? matchTeamSides(teamGame) : ["Allies", "Axis"]
-    const sideLabel = (side: string | null) =>
-        side ? ((t.match.sides as Record<string, string>)[side] ?? side) : null
+    // A saved match shows the team it stored in slot a.
+    const storedOwn = storedTeams?.find((team) => team.slot === "a")
+    const ownDisplay = storedOwn
+        ? {
+              name: storedOwn.snapshot.name,
+              shortCode: storedOwn.snapshot.shortCode,
+              logoUrl: storedOwn.snapshot.logoUrl,
+          }
+        : ownTeam
+    const savedTeamIds = new Set((storedTeams ?? []).map((team) => team.teamId))
+    const sides: readonly string[] = teamGame
+        ? matchTeamSides(teamGame)
+        : ["Allies", "Axis"]
+    const sideLabel = (side: string | null) => flowSideLabel(t, side)
     const template =
         templates.find((entry) => entry.id === values.templateId) ?? null
     const offeredTemplates = useMemo(
@@ -525,104 +432,68 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         [templates, values.gameId]
     )
     const groupsOfGame = gameGroups(groups, values.gameId)
-    const ownCode = teamChipCode(
-        ownTeam?.name ?? props.clan.name,
-        ownTeam?.shortCode
-    )
-    const opponentCode = values.opponent
-        ? teamChipCode(values.opponent.name, values.opponent.shortCode)
-        : null
-    const suggestedName = suggestedEventName({
-        kind: values.kind,
-        ownCode,
-        opponentCode,
-        templateName: template?.name ?? (isMatch ? null : t.steps.training),
-    })
-    const name = values.nameTouched ? values.name : suggestedName
-
-    // Map choices.
-    const maps = getStratmapMaps(values.gameId)
-    const selectedMap = values.mapId
-        ? getStratmapMapById(values.mapId, values.gameId)
-        : undefined
-    const timeOptions = values.mapId
-        ? getHllTimeOptions(values.mapId, values.gameId)
-        : []
-    const strongpoints =
-        values.gameId === "wardogs" ? [] : (selectedMap?.strongpoints ?? [])
-    const timeLabel = (time: string) =>
-        (t.match.timesOfDay as Record<string, string>)[time] ?? time
-    const mapCode = (() => {
-        if (!values.mapId) return ""
-        if (!values.timeOfDay) return values.mapId
-        const modes = getHllModeOptions(
-            values.mapId,
-            values.timeOfDay,
-            values.gameId
-        )
-        const mode =
-            modes.find((option) => option.value === "warfare")?.value ??
-            modes[0]?.value
-        return mode
-            ? (resolveHllPresetCode({
-                  mapId: values.mapId,
-                  time: values.timeOfDay,
-                  mode,
-                  side: values.ownSide,
-                  gameId: values.gameId,
-              }) ?? values.mapId)
-            : values.mapId
-    })()
-
-    // The timeline from the start and the template's offsets.
-    const startLocal =
-        values.date && values.time ? `${values.date}T${values.time}` : ""
-    const startIso = startLocal
-        ? fromDateTimeLocalInTimeZone(startLocal, timezone)
-        : ""
-    const schedule = startIso
-        ? templateSchedule(
-              {
-                  kind: values.kind,
-                  announcementHoursBeforeStart:
-                      values.announcementHours ?? undefined,
-                  registrationHoursBeforeMeeting: values.registrationHours,
-                  meetingMinutesBeforeStart: values.meetingMinutes,
-                  durationMinutes: values.durationMinutes,
-              },
-              startIso
-          )
-        : null
-
     const intl = locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : "en-GB"
-    const formatAt = (iso: string, withWeekday = true) =>
-        new Intl.DateTimeFormat(intl, {
-            timeZone: timezone,
-            weekday: withWeekday ? "short" : undefined,
-            day: "numeric",
-            month: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(iso))
-    const formatTimeOnly = (iso: string) =>
-        new Intl.DateTimeFormat(intl, {
-            timeZone: timezone,
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(iso))
 
     const textChannels = (metadata?.channels ?? []).filter(
         (channel) => channel.type === 0 || channel.type === 5
     )
-    const channelName = (id: string) =>
-        textChannels.find((channel) => channel.id === id)?.name ?? null
-    const roleName = (id: string | undefined) =>
-        id
-            ? (metadata?.roles.find((role) => role.id === id)?.name ?? null)
-            : null
-    const category = props.eventCategories.find(
-        (entry) => entry.id === values.matchType
+    const voiceChannels = (metadata?.channels ?? []).filter(
+        (channel) => channel.type === 2 || channel.type === 13
     )
+    const categoryChannels = (metadata?.channels ?? []).filter(
+        (channel) => channel.type === 4
+    )
+    const channelName = (id: string) =>
+        metadata?.channels.find((channel) => channel.id === id)?.name ?? null
+    const roleName = (id: string) =>
+        metadata?.roles.find((role) => role.id === id)?.name ?? null
+    const squadPresetsOfGame = props.squadPresets.filter(
+        (preset) => (preset.gameId ?? "hell_let_loose") === values.gameId
+    )
+    const stratmapsOfGame = props.stratmaps.filter(
+        (stratmap) => (stratmap.gameId ?? "hell_let_loose") === values.gameId
+    )
+
+    const summaryContext: FlowSummaryContext = {
+        t,
+        intl,
+        timezone,
+        clanName: props.clan.name,
+        ownTeam: ownDisplay,
+        templateName: template?.name ?? null,
+        groups,
+        categories: props.eventCategories,
+        squadPresets: props.squadPresets,
+        topicPresets: props.topicPresets,
+        stratmaps: props.stratmaps,
+        channelName,
+        roleName,
+    }
+    const facts = flowFacts(values, summaryContext)
+    const { ownCode, name, map: selectedMap } = facts
+    const schedule = flowSchedule(values, timezone)
+
+    // Map choices.
+    const maps = getStratmapMaps(values.gameId)
+    const timeOptions = values.mapId
+        ? getHllTimeOptions(values.mapId, values.gameId)
+        : []
+    const modeOptions =
+        values.mapId && values.timeOfDay
+            ? getHllModeOptions(values.mapId, values.timeOfDay, values.gameId)
+            : []
+    const strongpoints =
+        values.gameId === "wardogs" ? [] : (selectedMap?.strongpoints ?? [])
+    const timeLabel = (time: string) =>
+        (t.match.timesOfDay as Record<string, string>)[time] ?? time
+    const modeLabel = (mode: string) =>
+        (t.match.modes as Record<string, string>)[mode] ?? mode
+    // A stored map Logi cannot read as a preset is kept until another is picked.
+    const unknownStoredMap =
+        isEdit && isMatch && edit.event.map && !initial.mapId
+            ? (formatHllPresetLabel(edit.event.map, values.gameId) ??
+              edit.event.map)
+            : null
 
     const offeredGroups = groupsOfGame.filter((group) =>
         values.signupGroupIds.includes(group.id)
@@ -630,120 +501,25 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const limitOf = (groupId: string) =>
         values.signupGroupLimits.find((limit) => limit.groupId === groupId)?.max
 
-    // The bot lists the stored team assignments by slot; without any it shows
-    // the clan's own side.
-    const previewTeams = [
-        ...(ownTeam ? [{ code: ownCode, side: values.ownSide }] : []),
-        ...(opponentCode
-            ? [{ code: opponentCode, side: values.opponentSide }]
-            : []),
-    ]
-    const previewModel: NewMatchPreviewModel = {
-        kind: values.kind,
-        language: props.botLanguage,
-        title: name,
-        categoryLabel: category?.label ?? null,
-        teams: isMatch
-            ? previewTeams.length
-                ? previewTeams
-                : values.ownSide
-                  ? [{ code: ownCode, side: values.ownSide }]
-                  : []
-            : [],
-        map: selectedMap
-            ? { name: selectedMap.name, time: values.timeOfDay || null }
-            : null,
-        cap: values.cap || null,
-        meetingStart: schedule?.meetingStart ?? null,
-        gameStart: schedule?.gameStart ?? null,
-        registrationEnd: schedule?.registrationEnd ?? null,
-        groups: offeredGroups.map((group) => ({
-            name: group.name,
-            max: limitOf(group.id),
-        })),
-        mentions:
-            values.pingMode === "clan"
-                ? [roleName(props.clanRoleId) ?? t.discord.pingClan]
-                : values.pingMode === "roles"
-                  ? values.pingRoleIds.map((id) => roleName(id) ?? id)
-                  : [],
-        forum: isMatch && values.createForumChannel,
-        categoryColor: category?.color,
-        messageStyle: props.messageStyle,
-    }
-
-    function matchTeams(): MatchTeamInput[] | undefined {
-        if (!teamGame || !isMatch) return undefined
-        const teams: MatchTeamInput[] = []
-        if (ownTeam)
-            teams.push({ teamId: ownTeam.id, slot: "a", side: values.ownSide })
-        if (values.opponent)
-            teams.push({
-                teamId: values.opponent.teamId,
-                slot: "b",
-                side: values.opponentSide,
-            })
-        return teams
-    }
-
-    function payload() {
-        const start = schedule
-        const weekday = startIso
-            ? new Date(`${values.date}T00:00:00Z`).getUTCDay()
-            : 0
-        return {
-            gameId: values.gameId,
-            kind: values.kind,
-            matchType: values.matchType || undefined,
-            name: name.trim(),
-            description: values.description || undefined,
-            notes: values.notes || undefined,
-            registrationStart: start?.registrationStart ?? "",
-            registrationEnd: start?.registrationEnd ?? "",
-            meetingStart: start?.meetingStart ?? "",
-            gameStart: start?.gameStart ?? "",
-            gameEnd: start?.gameEnd ?? "",
-            durationMinutes: values.durationMinutes,
-            pingClan: values.pingMode === "clan",
-            pingMode: values.pingMode,
-            pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
-            createForumChannel: isMatch && values.createForumChannel,
-            createSquadVoiceChannels: values.createSquadVoiceChannels,
-            announcementChannelId: values.announcementChannelId || undefined,
-            eventInfoChannelId: isMatch
-                ? values.eventInfoChannelId || undefined
-                : undefined,
-            server: values.server || undefined,
-            serverPassword: values.serverPassword || undefined,
-            side: isMatch ? (values.ownSide ?? undefined) : undefined,
-            map: isMatch ? mapCode || undefined : undefined,
-            cap: isMatch ? values.cap || undefined : undefined,
-            topicPresetId: isMatch ? values.topicPresetId : undefined,
-            signupGroupIds: isMatch ? values.signupGroupIds : [],
-            allowedSignupStatuses: isMatch ? values.allowedSignupStatuses : [],
-            useGeneralSignup: isMatch && values.useGeneralSignup,
-            signupReminderStatuses: isMatch
-                ? values.signupReminderStatuses
-                : [],
-            signupGroupLimits: isMatch
-                ? values.signupGroupLimits.filter((limit) =>
-                      values.signupGroupIds.includes(limit.groupId)
-                  )
-                : undefined,
-            attendanceReminderHours: values.attendanceReminderHours,
-            createParticipantRoles: values.createParticipantRoles,
-            squadPresetId: isMatch ? values.squadPresetId : undefined,
-            recurrence:
-                isMatch && values.repeatWeekly
-                    ? {
-                          frequency: "weekly" as const,
-                          interval: 1,
-                          weekdays: [weekday],
-                      }
-                    : undefined,
-            matchTeams: matchTeams(),
-        }
-    }
+    const previewModel: NewMatchPreviewModel = flowPreviewModel(
+        values,
+        {
+            ...summaryContext,
+            botLanguage: props.botLanguage,
+            clanRoleId: props.clanRoleId,
+            messageStyle: props.messageStyle,
+            signups: edit?.signups,
+        },
+        schedule
+    )
+    const changes = useMemo(
+        () => (isEdit ? flowChanges(initial, values, summaryContext) : []),
+        // The summary context is derived from props, metadata and values.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [isEdit, initial, values, metadata]
+    )
+    const unsaved = isEdit && changes.length > 0
+    useLeaveGuard(unsaved && busy !== "save", t.edit.leavePrompt)
 
     const stepOfField = (field: string): NewMatchStep => {
         if (
@@ -816,7 +592,11 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                             ? { eventId: draftIdRef.current }
                             : {}),
                         publish,
-                        event: payload(),
+                        event: flowEventPayload(values, {
+                            timezone,
+                            name,
+                            ownTeamId: ownTeam?.id ?? null,
+                        }),
                     }),
                 }
             )
@@ -828,9 +608,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             } | null
             return { ok: response.ok && Boolean(body?.eventId), body }
         },
-        // payload() reads the current render's values.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [serverId, values, name, schedule?.registrationEnd, mapCode]
+        [serverId, values, name, timezone, ownTeam?.id]
     )
 
     const rememberDraft = useCallback((eventId: string) => {
@@ -871,14 +649,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         [write, schedule?.registrationEnd]
     )
 
-    // Autosave a little after the last change.
+    // Autosave a little after the last change; edit mode saves only on purpose.
     useEffect(() => {
-        if (!dirty || busy) return
+        if (isEdit || !dirty || busy) return
         const timer = setTimeout(() => {
             if (!saving.current) void saveDraft(false)
         }, AUTOSAVE_DELAY_MS)
         return () => clearTimeout(timer)
-    }, [busy, dirty, saveDraft, values])
+    }, [isEdit, busy, dirty, saveDraft, values])
 
     async function publish() {
         setBusy("publish")
@@ -931,6 +709,134 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         router.refresh()
     }
 
+    /** Saves an edit through the event update route; the bot updates the announcement. */
+    async function saveChanges() {
+        if (!edit) return
+        if (!name.trim()) {
+            toast.error(t.errors.nameRequired)
+            setStep("match")
+            return
+        }
+        if (!scheduleIsCoherent(schedule)) {
+            toast.error(t.edit.invalidSchedule)
+            setStep("time")
+            return
+        }
+        setBusy("save")
+        try {
+            const response = await fetch(
+                `/api/servers/${serverId}/events/${edit.event.id}`,
+                {
+                    method: "PATCH",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify(
+                        flowEditPayload(
+                            values,
+                            initial,
+                            { ...edit.event, matchTeams: storedTeams },
+                            {
+                                timezone,
+                                name,
+                                ownTeamId: ownTeam?.id ?? null,
+                            }
+                        )
+                    ),
+                }
+            )
+            const body = (await response.json().catch(() => null)) as {
+                eventId?: string
+                error?: string
+            } | null
+            if (!response.ok) {
+                const teamError = matchTeamSaveErrorCode(body)
+                toast.error(
+                    teamError
+                        ? dictionary.teams.picker.errors[teamError]
+                        : eventWriteErrorMessage(body, {
+                              forbidden: dictionary.event.writeForbidden,
+                              fallback: t.errors.save_failed,
+                          })
+                )
+                setBusy(null)
+                return
+            }
+            toast.success(t.edit.saved)
+            router.push(edit.detailHref)
+            router.refresh()
+        } catch {
+            toast.error(t.errors.save_failed)
+            setBusy(null)
+        }
+    }
+
+    function leaveEdit() {
+        if (edit) router.push(edit.detailHref)
+    }
+
+    /**
+     * Re-captures a saved team's name and logo from the catalogue. It saves
+     * at once (like before); a merged team moves to the surviving one.
+     */
+    async function refreshTeam(teamId: string) {
+        if (!edit) return
+        const slot = storedTeams?.find((team) => team.teamId === teamId)?.slot
+        setRefreshing(teamId)
+        const result = await requestMatchTeamRefresh(
+            serverId,
+            edit.event.id,
+            teamId
+        )
+        setRefreshing(null)
+        if (!result.ok) {
+            toast.error(
+                (dictionary.teams.picker.errors as Record<string, string>)[
+                    result.code
+                ] ?? t.errors.save_failed
+            )
+            return
+        }
+        setStoredTeams(result.matchTeams)
+        const next = result.matchTeams.find((team) => team.slot === slot)
+        const apply = (current: FlowValues): FlowValues => {
+            if (!next) return current
+            const display = {
+                teamId: next.teamId,
+                name: next.snapshot.name,
+                shortCode: next.snapshot.shortCode,
+                logoUrl: next.snapshot.logoUrl,
+            }
+            if (slot === "b" && current.opponent?.teamId === teamId)
+                return { ...current, opponent: display }
+            if (slot === "c" && current.extraTeam?.teamId === teamId)
+                return { ...current, extraTeam: display }
+            return current
+        }
+        setInitial(apply)
+        setValues(apply)
+        toast.success(dictionary.teams.picker.snapshotRefreshed)
+        router.refresh()
+    }
+
+    const refreshButton = (teamId: string) =>
+        isEdit && savedTeamIds.has(teamId) ? (
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                disabled={refreshing !== null}
+                aria-label={dictionary.teams.picker.refreshSnapshot}
+                title={dictionary.teams.picker.refreshSnapshot}
+                onClick={() => void refreshTeam(teamId)}
+            >
+                {refreshing === teamId ? (
+                    <Loader2 className="size-4 animate-spin" />
+                ) : (
+                    <RefreshCw className="size-4" />
+                )}
+            </Button>
+        ) : null
+
     function changeGame(gameId: GameId) {
         const next: FlowValues = {
             ...values,
@@ -938,8 +844,11 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             opponent: null,
             ownSide: null,
             opponentSide: null,
+            extraTeam: null,
+            extraSide: null,
             mapId: "",
             timeOfDay: "",
+            mapMode: "",
             cap: "",
             signupGroupIds: gameGroups(groups, gameId).map((group) => group.id),
             signupGroupLimits: [],
@@ -1001,6 +910,33 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         })
     }
 
+    function setGroupOffered(groupId: string, offered: boolean) {
+        update({
+            signupGroupIds: offered
+                ? groupsOfGame
+                      .map((group) => group.id)
+                      .filter(
+                          (id) =>
+                              id === groupId ||
+                              values.signupGroupIds.includes(id)
+                      )
+                : values.signupGroupIds.filter((id) => id !== groupId),
+        })
+    }
+
+    function setGroupLimit(groupId: string, raw: string) {
+        const others = values.signupGroupLimits.filter(
+            (limit) => limit.groupId !== groupId
+        )
+        const max = Number(raw)
+        if (raw.trim() === "") {
+            update({ signupGroupLimits: others })
+            return
+        }
+        if (Number.isInteger(max) && max >= 1 && max <= 100)
+            update({ signupGroupLimits: [...others, { groupId, max }] })
+    }
+
     const stepIndex = NEW_MATCH_STEPS.indexOf(step)
     const stepTitle = (entry: NewMatchStep) =>
         entry === "match" && !isMatch ? t.steps.training : t.steps[entry]
@@ -1009,7 +945,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             ? t.autosave.saving
             : saveState.kind === "saved"
               ? fill(t.autosave.saved, {
-                    time: formatTimeOnly(saveState.at.toISOString()),
+                    time: formatTimeOnly(saveState.at.toISOString(), {
+                        intl,
+                        timezone,
+                    }),
                 })
               : saveState.kind === "failed"
                 ? t.autosave.failed
@@ -1033,6 +972,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value={NO_SIDE}>{t.match.noSide}</SelectItem>
+                {value && !sides.includes(value) ? (
+                    <SelectItem value={value}>{value}</SelectItem>
+                ) : null}
                 {sides.map((side) => (
                     <SelectItem key={side} value={side}>
                         {sideLabel(side)}
@@ -1042,119 +984,26 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         </Select>
     )
 
-    // Review texts.
-    const teamsText = isMatch
-        ? opponentCode
-            ? `${ownCode} vs ${opponentCode}`
-            : t.review.noOpponent
-        : null
-    const reviewRows: Array<{ step: NewMatchStep; text: string }> = [
-        {
-            step: "match",
-            text: [
-                teamsText,
-                selectedMap
-                    ? [
-                          selectedMap.name,
-                          values.timeOfDay
-                              ? timeLabel(values.timeOfDay).toLocaleLowerCase(
-                                    intl
-                                )
-                              : null,
-                      ]
-                          .filter(Boolean)
-                          .join(", ")
-                    : null,
-                template
-                    ? fill(t.review.template, { name: template.name })
-                    : null,
-            ]
-                .filter(Boolean)
-                .join(" · "),
-        },
-        {
-            step: "time",
-            text: schedule
-                ? [
-                      formatAt(
-                          isMatch ? schedule.gameStart : schedule.meetingStart
-                      ),
-                      isMatch
-                          ? fill(t.review.reviewMeeting, {
-                                time: formatTimeOnly(schedule.meetingStart),
-                            })
-                          : null,
-                      fill(t.review.reviewSignupsUntil, {
-                          date: formatAt(schedule.registrationEnd),
-                      }),
-                      values.repeatWeekly && isMatch ? t.review.repeats : null,
-                  ]
-                      .filter(Boolean)
-                      .join(" · ")
-                : t.review.missing,
-        },
-        {
-            step: "signups",
-            text: isMatch
-                ? [
-                      (values.allowedSignupStatuses.length
-                          ? values.allowedSignupStatuses
-                          : STATUSES
-                      )
-                          .map((status) => t.signups.statuses[status])
-                          .join(", "),
-                      offeredGroups
-                          .map((group) =>
-                              limitOf(group.id)
-                                  ? fill(t.review.groupMax, {
-                                        name: group.name,
-                                        count: limitOf(group.id) ?? 0,
-                                    })
-                                  : group.name
-                          )
-                          .join(", "),
-                  ]
-                      .filter(Boolean)
-                      .join(" · ")
-                : t.signups.trainingNote,
-        },
-        {
-            step: "discord",
-            text: [
-                values.announcementChannelId
-                    ? `#${channelName(values.announcementChannelId) ?? values.announcementChannelId}`
-                    : t.discord.defaultChannel,
-                values.pingMode === "clan"
-                    ? t.review.pingClan
-                    : values.pingMode === "roles"
-                      ? t.review.pingRoles
-                      : t.review.pingNone,
-                [
-                    isMatch && values.createForumChannel
-                        ? t.review.forum
-                        : null,
-                    values.createSquadVoiceChannels ? t.review.voice : null,
-                ]
-                    .filter(Boolean)
-                    .join(` ${t.review.and} `),
-            ]
-                .filter(Boolean)
-                .join(" · "),
-        },
-    ]
+    const reviewRows = flowReviewRows(values, summaryContext, schedule)
     const squadPreset = props.squadPresets.find(
         (preset) => preset.id === values.squadPresetId
     )
-    const notice = fill(t.review.notice, {
-        channel: values.announcementChannelId
-            ? `#${channelName(values.announcementChannelId) ?? values.announcementChannelId}`
-            : t.review.channelFallback,
-        forum: isMatch && values.createForumChannel ? t.review.noticeForum : "",
-        preset:
-            isMatch && squadPreset
-                ? fill(t.review.noticePreset, { name: squadPreset.name })
-                : "",
-    })
+    const announcementChannelText = values.announcementChannelId
+        ? `#${channelName(values.announcementChannelId) ?? values.announcementChannelId}`
+        : t.review.channelFallback
+    const notice = isEdit
+        ? fill(t.review.noticeEdit, { channel: announcementChannelText })
+        : fill(t.review.notice, {
+              channel: announcementChannelText,
+              forum:
+                  isMatch && values.createForumChannel
+                      ? t.review.noticeForum
+                      : "",
+              preset:
+                  isMatch && squadPreset
+                      ? fill(t.review.noticePreset, { name: squadPreset.name })
+                      : "",
+          })
 
     const statusChip = (status: TemplateSignupStatus) => {
         const pressed = values.allowedSignupStatuses.length
@@ -1168,27 +1017,53 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 onClick={() => {
                     const current = values.allowedSignupStatuses.length
                         ? values.allowedSignupStatuses
-                        : STATUSES
+                        : FLOW_SIGNUP_STATUSES
                     const next = pressed
                         ? current.filter((entry) => entry !== status)
                         : [...current, status]
                     // Every status chosen is stored as "no restriction".
                     update({
                         allowedSignupStatuses:
-                            next.length === STATUSES.length ? [] : next,
+                            next.length === FLOW_SIGNUP_STATUSES.length
+                                ? []
+                                : next,
                     })
                 }}
-                className={cn(
-                    "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
-                    pressed
-                        ? "border-foreground bg-muted text-foreground"
-                        : "border-border bg-background text-muted-foreground"
-                )}
+                className={chipClass(pressed)}
             >
                 {pressed ? (
                     <Check className="size-3" strokeWidth={3} aria-hidden />
                 ) : null}
                 {t.signups.statuses[status]}
+            </button>
+        )
+    }
+
+    const reminderHours = effectiveReminderHours(values.attendanceReminderHours)
+    const reminderChip = (hours: number) => {
+        const pressed = reminderHours.includes(hours)
+        return (
+            <button
+                key={hours}
+                type="button"
+                aria-pressed={pressed}
+                onClick={() =>
+                    update({
+                        attendanceReminderHours: pressed
+                            ? reminderHours.filter((entry) => entry !== hours)
+                            : ATTENDANCE_REMINDER_OFFSETS.filter(
+                                  (offset) =>
+                                      offset === hours ||
+                                      reminderHours.includes(offset)
+                              ),
+                    })
+                }
+                className={chipClass(pressed)}
+            >
+                {pressed ? (
+                    <Check className="size-3" strokeWidth={3} aria-hidden />
+                ) : null}
+                {fill(t.signups.attendanceHour, { hours })}
             </button>
         )
     }
@@ -1211,7 +1086,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         value: number,
         unit: string,
         onChange: (value: number) => void,
-        max: number
+        max: number,
+        fractional = false
     ) => (
         <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -1219,13 +1095,19 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 <Input
                     id={id}
                     type="number"
-                    inputMode="numeric"
+                    inputMode={fractional ? "decimal" : "numeric"}
                     min={0}
                     max={max}
-                    value={value}
+                    step={fractional ? "any" : 1}
+                    value={fractional ? Math.round(value * 100) / 100 : value}
                     onChange={(event) => {
                         const next = Number(event.target.value)
-                        if (Number.isInteger(next) && next >= 0 && next <= max)
+                        if (
+                            Number.isFinite(next) &&
+                            (fractional || Number.isInteger(next)) &&
+                            next >= 0 &&
+                            next <= max
+                        )
                             onChange(next)
                     }}
                     className="h-9 w-20"
@@ -1237,31 +1119,166 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         </div>
     )
 
+    const channelSelect = (
+        id: string,
+        label: string,
+        value: string,
+        options: Array<{ id: string; name: string }>,
+        onChange: (id: string) => void,
+        noneLabel: string,
+        disabled = false
+    ) => (
+        <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor={id}>{label}</FieldLabel>
+            <Select
+                value={value || NONE}
+                disabled={disabled}
+                onValueChange={(next) => onChange(next === NONE ? "" : next)}
+            >
+                <SelectTrigger id={id} className="h-9 w-full">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value={NONE}>{noneLabel}</SelectItem>
+                    {value && !options.some((option) => option.id === value) ? (
+                        <SelectItem value={value}>
+                            <span className="text-muted-foreground">#</span>{" "}
+                            {channelName(value) ?? value}
+                        </SelectItem>
+                    ) : null}
+                    {options.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                            <span className="text-muted-foreground">#</span>{" "}
+                            {option.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    )
+
+    const switchRow = (
+        id: string,
+        label: string,
+        checked: boolean,
+        onChange: (checked: boolean) => void,
+        hint?: React.ReactNode
+    ) => (
+        <div className="flex items-start gap-3">
+            <Switch
+                id={id}
+                checked={checked}
+                onCheckedChange={onChange}
+                className="mt-0.5"
+                aria-describedby={hint ? `${id}-hint` : undefined}
+            />
+            <span className="flex flex-col gap-0.5 leading-5">
+                <Label htmlFor={id} className="text-sm font-normal">
+                    {label}
+                </Label>
+                {hint ? <Hint id={`${id}-hint`}>{hint}</Hint> : null}
+            </span>
+        </div>
+    )
+
+    const listHref =
+        edit?.listHref ??
+        `/${locale}/dashboard/servers/${serverId}/${isMatch ? "matches" : "trainings"}`
+    const listLabel = isMatch
+        ? dictionary.matchDetail.backToMatches
+        : t.edit.breadcrumbTrainings
+    const footerSave = isEdit ? (
+        <>
+            <Button
+                type="button"
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() => (unsaved ? setLeaveOpen(true) : leaveEdit())}
+            >
+                {t.edit.cancel}
+            </Button>
+            <Button
+                type="button"
+                disabled={busy !== null || !unsaved}
+                onClick={() => void saveChanges()}
+            >
+                <Check aria-hidden />
+                {t.edit.save}
+            </Button>
+        </>
+    ) : null
+
     return (
         <div className="flex flex-col gap-6 px-4 pb-12 lg:px-6">
+            {isEdit ? (
+                <nav
+                    aria-label={dictionary.matchDetail.breadcrumbLabel}
+                    className="text-muted-foreground -mb-2 flex min-w-0 items-center gap-1 text-sm"
+                >
+                    <Link href={listHref} className="hover:text-foreground">
+                        {listLabel}
+                    </Link>
+                    <ChevronRight className="size-3.5 shrink-0" aria-hidden />
+                    <Link
+                        href={edit.detailHref}
+                        className="hover:text-foreground truncate"
+                    >
+                        {edit.event.name}
+                    </Link>
+                    <ChevronRight className="size-3.5 shrink-0" aria-hidden />
+                    <span aria-current="page" className="text-foreground">
+                        {t.edit.breadcrumb}
+                    </span>
+                </nav>
+            ) : null}
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-2xl leading-8 font-semibold tracking-tight">
-                        {isMatch ? t.title : t.titleTraining}
+                        {isEdit
+                            ? isMatch
+                                ? t.edit.title
+                                : t.edit.titleTraining
+                            : isMatch
+                              ? t.title
+                              : t.titleTraining}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        {t.description}
+                        {isEdit ? t.edit.description : t.description}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <span
-                        role="status"
-                        aria-live="polite"
-                        className={cn(
-                            "text-[13px]",
-                            saveState.kind === "failed"
-                                ? "text-destructive"
-                                : "text-muted-foreground"
-                        )}
-                    >
-                        {autosaveText}
-                    </span>
-                    {draftId ? (
+                    {isEdit ? (
+                        <span
+                            role="status"
+                            aria-live="polite"
+                            className={cn(
+                                "text-[13px]",
+                                unsaved
+                                    ? "text-foreground font-medium"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            {unsaved
+                                ? fill(t.edit.unsaved, {
+                                      count: changes.length,
+                                  })
+                                : t.edit.noChanges}
+                        </span>
+                    ) : (
+                        <span
+                            role="status"
+                            aria-live="polite"
+                            className={cn(
+                                "text-[13px]",
+                                saveState.kind === "failed"
+                                    ? "text-destructive"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            {autosaveText}
+                        </span>
+                    )}
+                    {!isEdit && draftId ? (
                         <ConfirmActionDialog
                             open={deleteOpen}
                             onOpenChange={setDeleteOpen}
@@ -1279,6 +1296,17 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                             onConfirm={deleteDraft}
                         />
                     ) : null}
+                    {isEdit ? (
+                        <ConfirmActionDialog
+                            open={leaveOpen}
+                            onOpenChange={setLeaveOpen}
+                            title={t.edit.leaveTitle}
+                            description={t.edit.leaveDescription}
+                            confirmLabel={t.edit.leaveConfirm}
+                            cancelLabel={dictionary.common.cancel}
+                            onConfirm={leaveEdit}
+                        />
+                    ) : null}
                 </div>
             </div>
 
@@ -1288,7 +1316,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             >
                 {NEW_MATCH_STEPS.map((entry, index) => {
                     const current = entry === step
-                    const done = index < stepIndex
+                    // In edit mode every step is filled in already.
+                    const done = isEdit ? !current : index < stepIndex
                     return (
                         <li key={entry}>
                             <button
@@ -1349,6 +1378,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         label={t.match.game}
                                         value={values.gameId}
                                         onChange={changeGame}
+                                        // A published match keeps its game.
+                                        disabled={isEdit}
                                         options={props.enabledGames.map(
                                             (gameId) => ({
                                                 value: gameId,
@@ -1358,78 +1389,143 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     />
                                 </div>
                             ) : null}
-                            <div className="flex flex-col gap-2">
-                                <FieldLabel id="nm-template">
-                                    {t.match.template}
-                                </FieldLabel>
-                                {offeredTemplates.length ? (
-                                    <div
-                                        role="radiogroup"
-                                        aria-labelledby="nm-template"
-                                        className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-2"
-                                    >
-                                        {offeredTemplates.map((entry) => {
-                                            const checked =
-                                                entry.id === values.templateId
-                                            return (
-                                                <button
-                                                    key={entry.id}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={checked}
-                                                    onClick={() =>
-                                                        pickTemplate(entry)
-                                                    }
-                                                    className={cn(
-                                                        "flex flex-col items-start gap-0.5 rounded-[10px] border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
-                                                        checked
-                                                            ? "border-foreground bg-muted/50"
-                                                            : "border-border bg-background hover:bg-muted/40"
-                                                    )}
-                                                >
-                                                    <span className="text-sm font-semibold">
-                                                        {entry.name}
-                                                    </span>
-                                                    <span className="text-muted-foreground text-xs leading-4">
-                                                        {entry.kind ===
-                                                        "training"
-                                                            ? t.match
-                                                                  .templateTraining
-                                                            : fill(
-                                                                  t.match
-                                                                      .templateRegistration,
-                                                                  {
-                                                                      hours: entry.registrationHoursBeforeMeeting,
-                                                                  }
-                                                              )}
-                                                    </span>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">
-                                        {t.match.noTemplates}{" "}
-                                        <Link
-                                            href={`/${locale}/dashboard/servers/${serverId}/settings/match-templates`}
-                                            className="text-foreground underline underline-offset-[3px]"
+                            {isEdit ? (
+                                props.eventCategories.length ? (
+                                    <div className="flex flex-col gap-2">
+                                        <FieldLabel id="nm-category">
+                                            {t.match.category}
+                                        </FieldLabel>
+                                        <div
+                                            role="radiogroup"
+                                            aria-labelledby="nm-category"
+                                            className="grid grid-cols-[repeat(auto-fit,minmax(min(150px,100%),1fr))] gap-2"
                                         >
-                                            {t.match.manageTemplates}
-                                        </Link>
-                                    </p>
-                                )}
-                            </div>
+                                            {[
+                                                {
+                                                    id: "",
+                                                    label: t.match.noCategory,
+                                                    color: undefined as
+                                                        string | undefined,
+                                                },
+                                                ...props.eventCategories,
+                                            ].map((entry) => {
+                                                const checked =
+                                                    (values.matchType ?? "") ===
+                                                    entry.id
+                                                return (
+                                                    <button
+                                                        key={entry.id || NONE}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={checked}
+                                                        onClick={() =>
+                                                            update({
+                                                                matchType:
+                                                                    entry.id ||
+                                                                    undefined,
+                                                            })
+                                                        }
+                                                        className={cn(
+                                                            "flex items-center gap-2 rounded-[10px] border p-3 text-left text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                                                            checked
+                                                                ? "border-foreground bg-muted/50"
+                                                                : "border-border bg-background hover:bg-muted/40"
+                                                        )}
+                                                    >
+                                                        {entry.color ? (
+                                                            <span
+                                                                aria-hidden
+                                                                className="size-2.5 shrink-0 rounded-full"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        entry.color,
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <span className="truncate">
+                                                            {entry.label}
+                                                        </span>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : null
+                            ) : (
+                                <div className="flex flex-col gap-2">
+                                    <FieldLabel id="nm-template">
+                                        {t.match.template}
+                                    </FieldLabel>
+                                    {offeredTemplates.length ? (
+                                        <div
+                                            role="radiogroup"
+                                            aria-labelledby="nm-template"
+                                            className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-2"
+                                        >
+                                            {offeredTemplates.map((entry) => {
+                                                const checked =
+                                                    entry.id ===
+                                                    values.templateId
+                                                return (
+                                                    <button
+                                                        key={entry.id}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={checked}
+                                                        onClick={() =>
+                                                            pickTemplate(entry)
+                                                        }
+                                                        className={cn(
+                                                            "flex flex-col items-start gap-0.5 rounded-[10px] border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                                                            checked
+                                                                ? "border-foreground bg-muted/50"
+                                                                : "border-border bg-background hover:bg-muted/40"
+                                                        )}
+                                                    >
+                                                        <span className="text-sm font-semibold">
+                                                            {entry.name}
+                                                        </span>
+                                                        <span className="text-muted-foreground text-xs leading-4">
+                                                            {entry.kind ===
+                                                            "training"
+                                                                ? t.match
+                                                                      .templateTraining
+                                                                : fill(
+                                                                      t.match
+                                                                          .templateRegistration,
+                                                                      {
+                                                                          hours: entry.registrationHoursBeforeMeeting,
+                                                                      }
+                                                                  )}
+                                                        </span>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted-foreground text-sm">
+                                            {t.match.noTemplates}{" "}
+                                            <Link
+                                                href={`/${locale}/dashboard/servers/${serverId}/settings/match-templates`}
+                                                className="text-foreground underline underline-offset-[3px]"
+                                            >
+                                                {t.match.manageTemplates}
+                                            </Link>
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             {isMatch ? (
                                 <div className="flex flex-col gap-2">
                                     <FieldLabel id="nm-teams">
                                         {t.match.teams}
                                     </FieldLabel>
                                     <div className="border-border flex flex-wrap items-center gap-2 rounded-[10px] border px-3 py-2.5">
-                                        {ownTeam?.logoUrl ? (
+                                        {ownDisplay?.logoUrl ? (
                                             <TeamLogo
-                                                name={ownTeam.name}
-                                                shortCode={ownTeam.shortCode}
-                                                logoUrl={ownTeam.logoUrl}
+                                                name={ownDisplay.name}
+                                                shortCode={ownDisplay.shortCode}
+                                                logoUrl={ownDisplay.logoUrl}
                                                 className="size-8"
                                             />
                                         ) : (
@@ -1442,7 +1538,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         )}
                                         <span className="flex min-w-0 flex-[1_1_140px] flex-col leading-[18px]">
                                             <span className="truncate text-sm font-medium">
-                                                {ownTeam?.name ??
+                                                {ownDisplay?.name ??
                                                     props.clan.name}
                                             </span>
                                             <span className="text-muted-foreground text-xs">
@@ -1454,6 +1550,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             setOwnSide,
                                             t.match.yourSide
                                         )}
+                                        {storedOwn
+                                            ? refreshButton(storedOwn.teamId)
+                                            : null}
                                     </div>
                                     {teamGame ? (
                                         values.opponent ? (
@@ -1485,6 +1584,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                     setOpponentSide,
                                                     t.match.opponentSide
                                                 )}
+                                                {refreshButton(
+                                                    values.opponent.teamId
+                                                )}
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
@@ -1507,13 +1609,103 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             <OpponentPicker
                                                 serverId={serverId}
                                                 gameId={teamGame}
-                                                excludeIds={
-                                                    ownTeam ? [ownTeam.id] : []
-                                                }
+                                                excludeIds={[
+                                                    storedOwn?.teamId ??
+                                                        ownTeam?.id,
+                                                    values.extraTeam?.teamId,
+                                                ].filter((id): id is string =>
+                                                    Boolean(id)
+                                                )}
                                                 dictionary={dictionary}
                                                 onPick={(team: TeamRecord) =>
                                                     update({
                                                         opponent: {
+                                                            teamId: team.id,
+                                                            name: team.name,
+                                                            shortCode:
+                                                                team.shortCode,
+                                                            logoUrl:
+                                                                team.logoUrl,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                        )
+                                    ) : null}
+                                    {/* Wardogs: a third team (slot c) when editing. */}
+                                    {isEdit &&
+                                    teamGame === "wardogs" &&
+                                    (values.opponent || values.extraTeam) ? (
+                                        values.extraTeam ? (
+                                            <div className="border-border flex flex-wrap items-center gap-2 rounded-[10px] border px-3 py-2.5">
+                                                <TeamLogo
+                                                    name={values.extraTeam.name}
+                                                    shortCode={
+                                                        values.extraTeam
+                                                            .shortCode
+                                                    }
+                                                    logoUrl={
+                                                        values.extraTeam.logoUrl
+                                                    }
+                                                    className="size-8"
+                                                />
+                                                <span className="flex min-w-0 flex-[1_1_140px] flex-col leading-[18px]">
+                                                    <span className="truncate text-sm font-medium">
+                                                        {values.extraTeam.name}
+                                                    </span>
+                                                    <span className="text-muted-foreground text-xs">
+                                                        {t.match.otherTeam}
+                                                    </span>
+                                                </span>
+                                                {sideSelect(
+                                                    values.extraSide,
+                                                    (extraSide) =>
+                                                        update({ extraSide }),
+                                                    t.match.otherSide
+                                                )}
+                                                {refreshButton(
+                                                    values.extraTeam.teamId
+                                                )}
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8"
+                                                    aria-label={
+                                                        t.match.removeTeam
+                                                    }
+                                                    onClick={() =>
+                                                        update({
+                                                            extraTeam: null,
+                                                            extraSide: null,
+                                                        })
+                                                    }
+                                                >
+                                                    <X className="size-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <OpponentPicker
+                                                serverId={serverId}
+                                                gameId="wardogs"
+                                                label={t.match.addTeam}
+                                                excludeIds={[
+                                                    ...(storedOwn
+                                                        ? [storedOwn.teamId]
+                                                        : ownTeam
+                                                          ? [ownTeam.id]
+                                                          : []),
+                                                    ...(values.opponent
+                                                        ? [
+                                                              values.opponent
+                                                                  .teamId,
+                                                          ]
+                                                        : []),
+                                                ]}
+                                                dictionary={dictionary}
+                                                onPick={(team: TeamRecord) =>
+                                                    update({
+                                                        extraTeam: {
                                                             teamId: team.id,
                                                             name: team.name,
                                                             shortCode:
@@ -1561,122 +1753,40 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 </div>
                             ) : null}
                             {isMatch ? (
-                                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))] gap-3">
-                                    <div className="flex flex-col gap-1.5">
-                                        <FieldLabel htmlFor="nm-map">
-                                            {t.match.map}
-                                        </FieldLabel>
-                                        <Select
-                                            value={values.mapId || NONE}
-                                            onValueChange={(mapId) =>
-                                                update({
-                                                    mapId:
-                                                        mapId === NONE
-                                                            ? ""
-                                                            : mapId,
-                                                    timeOfDay:
-                                                        mapId === NONE
-                                                            ? ""
-                                                            : (getHllTimeOptions(
-                                                                  mapId,
-                                                                  values.gameId
-                                                              ).find(
-                                                                  (option) =>
-                                                                      option.value ===
-                                                                      "day"
-                                                              )?.value ??
-                                                              getHllTimeOptions(
-                                                                  mapId,
-                                                                  values.gameId
-                                                              )[0]?.value ??
-                                                              ""),
-                                                    cap: "",
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="nm-map"
-                                                className="h-9 w-full"
-                                            >
-                                                <SelectValue
-                                                    placeholder={t.match.choose}
-                                                />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value={NONE}>
-                                                    {t.match.choose}
-                                                </SelectItem>
-                                                {maps.map((map) => (
-                                                    <SelectItem
-                                                        key={map.id}
-                                                        value={map.id}
-                                                    >
-                                                        {map.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <FieldLabel htmlFor="nm-tod">
-                                            {t.match.timeOfDay}
-                                        </FieldLabel>
-                                        <Select
-                                            value={values.timeOfDay || NONE}
-                                            disabled={!timeOptions.length}
-                                            onValueChange={(timeOfDay) =>
-                                                update({
-                                                    timeOfDay:
-                                                        timeOfDay === NONE
-                                                            ? ""
-                                                            : timeOfDay,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="nm-tod"
-                                                className="h-9 w-full"
-                                            >
-                                                <SelectValue
-                                                    placeholder={t.match.choose}
-                                                />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value={NONE}>
-                                                    {t.match.choose}
-                                                </SelectItem>
-                                                {timeOptions.map((option) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {timeLabel(
-                                                            option.value
-                                                        )}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    {values.gameId !== "wardogs" ? (
-                                        <div className="flex flex-col gap-1.5">
-                                            <FieldLabel htmlFor="nm-cap">
-                                                {t.match.strongpoint}
+                                <div className="flex flex-col gap-2">
+                                    <div
+                                        className={cn(
+                                            "grid gap-3",
+                                            isEdit && modeOptions.length > 1
+                                                ? "grid-cols-2 sm:grid-cols-4"
+                                                : "grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))]"
+                                        )}
+                                    >
+                                        <div className="flex min-w-0 flex-col gap-1.5">
+                                            <FieldLabel htmlFor="nm-map">
+                                                {t.match.map}
                                             </FieldLabel>
                                             <Select
-                                                value={values.cap || NONE}
-                                                disabled={!strongpoints.length}
-                                                onValueChange={(cap) =>
+                                                value={values.mapId || NONE}
+                                                onValueChange={(mapId) =>
                                                     update({
-                                                        cap:
-                                                            cap === NONE
+                                                        mapId:
+                                                            mapId === NONE
                                                                 ? ""
-                                                                : cap,
+                                                                : mapId,
+                                                        timeOfDay:
+                                                            mapId === NONE
+                                                                ? ""
+                                                                : defaultTimeOfDay(
+                                                                      mapId,
+                                                                      values.gameId
+                                                                  ),
+                                                        cap: "",
                                                     })
                                                 }
                                             >
                                                 <SelectTrigger
-                                                    id="nm-cap"
+                                                    id="nm-map"
                                                     className="h-9 w-full"
                                                 >
                                                     <SelectValue
@@ -1689,21 +1799,195 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                     <SelectItem value={NONE}>
                                                         {t.match.choose}
                                                     </SelectItem>
-                                                    {strongpoints.map(
-                                                        (point) => (
+                                                    {maps.map((map) => (
+                                                        <SelectItem
+                                                            key={map.id}
+                                                            value={map.id}
+                                                        >
+                                                            {map.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex min-w-0 flex-col gap-1.5">
+                                            <FieldLabel htmlFor="nm-tod">
+                                                {t.match.timeOfDay}
+                                            </FieldLabel>
+                                            <Select
+                                                value={values.timeOfDay || NONE}
+                                                disabled={!timeOptions.length}
+                                                onValueChange={(timeOfDay) =>
+                                                    update({
+                                                        timeOfDay:
+                                                            timeOfDay === NONE
+                                                                ? ""
+                                                                : timeOfDay,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="nm-tod"
+                                                    className="h-9 w-full"
+                                                >
+                                                    <SelectValue
+                                                        placeholder={
+                                                            t.match.choose
+                                                        }
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value={NONE}>
+                                                        {t.match.choose}
+                                                    </SelectItem>
+                                                    {timeOptions.map(
+                                                        (option) => (
                                                             <SelectItem
-                                                                key={point.id}
+                                                                key={
+                                                                    option.value
+                                                                }
                                                                 value={
-                                                                    point.label
+                                                                    option.value
                                                                 }
                                                             >
-                                                                {point.label}
+                                                                {timeLabel(
+                                                                    option.value
+                                                                )}
                                                             </SelectItem>
                                                         )
                                                     )}
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        {isEdit && modeOptions.length > 1 ? (
+                                            <div className="flex min-w-0 flex-col gap-1.5">
+                                                <FieldLabel htmlFor="nm-mode">
+                                                    {t.match.mode}
+                                                </FieldLabel>
+                                                <Select
+                                                    value={
+                                                        modeOptions.some(
+                                                            (option) =>
+                                                                option.value ===
+                                                                values.mapMode
+                                                        )
+                                                            ? values.mapMode
+                                                            : (modeOptions.find(
+                                                                  (option) =>
+                                                                      option.value ===
+                                                                      "warfare"
+                                                              )?.value ??
+                                                              modeOptions[0]
+                                                                  .value)
+                                                    }
+                                                    onValueChange={(mapMode) =>
+                                                        update({ mapMode })
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="nm-mode"
+                                                        className="h-9 w-full"
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {modeOptions.map(
+                                                            (option) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    value={
+                                                                        option.value
+                                                                    }
+                                                                >
+                                                                    {modeLabel(
+                                                                        option.value
+                                                                    )}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        ) : null}
+                                        {values.gameId !== "wardogs" ? (
+                                            <div className="flex min-w-0 flex-col gap-1.5">
+                                                <FieldLabel htmlFor="nm-cap">
+                                                    {t.match.strongpoint}
+                                                </FieldLabel>
+                                                <Select
+                                                    value={values.cap || NONE}
+                                                    disabled={
+                                                        !strongpoints.length &&
+                                                        !values.cap
+                                                    }
+                                                    onValueChange={(cap) =>
+                                                        update({
+                                                            cap:
+                                                                cap === NONE
+                                                                    ? ""
+                                                                    : cap,
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="nm-cap"
+                                                        className="h-9 w-full"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder={
+                                                                t.match.choose
+                                                            }
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem
+                                                            value={NONE}
+                                                        >
+                                                            {t.match.choose}
+                                                        </SelectItem>
+                                                        {values.cap &&
+                                                        !strongpoints.some(
+                                                            (point) =>
+                                                                point.label ===
+                                                                values.cap
+                                                        ) ? (
+                                                            <SelectItem
+                                                                value={
+                                                                    values.cap
+                                                                }
+                                                            >
+                                                                {values.cap}
+                                                            </SelectItem>
+                                                        ) : null}
+                                                        {strongpoints.map(
+                                                            (point) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        point.id
+                                                                    }
+                                                                    value={
+                                                                        point.label
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        point.label
+                                                                    }
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                    {unknownStoredMap && !values.mapId ? (
+                                        <Hint>
+                                            {fill(t.match.storedMap, {
+                                                map: unknownStoredMap,
+                                            })}
+                                        </Hint>
                                     ) : null}
                                 </div>
                             ) : null}
@@ -1715,7 +1999,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     id="nm-name"
                                     value={name}
                                     maxLength={200}
-                                    aria-describedby="nm-name-hint"
+                                    aria-describedby={
+                                        isEdit ? undefined : "nm-name-hint"
+                                    }
                                     onChange={(event) =>
                                         update({
                                             name: event.target.value,
@@ -1724,13 +2010,203 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     }
                                     className="h-9"
                                 />
-                                <span
-                                    id="nm-name-hint"
-                                    className="text-muted-foreground text-xs"
-                                >
-                                    {t.match.nameHint}
-                                </span>
+                                {isEdit ? null : (
+                                    <span
+                                        id="nm-name-hint"
+                                        className="text-muted-foreground text-xs"
+                                    >
+                                        {t.match.nameHint}
+                                    </span>
+                                )}
                             </div>
+                            {isEdit ? (
+                                <div className="border-border rounded-[10px] border">
+                                    <button
+                                        type="button"
+                                        aria-expanded={moreOpen}
+                                        aria-controls="nm-more"
+                                        onClick={() =>
+                                            setMoreOpen((open) => !open)
+                                        }
+                                        className="hover:bg-muted/40 flex w-full items-center gap-3 rounded-[10px] px-3.5 py-3 text-left focus-visible:ring-2 focus-visible:outline-none"
+                                    >
+                                        <span className="flex min-w-0 flex-1 flex-col leading-5">
+                                            <span className="text-sm font-medium">
+                                                {t.more.title}
+                                            </span>
+                                            <span className="text-muted-foreground truncate text-[13px]">
+                                                {t.more.summary}
+                                            </span>
+                                        </span>
+                                        <ChevronDown
+                                            aria-hidden
+                                            className={cn(
+                                                "text-muted-foreground size-4 shrink-0 transition-transform",
+                                                moreOpen && "rotate-180"
+                                            )}
+                                        />
+                                    </button>
+                                    {moreOpen ? (
+                                        <div
+                                            id="nm-more"
+                                            className="border-border/60 flex flex-col gap-[18px] border-t px-3.5 py-4"
+                                        >
+                                            <div className="flex flex-col gap-1.5">
+                                                <FieldLabel id="nm-description">
+                                                    {t.more.description}
+                                                </FieldLabel>
+                                                <DiscordMarkdownTextarea
+                                                    value={
+                                                        values.description ?? ""
+                                                    }
+                                                    onChange={(description) =>
+                                                        update({ description })
+                                                    }
+                                                    compactToolbar
+                                                    rows={4}
+                                                    maxLength={4000}
+                                                    className="rounded-lg"
+                                                />
+                                                <Hint>
+                                                    {t.more.descriptionHint}
+                                                </Hint>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <FieldLabel id="nm-notes">
+                                                    {t.more.notes}
+                                                </FieldLabel>
+                                                <DiscordMarkdownTextarea
+                                                    value={values.notes ?? ""}
+                                                    onChange={(notes) =>
+                                                        update({ notes })
+                                                    }
+                                                    compactToolbar
+                                                    rows={4}
+                                                    maxLength={4000}
+                                                    className="rounded-lg"
+                                                />
+                                                <Hint>{t.more.notesHint}</Hint>
+                                            </div>
+                                            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] gap-3">
+                                                {(
+                                                    [
+                                                        [
+                                                            "thumbnailUrl",
+                                                            t.more.thumbnail,
+                                                        ],
+                                                        ...(isMatch
+                                                            ? ([
+                                                                  [
+                                                                      "imageUrl",
+                                                                      t.more
+                                                                          .image,
+                                                                  ],
+                                                              ] as const)
+                                                            : []),
+                                                    ] as const
+                                                ).map(([field, label]) => (
+                                                    <div
+                                                        key={field}
+                                                        className="flex flex-col gap-1.5"
+                                                    >
+                                                        <AvatarPicker
+                                                            value={
+                                                                values[field] ??
+                                                                ""
+                                                            }
+                                                            onChange={(url) =>
+                                                                update({
+                                                                    [field]:
+                                                                        url ||
+                                                                        undefined,
+                                                                })
+                                                            }
+                                                            fallback={(
+                                                                name || "EV"
+                                                            )
+                                                                .slice(0, 2)
+                                                                .toUpperCase()}
+                                                            label={label}
+                                                            buttonLabel={
+                                                                t.more.upload
+                                                            }
+                                                            disabled={
+                                                                busy !== null
+                                                            }
+                                                            className="border-border rounded-[10px] border p-3"
+                                                        />
+                                                        {values[field] ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    update({
+                                                                        [field]:
+                                                                            undefined,
+                                                                    })
+                                                                }
+                                                                className="text-muted-foreground hover:text-foreground self-start text-xs underline underline-offset-[3px]"
+                                                            >
+                                                                {t.more.remove}
+                                                            </button>
+                                                        ) : null}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {isMatch ? (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <FieldLabel id="nm-stratmaps">
+                                                        {t.more.stratmaps}
+                                                    </FieldLabel>
+                                                    {stratmapsOfGame.length ||
+                                                    values.stratmapIds
+                                                        .length ? (
+                                                        <DiscordMultiEntitySelect
+                                                            value={
+                                                                values.stratmapIds
+                                                            }
+                                                            onChange={(
+                                                                stratmapIds
+                                                            ) =>
+                                                                update({
+                                                                    stratmapIds,
+                                                                })
+                                                            }
+                                                            options={props.stratmaps
+                                                                .filter(
+                                                                    (
+                                                                        stratmap
+                                                                    ) =>
+                                                                        stratmapsOfGame.includes(
+                                                                            stratmap
+                                                                        ) ||
+                                                                        values.stratmapIds.includes(
+                                                                            stratmap.id
+                                                                        )
+                                                                )
+                                                                .map(
+                                                                    (
+                                                                        stratmap
+                                                                    ) => ({
+                                                                        id: stratmap.id,
+                                                                        name: stratmap.title,
+                                                                    })
+                                                                )}
+                                                            placeholder={
+                                                                t.more
+                                                                    .stratmapsPlaceholder
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <Hint>
+                                                            {t.more.noStratmaps}
+                                                        </Hint>
+                                                    )}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
                         </div>
                     ) : null}
 
@@ -1849,8 +2325,12 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                         }
                                                         min={0}
                                                         max={720}
+                                                        step="any"
                                                         value={
-                                                            values.announcementHours
+                                                            Math.round(
+                                                                values.announcementHours *
+                                                                    100
+                                                            ) / 100
                                                         }
                                                         onChange={(event) => {
                                                             const next = Number(
@@ -1858,7 +2338,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                                     .value
                                                             )
                                                             if (
-                                                                Number.isInteger(
+                                                                Number.isFinite(
                                                                     next
                                                                 ) &&
                                                                 next >= 0 &&
@@ -1887,7 +2367,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             t.time.hoursBeforeMeeting,
                                             (registrationHours) =>
                                                 update({ registrationHours }),
-                                            720
+                                            720,
+                                            true
                                         )}
                                         {isMatch
                                             ? numberField(
@@ -1921,48 +2402,98 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 {timeRow(
                                     t.time.announcement,
                                     schedule?.registrationStart
-                                        ? formatAt(schedule.registrationStart)
+                                        ? formatAt(
+                                              schedule.registrationStart,
+                                              summaryContext
+                                          )
                                         : t.time.onPublish,
                                     editingTimes ? false : true
                                 )}
                                 {timeRow(
                                     t.time.registrationEnd,
                                     schedule
-                                        ? formatAt(schedule.registrationEnd)
+                                        ? formatAt(
+                                              schedule.registrationEnd,
+                                              summaryContext
+                                          )
                                         : "—"
                                 )}
                                 {timeRow(
                                     t.time.meeting,
                                     schedule
-                                        ? formatAt(schedule.meetingStart)
+                                        ? formatAt(
+                                              schedule.meetingStart,
+                                              summaryContext
+                                          )
                                         : "—"
                                 )}
                                 {timeRow(
                                     isMatch ? t.time.end : t.time.endTraining,
-                                    schedule ? formatAt(schedule.gameEnd) : "—"
+                                    schedule
+                                        ? formatAt(
+                                              schedule.gameEnd,
+                                              summaryContext
+                                          )
+                                        : "—"
                                 )}
                             </div>
-                            {isMatch ? (
-                                <div className="flex items-start gap-3">
-                                    <Switch
-                                        id="nm-repeat"
-                                        checked={values.repeatWeekly}
-                                        onCheckedChange={(repeatWeekly) =>
-                                            update({ repeatWeekly })
-                                        }
-                                        className="mt-0.5"
+                            {isEdit && !scheduleIsCoherent(schedule) ? (
+                                <Hint tone="warning">
+                                    {t.edit.invalidSchedule}
+                                </Hint>
+                            ) : null}
+                            {isMatch && edit?.series?.kind === "occurrence" ? (
+                                <p className="bg-muted text-foreground/80 m-0 flex flex-wrap items-start gap-2.5 rounded-[10px] px-3.5 py-3 text-sm leading-5">
+                                    <Repeat
+                                        className="mt-px size-[18px] shrink-0"
+                                        aria-hidden
                                     />
-                                    <label
-                                        htmlFor="nm-repeat"
-                                        className="flex flex-col leading-5"
-                                    >
-                                        <span className="text-sm">
-                                            {t.time.repeat}
-                                        </span>
-                                        <span className="text-muted-foreground text-[13px]">
-                                            {t.time.repeatHint}
-                                        </span>
-                                    </label>
+                                    <span className="min-w-0 flex-1">
+                                        {t.edit.series}
+                                    </span>
+                                    {edit.series.sourceEditHref ? (
+                                        <Link
+                                            href={edit.series.sourceEditHref}
+                                            className="text-foreground font-medium underline underline-offset-[3px]"
+                                        >
+                                            {t.edit.seriesEdit}
+                                        </Link>
+                                    ) : null}
+                                </p>
+                            ) : isMatch ? (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-start gap-3">
+                                        <Switch
+                                            id="nm-repeat"
+                                            checked={values.repeatWeekly}
+                                            onCheckedChange={(repeatWeekly) =>
+                                                update({ repeatWeekly })
+                                            }
+                                            className="mt-0.5"
+                                        />
+                                        <label
+                                            htmlFor="nm-repeat"
+                                            className="flex flex-col leading-5"
+                                        >
+                                            <span className="text-sm">
+                                                {t.time.repeat}
+                                            </span>
+                                            <span className="text-muted-foreground text-[13px]">
+                                                {isEdit && initial.repeatWeekly
+                                                    ? t.edit.stopHint
+                                                    : t.time.repeatHint}
+                                            </span>
+                                        </label>
+                                    </div>
+                                    {edit?.series?.kind === "source" ? (
+                                        <p className="bg-muted text-foreground/80 m-0 flex gap-2.5 rounded-[10px] px-3.5 py-3 text-sm leading-5">
+                                            <Repeat
+                                                className="mt-px size-[18px] shrink-0"
+                                                aria-hidden
+                                            />
+                                            {t.edit.seriesSource}
+                                        </p>
+                                    ) : null}
                                 </div>
                             ) : null}
                         </div>
@@ -1996,92 +2527,437 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             aria-labelledby="nm-who"
                                             className="flex flex-wrap gap-2"
                                         >
-                                            {STATUSES.map(statusChip)}
+                                            {FLOW_SIGNUP_STATUSES.map(
+                                                statusChip
+                                            )}
                                         </div>
                                     </div>
                                     {groupsOfGame.length ? (
-                                        <div className="border-border flex flex-col rounded-[10px] border">
-                                            {offeredGroups.map(
-                                                (group, index) => (
+                                        isEdit ? (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="border-border flex flex-col rounded-[10px] border">
+                                                    {groupsOfGame.map(
+                                                        (group, index) => {
+                                                            const offered =
+                                                                values.signupGroupIds.includes(
+                                                                    group.id
+                                                                )
+                                                            return (
+                                                                <div
+                                                                    key={
+                                                                        group.id
+                                                                    }
+                                                                    className={cn(
+                                                                        "flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm",
+                                                                        index &&
+                                                                            "border-border/50 border-t"
+                                                                    )}
+                                                                >
+                                                                    <label className="flex min-w-0 items-center gap-2.5">
+                                                                        <Checkbox
+                                                                            checked={
+                                                                                offered
+                                                                            }
+                                                                            onCheckedChange={(
+                                                                                checked
+                                                                            ) =>
+                                                                                setGroupOffered(
+                                                                                    group.id,
+                                                                                    checked ===
+                                                                                        true
+                                                                                )
+                                                                            }
+                                                                            aria-label={fill(
+                                                                                t
+                                                                                    .signups
+                                                                                    .groupOffered,
+                                                                                {
+                                                                                    name: group.name,
+                                                                                }
+                                                                            )}
+                                                                        />
+                                                                        <span
+                                                                            className={cn(
+                                                                                "truncate",
+                                                                                !offered &&
+                                                                                    "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            {
+                                                                                group.name
+                                                                            }
+                                                                        </span>
+                                                                    </label>
+                                                                    {offered ? (
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            {limitOf(
+                                                                                group.id
+                                                                            ) ? (
+                                                                                <span
+                                                                                    aria-hidden
+                                                                                    className="text-muted-foreground text-[13px]"
+                                                                                >
+                                                                                    max
+                                                                                </span>
+                                                                            ) : null}
+                                                                            <Input
+                                                                                type="number"
+                                                                                inputMode="numeric"
+                                                                                min={
+                                                                                    1
+                                                                                }
+                                                                                max={
+                                                                                    100
+                                                                                }
+                                                                                aria-label={fill(
+                                                                                    t
+                                                                                        .signups
+                                                                                        .capLabel,
+                                                                                    {
+                                                                                        name: group.name,
+                                                                                    }
+                                                                                )}
+                                                                                placeholder={
+                                                                                    t
+                                                                                        .signups
+                                                                                        .capPlaceholder
+                                                                                }
+                                                                                value={
+                                                                                    limitOf(
+                                                                                        group.id
+                                                                                    ) ??
+                                                                                    ""
+                                                                                }
+                                                                                onChange={(
+                                                                                    event
+                                                                                ) =>
+                                                                                    setGroupLimit(
+                                                                                        group.id,
+                                                                                        event
+                                                                                            .target
+                                                                                            .value
+                                                                                    )
+                                                                                }
+                                                                                className="h-8 w-[104px] text-right text-[13px]"
+                                                                            />
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+                                                            )
+                                                        }
+                                                    )}
+                                                    <div className="border-border/50 flex min-h-11 items-center justify-between gap-3 border-t px-3.5 py-1.5 text-sm">
+                                                        <Label
+                                                            htmlFor="nm-general"
+                                                            className="text-sm font-normal"
+                                                        >
+                                                            {t.signups.general}
+                                                        </Label>
+                                                        <Switch
+                                                            id="nm-general"
+                                                            checked={
+                                                                values.useGeneralSignup
+                                                            }
+                                                            onCheckedChange={(
+                                                                useGeneralSignup
+                                                            ) =>
+                                                                update({
+                                                                    useGeneralSignup,
+                                                                })
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <Hint>{t.signups.capHint}</Hint>
+                                            </div>
+                                        ) : (
+                                            <div className="border-border flex flex-col rounded-[10px] border">
+                                                {offeredGroups.map(
+                                                    (group, index) => (
+                                                        <div
+                                                            key={group.id}
+                                                            className={cn(
+                                                                "flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm",
+                                                                index &&
+                                                                    "border-border/50 border-t"
+                                                            )}
+                                                        >
+                                                            <span>
+                                                                {group.name}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                {limitOf(
+                                                                    group.id
+                                                                )
+                                                                    ? fill(
+                                                                          t
+                                                                              .signups
+                                                                              .max,
+                                                                          {
+                                                                              count:
+                                                                                  limitOf(
+                                                                                      group.id
+                                                                                  ) ??
+                                                                                  0,
+                                                                          }
+                                                                      )
+                                                                    : t.signups
+                                                                          .noLimit}
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                )}
+                                                {values.useGeneralSignup ? (
                                                     <div
-                                                        key={group.id}
                                                         className={cn(
                                                             "flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm",
-                                                            index &&
+                                                            offeredGroups.length &&
                                                                 "border-border/50 border-t"
                                                         )}
                                                     >
                                                         <span>
-                                                            {group.name}
+                                                            {t.signups.general}
                                                         </span>
                                                         <span className="text-muted-foreground">
-                                                            {limitOf(group.id)
-                                                                ? fill(
-                                                                      t.signups
-                                                                          .max,
-                                                                      {
-                                                                          count:
-                                                                              limitOf(
-                                                                                  group.id
-                                                                              ) ??
-                                                                              0,
-                                                                      }
-                                                                  )
-                                                                : t.signups
-                                                                      .noLimit}
+                                                            {
+                                                                t.signups
+                                                                    .generalOn
+                                                            }
                                                         </span>
                                                     </div>
-                                                )
-                                            )}
-                                            {values.useGeneralSignup ? (
-                                                <div
-                                                    className={cn(
-                                                        "flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm",
-                                                        offeredGroups.length &&
-                                                            "border-border/50 border-t"
-                                                    )}
-                                                >
-                                                    <span>
-                                                        {t.signups.general}
-                                                    </span>
-                                                    <span className="text-muted-foreground">
-                                                        {t.signups.generalOn}
-                                                    </span>
-                                                </div>
-                                            ) : null}
-                                        </div>
+                                                ) : null}
+                                            </div>
+                                        )
                                     ) : (
                                         <p className="text-muted-foreground text-sm">
                                             {t.signups.noGroups}
                                         </p>
                                     )}
-                                    <div className="flex flex-wrap justify-between gap-3 text-sm">
-                                        <span className="text-muted-foreground">
-                                            {t.signups.reminder}
-                                        </span>
-                                        <span className="font-medium">
-                                            {reminderAudience(
-                                                values.signupReminderStatuses
-                                            ) === "off"
-                                                ? t.signups.reminderOff
-                                                : fill(t.signups.reminderOn, {
-                                                      audience:
-                                                          t.signups.audience[
-                                                              reminderAudience(
-                                                                  values.signupReminderStatuses
-                                                              ) as
-                                                                  | "member"
-                                                                  | "memberRecruit"
-                                                                  | "all"
-                                                          ],
-                                                  })}
-                                        </span>
-                                    </div>
+                                    {isEdit ? (
+                                        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                                            <Label
+                                                htmlFor="nm-reminder"
+                                                className="text-muted-foreground font-normal"
+                                            >
+                                                {t.signups.reminder}
+                                            </Label>
+                                            <Select
+                                                value={reminderAudience(
+                                                    values.signupReminderStatuses
+                                                )}
+                                                onValueChange={(audience) =>
+                                                    update({
+                                                        signupReminderStatuses:
+                                                            reminderStatusesFor(
+                                                                audience as ReminderAudience
+                                                            ),
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="nm-reminder"
+                                                    size="sm"
+                                                    className="h-8 min-w-[180px] rounded-lg text-[13px]"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {(
+                                                        [
+                                                            "off",
+                                                            "member",
+                                                            "memberRecruit",
+                                                            "all",
+                                                        ] as const
+                                                    ).map((audience) => (
+                                                        <SelectItem
+                                                            key={audience}
+                                                            value={audience}
+                                                        >
+                                                            {
+                                                                t.signups
+                                                                    .reminderOptions[
+                                                                    audience
+                                                                ]
+                                                            }
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap justify-between gap-3 text-sm">
+                                            <span className="text-muted-foreground">
+                                                {t.signups.reminder}
+                                            </span>
+                                            <span className="font-medium">
+                                                {reminderAudience(
+                                                    values.signupReminderStatuses
+                                                ) === "off"
+                                                    ? t.signups.reminderOff
+                                                    : fill(
+                                                          t.signups.reminderOn,
+                                                          {
+                                                              audience:
+                                                                  t.signups
+                                                                      .audience[
+                                                                      reminderAudience(
+                                                                          values.signupReminderStatuses
+                                                                      ) as
+                                                                          | "member"
+                                                                          | "memberRecruit"
+                                                                          | "all"
+                                                                  ],
+                                                          }
+                                                      )}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {isEdit ? (
+                                        <div className="flex flex-col gap-2">
+                                            <FieldLabel id="nm-attendance">
+                                                {t.signups.attendanceReminders}
+                                            </FieldLabel>
+                                            <div
+                                                role="group"
+                                                aria-labelledby="nm-attendance"
+                                                aria-describedby="nm-attendance-hint"
+                                                className="flex flex-wrap gap-2"
+                                            >
+                                                {ATTENDANCE_REMINDER_OFFSETS.map(
+                                                    reminderChip
+                                                )}
+                                            </div>
+                                            <Hint id="nm-attendance-hint">
+                                                {t.signups.attendanceHint}{" "}
+                                                {t.signups.attendanceEditHint}
+                                            </Hint>
+                                        </div>
+                                    ) : null}
+                                    {isEdit ? (
+                                        <div className="flex flex-col gap-1.5">
+                                            <FieldLabel htmlFor="nm-preset">
+                                                {t.signups.squadPreset}
+                                            </FieldLabel>
+                                            <Select
+                                                value={
+                                                    values.squadPresetId || NONE
+                                                }
+                                                onValueChange={(presetId) =>
+                                                    update({
+                                                        squadPresetId:
+                                                            presetId === NONE
+                                                                ? undefined
+                                                                : presetId,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="nm-preset"
+                                                    className="h-9 w-full"
+                                                    aria-describedby="nm-preset-hint"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value={NONE}>
+                                                        {
+                                                            t.signups
+                                                                .squadPresetNone
+                                                        }
+                                                    </SelectItem>
+                                                    {values.squadPresetId &&
+                                                    !squadPresetsOfGame.some(
+                                                        (preset) =>
+                                                            preset.id ===
+                                                            values.squadPresetId
+                                                    ) ? (
+                                                        <SelectItem
+                                                            value={
+                                                                values.squadPresetId
+                                                            }
+                                                        >
+                                                            {squadPreset?.name ??
+                                                                values.squadPresetId}
+                                                        </SelectItem>
+                                                    ) : null}
+                                                    {squadPresetsOfGame.map(
+                                                        (preset) => (
+                                                            <SelectItem
+                                                                key={preset.id}
+                                                                value={
+                                                                    preset.id
+                                                                }
+                                                            >
+                                                                {preset.name}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <Hint id="nm-preset-hint">
+                                                {edit.rosterExists
+                                                    ? t.signups
+                                                          .squadPresetRosterExists
+                                                    : t.signups.squadPresetHint}
+                                            </Hint>
+                                        </div>
+                                    ) : null}
                                 </>
                             ) : (
-                                <p className="text-muted-foreground text-sm">
-                                    {t.signups.trainingNote}
-                                </p>
+                                <>
+                                    <p className="text-muted-foreground text-sm">
+                                        {t.signups.trainingNote}
+                                    </p>
+                                    {isEdit ? (
+                                        <>
+                                            <div className="flex flex-col gap-1.5">
+                                                <FieldLabel id="nm-required">
+                                                    {t.signups.requiredRoles}
+                                                </FieldLabel>
+                                                <DiscordMultiEntitySelect
+                                                    value={
+                                                        values.requiredRoleIds
+                                                    }
+                                                    onChange={(
+                                                        requiredRoleIds
+                                                    ) =>
+                                                        update({
+                                                            requiredRoleIds,
+                                                        })
+                                                    }
+                                                    options={
+                                                        metadata?.roles ?? []
+                                                    }
+                                                    placeholder={
+                                                        t.signups
+                                                            .rolesPlaceholder
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <FieldLabel id="nm-reward">
+                                                    {t.signups.rewardRoles}
+                                                </FieldLabel>
+                                                <DiscordMultiEntitySelect
+                                                    value={values.rewardRoleIds}
+                                                    onChange={(rewardRoleIds) =>
+                                                        update({
+                                                            rewardRoleIds,
+                                                        })
+                                                    }
+                                                    options={
+                                                        metadata?.roles ?? []
+                                                    }
+                                                    placeholder={
+                                                        t.signups
+                                                            .rolesPlaceholder
+                                                    }
+                                                />
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </>
                             )}
                         </div>
                     ) : null}
@@ -2094,79 +2970,36 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                             >
                                 {t.steps.discord}
                             </h2>
-                            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-3">
-                                {(
-                                    [
-                                        [
-                                            "nm-ch",
-                                            t.discord.announcement,
-                                            "announcementChannelId",
-                                        ],
-                                        ...(isMatch
-                                            ? ([
-                                                  [
-                                                      "nm-ch2",
-                                                      t.discord.roster,
-                                                      "eventInfoChannelId",
-                                                  ],
-                                              ] as const)
-                                            : []),
-                                    ] as const
-                                ).map(([id, label, field]) => (
-                                    <div
-                                        key={id}
-                                        className="flex flex-col gap-1.5"
-                                    >
-                                        <FieldLabel htmlFor={id}>
-                                            {label}
-                                        </FieldLabel>
-                                        <Select
-                                            value={values[field] || NONE}
-                                            onValueChange={(channelId) =>
-                                                update({
-                                                    [field]:
-                                                        channelId === NONE
-                                                            ? ""
-                                                            : channelId,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id={id}
-                                                className="h-9 w-full"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value={NONE}>
-                                                    {t.discord.defaultChannel}
-                                                </SelectItem>
-                                                {values[field] &&
-                                                !channelName(values[field]) ? (
-                                                    <SelectItem
-                                                        value={values[field]}
-                                                    >
-                                                        <span className="text-muted-foreground">
-                                                            #
-                                                        </span>{" "}
-                                                        {values[field]}
-                                                    </SelectItem>
-                                                ) : null}
-                                                {textChannels.map((channel) => (
-                                                    <SelectItem
-                                                        key={channel.id}
-                                                        value={channel.id}
-                                                    >
-                                                        <span className="text-muted-foreground">
-                                                            #
-                                                        </span>{" "}
-                                                        {channel.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                ))}
+                            <div className="flex flex-col gap-2">
+                                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-3">
+                                    {channelSelect(
+                                        "nm-ch",
+                                        t.discord.announcement,
+                                        values.announcementChannelId,
+                                        textChannels,
+                                        (announcementChannelId) =>
+                                            update({ announcementChannelId }),
+                                        t.discord.defaultChannel,
+                                        isEdit
+                                    )}
+                                    {isMatch
+                                        ? channelSelect(
+                                              "nm-ch2",
+                                              t.discord.roster,
+                                              values.eventInfoChannelId,
+                                              textChannels,
+                                              (eventInfoChannelId) =>
+                                                  update({
+                                                      eventInfoChannelId,
+                                                  }),
+                                              t.discord.defaultChannel,
+                                              isEdit
+                                          )
+                                        : null}
+                                </div>
+                                {isEdit ? (
+                                    <Hint>{t.discord.channelsLocked}</Hint>
+                                ) : null}
                             </div>
                             <div className="flex flex-col gap-2">
                                 <FieldLabel id="nm-ping">
@@ -2207,42 +3040,217 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                             </div>
                             <div className="flex flex-col gap-3">
                                 {isMatch ? (
+                                    isEdit ? (
+                                        <div className="flex flex-col gap-2">
+                                            {switchRow(
+                                                "nm-forum",
+                                                t.discord.forum,
+                                                values.createForumChannel,
+                                                (createForumChannel) =>
+                                                    update({
+                                                        createForumChannel,
+                                                    })
+                                            )}
+                                            {values.createForumChannel ? (
+                                                <div className="ml-12 flex flex-col gap-2">
+                                                    {!props.forumCategoryConfigured ? (
+                                                        <Hint tone="warning">
+                                                            {
+                                                                t.discord
+                                                                    .forumMissing
+                                                            }{" "}
+                                                            <Link
+                                                                href={`/${locale}/dashboard/servers/${serverId}/settings/channels`}
+                                                                className="underline underline-offset-[3px]"
+                                                            >
+                                                                {
+                                                                    t.discord
+                                                                        .openChannelSettings
+                                                                }
+                                                            </Link>
+                                                        </Hint>
+                                                    ) : null}
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <FieldLabel htmlFor="nm-topics">
+                                                            {
+                                                                t.discord
+                                                                    .topicPreset
+                                                            }
+                                                        </FieldLabel>
+                                                        <Select
+                                                            value={
+                                                                values.topicPresetId ||
+                                                                NONE
+                                                            }
+                                                            onValueChange={(
+                                                                presetId
+                                                            ) =>
+                                                                update({
+                                                                    topicPresetId:
+                                                                        presetId ===
+                                                                        NONE
+                                                                            ? undefined
+                                                                            : presetId,
+                                                                })
+                                                            }
+                                                        >
+                                                            <SelectTrigger
+                                                                id="nm-topics"
+                                                                className="h-9 w-full"
+                                                            >
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem
+                                                                    value={NONE}
+                                                                >
+                                                                    {
+                                                                        t
+                                                                            .discord
+                                                                            .topicPresetNone
+                                                                    }
+                                                                </SelectItem>
+                                                                {props.topicPresets.map(
+                                                                    (
+                                                                        preset
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                preset.id
+                                                                            }
+                                                                            value={
+                                                                                preset.id
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                preset.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    )
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <Switch
+                                                id="nm-forum"
+                                                checked={
+                                                    values.createForumChannel
+                                                }
+                                                onCheckedChange={(
+                                                    createForumChannel
+                                                ) =>
+                                                    update({
+                                                        createForumChannel,
+                                                    })
+                                                }
+                                            />
+                                            <Label
+                                                htmlFor="nm-forum"
+                                                className="text-sm font-normal"
+                                            >
+                                                {t.discord.forum}
+                                            </Label>
+                                        </div>
+                                    )
+                                ) : null}
+                                {isEdit ? (
+                                    <div className="flex flex-col gap-2">
+                                        {switchRow(
+                                            "nm-voice",
+                                            t.discord.voice,
+                                            values.createSquadVoiceChannels,
+                                            (createSquadVoiceChannels) =>
+                                                update({
+                                                    createSquadVoiceChannels,
+                                                })
+                                        )}
+                                        {values.createSquadVoiceChannels ? (
+                                            <div className="ml-12">
+                                                {channelSelect(
+                                                    "nm-voice-category",
+                                                    t.discord.voiceCategory,
+                                                    values.squadVoiceCategoryId ??
+                                                        "",
+                                                    categoryChannels,
+                                                    (squadVoiceCategoryId) =>
+                                                        update({
+                                                            squadVoiceCategoryId:
+                                                                squadVoiceCategoryId ||
+                                                                undefined,
+                                                        }),
+                                                    t.discord
+                                                        .voiceCategoryDefault
+                                                )}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ) : (
                                     <div className="flex items-center gap-3">
                                         <Switch
-                                            id="nm-forum"
-                                            checked={values.createForumChannel}
+                                            id="nm-voice"
+                                            checked={
+                                                values.createSquadVoiceChannels
+                                            }
                                             onCheckedChange={(
-                                                createForumChannel
-                                            ) => update({ createForumChannel })}
+                                                createSquadVoiceChannels
+                                            ) =>
+                                                update({
+                                                    createSquadVoiceChannels,
+                                                })
+                                            }
                                         />
                                         <Label
-                                            htmlFor="nm-forum"
+                                            htmlFor="nm-voice"
                                             className="text-sm font-normal"
                                         >
-                                            {t.discord.forum}
+                                            {t.discord.voice}
                                         </Label>
                                     </div>
-                                ) : null}
-                                <div className="flex items-center gap-3">
-                                    <Switch
-                                        id="nm-voice"
-                                        checked={
-                                            values.createSquadVoiceChannels
-                                        }
-                                        onCheckedChange={(
-                                            createSquadVoiceChannels
-                                        ) =>
-                                            update({ createSquadVoiceChannels })
-                                        }
-                                    />
-                                    <Label
-                                        htmlFor="nm-voice"
-                                        className="text-sm font-normal"
-                                    >
-                                        {t.discord.voice}
-                                    </Label>
-                                </div>
+                                )}
+                                {isEdit
+                                    ? switchRow(
+                                          "nm-roles",
+                                          t.discord.participantRoles,
+                                          values.createParticipantRoles ?? true,
+                                          (createParticipantRoles) =>
+                                              update({
+                                                  createParticipantRoles,
+                                              }),
+                                          (values.createParticipantRoles ??
+                                              true) ||
+                                              !(
+                                                  initial.createParticipantRoles ??
+                                                  true
+                                              )
+                                              ? t.discord.participantRolesHint
+                                              : t.discord
+                                                    .participantRolesOffHint
+                                      )
+                                    : null}
                             </div>
+                            {isEdit && isMatch ? (
+                                <div className="flex flex-col gap-1.5">
+                                    {channelSelect(
+                                        "nm-meeting",
+                                        t.discord.meetingChannel,
+                                        values.meetingChannelId ?? "",
+                                        voiceChannels,
+                                        (meetingChannelId) =>
+                                            update({
+                                                meetingChannelId:
+                                                    meetingChannelId ||
+                                                    undefined,
+                                            }),
+                                        t.discord.meetingChannelDefault
+                                    )}
+                                    <Hint>{t.discord.meetingChannelHint}</Hint>
+                                </div>
+                            ) : null}
                             <div className="flex flex-col gap-1.5">
                                 <FieldLabel htmlFor="nm-pass">
                                     {t.discord.serverAndPassword}
@@ -2326,6 +3334,53 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     </li>
                                 ))}
                             </ul>
+                            {isEdit ? (
+                                <div className="flex flex-col gap-2">
+                                    <h3 className="text-sm font-semibold">
+                                        {t.review.changes}
+                                    </h3>
+                                    {changes.length ? (
+                                        <ul className="border-border m-0 flex list-none flex-col rounded-[10px] border p-0">
+                                            {changes.map((change, index) => (
+                                                <li
+                                                    key={change.key}
+                                                    className={cn(
+                                                        "flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-sm",
+                                                        index &&
+                                                            "border-border/60 border-t"
+                                                    )}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setStep(change.step)
+                                                        }
+                                                        className="text-muted-foreground hover:text-foreground w-full text-left text-[13px] sm:w-44 sm:shrink-0"
+                                                    >
+                                                        {change.label}
+                                                    </button>
+                                                    <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 break-words">
+                                                        <del className="text-muted-foreground decoration-muted-foreground/60">
+                                                            {change.before}
+                                                        </del>
+                                                        <ArrowRight
+                                                            aria-hidden
+                                                            className="text-muted-foreground size-3.5 shrink-0 self-center"
+                                                        />
+                                                        <ins className="font-medium no-underline">
+                                                            {change.after}
+                                                        </ins>
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="border-border text-muted-foreground m-0 rounded-[10px] border border-dashed px-3.5 py-3 text-sm">
+                                            {t.review.noChanges}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : null}
                             <p className="bg-muted text-foreground/80 m-0 flex gap-2.5 rounded-[10px] px-3.5 py-3 text-sm leading-5">
                                 <Info
                                     className="mt-px size-[18px] shrink-0"
@@ -2355,6 +3410,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                             {step !== "review" ? (
                                 <Button
                                     type="button"
+                                    variant={isEdit ? "outline" : "default"}
                                     onClick={() =>
                                         setStep(NEW_MATCH_STEPS[stepIndex + 1])
                                     }
@@ -2362,7 +3418,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     {t.next}
                                     <ArrowRight aria-hidden />
                                 </Button>
-                            ) : (
+                            ) : isEdit ? null : (
                                 <>
                                     <Button
                                         type="button"
@@ -2382,6 +3438,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     </Button>
                                 </>
                             )}
+                            {footerSave}
                         </div>
                     </div>
                 </section>
@@ -2396,5 +3453,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 </div>
             </div>
         </div>
+    )
+}
+
+function chipClass(pressed: boolean) {
+    return cn(
+        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
+        pressed
+            ? "border-foreground bg-muted text-foreground"
+            : "border-border bg-background text-muted-foreground"
     )
 }
