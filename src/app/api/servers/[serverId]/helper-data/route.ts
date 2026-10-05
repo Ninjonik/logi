@@ -6,6 +6,8 @@ import {
     resetHelperData,
 } from "@/lib/server-setup"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { getUserSafeErrorMessage } from "@/lib/server-route-errors"
+import { clanAdminWriteDenied } from "@/lib/api/clan-admin-route"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 
 const helperDataActionSchema = z.object({
@@ -16,9 +18,12 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ serverId: string }> }
 ) {
+    const { serverId } = await params
+    // Resetting replaces the clan's groups and presets: clan admins only.
+    const denied = await clanAdminWriteDenied(request, serverId)
+    if (denied) return denied
     try {
         const body = helperDataActionSchema.parse(await request.json())
-        const { serverId } = await params
 
         if (body.action === "initialize") {
             await initializeDefaultHelperData(serverId)
@@ -43,10 +48,10 @@ export async function POST(
         logNextError("helper-data", "Failed to update helper data", { error })
         return NextResponse.json(
             {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to update helper data.",
+                error: getUserSafeErrorMessage(
+                    error,
+                    "Unable to update helper data."
+                ),
             },
             { status: 400 }
         )
