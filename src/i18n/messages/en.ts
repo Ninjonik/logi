@@ -899,6 +899,11 @@ export const enMessages = {
         noServerDescription:
             "Your clans appear here once the Logi bot is on their Discord server. Ask your clan's admin to add it, or set it up on your own server.",
         noServerSetupGuide: "How to set up the Logi bot",
+        askAdminForBot:
+            "Ask a clan admin to add the Logi bot to this Discord server.",
+        botMissingMemberDescription:
+            "Most clan features stay unavailable until a clan admin invites the Discord bot.",
+        memberServers: "Member clans",
     },
     sidebar: {
         home: "Home",
@@ -932,6 +937,12 @@ export const enMessages = {
         teams: "Teams",
         teamCatalog: "Team catalogue",
         teamRequests: "Team requests",
+        dashboard: "Dashboard",
+        settings: "Settings",
+        settingsAttention: "Settings needing attention: {count}",
+        globalAdmin: "Global administration",
+        myAccount: "My account",
+        showSubpages: "Show pages under {item}",
     },
     teams: {
         title: "Teams",
@@ -1691,6 +1702,31 @@ export const enMessages = {
         history: "Recent revision history",
         importer: "Import",
     },
+    appStates: {
+        loading: "Loading…",
+        loadingPage: "Loading the page",
+        errorTitle: "This page did not load",
+        errorDescription:
+            "Something went wrong while loading it. Your settings and data were not changed.",
+        errorNextStep:
+            "Try again. If it keeps happening, send the details below to support.",
+        retry: "Try again",
+        supportDetails: "Details for support",
+        errorReference: "Error reference",
+        errorTime: "Time",
+        errorPage: "Page",
+        copyDetails: "Copy details",
+        detailsCopied: "Details copied.",
+        notFoundTitle: "Page not found",
+        notFoundDescription:
+            "The link may be old or mistyped, or the page was removed. Check the address or continue from one of these pages.",
+        notFoundDashboardDescription:
+            "This clan page does not exist, or you no longer have access to it.",
+        goHome: "Go to the home page",
+        backToClans: "Back to your clans",
+        openMenu: "Open menu",
+        mainNavigation: "Main navigation",
+    },
     verifiedPlatformLinks: {
         title: "Verified Steam account",
         description:
@@ -1760,6 +1796,54 @@ export const enMessages = {
         platformIdEpicLink: "Epic guide",
         platformIdEpicHint:
             "Open Epic account settings or the launcher and copy your Account ID.",
+        accountTitle: "My account",
+        accountDescription:
+            "Your language, game accounts, bot messages and personal data.",
+        signedInWith: "{name} · signed in with Discord",
+        autoSaveNote:
+            "Changes are saved straight away. Nothing needs a save button.",
+        changeAvatar: "Change avatar",
+        avatarSaved: "Avatar saved.",
+        lookTitle: "Language and appearance",
+        appLanguage: "App language",
+        theme: "Theme",
+        startClan: "Clan after sign-in",
+        startClanAutomatic: "Automatic (your main clan)",
+        startClanSaved: "Clan after sign-in saved.",
+        gameAccountsTitle: "Game accounts",
+        steamVerifiedOn:
+            "Verified through Steam on {date} · stats are matched automatically",
+        steamNotVerified:
+            "Not verified. Verify through Steam so your stats are matched automatically.",
+        steamUnavailable:
+            "Steam verification is unavailable right now. Try again shortly.",
+        steamUnlink: "Unlink",
+        steamUnlinked: "Steam account unlinked.",
+        steamVerify: "Verify with Steam",
+        manualIdsTitle: "Epic, Xbox, PlayStation",
+        manualIdsUnverified: "Entered manually, unverified",
+        manualIdsEmpty: "No ID entered yet",
+        addId: "Add ID",
+        editIds: "Edit IDs",
+        manualIdsDialogTitle: "Game account IDs",
+        manualIdsDialogDescription:
+            "Separate several IDs with commas. Logi cannot verify them, so your clan sees them as unverified.",
+        platformIdsSaved: "Game account IDs saved.",
+        botDmTitle: "Bot direct messages",
+        recapTitle: "Match recap",
+        recapDescription: "Your stats from a confirmed match.",
+        remindersTitle: "Sign-up and attendance reminders",
+        remindersDescription: "Your clan sends them according to its settings.",
+        remindersByClan: "set by your clan",
+        downloadAllData: "Download all my data",
+        downloadZip: "Download ZIP",
+        deleteAccountTitle: "Delete account",
+        deleteAccountDescription:
+            "Removes your profile, sign-ups and linked accounts. The Logi team processes the request and it cannot be undone. To confirm, type your name.",
+        deleteAccountConfirmLabel: "Confirm with your name",
+        deleteAccountButton: "Delete account",
+        deleteAccountRequested:
+            "Your deletion request was sent. The Logi team will process it.",
     },
     serverSettings: {
         title: "Clan settings",
@@ -2248,9 +2332,17 @@ export const enMessages = {
         searchWorkspace: "Search workspaces...",
         missingWorkspaceHelp:
             "Missing a workspace? Make sure you are in that Discord server or have administrator access to it.",
+        allClans: "All clans",
+        showAllResults: "Show all ({count})",
+        allGames: "All games",
     },
     languageSwitcher: {
         selectLanguage: "Select language",
+        changeLanguage: "Change language",
+        theme: "Theme",
+        themeLight: "Light",
+        themeDark: "Dark",
+        themeSystem: "System",
     },
     platformIdLink: {
         title: "Link your platform ID",

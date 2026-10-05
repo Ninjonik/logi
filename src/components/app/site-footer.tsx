@@ -13,12 +13,12 @@ export function SiteFooter({
     status: LogiStatus
 }) {
     return (
-        <footer className="bg-background h-(--footer-height) border-t">
-            <div className="text-muted-foreground flex h-full items-center justify-between px-4 text-[11px] lg:px-6 2xl:text-xs">
+        <footer className="bg-background min-h-(--footer-height) border-t">
+            <div className="text-muted-foreground flex min-h-(--footer-height) flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-4 py-2 text-[11px] lg:px-6 2xl:text-xs">
                 <div>
                     &copy; {dictionary.app.name} {new Date().getFullYear()}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     <LogiStatusLink status={status} />
                     <a
                         href={getDiscordSupportUrl()}

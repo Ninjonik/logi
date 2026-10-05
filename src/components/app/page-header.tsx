@@ -1,3 +1,4 @@
+import { MobileActionBar } from "@/components/app/mobile-action-bar"
 import { Badge } from "@/components/ui/badge"
 
 export function PageHeader({
@@ -6,12 +7,15 @@ export function PageHeader({
     badge,
     badges,
     actions,
+    primaryAction,
 }: {
     title: string
     description?: string
     badge?: string
     badges?: React.ReactNode
     actions?: React.ReactNode
+    /** The page's main action; on phones it moves to a bar at the bottom. */
+    primaryAction?: React.ReactNode
 }) {
     return (
         <div className="flex flex-col gap-2 px-4 sm:gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4 lg:px-6">
@@ -33,7 +37,14 @@ export function PageHeader({
                     </p>
                 ) : null}
             </div>
-            {actions}
+            {primaryAction ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    {actions}
+                    <MobileActionBar>{primaryAction}</MobileActionBar>
+                </div>
+            ) : (
+                actions
+            )}
         </div>
     )
 }

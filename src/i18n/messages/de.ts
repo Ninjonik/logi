@@ -920,6 +920,11 @@ export const deMessages = {
         noServerDescription:
             "Deine Clans erscheinen hier, sobald der Logi-Bot auf ihrem Discord-Server ist. Bitte den Admin deines Clans, ihn hinzuzufügen, oder richte ihn auf deinem eigenen Server ein.",
         noServerSetupGuide: "So richtest du den Logi-Bot ein",
+        askAdminForBot:
+            "Bitte einen Clan-Admin, den Logi-Bot zu diesem Discord-Server hinzuzufügen.",
+        botMissingMemberDescription:
+            "Die meisten Clan-Funktionen bleiben nicht verfügbar, bis ein Clan-Admin den Discord-Bot einlädt.",
+        memberServers: "Clans, in denen du Mitglied bist",
     },
     sidebar: {
         home: "Start",
@@ -953,6 +958,13 @@ export const deMessages = {
         teams: "Teams",
         teamCatalog: "Teamkatalog",
         teamRequests: "Teamanfragen",
+        dashboard: "Dashboard",
+        settings: "Einstellungen",
+        settingsAttention:
+            "Einstellungen, die Aufmerksamkeit brauchen: {count}",
+        globalAdmin: "Globale Verwaltung",
+        myAccount: "Mein Konto",
+        showSubpages: "Seiten unter {item} anzeigen",
     },
     teams: {
         title: "Teams",
@@ -1756,6 +1768,31 @@ export const deMessages = {
         history: "Letzte Ergebnisversionen",
         importer: "Import",
     },
+    appStates: {
+        loading: "Wird geladen…",
+        loadingPage: "Seite wird geladen",
+        errorTitle: "Diese Seite wurde nicht geladen",
+        errorDescription:
+            "Beim Laden ist etwas schiefgelaufen. Deine Einstellungen und Daten wurden nicht geändert.",
+        errorNextStep:
+            "Versuche es erneut. Wenn es wieder passiert, schick die Details unten an den Support.",
+        retry: "Erneut versuchen",
+        supportDetails: "Details für den Support",
+        errorReference: "Fehlerreferenz",
+        errorTime: "Zeit",
+        errorPage: "Seite",
+        copyDetails: "Details kopieren",
+        detailsCopied: "Details kopiert.",
+        notFoundTitle: "Seite nicht gefunden",
+        notFoundDescription:
+            "Der Link ist vielleicht veraltet oder vertippt, oder die Seite wurde entfernt. Prüf die Adresse oder mach auf einer dieser Seiten weiter.",
+        notFoundDashboardDescription:
+            "Diese Clan-Seite gibt es nicht, oder du hast keinen Zugriff mehr darauf.",
+        goHome: "Zur Startseite",
+        backToClans: "Zurück zu deinen Clans",
+        openMenu: "Menü öffnen",
+        mainNavigation: "Hauptnavigation",
+    },
     verifiedPlatformLinks: {
         title: "Verifiziertes Steam-Konto",
         description:
@@ -1825,6 +1862,55 @@ export const deMessages = {
         platformIdEpicLink: "Epic-Anleitung",
         platformIdEpicHint:
             "Öffne die Epic-Kontoeinstellungen oder den Launcher und kopiere deine Account-ID.",
+        accountTitle: "Mein Konto",
+        accountDescription:
+            "Deine Sprache, Spielkonten, Bot-Nachrichten und persönlichen Daten.",
+        signedInWith: "{name} · über Discord angemeldet",
+        autoSaveNote:
+            "Änderungen werden sofort gespeichert. Du musst nichts mit einem Button bestätigen.",
+        changeAvatar: "Avatar ändern",
+        avatarSaved: "Avatar gespeichert.",
+        lookTitle: "Sprache und Darstellung",
+        appLanguage: "App-Sprache",
+        theme: "Design",
+        startClan: "Clan nach der Anmeldung",
+        startClanAutomatic: "Automatisch (dein Hauptclan)",
+        startClanSaved: "Clan nach der Anmeldung gespeichert.",
+        gameAccountsTitle: "Spielkonten",
+        steamVerifiedOn:
+            "Am {date} über Steam bestätigt · Statistiken werden automatisch zugeordnet",
+        steamNotVerified:
+            "Nicht bestätigt. Bestätige dein Konto über Steam, dann werden deine Statistiken automatisch zugeordnet.",
+        steamUnavailable:
+            "Die Steam-Bestätigung ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
+        steamUnlink: "Trennen",
+        steamUnlinked: "Steam-Konto getrennt.",
+        steamVerify: "Mit Steam bestätigen",
+        manualIdsTitle: "Epic, Xbox, PlayStation",
+        manualIdsUnverified: "Manuell eingegeben, nicht bestätigt",
+        manualIdsEmpty: "Noch keine ID eingegeben",
+        addId: "ID hinzufügen",
+        editIds: "IDs bearbeiten",
+        manualIdsDialogTitle: "Spielkonto-IDs",
+        manualIdsDialogDescription:
+            "Trenne mehrere IDs mit Kommas. Logi kann sie nicht bestätigen, dein Clan sieht sie deshalb als nicht bestätigt.",
+        platformIdsSaved: "Spielkonto-IDs gespeichert.",
+        botDmTitle: "Direktnachrichten vom Bot",
+        recapTitle: "Zusammenfassung nach dem Match",
+        recapDescription: "Deine Statistiken aus einem bestätigten Match.",
+        remindersTitle: "Erinnerungen an Anmeldungen und Anwesenheit",
+        remindersDescription:
+            "Dein Clan schickt sie nach seinen Einstellungen.",
+        remindersByClan: "legt dein Clan fest",
+        downloadAllData: "Alle meine Daten herunterladen",
+        downloadZip: "ZIP herunterladen",
+        deleteAccountTitle: "Konto löschen",
+        deleteAccountDescription:
+            "Entfernt dein Profil, deine Anmeldungen und verknüpften Konten. Das Logi-Team bearbeitet die Anfrage, sie lässt sich nicht rückgängig machen. Gib zur Bestätigung deinen Namen ein.",
+        deleteAccountConfirmLabel: "Bestätigung mit deinem Namen",
+        deleteAccountButton: "Konto löschen",
+        deleteAccountRequested:
+            "Deine Löschanfrage wurde gesendet. Das Logi-Team bearbeitet sie.",
     },
     serverSettings: {
         title: "Clan-Einstellungen",
@@ -2322,9 +2408,17 @@ export const deMessages = {
         searchWorkspace: "Workspaces suchen...",
         missingWorkspaceHelp:
             "Fehlt ein Workspace? Stelle sicher, dass du auf diesem Discord-Server bist oder dort Administratorzugriff hast.",
+        allClans: "Alle Clans",
+        showAllResults: "Alle anzeigen ({count})",
+        allGames: "Alle Spiele",
     },
     languageSwitcher: {
         selectLanguage: "Sprache wählen",
+        changeLanguage: "Sprache ändern",
+        theme: "Design",
+        themeLight: "Hell",
+        themeDark: "Dunkel",
+        themeSystem: "System",
     },
     platformIdLink: {
         title: "Verknüpfe deine Plattform-ID",

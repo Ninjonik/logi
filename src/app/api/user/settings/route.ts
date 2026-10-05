@@ -8,9 +8,14 @@ import {
 import { userSettingsPatchSchema } from "@/lib/validation/user-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { isSameOrigin } from "@/lib/api/superadmin-route"
+import { getSiteUrl } from "@/lib/env"
 
 export async function POST(request: Request) {
     await handleIfNotLoggedIn("/dashboard/settings/user")
+    if (!isSameOrigin(request, new URL(getSiteUrl()).origin)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
 
     try {
         const parsed = userSettingsPatchSchema.safeParse(

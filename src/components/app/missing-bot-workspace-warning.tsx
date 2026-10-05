@@ -5,6 +5,7 @@ import { AlertTriangle, Bot } from "lucide-react"
 
 import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button"
 import { BotInviteButton } from "@/components/app/bot-invite-button"
+import { canAdminWorkspace } from "@/lib/workspace-admin"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { Guild } from "@/types/domain"
 
@@ -12,10 +13,12 @@ export function MissingBotWorkspaceWarning({
     dictionary,
     inviteUrlByGuildId,
     servers,
+    userDiscordId,
 }: {
     dictionary: Dictionary
     inviteUrlByGuildId: Record<string, string>
     servers: Guild[]
+    userDiscordId: string
 }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -29,7 +32,9 @@ export function MissingBotWorkspaceWarning({
         return null
     }
 
-    const inviteUrl = inviteUrlByGuildId[server.id]
+    // Only clan admins can add the bot; members are told to ask one.
+    const canInvite = canAdminWorkspace(server, userDiscordId)
+    const inviteUrl = canInvite ? inviteUrlByGuildId[server.id] : undefined
 
     return (
         <section
@@ -46,10 +51,16 @@ export function MissingBotWorkspaceWarning({
                         )}
                     </h2>
                     <p className="mt-2 max-w-3xl text-sm leading-6 sm:text-base">
-                        {dictionary.dashboard.botMissingWorkspaceDescription}
+                        {canInvite
+                            ? dictionary.dashboard
+                                  .botMissingWorkspaceDescription
+                            : dictionary.dashboard.botMissingMemberDescription}
                     </p>
                     <p className="mt-2 text-sm font-medium">
-                        {dictionary.dashboard.botMissingWorkspacePermissions}
+                        {canInvite
+                            ? dictionary.dashboard
+                                  .botMissingWorkspacePermissions
+                            : dictionary.dashboard.askAdminForBot}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                         {inviteUrl ? (

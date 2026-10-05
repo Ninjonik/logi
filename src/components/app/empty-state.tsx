@@ -13,13 +13,17 @@ export function EmptyState({
     description,
     actions,
     className,
+    headingLevel = "h2",
 }: {
     icon?: LucideIcon
+    /** Use "h1" when the empty state is the whole page, such as a 404. */
+    headingLevel?: "h1" | "h2"
     title: string
     description?: string
     actions?: ReactNode
     className?: string
 }) {
+    const Heading = headingLevel
     return (
         <section
             className={cn(
@@ -32,7 +36,7 @@ export function EmptyState({
                     <Icon className="size-5" />
                 </span>
             ) : null}
-            <h2 className="text-lg font-semibold">{title}</h2>
+            <Heading className="text-lg font-semibold">{title}</Heading>
             {description ? (
                 <p className="text-muted-foreground max-w-prose text-sm">
                     {description}
