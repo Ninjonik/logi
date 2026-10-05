@@ -107,14 +107,15 @@ function AudienceSelect({
     value,
     options,
     onChange,
-    labelledBy,
+    label,
     text,
     disabled,
 }: {
     value: CommandAudience
     options: readonly CommandAudience[]
     onChange(value: CommandAudience): void
-    labelledBy: string
+    /** "Kdo smí použít /player": names the command for screen readers. */
+    label: string
     text: Text
     disabled?: boolean
 }) {
@@ -125,7 +126,7 @@ function AudienceSelect({
             disabled={disabled}
         >
             <SelectPrimitive.Trigger
-                aria-labelledby={labelledBy}
+                aria-label={label}
                 className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full items-center justify-between gap-2 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:opacity-50"
             >
                 <SelectPrimitive.Value />
@@ -237,13 +238,7 @@ export function CommandRow({
             >
                 <Field id={`${id}-who`} label={text.who}>
                     {capabilities.audience ? (
-                        <div
-                            className="space-y-2"
-                            aria-label={text.whoLabel.replace(
-                                "{command}",
-                                name
-                            )}
-                        >
+                        <div className="space-y-2">
                             <AudienceSelect
                                 value={entry.audience}
                                 options={capabilities.audience}
@@ -256,7 +251,7 @@ export function CommandRow({
                                                 : entry.roleIds,
                                     })
                                 }
-                                labelledBy={`${id}-who`}
+                                label={text.whoLabel.replace("{command}", name)}
                                 text={text}
                             />
                             {entry.audience !== "everyone" ? (
