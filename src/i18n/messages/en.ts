@@ -226,6 +226,61 @@ export const enMessages = {
             emptyDescription:
                 "Connect a CRCON or Warcon server so Logi can collect results and statistics. The API key is stored encrypted and nobody sees it again.",
             closeForm: "Close",
+            card: {
+                status: {
+                    collecting: "Collecting",
+                    stopped: "Collection stopped",
+                    off: "Not collecting",
+                    none: "No collection",
+                },
+                key: {
+                    set: "saved",
+                    missing: "missing",
+                    not_required: "not needed",
+                    environment: "set by the Logi operator",
+                    needs_operator: "enter it again",
+                },
+                unverified: "not verified",
+                changed: "changed {date}",
+                testOk: "passed",
+                testFailed: "failed",
+                lastGame: "Last game",
+                noGame: "none yet",
+                serverNumber: "server {id}",
+                testKey: "Test key",
+                live: "Live score",
+                liveHide: "Hide live score",
+                fixUnauthorized: {
+                    crcon: "The server rejected the key. Create a new key in CRCON that may read server information and enter it with Change key.",
+                    other: "The server rejected the key. Create a new key with the provider and enter it with Change key.",
+                },
+                retentionKeep: "Keep played games",
+                retentionHelp:
+                    "Older games are deleted overnight and websites recalculate their totals.",
+                browseHistory: "Browse played games",
+            },
+            form: {
+                type: "Server type",
+                types: {
+                    hll_crcon: "CRCON",
+                    wardogs_warcon: "Warcon",
+                    wardogs_rcon: "RCON",
+                    wardogs_public_directory: "Public",
+                },
+                address: "Address",
+                namePlaceholder: "For example Server 2",
+                serverNumber: {
+                    hll_crcon: "Server number in CRCON",
+                    wardogs_warcon: "Server ID in Warcon",
+                    wardogs_rcon: "Server ID in RCON",
+                    wardogs_public_directory: "Server ID in the list",
+                },
+                keyPlaceholder: "Paste the key",
+                help: "The game follows from the server type. The key is tested first and only then saved.",
+                testFirst: "Saving is possible after a successful test.",
+                testPassed: "The test passed. You can save the server.",
+                saveAndCollect: "Save and start collecting",
+            },
             keyLabel: "API key",
             lastTestLabel: "Last test",
             notTested: "Not tested yet",
@@ -2459,6 +2514,17 @@ export const enMessages = {
             "Logi adds and removes roles by member status. It is switched on and off together with join requests.",
         roleSyncOn: "On",
         roleSyncOff: "Off",
+        roleSyncSwitchDescription:
+            "Logi adds and removes roles by member status. It also works while applications are switched off.",
+        skipPendingCategoryTitle: "Skip waiting and add straight as a recruit",
+        skipPendingCategoryHelp: "Main members only.",
+        categoryDescriptionHelp:
+            "Shown in the Discord panel next to the category name.",
+        addRole: "role",
+        addRoleAria: "Add a role: {status}",
+        removeRole: "Remove role {role}",
+        roleSearch: "Search roles",
+        roleEmpty: "No other role.",
         tabsLabel: "Membership sections",
         tabs: {
             categories: "Categories",
@@ -2902,6 +2968,247 @@ export const enMessages = {
         continueSetup: "Continue",
         backToOverview: "All settings",
         sectionNavLabel: "Settings sections",
+        menu: "Sections",
+        breadcrumbLabel: "Breadcrumb",
+        channelsPage: {
+            missingAnnouncements: "The announcements channel is missing.",
+            missingAnnouncementsHelp:
+                "Without it the bot does not announce new events.",
+            languageTitle: "Language and time",
+            textTitle: "Text channels",
+            voiceTitle: "Voice channels",
+            timezone: "Time zone",
+            timezoneHelp: "The bot writes event times in it.",
+            language: "Bot language",
+            languageHelp: "Messages, embeds and command replies.",
+            announcements: "Announcements",
+            required: "required",
+            announcementsHelp: "New events and roster changes.",
+            eventInfo: "Event information",
+            eventInfoHelp: "Event details and sign-ups.",
+            calendar: "Calendar",
+            calendarHelp: "An overview of upcoming events.",
+            errors: "Bot errors",
+            errorsHelp: "For admins only. Optional.",
+            forum: "Category for event forums",
+            forumHelp: "Where the bot opens threads for events.",
+            squadVoice: "Category for squad voice channels",
+            squadVoiceHelp:
+                "The bot creates squad channels here before an event.",
+            meeting: "Meeting channel",
+            meetingHelp: "Where players gather before an event.",
+            addChannelException: "Different channel for a game",
+            addCategoryException: "Different category for a game",
+            selectChannel: "Choose a channel",
+            selectCategory: "Choose a category",
+            none: "None",
+        },
+        scopeLegend: {
+            clanWide: "Whole clan: one value for every game",
+            exception: "exception for one game only",
+            clanWideShort: "Whole clan",
+        },
+        overview: {
+            title: "Settings",
+            description:
+                "Clan, Discord, game data and connected websites in one place.",
+            searchLabel: "Search settings",
+            searchPlaceholder: "Search: channel, role, API key…",
+            noResults: "Nothing found",
+            noResultsDescription:
+                "Try another word, such as channel, role or key.",
+            groupHints: {
+                clan: "Applies to every game",
+                matches: "Defaults for new matches and their messages",
+                discord: "Bot, channels, roles and panels",
+                gameData: "Servers Logi collects results from",
+                web: "Optional: clan website, sign-in and other services",
+                maintenance: "One-off tools",
+            },
+            badges: {
+                done: "Done",
+                notSet: "Not set",
+                on: "On",
+                off: "Off",
+                collecting: {
+                    one: "{count} collecting",
+                    few: "{count} collecting",
+                    many: "{count} collecting",
+                    other: "{count} collecting",
+                },
+                failing: {
+                    one: "{count} failing",
+                    few: "{count} failing",
+                    many: "{count} failing",
+                    other: "{count} failing",
+                },
+                missingChannels: {
+                    one: "{count} channel missing",
+                    few: "{count} channels missing",
+                    many: "{count} channels missing",
+                    other: "{count} channels missing",
+                },
+                gamesOn: {
+                    one: "{count} on",
+                    few: "{count} on",
+                    many: "{count} on",
+                    other: "{count} on",
+                },
+                templates: {
+                    one: "{count} template",
+                    few: "{count} templates",
+                    many: "{count} templates",
+                    other: "{count} templates",
+                },
+            },
+            tiles: {
+                profile: {
+                    title: "Clan profile",
+                    description: "The clan's name, logo and description.",
+                },
+                games: {
+                    title: "Games",
+                    description:
+                        "Which games the clan plays. Logi offers further options based on them.",
+                },
+                "event-categories": {
+                    title: "Event categories",
+                    description:
+                        "Colours and emoji for the event types in the calendar.",
+                },
+                "match-templates": {
+                    title: "Match templates",
+                    description:
+                        "Default times, sign-ups, ping and roster for a new match.",
+                },
+                presets: {
+                    title: "Squad and topic presets",
+                    description:
+                        "Squad and role layouts for rosters, topics for the match forum.",
+                },
+                messages: {
+                    title: "Discord messages",
+                    description:
+                        "Announcements, rosters, reminders, live scores and results.",
+                },
+                channels: {
+                    title: "Channels and language",
+                    description:
+                        "Where the bot posts announcements, events and errors. Time zone and language.",
+                },
+                roles: {
+                    title: "Roles and access",
+                    description:
+                        "The clan role and the role that may manage Logi.",
+                },
+                stats: {
+                    title: "/stats command",
+                    description:
+                        "Player statistics in Discord: for which games and where they are shared.",
+                },
+                membership: {
+                    title: "Membership",
+                    description:
+                        "Recruit and member roles, roster score rules.",
+                },
+                tickets: {
+                    title: "Tickets",
+                    description: "Ticket panel, categories and channels.",
+                },
+                "game-servers": {
+                    title: "Game servers",
+                    description:
+                        "CRCON and Warcon servers, their API keys and data collection.",
+                },
+                history: {
+                    title: "History retention",
+                    description: "How long Logi keeps played games.",
+                },
+                league: {
+                    title: "Wardogs League",
+                    description:
+                        "League match tracking and cards in Discord. Wardogs only.",
+                },
+                apiKeys: {
+                    title: "API keys",
+                    description: "Keys for the clan website and other apps.",
+                },
+                login: {
+                    title: "Website sign-in",
+                    description:
+                        "Your own sign-in page and single sign-on (SSO) applications.",
+                },
+                webAccess: {
+                    title: "Website permissions",
+                    description:
+                        "Which roles the website may read membership for and create events with. Builds on the API key and SSO.",
+                },
+                calendar: {
+                    title: "Google Calendar",
+                    description: "A subscription link for the clan calendar.",
+                },
+                webhooks: {
+                    title: "Webhooks",
+                    description:
+                        "Notifications for other services when something changes in Logi.",
+                },
+                imports: {
+                    title: "Imports and data fixes",
+                    description:
+                        "Bulk import of events, players and Platform IDs, statistics recalculation.",
+                },
+                "helper-data": {
+                    title: "Helper data",
+                    description: "Default presets and restoring them.",
+                },
+            },
+            setup: {
+                title: "Workspace setup",
+                description:
+                    "Finish the required steps so the bot can announce events and guard access.",
+                progress: "{done} of {total} done",
+                progressLabel: "Setup progress",
+                continue: "Continue setup",
+                continueHelp: "Opens the first unfinished step.",
+                optional: "optional",
+                fix: "Fix",
+                setUp: "Set up",
+                steps: {
+                    bot: {
+                        title: "Bot on Discord",
+                        done: "The bot is on the server and sees the channels.",
+                        missing: "The bot is not on the server yet.",
+                    },
+                    games: {
+                        title: "Games",
+                        missing: "Choose what the clan plays",
+                    },
+                    profile: {
+                        title: "Clan profile",
+                        detail: "Name, logo and description",
+                    },
+                    channels: {
+                        title: "Channels",
+                        done: "The announcements channel is chosen",
+                        missing: "The announcements channel is missing",
+                    },
+                    roles: {
+                        title: "Roles and access",
+                        detail: "Who may manage Logi",
+                    },
+                    gameServers: {
+                        title: "Game servers",
+                        done: {
+                            one: "{count} server collects data",
+                            few: "{count} servers collect data",
+                            many: "{count} servers collect data",
+                            other: "{count} servers collect data",
+                        },
+                        missing: "Results and statistics from the server",
+                    },
+                },
+            },
+        },
         openSection: "Open",
         gameExceptionsNote:
             "These settings apply to the whole clan. Where one game needs a different channel, add an exception for that game under the setting.",
@@ -3099,7 +3406,7 @@ export const enMessages = {
             channels: {
                 title: "Channels and language",
                 description:
-                    "Time zone, bot language and the channels for announcements, event info, errors and voice.",
+                    "Where the bot posts messages and which language it writes in.",
             },
             roles: {
                 title: "Roles and access",
@@ -3114,17 +3421,17 @@ export const enMessages = {
             membership: {
                 title: "Membership",
                 description:
-                    "Clan applications, categories, recruit and member roles, roster scores.",
+                    "How people join the clan, who answers them and which roles they get.",
             },
             tickets: {
                 title: "Tickets",
                 description:
-                    "The ticket panel, categories, support roles and questions.",
+                    "The panel members use to open a private thread with the admins.",
             },
             "game-servers": {
                 title: "Game servers",
                 description:
-                    "Servers, provider keys and the data Logi collects from them.",
+                    "Where Logi collects results and statistics from. An API key is stored encrypted and nobody sees it again.",
             },
             league: {
                 title: "Wardogs League",
@@ -3146,9 +3453,9 @@ export const enMessages = {
                 description: "Send Logi events to your own services.",
             },
             imports: {
-                title: "Imports and repairs",
+                title: "Imports and data fixes",
                 description:
-                    "Import events and Discord members, link IDs and refresh statistics.",
+                    "Bulk import of events, players and Platform IDs, statistics recalculation.",
             },
             "helper-data": {
                 title: "Helper data",

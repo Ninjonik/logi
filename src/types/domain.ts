@@ -160,6 +160,8 @@ export type MembershipCategory = {
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
     assignmentType: "member" | "reserve_member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
 }
 
 export type TicketSettings = {
@@ -184,6 +186,8 @@ export type MembershipSettings = {
     /** Ask infantry/tank preference for supported games during application. */
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     /** Defaults to true for legacy configurations. */
     inviteSupportMembersIndividually?: boolean
     rosterScoreSettings?: {

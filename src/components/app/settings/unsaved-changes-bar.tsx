@@ -21,8 +21,9 @@ export function unsavedChangesLabel(
 }
 
 /**
- * Sticky footer of a settings form (designs D4, G2, G3): how many changes are
- * unsaved, discard and save.
+ * Sticky footer of a settings form (designs A2, D4, G2, G3): how many changes
+ * are unsaved, discard and save. On phones it is a bar at the bottom of the
+ * screen with the count and save (design K2).
  */
 export function UnsavedChangesBar({
     changes,
@@ -40,7 +41,10 @@ export function UnsavedChangesBar({
     const locale = useLocale()
     const text = dictionary.settingsHub.saveBar
     return (
-        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-sm backdrop-blur">
+        <div
+            data-mobile-action-bar=""
+            className="bg-background/95 supports-[backdrop-filter]:bg-background/80 z-30 flex items-center justify-between gap-3 backdrop-blur max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:border-t max-sm:px-3.5 max-sm:pt-3 max-sm:pb-[max(1.125rem,env(safe-area-inset-bottom))] sm:sticky sm:bottom-0 sm:-mx-1 sm:flex-wrap sm:rounded-xl sm:border sm:px-4 sm:py-3 sm:shadow-sm"
+        >
             <span
                 role="status"
                 className={
@@ -56,7 +60,7 @@ export function UnsavedChangesBar({
                     <Button
                         type="button"
                         variant="outline"
-                        className="rounded-xl"
+                        className="rounded-xl max-sm:hidden"
                         disabled={saving}
                         onClick={onDiscard}
                     >
@@ -65,7 +69,7 @@ export function UnsavedChangesBar({
                 ) : null}
                 <Button
                     type="button"
-                    className="rounded-xl"
+                    className="rounded-xl max-sm:h-11 max-sm:px-6"
                     disabled={!changes || saving}
                     onClick={onSave}
                 >

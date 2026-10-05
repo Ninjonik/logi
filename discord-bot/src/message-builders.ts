@@ -1371,6 +1371,32 @@ export function buildMembershipPanelComponents(config: DiscordConfig) {
     ]
 }
 
+/**
+ * One line per membership category for the public panel (design F1): the
+ * button text in bold and, when set, the description written under it.
+ */
+export function membershipCategoryLines(
+    categories: Pick<
+        MembershipCategory,
+        "id" | "emoji" | "label" | "description"
+    >[]
+) {
+    return categories
+        .map((category) => {
+            const heading = [
+                category.emoji?.trim(),
+                `**${(category.label?.trim() || category.id).slice(0, 80)}**`,
+            ]
+                .filter(Boolean)
+                .join(" ")
+            const description = category.description?.trim()
+            return description
+                ? `${heading} · ${formatDiscordMarkdown(description, 240)}`
+                : heading
+        })
+        .join("\n")
+}
+
 export function buildMembershipPanelMessage(config: DiscordConfig) {
     const membershipSettings = config.membershipSettings
     if (!membershipSettings?.categories.length) {
@@ -1387,17 +1413,18 @@ export function buildMembershipPanelMessage(config: DiscordConfig) {
             })
         )
     }
+    const intro = [
+        `# ${membershipSettings.panelTitle.slice(0, 256)}`,
+        formatDiscordMarkdown(membershipSettings.panelDescription, 3000),
+    ]
+        .filter(Boolean)
+        .join("\n")
     container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-            [
-                `# ${membershipSettings.panelTitle.slice(0, 256)}`,
-                formatDiscordMarkdown(
-                    membershipSettings.panelDescription,
-                    4000
-                ),
-            ]
+            [intro, membershipCategoryLines(membershipSettings.categories)]
                 .filter(Boolean)
-                .join("\n")
+                .join("\n\n")
+                .slice(0, 4000)
         )
     )
     container.addActionRowComponents(

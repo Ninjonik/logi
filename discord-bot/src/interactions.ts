@@ -34,6 +34,7 @@ import {
     getClanDiscordMessages,
     type ClanLanguage,
 } from "../../src/lib/clan-language"
+import { skipsPendingOnApply } from "../../src/domain/membership/membership-options"
 import { withGameOverrides, type GameId } from "../../src/domain/games/game"
 
 import {
@@ -3511,11 +3512,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const initialStatus =
-            category.assignmentType === "member" &&
-            membershipSettings.autoAssignRecruitOnApply
-                ? "recruit"
-                : "pending"
+        const initialStatus = skipsPendingOnApply(membershipSettings, category)
+            ? "recruit"
+            : "pending"
 
         const assignmentId = (await convex
             .mutation(references.upsertAssignment, {

@@ -30,6 +30,8 @@ export type MembershipCategory = {
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
     assignmentType: "member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
 }
 
 export type TicketSettings = {
@@ -52,6 +54,8 @@ export type MembershipSettings = {
     applicationWelcomeMessage?: string
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
 }

@@ -227,6 +227,61 @@ export const csMessages = {
             emptyDescription:
                 "Připojte server CRCON nebo Warcon a Logi začne sbírat výsledky a statistiky. API klíč se uloží šifrovaně a už ho nikdo neuvidí.",
             closeForm: "Zavřít",
+            card: {
+                status: {
+                    collecting: "Sbírá data",
+                    stopped: "Sběr zastaven",
+                    off: "Nesbírá",
+                    none: "Bez sběru",
+                },
+                key: {
+                    set: "uložen",
+                    missing: "chybí",
+                    not_required: "není potřeba",
+                    environment: "nastavil operátor Logi",
+                    needs_operator: "zadejte ho znovu",
+                },
+                unverified: "neověřen",
+                changed: "změněn {date}",
+                testOk: "v pořádku",
+                testFailed: "neprošel",
+                lastGame: "Poslední hra",
+                noGame: "zatím žádná",
+                serverNumber: "server {id}",
+                testKey: "Otestovat klíč",
+                live: "Živé skóre",
+                liveHide: "Skrýt živé skóre",
+                fixUnauthorized: {
+                    crcon: "Server odmítl klíč. Vytvořte v CRCON nový klíč s právem číst informace o serveru a vložte ho přes Změnit klíč.",
+                    other: "Server odmítl klíč. Vytvořte u poskytovatele nový klíč a vložte ho přes Změnit klíč.",
+                },
+                retentionKeep: "Uchovávat odehrané hry",
+                retentionHelp:
+                    "Starší hry se v noci smažou a weby si přepočítají součty.",
+                browseHistory: "Prohlédnout odehrané hry",
+            },
+            form: {
+                type: "Typ serveru",
+                types: {
+                    hll_crcon: "CRCON",
+                    wardogs_warcon: "Warcon",
+                    wardogs_rcon: "RCON",
+                    wardogs_public_directory: "Veřejný",
+                },
+                address: "Adresa",
+                namePlaceholder: "Třeba Server 2",
+                serverNumber: {
+                    hll_crcon: "Číslo serveru v CRCON",
+                    wardogs_warcon: "ID serveru ve Warconu",
+                    wardogs_rcon: "ID serveru v RCON",
+                    wardogs_public_directory: "ID serveru v seznamu",
+                },
+                keyPlaceholder: "Vložte klíč",
+                help: "Hra se pozná podle typu serveru. Klíč se nejdřív otestuje a teprve pak uloží.",
+                testFirst: "Uložit půjde po úspěšném testu.",
+                testPassed: "Test prošel. Server můžete uložit.",
+                saveAndCollect: "Uložit a začít sbírat",
+            },
             keyLabel: "API klíč",
             lastTestLabel: "Poslední test",
             notTested: "Zatím netestováno",
@@ -2453,6 +2508,18 @@ export const csMessages = {
             "Logi přidává a bere role podle stavu člena. Zapíná a vypíná se spolu se žádostmi o vstup.",
         roleSyncOn: "Zapnuto",
         roleSyncOff: "Vypnuto",
+        roleSyncSwitchDescription:
+            "Logi přidává a bere role podle stavu člena. Funguje i tehdy, když jsou žádosti o vstup vypnuté.",
+        skipPendingCategoryTitle:
+            "Přeskočit čekání a přidat rovnou jako rekruta",
+        skipPendingCategoryHelp: "Jen u hlavních členů.",
+        categoryDescriptionHelp:
+            "Zobrazí se v panelu v Discordu u názvu kategorie.",
+        addRole: "role",
+        addRoleAria: "Přidat roli: {status}",
+        removeRole: "Odebrat roli {role}",
+        roleSearch: "Hledat roli",
+        roleEmpty: "Žádná další role.",
         tabsLabel: "Části členství",
         tabs: {
             categories: "Kategorie",
@@ -2900,6 +2967,244 @@ export const csMessages = {
         continueSetup: "Pokračovat",
         backToOverview: "Všechna nastavení",
         sectionNavLabel: "Části nastavení",
+        menu: "Sekce",
+        breadcrumbLabel: "Drobečková navigace",
+        channelsPage: {
+            missingAnnouncements: "Chybí kanál pro oznámení.",
+            missingAnnouncementsHelp: "Bez něj bot neohlásí nové akce.",
+            languageTitle: "Jazyk a čas",
+            textTitle: "Textové kanály",
+            voiceTitle: "Hlasové kanály",
+            timezone: "Časové pásmo",
+            timezoneHelp: "Podle něj bot píše časy akcí.",
+            language: "Jazyk bota",
+            languageHelp: "Zprávy, embedy a odpovědi příkazů.",
+            announcements: "Oznámení",
+            required: "povinné",
+            announcementsHelp: "Nové akce a změny soupisek.",
+            eventInfo: "Informace o akci",
+            eventInfoHelp: "Podrobnosti a přihlášky k akci.",
+            calendar: "Kalendář",
+            calendarHelp: "Přehled nadcházejících akcí.",
+            errors: "Chyby bota",
+            errorsHelp: "Jen pro správce. Volitelné.",
+            forum: "Kategorie pro fóra akcí",
+            forumHelp: "Kde bot zakládá vlákna k akcím.",
+            squadVoice: "Kategorie pro hlasové kanály čet",
+            squadVoiceHelp: "Sem bot vytváří kanály čet před akcí.",
+            meeting: "Kanál pro sraz",
+            meetingHelp: "Kam se hráči sejdou před akcí.",
+            addChannelException: "Jiný kanál pro hru",
+            addCategoryException: "Jiná kategorie pro hru",
+            selectChannel: "Vyberte kanál",
+            selectCategory: "Vyberte kategorii",
+            none: "Žádný",
+        },
+        scopeLegend: {
+            clanWide: "Pro celý klan: jedna hodnota pro všechny hry",
+            exception: "výjimka jen pro jednu hru",
+            clanWideShort: "Pro celý klan",
+        },
+        overview: {
+            title: "Nastavení",
+            description:
+                "Klan, Discord, herní data a připojené weby na jednom místě.",
+            searchLabel: "Hledat v nastavení",
+            searchPlaceholder: "Hledat: kanál, role, API klíč…",
+            noResults: "Nic nenalezeno",
+            noResultsDescription:
+                "Zkuste jiné slovo, například kanál, role nebo klíč.",
+            groupHints: {
+                clan: "Platí pro všechny hry",
+                matches: "Výchozí hodnoty pro nové zápasy a jejich zprávy",
+                discord: "Bot, kanály, role a panely",
+                gameData: "Servery, ze kterých Logi sbírá výsledky",
+                web: "Volitelné: web klanu, přihlášení a další služby",
+                maintenance: "Jednorázové nástroje",
+            },
+            badges: {
+                done: "Hotovo",
+                notSet: "Nenastaveno",
+                on: "Zapnuto",
+                off: "Vypnuto",
+                collecting: {
+                    one: "{count} sbírá",
+                    few: "{count} sbírají",
+                    many: "{count} sbírá",
+                    other: "{count} sbírá",
+                },
+                failing: {
+                    one: "{count} s chybou",
+                    few: "{count} s chybou",
+                    many: "{count} s chybou",
+                    other: "{count} s chybou",
+                },
+                missingChannels: {
+                    one: "Chybí {count} kanál",
+                    few: "Chybí {count} kanály",
+                    many: "Chybí {count} kanálu",
+                    other: "Chybí {count} kanálů",
+                },
+                gamesOn: {
+                    one: "{count} zapnutá",
+                    few: "{count} zapnuté",
+                    many: "{count} zapnuté",
+                    other: "{count} zapnutých",
+                },
+                templates: {
+                    one: "{count} šablona",
+                    few: "{count} šablony",
+                    many: "{count} šablony",
+                    other: "{count} šablon",
+                },
+            },
+            tiles: {
+                profile: {
+                    title: "Profil klanu",
+                    description: "Název, logo a popis klanu.",
+                },
+                games: {
+                    title: "Hry",
+                    description:
+                        "Které hry klan hraje. Podle nich Logi nabízí další volby.",
+                },
+                "event-categories": {
+                    title: "Kategorie akcí",
+                    description: "Barvy a emoji pro typy akcí v kalendáři.",
+                },
+                "match-templates": {
+                    title: "Šablony zápasů",
+                    description:
+                        "Výchozí časy, přihlášky, ping a soupiska pro nový zápas.",
+                },
+                presets: {
+                    title: "Předvolby čet a témat",
+                    description:
+                        "Rozložení čet a rolí pro soupisky, témata pro fórum zápasu.",
+                },
+                messages: {
+                    title: "Zprávy v Discordu",
+                    description:
+                        "Ohlášení, soupisky, připomínky, živé skóre a výsledky.",
+                },
+                channels: {
+                    title: "Kanály a jazyk",
+                    description:
+                        "Kam bot posílá oznámení, akce a chyby. Časové pásmo a jazyk.",
+                },
+                roles: {
+                    title: "Role a přístup",
+                    description:
+                        "Klanová role a role, která smí spravovat Logi.",
+                },
+                stats: {
+                    title: "Příkaz /stats",
+                    description:
+                        "Statistiky hráčů v Discordu: pro které hry a kam se sdílí.",
+                },
+                membership: {
+                    title: "Členství",
+                    description:
+                        "Role náboru a přijetí, pravidla skóre soupisky.",
+                },
+                tickets: {
+                    title: "Tickety",
+                    description: "Panel pro tickety, kategorie a kanály.",
+                },
+                "game-servers": {
+                    title: "Herní servery",
+                    description:
+                        "CRCON a Warcon servery, jejich API klíče a sběr dat.",
+                },
+                history: {
+                    title: "Uchovávání historie",
+                    description: "Jak dlouho Logi drží odehrané hry.",
+                },
+                league: {
+                    title: "Wardogs League",
+                    description:
+                        "Sledování ligových zápasů a karty v Discordu. Jen pro Wardogs.",
+                },
+                apiKeys: {
+                    title: "API klíče",
+                    description: "Klíče pro web klanu a další aplikace.",
+                },
+                login: {
+                    title: "Přihlášení na web",
+                    description:
+                        "Vlastní přihlašovací stránka a aplikace jednotného přihlášení (SSO).",
+                },
+                webAccess: {
+                    title: "Oprávnění webu",
+                    description:
+                        "Které role smí přes web číst členství a zakládat akce. Navazuje na API klíč a SSO.",
+                },
+                calendar: {
+                    title: "Kalendář Google",
+                    description: "Odkaz pro odběr kalendáře klanu.",
+                },
+                webhooks: {
+                    title: "Webhooky",
+                    description:
+                        "Upozornění pro jiné služby, když se v Logi něco změní.",
+                },
+                imports: {
+                    title: "Importy a opravy dat",
+                    description:
+                        "Hromadný import akcí, hráčů a Platform ID, přepočet statistik.",
+                },
+                "helper-data": {
+                    title: "Pomocná data",
+                    description: "Výchozí předvolby a jejich obnovení.",
+                },
+            },
+            setup: {
+                title: "Nastavení prostoru",
+                description:
+                    "Dokončete povinné kroky, aby bot mohl ohlašovat akce a hlídat přístup.",
+                progress: "{done} ze {total} hotovo",
+                progressLabel: "Postup nastavení",
+                continue: "Pokračovat v průvodci",
+                continueHelp: "Otevře první nedokončený krok.",
+                optional: "volitelné",
+                fix: "Doplnit",
+                setUp: "Nastavit",
+                steps: {
+                    bot: {
+                        title: "Bot na Discordu",
+                        done: "Bot je na serveru a vidí kanály.",
+                        missing: "Bot zatím na serveru není.",
+                    },
+                    games: {
+                        title: "Hry",
+                        missing: "Vyberte, co klan hraje",
+                    },
+                    profile: {
+                        title: "Profil klanu",
+                        detail: "Název, logo a popis",
+                    },
+                    channels: {
+                        title: "Kanály",
+                        done: "Kanál pro oznámení je vybraný",
+                        missing: "Chybí kanál pro oznámení",
+                    },
+                    roles: {
+                        title: "Role a přístup",
+                        detail: "Kdo smí spravovat Logi",
+                    },
+                    gameServers: {
+                        title: "Herní servery",
+                        done: {
+                            one: "{count} server sbírá data",
+                            few: "{count} servery sbírají data",
+                            many: "{count} serveru sbírá data",
+                            other: "{count} serverů sbírá data",
+                        },
+                        missing: "Výsledky a statistiky ze serveru",
+                    },
+                },
+            },
+        },
         openSection: "Otevřít",
         gameExceptionsNote:
             "Tato nastavení platí pro celý klan. Když jedna hra potřebuje jiný kanál, přidejte pod nastavením výjimku pro tuto hru.",
@@ -3095,8 +3400,7 @@ export const csMessages = {
             },
             channels: {
                 title: "Kanály a jazyk",
-                description:
-                    "Časové pásmo, jazyk bota a kanály pro oznámení, informace o akcích, chyby a hlasové místnosti.",
+                description: "Kam bot posílá zprávy a v jakém jazyce píše.",
             },
             roles: {
                 title: "Role a přístup",
@@ -3110,16 +3414,17 @@ export const csMessages = {
             membership: {
                 title: "Členství",
                 description:
-                    "Přihlášky do klanu, kategorie, role nováčků a členů, body za soupisky.",
+                    "Jak se lidé přidávají do klanu, kdo jim odpovídá a jaké role dostanou.",
             },
             tickets: {
                 title: "Tickety",
-                description: "Panel ticketů, kategorie, role podpory a otázky.",
+                description:
+                    "Panel, přes který členové otevřou soukromé vlákno se správci.",
             },
             "game-servers": {
                 title: "Herní servery",
                 description:
-                    "Servery, klíče poskytovatelů a data, která z nich Logi sbírá.",
+                    "Odkud Logi sbírá výsledky a statistiky. API klíč se uloží šifrovaně a už ho nikdo neuvidí.",
             },
             league: {
                 title: "Wardogs League",
@@ -3132,7 +3437,7 @@ export const csMessages = {
                     "Když má klan vlastní web, který čte data z Logi nebo přes něj přihlašuje členy. Kroky na sebe navazují.",
             },
             calendar: {
-                title: "Google Kalendář",
+                title: "Kalendář Google",
                 description:
                     "Odběr kalendáře klanu v Googlu nebo jiné kalendářové aplikaci.",
             },
@@ -3141,9 +3446,9 @@ export const csMessages = {
                 description: "Posílání událostí z Logi do vašich služeb.",
             },
             imports: {
-                title: "Importy a opravy",
+                title: "Importy a opravy dat",
                 description:
-                    "Import akcí a členů z Discordu, propojení ID a přepočet statistik.",
+                    "Hromadný import akcí, hráčů a Platform ID, přepočet statistik.",
             },
             "helper-data": {
                 title: "Pomocná data",

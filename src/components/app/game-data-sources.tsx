@@ -10,11 +10,9 @@ import {
 import {
     fill,
     keyField,
-    PROVIDERS_BY_GAME,
     PUBLIC_DIRECTORY_ORIGIN,
     readCommandResult,
     type CommandResult,
-    type GameId,
 } from "@/lib/game-data/game-server-form"
 import {
     DropdownMenu,
@@ -23,26 +21,41 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+    useCallback,
+    useEffect,
+    useId,
+    useRef,
+    useState,
+    type RefObject,
+} from "react"
+import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
+import { SegmentedControl } from "@/components/app/settings/segmented-control"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
-import { useCallback, useEffect, useId, useState } from "react"
+import { Ellipsis, Plus, Server, TriangleAlert, X } from "lucide-react"
+import { formatRelativeTime } from "@/lib/format/relative-time"
 import { EmptyState } from "@/components/app/empty-state"
-import { Ellipsis, Plus, Server, X } from "lucide-react"
+import { WarconScoreboard } from "./warcon-scoreboard"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { useLocale } from "next-intl"
 import { cn } from "@/lib/utils"
+
+/** What the collector last saw on a server, from the live connection. */
+export type ServerLastGame = {
+    map: string | null
+    at: string | null
+    /** The live connection, for the Warcon scoreboard. */
+    connectionId: string
+}
 
 type Props = {
     serverId: string
     dictionary: Dictionary
+    /** The last game seen on each server, by source reference. */
+    lastGames?: Record<string, ServerLastGame>
     /** Called after a change that affects collection, so the connection list can reload. */
     onChanged?: () => void
 }
@@ -51,15 +64,22 @@ type CollectionErrors = Dictionary["gameData"]["errors"]
 type Notice = { kind: "error" | "status"; text: string }
 type Post = (body: Record<string, unknown>) => Promise<CommandResult>
 
+/** Server types in the order the add form offers them; each implies its game. */
+const SERVER_TYPES = [
+    "hll_crcon",
+    "wardogs_warcon",
+    "wardogs_rcon",
+    "wardogs_public_directory",
+] as const satisfies readonly DataProvider[]
+const gameFor = (provider: DataProvider) =>
+    provider === "hll_crcon" ? "hell_let_loose" : "wardogs"
+
 const emptyDraft = {
     displayName: "",
-    gameId: "wardogs" as GameId,
-    provider: "wardogs_warcon" as DataProvider,
+    provider: "hll_crcon" as DataProvider,
     origin: "",
     providerServerId: "",
 }
-const GAMES: readonly GameId[] = ["wardogs", "hell_let_loose"]
-const date = (value: string) => new Date(value).toLocaleString()
 
 /** The message for a failed command, including a failed connection test. */
 function failureText(t: Copy, result: CommandResult): string {
@@ -76,14 +96,16 @@ export function GameDataSources(props: Props) {
     return <Servers key={props.serverId} {...props} />
 }
 
-function Servers({ serverId, dictionary, onChanged }: Props) {
+function Servers({ serverId, dictionary, lastGames, onChanged }: Props) {
     const t = dictionary.gameData.servers
+    const section = dictionary.settingsHub.sections["game-servers"]
     const url = `/api/servers/${encodeURIComponent(serverId)}/game-data-sources`
     const [list, setList] = useState<GameServerSourceList | null>(null)
     const [loading, setLoading] = useState(true)
     const [pending, setPending] = useState(false)
     const [notice, setNotice] = useState<Notice | null>(null)
     const [formOpen, setFormOpen] = useState(false)
+    const formRef = useRef<HTMLFormElement>(null)
 
     const load = useCallback(
         async (signal?: AbortSignal) => {
@@ -149,47 +171,54 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
     const workspaceCount =
         list?.sources.filter((source) => source.managed === "workspace")
             .length ?? 0
+    function openForm() {
+        setFormOpen(true)
+        requestAnimationFrame(() => {
+            formRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            })
+            formRef.current?.querySelector("input")?.focus()
+        })
+    }
     return (
-        <section className="space-y-4" aria-busy={busy}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <p className="text-muted-foreground max-w-prose min-w-0 flex-1 text-sm">
-                    {t.description}
-                </p>
-                <Button
-                    type="button"
-                    variant={formOpen ? "ghost" : "default"}
-                    className="rounded-xl"
-                    aria-expanded={formOpen}
-                    aria-controls="game-server-add"
-                    disabled={!list}
-                    onClick={() => setFormOpen((open) => !open)}
-                >
-                    {formOpen ? (
-                        <X className="size-4" />
-                    ) : (
-                        <Plus className="size-4" />
-                    )}
-                    {formOpen ? t.closeForm : t.add}
-                </Button>
-            </div>
+        <section className="space-y-5" aria-busy={busy}>
+            <SettingsSectionHeader
+                title={section.title}
+                description={section.description}
+                actions={
+                    <Button
+                        type="button"
+                        className="rounded-lg"
+                        aria-controls="game-server-add"
+                        disabled={!list}
+                        onClick={openForm}
+                    >
+                        <Plus className="size-4" aria-hidden="true" />
+                        {t.add}
+                    </Button>
+                }
+            />
             {list?.encryption === "unavailable" && (
                 <p
                     role="note"
-                    className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+                    className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
                 >
                     {t.encryptionUnavailable}
                 </p>
             )}
-            <p
-                role={notice?.kind === "error" ? "alert" : "status"}
-                className={
-                    notice?.kind === "error"
-                        ? "text-destructive text-sm"
-                        : "text-sm"
-                }
-            >
-                {notice?.text}
-            </p>
+            {notice ? (
+                <p
+                    role={notice.kind === "error" ? "alert" : "status"}
+                    className={
+                        notice.kind === "error"
+                            ? "text-destructive text-sm"
+                            : "text-sm"
+                    }
+                >
+                    {notice.text}
+                </p>
+            ) : null}
             {list?.sources.length === 0 && !formOpen && (
                 <EmptyState
                     icon={Server}
@@ -198,10 +227,12 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
                 />
             )}
             {list?.sources.map((source) => (
-                <ServerRow
+                <ServerCard
                     key={`${source.ref}:${source.revision}`}
+                    serverId={serverId}
                     source={source}
-                    copy={t}
+                    lastGame={lastGames?.[source.ref]}
+                    dictionary={dictionary}
                     disabled={busy}
                     encryption={list.encryption}
                     errors={dictionary.gameData.errors}
@@ -211,6 +242,8 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
             ))}
             {list && formOpen && (
                 <AddServer
+                    formRef={formRef}
+                    onClose={() => setFormOpen(false)}
                     onSaved={() => setFormOpen(false)}
                     copy={t}
                     disabled={busy || workspaceCount >= list.limit}
@@ -225,6 +258,8 @@ function Servers({ serverId, dictionary, onChanged }: Props) {
 }
 
 function AddServer({
+    formRef,
+    onClose,
     onSaved,
     copy: t,
     disabled,
@@ -233,6 +268,8 @@ function AddServer({
     post,
     report,
 }: {
+    formRef: RefObject<HTMLFormElement | null>
+    onClose(): void
     onSaved(): void
     copy: Copy
     disabled: boolean
@@ -247,12 +284,16 @@ function AddServer({
     // The key lives only in this field's state: kept after a test so it can be
     // saved, cleared after every save attempt, and never stored elsewhere.
     const [key, setKey] = useState("")
-    const [enable, setEnable] = useState(true)
-    const [tested, setTested] = useState<ConnectionTestOutcome | null>(null)
+    // A test result counts only for the exact draft and key it tested.
+    const [tested, setTested] = useState<{
+        outcome: ConnectionTestOutcome
+        input: string
+    } | null>(null)
     const requirement = keyField(draft.provider)
     const body = () => ({
         draft: {
             ...draft,
+            gameId: gameFor(draft.provider),
             origin:
                 draft.provider === "wardogs_public_directory"
                     ? PUBLIC_DIRECTORY_ORIGIN
@@ -260,20 +301,26 @@ function AddServer({
         },
         key: requirement === "hidden" || !key.trim() ? null : key,
     })
+    const input = JSON.stringify(body())
+    const outcome = tested && tested.input === input ? tested.outcome : null
     const canSaveKey = encryption === "active" || requirement === "hidden"
+    const passed = outcome === "ok"
     return (
         <form
             id="game-server-add"
-            className="space-y-3 rounded-xl border p-4"
+            ref={formRef}
+            aria-labelledby={field("title")}
+            className="bg-card border-foreground space-y-5 rounded-2xl border p-5 sm:p-6"
             onSubmit={async (event) => {
                 event.preventDefault()
+                if (!passed) return
                 const result = await post({
                     action: "create",
                     ...body(),
-                    enable,
+                    enable: true,
                 })
                 setKey("")
-                setTested(result.test)
+                setTested(null)
                 if (result.ok) {
                     setDraft(emptyDraft)
                     report(
@@ -284,142 +331,120 @@ function AddServer({
                 } else report(result, "")
             }}
         >
-            <h4 className="text-sm font-medium">{t.add}</h4>
-            <p className="text-muted-foreground text-xs">
-                {fill(t.limit, { limit })}
-            </p>
-            <fieldset disabled={disabled} className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-1">
-                    <Label htmlFor={field("name")}>
-                        {t.fields.displayName}
-                    </Label>
-                    <Input
-                        id={field("name")}
-                        value={draft.displayName}
-                        maxLength={80}
-                        required
-                        onChange={(event) =>
-                            setDraft({
-                                ...draft,
-                                displayName: event.target.value,
-                            })
-                        }
-                    />
+            <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                    <h2 id={field("title")} className="text-base font-semibold">
+                        {t.add}
+                    </h2>
+                    <p className="text-muted-foreground text-xs">
+                        {fill(t.limit, { limit })}
+                    </p>
                 </div>
-                <div className="space-y-1">
-                    <Label htmlFor={field("game")}>{t.fields.game}</Label>
-                    <Select
-                        value={draft.gameId}
-                        onValueChange={(value) => {
-                            const gameId = GAMES.find((game) => game === value)
-                            if (!gameId) return
-                            setDraft({
-                                ...draft,
-                                gameId,
-                                provider: PROVIDERS_BY_GAME[gameId][0]!,
-                            })
-                            setTested(null)
-                        }}
-                    >
-                        <SelectTrigger id={field("game")} className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {GAMES.map((game) => (
-                                <SelectItem key={game} value={game}>
-                                    {t.games[game]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor={field("provider")}>
-                        {t.fields.provider}
-                    </Label>
-                    <Select
-                        value={draft.provider}
-                        onValueChange={(value) => {
-                            const provider = PROVIDERS_BY_GAME[
-                                draft.gameId
-                            ].find((entry) => entry === value)
-                            if (!provider) return
-                            setDraft({ ...draft, provider })
-                            setTested(null)
-                        }}
-                    >
-                        <SelectTrigger
-                            id={field("provider")}
-                            className="w-full"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PROVIDERS_BY_GAME[draft.gameId].map((provider) => (
-                                <SelectItem key={provider} value={provider}>
-                                    {t.providers[provider]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                {draft.provider !== "wardogs_public_directory" && (
-                    <div className="space-y-1">
-                        <Label htmlFor={field("origin")}>
-                            {t.fields.origin}
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-lg"
+                    aria-label={t.closeForm}
+                    onClick={onClose}
+                >
+                    <X className="size-4" />
+                </Button>
+            </div>
+            <fieldset disabled={disabled} className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                    <div className="space-y-2">
+                        <Label htmlFor={field("name")}>
+                            {t.fields.displayName}
                         </Label>
                         <Input
-                            id={field("origin")}
-                            type="url"
-                            inputMode="url"
-                            value={draft.origin}
-                            maxLength={200}
+                            id={field("name")}
+                            value={draft.displayName}
+                            maxLength={80}
                             required
-                            placeholder="https://panel.example.com"
-                            aria-describedby={field("origin-hint")}
+                            placeholder={t.form.namePlaceholder}
                             onChange={(event) =>
                                 setDraft({
                                     ...draft,
-                                    origin: event.target.value,
+                                    displayName: event.target.value,
                                 })
                             }
                         />
-                        <p
-                            id={field("origin-hint")}
-                            className="text-muted-foreground text-xs"
-                        >
-                            {t.hints.origin}
+                    </div>
+                    <div className="space-y-2">
+                        <Label id={field("type")}>{t.form.type}</Label>
+                        <SegmentedControl
+                            labelledBy={field("type")}
+                            value={draft.provider}
+                            onChange={(provider) =>
+                                setDraft({ ...draft, provider })
+                            }
+                            options={SERVER_TYPES.map((provider) => ({
+                                value: provider,
+                                label: t.form.types[provider],
+                            }))}
+                            className="lg:w-auto"
+                        />
+                    </div>
+                    {draft.provider !== "wardogs_public_directory" ? (
+                        <div className="space-y-2">
+                            <Label htmlFor={field("origin")}>
+                                {t.form.address}
+                            </Label>
+                            <Input
+                                id={field("origin")}
+                                type="url"
+                                inputMode="url"
+                                value={draft.origin}
+                                maxLength={200}
+                                required
+                                placeholder="https://"
+                                aria-describedby={field("origin-hint")}
+                                onChange={(event) =>
+                                    setDraft({
+                                        ...draft,
+                                        origin: event.target.value,
+                                    })
+                                }
+                            />
+                            <p id={field("origin-hint")} className="sr-only">
+                                {t.hints.origin}
+                            </p>
+                        </div>
+                    ) : null}
+                </div>
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                    <div className="space-y-2">
+                        <Label htmlFor={field("server")}>
+                            {t.form.serverNumber[draft.provider]}
+                        </Label>
+                        <Input
+                            id={field("server")}
+                            value={draft.providerServerId}
+                            maxLength={200}
+                            required
+                            placeholder={
+                                draft.provider === "hll_crcon" ? "1" : undefined
+                            }
+                            aria-describedby={field("server-hint")}
+                            onChange={(event) =>
+                                setDraft({
+                                    ...draft,
+                                    providerServerId: event.target.value,
+                                })
+                            }
+                        />
+                        <p id={field("server-hint")} className="sr-only">
+                            {t.hints.serverId[draft.provider]}
                         </p>
                     </div>
-                )}
-                <div className="space-y-1">
-                    <Label htmlFor={field("server")}>{t.fields.serverId}</Label>
-                    <Input
-                        id={field("server")}
-                        value={draft.providerServerId}
-                        maxLength={200}
-                        required
-                        aria-describedby={field("server-hint")}
-                        onChange={(event) =>
-                            setDraft({
-                                ...draft,
-                                providerServerId: event.target.value,
-                            })
-                        }
-                    />
-                    <p
-                        id={field("server-hint")}
-                        className="text-muted-foreground text-xs"
-                    >
-                        {t.hints.serverId[draft.provider]}
-                    </p>
                 </div>
                 {requirement === "hidden" ? (
-                    <p className="text-muted-foreground self-end text-xs">
+                    <p className="text-muted-foreground text-xs">
                         {t.hints.keyNone}
                     </p>
                 ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                         <Label htmlFor={field("key")}>{t.fields.key}</Label>
                         <Input
                             id={field("key")}
@@ -433,6 +458,7 @@ function AddServer({
                             value={key}
                             maxLength={4200}
                             required={requirement === "required"}
+                            placeholder={t.form.keyPlaceholder}
                             aria-describedby={field("key-hint")}
                             onChange={(event) => setKey(event.target.value)}
                         />
@@ -440,261 +466,357 @@ function AddServer({
                             id={field("key-hint")}
                             className="text-muted-foreground text-xs"
                         >
+                            {t.form.help}
                             {requirement === "optional"
-                                ? t.hints.keyOptional
-                                : t.hints.key}
+                                ? ` ${t.hints.keyOptional}`
+                                : ""}
                         </p>
                     </div>
                 )}
             </fieldset>
-            <div className="flex items-center gap-2">
-                <Checkbox
-                    id={field("enable")}
-                    checked={enable}
-                    disabled={disabled}
-                    onCheckedChange={(value) => setEnable(value === true)}
-                />
-                <Label
-                    htmlFor={field("enable")}
-                    className="text-sm font-normal"
-                >
-                    {t.enableAfterTest}
-                </Label>
-            </div>
-            {tested && (
+            {outcome ? (
                 <p
                     role="status"
                     className={
-                        tested === "ok" ? "text-sm" : "text-destructive text-sm"
+                        passed
+                            ? "text-sm text-emerald-700 dark:text-emerald-400"
+                            : "text-destructive text-sm"
                     }
                 >
-                    {t.outcomes[tested]}
+                    {passed ? t.form.testPassed : t.outcomes[outcome]}
                 </p>
-            )}
-            <div className="flex flex-wrap gap-2">
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                 <Button
                     type="button"
                     variant="outline"
+                    className="rounded-lg"
                     disabled={disabled}
                     onClick={async () => {
+                        const tested = input
                         const result = await post({ action: "test", ...body() })
-                        setTested(result.test)
+                        if (result.test)
+                            setTested({ outcome: result.test, input: tested })
                         if (!result.ok) report(result, "")
                     }}
                 >
                     {t.actions.test}
                 </Button>
-                <Button type="submit" disabled={disabled || !canSaveKey}>
-                    {t.actions.save}
-                </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                    {!passed ? (
+                        <span className="text-muted-foreground text-xs">
+                            {t.form.testFirst}
+                        </span>
+                    ) : null}
+                    <Button
+                        type="submit"
+                        className="rounded-lg"
+                        disabled={disabled || !canSaveKey || !passed}
+                    >
+                        {t.form.saveAndCollect}
+                    </Button>
+                </div>
             </div>
         </form>
     )
 }
 
-function ServerRow({
+type Status = "collecting" | "stopped" | "off" | "none"
+
+function statusOf(source: GameServerSource): Status {
+    if (!source.collection) return "none"
+    if (!source.collection.enabled) return "off"
+    return source.collection.errorCategory || source.key.failure
+        ? "stopped"
+        : "collecting"
+}
+
+function StatusPill({ status, copy }: { status: Status; copy: Copy }) {
+    return (
+        <span
+            className={cn(
+                "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium",
+                status === "collecting"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+                    : status === "stopped"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200"
+                      : "bg-muted text-muted-foreground border-transparent"
+            )}
+        >
+            {status === "collecting" ? (
+                <span
+                    aria-hidden="true"
+                    className="size-2 rounded-full bg-emerald-500"
+                />
+            ) : status === "stopped" ? (
+                <TriangleAlert className="size-3.5" aria-hidden="true" />
+            ) : null}
+            {copy.card.status[status]}
+        </span>
+    )
+}
+
+function ServerCard({
+    serverId,
     source,
-    copy: t,
+    lastGame,
+    dictionary,
     disabled,
     encryption,
     errors,
     post,
     report,
 }: {
+    serverId: string
     source: GameServerSource
-    copy: Copy
+    lastGame?: ServerLastGame
+    dictionary: Dictionary
     disabled: boolean
     encryption: GameServerSourceList["encryption"]
     errors: CollectionErrors
     post: Post
     report(result: CommandResult, success: string): void
 }) {
+    const t = dictionary.gameData.servers
+    const locale = useLocale()
     const id = useId()
     const [mode, setMode] = useState<"view" | "key" | "rename">("view")
+    const [live, setLive] = useState(false)
     const [key, setKey] = useState("")
     const [allowUnverified, setAllowUnverified] = useState(false)
     const [name, setName] = useState(source.displayName)
     const [confirm, setConfirm] = useState<"removeKey" | "remove" | null>(null)
+    const [now] = useState(() => Date.now())
     const workspace = source.managed === "workspace"
     const requirement = keyField(source.provider)
     const enabled = source.collection?.enabled ?? false
+    const status = statusOf(source)
+    const stopped = status === "stopped"
+    const canChangeKey = requirement !== "hidden" && encryption === "active"
     const base = { ref: source.ref, expectedRevision: source.revision }
+    const ago = (iso: string) => formatRelativeTime(iso, now, locale)
+    const shortDate = (iso: string) =>
+        new Intl.DateTimeFormat(locale, {
+            day: "numeric",
+            month: "numeric",
+        }).format(new Date(iso))
+    const host = (() => {
+        try {
+            return new URL(source.origin).host
+        } catch {
+            return source.origin
+        }
+    })()
+    const keyText = [
+        t.card.key[source.key.state],
+        source.key.state === "set" && !source.key.verified
+            ? t.card.unverified
+            : null,
+        source.key.changedAt
+            ? fill(t.card.changed, { date: shortDate(source.key.changedAt) })
+            : null,
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    const testText = source.lastTest
+        ? `${source.lastTest.outcome === "ok" ? t.card.testOk : t.card.testFailed} · ${ago(source.lastTest.at)}`
+        : t.notTested
+    const gameText =
+        lastGame?.map && lastGame.at
+            ? `${lastGame.map} · ${ago(lastGame.at)}`
+            : t.card.noGame
+    const problem = source.key.failure
+        ? t.failure[source.key.failure]
+        : source.collection?.errorCategory === "unauthorized"
+          ? t.card.fixUnauthorized[
+                source.provider === "hll_crcon" ? "crcon" : "other"
+            ]
+          : source.collection?.errorCategory
+            ? errors[source.collection.errorCategory]
+            : null
+    const testStored = async () => {
+        const result = await post({ action: "test_stored", ref: source.ref })
+        report(result, result.test ? t.outcomes[result.test] : "")
+    }
+    const toggleCollection = async () => {
+        const result = await post({
+            action: "set_enabled",
+            ref: source.ref,
+            enabled: !enabled,
+        })
+        report(result, enabled ? t.saved.disabled : t.saved.enabled)
+    }
+    const liveAvailable =
+        enabled && source.provider === "wardogs_warcon" && lastGame
     return (
         <article
-            className="space-y-3 rounded-xl border p-4"
+            className={cn(
+                "bg-card space-y-4 rounded-2xl border p-5",
+                stopped && "border-amber-400/70 dark:border-amber-500/50"
+            )}
             aria-labelledby={`${id}-name`}
         >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <span
-                        aria-hidden="true"
-                        className={cn(
-                            "mt-1.5 size-2.5 shrink-0 rounded-full",
-                            enabled
-                                ? "bg-emerald-500"
-                                : "bg-muted-foreground/40"
-                        )}
-                    />
-                    <div className="min-w-0">
-                        <h4 id={`${id}-name`} className="font-medium break-all">
-                            {source.displayName}
-                        </h4>
-                        <p className="text-muted-foreground text-xs break-all">
-                            {t.games[source.gameId]} ·{" "}
-                            {t.providers[source.provider]} ·{" "}
-                            {new URL(source.origin).host} ·{" "}
-                            {source.providerServerId}
-                        </p>
-                    </div>
-                </div>
-                <span
-                    className={cn(
-                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                        enabled
-                            ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
-                            : "bg-muted text-muted-foreground"
-                    )}
-                >
-                    {source.collection
-                        ? source.collection.enabled
-                            ? t.collection.enabled
-                            : t.collection.disabled
-                        : t.collection.none}
+            <div className="flex flex-wrap items-start gap-3">
+                <span className="bg-muted/50 flex size-10 shrink-0 items-center justify-center rounded-xl border">
+                    <Server className="size-4" aria-hidden="true" />
                 </span>
+                <div className="min-w-0 flex-1">
+                    <h3 id={`${id}-name`} className="font-semibold break-words">
+                        {source.displayName}
+                    </h3>
+                    <p className="text-muted-foreground text-sm break-all">
+                        {t.games[source.gameId]} ·{" "}
+                        {t.form.types[source.provider]} · {host}
+                        {source.provider === "hll_crcon"
+                            ? ` · ${fill(t.card.serverNumber, { id: source.providerServerId })}`
+                            : ""}
+                    </p>
+                </div>
+                <StatusPill status={status} copy={t} />
             </div>
-            <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                <div className="min-w-0">
-                    <dt className="text-muted-foreground text-xs">
-                        {t.keyLabel}
-                    </dt>
-                    <dd>
-                        {t.key[source.key.state]}
-                        {source.key.changedAt &&
-                            ` · ${fill(t.keyChanged, { date: date(source.key.changedAt) })}`}
-                        {source.key.state === "set" &&
-                            ` · ${source.key.verified ? t.verified : t.unverified}`}
-                    </dd>
-                </div>
-                <div className="min-w-0">
-                    <dt className="text-muted-foreground text-xs">
-                        {t.lastTestLabel}
-                    </dt>
-                    <dd>
-                        {source.lastTest
-                            ? `${t.outcomes[source.lastTest.outcome]} · ${date(source.lastTest.at)}`
-                            : t.notTested}
-                    </dd>
-                </div>
-                <div className="min-w-0">
-                    <dt className="text-muted-foreground text-xs">
-                        {t.collectionLabel}
-                    </dt>
-                    <dd>
-                        {source.collection?.lastSuccessAt
-                            ? fill(t.collection.lastSuccess, {
-                                  date: date(source.collection.lastSuccessAt),
-                              })
-                            : t.collection.never}
-                    </dd>
-                </div>
-            </dl>
-            {source.key.failure && (
-                <p className="text-destructive text-sm">
-                    {t.failure[source.key.failure]}
+            {stopped && problem ? (
+                <p className="rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+                    {problem}
                 </p>
+            ) : (
+                <dl className="grid gap-3 border-b pb-4 text-sm sm:grid-cols-3">
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
+                            {t.keyLabel}
+                        </dt>
+                        <dd>{keyText}</dd>
+                    </div>
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
+                            {t.lastTestLabel}
+                        </dt>
+                        <dd>{testText}</dd>
+                    </div>
+                    <div className="min-w-0">
+                        <dt className="text-muted-foreground text-xs">
+                            {t.card.lastGame}
+                        </dt>
+                        <dd className="break-words">{gameText}</dd>
+                    </div>
+                </dl>
             )}
-            {source.collection?.errorCategory && (
-                <p className="text-destructive text-sm">
-                    {errors[source.collection.errorCategory]}
-                </p>
-            )}
+            {problem && !stopped ? (
+                <p className="text-destructive text-sm">{problem}</p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={disabled}
-                    onClick={async () => {
-                        const result = await post({
-                            action: "test_stored",
-                            ref: source.ref,
-                        })
-                        report(
-                            result,
-                            result.test ? t.outcomes[result.test] : ""
-                        )
-                    }}
-                >
-                    {t.actions.testStored}
-                </Button>
-                {requirement !== "hidden" && encryption === "active" && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={disabled}
-                        aria-expanded={mode === "key"}
-                        onClick={() => setMode(mode === "key" ? "view" : "key")}
-                    >
-                        {t.actions.changeKey}
-                    </Button>
-                )}
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={disabled}
-                    onClick={async () => {
-                        const result = await post({
-                            action: "set_enabled",
-                            ref: source.ref,
-                            enabled: !enabled,
-                        })
-                        report(
-                            result,
-                            enabled ? t.saved.disabled : t.saved.enabled
-                        )
-                    }}
-                >
-                    {enabled ? t.actions.disable : t.actions.enable}
-                </Button>
-                {workspace && (
-                    <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
+                {stopped ? (
+                    canChangeKey ? (
+                        <Button
+                            size="sm"
+                            className="rounded-lg"
+                            disabled={disabled}
+                            aria-expanded={mode === "key"}
+                            onClick={() =>
+                                setMode(mode === "key" ? "view" : "key")
+                            }
+                        >
+                            {t.actions.changeKey}
+                        </Button>
+                    ) : null
+                ) : (
+                    <>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg"
+                            disabled={disabled}
+                            onClick={() => void testStored()}
+                        >
+                            {t.card.testKey}
+                        </Button>
+                        {canChangeKey ? (
                             <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8"
+                                size="sm"
+                                variant="outline"
+                                className="rounded-lg"
                                 disabled={disabled}
-                                aria-label={fill(t.moreActions, {
-                                    name: source.displayName,
-                                })}
+                                aria-expanded={mode === "key"}
+                                onClick={() =>
+                                    setMode(mode === "key" ? "view" : "key")
+                                }
                             >
-                                <Ellipsis className="size-4" />
+                                {t.actions.changeKey}
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        ) : null}
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg"
+                            disabled={disabled}
+                            onClick={() => void toggleCollection()}
+                        >
+                            {enabled ? t.actions.disable : t.actions.enable}
+                        </Button>
+                    </>
+                )}
+                <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className="size-8 rounded-lg"
+                            disabled={disabled}
+                            aria-label={fill(t.moreActions, {
+                                name: source.displayName,
+                            })}
+                        >
+                            <Ellipsis className="size-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        {stopped ? (
+                            <>
+                                <DropdownMenuItem
+                                    onSelect={() => void testStored()}
+                                >
+                                    {t.card.testKey}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => void toggleCollection()}
+                                >
+                                    {t.actions.disable}
+                                </DropdownMenuItem>
+                            </>
+                        ) : null}
+                        {liveAvailable ? (
+                            <DropdownMenuItem onSelect={() => setLive(!live)}>
+                                {live ? t.card.liveHide : t.card.live}
+                            </DropdownMenuItem>
+                        ) : null}
+                        {workspace ? (
                             <DropdownMenuItem
                                 onSelect={() => setMode("rename")}
                             >
                                 {t.actions.rename}
                             </DropdownMenuItem>
-                            {source.key.state === "set" && (
-                                <DropdownMenuItem
-                                    onSelect={() => setConfirm("removeKey")}
-                                >
-                                    {t.actions.removeKey}
-                                </DropdownMenuItem>
-                            )}
+                        ) : null}
+                        {workspace && source.key.state === "set" ? (
+                            <DropdownMenuItem
+                                onSelect={() => setConfirm("removeKey")}
+                            >
+                                {t.actions.removeKey}
+                            </DropdownMenuItem>
+                        ) : null}
+                        {workspace ? (
                             <DropdownMenuItem
                                 variant="destructive"
                                 onSelect={() => setConfirm("remove")}
                             >
                                 {t.actions.remove}
                             </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-                <span className="text-muted-foreground ml-auto text-xs">
-                    {t.managed[source.managed]}
-                </span>
+                        ) : null}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                {!workspace ? (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                        {t.managed.operator}
+                    </span>
+                ) : null}
             </div>
             <ConfirmActionDialog
                 open={confirm === "removeKey"}
@@ -726,7 +848,7 @@ function ServerRow({
             />
             {mode === "key" && (
                 <form
-                    className="grid gap-2 md:grid-cols-[1fr_auto]"
+                    className="grid gap-2 border-t pt-4 md:grid-cols-[1fr_auto]"
                     onSubmit={async (event) => {
                         event.preventDefault()
                         const result = await post({
@@ -762,6 +884,7 @@ function ServerRow({
                             maxLength={4200}
                             required
                             disabled={disabled}
+                            placeholder={t.form.keyPlaceholder}
                             aria-describedby={`${id}-key-hint`}
                             onChange={(event) => setKey(event.target.value)}
                         />
@@ -809,7 +932,7 @@ function ServerRow({
             )}
             {mode === "rename" && (
                 <form
-                    className="flex flex-wrap items-end gap-2"
+                    className="flex flex-wrap items-end gap-2 border-t pt-4"
                     onSubmit={async (event) => {
                         event.preventDefault()
                         const result = await post({
@@ -851,6 +974,15 @@ function ServerRow({
                     </Button>
                 </form>
             )}
+            {live && liveAvailable ? (
+                <div className="border-t pt-4">
+                    <WarconScoreboard
+                        serverId={serverId}
+                        connectionId={lastGame.connectionId}
+                        dictionary={dictionary}
+                    />
+                </div>
+            ) : null}
         </article>
     )
 }

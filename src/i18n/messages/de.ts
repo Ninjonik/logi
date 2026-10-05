@@ -235,6 +235,62 @@ export const deMessages = {
             emptyDescription:
                 "Verbinde einen CRCON- oder Warcon-Server, damit Logi Ergebnisse und Statistiken sammelt. Der API-Schlüssel wird verschlüsselt gespeichert und ist danach für niemanden mehr sichtbar.",
             closeForm: "Schließen",
+            card: {
+                status: {
+                    collecting: "Sammelt Daten",
+                    stopped: "Sammeln gestoppt",
+                    off: "Sammelt nicht",
+                    none: "Kein Sammeln",
+                },
+                key: {
+                    set: "gespeichert",
+                    missing: "fehlt",
+                    not_required: "nicht nötig",
+                    environment: "vom Logi-Betreiber gesetzt",
+                    needs_operator: "erneut eingeben",
+                },
+                unverified: "nicht geprüft",
+                changed: "geändert {date}",
+                testOk: "in Ordnung",
+                testFailed: "fehlgeschlagen",
+                lastGame: "Letztes Spiel",
+                noGame: "noch keins",
+                serverNumber: "Server {id}",
+                testKey: "Schlüssel testen",
+                live: "Live-Punktestand",
+                liveHide: "Live-Punktestand ausblenden",
+                fixUnauthorized: {
+                    crcon: "Der Server hat den Schlüssel abgelehnt. Erstelle in CRCON einen neuen Schlüssel, der Serverinformationen lesen darf, und gib ihn über Schlüssel ändern ein.",
+                    other: "Der Server hat den Schlüssel abgelehnt. Erstelle beim Anbieter einen neuen Schlüssel und gib ihn über Schlüssel ändern ein.",
+                },
+                retentionKeep: "Gespielte Runden aufbewahren",
+                retentionHelp:
+                    "Ältere Runden werden nachts gelöscht und Websites berechnen ihre Summen neu.",
+                browseHistory: "Gespielte Runden ansehen",
+            },
+            form: {
+                type: "Servertyp",
+                types: {
+                    hll_crcon: "CRCON",
+                    wardogs_warcon: "Warcon",
+                    wardogs_rcon: "RCON",
+                    wardogs_public_directory: "Öffentlich",
+                },
+                address: "Adresse",
+                namePlaceholder: "Zum Beispiel Server 2",
+                serverNumber: {
+                    hll_crcon: "Servernummer in CRCON",
+                    wardogs_warcon: "Server-ID in Warcon",
+                    wardogs_rcon: "Server-ID in RCON",
+                    wardogs_public_directory: "Server-ID in der Liste",
+                },
+                keyPlaceholder: "Schlüssel einfügen",
+                help: "Das Spiel ergibt sich aus dem Servertyp. Der Schlüssel wird zuerst getestet und erst dann gespeichert.",
+                testFirst: "Speichern geht nach einem erfolgreichen Test.",
+                testPassed:
+                    "Der Test war erfolgreich. Du kannst den Server speichern.",
+                saveAndCollect: "Speichern und Sammeln starten",
+            },
             keyLabel: "API-Schlüssel",
             lastTestLabel: "Letzter Test",
             notTested: "Noch nicht getestet",
@@ -2534,6 +2590,18 @@ export const deMessages = {
             "Logi vergibt und entzieht Rollen nach dem Status des Mitglieds. Sie wird zusammen mit den Beitrittsanfragen ein- und ausgeschaltet.",
         roleSyncOn: "An",
         roleSyncOff: "Aus",
+        roleSyncSwitchDescription:
+            "Logi vergibt und entzieht Rollen nach dem Mitgliedsstatus. Das funktioniert auch, wenn Bewerbungen ausgeschaltet sind.",
+        skipPendingCategoryTitle:
+            "Warten überspringen und direkt als Rekrut aufnehmen",
+        skipPendingCategoryHelp: "Nur für Hauptmitglieder.",
+        categoryDescriptionHelp:
+            "Wird im Discord-Panel beim Namen der Kategorie angezeigt.",
+        addRole: "Rolle",
+        addRoleAria: "Rolle hinzufügen: {status}",
+        removeRole: "Rolle {role} entfernen",
+        roleSearch: "Rolle suchen",
+        roleEmpty: "Keine weitere Rolle.",
         tabsLabel: "Bereiche der Mitgliedschaft",
         tabs: {
             categories: "Kategorien",
@@ -2990,6 +3058,248 @@ export const deMessages = {
         continueSetup: "Weiter",
         backToOverview: "Alle Einstellungen",
         sectionNavLabel: "Bereiche der Einstellungen",
+        menu: "Bereiche",
+        breadcrumbLabel: "Brotkrumen-Navigation",
+        channelsPage: {
+            missingAnnouncements: "Der Ankündigungskanal fehlt.",
+            missingAnnouncementsHelp:
+                "Ohne ihn kündigt der Bot keine neuen Events an.",
+            languageTitle: "Sprache und Zeit",
+            textTitle: "Textkanäle",
+            voiceTitle: "Sprachkanäle",
+            timezone: "Zeitzone",
+            timezoneHelp: "Danach schreibt der Bot die Zeiten der Events.",
+            language: "Sprache des Bots",
+            languageHelp: "Nachrichten, Embeds und Antworten auf Befehle.",
+            announcements: "Ankündigungen",
+            required: "Pflicht",
+            announcementsHelp: "Neue Events und Änderungen an Aufstellungen.",
+            eventInfo: "Event-Informationen",
+            eventInfoHelp: "Details und Anmeldungen zum Event.",
+            calendar: "Kalender",
+            calendarHelp: "Überblick über kommende Events.",
+            errors: "Bot-Fehler",
+            errorsHelp: "Nur für Admins. Optional.",
+            forum: "Kategorie für Event-Foren",
+            forumHelp: "Wo der Bot Threads zu Events anlegt.",
+            squadVoice: "Kategorie für Squad-Sprachkanäle",
+            squadVoiceHelp:
+                "Hier legt der Bot vor einem Event die Squad-Kanäle an.",
+            meeting: "Treffpunkt-Kanal",
+            meetingHelp: "Wo sich die Spieler vor einem Event treffen.",
+            addChannelException: "Anderer Kanal für ein Spiel",
+            addCategoryException: "Andere Kategorie für ein Spiel",
+            selectChannel: "Kanal wählen",
+            selectCategory: "Kategorie wählen",
+            none: "Keiner",
+        },
+        scopeLegend: {
+            clanWide: "Ganzer Clan: ein Wert für alle Spiele",
+            exception: "Ausnahme nur für ein Spiel",
+            clanWideShort: "Ganzer Clan",
+        },
+        overview: {
+            title: "Einstellungen",
+            description:
+                "Clan, Discord, Spieldaten und verbundene Websites an einem Ort.",
+            searchLabel: "Einstellungen durchsuchen",
+            searchPlaceholder: "Suchen: Kanal, Rolle, API-Schlüssel…",
+            noResults: "Nichts gefunden",
+            noResultsDescription:
+                "Versuch ein anderes Wort, zum Beispiel Kanal, Rolle oder Schlüssel.",
+            groupHints: {
+                clan: "Gilt für alle Spiele",
+                matches: "Vorgaben für neue Matches und ihre Nachrichten",
+                discord: "Bot, Kanäle, Rollen und Panels",
+                gameData: "Server, von denen Logi Ergebnisse sammelt",
+                web: "Optional: Clan-Website, Anmeldung und weitere Dienste",
+                maintenance: "Einmalige Werkzeuge",
+            },
+            badges: {
+                done: "Erledigt",
+                notSet: "Nicht eingestellt",
+                on: "An",
+                off: "Aus",
+                collecting: {
+                    one: "{count} sammelt",
+                    few: "{count} sammeln",
+                    many: "{count} sammeln",
+                    other: "{count} sammeln",
+                },
+                failing: {
+                    one: "{count} mit Fehler",
+                    few: "{count} mit Fehler",
+                    many: "{count} mit Fehler",
+                    other: "{count} mit Fehler",
+                },
+                missingChannels: {
+                    one: "{count} Kanal fehlt",
+                    few: "{count} Kanäle fehlen",
+                    many: "{count} Kanäle fehlen",
+                    other: "{count} Kanäle fehlen",
+                },
+                gamesOn: {
+                    one: "{count} aktiv",
+                    few: "{count} aktiv",
+                    many: "{count} aktiv",
+                    other: "{count} aktiv",
+                },
+                templates: {
+                    one: "{count} Vorlage",
+                    few: "{count} Vorlagen",
+                    many: "{count} Vorlagen",
+                    other: "{count} Vorlagen",
+                },
+            },
+            tiles: {
+                profile: {
+                    title: "Clan-Profil",
+                    description: "Name, Logo und Beschreibung des Clans.",
+                },
+                games: {
+                    title: "Spiele",
+                    description:
+                        "Welche Spiele der Clan spielt. Danach bietet Logi weitere Optionen an.",
+                },
+                "event-categories": {
+                    title: "Event-Kategorien",
+                    description:
+                        "Farben und Emoji für die Event-Arten im Kalender.",
+                },
+                "match-templates": {
+                    title: "Match-Vorlagen",
+                    description:
+                        "Standardzeiten, Anmeldungen, Ping und Aufstellung für ein neues Match.",
+                },
+                presets: {
+                    title: "Squad- und Themenvorlagen",
+                    description:
+                        "Squad- und Rollenaufteilung für Aufstellungen, Themen für das Match-Forum.",
+                },
+                messages: {
+                    title: "Discord-Nachrichten",
+                    description:
+                        "Ankündigungen, Aufstellungen, Erinnerungen, Live-Punktestand und Ergebnisse.",
+                },
+                channels: {
+                    title: "Kanäle und Sprache",
+                    description:
+                        "Wohin der Bot Ankündigungen, Events und Fehler schickt. Zeitzone und Sprache.",
+                },
+                roles: {
+                    title: "Rollen und Zugriff",
+                    description:
+                        "Die Clan-Rolle und die Rolle, die Logi verwalten darf.",
+                },
+                stats: {
+                    title: "Befehl /stats",
+                    description:
+                        "Spielerstatistiken in Discord: für welche Spiele und wo sie geteilt werden.",
+                },
+                membership: {
+                    title: "Mitgliedschaft",
+                    description:
+                        "Rollen für Rekruten und Mitglieder, Regeln für den Aufstellungs-Score.",
+                },
+                tickets: {
+                    title: "Tickets",
+                    description: "Ticket-Panel, Kategorien und Kanäle.",
+                },
+                "game-servers": {
+                    title: "Spielserver",
+                    description:
+                        "CRCON- und Warcon-Server, ihre API-Schlüssel und die Datensammlung.",
+                },
+                history: {
+                    title: "Verlauf aufbewahren",
+                    description: "Wie lange Logi gespielte Runden behält.",
+                },
+                league: {
+                    title: "Wardogs League",
+                    description:
+                        "Liga-Matches verfolgen und Karten in Discord. Nur für Wardogs.",
+                },
+                apiKeys: {
+                    title: "API-Schlüssel",
+                    description:
+                        "Schlüssel für die Clan-Website und andere Apps.",
+                },
+                login: {
+                    title: "Anmeldung auf der Website",
+                    description:
+                        "Eigene Anmeldeseite und Single-Sign-on-Anwendungen (SSO).",
+                },
+                webAccess: {
+                    title: "Website-Berechtigungen",
+                    description:
+                        "Für welche Rollen die Website Mitgliedschaften lesen und Events anlegen darf. Baut auf API-Schlüssel und SSO auf.",
+                },
+                calendar: {
+                    title: "Google Kalender",
+                    description: "Ein Abo-Link für den Clan-Kalender.",
+                },
+                webhooks: {
+                    title: "Webhooks",
+                    description:
+                        "Benachrichtigungen für andere Dienste, wenn sich in Logi etwas ändert.",
+                },
+                imports: {
+                    title: "Importe und Datenkorrekturen",
+                    description:
+                        "Massenimport von Events, Spielern und Platform-IDs, Neuberechnung der Statistiken.",
+                },
+                "helper-data": {
+                    title: "Hilfsdaten",
+                    description: "Standardvorlagen und ihre Wiederherstellung.",
+                },
+            },
+            setup: {
+                title: "Einrichtung des Bereichs",
+                description:
+                    "Schließ die Pflichtschritte ab, damit der Bot Events ankündigen und den Zugriff prüfen kann.",
+                progress: "{done} von {total} erledigt",
+                progressLabel: "Fortschritt der Einrichtung",
+                continue: "Einrichtung fortsetzen",
+                continueHelp: "Öffnet den ersten offenen Schritt.",
+                optional: "optional",
+                fix: "Ergänzen",
+                setUp: "Einrichten",
+                steps: {
+                    bot: {
+                        title: "Bot auf Discord",
+                        done: "Der Bot ist auf dem Server und sieht die Kanäle.",
+                        missing: "Der Bot ist noch nicht auf dem Server.",
+                    },
+                    games: {
+                        title: "Spiele",
+                        missing: "Wähle, was der Clan spielt",
+                    },
+                    profile: {
+                        title: "Clan-Profil",
+                        detail: "Name, Logo und Beschreibung",
+                    },
+                    channels: {
+                        title: "Kanäle",
+                        done: "Der Ankündigungskanal ist gewählt",
+                        missing: "Der Ankündigungskanal fehlt",
+                    },
+                    roles: {
+                        title: "Rollen und Zugriff",
+                        detail: "Wer Logi verwalten darf",
+                    },
+                    gameServers: {
+                        title: "Spielserver",
+                        done: {
+                            one: "{count} Server sammelt Daten",
+                            few: "{count} Server sammeln Daten",
+                            many: "{count} Server sammeln Daten",
+                            other: "{count} Server sammeln Daten",
+                        },
+                        missing: "Ergebnisse und Statistiken vom Server",
+                    },
+                },
+            },
+        },
         openSection: "Öffnen",
         gameExceptionsNote:
             "Diese Einstellungen gelten für den ganzen Clan. Braucht ein Spiel einen anderen Kanal, füge unter der Einstellung eine Ausnahme für dieses Spiel hinzu.",
@@ -3190,7 +3500,7 @@ export const deMessages = {
             channels: {
                 title: "Kanäle und Sprache",
                 description:
-                    "Zeitzone, Bot-Sprache und die Kanäle für Ankündigungen, Event-Infos, Fehler und Sprachräume.",
+                    "Wohin der Bot Nachrichten schickt und in welcher Sprache er schreibt.",
             },
             roles: {
                 title: "Rollen und Zugriff",
@@ -3205,17 +3515,17 @@ export const deMessages = {
             membership: {
                 title: "Mitgliedschaft",
                 description:
-                    "Clan-Bewerbungen, Kategorien, Rekruten- und Mitgliederrollen, Roster-Punkte.",
+                    "Wie Leute dem Clan beitreten, wer ihnen antwortet und welche Rollen sie bekommen.",
             },
             tickets: {
                 title: "Tickets",
                 description:
-                    "Das Ticket-Panel, Kategorien, Support-Rollen und Fragen.",
+                    "Das Panel, über das Mitglieder einen privaten Thread mit den Admins öffnen.",
             },
             "game-servers": {
                 title: "Spielserver",
                 description:
-                    "Server, Anbieterschlüssel und die Daten, die Logi von ihnen sammelt.",
+                    "Woher Logi Ergebnisse und Statistiken sammelt. Ein API-Schlüssel wird verschlüsselt gespeichert und ist danach für niemanden mehr sichtbar.",
             },
             league: {
                 title: "Wardogs League",
@@ -3237,9 +3547,9 @@ export const deMessages = {
                 description: "Logi-Ereignisse an eure eigenen Dienste senden.",
             },
             imports: {
-                title: "Importe und Reparaturen",
+                title: "Importe und Datenkorrekturen",
                 description:
-                    "Events und Discord-Mitglieder importieren, IDs verknüpfen und Statistiken neu berechnen.",
+                    "Massenimport von Events, Spielern und Platform-IDs, Neuberechnung der Statistiken.",
             },
             "helper-data": {
                 title: "Hilfsdaten",

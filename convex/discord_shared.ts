@@ -89,6 +89,7 @@ export const membershipCategoryValidator = v.object({
         v.literal("reserve_member"),
         v.literal("mercenary")
     ),
+    autoAssignRecruitOnApply: v.optional(v.boolean()),
 })
 
 export const ticketSettingsValidator = v.object({
@@ -111,6 +112,7 @@ export const membershipSettingsValidator = v.object({
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
+    roleSyncEnabled: v.optional(v.boolean()),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(
         v.object({

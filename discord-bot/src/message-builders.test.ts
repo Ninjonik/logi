@@ -10,6 +10,8 @@ import {
     buildMatchTeamLogoEmbeds,
     buildMatchTeamV2Sections,
     buildMembershipPanelComponents,
+    buildMembershipPanelMessage,
+    membershipCategoryLines,
     buildRosterSummaryText,
     escapeMatchTeamText,
 } from "./message-builders"
@@ -149,6 +151,65 @@ test("membership panel categories open the shared membership wizard", () => {
             ? applyButton.custom_id
             : undefined,
         "membership:apply"
+    )
+})
+
+test("the membership panel lists each category with its description", () => {
+    const category = {
+        supportRoleIds: [],
+        recruitRoleIds: [],
+        finalRoleIds: [],
+        modalQuestions: [],
+        assignmentType: "member" as const,
+    }
+    const membershipConfig: DiscordConfig = {
+        ...config,
+        membershipSettings: {
+            enabled: true,
+            panelTitle: "Přidej se",
+            panelDescription: "Vyber, jak chceš hrát.",
+            autoAssignRecruitOnApply: false,
+            categories: [
+                {
+                    ...category,
+                    id: "main",
+                    emoji: "⭐",
+                    label: "Hlavní člen",
+                    description: "Pro hráče, kteří chtějí hrát každý týden.",
+                },
+                { ...category, id: "reserve", label: "Záloha" },
+                { ...category, id: "merc", description: "  " },
+            ],
+        },
+    }
+
+    assert.equal(
+        membershipCategoryLines(
+            membershipConfig.membershipSettings!.categories
+        ),
+        "⭐ **Hlavní člen** · Pro hráče, kteří chtějí hrát každý týden.\n**Záloha**\n**merc**"
+    )
+    const message = buildMembershipPanelMessage(membershipConfig)
+    const text = JSON.stringify(message?.components[0]?.toJSON())
+    assert.ok(text.includes("# Přidej se"))
+    assert.ok(text.includes("Vyber, jak chceš hrát."))
+    assert.ok(text.includes("· Pro hráče, kteří chtějí hrát každý týden."))
+    assert.ok(text.includes("membership:apply"))
+})
+
+test("a membership panel without categories is not posted", () => {
+    assert.equal(
+        buildMembershipPanelMessage({
+            ...config,
+            membershipSettings: {
+                enabled: true,
+                panelTitle: "Apply",
+                panelDescription: "",
+                autoAssignRecruitOnApply: false,
+                categories: [],
+            },
+        }),
+        null
     )
 })
 
