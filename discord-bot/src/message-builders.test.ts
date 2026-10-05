@@ -253,7 +253,7 @@ test("buildEventEmbed shows the match start, meeting and sign-up deadline as sho
 test("public event cards never contain the server or its password", () => {
     const event = createMatchEvent({
         server: "VLK Scrim",
-        serverPassword: "k7-sraz",
+        serverPassword: "synthetic-private",
     })
     const roster: Roster = {
         id: "roster-1",
@@ -299,7 +299,7 @@ test("public event cards never contain the server or its password", () => {
         ).components?.[0]?.toJSON(),
     ]) {
         const json = JSON.stringify(rendered)
-        assert.doesNotMatch(json, /k7-sraz/)
+        assert.doesNotMatch(json, /synthetic-private/)
         assert.doesNotMatch(json, /VLK Scrim/)
     }
     // Trainings have no private assignment, so their server stays visible.

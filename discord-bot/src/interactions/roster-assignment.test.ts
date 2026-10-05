@@ -22,7 +22,7 @@ const event: EventRecord = {
     requiredRoleIds: [],
     rewardRoleIds: [],
     server: "VLK Scrim",
-    serverPassword: "k7-sraz",
+    serverPassword: "synthetic-private",
     registrationEnd: "2026-10-10T17:30:00.000Z",
     meetingStart: "2026-10-11T17:30:00.000Z",
     gameStart: "2026-10-11T18:00:00.000Z",
@@ -88,7 +88,7 @@ test("my assignment shows squad, role, leader, meeting, server and password priv
         [
             "Velitel čety: <@leader-1> · sraz <t:1791739800:t> (<t:1791739800:R>) v kanálu <#meeting-channel>",
             "Bring \\*smokes\\*",
-            "Server: VLK Scrim · heslo `k7-sraz`",
+            "Server: VLK Scrim · heslo `synthetic-private`",
         ].join("\n")
     )
     assert.equal(embed?.footer?.text, "Heslo vidí jen hráči na soupisce.")
@@ -125,7 +125,7 @@ test("reserves see the server and password with the reserve notice", () => {
 
     assert.equal(embed?.title, "Záloha")
     assert.match(embed?.description ?? "", /^Pro tuto akci jste náhradník\./)
-    assert.match(embed?.description ?? "", /heslo `k7-sraz`/)
+    assert.match(embed?.description ?? "", /heslo `synthetic-private`/)
 })
 
 test("players off the roster or before publication never see the password", () => {
@@ -144,7 +144,7 @@ test("players off the roster or before publication never see the password", () =
         draft.content,
         "Soupiska pro tuto akci ještě není publikovaná."
     )
-    assert.doesNotMatch(JSON.stringify([outsider, draft]), /k7-sraz/)
+    assert.doesNotMatch(JSON.stringify([outsider, draft]), /synthetic-private/)
 })
 
 test("attendance buttons appear only while the event is starting", () => {
