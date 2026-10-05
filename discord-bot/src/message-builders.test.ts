@@ -10,6 +10,7 @@ import {
     buildMatchTeamLogoEmbeds,
     buildMatchTeamV2Sections,
     buildMembershipPanelComponents,
+    buildRosterSummaryText,
     escapeMatchTeamText,
 } from "./message-builders"
 import type {
@@ -164,17 +165,16 @@ test("buildEventComponents omits group buttons when signupGroupIds is empty", ()
     const buttons = rows.flatMap((row) => row.toJSON().components)
     assert.deepEqual(
         buttons.map((button) => ("label" in button ? button.label : undefined)),
-        [
-            "Přihlásit se",
-            "Zkontrolovat přihlášení",
-            "Odmítnout",
-            "Přidat do kalendáře",
-        ]
+        ["Přihlásit se", "Moje přihláška", "Nepřijdu", "Přidat do kalendáře"]
     )
-    assert.equal(buttons[0]?.style, 3)
+    assert.deepEqual(
+        buttons.map((button) => button.style),
+        [3, 2, 4, 5]
+    )
+    // Colour carries the meaning; the buttons have no decorative emoji.
     assert.equal(
-        "emoji" in (buttons[0] ?? {}) ? buttons[0]?.emoji?.name : undefined,
-        "✅"
+        buttons.some((button) => "emoji" in button && button.emoji),
+        false
     )
 })
 
@@ -218,25 +218,104 @@ test("buildEventEmbed uses training-specific start wording for trainings", () =>
     )
 })
 
-test("buildEventEmbed prioritizes match headcount, match start, and registration times", () => {
+test("buildEventEmbed shows the match start, meeting and sign-up deadline as short Discord times", () => {
     const embed = buildEventEmbed(
         { ...config, defaultLanguage: "en" },
         groups,
         eventCategories,
-        createMatchEvent()
+        createMatchEvent({ map: "Foy", cap: "50", matchType: "competitive" })
+    ).toJSON()
+    const [header] = (embed.description ?? "").split(/\n-{20,}\n/)
+
+    assert.equal(embed.title, "Test Match · Competitive")
+    assert.equal(embed.color, 0xdc2626)
+    assert.equal(
+        header,
+        [
+            "**Match Start:** <t:1785333600:F>",
+            "Foy · Cap 50 · meeting <t:1785330000:t> · sign-ups close <t:1785328200:R>",
+        ].join("\n")
     )
-    const description = embed.toJSON().description ?? ""
+    // Decorative line icons are gone; times stay Discord timestamps.
+    assert.doesNotMatch(embed.description ?? "", /🗺️|🎮|🔒|📌|👥|🏷️/)
+})
 
-    const headcountIndex = description.indexOf("Headcount Start")
-    const matchStartIndex = description.indexOf("Match Start")
-    const registrationIndex = description.indexOf("Registration Ends")
+test("public event cards never contain the server or its password", () => {
+    const event = createMatchEvent({
+        server: "VLK Scrim",
+        serverPassword: "k7-sraz",
+    })
+    const roster: Roster = {
+        id: "roster-1",
+        eventId: event.id,
+        published: true,
+        reservePlayerIds: [],
+        updatedAt: "2026-07-29T10:00:00.000Z",
+        squads: [],
+    }
+    const payload = {
+        config,
+        groups,
+        guild: { eventCategories },
+        rosters: [roster],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
 
-    assert.ok(headcountIndex >= 0)
-    assert.ok(matchStartIndex > headcountIndex)
-    assert.ok(registrationIndex > matchStartIndex)
-    assert.match(description, /Headcount Start:\*\* <t:\d+:F>/)
-    assert.match(description, /Match Start:\*\* <t:\d+:F>/)
-    assert.match(description, /Registration Ends:\*\* <t:\d+:F>/)
+    for (const rendered of [
+        buildEventEmbed(config, groups, eventCategories, event).toJSON(),
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            event,
+            roster,
+            {},
+            {
+                showPublishedRosterImage: true,
+            }
+        ).toJSON(),
+        buildAnnouncementV2Message(
+            payload,
+            event,
+            {}
+        ).components?.[0]?.toJSON(),
+        buildAnnouncementV2Message(
+            payload,
+            event,
+            {},
+            {
+                showPublishedRosterImage: true,
+            }
+        ).components?.[0]?.toJSON(),
+    ]) {
+        const json = JSON.stringify(rendered)
+        assert.doesNotMatch(json, /k7-sraz/)
+        assert.doesNotMatch(json, /VLK Scrim/)
+    }
+    // Trainings have no private assignment, so their server stays visible.
+    assert.match(
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createTrainingEvent({
+                server: "Training Server",
+                serverPassword: "secret",
+            })
+        ).toJSON().description ?? "",
+        /Training Server/
+    )
+    assert.doesNotMatch(
+        JSON.stringify(
+            buildEventEmbed(
+                config,
+                groups,
+                eventCategories,
+                createTrainingEvent({ serverPassword: "secret" })
+            ).toJSON()
+        ),
+        /secret/
+    )
 })
 
 test("buildEventEmbed shows the total number of signed-up players", () => {
@@ -261,7 +340,10 @@ test("buildEventEmbed shows the total number of signed-up players", () => {
         event
     ).toJSON().description
 
-    assert.match(description ?? "", /People signed up:\*\* 1/)
+    assert.match(
+        description ?? "",
+        /\*\*Signed up 1\*\* · Status: Registration/
+    )
 })
 
 test("buildEventEmbed links the event-specific forum channel when available", () => {
@@ -275,7 +357,7 @@ test("buildEventEmbed links the event-specific forum channel when available", ()
         { forumChannelId: "forum-123" }
     ).toJSON().description
 
-    assert.match(description ?? "", /Event forum:\*\* <#forum-123>/)
+    assert.match(description ?? "", /Event forum: <#forum-123>/)
 })
 
 test("buildCalendarPanelEmbed does not repeat a category emoji when it is the color chip", () => {
@@ -772,7 +854,7 @@ test("buildEventEmbed lists match teams by slot next to the side line", () => {
             })
         ).toJSON().description ?? ""
     const lines = description.split("\n")
-    const sideIndex = lines.findIndex((line) => line.includes("⚔️ Strana"))
+    const sideIndex = lines.findIndex((line) => line === "**Strana:** Valkyra")
 
     assert.ok(sideIndex >= 0)
     assert.equal(
@@ -1144,4 +1226,79 @@ test("match team logo labels stay within Discord UTF-16 limits and never contain
             : "",
         /:\/\//
     )
+})
+
+test("published roster cards list meeting, squads with counts and reserves", () => {
+    const event = createMatchEvent({
+        meetingChannelId: "meeting-1",
+        matchType: "competitive",
+    })
+    const roster: Roster = {
+        id: "roster-1",
+        eventId: event.id,
+        published: true,
+        reservePlayerIds: ["reserve-1", "reserve-2"],
+        updatedAt: "2026-07-29T10:00:00.000Z",
+        squads: [
+            {
+                name: "Able",
+                group: "Infantry",
+                color: "#16a34a",
+                order: 2,
+                players: [
+                    { id: "a1", ack: false },
+                    { id: "a2", ack: false },
+                    { customName: "Guest", ack: false },
+                    { ack: false },
+                ],
+            },
+            {
+                name: "Command",
+                group: "Command",
+                color: "#d4a017",
+                order: 1,
+                players: [{ id: "commander", ack: false }],
+            },
+            {
+                name: "Empty",
+                group: "Recon",
+                color: "#000000",
+                order: 3,
+                players: [{ ack: false }],
+            },
+        ],
+    }
+    const summary = buildRosterSummaryText(config, event, roster, {
+        commander: "Hráč 01",
+    })
+
+    assert.equal(
+        summary,
+        [
+            "Sraz <t:1785330000:t> (<t:1785330000:R>) v kanálu <#meeting-1>",
+            "**Command** · Hráč 01",
+            "**Able** · 3 hráči",
+            "**Zálohy** · 2 hráči",
+        ].join("\n")
+    )
+
+    const payload = {
+        config,
+        groups,
+        guild: { eventCategories },
+        rosters: [roster],
+        userDisplayNames: {},
+    } as unknown as SyncPayload
+    const card = JSON.stringify(
+        buildAnnouncementV2Message(
+            payload,
+            event,
+            { commander: "Hráč 01" },
+            { showPublishedRosterImage: true }
+        ).components?.[0]?.toJSON()
+    )
+    assert.match(card, /# Soupiska · Test Match · Competitive/)
+    assert.match(card, /\*\*Able\*\* · 3 hráči/)
+    assert.match(card, /roster-assignment:event-1/)
+    assert.match(card, /Celá soupiska na webu/)
 })

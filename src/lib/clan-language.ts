@@ -44,6 +44,9 @@ type ClanDiscordMessages = {
         notes: string
         eventThread: string
         openInDiscord: string
+        upcomingTitle: string
+        upcomingHint: string
+        start: string
     }
     embed: {
         map: string
@@ -73,6 +76,9 @@ type ClanDiscordMessages = {
         nobodyYet: string
         notAttending: string
         attending: string
+        meetingAt: string
+        registrationCloses: string
+        signedUpTotal: string
     }
     forum: {
         matchInformation: string
@@ -88,6 +94,22 @@ type ClanDiscordMessages = {
         debrief: string
         debriefTitle: string
         debriefDescription: string
+        passwordInAssignment: string
+    }
+    assignment: {
+        reserveTitle: string
+        squadLeader: string
+        meeting: string
+        meetingInChannel: string
+        server: string
+        serverPassword: string
+        passwordNotice: string
+    }
+    rosterSummary: {
+        title: string
+        meeting: string
+        meetingInChannel: string
+        players: { one: string; few: string; many: string; other: string }
     }
     statuses: {
         registration: string
@@ -414,13 +436,13 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     en: {
         locale: "en-GB",
         buttons: {
-            acknowledgeAttendance: "Acknowledge attendance",
+            acknowledgeAttendance: "I'll be there",
             attend: "Attend",
             generalSignup: "Sign up",
-            checkSignup: "Check signup",
+            checkSignup: "My sign-up",
             addToCalendar: "Add to Calendar",
-            viewFullRoster: "View roster",
-            decline: "Decline",
+            viewFullRoster: "Full roster on the web",
+            decline: "Can't make it",
             openRegistrationChannel: "Open registration channel",
             openEventForum: "Open event forum",
         },
@@ -461,6 +483,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             notes: "Notes",
             eventThread: "Event thread",
             openInDiscord: "open in Discord",
+            upcomingTitle: "You're playing {event}",
+            upcomingHint: "Confirm so command knows who to count on.",
+            start: "start",
         },
         embed: {
             map: "Map",
@@ -490,6 +515,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             nobodyYet: "*Nobody yet*",
             notAttending: "Not Attending",
             attending: "Attending",
+            meetingAt: "meeting {time}",
+            registrationCloses: "sign-ups close {time}",
+            signedUpTotal: "Signed up {count}",
         },
         forum: {
             matchInformation: "Match information",
@@ -506,6 +534,28 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             debriefTitle: "Debrief",
             debriefDescription:
                 "Use this thread for after-action notes, lessons learned, and follow-up discussion.",
+            passwordInAssignment:
+                "Shown only to rostered players under “My assignment”",
+        },
+        assignment: {
+            reserveTitle: "Reserve",
+            squadLeader: "Squad leader",
+            meeting: "meeting {time}",
+            meetingInChannel: "meeting {time} in {channel}",
+            server: "Server: {server}",
+            serverPassword: "password {password}",
+            passwordNotice: "Only players on the roster can see the password.",
+        },
+        rosterSummary: {
+            title: "Roster · {event}",
+            meeting: "Meeting {time}",
+            meetingInChannel: "Meeting {time} in {channel}",
+            players: {
+                one: "{count} player",
+                few: "{count} players",
+                many: "{count} players",
+                other: "{count} players",
+            },
         },
         statuses: {
             registration: "Registration",
@@ -970,13 +1020,13 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     cs: {
         locale: "cs-CZ",
         buttons: {
-            checkSignup: "Zkontrolovat p\u0159ihl\u00e1\u0161en\u00ed",
-            acknowledgeAttendance: "Potvrdit účast",
+            checkSignup: "Moje přihláška",
+            acknowledgeAttendance: "Potvrdím účast",
             attend: "Zúčastním se",
             generalSignup: "Přihlásit se",
             addToCalendar: "Přidat do kalendáře",
-            viewFullRoster: "Zobrazit soupisku",
-            decline: "Odmítnout",
+            viewFullRoster: "Celá soupiska na webu",
+            decline: "Nepřijdu",
             openRegistrationChannel: "Otevřít registrační kanál",
             openEventForum: "Otevřít fórum akce",
         },
@@ -1018,6 +1068,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             notes: "Poznámky",
             eventThread: "Vlákno akce",
             openInDiscord: "otevřít na Discordu",
+            upcomingTitle: "Hraješ {event}",
+            upcomingHint: "Potvrď, ať velení ví, s kým počítat.",
+            start: "start",
         },
         embed: {
             signupCount: "Počet přihlášených",
@@ -1033,8 +1086,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             headcountStart: "Začátek headcountu",
             briefingStart: "Začátek briefingu",
             chooseSignup: "Přihlásit se",
-            runningLate: "Přijdu pozdě",
-            lateNoticeTitle: "Přijdu pozdě",
+            runningLate: "Přijdu později",
+            lateNoticeTitle: "Přijdu později",
             lateNoticeLabel: "Předpokládaný příchod a poznámka",
             myAssignment: "Moje zařazení",
             assignmentReserve: "Pro tuto akci jste náhradník.",
@@ -1048,6 +1101,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             nobodyYet: "*Zatím nikdo*",
             notAttending: "Neúčastní se",
             attending: "Účastní se",
+            meetingAt: "sraz {time}",
+            registrationCloses: "přihlášky končí {time}",
+            signedUpTotal: "Přihlášeno {count}",
         },
         forum: {
             matchInformation: "Informace o zápasu",
@@ -1064,6 +1120,28 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             debriefTitle: "Debrief",
             debriefDescription:
                 "Použijte toto vlákno pro poznámky po akci, zjištěné zkušenosti a navazující diskuzi.",
+            passwordInAssignment:
+                "Vidí jen hráči na soupisce v „Moje zařazení“",
+        },
+        assignment: {
+            reserveTitle: "Záloha",
+            squadLeader: "Velitel čety",
+            meeting: "sraz {time}",
+            meetingInChannel: "sraz {time} v kanálu {channel}",
+            server: "Server: {server}",
+            serverPassword: "heslo {password}",
+            passwordNotice: "Heslo vidí jen hráči na soupisce.",
+        },
+        rosterSummary: {
+            title: "Soupiska · {event}",
+            meeting: "Sraz {time}",
+            meetingInChannel: "Sraz {time} v kanálu {channel}",
+            players: {
+                one: "{count} hráč",
+                few: "{count} hráči",
+                many: "{count} hráče",
+                other: "{count} hráčů",
+            },
         },
         statuses: {
             registration: "Registrace",
@@ -1360,13 +1438,13 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
     de: {
         locale: "de-DE",
         buttons: {
-            acknowledgeAttendance: "Anwesenheit bestätigen",
+            acknowledgeAttendance: "Ich bin dabei",
             attend: "Teilnehmen",
             generalSignup: "Anmelden",
-            checkSignup: "Anmeldung prüfen",
+            checkSignup: "Meine Anmeldung",
             addToCalendar: "Zum Kalender hinzufügen",
-            viewFullRoster: "Roster ansehen",
-            decline: "Ablehnen",
+            viewFullRoster: "Ganze Aufstellung im Web",
+            decline: "Ich komme nicht",
             openRegistrationChannel: "Anmeldekanal öffnen",
             openEventForum: "Event-Forum öffnen",
         },
@@ -1410,6 +1488,10 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             notes: "Notizen",
             eventThread: "Event-Thread",
             openInDiscord: "in Discord öffnen",
+            upcomingTitle: "Du spielst {event}",
+            upcomingHint:
+                "Bestätige, damit die Führung weiß, mit wem sie rechnen kann.",
+            start: "Start",
         },
         embed: {
             map: "Map",
@@ -1424,8 +1506,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             headcountStart: "Headcount-Start",
             briefingStart: "Briefing-Start",
             chooseSignup: "Anmelden",
-            runningLate: "Verspätung",
-            lateNoticeTitle: "Verspätung",
+            runningLate: "Komme später",
+            lateNoticeTitle: "Komme später",
             lateNoticeLabel: "Voraussichtliche Ankunft und Notiz",
             myAssignment: "Meine Zuweisung",
             assignmentReserve: "Sie sind Ersatz (Reserve) für dieses Event.",
@@ -1440,6 +1522,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             nobodyYet: "*Noch niemand*",
             notAttending: "Nicht teilnehmend",
             attending: "Teilnehmend",
+            meetingAt: "Treffen {time}",
+            registrationCloses: "Anmeldung endet {time}",
+            signedUpTotal: "Angemeldet {count}",
         },
         forum: {
             matchInformation: "Match-Informationen",
@@ -1456,6 +1541,29 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             debriefTitle: "Debrief",
             debriefDescription:
                 "Nutzen Sie diesen Thread für Notizen nach dem Einsatz, Lessons Learned und die anschließende Diskussion.",
+            passwordInAssignment:
+                "Nur für Spieler auf der Aufstellung unter „Meine Zuweisung“",
+        },
+        assignment: {
+            reserveTitle: "Reserve",
+            squadLeader: "Truppführer",
+            meeting: "Treffen {time}",
+            meetingInChannel: "Treffen {time} in {channel}",
+            server: "Server: {server}",
+            serverPassword: "Passwort {password}",
+            passwordNotice:
+                "Das Passwort sehen nur Spieler auf der Aufstellung.",
+        },
+        rosterSummary: {
+            title: "Aufstellung · {event}",
+            meeting: "Treffen {time}",
+            meetingInChannel: "Treffen {time} in {channel}",
+            players: {
+                one: "{count} Spieler",
+                few: "{count} Spieler",
+                many: "{count} Spieler",
+                other: "{count} Spieler",
+            },
         },
         statuses: {
             registration: "Anmeldung",
