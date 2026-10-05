@@ -359,8 +359,10 @@ export function seedMessageOutbox(
             const channels = new Set(
                 (await messageRows(guildId, "intro")).map((row) => row.key)
             )
-            for (const plan of plans)
-                if (introChannel(plan)) channels.add(introChannel(plan)!)
+            for (const plan of plans) {
+                const channelId = introChannel(plan)
+                if (channelId) channels.add(channelId)
+            }
             for (const channelId of channels)
                 await bump(guildId, "intro", channelId)
         },
