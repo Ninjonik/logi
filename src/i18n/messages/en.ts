@@ -953,7 +953,7 @@ export const enMessages = {
         matches: "Matches",
         trainings: "Trainings",
         topicPresets: "Topic presets",
-        stratmaps: "Stratmaps",
+        stratmaps: "Tactical maps",
         groups: "Groups",
         squadPresets: "Squad presets",
         rosters: "Rosters",
@@ -1954,6 +1954,7 @@ export const enMessages = {
         backToClans: "Back to your clans",
         openMenu: "Open menu",
         mainNavigation: "Main navigation",
+        backTo: "Back to {page}",
     },
     verifiedPlatformLinks: {
         title: "Verified Steam account",
@@ -2067,7 +2068,7 @@ export const enMessages = {
         downloadZip: "Download ZIP",
         deleteAccountTitle: "Delete account",
         deleteAccountDescription:
-            "Removes your profile, sign-ups and linked accounts. The Logi team processes the request and it cannot be undone. To confirm, type your name.",
+            "Removes your profile, sign-ups and linked accounts. To confirm, type your name.",
         deleteAccountConfirmLabel: "Confirm with your name",
         deleteAccountButton: "Delete account",
         deleteAccountRequested:
@@ -2771,15 +2772,19 @@ export const enMessages = {
         scoreSuffix: "score",
     },
     workspace: {
-        selectWorkspace: "Select workspace",
+        selectWorkspace: "Choose a clan",
         activeWorkspace: "Active workspace",
-        noWorkspaceSelected: "No workspace selected",
-        searchWorkspace: "Search workspaces...",
+        noWorkspaceSelected: "No clan selected",
+        searchWorkspace: "Search clans…",
         missingWorkspaceHelp:
-            "Missing a workspace? Make sure you are in that Discord server or have administrator access to it.",
+            "Missing a clan? Make sure you are on its Discord server or have administrator access there.",
         allClans: "All clans",
         showAllResults: "Show all ({count})",
         allGames: "All games",
+        gameHeading: "Game",
+        clanHeading: "Clans",
+        clanStats: "Members {members} · admins {admins}",
+        botMissingBadge: "Bot missing",
     },
     languageSwitcher: {
         selectLanguage: "Select language",

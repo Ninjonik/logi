@@ -5,6 +5,7 @@ import {
     isCurrentUserSuperadmin,
 } from "@/lib/auth"
 import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspace-warning"
+import { AppBreadcrumbs, PageCrumbProvider } from "@/components/app/breadcrumbs"
 import { SettingsAttentionProvider } from "@/components/app/settings-attention"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -51,35 +52,52 @@ export async function DashboardShell({
             userId={user.discordId}
         >
             <SettingsAttentionProvider>
-                <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:3.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:14.5rem] md:[--header-height:2.75rem] xl:[--header-height:3rem] xl:[--sidebar-width:15rem] 2xl:[--footer-height:4rem] 2xl:[--header-height:3.5rem] 2xl:[--sidebar-width-icon:3.25rem] 2xl:[--sidebar-width:18rem]">
-                    <AppSidebar
-                        locale={locale}
-                        dictionary={dictionary}
-                        servers={visibleServers}
-                        user={user}
-                        activeServerId={undefined}
-                        canAdmin={false}
-                        isSuperadmin={isSuperadmin}
-                    />
-                    <SidebarInset className="min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">
-                        <SiteHeader
+                <PageCrumbProvider>
+                    {/*
+                     * --header-height is what full-height pages (the stratmap
+                     * editor) subtract above their content beyond the frame's
+                     * own padding: the phone title bar, or the page trail.
+                     */}
+                    <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:4.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:16rem] sm:[--header-height:4rem] 2xl:[--footer-height:3rem] 2xl:[--header-height:3rem]">
+                        <AppSidebar
                             locale={locale}
                             dictionary={dictionary}
                             servers={visibleServers}
                             user={user}
+                            activeServerId={undefined}
+                            canAdmin={false}
+                            isSuperadmin={isSuperadmin}
                         />
-                        <div className="relative flex flex-1 flex-col gap-3 py-3 max-sm:has-[[data-mobile-action-bar]]:pb-24 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
-                            <MissingBotWorkspaceWarning
+                        <SidebarInset className="min-h-dvh overflow-x-hidden">
+                            <SiteHeader
+                                locale={locale}
                                 dictionary={dictionary}
-                                inviteUrlByGuildId={inviteUrlByGuildId}
                                 servers={visibleServers}
-                                userDiscordId={user.discordId}
+                                user={user}
                             />
-                            {children}
-                        </div>
-                        <SiteFooter dictionary={dictionary} status={status} />
-                    </SidebarInset>
-                </SidebarProvider>
+                            <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
+                                <AppBreadcrumbs
+                                    locale={locale}
+                                    dictionary={dictionary}
+                                    servers={visibleServers}
+                                    className="max-md:hidden"
+                                />
+                                <MissingBotWorkspaceWarning
+                                    dictionary={dictionary}
+                                    inviteUrlByGuildId={inviteUrlByGuildId}
+                                    servers={visibleServers}
+                                    userDiscordId={user.discordId}
+                                />
+                                {children}
+                            </div>
+                            <SiteFooter
+                                dictionary={dictionary}
+                                status={status}
+                                locale={locale}
+                            />
+                        </SidebarInset>
+                    </SidebarProvider>
+                </PageCrumbProvider>
             </SettingsAttentionProvider>
         </DashboardOnboarding>
     )

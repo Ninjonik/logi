@@ -72,19 +72,23 @@ export function ConfirmActionDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-            <DialogContent className="rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
+            <DialogContent className="gap-3.5 rounded-[14px] p-[22px] sm:max-w-md">
+                <DialogHeader className="gap-3.5 text-left">
+                    <DialogTitle className="pr-6 text-[17px] leading-6">
+                        {title}
+                    </DialogTitle>
                     {description ? (
-                        <DialogDescription>{description}</DialogDescription>
+                        <DialogDescription className="text-foreground/80 leading-5">
+                            {description}
+                        </DialogDescription>
                     ) : null}
                 </DialogHeader>
                 {children}
-                <DialogFooter>
+                <DialogFooter className="flex-row justify-end gap-2 pt-1.5">
                     <Button
                         type="button"
                         variant="outline"
-                        className="rounded-xl"
+                        className="rounded-lg"
                         disabled={isRunning}
                         onClick={() => setOpen(false)}
                     >
@@ -93,7 +97,7 @@ export function ConfirmActionDialog({
                     <Button
                         type="button"
                         variant={destructive ? "destructive" : "default"}
-                        className="rounded-xl"
+                        className="rounded-lg"
                         disabled={isRunning}
                         onClick={confirm}
                     >

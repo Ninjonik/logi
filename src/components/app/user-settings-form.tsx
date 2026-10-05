@@ -8,7 +8,7 @@ import {
     useTransition,
     type ReactNode,
 } from "react"
-import { Camera, CircleHelp, Loader2, LogOut } from "lucide-react"
+import { Camera, CircleHelp, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -48,6 +48,7 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useTheme } from "@/hooks/use-theme"
+import { initialsOf } from "@/lib/initials"
 
 const AUTOMATIC = "automatic"
 
@@ -64,7 +65,7 @@ function Section({
     return (
         <section
             aria-labelledby={headingId}
-            className={`bg-card rounded-2xl border px-4 py-2 sm:px-6 ${className ?? ""}`}
+            className={`bg-card rounded-[14px] border px-4 py-2 sm:px-[22px] ${className ?? ""}`}
         >
             <h2 id={headingId} className="mt-3.5 mb-1 text-base font-semibold">
                 {title}
@@ -322,30 +323,38 @@ export function UserSettingsForm({
 
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-            <header className="flex flex-wrap items-center gap-4">
+            <header className="flex items-center gap-4">
                 <div className="relative flex-none">
-                    <Avatar className="size-14 rounded-full">
-                        <AvatarImage src={avatar} alt="" />
-                        <AvatarFallback className="rounded-full text-base font-semibold">
-                            {user.name.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <Button
+                    {/* The picture itself changes it; the camera shows on hover. */}
+                    <button
                         type="button"
-                        variant="outline"
-                        size="icon"
                         aria-label={t.changeAvatar}
                         title={t.changeAvatar}
                         disabled={isUploadingAvatar}
                         onClick={() => avatarInput.current?.click()}
-                        className="bg-background absolute -right-1.5 -bottom-1.5 size-7 rounded-full"
+                        className="group/avatar focus-visible:ring-ring relative block rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2"
                     >
-                        {isUploadingAvatar ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                            <Camera className="size-3.5" />
-                        )}
-                    </Button>
+                        <Avatar className="size-14 rounded-full">
+                            <AvatarImage src={avatar} alt="" />
+                            <AvatarFallback className="bg-primary text-primary-foreground rounded-full text-base font-semibold">
+                                {initialsOf(user.name)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span
+                            aria-hidden="true"
+                            className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white transition-opacity ${
+                                isUploadingAvatar
+                                    ? "opacity-100"
+                                    : "opacity-0 group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100"
+                            }`}
+                        >
+                            {isUploadingAvatar ? (
+                                <Loader2 className="size-5 animate-spin" />
+                            ) : (
+                                <Camera className="size-5" />
+                            )}
+                        </span>
+                    </button>
                     <input
                         ref={avatarInput}
                         type="file"
@@ -356,27 +365,32 @@ export function UserSettingsForm({
                         }
                     />
                 </div>
-                <div className="flex min-w-48 flex-1 flex-col gap-0.5">
-                    <h1 className="text-2xl font-semibold tracking-tight">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <h1
+                        data-page-title=""
+                        className="text-2xl leading-8 font-semibold tracking-[-0.01em]"
+                    >
                         {t.accountTitle}
                     </h1>
-                    <span className="text-muted-foreground truncate text-sm">
+                    <span className="text-muted-foreground text-sm break-words">
                         {t.signedInWith.replace("{name}", user.name)}
                     </span>
                 </div>
-                <form action="/api/auth/logout" method="post">
+                <form
+                    action="/api/auth/logout"
+                    method="post"
+                    className="flex-none"
+                >
                     <Button
                         type="submit"
                         variant="outline"
-                        size="sm"
-                        className="rounded-lg"
+                        className="h-[34px] rounded-lg px-3 text-[13px]"
                     >
-                        <LogOut className="size-4" />
                         {dictionary.common.logout}
                     </Button>
                 </form>
             </header>
-            <p className="text-muted-foreground text-sm">{t.autoSaveNote}</p>
+            <p className="text-foreground/75 text-[13px]">{t.autoSaveNote}</p>
 
             <Section title={t.lookTitle}>
                 <SettingRow label={t.appLanguage} labelFor={ids.language}>
@@ -384,14 +398,15 @@ export function UserSettingsForm({
                         id={ids.language}
                         locale={locale}
                         dictionary={dictionary}
-                        className="w-full justify-start font-normal"
+                        hideFlag
+                        className="w-full justify-start px-3 font-normal"
                     />
                 </SettingRow>
                 <SettingRow label={t.theme} labelId={ids.theme}>
                     <ToggleGroup
                         type="single"
                         aria-labelledby={ids.theme}
-                        value={mounted ? theme : undefined}
+                        value={mounted ? theme : ""}
                         onValueChange={(value) => {
                             if (value) setTheme(value as ThemeOption)
                         }}
@@ -448,7 +463,7 @@ export function UserSettingsForm({
                         <span className="text-sm font-medium">
                             {t.manualIdsTitle}
                         </span>
-                        <span className="text-muted-foreground text-sm">
+                        <span className="text-muted-foreground text-[13px] leading-5">
                             {user.platformIds.length
                                 ? t.manualIdsUnverified
                                 : t.manualIdsEmpty}
@@ -484,7 +499,7 @@ export function UserSettingsForm({
                 <div className="flex items-center gap-3 border-t py-3.5">
                     <div className="flex flex-1 flex-col">
                         <span className="text-sm">{t.recapTitle}</span>
-                        <span className="text-muted-foreground text-sm">
+                        <span className="text-muted-foreground text-[13px] leading-5">
                             {t.recapDescription}
                         </span>
                     </div>
@@ -500,11 +515,11 @@ export function UserSettingsForm({
                 <div className="flex items-center gap-3 border-t py-3.5">
                     <div className="flex flex-1 flex-col">
                         <span className="text-sm">{t.remindersTitle}</span>
-                        <span className="text-muted-foreground text-sm">
+                        <span className="text-muted-foreground text-[13px] leading-5">
                             {t.remindersDescription}
                         </span>
                     </div>
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-foreground/75 text-[13px]">
                         {t.remindersByClan}
                     </span>
                 </div>
@@ -556,7 +571,7 @@ export function UserSettingsForm({
                         <Button
                             type="submit"
                             variant="destructive"
-                            className="h-9 rounded-lg"
+                            className="disabled:bg-status-danger-border disabled:text-status-danger h-9 rounded-lg px-3.5 text-[13px] disabled:opacity-100"
                             disabled={!erasureConfirmed || isRequestingErasure}
                         >
                             {isRequestingErasure ? (

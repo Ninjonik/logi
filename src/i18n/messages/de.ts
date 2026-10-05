@@ -975,7 +975,7 @@ export const deMessages = {
         matches: "Matches",
         trainings: "Trainings",
         topicPresets: "Themen-Presets",
-        stratmaps: "Stratmaps",
+        stratmaps: "Taktikkarten",
         groups: "Gruppen",
         squadPresets: "Squad-Presets",
         rosters: "Roster",
@@ -2022,6 +2022,7 @@ export const deMessages = {
         backToClans: "Zurück zu deinen Clans",
         openMenu: "Menü öffnen",
         mainNavigation: "Hauptnavigation",
+        backTo: "Zurück zu {page}",
     },
     verifiedPlatformLinks: {
         title: "Verifiziertes Steam-Konto",
@@ -2136,7 +2137,7 @@ export const deMessages = {
         downloadZip: "ZIP herunterladen",
         deleteAccountTitle: "Konto löschen",
         deleteAccountDescription:
-            "Entfernt dein Profil, deine Anmeldungen und verknüpften Konten. Das Logi-Team bearbeitet die Anfrage, sie lässt sich nicht rückgängig machen. Gib zur Bestätigung deinen Namen ein.",
+            "Entfernt dein Profil, deine Anmeldungen und verknüpften Konten. Gib zur Bestätigung deinen Namen ein.",
         deleteAccountConfirmLabel: "Bestätigung mit deinem Namen",
         deleteAccountButton: "Konto löschen",
         deleteAccountRequested:
@@ -2856,15 +2857,19 @@ export const deMessages = {
         scoreSuffix: "Score",
     },
     workspace: {
-        selectWorkspace: "Workspace wählen",
+        selectWorkspace: "Clan wählen",
         activeWorkspace: "Aktiver Workspace",
-        noWorkspaceSelected: "Kein Workspace gewählt",
-        searchWorkspace: "Workspaces suchen...",
+        noWorkspaceSelected: "Kein Clan gewählt",
+        searchWorkspace: "Clans suchen…",
         missingWorkspaceHelp:
-            "Fehlt ein Workspace? Stelle sicher, dass du auf diesem Discord-Server bist oder dort Administratorzugriff hast.",
+            "Fehlt ein Clan? Stelle sicher, dass du auf seinem Discord-Server bist oder dort Administratorzugriff hast.",
         allClans: "Alle Clans",
         showAllResults: "Alle anzeigen ({count})",
         allGames: "Alle Spiele",
+        gameHeading: "Spiel",
+        clanHeading: "Clans",
+        clanStats: "Mitglieder {members} · Admins {admins}",
+        botMissingBadge: "Bot fehlt",
     },
     languageSwitcher: {
         selectLanguage: "Sprache wählen",

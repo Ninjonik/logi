@@ -13,6 +13,18 @@ import type { Dictionary } from "@/i18n/dictionaries"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 
+/** "2. 10." in Czech; the year only when it is not the current one. */
+function shortDate(timestamp: number, locale: LinkLocale) {
+    const date = new Date(timestamp)
+    return date.toLocaleDateString(locale, {
+        day: "numeric",
+        month: "numeric",
+        ...(date.getFullYear() === new Date().getFullYear()
+            ? {}
+            : { year: "numeric" }),
+    })
+}
+
 /**
  * The verified Steam account as one row of "Game accounts" (design K1):
  * verified with its date and an unlink action, or a prompt to verify.
@@ -121,21 +133,17 @@ export function VerifiedPlatformLinks({
                         {account.steamUnavailable}
                     </span>
                 ) : active ? (
-                    <>
-                        <span className="text-status-success text-sm">
-                            {account.steamVerifiedOn.replace(
-                                "{date}",
-                                new Date(active.verifiedAt).toLocaleDateString(
-                                    locale
-                                )
-                            )}
-                        </span>
-                        <span className="text-muted-foreground font-mono text-xs break-all">
-                            {active.platformId}
-                        </span>
-                    </>
+                    <span
+                        className="text-status-success text-[13px] leading-5"
+                        title={active.platformId}
+                    >
+                        {account.steamVerifiedOn.replace(
+                            "{date}",
+                            shortDate(active.verifiedAt, locale)
+                        )}
+                    </span>
                 ) : (
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-muted-foreground text-[13px] leading-5">
                         {account.steamNotVerified}
                     </span>
                 )}

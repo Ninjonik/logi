@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { initialsOf } from "@/lib/initials"
 
 /** The person's account at the bottom of the sidebar; opens "My account". */
 export function NavUser({
@@ -40,13 +41,18 @@ export function NavUser({
                     asChild
                     size="lg"
                     isActive={pathname === accountPath}
-                    className="h-11 gap-2 px-2"
+                    className="h-11 gap-2 rounded-lg px-2"
                 >
-                    <Link href={accountHref}>
+                    <Link
+                        href={accountHref}
+                        aria-current={
+                            pathname === accountPath ? "page" : undefined
+                        }
+                    >
                         <Avatar className="size-7 rounded-full">
                             <AvatarImage src={user.avatar} alt="" />
-                            <AvatarFallback className="rounded-full text-[11px] font-semibold">
-                                {user.name.slice(0, 2).toUpperCase()}
+                            <AvatarFallback className="bg-primary text-primary-foreground rounded-full text-[11px] font-semibold">
+                                {initialsOf(user.name)}
                             </AvatarFallback>
                         </Avatar>
                         <span className="grid min-w-0 flex-1 text-left leading-tight">
