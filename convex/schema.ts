@@ -672,6 +672,9 @@ export default defineSchema({
         // Create-form defaults per match or training type; events never read them.
         matchTemplates: v.optional(v.array(matchTemplateValidator)),
         enabledGames: v.optional(v.array(gameId)),
+        // The clan's own Discord invite (`https://discord.gg/<code>`) for the
+        // public clan page; set by clan admins, missing means no button.
+        publicInviteUrl: v.optional(v.string()),
         botInside: v.boolean(),
         adminIds: v.array(v.string()),
         // Legacy role-derived dashboard admins. New authorization uses the current

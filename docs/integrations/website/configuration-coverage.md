@@ -105,6 +105,15 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   `DELETE` needs a new idempotent Convex mutation beside
   `publicApi:mutateClanPreset` (whose arguments must not change) and is open
   follow-up work.
+- **Public clan page invite (API parity):** Settings → Clan profile → Discord
+  invite stores the clan's own invite on the clan (`guilds.publicInviteUrl`,
+  written by `clanPublicPage:setInviteUrl` through
+  `PUT /api/servers/{serverId}/public-invite`, clan admin, same origin, strict
+  `{ inviteUrl }`, Discord invite links only). It is read back through
+  `GET /api/v1/public/clans/{clanId}` (`inviteUrl`, with the page's games,
+  `upcomingMatches`, `clanResults` and `competitions`). Like the clan name,
+  logo and description it has no keyed `/api/v1` write: the clan profile is a
+  dashboard-only lifecycle (deliberate exclusion).
 
 These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still

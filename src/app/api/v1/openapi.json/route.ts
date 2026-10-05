@@ -423,7 +423,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public clan profile",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited clan profile. Use collection=recentMatches for recent matches.",
+                "Public, rate-limited clan profile, the data of the public clan page. Besides the profile and recentMatches it carries inviteUrl (the clan's own Discord invite as https://discord.gg/<code>, or null), games, upcomingMatches (announced, non-draft matches that have not started: eventId, gameId, startsAt, opponent, name, label; trainings, drafts, server details and sign-ups are never included), clanResults (recent recorded matches from the clan's side: outcome, clanScore, opponentScore, opponent, mapName) and competitions (placements in published competitions: slug, name, season, divisionName, position, teamCount; position is null before the division has a result). Use collection=recentMatches, upcomingMatches, clanResults or competitions for a paginated list.",
             parameters: [
                 {
                     name: "clanId",

@@ -7,9 +7,17 @@ import {
     filterCollection,
     paginateCollection,
 } from "@/domain/shared/collection-query"
+import { getPublicClanPageDetails } from "@/lib/read-models/public-clan-page"
 import { getPublicClan } from "@/lib/read-models/public-profiles"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
 import { NextResponse } from "next/server"
+
+const PUBLIC_CLAN_COLLECTIONS: readonly string[] = [
+    "recentMatches",
+    "upcomingMatches",
+    "clanResults",
+    "competitions",
+]
 
 export async function GET(
     request: Request,
@@ -25,12 +33,24 @@ export async function GET(
             { status: 429 }
         )
     const { clanId } = await params
-    const data = await getPublicClan(clanId)
-    if (!data)
+    const clan = await getPublicClan(clanId)
+    if (!clan)
         return NextResponse.json(
             { error: { code: "not_found", message: "Clan not found." } },
             { status: 404 }
         )
+    // The public clan page's invite, games, announced upcoming matches,
+    // results from the clan's side and competition placements; empty when the
+    // Convex deployment does not provide them yet.
+    const details = await getPublicClanPageDetails(clanId)
+    const data = {
+        ...clan,
+        inviteUrl: details?.inviteUrl ?? null,
+        games: details?.games ?? [],
+        upcomingMatches: details?.upcoming ?? [],
+        clanResults: details?.results ?? [],
+        competitions: details?.placements ?? [],
+    }
     const collection = new URL(request.url).searchParams.get("collection")
     if (!collection)
         return NextResponse.json(
@@ -43,10 +63,9 @@ export async function GET(
             { error: { code: "invalid_query", message: query.error } },
             { status: 400 }
         )
-    const items =
-        collection === "recentMatches"
-            ? getNamedCollection(data, ["recentMatches"])
-            : null
+    const items = PUBLIC_CLAN_COLLECTIONS.includes(collection)
+        ? getNamedCollection(data, [collection])
+        : null
     if (!items)
         return NextResponse.json(
             { error: { code: "not_found", message: "Collection not found." } },
