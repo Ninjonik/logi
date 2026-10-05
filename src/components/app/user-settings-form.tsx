@@ -351,7 +351,7 @@ export function UserSettingsForm({
                         }
                     />
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex min-w-48 flex-1 flex-col gap-0.5">
                     <h1 className="text-2xl font-semibold tracking-tight">
                         {t.accountTitle}
                     </h1>
@@ -449,7 +449,8 @@ export function UserSettingsForm({
                                 : t.manualIdsEmpty}
                         </span>
                         {user.platformIds.length ? (
-                            <div className="mt-1.5">
+                            // Long IDs shorten instead of widening the card on phones.
+                            <div className="mt-1.5 min-w-0 [&_.truncate]:min-w-0 [&_[data-slot=badge]]:max-w-full [&_[data-slot=badge]]:shrink">
                                 <PlatformIdList
                                     platformIds={user.platformIds}
                                     dictionary={dictionary}

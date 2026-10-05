@@ -68,7 +68,7 @@ export async function DashboardShell({
                             servers={visibleServers}
                             user={user}
                         />
-                        <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
+                        <div className="relative flex flex-1 flex-col gap-3 py-3 max-sm:has-[[data-mobile-action-bar]]:pb-24 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
                             <MissingBotWorkspaceWarning
                                 dictionary={dictionary}
                                 inviteUrlByGuildId={inviteUrlByGuildId}

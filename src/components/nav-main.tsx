@@ -135,7 +135,7 @@ export function NavMenuItems({
                         <SidebarMenuBadge
                             title={item.badge.label}
                             aria-label={item.badge.label}
-                            className="bg-status-warning-muted text-status-warning top-2.5 rounded-full px-1.5 font-semibold md:top-1.5"
+                            className="bg-status-warning-muted text-status-warning rounded-full px-1.5 font-semibold peer-data-[size=default]/menu-button:top-2.5 md:peer-data-[size=default]/menu-button:top-1.5"
                         >
                             {item.badge.count}
                         </SidebarMenuBadge>
@@ -145,7 +145,7 @@ export function NavMenuItems({
                             <CollapsibleTrigger asChild>
                                 <SidebarMenuAction
                                     aria-label={expandLabel(item.title)}
-                                    className="top-2.5 transition-transform group-data-[state=open]/collapsible:rotate-90 md:top-1.5"
+                                    className="transition-transform group-data-[state=open]/collapsible:rotate-90 peer-data-[size=default]/menu-button:top-2.5 md:peer-data-[size=default]/menu-button:top-1.5"
                                 >
                                     <ChevronRight />
                                 </SidebarMenuAction>
