@@ -1054,3 +1054,79 @@ test("the ECL seed creates or reuses global catalogue teams instead of placehold
         error: "migration_pending",
     })
 })
+
+test("clan fixture labels name published competitions of the clan's linked matches only", async () => {
+    const ctx = testContext()
+    const competition = (id: string, published?: boolean) =>
+        ctx.db.seed("competitions", {
+            _id: id,
+            slug: id,
+            name: "ECL",
+            season: "2026",
+            published,
+            format: {
+                kind: "league_with_playoffs",
+                standings: "ecl_cap_score",
+            },
+            createdAt: NOW,
+            updatedAt: NOW,
+        })
+    competition("competitions:ecl")
+    competition("competitions:draft", false)
+    const linked = (
+        eventId: string,
+        fixtureId: string,
+        competitionId: string,
+        event: Record<string, unknown> = {},
+        fixtureEventId: string = eventId
+    ) => {
+        ctx.db.seed("events", {
+            _id: eventId,
+            guildId: "guild-a",
+            kind: "match",
+            name: eventId,
+            competitionFixtureId: fixtureId,
+            ...event,
+        })
+        ctx.db.seed("competitionFixtures", {
+            _id: fixtureId,
+            competitionId,
+            phase: "playoff",
+            status: "scheduled",
+            eventId: fixtureEventId,
+            createdAt: NOW,
+            updatedAt: NOW,
+        })
+    }
+    linked("events:a", "competitionFixtures:a", "competitions:ecl")
+    linked("events:hidden", "competitionFixtures:b", "competitions:draft")
+    linked("events:draft", "competitionFixtures:c", "competitions:ecl", {
+        isDraft: true,
+    })
+    linked(
+        "events:stale",
+        "competitionFixtures:d",
+        "competitions:ecl",
+        {},
+        "events:other"
+    )
+    linked("events:other-clan", "competitionFixtures:e", "competitions:ecl", {
+        guildId: "guild-b",
+    })
+    const list = (args: Record<string, unknown> = {}) =>
+        invoke(competitions.listClanFixtureLabels, ctx, {
+            secret,
+            guildId: "guild-a",
+            ...args,
+        })
+    assert.deepEqual(await list(), [
+        { eventId: "events:a", name: "ECL", season: "2026", phase: "playoff" },
+    ])
+    assert.deepEqual(
+        (await list({ guildId: "guild-b" })).map(
+            (row: { eventId: string }) => row.eventId
+        ),
+        ["events:other-clan"]
+    )
+    await assert.rejects(list({ secret: "wrong" }))
+})

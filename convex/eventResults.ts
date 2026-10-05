@@ -247,3 +247,49 @@ export const get = query({
         }
     },
 })
+
+/** How many of a clan's newest events the review list reads at most. */
+const CLAN_REVIEW_SCAN_LIMIT = 400
+
+/**
+ * Result review state of a clan's matches for the dashboard match list: which
+ * staged results wait for a manager's confirmation and which are confirmed.
+ * It reads the clan's newest events through the guild index, bounded, and
+ * returns only the stored head (status, origin and scores), never players or
+ * sources. The Next server calls it after checking that the person manages
+ * the clan; it is not cached, so a confirmation shows on the next load.
+ */
+export const listClanReviews = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertMembershipSecret(args.secret)
+        const events = await ctx.db
+            .query("events")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .order("desc")
+            .take(CLAN_REVIEW_SCAN_LIMIT)
+        return events.flatMap((event) => {
+            const head = event.reviewedResult
+            if (
+                !head ||
+                event.guildId !== args.guildId ||
+                (event.kind ?? "match") !== "match" ||
+                event.isDraft ||
+                event.reviewedResultGameId !== resolveGameScope(event.gameId)
+            )
+                return []
+            return [
+                {
+                    eventId: event._id,
+                    status: head.status,
+                    origin: head.provenance.origin,
+                    participants: head.participants.map((participant) => ({
+                        id: participant.id,
+                        label: participant.label,
+                        score: participant.score,
+                    })),
+                },
+            ]
+        })
+    },
+})

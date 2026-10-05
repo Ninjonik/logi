@@ -42,31 +42,78 @@ export function describeRecurrence(
     }
 }
 
-/** "ne 11. 10." style short date and "20:00" time in the clan's time zone. */
+/**
+ * "repeats every Wednesday" for a weekly series in a row's detail line; other
+ * schedules use the full description.
+ */
+export function describeRepeat(
+    recurrence: MatchRecurrence,
+    dictionary: Dictionary,
+    locale: string
+) {
+    const text = dictionary.matchList.recurrence
+    const interval = Math.max(1, Math.trunc(recurrence.interval || 1))
+    const days = recurrence.weekdays.filter(
+        (day) => Number.isInteger(day) && day >= 0 && day <= 6
+    )
+    if (recurrence.frequency !== "weekly" || interval !== 1 || !days.length)
+        return describeRecurrence(recurrence, dictionary, locale)
+    const phrases = days.map((day) => text.every[day])
+    const list =
+        phrases.length > 1
+            ? `${phrases.slice(0, -1).join(", ")} ${text.and} ${phrases.at(-1)}`
+            : phrases[0]
+    return text.repeats.replace("{days}", list)
+}
+
+function zoneOrUtc(timeZone: string) {
+    try {
+        new Intl.DateTimeFormat("en", { timeZone })
+        return timeZone
+    } catch {
+        return "UTC"
+    }
+}
+
+/**
+ * Parts of a date in the clan's time zone for the list: "ne 11. 10." (`date`),
+ * "11. 10." (`day`), "ne" (`weekday`) and "20:00" (`time`).
+ */
 export function formatListDate(
     iso: string,
     locale: string,
     timeZone: string
-): { date: string; time: string } {
-    const options = { timeZone } as const
-    let zone = timeZone
-    try {
-        new Intl.DateTimeFormat("en", options)
-    } catch {
-        zone = "UTC"
-    }
+): { date: string; day: string; weekday: string; time: string } {
+    const zone = zoneOrUtc(timeZone)
     const value = new Date(iso)
+    const format = (options: Intl.DateTimeFormatOptions) =>
+        new Intl.DateTimeFormat(intlLocale(locale), {
+            timeZone: zone,
+            ...options,
+        }).format(value)
     return {
-        date: new Intl.DateTimeFormat(intlLocale(locale), {
-            timeZone: zone,
-            weekday: "short",
-            day: "numeric",
-            month: "numeric",
-        }).format(value),
-        time: new Intl.DateTimeFormat(intlLocale(locale), {
-            timeZone: zone,
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(value),
+        date: format({ weekday: "short", day: "numeric", month: "numeric" }),
+        day: format({ day: "numeric", month: "numeric" }),
+        weekday: format({ weekday: "short" }),
+        time: format({ hour: "2-digit", minute: "2-digit" }),
     }
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * "út 19:30" for a moment within the next six days, where the weekday is
+ * unambiguous; "24. 10. 18:00" further ahead or in the past.
+ */
+export function formatDeadline(
+    iso: string,
+    now: Date,
+    locale: string,
+    timeZone: string
+) {
+    const parts = formatListDate(iso, locale, timeZone)
+    const ahead = Date.parse(iso) - now.getTime()
+    return ahead >= 0 && ahead < 6 * DAY_MS
+        ? `${parts.weekday} ${parts.time}`
+        : `${parts.day} ${parts.time}`
 }
