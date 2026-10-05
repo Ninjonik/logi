@@ -11,7 +11,6 @@ import Link from "next/link"
 
 import {
     getKnownLogScopes,
-    getLogDatabasePath,
     getSystemLogStats,
     querySystemLogs,
     type SystemLogLevel,
@@ -48,7 +47,7 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 export const metadata: Metadata = {
-    title: "Bot dashboard | Logi",
+    title: "Bot logs",
     description: "Discord bot status and system logs.",
 }
 
@@ -119,8 +118,8 @@ export default async function BotDashboardPage({
         <TablePageLayout
             header={
                 <PageHeader
-                    title={dictionary.dashboard.botTitle}
-                    description={`${dictionary.dashboard.botDescription} ${getLogDatabasePath()}`}
+                    title={dictionary.sidebar.adminNav.botLogs}
+                    description={dictionary.dashboard.botDescription}
                 />
             }
         >
@@ -129,31 +128,31 @@ export default async function BotDashboardPage({
                     <StatCard
                         title={dictionary.dashboard.totalLogs}
                         value={stats.total}
-                        description={dictionary.dashboard.botDescription}
+                        description={dictionary.dashboard.totalLogsHint}
                         icon={DatabaseZap}
                     />
                     <StatCard
                         title={dictionary.dashboard.totalErrors}
                         value={stats.errors}
-                        description={dictionary.dashboard.tableLevel}
+                        description={dictionary.dashboard.totalErrorsHint}
                         icon={AlertTriangle}
                     />
                     <StatCard
                         title={dictionary.dashboard.errorsToday}
                         value={stats.errorsToday}
-                        description={dictionary.dashboard.filtersTitle}
+                        description={dictionary.dashboard.errorsTodayHint}
                         icon={Filter}
                     />
                     <StatCard
                         title={dictionary.dashboard.nextjsLogs}
                         value={stats.nextjs}
-                        description={dictionary.dashboard.tableSource}
+                        description={dictionary.dashboard.nextjsLogsHint}
                         icon={AppWindow}
                     />
                     <StatCard
                         title={dictionary.dashboard.discordBotLogs}
                         value={stats.discordBot}
-                        description={dictionary.dashboard.tableSource}
+                        description={dictionary.dashboard.discordBotLogsHint}
                         icon={Bot}
                     />
                 </div>

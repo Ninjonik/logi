@@ -10,6 +10,12 @@ import { PageHeader } from "@/components/app/page-header"
 import { getDictionary } from "@/i18n/dictionaries"
 import { redirect } from "next/navigation"
 import { isLocale } from "@/i18n/config"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Platform settings",
+    description: "Platform-wide service status settings.",
+}
 
 export default async function PlatformSettingsPage({
     params,
@@ -25,6 +31,7 @@ export default async function PlatformSettingsPage({
         getVisibleGuildsForLoggedInUser(),
     ])
     const dictionary = getDictionary(safeLocale)
+    const t = dictionary.dashboard
     return (
         <>
             <PageHeader
@@ -40,23 +47,34 @@ export default async function PlatformSettingsPage({
                     </CardHeader>
                     <CardContent>
                         <PlatformSettingsForm
-                            workspaces={workspaces
-                                .filter((workspace) => workspace.botInside)
-                                .map((workspace) => ({
-                                    id: workspace.discordId,
-                                    name: workspace.name,
-                                }))}
+                            workspaces={workspaces.map((workspace) => ({
+                                id: workspace.discordId,
+                                name: workspace.name,
+                                botInside: Boolean(workspace.botInside),
+                            }))}
                             initialWorkspaceGuildId={settings?.workspaceGuildId}
                             initialStatusChannelId={settings?.statusChannelId}
                             labels={{
-                                workspace:
-                                    dictionary.dashboard.platformWorkspace,
-                                channel:
-                                    dictionary.dashboard.platformStatusChannel,
-                                hint: dictionary.dashboard
-                                    .platformStatusChannelHint,
-                                save: dictionary.dashboard.platformSave,
-                                saved: dictionary.dashboard.platformSaved,
+                                workspace: t.platformWorkspace,
+                                workspacePlaceholder:
+                                    t.platformWorkspacePlaceholder,
+                                workspaceHint: t.platformWorkspaceHint,
+                                workspaceBotMissing:
+                                    t.platformWorkspaceBotMissing,
+                                savedWorkspace: t.platformSavedWorkspace,
+                                channel: t.platformStatusChannel,
+                                channelPlaceholder:
+                                    t.platformChannelPlaceholder,
+                                channelNone: t.platformChannelNone,
+                                channelsLoading: t.platformChannelsLoading,
+                                channelsError: t.platformChannelsError,
+                                channelsRetry: t.platformChannelsRetry,
+                                chooseWorkspaceFirst:
+                                    t.platformChooseWorkspaceFirst,
+                                hint: t.platformStatusChannelHint,
+                                save: t.platformSave,
+                                saved: t.platformSaved,
+                                saveError: t.platformSaveError,
                             }}
                         />
                     </CardContent>

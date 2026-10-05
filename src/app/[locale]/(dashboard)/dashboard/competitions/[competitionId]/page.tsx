@@ -16,7 +16,7 @@ import { isLocale } from "@/i18n/config"
 import { ArrowLeft } from "lucide-react"
 
 export const metadata: Metadata = {
-    title: "Manage competition | Logi",
+    title: "Manage competition",
     description: "Global competition management.",
 }
 

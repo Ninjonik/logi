@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, playerId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("player", playerId)
-    const title = preview?.title ?? "Player profile | Logi"
+    const title = preview?.title ?? "Player profile"
     const description =
         preview?.description ??
         "Public player profile and recorded match history."

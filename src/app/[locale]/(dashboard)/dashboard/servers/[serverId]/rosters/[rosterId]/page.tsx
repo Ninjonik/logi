@@ -14,7 +14,7 @@ import { isLocale } from "@/i18n/config"
 import { getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
-    title: "Roster | Logi",
+    title: "Roster",
     description:
         "Roster board with reserves, role slots, publish state, and acknowledgements.",
 }

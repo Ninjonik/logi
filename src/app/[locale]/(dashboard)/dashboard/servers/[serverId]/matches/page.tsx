@@ -50,7 +50,7 @@ function getEventResultLabel(
 }
 
 export const metadata: Metadata = {
-    title: "Matches | Logi",
+    title: "Matches",
     description: "Matches, results, and registration.",
 }
 

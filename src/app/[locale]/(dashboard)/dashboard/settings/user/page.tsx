@@ -7,7 +7,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "User settings | Logi",
+    title: "User settings",
     description: "Manage your Logi account settings.",
 }
 

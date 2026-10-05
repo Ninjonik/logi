@@ -12,7 +12,7 @@ import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Squad presets | Logi",
+    title: "Squad presets",
     description: "Manage preset squad structures.",
 }
 

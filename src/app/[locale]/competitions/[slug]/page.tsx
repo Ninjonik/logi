@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const competition = await getPublicCompetition(slug)
     return {
         title: competition
-            ? `${competition.name} ${competition.season} | Logi`
-            : "Competition | Logi",
+            ? `${competition.name} ${competition.season}`
+            : "Competition",
         description: competition
             ? `${competition.name} standings and match results.`
             : "Competition standings.",

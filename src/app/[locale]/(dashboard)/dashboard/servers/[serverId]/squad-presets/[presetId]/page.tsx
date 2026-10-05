@@ -9,7 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Squad preset | Logi",
+    title: "Squad preset",
     description: "Preset squad structure for new rosters.",
 }
 

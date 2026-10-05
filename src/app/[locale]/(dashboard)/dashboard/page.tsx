@@ -44,7 +44,7 @@ function requiresBotRoleHierarchySetup(
 }
 
 export const metadata: Metadata = {
-    title: "Dashboard | Logi",
+    title: "Dashboard",
     description: "Manage your Discord communities.",
 }
 

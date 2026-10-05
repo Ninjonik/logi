@@ -29,7 +29,7 @@ async function DynamicMetadataMarker() {
 }
 
 export const metadata: Metadata = {
-    title: "Trainings | Logi",
+    title: "Trainings",
     description: "Training events and registration.",
 }
 

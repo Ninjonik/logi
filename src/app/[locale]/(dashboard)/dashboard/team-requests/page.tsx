@@ -8,7 +8,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Team requests | Logi",
+    title: "Team requests",
     description: "Global moderation queue for team requests.",
 }
 

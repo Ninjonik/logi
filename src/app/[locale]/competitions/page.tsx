@@ -12,6 +12,7 @@ import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
 import { getLocalizedCanonical } from "@/lib/seo"
+import { pluralize } from "@/i18n/plural"
 import { isLocale } from "@/i18n/config"
 import type { Metadata } from "next"
 
@@ -105,13 +106,11 @@ export default async function CompetitionsPage({
                                                         ]
                                                     }{" "}
                                                     ·{" "}
-                                                    {labels.divisions.replace(
-                                                        "{count}",
-                                                        String(
-                                                            competition
-                                                                .divisions
-                                                                .length
-                                                        )
+                                                    {pluralize(
+                                                        safeLocale,
+                                                        competition.divisions
+                                                            .length,
+                                                        labels.divisions
                                                     )}
                                                 </span>
                                             </p>

@@ -20,6 +20,7 @@ import {
 } from "@/lib/discord"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { sanitizeLocalRedirect } from "@/lib/local-redirect"
+import { loginErrorPath } from "@/lib/login-redirect"
 import { getSiteUrl } from "@/lib/env"
 
 const STATE_COOKIE = "discord_oauth_state"
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     if (!code || !state || !expectedState || state !== expectedState) {
         cleanOauthCookies(cookieStore)
         return NextResponse.redirect(
-            new URL("/en/login?error=oauth-state", getSiteUrl())
+            new URL(loginErrorPath(redirectTo, "oauth-state"), getSiteUrl())
         )
     }
 
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
         })
         cleanOauthCookies(cookieStore)
         return NextResponse.redirect(
-            new URL("/en/login?error=discord-login", getSiteUrl())
+            new URL(loginErrorPath(redirectTo, "discord-login"), getSiteUrl())
         )
     }
 }

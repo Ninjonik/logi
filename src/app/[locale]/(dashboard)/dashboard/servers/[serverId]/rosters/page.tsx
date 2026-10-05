@@ -12,7 +12,7 @@ import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Rosters | Logi",
+    title: "Rosters",
     description: "Manage event rosters.",
 }
 

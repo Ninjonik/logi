@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, guildId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("clan", guildId)
-    const title = preview?.title ?? "Clan profile | Logi"
+    const title = preview?.title ?? "Clan profile"
     const description =
         preview?.description ??
         "Public clan profile and recorded match history."

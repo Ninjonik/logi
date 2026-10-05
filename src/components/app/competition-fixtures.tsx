@@ -45,10 +45,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    CalendarPlus,
+    Link2,
+    Loader2,
+    Pencil,
+    Plus,
+    Trash2,
+} from "lucide-react"
 import type { CompetitionSectionProps } from "@/components/app/competition-manager"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Link2, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { useEffect, useId, useState, type FormEvent } from "react"
+import { EmptyState } from "@/components/app/empty-state"
 import { TeamLogo } from "@/components/app/team-logo"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -256,26 +265,34 @@ export function CompetitionFixtures({
                                             >
                                                 <Link2 className="size-4" />
                                             </Button>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                aria-label={`${t.delete}: ${label}`}
-                                                disabled={pending}
-                                                onClick={() => {
-                                                    if (
-                                                        window.confirm(
-                                                            t.confirmDeleteFixture
-                                                        )
-                                                    )
-                                                        void run({
+                                            <ConfirmActionDialog
+                                                trigger={
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        aria-label={`${t.delete}: ${label}`}
+                                                        disabled={pending}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                }
+                                                title={t.confirmDeleteFixture}
+                                                description={t.confirmDeleteFixtureDescription.replace(
+                                                    "{teams}",
+                                                    label
+                                                )}
+                                                confirmLabel={t.delete}
+                                                cancelLabel={t.cancel}
+                                                onConfirm={async () =>
+                                                    (
+                                                        await run({
                                                             action: "deleteFixture",
                                                             fixtureId:
                                                                 fixture.id,
                                                         })
-                                                }}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
+                                                    ).ok
+                                                }
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 )
@@ -283,9 +300,13 @@ export function CompetitionFixtures({
                         </TableBody>
                     </Table>
                 ) : (
-                    <p className="text-muted-foreground px-6 pb-6 text-sm">
-                        {t.noFixtures}
-                    </p>
+                    <div className="px-6 pb-6">
+                        <EmptyState
+                            icon={CalendarPlus}
+                            title={t.noFixtures}
+                            description={t.fixturesDescription}
+                        />
+                    </div>
                 )}
             </CardContent>
             <Dialog

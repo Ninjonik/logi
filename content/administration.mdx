@@ -75,7 +75,21 @@ increasing delays; when the requester's DMs stay closed the request shows
 **Could not be delivered**, and the decision itself stands. Requests a workspace
 withdraws are shown as cancelled and send no message.
 
-## Bot dashboard and logs
+## Platform settings
+
+**Platform settings** chooses the Logi workspace and the Discord channel where
+the bot keeps the platform-wide status message and its **Status updates**
+thread. Only workspaces with the Logi bot are offered, and the channel is
+picked by name from that workspace's Discord channels (announcement and text
+channels). If the saved workspace has lost the bot, the page names it and says
+that status updates have stopped until the bot is back or another workspace is
+chosen.
+
+The public **Service status** page (`/status`, linked from the status dot in the
+website footer) lists the monitored services. When the status monitor does not
+answer, the page says so instead of showing an empty status.
+
+## Bot logs
 
 Logs document what the bot attempted or observed; they are not a guarantee that
 Discord completed a requested change. When diagnosing an issue, compare the log
@@ -83,7 +97,7 @@ entry with the affected Discord channel/role and the saved dashboard setting.
 The error channel is optional, so a missing Discord error report does not prove
 that the bot had no error.
 
-The bot dashboard provides operational visibility into bot activity, including timestamp, level, source, scope, message, and context. Use it to investigate a specific issue, not as a place to expose private data. Copy only the minimum useful diagnostic information into a support report.
+**Bot logs** provides operational visibility into bot activity, including timestamp, level, source, scope, message, and context. Use it to investigate a specific issue, not as a place to expose private data. Copy only the minimum useful diagnostic information into a support report.
 
 It is a superadmin-only page, separate from normal server-manager access. It
 reads the application's local system-log database and can filter by free-text
@@ -134,9 +148,13 @@ immediately.
   it; later imports mark the fixture final. Without sides, enter the score
   yourself. Changing a fixture's teams releases its linked match. Workspace
   managers no longer link their own matches.
-- **ECL 2026.** **Create ECL 2026** creates (or completes) the published ECL
-  competition with its official divisions, reusing catalogue teams with the
-  same name and creating the missing ones.
+- **Deleting.** Deleting a division or a fixture and removing a registered
+  team first ask for confirmation and say what changes; none of them can be
+  undone.
+- **ECL 2026.** The ECL 2026 import is an operator task, not a dashboard
+  button: a global administrator's `POST /api/competitions/ecl/seed` creates
+  (or completes) the published ECL competition with its official divisions,
+  reusing catalogue teams with the same name and creating the missing ones.
 
 Standings use the ECL cap-score rules and count only final and forfeit fixtures
 with both scores. Changes reach the public pages within a few minutes. A Logi

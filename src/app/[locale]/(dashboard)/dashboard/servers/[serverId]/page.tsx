@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge"
 import { getLoggedInUser } from "@/lib/auth"
 
 export const metadata: Metadata = {
-    title: "Server dashboard | Logi",
+    title: "Server dashboard",
     description: "Manage your server community.",
 }
 

@@ -10,8 +10,14 @@ const statusApiUrl =
     process.env.LOGI_STATUS_API_URL ?? "http://127.0.0.1:8303/api/services"
 
 export async function getLogiStatus(): Promise<LogiStatus> {
-    const services = await getLogiServices()
-    if (!services) return "unknown"
+    return overallLogiStatus(await getLogiServices())
+}
+
+/** Unknown without a monitor answer, degraded when any service is down. */
+export function overallLogiStatus(
+    services: readonly Pick<StatusService, "online">[] | null
+): LogiStatus {
+    if (!services?.length) return "unknown"
     return services.every((service) => service.online)
         ? "operational"
         : "degraded"

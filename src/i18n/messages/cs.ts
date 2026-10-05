@@ -534,7 +534,7 @@ export const csMessages = {
     },
     app: {
         name: "Logi",
-        tagline: "Organizátor akcí pro kompetetivní hry",
+        tagline: "Organizátor akcí pro kompetitivní hry",
         description:
             "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
     },
@@ -619,7 +619,7 @@ export const csMessages = {
             heroLineAccent: "Každá operace.",
             heroLineThree: "V sestavě.",
             heroDescription:
-                "Logi proměňuje krásný chaos vedení kompetetivní komunity v jedno živé velitelské centrum.",
+                "Logi proměňuje krásný chaos vedení kompetitivní komunity v jedno živé velitelské centrum.",
             deployCommunity: "Spusťte svou komunitu",
             seeEverything: "Prohlédnout všechny funkce",
             playersConfirmed: "31 hráčů potvrzeno",
@@ -798,7 +798,7 @@ export const csMessages = {
         loginDescription:
             "Přihlaste se přes Discord a spravujte klany, publikujte soupisky a mějte všechny briefingy na jednom místě.",
         loginButton: "Pokračovat přes Discord",
-        heroSubtitle: "Správa kompetetivního týmu bez zbytečné složitosti.",
+        heroSubtitle: "Správa kompetitivního týmu bez zbytečné složitosti.",
         contributeButton: "Přispět",
         featureRosterManagement: "Správa soupisek",
         featurePlayerPerformance: "Agregace výkonu hráčů",
@@ -866,16 +866,36 @@ export const csMessages = {
         platformSettingsDescription:
             "Vyberte workspace Logi a Discord kanál pro celoplatformní stav služeb.",
         platformWorkspace: "Superadmin workspace",
-        platformStatusChannel: "ID kanálu stavu",
+        platformStatusChannel: "Kanál stavu",
         platformStatusChannelHint:
             "Bot zde udržuje status embed a vytvoří vlákno Aktualizace stavu pro výpadky a obnovení.",
         platformSave: "Uložit nastavení platformy",
         platformSaved: "Nastavení platformy bylo uloženo.",
+        platformWorkspacePlaceholder: "Vyberte pracovní prostor",
+        platformWorkspaceHint:
+            "Stavovou zprávu může posílat jen pracovní prostor s botem Logi.",
+        platformWorkspaceBotMissing:
+            "V uloženém pracovním prostoru {name} už bot Logi není, takže se stav přestal aktualizovat. Přidejte bota znovu, nebo vyberte jiný prostor.",
+        platformSavedWorkspace: "Uložený pracovní prostor ({id})",
+        platformChannelNone: "Bez kanálu stavu",
+        platformChannelPlaceholder: "Vyberte kanál",
+        platformChannelsLoading: "Načítám kanály z Discordu…",
+        platformChannelsError:
+            "Kanály z Discordu se nenačetly. Vaše nastavení se nezměnilo.",
+        platformChannelsRetry: "Zkusit znovu",
+        platformChooseWorkspaceFirst:
+            "Nejdřív vyberte pracovní prostor, pak se zobrazí jeho kanály.",
+        platformSaveError: "Nastavení platformy se nepodařilo uložit.",
         totalLogs: "Celkem logů",
         totalErrors: "Celkem chyb",
         errorsToday: "Chyby dnes",
         nextjsLogs: "Next.js logy",
         discordBotLogs: "Discord bot logy",
+        totalLogsHint: "Všechny záznamy uložené na tomto serveru",
+        totalErrorsHint: "Záznamy ERROR za celou dobu",
+        errorsTodayHint: "Záznamy ERROR od půlnoci",
+        nextjsLogsHint: "Zapsala webová aplikace",
+        discordBotLogsHint: "Zapsal Discord bot",
         topScopes: "Nejčastější scope",
         filtersTitle: "Filtry",
         filterLevel: "Úroveň",
@@ -922,6 +942,31 @@ export const csMessages = {
         configuration: "Konfigurace",
         bot: "Bot",
         platformSettings: "Nastavení platformy",
+        adminNav: {
+            label: "Globální správa",
+            title: "Globální správa",
+            subtitle: "celý Logi, všechny klany",
+            backToClan: "Zpět do klanu {clan}",
+            backToDashboard: "Zpět na moje klany",
+            competitionsAndTeams: "Soutěže a týmy",
+            operations: "Provoz",
+            botLogs: "Záznamy bota",
+            pendingRequests: "Čekající žádosti: {count}",
+            open: "Globální správa",
+            adminsOnly: "jen správci",
+        },
+        crumbs: {
+            detail: "Detail",
+            event: "Akce",
+            training: "Trénink",
+            group: "Skupina",
+            article: "Článek",
+            stratmap: "Taktická mapa",
+            player: "Hráč",
+            competition: "Soutěž",
+            matchResult: "Výsledek zápasu",
+            matchStatistics: "Statistiky zápasu",
+        },
         competitions: "Soutěže",
         articles: "Články",
         logiComms: "LogiComms",
@@ -1376,6 +1421,53 @@ export const csMessages = {
                 "Žádosti o týmy jsou momentálně nedostupné. Zkuste to znovu.",
         },
     },
+    publicSite: {
+        status: {
+            eyebrow: "Stav Logi",
+            title: "Dostupnost služeb",
+            description:
+                "Stránka pokrývá dashboard Logi, služby Convex, úložiště dat, dostupnost Discordu a závislosti LogiComms.",
+            link: "Stav služeb",
+            operational: "Všechny služby fungují",
+            degraded: "Některé služby mají potíže",
+            unknown: "Stav služeb není k dispozici",
+            serviceOperational: "Funguje",
+            serviceDegraded: "Potíže",
+            unavailableTitle: "Stav služeb se nepodařilo načíst",
+            unavailableDescription:
+                "Monitorování neodpovědělo, takže Logi neví, které služby běží. Samotné Logi může fungovat dál. Načtěte stránku znovu za minutu, nebo se zeptejte na podpůrném Discord serveru, pokud něco nefunguje.",
+            reload: "Načíst znovu",
+        },
+        login: {
+            errorTitle: "Přihlášení se nedokončilo",
+            errors: {
+                "oauth-state":
+                    "Odkaz pro přihlášení vypršel, nebo byl otevřen v jiném prohlížeči. Začněte znovu tlačítkem níže.",
+                "discord-login":
+                    "Discord přihlášení nepotvrdil. Zkuste to za chvíli znovu; pokud to nepůjde, zeptejte se na podpůrném Discord serveru.",
+            },
+        },
+        guildLogin: {
+            notMemberTitle: "Zatím nejste členem klanu {clan}",
+            notMemberDescription:
+                "Jste přihlášeni jako {name}, ale Logi vás na Discord serveru tohoto klanu nevidí, takže vám klan nemůže otevřít.",
+            notMemberNextStep:
+                "Požádejte klan o pozvánku na Discord a připojte se k serveru. Pak se tu přihlaste znovu, aby Logi načetlo vaše servery.",
+            signInAgain: "Přihlásit se znovu",
+            openDashboard: "Otevřít moje klany",
+        },
+        community: {
+            pickGameTitle: "Vyberte hru",
+            pickGameDescription:
+                "Klany, hráči a výsledky zápasů jsou pro každou hru zvlášť. Vyberte hru a projděte si její komunitu.",
+        },
+        legal: {
+            privacyTitle: "Zásady ochrany osobních údajů",
+            termsTitle: "Podmínky použití",
+            loadFailed:
+                "Dokument se teď nepodařilo načíst. Zkuste to později, nebo se zeptejte na podpůrném Discord serveru.",
+        },
+    },
     competition: {
         title: "Soutěže",
         description:
@@ -1385,7 +1477,12 @@ export const csMessages = {
         rules: "Oficiální pravidla",
         website: "Oficiální web",
         seasonSummary: "Sezóna {season} · tabulky a výsledky sledované v Logi",
-        divisions: "{count} divizí · živé tabulky a zaznamenané výsledky",
+        divisions: {
+            one: "{count} divize · živé tabulky a zaznamenané výsledky",
+            few: "{count} divize · živé tabulky a zaznamenané výsledky",
+            many: "{count} divize · živé tabulky a zaznamenané výsledky",
+            other: "{count} divizí · živé tabulky a zaznamenané výsledky",
+        },
         results: "Výsledky",
         statistics: "Statistiky zápasu",
         statisticsUnavailable: "Statistiky nejsou k dispozici",
@@ -1408,9 +1505,6 @@ export const csMessages = {
             final: "Konečný",
             forfeit: "Kontumace",
         },
-        createEcl: "Vytvořit ECL 2026",
-        createFailed: "ECL se nepodařilo vytvořit.",
-        createSuccess: "ECL 2026 vytvořena.",
     },
     competitionAdmin: {
         listDescription:
@@ -1441,7 +1535,25 @@ export const csMessages = {
         openPublic: "Veřejná stránka",
         back: "Všechny soutěže",
         noCompetitions: "Zatím žádné soutěže.",
-        counts: "Divize: {divisions} · týmy: {teams} · zápasy: {fixtures}",
+        countDivisions: {
+            one: "{count} divize",
+            few: "{count} divize",
+            many: "{count} divize",
+            other: "{count} divizí",
+        },
+        countTeams: {
+            one: "{count} tým",
+            few: "{count} týmy",
+            many: "{count} týmu",
+            other: "{count} týmů",
+        },
+        countFixtures: {
+            one: "{count} zápas",
+            few: "{count} zápasy",
+            many: "{count} zápasu",
+            other: "{count} zápasů",
+        },
+        sectionsLabel: "Části soutěže",
         legacyTitle: "Čeká na migraci",
         legacyDescription:
             "Záznamy soutěží ({count}) stále odkazují na pracovní prostory Logi místo globálních týmů. Zůstávají viditelné, ale nelze je upravovat ani propojovat, dokud vlastník platformy nespustí jednorázovou migraci soutěží.",
@@ -1453,7 +1565,6 @@ export const csMessages = {
         divisionsDescription:
             "Divize se na veřejné stránce zobrazují v tomto pořadí. Smazat lze jen divizi bez týmů a zápasů.",
         divisionName: "Název divize",
-        divisionCounts: "Týmy: {teams} · zápasy: {fixtures}",
         addDivision: "Přidat divizi",
         addDivisionFirst: "Před registrací týmů přidejte divizi.",
         rename: "Přejmenovat",
@@ -1461,6 +1572,8 @@ export const csMessages = {
         moveDown: "Posunout dolů",
         delete: "Smazat",
         confirmDeleteDivision: "Smazat divizi „{name}“?",
+        confirmDeleteDivisionDescription:
+            "Divize zmizí z veřejné stránky. Tuto akci nelze vrátit.",
         noDivisions: "Zatím žádné divize.",
         teamsTitle: "Týmy",
         teamsDescription:
@@ -1478,6 +1591,8 @@ export const csMessages = {
         remove: "Odebrat",
         moveTo: "Divize",
         confirmRemoveTeam: "Odebrat tým {name} z této soutěže?",
+        confirmRemoveTeamDescription:
+            "Registrace týmu se smaže. Pokud chcete zachovat jeho výsledky, tým raději odhlaste.",
         noTeams: "V této divizi nejsou žádné týmy.",
         withdrawnBadge: "Odstoupil",
         archivedBadge: "Archivován",
@@ -1493,6 +1608,8 @@ export const csMessages = {
         invalidFixture:
             "Vyberte divizi a dva různé týmy a u konečného či kontumačního výsledku zadejte obě skóre jako celá čísla.",
         confirmDeleteFixture: "Smazat tento zápas?",
+        confirmDeleteFixtureDescription:
+            "{teams}: zápas i jeho skóre zmizí z tabulky. Tuto akci nelze vrátit.",
         phase: "Fáze",
         phases: {
             league: "Liga",
@@ -3012,7 +3129,7 @@ export const csMessages = {
         title: "Stratmapy",
         createTitle: "Vytvořit Stratmapu",
         pageDescription:
-            "Uložené realtime taktické mapy pro plánování kompetetivních zápasů.",
+            "Uložené realtime taktické mapy pro plánování kompetitivních zápasů.",
         createDescription:
             "Vytvořte uložený realtime taktický náčrt, který půjde později připojit k match briefingu.",
         detailDescription:

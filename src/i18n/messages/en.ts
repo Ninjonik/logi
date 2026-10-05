@@ -538,7 +538,7 @@ export const enMessages = {
     },
     app: {
         name: "Logi",
-        tagline: "Competetive event organizer",
+        tagline: "Competitive event organizer",
         description:
             "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
     },
@@ -623,7 +623,7 @@ export const enMessages = {
             heroLineAccent: "Every operation.",
             heroLineThree: "In formation.",
             heroDescription:
-                "Logi turns the beautiful chaos of running a competetive community into one living, breathing command center.",
+                "Logi turns the beautiful chaos of running a competitive community into one living, breathing command center.",
             deployCommunity: "Deploy your community",
             seeEverything: "See everything it does",
             playersConfirmed: "31 players confirmed",
@@ -801,7 +801,7 @@ export const enMessages = {
         loginDescription:
             "Sign in with Discord to manage clans, publish rosters, and keep every briefing in one place.",
         loginButton: "Continue with Discord",
-        heroSubtitle: "Competetive Team Management made simple.",
+        heroSubtitle: "Competitive team management made simple.",
         contributeButton: "Contribute",
         featureRosterManagement: "Roster management",
         featurePlayerPerformance: "Player performance aggregation",
@@ -869,16 +869,36 @@ export const enMessages = {
         platformSettingsDescription:
             "Choose the Logi workspace and Discord channel used for platform-wide service status.",
         platformWorkspace: "Superadmin workspace",
-        platformStatusChannel: "Status channel ID",
+        platformStatusChannel: "Status channel",
         platformStatusChannelHint:
             "The bot keeps a status embed here and creates a Status updates thread for outages and recoveries.",
         platformSave: "Save platform settings",
         platformSaved: "Platform settings saved.",
+        platformWorkspacePlaceholder: "Choose a workspace",
+        platformWorkspaceHint:
+            "Only workspaces with the Logi bot can post the status message.",
+        platformWorkspaceBotMissing:
+            "The saved workspace {name} no longer has the Logi bot, so status updates stop. Add the bot again or choose another workspace.",
+        platformSavedWorkspace: "Saved workspace ({id})",
+        platformChannelNone: "No status channel",
+        platformChannelPlaceholder: "Choose a channel",
+        platformChannelsLoading: "Loading channels from Discord…",
+        platformChannelsError:
+            "Channels could not be loaded from Discord. Your settings have not changed.",
+        platformChannelsRetry: "Try again",
+        platformChooseWorkspaceFirst:
+            "Choose a workspace first to list its channels.",
+        platformSaveError: "Platform settings could not be saved.",
         totalLogs: "Total logs",
         totalErrors: "Total errors",
         errorsToday: "Errors today",
         nextjsLogs: "Next.js logs",
         discordBotLogs: "Discord bot logs",
+        totalLogsHint: "Every entry kept on this server",
+        totalErrorsHint: "ERROR entries, all time",
+        errorsTodayHint: "ERROR entries since midnight",
+        nextjsLogsHint: "Written by the dashboard app",
+        discordBotLogsHint: "Written by the Discord bot",
         topScopes: "Top scopes",
         filtersTitle: "Filters",
         filterLevel: "Level",
@@ -925,6 +945,31 @@ export const enMessages = {
         configuration: "Configuration",
         bot: "Bot",
         platformSettings: "Platform settings",
+        adminNav: {
+            label: "Global administration",
+            title: "Global administration",
+            subtitle: "All of Logi, every clan",
+            backToClan: "Back to {clan}",
+            backToDashboard: "Back to your clans",
+            competitionsAndTeams: "Competitions and teams",
+            operations: "Operations",
+            botLogs: "Bot logs",
+            pendingRequests: "Pending requests: {count}",
+            open: "Global administration",
+            adminsOnly: "admins only",
+        },
+        crumbs: {
+            detail: "Details",
+            event: "Event",
+            training: "Training",
+            group: "Group",
+            article: "Article",
+            stratmap: "Stratmap",
+            player: "Player",
+            competition: "Competition",
+            matchResult: "Match result",
+            matchStatistics: "Match statistics",
+        },
         competitions: "Competitions",
         articles: "Articles",
         logiComms: "LogiComms",
@@ -1373,6 +1418,53 @@ export const enMessages = {
             unavailable: "Team requests are unavailable right now. Try again.",
         },
     },
+    publicSite: {
+        status: {
+            eyebrow: "Logi status",
+            title: "Service availability",
+            description:
+                "This page covers the Logi dashboard, Convex services, data stores, Discord reachability and LogiComms dependencies.",
+            link: "Service status",
+            operational: "All services operational",
+            degraded: "Some services are degraded",
+            unknown: "Service status unavailable",
+            serviceOperational: "Operational",
+            serviceDegraded: "Degraded",
+            unavailableTitle: "The service status could not be loaded",
+            unavailableDescription:
+                "The status monitor did not answer, so Logi cannot say which services are up. Logi itself may still work. Reload this page in a minute, or ask on the Discord support server if something is broken.",
+            reload: "Reload",
+        },
+        login: {
+            errorTitle: "Sign-in did not finish",
+            errors: {
+                "oauth-state":
+                    "The sign-in link expired or was opened in another browser. Start again with the button below.",
+                "discord-login":
+                    "Discord did not confirm the sign-in. Try again in a moment; if it keeps failing, ask on the Discord support server.",
+            },
+        },
+        guildLogin: {
+            notMemberTitle: "You are not a member of {clan} yet",
+            notMemberDescription:
+                "You are signed in as {name}, but Logi does not see you on this clan's Discord server, so it cannot open the clan for you.",
+            notMemberNextStep:
+                "Ask the clan for a Discord invite and join their server. Then sign in again here so Logi refreshes your servers.",
+            signInAgain: "Sign in again",
+            openDashboard: "Open your clans",
+        },
+        community: {
+            pickGameTitle: "Choose a game",
+            pickGameDescription:
+                "Clans, players and match results are kept separately for each game. Pick one to browse its community.",
+        },
+        legal: {
+            privacyTitle: "Privacy policy",
+            termsTitle: "Terms of service",
+            loadFailed:
+                "This document could not be loaded right now. Try again later, or ask on the Discord support server.",
+        },
+    },
     competition: {
         title: "Competitions",
         description:
@@ -1383,7 +1475,12 @@ export const enMessages = {
         website: "Official website",
         seasonSummary:
             "{season} season · standings and results tracked by Logi",
-        divisions: "{count} divisions · live standings and recorded results",
+        divisions: {
+            one: "{count} division · live standings and recorded results",
+            few: "{count} divisions · live standings and recorded results",
+            many: "{count} divisions · live standings and recorded results",
+            other: "{count} divisions · live standings and recorded results",
+        },
         results: "Results",
         statistics: "Match statistics",
         statisticsUnavailable: "Statistics unavailable",
@@ -1406,9 +1503,6 @@ export const enMessages = {
             final: "Final",
             forfeit: "Forfeit",
         },
-        createEcl: "Create ECL 2026",
-        createFailed: "Unable to create ECL.",
-        createSuccess: "ECL 2026 created.",
     },
     competitionAdmin: {
         listDescription:
@@ -1439,7 +1533,25 @@ export const enMessages = {
         openPublic: "Public page",
         back: "All competitions",
         noCompetitions: "No competitions yet.",
-        counts: "{divisions} divisions · {teams} teams · {fixtures} fixtures",
+        countDivisions: {
+            one: "{count} division",
+            few: "{count} divisions",
+            many: "{count} divisions",
+            other: "{count} divisions",
+        },
+        countTeams: {
+            one: "{count} team",
+            few: "{count} teams",
+            many: "{count} teams",
+            other: "{count} teams",
+        },
+        countFixtures: {
+            one: "{count} fixture",
+            few: "{count} fixtures",
+            many: "{count} fixtures",
+            other: "{count} fixtures",
+        },
+        sectionsLabel: "Competition sections",
         legacyTitle: "Migration pending",
         legacyDescription:
             "{count} competition records still reference Logi workspaces instead of global teams. They stay visible but cannot be edited or linked until the platform owner runs the one-time competition migration.",
@@ -1451,7 +1563,6 @@ export const enMessages = {
         divisionsDescription:
             "Divisions are shown in this order on the public page. A division can be deleted only when it has no teams and no fixtures.",
         divisionName: "Division name",
-        divisionCounts: "{teams} teams · {fixtures} fixtures",
         addDivision: "Add division",
         addDivisionFirst: "Add a division before registering teams.",
         rename: "Rename",
@@ -1459,6 +1570,8 @@ export const enMessages = {
         moveDown: "Move down",
         delete: "Delete",
         confirmDeleteDivision: "Delete the division “{name}”?",
+        confirmDeleteDivisionDescription:
+            "The division disappears from the public page. This cannot be undone.",
         noDivisions: "No divisions yet.",
         teamsTitle: "Teams",
         teamsDescription:
@@ -1476,6 +1589,8 @@ export const enMessages = {
         remove: "Remove",
         moveTo: "Division",
         confirmRemoveTeam: "Remove {name} from this competition?",
+        confirmRemoveTeamDescription:
+            "The team's registration is removed. To keep its results, withdraw the team instead.",
         noTeams: "No teams in this division.",
         withdrawnBadge: "Withdrawn",
         archivedBadge: "Archived",
@@ -1491,6 +1606,8 @@ export const enMessages = {
         invalidFixture:
             "Choose a division and two different teams, and enter both whole-number scores for a final or forfeit result.",
         confirmDeleteFixture: "Delete this fixture?",
+        confirmDeleteFixtureDescription:
+            "{teams}: the fixture and its score are removed from the standings. This cannot be undone.",
         phase: "Phase",
         phases: {
             league: "League",
@@ -3013,7 +3130,7 @@ export const enMessages = {
         title: "Stratmaps",
         createTitle: "Create Stratmap",
         pageDescription:
-            "Saved realtime tactical maps for competetive match planning.",
+            "Saved realtime tactical maps for competitive match planning.",
         createDescription:
             "Create a saved realtime tactical sketch that can later be attached to match briefings.",
         detailDescription:
