@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation"
 import { ArrowLeft, Menu } from "lucide-react"
-import { useEffect, useState } from "react"
 import Link from "next/link"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -13,35 +12,6 @@ import type { AppUser } from "@/types/domain"
 import type { Guild } from "@/types/domain"
 import { initialsOf } from "@/lib/initials"
 import type { Locale } from "@/i18n/config"
-
-/**
- * The title of the page below the bar: its heading (`data-page-title`, set
- * by PageHeader), which pages may stream in after the frame. Read again on
- * every navigation.
- */
-function usePageTitle(pageKey: string | undefined) {
-    const [title, setTitle] = useState<{ key?: string; text: string }>()
-    useEffect(() => {
-        const read = () => {
-            const text = document
-                .querySelector("[data-page-title]")
-                ?.textContent?.trim()
-            if (text) setTitle({ key: pageKey, text })
-            return Boolean(text)
-        }
-        if (read()) return
-        const observer = new MutationObserver(() => {
-            if (read()) observer.disconnect()
-        })
-        observer.observe(document.body, { childList: true, subtree: true })
-        const stop = window.setTimeout(() => observer.disconnect(), 10_000)
-        return () => {
-            observer.disconnect()
-            window.clearTimeout(stop)
-        }
-    }, [pageKey])
-    return title?.key === pageKey ? title?.text : undefined
-}
 
 /**
  * The phone title bar (design K2). On a section page it holds the menu
@@ -64,7 +34,6 @@ export function SiteHeader({
     const { toggleSidebar } = useSidebar()
     const searchParams = useSearchParams()
     const trail = useDashboardPageTrail({ dictionary, locale, servers })
-    const pageTitle = usePageTitle(trail.current?.href)
     const workspaceId = searchParams.get("workspace")
     const clan =
         trail.server ??
@@ -94,7 +63,7 @@ export function SiteHeader({
                         <ArrowLeft aria-hidden="true" className="size-5" />
                     </Link>
                     <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
-                        {pageTitle ?? trail.current?.label}
+                        {trail.current?.label}
                     </span>
                 </>
             ) : (

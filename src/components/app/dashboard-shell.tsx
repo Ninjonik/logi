@@ -5,10 +5,10 @@ import {
     isCurrentUserSuperadmin,
 } from "@/lib/auth"
 import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspace-warning"
-import { AppBreadcrumbs, PageCrumbProvider } from "@/components/app/breadcrumbs"
 import { SettingsAttentionProvider } from "@/components/app/settings-attention"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AppBreadcrumbs } from "@/components/app/breadcrumbs"
 import { SiteHeader } from "@/components/app/site-header"
 import { SiteFooter } from "@/components/app/site-footer"
 import { AppSidebar } from "@/components/app/app-sidebar"
@@ -52,52 +52,50 @@ export async function DashboardShell({
             userId={user.discordId}
         >
             <SettingsAttentionProvider>
-                <PageCrumbProvider>
-                    {/*
-                     * --header-height is what full-height pages (the stratmap
-                     * editor) subtract above their content beyond the frame's
-                     * own padding: the phone title bar, or the page trail.
-                     */}
-                    <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:4.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:16rem] sm:[--header-height:4rem] 2xl:[--footer-height:3rem] 2xl:[--header-height:3rem]">
-                        <AppSidebar
+                {/*
+                 * --header-height is what full-height pages (the stratmap
+                 * editor) subtract above their content beyond the frame's own
+                 * padding: the phone title bar, or the page trail.
+                 */}
+                <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:4.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:16rem] sm:[--header-height:4rem] 2xl:[--footer-height:3rem] 2xl:[--header-height:3rem]">
+                    <AppSidebar
+                        locale={locale}
+                        dictionary={dictionary}
+                        servers={visibleServers}
+                        user={user}
+                        activeServerId={undefined}
+                        canAdmin={false}
+                        isSuperadmin={isSuperadmin}
+                    />
+                    <SidebarInset className="min-h-dvh overflow-x-hidden">
+                        <SiteHeader
                             locale={locale}
                             dictionary={dictionary}
                             servers={visibleServers}
                             user={user}
-                            activeServerId={undefined}
-                            canAdmin={false}
-                            isSuperadmin={isSuperadmin}
                         />
-                        <SidebarInset className="min-h-dvh overflow-x-hidden">
-                            <SiteHeader
+                        <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
+                            <AppBreadcrumbs
                                 locale={locale}
                                 dictionary={dictionary}
                                 servers={visibleServers}
-                                user={user}
+                                className="max-md:hidden"
                             />
-                            <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
-                                <AppBreadcrumbs
-                                    locale={locale}
-                                    dictionary={dictionary}
-                                    servers={visibleServers}
-                                    className="max-md:hidden"
-                                />
-                                <MissingBotWorkspaceWarning
-                                    dictionary={dictionary}
-                                    inviteUrlByGuildId={inviteUrlByGuildId}
-                                    servers={visibleServers}
-                                    userDiscordId={user.discordId}
-                                />
-                                {children}
-                            </div>
-                            <SiteFooter
+                            <MissingBotWorkspaceWarning
                                 dictionary={dictionary}
-                                status={status}
-                                locale={locale}
+                                inviteUrlByGuildId={inviteUrlByGuildId}
+                                servers={visibleServers}
+                                userDiscordId={user.discordId}
                             />
-                        </SidebarInset>
-                    </SidebarProvider>
-                </PageCrumbProvider>
+                            {children}
+                        </div>
+                        <SiteFooter
+                            dictionary={dictionary}
+                            status={status}
+                            locale={locale}
+                        />
+                    </SidebarInset>
+                </SidebarProvider>
             </SettingsAttentionProvider>
         </DashboardOnboarding>
     )

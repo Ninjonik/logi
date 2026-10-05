@@ -1,14 +1,6 @@
 "use client"
 
-import {
-    createContext,
-    Fragment,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-    type ReactNode,
-} from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { usePathname, useParams } from "next/navigation"
 import Link from "next/link"
 
@@ -32,39 +24,39 @@ import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 import { cn } from "@/lib/utils"
 
-type PageCrumbState = { pathname: string; label: string } | null
-
-const PageCrumbContext = createContext<{
-    value: PageCrumbState
-    set: (value: PageCrumbState) => void
-} | null>(null)
-
-/** Holds the name a page gives itself for the trail (see `PageCrumb`). */
-export function PageCrumbProvider({ children }: { children: ReactNode }) {
-    const [value, set] = useState<PageCrumbState>(null)
-    const context = useMemo(() => ({ value, set }), [value])
-    return (
-        <PageCrumbContext.Provider value={context}>
-            {children}
-        </PageCrumbContext.Provider>
-    )
-}
+/** The page's own heading: PageHeader's title, else the first `h1`. */
+const PAGE_HEADING =
+    '[data-page-title], [data-slot="sidebar-inset"] h1, main h1'
 
 /**
- * Names the current record in the trail and the phone title bar, such as
- * "VLK vs ROG · Friendly" instead of "Match" (design D3). Render it anywhere
- * on the page; it shows nothing itself.
+ * The current page's heading, so the trail and the phone title bar can name
+ * a record ("VLK vs ROG · Friendly" rather than "Match", design D3). Pages
+ * may stream their heading in after the frame, so it is watched for a while
+ * after every navigation.
  */
-export function PageCrumb({ label }: { label: string }) {
-    const context = useContext(PageCrumbContext)
-    const pathname = usePathname() ?? ""
-    const set = context?.set
+function usePageHeading(pathname: string) {
+    const [heading, setHeading] = useState<{ path: string; text: string }>()
     useEffect(() => {
-        if (!set) return
-        set({ pathname, label })
-        return () => set(null)
-    }, [set, pathname, label])
-    return null
+        const read = () => {
+            const text = document
+                .querySelector(PAGE_HEADING)
+                ?.textContent?.replace(/\s+/g, " ")
+                .trim()
+            if (text) setHeading({ path: pathname, text })
+            return Boolean(text)
+        }
+        if (read()) return
+        const observer = new MutationObserver(() => {
+            if (read()) observer.disconnect()
+        })
+        observer.observe(document.body, { childList: true, subtree: true })
+        const stop = window.setTimeout(() => observer.disconnect(), 10_000)
+        return () => {
+            observer.disconnect()
+            window.clearTimeout(stop)
+        }
+    }, [pathname])
+    return heading?.path === pathname ? heading.text : undefined
 }
 
 /** The current page's trail: section, record and the way back. */
@@ -79,7 +71,7 @@ export function useDashboardPageTrail({
 }): DashboardPageTrail & { server?: Guild } {
     const pathname = usePathname() ?? ""
     const params = useParams()
-    const named = useContext(PageCrumbContext)?.value
+    const heading = usePageHeading(pathname)
     const serverId =
         typeof params.serverId === "string" ? params.serverId : undefined
     const server = servers.find((item) => item.id === serverId)
@@ -92,9 +84,7 @@ export function useDashboardPageTrail({
             serverName: server?.name,
             labels,
         }).map((crumb) =>
-            crumb.isLast && named?.pathname === pathname
-                ? { ...crumb, label: named.label }
-                : crumb
+            crumb.isLast && heading ? { ...crumb, label: heading } : crumb
         )
         return {
             ...dashboardPageTrail(crumbs, {
@@ -102,7 +92,7 @@ export function useDashboardPageTrail({
             }),
             server,
         }
-    }, [labels, locale, named, pathname, server, serverId])
+    }, [heading, labels, locale, pathname, server, serverId])
 }
 
 /**

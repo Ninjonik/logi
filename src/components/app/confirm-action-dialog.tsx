@@ -72,9 +72,12 @@ export function ConfirmActionDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-            <DialogContent className="gap-3.5 rounded-[14px] p-[22px] sm:max-w-md">
+            <DialogContent
+                showCloseButton={false}
+                className="gap-3.5 rounded-[14px] p-[22px] sm:max-w-md"
+            >
                 <DialogHeader className="gap-3.5 text-left">
-                    <DialogTitle className="pr-6 text-[17px] leading-6">
+                    <DialogTitle className="text-[17px] leading-6">
                         {title}
                     </DialogTitle>
                     {description ? (
