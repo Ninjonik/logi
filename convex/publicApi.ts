@@ -10,6 +10,10 @@ import {
     projectEventSummary,
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
+import {
+    prepareExternalClanSettings,
+    readExternalClanSettings,
+} from "./clanSettingsStores"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
@@ -1784,7 +1788,15 @@ export const getClanSettings = query({
             discordConfig: safeDiscordConfig,
             // Feature settings slices (src/domain/api/clan-settings-slices.ts).
             slices: readClanSettingsSlices(
-                { discordConfig: safeDiscordConfig },
+                {
+                    discordConfig: safeDiscordConfig,
+                    // Slices kept in their own table (convex/clanSettingsStores.ts).
+                    external: await readExternalClanSettings(
+                        ctx,
+                        key.guildId,
+                        CLAN_SETTINGS_SLICES
+                    ),
+                },
                 CLAN_SETTINGS_SLICES
             ),
         }
@@ -1851,8 +1863,31 @@ export const mutateClanSettings = mutation({
                     },
                 }
             }
+            // Slices in their own table are checked against the database
+            // here and written below only when the whole request is accepted.
+            const external =
+                slicePatch.ok && args.slices
+                    ? await prepareExternalClanSettings(
+                          ctx,
+                          key.guildId,
+                          args.slices,
+                          CLAN_SETTINGS_SLICES
+                      )
+                    : null
+            if (external && !external.ok && !response) {
+                status = external.error.status
+                response = {
+                    error: {
+                        code: external.error.code,
+                        message: external.error.message,
+                    },
+                }
+            }
             const hasDiscordPatch = [
-                slicePatch.ok && slicePatch.changed ? true : undefined,
+                // External slices write no Discord configuration fields.
+                slicePatch.ok && Object.keys(slicePatch.patch).length
+                    ? true
+                    : undefined,
                 args.timezone,
                 args.defaultLanguage,
                 args.announcementsChannelId,
@@ -1942,6 +1977,8 @@ export const mutateClanSettings = mutation({
                     ...discordPatch,
                     updatedAt: now,
                 })
+            if (!response && external?.ok)
+                await external.commit(`api:${String(key._id)}`)
             if (!response!) {
                 const updatedGuild = await ctx.db.get(guild._id)
                 const updatedConfig = config
@@ -1955,7 +1992,14 @@ export const mutateClanSettings = mutation({
                             : null,
                         discordConfig: safeDiscordConfig,
                         slices: readClanSettingsSlices(
-                            { discordConfig: safeDiscordConfig },
+                            {
+                                discordConfig: safeDiscordConfig,
+                                external: await readExternalClanSettings(
+                                    ctx,
+                                    key.guildId,
+                                    CLAN_SETTINGS_SLICES
+                                ),
+                            },
                             CLAN_SETTINGS_SLICES
                         ),
                     },

@@ -1,7 +1,10 @@
 import { z } from "zod"
 
+import {
+    panelGraphicsPageDataSchema,
+    type PanelGraphicsPageData,
+} from "@/lib/panel-graphics-view"
 import type { PanelGraphicsPatch } from "@/domain/discord-publications/panel-graphics-settings"
-import { panelGraphicsViewSchema } from "@/lib/api/panel-graphics-route"
 
 /** Error codes of `PATCH /api/servers/{serverId}/discord-panel-graphics`. */
 export const PANEL_GRAPHICS_SAVE_ERRORS = [
@@ -14,18 +17,6 @@ export const PANEL_GRAPHICS_SAVE_ERRORS = [
 ] as const
 export type PanelGraphicsSaveError = (typeof PANEL_GRAPHICS_SAVE_ERRORS)[number]
 
-const tileSchema = z.object({
-    game: z.enum(["hell_let_loose", "wardogs"]),
-    key: z.string(),
-    name: z.string(),
-    status: z.enum(["custom", "builtin", "none"]),
-    image: z.string().nullable(),
-    builtIn: z.string().nullable(),
-})
-const loadSchema = panelGraphicsViewSchema.extend({
-    mapTiles: z.array(tileSchema),
-})
-export type PanelGraphicsPageData = z.infer<typeof loadSchema>
 const route = (serverId: string) =>
     `/api/servers/${encodeURIComponent(serverId)}/discord-panel-graphics`
 
@@ -40,7 +31,7 @@ export async function loadPanelGraphics(
     try {
         const response = await fetcher(route(serverId), { cache: "no-store" })
         if (response.status === 403) return { ok: false, error: "forbidden" }
-        const parsed = loadSchema.safeParse(
+        const parsed = panelGraphicsPageDataSchema.safeParse(
             await response.json().catch(() => null)
         )
         return response.ok && parsed.success

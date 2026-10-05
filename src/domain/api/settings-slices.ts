@@ -16,6 +16,11 @@ import { z } from "zod"
 /** What a slice reads: the clan's Discord configuration without secrets. */
 export type ClanSettingsSource = {
     discordConfig: Readonly<Record<string, unknown>> | null
+    /**
+     * Values of slices kept in their own table (`external` slices), loaded
+     * by Convex (`convex/clanSettingsStores.ts`) and keyed by slice key.
+     */
+    external?: Readonly<Record<string, unknown>>
 }
 
 /** Fields a slice writes on the clan's Discord configuration. */
@@ -34,6 +39,14 @@ export type ClanSettingsSlice<Value = unknown, Patch = unknown> = {
     read(source: ClanSettingsSource): Value
     /** Validated PATCH value → Discord configuration fields to write. */
     toPatch(patch: Patch, source: ClanSettingsSource): DiscordConfigPatch
+    /**
+     * The slice lives in its own table, not in the Discord configuration:
+     * `read` takes `source.external[key]`, `toPatch` returns no fields and
+     * Convex verifies and writes the patch through the slice's store in
+     * `convex/clanSettingsStores.ts` (for checks that need the database,
+     * such as uploaded image assets).
+     */
+    external?: boolean
 }
 
 /** Any slice, for registries (method parameters keep each slice's own types). */
@@ -143,6 +156,18 @@ export function parseClanSettingsSlicePatches(
         value[key] = parsed.data
     }
     return { ok: true, value }
+}
+
+/** The validated patches of `external` slices, which Convex writes itself. */
+export function externalClanSettingsSlicePatches(
+    patches: Readonly<Record<string, unknown>>,
+    slices: readonly AnyClanSettingsSlice[]
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(patches).filter(
+            ([key]) => sliceByKey(slices, key)?.external === true
+        )
+    )
 }
 
 /** Every slice's current value, for `data.slices`. */

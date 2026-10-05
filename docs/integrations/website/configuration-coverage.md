@@ -35,9 +35,9 @@ separate snapshot with an explicit Discord channel selection.
 
 ### Image assets
 
-Workspace administrators upload team request logos and panel banners through the
-dashboard-session route
-`POST /api/servers/{serverId}/image-assets?kind=team-logo|panel-banner`
+Workspace administrators upload team request logos, panel banners and panel
+map images through the dashboard-session route
+`POST /api/servers/{serverId}/image-assets?kind=team-logo|panel-banner|panel-map`
 (same-origin requests with admin access only) and list the workspace's live
 assets of one kind with `GET` on the same route. Global administrators upload
 catalogue logos into the platform scope through the same pipeline, which
@@ -48,7 +48,9 @@ content type against the magic number and the decoder, rejects animated WebP and
 animated PNG (APNG) sources, reports a source over 4096 pixels on either side as
 `bad_dimensions` without decoding its pixels, and stores only a normalized copy:
 logos fit inside 512×512 and are published as PNG, banners fit inside 1920×1080
-and are published as WebP, with EXIF orientation applied and metadata dropped.
+and are published as WebP, map images must be at least 160×160 (else
+`bad_dimensions`) and fit inside 1200×1200 as WebP, with EXIF orientation
+applied and metadata dropped.
 Each attempt counts toward a limit of 10 uploads per 10 minutes per actor and
 workspace before any body bytes are read; a limited attempt answers `429` with
 `Retry-After` and `{ "error": "upload_limited", "retryAfterMs": … }`. Stored
@@ -69,8 +71,9 @@ uploads that are still not attached to a team, team request, event or panel 24
 hours after they were created; each run pages through every expired asset with a
 cursor, so referenced logos and banners never block the uploads behind them, and
 it stops when the scan is complete. The route backs the workspace **Teams**
-request form (request logos) and the panel **Appearance** editor (banners). No
-`/api/v1` operation exposes uploads: that is the permanent API-parity exception
+request form (request logos), the panel **Appearance** editor (banners) and
+**Grafika panelů** (server banners and map images, referenced with owner
+`panelGraphics`). No `/api/v1` operation exposes uploads: that is the permanent API-parity exception
 recorded in the
 [v0.15 handoff](v0.15/README.md#api-parity-exception-catalogue-writes-logo-uploads-and-team-requests)
 and in [Discord public panels](discord-public-panels.md#api-and-activation).
@@ -158,12 +161,43 @@ validates the body with `parseClanSettingsPatch`, `publicApi:mutateClanSettings`
 validates it again and writes it, GET and the PATCH response include it, and
 `src/lib/api/settings-openapi.ts` documents it from its Zod schemas
 (`ClanSettings<Key>Slice` and `ClanSettings<Key>Patch`) at request time, so
-`npm run generate:openapi` is not needed for a slice. A slice whose data lives
-in its own table adds that read and write path to the Convex mutation itself.
-`src/domain/api/settings-slices.test.ts` shows a complete example slice. The
-registry ships empty; each redesign workstream adds its own slice and records
-its deliberate exclusions (binary uploads, live Discord actions, application
-decisions) in this document.
+`npm run generate:openapi` is not needed for a slice.
+
+A slice whose data lives in its own table sets `external: true`: its `read`
+takes `source.external[key]` and its `toPatch` returns no fields. Its store in
+`convex/clanSettingsStores.ts` reads the value for GET and, for PATCH,
+validates the patch against the database first (`prepare`) and writes it
+(`commit`) only when the whole request is accepted, so a refused request never
+writes half of a change. `src/domain/api/settings-slices.test.ts` shows a
+complete example slice. Each redesign workstream adds its own slice and
+records its deliberate exclusions (binary uploads, live Discord actions,
+application decisions) in this document.
+
+### `panelGraphics` (Grafika panelů)
+
+`src/domain/api/panel-graphics-settings-slice.ts`, stored in
+`discordPanelGraphics` (external slice). GET returns the default panel style
+(`a` generated score image, `b` banner and map thumbnail, `c` compact), the
+`revision`, one entry per game server with a banner (`assetId`, public `url`),
+`crop` (`top`/`center`/`bottom`), `useMapImage` and the style B `barColor`
+(`null` = clan colour), and the map image overrides per `game` and `mapKey`.
+PATCH accepts the same partial change as the dashboard
+(`panelGraphicsPatchSchema`): `defaultStyle`; `servers[]` with `connectionId`
+and any of `bannerAssetId` (`null` removes), `crop`, `useMapImage`, `barColor`
+(`null` = clan colour) or `reset: true`; `maps[]` with `game`, `mapKey` and
+`assetId` (`null` restores Logi's built-in image); optional `expectedRevision`
+(`409 conflict` when it is stale). An asset must be a live upload of the same
+clan of the right kind (`panel-banner` for banners, `panel-map` for maps),
+else `400 validation_error`; an unknown server connection is refused the same
+way. The dashboard and the API share `preparePanelGraphicsChange`, so both
+apply the same rules, and API writes record `api:<key id>` as the author.
+
+**Deliberate exclusions:** binary uploads of banners and map images stay in the
+dashboard (`POST /api/servers/{serverId}/image-assets`, session and clan admin
+only); the API references existing assets by ID. The fixed faction, nation,
+status and gauge signs are not settings: the bot provisions them as application
+emoji, and their upload state is shown on the page and returned by the
+dashboard route only.
 
 ## Source and runtime evidence
 

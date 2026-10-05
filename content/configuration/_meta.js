@@ -6,4 +6,5 @@ export default {
     "game-history": "Server game history",
     "single-sign-on": "Single sign-on",
     tickets: "Tickets",
+    "panel-graphics": "Panel graphics",
 }

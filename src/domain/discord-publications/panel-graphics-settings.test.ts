@@ -1,11 +1,13 @@
 import {
     applyPanelGraphicsPatch,
+    clanBadgeTag,
     DEFAULT_PANEL_GRAPHICS,
     filterPanelMapTiles,
     panelEmojiReportSchema,
     panelEmojiStatus,
     panelGraphicsChangeCount,
     panelGraphicsForBot,
+    panelGraphicsPatchFrom,
     panelGraphicsPatchSchema,
     panelGraphicsSettingsSchema,
     panelMapTiles,
@@ -232,4 +234,64 @@ test("emoji status counts 12 faction signs and 7 status pieces", () => {
             .success,
         false
     )
+})
+
+test("the save bar sends only what changed, with the edited revision", () => {
+    const saved = applyPanelGraphicsPatch(
+        DEFAULT_PANEL_GRAPHICS,
+        patch({
+            servers: [
+                {
+                    connectionId: "c1",
+                    bannerAssetId: "imageAssets:1",
+                    crop: "top",
+                },
+            ],
+            maps: [
+                {
+                    game: "hell_let_loose",
+                    mapKey: "carentan",
+                    assetId: "imageAssets:2",
+                },
+            ],
+        })
+    )
+    assert.equal(panelGraphicsPatchFrom(saved, saved, 3), null)
+    const draft = applyPanelGraphicsPatch(
+        saved,
+        patch({
+            defaultStyle: "c",
+            servers: [
+                { connectionId: "c1", crop: "center" },
+                { connectionId: "c2", barColor: "#7c8cf0" },
+            ],
+            maps: [
+                { game: "hell_let_loose", mapKey: "carentan", assetId: null },
+                { game: "wardogs", mapKey: "ozeti", assetId: "imageAssets:3" },
+            ],
+        })
+    )
+    const sent = panelGraphicsPatchFrom(saved, draft, 3)
+    assert.deepEqual(sent, {
+        defaultStyle: "c",
+        servers: [
+            { connectionId: "c1", crop: "center" },
+            { connectionId: "c2", barColor: "#7c8cf0" },
+        ],
+        maps: [
+            { game: "hell_let_loose", mapKey: "carentan", assetId: null },
+            { game: "wardogs", mapKey: "ozeti", assetId: "imageAssets:3" },
+        ],
+        expectedRevision: 3,
+    })
+    // Applying the patch reproduces the draft exactly.
+    assert.deepEqual(applyPanelGraphicsPatch(saved, sent!), draft)
+    assert.equal(panelGraphicsChangeCount(saved, draft), 5)
+})
+
+test("the banner badge uses the clan's initials", () => {
+    assert.equal(clanBadgeTag("Vlci"), "VLC")
+    assert.equal(clanBadgeTag("Váš klan"), "VK")
+    assert.equal(clanBadgeTag("Česká Elitní Jednotka Alfa"), "CEJ")
+    assert.equal(clanBadgeTag("  "), "LOGI")
 })

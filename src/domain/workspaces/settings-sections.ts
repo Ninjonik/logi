@@ -19,6 +19,8 @@ export const SETTINGS_SECTIONS = [
     { id: "presets", group: "matches" },
     { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
+    // "Grafika panelů" (board P8); it sits under "Panely v Discordu".
+    { id: "panel-graphics", group: "discord" },
     { id: "roles", group: "discord" },
     { id: "stats", group: "discord" },
     { id: "membership", group: "discord" },
