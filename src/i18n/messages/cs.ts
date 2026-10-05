@@ -1137,6 +1137,13 @@ export const csMessages = {
             unsigned: "se odhlásil(a)",
             declined: "odmítl(a)",
         },
+        emptyTitle: "Zatím žádné přihlášky",
+        emptyDescription:
+            "Přihlášky, změny rolí a odhlášky ze zápasů a tréninků se tu objeví, jakmile proběhnou.",
+        limitNotice:
+            "Zobrazuje se posledních {count} změn. Starší změny tu nejsou.",
+        filteredBy: "Jen {event}",
+        showAll: "Zobrazit vše",
     },
     teamCatalogAdmin: {
         title: "Katalog týmů",
@@ -2262,6 +2269,26 @@ export const csMessages = {
             "Propojeno {linked} importovaných hráčů z {scanned} kandidátů.",
         linkMissingDiscordIdsMerged:
             "{count} importovaných hráčských záznamů bylo sloučeno s existujícími Discord účty.",
+        platformIdsHint:
+            "Více ID oddělte čárkou. Steam ID má 17 číslic a začíná 7656119; ID z Xboxu a PlayStationu pište jako xbox:… nebo psn:….",
+        platformIdsInvalid: "Před uložením opravte označená ID platforem.",
+        platformIssues: {
+            steam_format:
+                "Není to Steam ID: musí mít 17 číslic a začínat 7656119.",
+            epic_format: "Není to ID Epic Games.",
+            too_long: "Na ID platformy je to příliš dlouhé.",
+            duplicate: "Uvedeno dvakrát; uloží se jednou.",
+            linked_elsewhere: "Už je propojené s hráčem {name}.",
+        },
+        grantAdminTitle: "Udělat z hráče {name} správce?",
+        grantAdminDescription:
+            "{name} pak bude moct v dashboardu Logi měnit nastavení klanu, zápasy, soupisky a členy. Přístup můžete později odebrat.",
+        removeAdminTitle: "Odebrat hráči {name} správcovský přístup?",
+        removeAdminDescription:
+            "{name} zůstane v klanu, ale v dashboardu ho už nebude moct spravovat, pokud mu přístup nedává role na Discordu.",
+        removePlayerTitle: "Odebrat hráče {name} z klanu?",
+        removePlayerDescription:
+            "Smaže se jeho zařazení, skupiny i stav členství v tomto klanu a Logi mu odebere role na Discordu, které spravuje. Historie zápasů zůstane.",
     },
     navUser: {
         scoreSuffix: "skóre",

@@ -1,4 +1,5 @@
 import { Activity, Shield, Skull, Swords, Target, Wrench } from "lucide-react"
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 import {
@@ -53,10 +54,10 @@ export default async function ServerUserDetailPage({
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const context = await getServerContext(serverId, gameScope)
-    if (!context) return null
+    if (!context) notFound()
     const { server, groups = [], assignments } = context
 
-    const found = await getServerUserAssignment(assignmentId)
+    const found = await getServerUserAssignment(assignmentId).catch(() => null)
     // The ID comes from the URL: only this clan's assignments may be shown.
     const assignment = found?.serverId === server.discordId ? found : null
     const users = assignment
@@ -65,7 +66,7 @@ export default async function ServerUserDetailPage({
     const user = users[0]
     const eligibleUsers = await getEligibleUsersForServer(server, assignments)
 
-    if (!assignment || !user) return null
+    if (!assignment || !user) notFound()
 
     const playerStatsDocs = await getPlayerStatsDocs(user.id)
     const sortedMatches = sortPlayerMatches(
@@ -131,6 +132,7 @@ export default async function ServerUserDetailPage({
                             <PlayerAdminAccessButton
                                 serverId={server.id}
                                 playerId={user.discordId}
+                                playerName={user.name}
                                 initialIsAdmin={
                                     server.adminAccessOverrides?.[
                                         user.discordId

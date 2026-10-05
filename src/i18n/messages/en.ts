@@ -1136,6 +1136,13 @@ export const enMessages = {
             unsigned: "withdrew",
             declined: "declined",
         },
+        emptyTitle: "No signup activity yet",
+        emptyDescription:
+            "Signups, role changes and withdrawals for matches and trainings appear here as they happen.",
+        limitNotice:
+            "Showing the latest {count} changes. Older changes are not listed here.",
+        filteredBy: "Only {event}",
+        showAll: "Show all activity",
     },
     teamCatalogAdmin: {
         title: "Team catalogue",
@@ -2265,6 +2272,26 @@ export const enMessages = {
             "This category has no final role configured. ",
         missingCategoryRolesSummary:
             "Logi will keep the membership status here, but the matching Discord role will not be added for that stage.",
+        platformIdsHint:
+            "Separate several IDs with commas. A Steam ID has 17 digits and starts with 7656119; write Xbox and PlayStation IDs as xbox:… or psn:….",
+        platformIdsInvalid: "Fix the marked platform IDs before saving.",
+        platformIssues: {
+            steam_format:
+                "Not a Steam ID: it must have 17 digits and start with 7656119.",
+            epic_format: "Not an Epic Games ID.",
+            too_long: "Too long for a platform ID.",
+            duplicate: "Listed twice; it is saved once.",
+            linked_elsewhere: "Already linked to {name}.",
+        },
+        grantAdminTitle: "Make {name} an admin?",
+        grantAdminDescription:
+            "{name} can then change this clan's settings, matches, rosters and members in the Logi dashboard. You can remove the access later.",
+        removeAdminTitle: "Remove admin access from {name}?",
+        removeAdminDescription:
+            "{name} stays in the clan but can no longer manage it in the dashboard, unless a Discord role still grants access.",
+        removePlayerTitle: "Remove {name} from the clan?",
+        removePlayerDescription:
+            "Their assignment, groups and membership status in this clan are deleted, and Logi removes the Discord roles it manages for them. Match history stays.",
     },
     navUser: {
         scoreSuffix: "score",

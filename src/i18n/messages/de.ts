@@ -1173,6 +1173,13 @@ export const deMessages = {
             unsigned: "hat sich abgemeldet",
             declined: "hat abgesagt",
         },
+        emptyTitle: "Noch keine Anmeldeaktivität",
+        emptyDescription:
+            "Anmeldungen, Rollenwechsel und Abmeldungen für Matches und Trainings erscheinen hier, sobald sie passieren.",
+        limitNotice:
+            "Es werden die letzten {count} Änderungen angezeigt. Ältere Änderungen erscheinen hier nicht.",
+        filteredBy: "Nur {event}",
+        showAll: "Alle Aktivitäten anzeigen",
     },
     teamCatalogAdmin: {
         title: "Teamkatalog",
@@ -2340,6 +2347,27 @@ export const deMessages = {
             "Diese Kategorie hat keine finale Rolle konfiguriert. ",
         missingCategoryRolesSummary:
             "Logi behält den Mitgliedsstatus hier, aber die passende Discord-Rolle wird für diese Stufe nicht hinzugefügt.",
+        platformIdsHint:
+            "Trenne mehrere IDs mit Kommas. Eine Steam-ID hat 17 Ziffern und beginnt mit 7656119; schreib Xbox- und PlayStation-IDs als xbox:… oder psn:….",
+        platformIdsInvalid:
+            "Korrigiere die markierten Plattform-IDs vor dem Speichern.",
+        platformIssues: {
+            steam_format:
+                "Keine Steam-ID: Sie muss 17 Ziffern haben und mit 7656119 beginnen.",
+            epic_format: "Keine Epic-Games-ID.",
+            too_long: "Zu lang für eine Plattform-ID.",
+            duplicate: "Doppelt angegeben; wird einmal gespeichert.",
+            linked_elsewhere: "Bereits mit {name} verknüpft.",
+        },
+        grantAdminTitle: "{name} zum Admin machen?",
+        grantAdminDescription:
+            "{name} kann dann im Logi-Dashboard die Einstellungen, Matches, Roster und Mitglieder dieses Clans ändern. Du kannst den Zugriff später wieder entfernen.",
+        removeAdminTitle: "{name} den Admin-Zugriff entziehen?",
+        removeAdminDescription:
+            "{name} bleibt im Clan, kann ihn aber nicht mehr im Dashboard verwalten, außer eine Discord-Rolle gewährt weiterhin Zugriff.",
+        removePlayerTitle: "{name} aus dem Clan entfernen?",
+        removePlayerDescription:
+            "Zuordnung, Gruppen und Mitgliedsstatus in diesem Clan werden gelöscht, und Logi entfernt die von ihm verwalteten Discord-Rollen. Der Match-Verlauf bleibt.",
     },
     navUser: {
         scoreSuffix: "Score",
