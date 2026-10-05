@@ -10,6 +10,7 @@ import {
     invalidateMembershipGuild,
 } from "./sync/member-access"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
+import { interactionLanguage, replyUnknownError } from "./ui/replies"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
 import { DiscordSyncService } from "./runtime/sync-service"
@@ -242,19 +243,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
             error,
         })
 
-        if (interaction.isRepliable()) {
-            const message =
-                "Something went wrong while handling that interaction."
-            if (interaction.deferred || interaction.replied) {
-                await interaction
-                    .followUp({ content: message, ephemeral: true })
-                    .catch(() => null)
-            } else {
-                await interaction
-                    .reply({ content: message, ephemeral: true })
-                    .catch(() => null)
-            }
-        }
+        // "Tohle se nepovedlo" in the clan language, private (M3-08).
+        if (interaction.isRepliable())
+            await replyUnknownError(interaction, {
+                language: await interactionLanguage(interaction.guildId),
+            }).catch((replyError) =>
+                logWarn("interaction", "Unknown error reply failed", {
+                    guildId: interaction.guildId,
+                    error: replyError,
+                })
+            )
     }
 })
 
