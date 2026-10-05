@@ -457,7 +457,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public competition",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId. An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
+                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId and carry an optional round number (missing on fixtures saved before rounds). An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
             parameters: [
                 {
                     name: "slug",
