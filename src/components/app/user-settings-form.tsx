@@ -143,8 +143,13 @@ export function UserSettingsForm({
     const avatarInput = useRef<HTMLInputElement>(null)
     const [avatar, setAvatar] = useState(user.avatar)
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-    const [startClan, setStartClan] = useState(
-        user.defaultWorkspaceId ?? AUTOMATIC
+    // A stored clan the person can no longer open is not offered; show Automatic.
+    const [startClan, setStartClan] = useState(() =>
+        workspaces.some(
+            (workspace) => workspace.discordId === user.defaultWorkspaceId
+        )
+            ? (user.defaultWorkspaceId ?? AUTOMATIC)
+            : AUTOMATIC
     )
     const [isSavingStartClan, setIsSavingStartClan] = useState(false)
     const [matchRecapNotificationsEnabled, setMatchRecapNotificationsEnabled] =

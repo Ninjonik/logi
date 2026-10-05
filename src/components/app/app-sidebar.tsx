@@ -51,6 +51,7 @@ export function AppSidebar({
     activeServerId,
     canAdmin,
     isSuperadmin,
+    globalAdminSidebar,
     ...props
 }: React.ComponentProps<typeof Sidebar> & {
     locale: Locale
@@ -60,6 +61,11 @@ export function AppSidebar({
     activeServerId?: string
     canAdmin: boolean
     isSuperadmin: boolean
+    /**
+     * The global administration sidebar (design AdminSidebar). When given, it
+     * replaces this clan sidebar on global administration pages.
+     */
+    globalAdminSidebar?: React.ReactNode
 }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -256,7 +262,9 @@ export function AppSidebar({
             : []
 
     // Switch point: on global administration pages (`isGlobalAdminPath`) the
-    // shell can render the global administration sidebar instead of this one.
+    // shell's `globalAdminSidebar` replaces this one (see the end of this
+    // component). Until it is passed, global administration stays reachable
+    // from the "Global administration" entry and its sub-pages below.
     const onGlobalAdminPage = isGlobalAdminPath(pathname)
     const footerItems: NavItem[] = [
         {
@@ -323,6 +331,10 @@ export function AppSidebar({
     ]
     const expandLabel = (title: string) =>
         t.showSubpages.replace("{item}", title)
+
+    if (globalAdminSidebar && isSuperadmin && onGlobalAdminPage) {
+        return globalAdminSidebar
+    }
 
     return (
         <Sidebar id="onboarding-sidebar" {...props}>

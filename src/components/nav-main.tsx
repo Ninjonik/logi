@@ -129,12 +129,17 @@ export function NavMenuItems({
                         <Link href={url} prefetch={!isHeavyServerRoute(url)}>
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
+                            {item.badge && item.badge.count > 0 ? (
+                                <span className="sr-only">
+                                    {`, ${item.badge.label}`}
+                                </span>
+                            ) : null}
                         </Link>
                     </SidebarMenuButton>
                     {item.badge && item.badge.count > 0 ? (
                         <SidebarMenuBadge
                             title={item.badge.label}
-                            aria-label={item.badge.label}
+                            aria-hidden="true"
                             className="bg-status-warning-muted text-status-warning rounded-full px-1.5 font-semibold peer-data-[size=default]/menu-button:top-2.5 md:peer-data-[size=default]/menu-button:top-1.5"
                         >
                             {item.badge.count}
