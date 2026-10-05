@@ -1,7 +1,7 @@
 "use client"
 
-import { BellRing, ChevronRight, Search, Users } from "lucide-react"
-import { useMemo, useState } from "react"
+import { Bell, Search, Trophy, UsersRound } from "lucide-react"
+import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 
 import {
@@ -11,28 +11,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import type {
-    MatchBadgeTone,
-    MatchListQueueRow,
-    MatchListRow,
-} from "@/lib/match-list-rows"
+import type { MatchListQueueRow, MatchListRow } from "@/lib/match-list-rows"
+import { MatchRowList } from "@/components/app/match-row-list"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-type Tab = "upcoming" | "played"
+export type MatchListTab = "upcoming" | "played" | "drafts"
+type Kind = MatchListRow["kind"]
 
 const RECENTLY_PLAYED_WEEKS = 2
 const RECENTLY_PLAYED_COUNT = 3
-
-const badgeTones: Record<MatchBadgeTone, string> = {
-    info: "border-sky-500/30 bg-sky-500/10 text-sky-900 dark:text-sky-100",
-    attention:
-        "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100",
-    success:
-        "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
-    neutral: "border-border bg-muted text-muted-foreground",
-}
+const PAGE_SIZE = 30
 
 function groupRows(rows: MatchListRow[]) {
     const groups: Array<{ key: number; label: string; rows: MatchListRow[] }> =
@@ -46,7 +37,7 @@ function groupRows(rows: MatchListRow[]) {
     return groups
 }
 
-function MatchRows({
+function WeekSection({
     id,
     label,
     rows,
@@ -56,149 +47,275 @@ function MatchRows({
     rows: MatchListRow[]
 }) {
     return (
-        <section aria-labelledby={id} className="space-y-2">
+        <section aria-labelledby={id} className="flex flex-col gap-2">
             <h2
                 id={id}
-                className="text-muted-foreground text-xs font-semibold tracking-wide uppercase"
+                className="text-muted-foreground text-xs font-semibold tracking-[0.04em] uppercase"
             >
                 {label}
             </h2>
-            <ul className="border-border/60 divide-border/60 divide-y overflow-hidden rounded-2xl border">
-                {rows.map((row) => (
-                    <li key={row.id}>
-                        <Link
-                            href={row.href}
-                            className="hover:bg-muted/50 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors"
-                        >
-                            <span className="flex w-16 shrink-0 flex-col items-center leading-tight">
-                                <span className="text-muted-foreground text-xs">
-                                    {row.date}
-                                </span>
-                                <span className="text-base font-semibold tabular-nums">
-                                    {row.time}
-                                </span>
-                            </span>
-                            <span className="flex min-w-0 flex-[1_1_14rem] flex-col leading-snug">
-                                <span className="truncate text-sm font-semibold">
-                                    {row.title}
-                                </span>
-                                {row.details ? (
-                                    <span className="text-muted-foreground truncate text-sm">
-                                        {row.details}
-                                    </span>
-                                ) : null}
-                            </span>
-                            <span
-                                className={cn(
-                                    "shrink-0 tabular-nums",
-                                    row.metricStrong
-                                        ? "text-sm font-semibold"
-                                        : "text-muted-foreground text-sm"
-                                )}
-                            >
-                                {row.metric}
-                            </span>
-                            <span
-                                className={cn(
-                                    "inline-flex h-6 shrink-0 items-center rounded-full border px-2.5 text-xs font-medium",
-                                    badgeTones[row.badge.tone]
-                                )}
-                            >
-                                {row.badge.label}
-                            </span>
-                            <ChevronRight
-                                className="text-muted-foreground/70 hidden size-4 shrink-0 sm:block"
-                                aria-hidden="true"
-                            />
-                        </Link>
-                    </li>
-                ))}
-            </ul>
+            <MatchRowList rows={rows} />
         </section>
     )
 }
 
+function QueueCard({ item }: { item: MatchListQueueRow }) {
+    const attention = item.kind !== "confirmAttendance"
+    const Icon =
+        item.kind === "publishRoster"
+            ? UsersRound
+            : item.kind === "confirmResult"
+              ? Trophy
+              : Bell
+    return (
+        <Link
+            href={item.href}
+            className={cn(
+                "flex items-start gap-3 rounded-xl border px-4 py-3.5 transition-colors",
+                attention
+                    ? "border-amber-200 bg-amber-50 hover:bg-amber-100/70 dark:border-amber-400/30 dark:bg-amber-400/10 dark:hover:bg-amber-400/15"
+                    : "bg-muted/40 hover:bg-muted/70"
+            )}
+        >
+            <Icon
+                className={cn(
+                    "mt-px size-[18px] shrink-0",
+                    attention
+                        ? "text-amber-700 dark:text-amber-300"
+                        : "text-muted-foreground"
+                )}
+                aria-hidden="true"
+            />
+            <span className="flex min-w-0 flex-col leading-5">
+                <span className="text-sm font-semibold">{item.title}</span>
+                <span
+                    className={cn(
+                        "text-[13px]",
+                        attention
+                            ? "text-amber-900 dark:text-amber-100/85"
+                            : "text-muted-foreground"
+                    )}
+                >
+                    {item.detail}
+                </span>
+            </span>
+        </Link>
+    )
+}
+
+function NoMatches({
+    children,
+    onClear,
+    clearLabel,
+}: {
+    children: ReactNode
+    onClear?: () => void
+    clearLabel: string
+}) {
+    return (
+        <div className="border-border/70 text-muted-foreground flex flex-col items-center gap-3 rounded-[14px] border border-dashed p-6 text-center text-sm">
+            <p>{children}</p>
+            {onClear ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                    onClick={onClear}
+                >
+                    {clearLabel}
+                </Button>
+            ) : null}
+        </div>
+    )
+}
+
 /**
- * Matches and trainings of a clan: organiser tasks first, then upcoming or
- * played events grouped by week, filtered by kind, game and text.
+ * Matches and trainings of a clan (design E1): organiser tasks first, then
+ * upcoming, played or draft events grouped by week, filtered by kind, game
+ * and text. `kinds` with one entry hides the kind chips, as on the trainings
+ * page.
  */
 export function MatchList({
     rows,
+    drafts,
     queue,
     games,
+    kinds,
+    showDrafts,
     initialGame,
     initialTab,
+    draftsEmpty,
     dictionary,
 }: {
     rows: MatchListRow[]
+    drafts: MatchListRow[]
     queue: MatchListQueueRow[]
     games: Array<{ id: GameId; label: string }>
+    kinds: readonly Kind[]
+    /** Managers get the drafts tab; members never see drafts. */
+    showDrafts: boolean
     initialGame?: GameId
-    initialTab?: Tab
+    initialTab?: MatchListTab
+    /** Shown in the drafts tab when the clan has no drafts. */
+    draftsEmpty?: ReactNode
     dictionary: Dictionary
 }) {
     const text = dictionary.matchList
-    const [tab, setTab] = useState<Tab>(initialTab ?? "upcoming")
-    const [kinds, setKinds] = useState({ match: true, training: true })
+    const trainingsOnly = kinds.length === 1 && kinds[0] === "training"
+    const [tab, setTab] = useState<MatchListTab>(
+        initialTab === "drafts" && !showDrafts
+            ? "upcoming"
+            : (initialTab ?? "upcoming")
+    )
+    const [selectedKinds, setSelectedKinds] = useState<Record<Kind, boolean>>({
+        match: true,
+        training: true,
+    })
     const [game, setGame] = useState<GameId | "all">(initialGame ?? "all")
     const [query, setQuery] = useState("")
+    const [playedLimit, setPlayedLimit] = useState(PAGE_SIZE)
 
-    const filtered = useMemo(() => {
+    const filtersActive =
+        game !== "all" ||
+        query.trim() !== "" ||
+        !selectedKinds.match ||
+        !selectedKinds.training
+    const filter = useMemo(() => {
         const needle = query.trim().toLocaleLowerCase()
-        return rows.filter(
-            (row) =>
-                kinds[row.kind] &&
-                (game === "all" || row.gameId === game) &&
-                (!needle || row.search.includes(needle))
-        )
-    }, [game, kinds, query, rows])
+        return (list: MatchListRow[]) =>
+            list.filter(
+                (row) =>
+                    selectedKinds[row.kind] &&
+                    (game === "all" || row.gameId === game) &&
+                    (!needle || row.search.includes(needle))
+            )
+    }, [game, selectedKinds, query])
+    const filtered = useMemo(() => filter(rows), [filter, rows])
+    const filteredDrafts = useMemo(() => filter(drafts), [filter, drafts])
     const upcoming = filtered.filter((row) => !row.played)
     const played = filtered.filter((row) => row.played).reverse()
     const recentlyPlayed = played
         .filter((row) => row.weekKey >= -RECENTLY_PLAYED_WEEKS)
         .slice(0, RECENTLY_PLAYED_COUNT)
-    const visible = tab === "upcoming" ? upcoming : played
 
-    function toggleKind(kind: "match" | "training") {
-        setKinds((current) => {
+    function toggleKind(kind: Kind) {
+        setSelectedKinds((current) => {
             const next = { ...current, [kind]: !current[kind] }
             // At least one kind stays selected so the list never empties by accident.
             return next.match || next.training ? next : current
         })
     }
 
+    function clearFilters() {
+        setSelectedKinds({ match: true, training: true })
+        setGame("all")
+        setQuery("")
+    }
+
+    const tabs: Array<{ value: MatchListTab; label: string }> = [
+        { value: "upcoming", label: text.tabs.upcoming },
+        { value: "played", label: text.tabs.played },
+        ...(showDrafts
+            ? [
+                  {
+                      value: "drafts" as const,
+                      label: drafts.length
+                          ? text.tabs.draftsCount.replace(
+                                "{count}",
+                                String(drafts.length)
+                            )
+                          : text.tabs.drafts,
+                  },
+              ]
+            : []),
+    ]
+
+    function weekSections(list: MatchListRow[]) {
+        return groupRows(list).map((group) => (
+            <WeekSection
+                key={`${tab}:${group.key}`}
+                id={`week-${tab}-${group.key}`}
+                label={group.label}
+                rows={group.rows}
+            />
+        ))
+    }
+
+    const clear = filtersActive ? clearFilters : undefined
+    let content: ReactNode
+    if (tab === "upcoming") {
+        content = (
+            <>
+                {upcoming.length ? (
+                    weekSections(upcoming)
+                ) : (
+                    <NoMatches onClear={clear} clearLabel={text.clearFilters}>
+                        {text.noUpcoming}
+                    </NoMatches>
+                )}
+                {recentlyPlayed.length ? (
+                    <WeekSection
+                        id="recently-played"
+                        label={text.recentlyPlayed}
+                        rows={recentlyPlayed}
+                    />
+                ) : null}
+            </>
+        )
+    } else if (tab === "played") {
+        content = played.length ? (
+            <>
+                {weekSections(played.slice(0, playedLimit))}
+                {played.length > playedLimit ? (
+                    <div className="flex justify-center">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-lg"
+                            onClick={() =>
+                                setPlayedLimit((limit) => limit + PAGE_SIZE)
+                            }
+                        >
+                            {text.showMore}
+                        </Button>
+                    </div>
+                ) : null}
+            </>
+        ) : (
+            <NoMatches onClear={clear} clearLabel={text.clearFilters}>
+                {text.noPlayed}
+            </NoMatches>
+        )
+    } else {
+        content = filteredDrafts.length ? (
+            weekSections(filteredDrafts)
+        ) : drafts.length ? (
+            <NoMatches onClear={clear} clearLabel={text.clearFilters}>
+                {text.noDraftsMatch}
+            </NoMatches>
+        ) : (
+            draftsEmpty
+        )
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {queue.length ? (
-                <section aria-labelledby="match-queue" className="space-y-2.5">
+                <section
+                    aria-labelledby="match-queue"
+                    className="flex flex-col gap-2.5"
+                >
                     <h2 id="match-queue" className="text-sm font-semibold">
                         {text.queue.title}
                     </h2>
-                    <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
-                        {queue.map((item) => {
-                            const Icon =
-                                item.kind === "publishRoster" ? Users : BellRing
-                            return (
-                                <Link
-                                    key={`${item.kind}:${item.href}`}
-                                    href={item.href}
-                                    className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 transition-colors hover:bg-amber-500/15"
-                                >
-                                    <Icon
-                                        className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300"
-                                        aria-hidden="true"
-                                    />
-                                    <span className="flex min-w-0 flex-col leading-snug">
-                                        <span className="text-sm font-semibold">
-                                            {item.title}
-                                        </span>
-                                        <span className="text-sm text-amber-900/80 dark:text-amber-100/80">
-                                            {item.detail}
-                                        </span>
-                                    </span>
-                                </Link>
-                            )
-                        })}
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(16.25rem,100%),1fr))] gap-3">
+                        {queue.map((item) => (
+                            <QueueCard
+                                key={`${item.kind}:${item.href}`}
+                                item={item}
+                            />
+                        ))}
                     </div>
                 </section>
             ) : null}
@@ -207,45 +324,69 @@ export function MatchList({
                 <div
                     role="tablist"
                     aria-label={text.tabsLabel}
-                    className="bg-muted flex gap-0.5 rounded-xl p-1"
+                    className="bg-muted flex gap-0.5 rounded-[10px] p-[3px]"
                 >
-                    {(["upcoming", "played"] as const).map((value) => (
+                    {tabs.map((item, index) => (
                         <button
-                            key={value}
+                            key={item.value}
+                            id={`match-tab-${item.value}`}
                             type="button"
                             role="tab"
-                            aria-selected={tab === value}
-                            onClick={() => setTab(value)}
+                            aria-selected={tab === item.value}
+                            aria-controls="match-tabpanel"
+                            tabIndex={tab === item.value ? 0 : -1}
+                            onClick={() => setTab(item.value)}
+                            onKeyDown={(event) => {
+                                const step =
+                                    event.key === "ArrowRight"
+                                        ? 1
+                                        : event.key === "ArrowLeft"
+                                          ? -1
+                                          : 0
+                                if (!step) return
+                                event.preventDefault()
+                                const next =
+                                    tabs[
+                                        (index + step + tabs.length) %
+                                            tabs.length
+                                    ]
+                                setTab(next.value)
+                                document
+                                    .getElementById(`match-tab-${next.value}`)
+                                    ?.focus()
+                            }}
                             className={cn(
-                                "h-8 rounded-lg px-3.5 text-sm font-medium transition-colors",
-                                tab === value
-                                    ? "bg-background text-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
+                                "h-8 rounded-lg px-3.5 text-[13px] whitespace-nowrap transition-colors",
+                                tab === item.value
+                                    ? "bg-background text-foreground font-semibold shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground font-medium"
                             )}
                         >
-                            {text.tabs[value]}
+                            {item.label}
                         </button>
                     ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    {(["match", "training"] as const).map((kind) => (
-                        <button
-                            key={kind}
-                            type="button"
-                            aria-pressed={kinds[kind]}
-                            onClick={() => toggleKind(kind)}
-                            className={cn(
-                                "h-8 rounded-full border px-3 text-sm font-medium transition-colors",
-                                kinds[kind]
-                                    ? "border-foreground bg-muted text-foreground"
-                                    : "border-border text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            {kind === "match"
-                                ? text.filters.matches
-                                : text.filters.trainings}
-                        </button>
-                    ))}
+                    {kinds.length > 1
+                        ? kinds.map((kind) => (
+                              <button
+                                  key={kind}
+                                  type="button"
+                                  aria-pressed={selectedKinds[kind]}
+                                  onClick={() => toggleKind(kind)}
+                                  className={cn(
+                                      "h-8 rounded-full border px-3 text-[13px] font-medium transition-colors",
+                                      selectedKinds[kind]
+                                          ? "border-foreground bg-muted text-foreground"
+                                          : "border-border text-muted-foreground hover:text-foreground"
+                                  )}
+                              >
+                                  {kind === "match"
+                                      ? text.filters.matches
+                                      : text.filters.trainings}
+                              </button>
+                          ))
+                        : null}
                     {games.length > 1 ? (
                         <Select
                             value={game}
@@ -254,7 +395,8 @@ export function MatchList({
                             }
                         >
                             <SelectTrigger
-                                className="h-8 w-auto min-w-36 rounded-lg"
+                                size="sm"
+                                className="h-8 w-auto gap-1.5 rounded-lg px-2.5 text-[13px] shadow-none"
                                 aria-label={text.filters.game}
                             >
                                 <SelectValue />
@@ -274,7 +416,7 @@ export function MatchList({
                             </SelectContent>
                         </Select>
                     ) : null}
-                    <label className="border-input text-muted-foreground flex h-8 w-full items-center gap-2 rounded-lg border px-2.5 sm:w-52">
+                    <label className="border-input text-muted-foreground focus-within:border-ring flex h-8 w-[12.5rem] max-w-full items-center gap-2 rounded-lg border px-2.5">
                         <Search
                             className="size-3.5 shrink-0"
                             aria-hidden="true"
@@ -283,36 +425,30 @@ export function MatchList({
                             type="search"
                             value={query}
                             onChange={(event) => setQuery(event.target.value)}
-                            aria-label={text.filters.searchLabel}
-                            placeholder={text.filters.searchPlaceholder}
-                            className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
+                            aria-label={
+                                trainingsOnly
+                                    ? text.filters.searchTrainingsLabel
+                                    : text.filters.searchLabel
+                            }
+                            placeholder={
+                                trainingsOnly
+                                    ? text.filters.searchTrainingsPlaceholder
+                                    : text.filters.searchPlaceholder
+                            }
+                            className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-[13px] outline-none"
                         />
                     </label>
                 </div>
             </div>
 
-            {visible.length ? (
-                groupRows(visible).map((group) => (
-                    <MatchRows
-                        key={`${tab}:${group.key}`}
-                        id={`week-${tab}-${group.key}`}
-                        label={group.label}
-                        rows={group.rows}
-                    />
-                ))
-            ) : (
-                <p className="text-muted-foreground border-border/60 rounded-2xl border border-dashed p-6 text-center text-sm">
-                    {tab === "upcoming" ? text.noUpcoming : text.noPlayed}
-                </p>
-            )}
-
-            {tab === "upcoming" && recentlyPlayed.length ? (
-                <MatchRows
-                    id="recently-played"
-                    label={text.recentlyPlayed}
-                    rows={recentlyPlayed}
-                />
-            ) : null}
+            <div
+                id="match-tabpanel"
+                role="tabpanel"
+                aria-labelledby={`match-tab-${tab}`}
+                className="flex flex-col gap-6"
+            >
+                {content}
+            </div>
         </div>
     )
 }

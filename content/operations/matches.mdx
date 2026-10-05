@@ -16,26 +16,51 @@ week in the clan's time zone (**This week**, **Next week**, then **Week of …**
 Each row shows the date and start time, the name and category, the game, map
 and side, how many players signed up and the event's phase:
 
-- **Sign-ups until …** while registration is open;
+- **Sign-ups until …** while registration is open (the weekday within the
+  next six days, otherwise the date);
 - **Roster missing** or **Roster · draft** once registration has closed and the
   roster is not published yet;
 - **Roster published**, or how many rostered players have not confirmed;
-- after play, the result and score, **No result yet**, or for a training how
-  many passed.
+- after play, the score with **Result awaiting confirmation**, **Victory ·
+  confirmed** (or defeat, draw, corrected), **No result yet**, or for a
+  training how many passed and failed.
 
-**Upcoming** shows what is still ahead with the most recently played events
-below it; **Played** shows past events. Filter by **Matches** and
-**Trainings**, by game, or search by name, opponent or map.
+**Upcoming** shows what is still ahead with up to three events played in the
+last two weeks below it; **Played** shows past events, newest first, thirty at
+a time with **Show more**. Filter by **Matches** and **Trainings**, by game, or
+search by name, opponent or map; **Clear filters** brings everything back.
 
-For managers, **Waiting for you** at the top lists matches whose roster still
-needs publishing and published rosters with players who have not confirmed.
-Confirming imported results is reached from the match itself.
+### Drafts (manager)
+
+A match saved with **Save as draft** in the new-match form is a draft: the bot
+does not announce it and members never see it. Drafts appear only in the
+**Drafts** tab (with their number, for example **Drafts · 1**), never under
+Upcoming or Played. Each shows **not announced**, the **Draft** label and, when
+no opponent is chosen yet, **no opponent yet**. Open a draft to continue in the
+new-match form and publish it from there.
+
+### Waiting for you (manager)
+
+At the top, **Waiting for you** lists up to three tasks of each kind:
+
+- **Publish the roster** for matches whose sign-ups have closed, soonest
+  first, with the start and the open slots;
+- **Confirm the result** for played matches whose imported, collected or
+  entered result has not been confirmed yet, with its source and score;
+- **Check attendance** for matches played in the last two weeks whose roster
+  was published but whose attendance has not been closed yet, with the number
+  of rostered players who did not confirm.
+
+Each task opens the matching tab of the match. The result state is read fresh
+on every visit, so a confirmed result leaves the list straight away. A manager
+also lands on the roster or result tab when opening a row that needs one.
 
 ## Recurring matches
 
-**Recurring** lists matches set to repeat. To change or stop a series, open its
-match with **Edit series** and change or switch off the repeat settings, then
-save. Matches that already exist stay as they are.
+**Recurring** lists match series in the same rows as the match list; each row
+starts with its schedule, for example **repeats every Wednesday**. To change or
+stop a series, open its match with **Edit series** and change or switch off the
+repeat settings, then save. Matches that already exist stay as they are.
 
 ## Create a match (manager)
 

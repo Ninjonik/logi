@@ -3,11 +3,14 @@ import { connection } from "next/server"
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import {
+    ClanListUnavailable,
+    MatchListView,
+} from "@/components/app/match-list-view"
+import { getClanResultReviews } from "@/lib/read-models/result-reviews"
+import type { MatchListTab } from "@/components/app/match-list"
 import { GAME_LABELS, isGameId } from "@/domain/games/game"
 import { buildMatchListRows } from "@/lib/match-list-rows"
-import { PageHeader } from "@/components/app/page-header"
-import { EmptyState } from "@/components/app/empty-state"
-import { MatchList } from "@/components/app/match-list"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -18,6 +21,12 @@ export const metadata: Metadata = {
     description: "Matches, trainings, results and registration.",
 }
 
+function listTab(value: unknown): MatchListTab | undefined {
+    return value === "upcoming" || value === "played" || value === "drafts"
+        ? value
+        : undefined
+}
+
 export default async function MatchesPage({
     params,
     searchParams,
@@ -26,18 +35,24 @@ export default async function MatchesPage({
     searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
     await connection()
-    const { locale, serverId } = await params
+    const { locale: rawLocale, serverId } = await params
+    const locale = isLocale(rawLocale) ? rawLocale : "en"
     const resolvedSearchParams = await searchParams
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const dictionary = getDictionary(locale)
     const game = resolvedSearchParams?.game
     const gameId = typeof game === "string" && isGameId(game) ? game : undefined
     const context = await getServerContext(serverId, "all")
-    if (!context) return null
+    if (!context)
+        return <ClanListUnavailable locale={locale} dictionary={dictionary} />
     const { canAdmin, discordConfig, server } = context
     const text = dictionary.matchList
     const base = `/${locale}/dashboard/servers/${serverId}`
     const createHref = `${base}/matches/create${gameId ? `?game=${gameId}` : ""}`
-    const { rows, queue } = buildMatchListRows({
+    // Result review state is read fresh, and only for the clan's managers.
+    const reviews = canAdmin
+        ? await getClanResultReviews(server.discordId)
+        : undefined
+    const { rows, drafts, queue } = buildMatchListRows({
         events: context.events,
         rosters: context.rosters,
         categories: server.eventCategories,
@@ -47,6 +62,7 @@ export default async function MatchesPage({
         timeZone: discordConfig?.timezone ?? "UTC",
         dictionary,
         now: new Date(),
+        reviews,
     })
     const games = (server.enabledGames ?? []).map((id) => ({
         id,
@@ -54,85 +70,53 @@ export default async function MatchesPage({
     }))
 
     return (
-        <div className="space-y-6 pb-8">
-            <PageHeader
-                title={text.title}
-                description={text.description}
-                actions={
-                    canAdmin ? (
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="rounded-xl"
-                            >
-                                <Link href={`${base}/matches/recurring`}>
-                                    <Repeat
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {text.recurring}
-                                </Link>
-                            </Button>
-                            <Button asChild className="rounded-xl">
-                                <Link href={createHref}>
-                                    <Plus
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {text.newMatch}
-                                </Link>
-                            </Button>
-                        </div>
-                    ) : undefined
-                }
-            />
-            <div className="px-4 lg:px-6">
-                {rows.length ? (
-                    <MatchList
-                        rows={rows}
-                        queue={queue}
-                        games={games}
-                        initialGame={gameId}
-                        initialTab={
-                            resolvedSearchParams?.tab === "played"
-                                ? "played"
-                                : "upcoming"
-                        }
-                        dictionary={dictionary}
-                    />
-                ) : (
-                    <EmptyState
-                        icon={CalendarPlus}
-                        title={text.emptyTitle}
-                        description={
-                            canAdmin ? text.emptyAdmin : text.emptyMember
-                        }
-                        actions={
-                            canAdmin ? (
-                                <>
-                                    <Button asChild className="rounded-xl">
-                                        <Link href={createHref}>
-                                            {text.newMatch}
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        className="rounded-xl"
-                                    >
-                                        <Link
-                                            href={`${base}/settings/match-templates`}
-                                        >
-                                            {text.editTemplates}
-                                        </Link>
-                                    </Button>
-                                </>
-                            ) : undefined
-                        }
-                    />
-                )}
-            </div>
-        </div>
+        <MatchListView
+            title={text.title}
+            description={text.description}
+            secondaryAction={
+                canAdmin
+                    ? {
+                          href: `${base}/matches/recurring`,
+                          label: text.recurring,
+                          icon: Repeat,
+                      }
+                    : undefined
+            }
+            primaryAction={
+                canAdmin
+                    ? { href: createHref, label: text.newMatch, icon: Plus }
+                    : undefined
+            }
+            rows={rows}
+            drafts={drafts}
+            queue={queue}
+            games={games}
+            kinds={["match", "training"]}
+            canAdmin={canAdmin}
+            initialGame={gameId}
+            initialTab={listTab(resolvedSearchParams?.tab)}
+            empty={{
+                icon: CalendarPlus,
+                title: text.emptyTitle,
+                description: canAdmin ? text.emptyAdmin : text.emptyMember,
+                actions: canAdmin ? (
+                    <>
+                        <Button asChild className="rounded-lg">
+                            <Link href={createHref}>{text.newMatch}</Link>
+                        </Button>
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-lg"
+                        >
+                            <Link href={`${base}/settings/match-templates`}>
+                                {text.editTemplates}
+                            </Link>
+                        </Button>
+                    </>
+                ) : undefined,
+            }}
+            dictionary={dictionary}
+        />
     )
 }
