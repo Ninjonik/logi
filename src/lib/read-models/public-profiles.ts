@@ -1,6 +1,7 @@
 import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
+import { selectPlayerMatchWindow } from "@/domain/player-stats/match-window"
 import type { CollectionFilter } from "@/domain/shared/collection-query"
 import type { GameId, GameSelection } from "@/domain/games/game"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
@@ -12,6 +13,9 @@ const getPublicPlayerReference = makeFunctionReference<"query">(
 )
 const getPublicMatchReference = makeFunctionReference<"query">(
     "publicProfiles:getMatch"
+)
+const getPublicPlayerMatchReference = makeFunctionReference<"query">(
+    "publicProfiles:getPlayerMatch"
 )
 const getPublicClanReference = makeFunctionReference<"query">(
     "publicProfiles:getClan"
@@ -98,6 +102,57 @@ export async function getPublicPlayerProfile(playerId: string) {
                     support: number
                 }>
                 updatedAt: string
+            } | null,
+        86400
+    )
+}
+
+type PublicPlayerMatchSummary =
+    NonNullable<PublicPlayerProfile>["recentMatches"][number]
+
+/** One match of a player's public history, found beyond the profile's
+ * 30-match list, with the ten older matches used for its comparison. */
+export async function getPublicPlayerMatch(playerId: string, eventId: string) {
+    try {
+        return await readPublicPlayerMatch(playerId, eventId)
+    } catch {
+        // A Convex deployment without `getPlayerMatch` yet: fall back to the
+        // profile's latest matches, as before.
+        const profile = await getPublicPlayerProfile(playerId)
+        const window = profile
+            ? selectPlayerMatchWindow(profile.recentMatches, eventId, 10)
+            : null
+        return profile && window
+            ? {
+                  player: {
+                      id: profile.id,
+                      name: profile.name,
+                      avatar: profile.avatar,
+                  },
+                  match: window.match,
+                  previousMatches: window.previous,
+              }
+            : null
+    }
+}
+
+async function readPublicPlayerMatch(playerId: string, eventId: string) {
+    return await cachedRead(
+        ["public-player-match", playerId, eventId],
+        [
+            appCacheTags.publicProfile(playerId),
+            appCacheTags.player(playerId),
+            appCacheTags.playerStats(playerId),
+        ],
+        async () =>
+            (await fetchQuery(getPublicPlayerMatchReference, {
+                secret: getInternalAuthSecret(),
+                playerId,
+                eventId,
+            })) as {
+                player: { id: string; name: string; avatar: string }
+                match: PublicPlayerMatchSummary
+                previousMatches: PublicPlayerMatchSummary[]
             } | null,
         86400
     )

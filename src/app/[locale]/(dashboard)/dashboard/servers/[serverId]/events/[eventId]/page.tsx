@@ -1,10 +1,14 @@
 import type { Metadata } from "next"
 
+import {
+    DEFAULT_ROSTER_SCORE_SETTINGS,
+    summarizeRosterScoreChanges,
+} from "@/domain/events/score-policy"
 import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button"
+import { MatchDetailPage } from "@/components/app/match-detail/match-detail-page"
 import { ConcludeEventButton } from "@/components/app/conclude-event-button"
 import { EventFormPanel } from "@/components/app/event-form-panel"
 import { PageHeader } from "@/components/app/page-header"
-import { getEventMetadata } from "@/lib/server-metadata"
 import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
@@ -27,19 +31,31 @@ export default async function EventDetailPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; eventId: string }>
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string; tab?: string }>
 }) {
     const { locale, serverId, eventId } = await params
-    const { game } = await searchParams
+    const { game, tab } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const context = await getServerContext(
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    const found = context?.events.find((item) => item.id === eventId)
+    // Matches share the match detail; it also explains a missing match.
+    if (!context || !found || found.kind !== "training")
+        return (
+            <MatchDetailPage
+                locale={locale}
+                serverId={serverId}
+                eventId={eventId}
+                game={game}
+                tab={tab}
+                section="events"
+                dictionary={dictionary}
+            />
+        )
     const {
-        events,
         rosters,
         canAdmin,
         topicPresets,
@@ -47,13 +63,22 @@ export default async function EventDetailPage({
         discordConfig,
         groups,
     } = context
-    const event = events.find((item) => item.id === eventId)
+    const event = found
     const roster = rosters.find((item) => item.eventId === eventId)
     const attachedStratmaps = stratmaps.filter((stratmap) =>
-        event?.stratmapIds.includes(stratmap.id)
+        event.stratmapIds.includes(stratmap.id)
     )
-
-    if (!event) return null
+    const closeSummary = summarizeRosterScoreChanges({
+        userIds: context.assignments
+            .filter((assignment) => !assignment.paused)
+            .map((assignment) => assignment.userId),
+        settings:
+            discordConfig?.membershipSettings?.rosterScoreSettings ??
+            DEFAULT_ROSTER_SCORE_SETTINGS,
+        participants: event.participants,
+        notices: event.absenceNotices,
+        roster: roster ?? null,
+    })
 
     const statusMeta = getEventStatusMeta(event.status, dictionary)
 
@@ -126,6 +151,7 @@ export default async function EventDetailPage({
                                     eventId={event.id}
                                     disabled={false}
                                     dictionary={dictionary}
+                                    summary={closeSummary}
                                 />
                             )
                         ) : null}

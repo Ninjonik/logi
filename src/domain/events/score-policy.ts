@@ -61,6 +61,95 @@ function buildRosterLookup(roster: ScorableRoster | null) {
     }
 }
 
+/** Points when a clan has not set its own rules; the same values as
+ * `DEFAULT_ROSTER_SCORE_SETTINGS` in `convex/guilds.ts`, which closing a
+ * match applies. */
+export const DEFAULT_ROSTER_SCORE_SETTINGS: RosterScoreSettings = {
+    noCategory: 0,
+    declined: -1,
+    rosterPresent: 0,
+    reservePresent: 0,
+    rosterAbsent: 0,
+    reserveAbsent: 0,
+    excusedAbsence: 0,
+}
+
+/** The attendance rule a member falls under when a match closes. */
+export type RosterScoreCategory = keyof RosterScoreSettings
+
+/** Display and summary order of the categories. */
+export const ROSTER_SCORE_CATEGORIES = [
+    "rosterPresent",
+    "reservePresent",
+    "excusedAbsence",
+    "rosterAbsent",
+    "reserveAbsent",
+    "declined",
+    "noCategory",
+] as const satisfies readonly RosterScoreCategory[]
+
+type ScoreLookup = {
+    participantByUserId: Map<string, ScorableParticipant>
+    noticeUserIds: Set<string>
+    roster: ReturnType<typeof buildRosterLookup>
+}
+
+function buildScoreLookup(input: {
+    participants: ScorableParticipant[]
+    notices: ScorableNotice[]
+    roster: ScorableRoster | null
+}): ScoreLookup {
+    return {
+        participantByUserId: new Map(
+            input.participants.map((participant) => [
+                participant.userId,
+                participant,
+            ])
+        ),
+        noticeUserIds: new Set(input.notices.map((notice) => notice.userId)),
+        roster: buildRosterLookup(input.roster),
+    }
+}
+
+function categoryFor(userId: string, lookup: ScoreLookup): RosterScoreCategory {
+    const participant = lookup.participantByUserId.get(userId)
+    const rosterLookup = lookup.roster
+
+    if (participant?.status === "not_attending") {
+        return "declined"
+    }
+
+    if (
+        participant?.status !== "attending" &&
+        !rosterLookup.reserveUserIds.has(userId)
+    ) {
+        return "noCategory"
+    }
+
+    const isRostered = rosterLookup.rosteredUserIds.has(userId)
+
+    if (rosterLookup.confirmedRosteredUserIds.has(userId)) {
+        return "rosterPresent"
+    }
+    if (rosterLookup.confirmedReserveUserIds.has(userId)) {
+        return "reservePresent"
+    }
+    if (lookup.noticeUserIds.has(userId)) {
+        return "excusedAbsence"
+    }
+    // Everyone else who signed up is a reserve, listed or not.
+    return isRostered ? "rosterAbsent" : "reserveAbsent"
+}
+
+export function resolveRosterScoreCategory(input: {
+    userId: string
+    participants: ScorableParticipant[]
+    notices: ScorableNotice[]
+    roster: ScorableRoster | null
+}): RosterScoreCategory {
+    return categoryFor(input.userId, buildScoreLookup(input))
+}
+
 export function resolveRosterScoreDelta(input: {
     userId: string
     settings: RosterScoreSettings
@@ -68,55 +157,50 @@ export function resolveRosterScoreDelta(input: {
     notices: ScorableNotice[]
     roster: ScorableRoster | null
 }) {
-    const participantByUserId = new Map(
-        input.participants.map((participant) => [
-            participant.userId,
-            participant,
-        ])
-    )
-    const noticesByUserId = new Set(
-        input.notices.map((notice) => notice.userId)
-    )
-    const rosterLookup = buildRosterLookup(input.roster)
-    const participant = participantByUserId.get(input.userId)
+    return input.settings[resolveRosterScoreCategory(input)]
+}
 
-    if (participant?.status === "not_attending") {
-        return input.settings.declined
-    }
+export type RosterScoreChangeSummary = {
+    /** One row per category with members, in `ROSTER_SCORE_CATEGORIES` order. */
+    rows: Array<{
+        category: RosterScoreCategory
+        count: number
+        delta: number
+    }>
+    /** Members whose score changes, that is, with a non-zero delta. */
+    changedCount: number
+}
 
-    if (
-        participant?.status !== "attending" &&
-        !rosterLookup.reserveUserIds.has(input.userId)
-    ) {
-        return input.settings.noCategory
-    }
-
-    const hasNotice = noticesByUserId.has(input.userId)
-    const isRostered = rosterLookup.rosteredUserIds.has(input.userId)
-    const isReserve =
-        rosterLookup.reserveUserIds.has(input.userId) || !isRostered
-    const isConfirmedRoster = rosterLookup.confirmedRosteredUserIds.has(
-        input.userId
-    )
-    const isConfirmedReserve = rosterLookup.confirmedReserveUserIds.has(
-        input.userId
-    )
-
-    if (isConfirmedRoster) {
-        return input.settings.rosterPresent
-    }
-    if (isConfirmedReserve) {
-        return input.settings.reservePresent
-    }
-    if (hasNotice) {
-        return input.settings.excusedAbsence
-    }
-    if (isRostered) {
-        return input.settings.rosterAbsent
-    }
-    if (isReserve) {
-        return input.settings.reserveAbsent
+/**
+ * What closing a match does to the members' scores: the members per rule and
+ * the points each rule adds. `userIds` are the members that are scored, the
+ * clan's active (not paused) members, as when the match closes.
+ */
+export function summarizeRosterScoreChanges(input: {
+    userIds: readonly string[]
+    settings: RosterScoreSettings
+    participants: ScorableParticipant[]
+    notices: ScorableNotice[]
+    roster: ScorableRoster | null
+}): RosterScoreChangeSummary {
+    const lookup = buildScoreLookup(input)
+    const counts = new Map<RosterScoreCategory, number>()
+    for (const userId of new Set(input.userIds)) {
+        const category = categoryFor(userId, lookup)
+        counts.set(category, (counts.get(category) ?? 0) + 1)
     }
 
-    return input.settings.noCategory
+    const rows = ROSTER_SCORE_CATEGORIES.flatMap((category) => {
+        const count = counts.get(category) ?? 0
+        return count > 0
+            ? [{ category, count, delta: input.settings[category] }]
+            : []
+    })
+    return {
+        rows,
+        changedCount: rows.reduce(
+            (sum, row) => sum + (row.delta !== 0 ? row.count : 0),
+            0
+        ),
+    }
 }

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 
 import {
     getPublicMatch,
-    getPublicPlayerProfile,
+    getPublicPlayerMatch,
 } from "@/lib/read-models/public-profiles"
 
 export const runtime = "nodejs"
@@ -47,11 +47,12 @@ export async function GET(
     { params }: { params: Promise<{ playerId: string; eventId: string }> }
 ) {
     const { playerId, eventId } = await params
-    const [player, publicMatch] = await Promise.all([
-        getPublicPlayerProfile(playerId),
+    const [playerMatch, publicMatch] = await Promise.all([
+        getPublicPlayerMatch(playerId, eventId),
         getPublicMatch(eventId),
     ])
-    const match = player?.recentMatches.find((item) => item.eventId === eventId)
+    const player = playerMatch?.player
+    const match = playerMatch?.match
     if (!player || !match) return new Response("Not found", { status: 404 })
     const rawPlayer = publicMatch?.raw.player_stats.find(
         (entry) => publicMatch.linkedPlayerIds[entry.player_id] === player.id

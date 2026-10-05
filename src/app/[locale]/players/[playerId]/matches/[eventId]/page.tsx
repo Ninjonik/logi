@@ -11,7 +11,7 @@ import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators"
 import type { PerformanceSnapshot } from "@/lib/read-models/performance-history"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
-import { getPublicPlayerProfile } from "@/lib/read-models/public-profiles"
+import { getPublicPlayerMatch } from "@/lib/read-models/public-profiles"
 import { PublicStat } from "@/components/public/public-stat"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLocalizedCanonical } from "@/lib/seo"
@@ -39,26 +39,18 @@ export default async function PublicPlayerMatchPage({ params }: Props) {
     const { locale, playerId, eventId } = await params
     const resolvedLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(resolvedLocale)
-    const player = await getPublicPlayerProfile(playerId)
-    const matchIndex = player?.recentMatches.findIndex(
-        (item) => item.eventId === eventId
-    )
-    const match =
-        matchIndex === undefined || matchIndex < 0
-            ? undefined
-            : player?.recentMatches[matchIndex]
-    if (!player || !match) notFound()
-    const previousMatches = player.recentMatches
-        .slice((matchIndex ?? -1) + 1, (matchIndex ?? -1) + 11)
-        .filter((item) => item.eventId !== eventId)
+    // Looked up in the whole public history: the profile lists only the latest
+    // 30 matches, but public match pages link every linked player.
+    const playerMatch = await getPublicPlayerMatch(playerId, eventId)
+    if (!playerMatch) notFound()
+    const { player, match, previousMatches } = playerMatch
     const average = (metric: "kills" | "deaths" | "killDeathRatio") =>
         previousMatches.length
             ? previousMatches.reduce((sum, item) => sum + item[metric], 0) /
               previousMatches.length
             : null
-    const trendMatches: PerformanceSnapshot[] = player.recentMatches
-        .slice(matchIndex ?? 0, (matchIndex ?? 0) + 11)
-        .map((item) => ({
+    const trendMatches: PerformanceSnapshot[] = [match, ...previousMatches].map(
+        (item) => ({
             eventId: item.eventId,
             playedAt: item.endedAt,
             label: item.name,
@@ -69,7 +61,8 @@ export default async function PublicPlayerMatchPage({ params }: Props) {
             deaths: item.deaths,
             points: 0,
             kd: item.killDeathRatio,
-        }))
+        })
+    )
 
     return (
         <PublicSiteShell locale={resolvedLocale}>

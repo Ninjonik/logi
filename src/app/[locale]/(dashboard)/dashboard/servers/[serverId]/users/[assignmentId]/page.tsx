@@ -96,9 +96,11 @@ export default async function ServerUserDetailPage({
                 .join(" ")
         },
     })
-    const matchRows = paginatedMatches.rows.map((match) => ({
+    // A player can have several stats rows for one event (one per linked
+    // platform account), so the event ID alone is not a unique row ID.
+    const matchRows = paginatedMatches.rows.map((match, index) => ({
         ...match,
-        id: match.eventId,
+        id: `${match.eventId}:${paginatedMatches.page}:${index}`,
     }))
 
     function formatAverage(value: number) {
