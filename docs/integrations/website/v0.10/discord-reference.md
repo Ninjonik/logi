@@ -76,7 +76,7 @@ These are existing or extended workflows, not additional slash commands:
 | --- | --- | --- |
 | Event announcements and signups | Configured event channel, signup buttons/selects | Operational signup windows, group choices, reserves and updates; actual Discord permissions still matter |
 | Forums, scheduled events, calendar panels | Workspace Discord settings | Existing event/thread synchronization; no second Valkyria bot is needed |
-| Attendance and absence notices | Event attendance buttons and `/notice` modal | Own-account acknowledgements, late/absence reason and relevant event state |
+| Attendance and absence notices | Event attendance buttons, `/notice` modal and **Can't make it** in the reminder DM | Own-account acknowledgements, late/absence reason and relevant event state; **Can't make it** (`rosters:declineAttendance`) also withdraws the player's confirmation and adds a `declined` sign-up history entry. These are a player's own Discord actions; `/api/v1` deliberately has no equivalent (no player-scoped API credential exists) |
 | Signup and attendance reminders | Existing reminder schedules/settings | Uses the currently tested feature-branch behavior; unrelated upstream additions are not claimed as delivered here |
 | Recruitment | Application panel/modal, staff application thread, `/close_application` | Existing pending/recruit/member/mercenary workflow now queues managed membership roles with actor/audit |
 | Support tickets | Configured categories, panel/modal, `/close_ticket` | Existing tracked ticket threads and contextual support permissions |
@@ -85,7 +85,7 @@ These are existing or extended workflows, not additional slash commands:
 | Match recaps and notification preference | Personal DM plus Subscribe/Unsubscribe buttons; own-account settings | Exact Discord binding and opt-out recheck; preference is account-global, not per event/game |
 | Game-server status | `/server-status` | Private on-demand read of stored HLL/WDG data; no RCON action or polling trigger |
 | Public live panels | Dashboard-selected source/game/channel, dropdown or pasted ID | Automatic stored-data server/score updates, map artwork, faction icons, opt-in leaders and durable message recovery; separate private Wardogs player pages |
-| Reviewed results | Configured results panel and authenticated result review | Publish confirmed results; correction edits the same message, withdrawal removes the owned message; no historical backfill |
+| Reviewed results | Configured results panel and authenticated result review | Publish confirmed results with category, team codes, the clan outcome, the confirming manager and a public match link when one exists; correction edits the same message, withdrawal removes the owned message; no historical backfill |
 | Logi platform-service status | Superadmin-selected platform status channel | Existing dashboard/Convex/service degradation/recovery reporting; a different feature from game-server status |
 
 Detailed wiki guides cover [events](../../../../content/operations/events.mdx),

@@ -17,6 +17,13 @@ import {
     type TeamRequestStatus,
 } from "@/domain/teams/team-request"
 import {
+    teamRequestContextListSchema,
+    teamUsageListSchema,
+    type TeamCatalogueState,
+    type TeamRequestContext,
+    type TeamUsage,
+} from "@/domain/teams/team-usage"
+import {
     precheckImageFile,
     readImageUploadResponse,
     type ImageUploadResult,
@@ -105,6 +112,8 @@ export class TeamAdminReadError<Code extends string = string> extends Error {
 export type AdminTeamListQuery = {
     gameId: TeamGame
     archived: boolean
+    /** Lists one lifecycle state instead of the `archived` flag's view. */
+    state?: TeamCatalogueState
     search?: string
     cursor?: string | null
     limit?: number
@@ -112,7 +121,8 @@ export type AdminTeamListQuery = {
 /** Omits defaults so the route applies its own; a blank search is not sent. */
 export function adminTeamListUrl(query: AdminTeamListQuery): string {
     const params = new URLSearchParams({ game: query.gameId })
-    if (query.archived) params.set("archived", "true")
+    if (query.state) params.set("state", query.state)
+    else if (query.archived) params.set("archived", "true")
     const search = query.search?.trim().slice(0, TEAM_SEARCH_MAX)
     if (search) params.set("search", search)
     if (query.cursor) params.set("cursor", query.cursor)
@@ -140,6 +150,28 @@ export async function fetchAdminTeamPage(
     if (!page.success)
         throw new TeamAdminReadError<TeamAdminErrorCode>("unavailable")
     return page.data
+}
+
+/** Where the given catalogue teams are used; an empty list asks nothing. */
+export async function fetchAdminTeamUsage(
+    teamIds: readonly string[],
+    options: { signal?: AbortSignal; fetcher?: Fetcher } = {}
+): Promise<TeamUsage[]> {
+    if (teamIds.length === 0) return []
+    const fetcher = options.fetcher ?? fetch
+    const response = await fetcher(
+        `${SUPERADMIN_TEAMS_ENDPOINT}?usage=${teamIds.map(encodeURIComponent).join(",")}`,
+        { cache: "no-store", signal: options.signal }
+    )
+    const body: unknown = await response.json().catch(() => null)
+    if (!response.ok)
+        throw new TeamAdminReadError<TeamAdminErrorCode>(
+            teamAdminErrorCode(body)
+        )
+    const usage = teamUsageListSchema.safeParse(body)
+    if (!usage.success)
+        throw new TeamAdminReadError<TeamAdminErrorCode>("unavailable")
+    return usage.data.items
 }
 
 const teamLookupSchema = z.object({ team: teamRecordSchema })
@@ -280,6 +312,28 @@ export async function fetchTeamRequestQueue(
     if (!page.success)
         throw new TeamAdminReadError<TeamRequestAdminErrorCode>("unavailable")
     return page.data
+}
+
+/** Requester names and similar active teams for the given requests. */
+export async function fetchTeamRequestContext(
+    requestIds: readonly string[],
+    options: { signal?: AbortSignal; fetcher?: Fetcher } = {}
+): Promise<TeamRequestContext[]> {
+    if (requestIds.length === 0) return []
+    const fetcher = options.fetcher ?? fetch
+    const response = await fetcher(
+        `${SUPERADMIN_TEAM_REQUESTS_ENDPOINT}?context=${requestIds.map(encodeURIComponent).join(",")}`,
+        { cache: "no-store", signal: options.signal }
+    )
+    const body: unknown = await response.json().catch(() => null)
+    if (!response.ok)
+        throw new TeamAdminReadError<TeamRequestAdminErrorCode>(
+            teamRequestAdminErrorCode(body)
+        )
+    const context = teamRequestContextListSchema.safeParse(body)
+    if (!context.success)
+        throw new TeamAdminReadError<TeamRequestAdminErrorCode>("unavailable")
+    return context.data.items
 }
 
 const requestLookupSchema = z.object({ request: teamRequestRecordSchema })

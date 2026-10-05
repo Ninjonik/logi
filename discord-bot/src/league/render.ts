@@ -5,8 +5,11 @@ import {
     EmbedBuilder,
     type MessageCreateOptions,
 } from "discord.js"
+import { DEFAULT_MESSAGE_ACCENT_COLOR } from "../../../src/domain/discord-messages/format"
+import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
 import { extractMatchUrls } from "../../../src/domain/wardogs-league/discovery"
 import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
+import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 const clean = (text: string | null | undefined, max = 150) =>
     (text ?? "—")
         .replace(/[@<>]/g, "")
@@ -14,7 +17,7 @@ const clean = (text: string | null | undefined, max = 150) =>
         .replace(/[\r\n]/g, " ")
         .slice(0, max)
 const at = (value: string | null) =>
-    value ? `<t:${Math.floor(Date.parse(value) / 1000)}:f>` : "—"
+    value ? `<t:${Math.floor(Date.parse(value) / 1000)}:F>` : "—"
 
 type LeagueCopy = {
     match: (number: string) => string
@@ -111,6 +114,22 @@ export function humanLeagueInput(
         ? null
         : extractMatchUrls(message.content)
 }
+/** Day/night labels the League site uses, in the clan language. */
+function lightingLabel(value: string | null | undefined, language?: string) {
+    const key = value?.trim().toLowerCase()
+    const times = getClanDiscordMessages(language).mapLabels.times
+    return key && Object.prototype.hasOwnProperty.call(times, key)
+        ? times[key as keyof typeof times]
+        : value
+          ? clean(value, 40)
+          : undefined
+}
+/**
+ * League fixture card: a small "WARDOGS LEAGUE · MATCH 14" line, the teams as
+ * the title, the scheduled time, one line per team with its faction emblem,
+ * then map, lighting and the ready check. Provider type/status and any stale,
+ * paused or archived state stay visible as a small last line.
+ */
 export function renderLeagueCard(
     fixture: LeagueFixture,
     artworkUrl?: string,
@@ -122,36 +141,62 @@ export function renderLeagueCard(
     const teams =
         match.teams
             ?.slice(0, 3)
-            .map(
-                (team) =>
-                    `${icons[(team.faction ?? "").toLowerCase()] ?? "▸"} **${clean(team.code, 30)}** · ${clean(team.faction, 40)}`
+            .map((team) =>
+                [
+                    factionEmblem(team.faction, icons) ?? "▸",
+                    `**${clean(team.code, 30)}**`,
+                    team.faction ? `· ${clean(team.faction, 40)}` : undefined,
+                ]
+                    .filter(Boolean)
+                    .join(" ")
             )
             .join("\n") ?? copy.teamsUnavailable
+    const facts = [
+        match.map?.name ? clean(match.map.name, 80) : undefined,
+        match.map?.zone ? clean(match.map.zone, 80) : undefined,
+        lightingLabel(match.map?.lighting, language),
+        match.readyCheck
+            ? `${copy.ready.toLocaleLowerCase()}: ${clean(match.readyCheck, 80)}`
+            : undefined,
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    const state = fixture.stale
+        ? copy.stale
+        : fixture.state === "paused"
+          ? copy.paused
+          : fixture.state === "archived"
+            ? copy.archived
+            : undefined
+    const footnote = [
+        match.type ? clean(match.type, 60) : undefined,
+        match.status ? clean(match.status, 60) : undefined,
+        state,
+    ]
+        .filter(Boolean)
+        .join(" · ")
     const embed = new EmbedBuilder()
-        .setColor(fixture.stale ? 0xd29922 : 0xf1c40f)
+        .setColor(fixture.stale ? 0xd29922 : DEFAULT_MESSAGE_ACCENT_COLOR)
+        .setAuthor({
+            name: `Wardogs League · ${copy.match(String(match.fixtureNumber ?? "—"))}`.toUpperCase(),
+        })
         .setTitle(
-            `${copy.match(String(match.fixtureNumber ?? "—"))} · ${clean(match.teams?.map((t) => t.code).join(" / ") ?? match.title, 170)}`
+            clean(
+                match.teams?.map((t) => t.code).join(" vs ") ?? match.title,
+                200
+            )
         )
         .setURL(match.sourceUrl)
         .setDescription(
-            `**${clean(match.type)} · ${clean(match.status)}**\n${at(match.scheduledAt)}\n\n${teams}`
+            [
+                match.scheduledAt ? `**${at(match.scheduledAt)}**` : undefined,
+                teams,
+                facts || undefined,
+                footnote ? `-# ${footnote}` : undefined,
+            ]
+                .filter(Boolean)
+                .join("\n")
         )
-        .addFields(
-            {
-                name: copy.map,
-                value: [match.map?.name, match.map?.zone, match.map?.lighting]
-                    .map((v) => clean(v, 80))
-                    .join(" · "),
-            },
-            {
-                name: copy.preparation,
-                value: `${copy.vote}: ${clean(match.mapVote?.status, 80)} · ${copy.rules}: ${clean(match.rules?.summary, 80)}\n${copy.ready}: ${clean(match.readyCheck, 80)}\n${copy.host}: ${clean(match.hosting?.teamCode ?? match.hosting?.mode, 80)}`,
-            }
-        )
-        .setFooter({
-            text: `Wardogs League · ${fixture.stale ? copy.stale : fixture.state === "paused" ? copy.paused : fixture.state === "archived" ? copy.archived : copy.checked} · ${copy.verification}`,
-        })
-        .setTimestamp(new Date(match.fetchedAt))
     if (artworkUrl) embed.setThumbnail(artworkUrl)
     return {
         embeds: [embed],

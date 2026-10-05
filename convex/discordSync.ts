@@ -10,9 +10,9 @@ import {
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
+import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { applyGatewayObservation } from "./memberObservations"
 import { mutation } from "./integrationMutation"
-import { getGuildDiscordId } from "./identity"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -342,6 +342,15 @@ export const getEventInteractionContext = query({
         if (!config) {
             return null
         }
+        // The event category colour keeps private replies in the card's colour.
+        const guild = await getGuildByDiscordId(ctx, event.guildId)
+        const matchType = event.matchType?.trim().toLowerCase()
+        const categoryColor =
+            (matchType &&
+                guild?.eventCategories?.find(
+                    (category) => category.id.trim().toLowerCase() === matchType
+                )?.color) ||
+            null
 
         return {
             config: normalizeConfigDoc(
@@ -350,6 +359,7 @@ export const getEventInteractionContext = query({
             event: normalizeEventDoc(event),
             groups: groups.map(normalizeDoc),
             roster: roster ? normalizeDoc(roster) : null,
+            categoryColor,
         }
     },
 })

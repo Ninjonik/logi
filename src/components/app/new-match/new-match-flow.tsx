@@ -58,6 +58,7 @@ import type { DiscordSelectOption } from "@/components/app/discord-entity-select
 import { matchTeamSides, type MatchTeamInput } from "@/domain/teams/match-teams"
 import { NewMatchPreview, type NewMatchPreviewModel } from "./new-match-preview"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import { getStratmapMapById, getStratmapMaps } from "@/lib/game-stratmaps"
 import { TeamRequestDialog } from "@/components/app/team-request-dialog"
 import { matchTeamGame } from "@/lib/teams/match-team-selection"
@@ -162,6 +163,8 @@ export type NewMatchFlowProps = {
         >
     >
     clanRoleId?: string
+    /** The clan's message style, so the preview has the bot's colour and icons. */
+    messageStyle?: MessageStyle
     draft: EventRecord | null
 }
 
@@ -665,7 +668,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                   ? values.pingRoleIds.map((id) => roleName(id) ?? id)
                   : [],
         forum: isMatch && values.createForumChannel,
-        accentColor: category?.color,
+        categoryColor: category?.color,
+        messageStyle: props.messageStyle,
     }
 
     function matchTeams(): MatchTeamInput[] | undefined {

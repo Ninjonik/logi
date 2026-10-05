@@ -3,9 +3,15 @@
 import { useSyncExternalStore, type ReactNode } from "react"
 
 import {
+    messageLineIcon,
+    type MessageIconDensity,
+    type MessageLine,
+} from "@/domain/discord-messages/message-style"
+import {
     NEUTRAL_FACTION_MARKER,
     panelFactionOf,
 } from "@/domain/discord-publications/panel-presentation"
+import { resolveMessageAccentColor } from "@/domain/discord-messages/format"
 import type { NewMatchStep } from "@/domain/events/new-match-flow"
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -30,7 +36,10 @@ export type NewMatchPreviewModel = {
     /** Role names the announcement pings, shown above the card. */
     mentions: string[]
     forum: boolean
-    accentColor?: string
+    /** The event category's colour, before the clan's accent colour. */
+    categoryColor?: string
+    /** The clan's message style (Settings › Discord messages). */
+    messageStyle?: { accentColor?: string; iconDensity?: MessageIconDensity }
 }
 
 const subscribeNever = () => () => undefined
@@ -128,6 +137,14 @@ export function NewMatchPreview({
             : side
     }
     const isMatch = model.kind === "match"
+    const icon = (line: MessageLine) =>
+        messageLineIcon(line, model.messageStyle?.iconDensity)
+    const accentColor = `#${resolveMessageAccentColor({
+        categoryColor: model.categoryColor,
+        messageStyle: model.messageStyle,
+    })
+        .toString(16)
+        .padStart(6, "0")}`
     const title =
         model.categoryLabel && model.categoryLabel !== model.title.trim()
             ? `${model.title || dictionary.newMatch.untitled} · ${model.categoryLabel}`
@@ -161,7 +178,10 @@ export function NewMatchPreview({
                   : null,
           ].filter(Boolean)
         : []
-    const footer = [model.forum ? `#${copy.forum}` : null, copy.managedShort]
+    const footer = [
+        model.forum ? `${icon("forum")}#${copy.forum}` : null,
+        copy.managedShort,
+    ]
         .filter(Boolean)
         .join(" · ")
 
@@ -213,7 +233,7 @@ export function NewMatchPreview({
                         <div
                             className="flex flex-col gap-3 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5"
                             style={{
-                                borderLeftColor: model.accentColor ?? "#FFB000",
+                                borderLeftColor: accentColor,
                             }}
                         >
                             <Section
@@ -225,6 +245,11 @@ export function NewMatchPreview({
                                 </span>
                                 {isMatch && model.teams.length ? (
                                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+                                        {icon("side") ? (
+                                            <span aria-hidden>
+                                                {icon("side")}
+                                            </span>
+                                        ) : null}
                                         {model.teams.map((team, index) => (
                                             <span
                                                 key={`${team.code}-${index}`}
@@ -259,11 +284,12 @@ export function NewMatchPreview({
                             >
                                 <span className="font-semibold text-[#f2f3f5]">
                                     {isBrowser && valid(model.gameStart)
-                                        ? formatFull(model.gameStart)
+                                        ? `${icon("start")}${formatFull(model.gameStart)}`
                                         : "…"}
                                 </span>
                                 {facts.length ? (
                                     <span className="text-[13px] text-[#b5bac1]">
+                                        {icon("details")}
                                         {facts.join(" · ")}
                                     </span>
                                 ) : null}
@@ -273,6 +299,7 @@ export function NewMatchPreview({
                                 className="flex flex-col gap-2.5"
                             >
                                 <span className="text-[13px]">
+                                    {icon("status")}
                                     {[
                                         <strong
                                             key="total"

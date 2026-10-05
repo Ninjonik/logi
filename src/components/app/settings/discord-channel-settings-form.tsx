@@ -1,16 +1,27 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
+import { Lock, Plus, TriangleAlert, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
     GAME_EXCEPTION_CHANNEL_FIELDS,
     gameExceptions,
-    showsGameExceptions,
     withGameExceptions,
     type GameExceptionChannelField,
 } from "@/domain/workspaces/game-exceptions"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    channelOptions,
+    SettingsChannelPicker,
+    type ChannelKind,
+} from "@/components/app/settings/settings-channel-picker"
 import {
     Select,
     SelectContent,
@@ -23,27 +34,107 @@ import {
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
 import { remapLocalizedDefaults } from "@/components/app/settings/localized-panel-defaults"
-import { GameExceptionList } from "@/components/app/settings/game-exception-list"
+import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
-import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
-import { DiscordEntitySelect } from "@/components/app/discord-entity-select"
 import type { DiscordConfig, GameDiscordOverrides } from "@/types/domain"
-import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
+import { SettingsField } from "@/components/app/settings/settings-panel"
+import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { supportedTimezones } from "@/lib/discord-timezones"
-import { Card, CardContent } from "@/components/ui/card"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 
-type ChannelExceptions = Record<
+type Exceptions = Record<
     GameExceptionChannelField,
     Partial<Record<GameId, string>>
 >
+type Values = {
+    timezone: string
+    defaultLanguage: ClanLanguage
+    errorsChannelId?: string
+    calendarChannelId?: string
+} & Record<GameExceptionChannelField, string | undefined>
+
+const KINDS: Record<GameExceptionChannelField, ChannelKind> = {
+    announcementsChannelId: "text",
+    eventInfoChannelId: "text",
+    forumCategoryId: "category",
+    squadVoiceCategoryId: "category",
+    meetingChannelId: "voice",
+}
+
+/** The chip that marks a value for one game only (design A2). */
+export function GameScopeChip({ gameId }: { gameId: GameId }) {
+    return (
+        <span className="inline-flex h-6 shrink-0 items-center rounded-md border border-sky-500/30 bg-sky-500/10 px-2 text-xs font-medium text-sky-800 dark:text-sky-200">
+            {GAME_LABELS[gameId]}
+        </span>
+    )
+}
+
+/** What the lock and the game chip on this page mean (design A2). */
+export function ChannelScopeLegend({
+    dictionary,
+    exampleGame,
+}: {
+    dictionary: Dictionary
+    exampleGame: GameId
+}) {
+    const text = dictionary.settingsHub.scopeLegend
+    return (
+        <p className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+            <span className="inline-flex items-center gap-1.5">
+                <Lock className="size-3.5" aria-hidden="true" />
+                {text.clanWide}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+                <GameScopeChip gameId={exampleGame} />
+                {text.exception}
+            </span>
+        </p>
+    )
+}
+
+function ClanWideNote({ label }: { label: string }) {
+    return (
+        <p className="text-muted-foreground mt-1.5 flex items-center gap-1.5 px-1 text-xs">
+            <Lock className="size-3" aria-hidden="true" />
+            {label}
+        </p>
+    )
+}
+
+function Card({
+    id,
+    title,
+    children,
+}: {
+    id: string
+    title: string
+    children: ReactNode
+}) {
+    return (
+        <section
+            aria-labelledby={id}
+            className="bg-card rounded-2xl border px-5 pt-5 pb-2 sm:px-6"
+        >
+            <h2 id={id} className="border-b pb-3 text-base font-semibold">
+                {title}
+            </h2>
+            <div className="divide-y">{children}</div>
+        </section>
+    )
+}
+
+function Row({ children }: { children: ReactNode }) {
+    return <div className="py-4">{children}</div>
+}
 
 /**
- * Time zone, bot language and routing channels for the whole clan. The routing
- * channels can differ per game: each shows its game exceptions underneath.
+ * Channels and language (design A2): time zone and bot language, the text and
+ * voice channels the bot uses, each clan-wide with optional per-game
+ * exceptions, and one save bar for the whole page.
  */
 export function DiscordChannelSettingsForm({
     serverId,
@@ -57,126 +148,235 @@ export function DiscordChannelSettingsForm({
     config: DiscordConfig | null
     enabledGames: readonly GameId[]
 }) {
+    const text = dictionary.settingsHub.channelsPage
+    const hub = dictionary.settingsHub
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const metadata = useDiscordMetadata(serverId)
-    const [timezone, setTimezone] = useState(config?.timezone ?? "UTC")
-    const [defaultLanguage, setDefaultLanguage] = useState<ClanLanguage>(
-        config?.defaultLanguage ?? "en"
+    const [saving, setSaving] = useState(false)
+    const metadataState = useDiscordMetadataState(serverId)
+    const channels = metadataState.metadata?.channels ?? []
+    const multiGame = enabledGames.length > 1
+
+    const initialValues = useMemo<Values>(
+        () => ({
+            timezone: config?.timezone ?? "UTC",
+            defaultLanguage: config?.defaultLanguage ?? "en",
+            errorsChannelId: config?.errorsChannelId,
+            calendarChannelId: config?.calendarChannelId,
+            announcementsChannelId: config?.announcementsChannelId,
+            eventInfoChannelId: config?.eventInfoChannelId,
+            forumCategoryId: config?.forumCategoryId,
+            meetingChannelId: config?.meetingChannelId,
+            squadVoiceCategoryId: config?.squadVoiceCategoryId,
+        }),
+        [config]
     )
-    const [values, setValues] = useState<
-        Record<GameExceptionChannelField, string | undefined>
-    >({
-        announcementsChannelId: config?.announcementsChannelId,
-        eventInfoChannelId: config?.eventInfoChannelId,
-        forumCategoryId: config?.forumCategoryId,
-        meetingChannelId: config?.meetingChannelId,
-        squadVoiceCategoryId: config?.squadVoiceCategoryId,
-    })
-    const [exceptions, setExceptions] = useState<ChannelExceptions>(() => {
+    const initialExceptions = useMemo<Exceptions>(() => {
         const read = (field: GameExceptionChannelField) =>
             gameExceptions<GameDiscordOverrides, GameExceptionChannelField>(
                 config?.gameOverrides,
                 field,
                 enabledGames
             )
-        return {
-            announcementsChannelId: read("announcementsChannelId"),
-            eventInfoChannelId: read("eventInfoChannelId"),
-            forumCategoryId: read("forumCategoryId"),
-            meetingChannelId: read("meetingChannelId"),
-            squadVoiceCategoryId: read("squadVoiceCategoryId"),
-        }
-    })
-    const [errorsChannelId, setErrorsChannelId] = useState(
-        config?.errorsChannelId
-    )
-    const [calendarChannelId, setCalendarChannelId] = useState(
-        config?.calendarChannelId
-    )
-    const channels = metadata?.channels ?? []
-    const categories = channels.filter((channel) => channel.type === 4)
-    const voiceChannels = channels.filter(
-        (channel) => channel.type === 2 || channel.type === 13
-    )
-    const exceptionsShown = showsGameExceptions(
-        enabledGames,
-        Object.values(exceptions)
-    )
+        return Object.fromEntries(
+            GAME_EXCEPTION_CHANNEL_FIELDS.map((field) => [field, read(field)])
+        ) as Exceptions
+    }, [config, enabledGames])
+    const [values, setValues] = useState<Values>(initialValues)
+    const [exceptions, setExceptions] = useState<Exceptions>(initialExceptions)
+
+    const changes =
+        (Object.keys(values) as Array<keyof Values>).filter(
+            (key) =>
+                (values[key] || undefined) !== (initialValues[key] || undefined)
+        ).length +
+        GAME_EXCEPTION_CHANNEL_FIELDS.reduce(
+            (count, field) =>
+                count +
+                enabledGames.filter(
+                    (game) =>
+                        exceptions[field][game] !==
+                        initialExceptions[field][game]
+                ).length,
+            0
+        )
+
+    function setValue<K extends keyof Values>(key: K, value: Values[K]) {
+        setValues((current) => ({ ...current, [key]: value }))
+    }
 
     function picker(
-        field: GameExceptionChannelField,
+        field:
+            GameExceptionChannelField | "errorsChannelId" | "calendarChannelId",
+        kind: ChannelKind,
         value: string | undefined,
         onChange: (value?: string) => void,
-        placeholder: string
+        options?: { attention?: boolean; id?: string }
     ) {
-        if (
-            field === "announcementsChannelId" ||
-            field === "eventInfoChannelId"
-        )
-            return (
-                <DiscordChannelSelect
-                    value={value}
-                    onChange={onChange}
-                    channels={channels}
-                    placeholder={placeholder}
-                />
-            )
         return (
-            <DiscordEntitySelect
+            <SettingsChannelPicker
+                id={options?.id}
                 value={value}
                 onChange={onChange}
-                options={
-                    field === "meetingChannelId" ? voiceChannels : categories
+                options={channelOptions(channels, kind)}
+                kind={kind}
+                placeholder={
+                    kind === "text" || kind === "voice"
+                        ? text.selectChannel
+                        : text.selectCategory
                 }
-                placeholder={placeholder}
+                noneLabel={
+                    field === "announcementsChannelId"
+                        ? text.selectChannel
+                        : text.none
+                }
+                loading={metadataState.status === "loading"}
+                unavailable={metadataState.status === "failed"}
+                attention={options?.attention}
             />
         )
     }
 
-    function routingField(field: GameExceptionChannelField) {
-        const label = dictionary.serverSettings[field]
+    function exceptionRows(field: GameExceptionChannelField) {
+        if (!multiGame) return null
+        const rows = enabledGames.filter((game) => game in exceptions[field])
+        const addable = enabledGames.filter(
+            (game) => !(game in exceptions[field])
+        )
+        const set = (next: Partial<Record<GameId, string>>) =>
+            setExceptions((current) => ({ ...current, [field]: next }))
+        const add = (game: GameId) => set({ ...exceptions[field], [game]: "" })
+        const addLabel =
+            KINDS[field] === "category"
+                ? text.addCategoryException
+                : text.addChannelException
         return (
-            <div key={field} className="space-y-2">
-                <Label>{label}</Label>
-                {picker(
-                    field,
-                    values[field],
-                    (value) =>
-                        setValues((current) => ({
-                            ...current,
-                            [field]: value,
-                        })),
-                    label
-                )}
-                {exceptionsShown ? (
-                    <GameExceptionList<string>
-                        enabledGames={enabledGames}
-                        exceptions={exceptions[field]}
-                        onChange={(next) =>
-                            setExceptions((current) => ({
-                                ...current,
-                                [field]: next,
-                            }))
-                        }
-                        emptyValue=""
-                        canAdd={enabledGames.length > 1}
-                        dictionary={dictionary}
-                        renderValue={(game, value, setValue) =>
-                            picker(
+            <div className="mt-2 space-y-2">
+                {rows.map((game) => (
+                    <div
+                        key={game}
+                        className="flex items-center gap-2 border-l-2 pl-3"
+                    >
+                        <GameScopeChip gameId={game} />
+                        <div className="min-w-0 flex-1">
+                            {picker(
                                 field,
-                                value,
-                                (next) => setValue(next ?? ""),
-                                dictionary.settingsHub.gameExceptionPlaceholder.replace(
-                                    "{game}",
-                                    GAME_LABELS[game]
-                                )
-                            )
-                        }
-                    />
+                                KINDS[field],
+                                exceptions[field][game] || undefined,
+                                (next) =>
+                                    set({
+                                        ...exceptions[field],
+                                        [game]: next ?? "",
+                                    })
+                            )}
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 shrink-0 rounded-lg"
+                            aria-label={hub.gameExceptionRemove.replace(
+                                "{game}",
+                                GAME_LABELS[game]
+                            )}
+                            onClick={() => {
+                                const next = { ...exceptions[field] }
+                                delete next[game]
+                                set(next)
+                            }}
+                        >
+                            <X className="size-4" />
+                        </Button>
+                    </div>
+                ))}
+                {addable.length === 1 ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8 rounded-lg px-2 font-normal"
+                        onClick={() => add(addable[0]!)}
+                    >
+                        <Plus className="size-3.5" aria-hidden="true" />
+                        {addLabel}
+                    </Button>
+                ) : addable.length > 1 ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground h-8 rounded-lg px-2 font-normal"
+                            >
+                                <Plus className="size-3.5" aria-hidden="true" />
+                                {addLabel}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {addable.map((game) => (
+                                <DropdownMenuItem
+                                    key={game}
+                                    onSelect={() => add(game)}
+                                >
+                                    {GAME_LABELS[game]}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 ) : null}
             </div>
         )
+    }
+
+    function routingRow(
+        field: GameExceptionChannelField,
+        label: ReactNode,
+        help: string
+    ) {
+        return (
+            <Row>
+                <SettingsField label={label} help={help}>
+                    {picker(
+                        field,
+                        KINDS[field],
+                        values[field],
+                        (value) => setValue(field, value),
+                        {
+                            id: `channels-${field}`,
+                            attention:
+                                field === "announcementsChannelId" &&
+                                !values.announcementsChannelId,
+                        }
+                    )}
+                    {exceptionRows(field)}
+                </SettingsField>
+            </Row>
+        )
+    }
+
+    function clanWideRow(
+        field: "errorsChannelId" | "calendarChannelId",
+        label: string,
+        help: string
+    ) {
+        return (
+            <Row>
+                <SettingsField label={label} help={help}>
+                    {picker(field, "text", values[field], (value) =>
+                        setValue(field, value)
+                    )}
+                    {multiGame ? (
+                        <ClanWideNote label={hub.scopeLegend.clanWideShort} />
+                    ) : null}
+                </SettingsField>
+            </Row>
+        )
+    }
+
+    function discard() {
+        setValues(initialValues)
+        setExceptions(initialExceptions)
     }
 
     async function save() {
@@ -188,21 +388,22 @@ export function DiscordChannelSettingsForm({
                 >(overrides, field, exceptions[field], enabledGames),
             config?.gameOverrides ?? {}
         )
+        setSaving(true)
         const result = await saveDiscordSettings(serverId, {
-            timezone,
-            defaultLanguage,
+            timezone: values.timezone,
+            defaultLanguage: values.defaultLanguage,
             announcementsChannelId: clearableId(values.announcementsChannelId),
             eventInfoChannelId: clearableId(values.eventInfoChannelId),
-            errorsChannelId: clearableId(errorsChannelId),
-            calendarChannelId: clearableId(calendarChannelId),
+            errorsChannelId: clearableId(values.errorsChannelId),
+            calendarChannelId: clearableId(values.calendarChannelId),
             forumCategoryId: clearableId(values.forumCategoryId),
             meetingChannelId: clearableId(values.meetingChannelId),
             squadVoiceCategoryId: clearableId(values.squadVoiceCategoryId),
             gameOverrides,
-            ...(defaultLanguage !== (config?.defaultLanguage ?? "en")
-                ? remapLocalizedDefaults(config, defaultLanguage)
+            ...(values.defaultLanguage !== (config?.defaultLanguage ?? "en")
+                ? remapLocalizedDefaults(config, values.defaultLanguage)
                 : {}),
-        })
+        }).finally(() => setSaving(false))
         if (!result.ok) {
             toast.error(
                 result.error ??
@@ -214,14 +415,49 @@ export function DiscordChannelSettingsForm({
         startTransition(() => router.refresh())
     }
 
+    const languageName = (language: ClanLanguage) =>
+        language === "en"
+            ? dictionary.serverSettings.languageEnglish
+            : language === "cs"
+              ? dictionary.serverSettings.languageCzech
+              : dictionary.serverSettings.languageGerman
+
     return (
-        <Card className="border-border/60 rounded-2xl">
-            <CardContent className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>{dictionary.serverSettings.timezone}</Label>
-                        <Select value={timezone} onValueChange={setTimezone}>
-                            <SelectTrigger className="rounded-xl">
+        <div className="space-y-6">
+            {!values.announcementsChannelId ? (
+                <div
+                    role="alert"
+                    className="flex items-start gap-2.5 rounded-xl border border-amber-400/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100"
+                >
+                    <TriangleAlert
+                        className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        aria-hidden="true"
+                    />
+                    <p>
+                        <strong className="font-semibold">
+                            {text.missingAnnouncements}
+                        </strong>{" "}
+                        {text.missingAnnouncementsHelp}
+                    </p>
+                </div>
+            ) : null}
+
+            <Card id="channels-language" title={text.languageTitle}>
+                <Row>
+                    <SettingsField
+                        label={text.timezone}
+                        help={text.timezoneHelp}
+                    >
+                        <Select
+                            value={values.timezone}
+                            onValueChange={(value) =>
+                                setValue("timezone", value)
+                            }
+                        >
+                            <SelectTrigger
+                                className="w-full rounded-lg"
+                                aria-label={text.timezone}
+                            >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -232,83 +468,99 @@ export function DiscordChannelSettingsForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.serverSettings.defaultLanguage}
-                        </Label>
+                        {multiGame ? (
+                            <ClanWideNote
+                                label={hub.scopeLegend.clanWideShort}
+                            />
+                        ) : null}
+                    </SettingsField>
+                </Row>
+                <Row>
+                    <SettingsField
+                        label={text.language}
+                        help={text.languageHelp}
+                    >
                         <Select
-                            value={defaultLanguage}
-                            onValueChange={(value) =>
-                                setDefaultLanguage(value as ClanLanguage)
-                            }
+                            value={values.defaultLanguage}
+                            onValueChange={(value) => {
+                                const language = supportedClanLanguages.find(
+                                    (item) => item === value
+                                )
+                                if (language)
+                                    setValue("defaultLanguage", language)
+                            }}
                         >
-                            <SelectTrigger className="rounded-xl">
+                            <SelectTrigger
+                                className="w-full rounded-lg"
+                                aria-label={text.language}
+                            >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {supportedClanLanguages.map((item) => (
                                     <SelectItem key={item} value={item}>
-                                        {item === "en"
-                                            ? dictionary.serverSettings
-                                                  .languageEnglish
-                                            : item === "cs"
-                                              ? dictionary.serverSettings
-                                                    .languageCzech
-                                              : dictionary.serverSettings
-                                                    .languageGerman}
+                                        {languageName(item)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
-                </div>
-                {exceptionsShown ? (
-                    <p className="text-muted-foreground text-sm">
-                        {dictionary.settingsHub.gameExceptionsNote}
-                    </p>
-                ) : null}
-                <div className="grid gap-6 md:grid-cols-2">
-                    {routingField("announcementsChannelId")}
-                    {routingField("eventInfoChannelId")}
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.serverSettings.errorsChannelId}
-                        </Label>
-                        <DiscordChannelSelect
-                            value={errorsChannelId}
-                            onChange={setErrorsChannelId}
-                            channels={channels}
-                            placeholder={
-                                dictionary.serverSettings.errorsChannelId
-                            }
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.serverSettings.calendarChannelId}
-                        </Label>
-                        <DiscordChannelSelect
-                            value={calendarChannelId}
-                            onChange={setCalendarChannelId}
-                            channels={channels}
-                            placeholder={
-                                dictionary.serverSettings.calendarChannelId
-                            }
-                        />
-                    </div>
-                    {routingField("forumCategoryId")}
-                    {routingField("squadVoiceCategoryId")}
-                    {routingField("meetingChannelId")}
-                </div>
-                <Button
-                    className="rounded-xl"
-                    onClick={save}
-                    disabled={isPending}
-                >
-                    {dictionary.serverSettings.saveDiscordSettings}
-                </Button>
-            </CardContent>
-        </Card>
+                        {multiGame ? (
+                            <ClanWideNote
+                                label={hub.scopeLegend.clanWideShort}
+                            />
+                        ) : null}
+                    </SettingsField>
+                </Row>
+            </Card>
+
+            <Card id="channels-text" title={text.textTitle}>
+                {routingRow(
+                    "announcementsChannelId",
+                    <>
+                        {text.announcements}{" "}
+                        <span
+                            className={cn(
+                                "font-normal",
+                                values.announcementsChannelId
+                                    ? "text-muted-foreground"
+                                    : "text-amber-700 dark:text-amber-400"
+                            )}
+                        >
+                            · {text.required}
+                        </span>
+                    </>,
+                    text.announcementsHelp
+                )}
+                {routingRow(
+                    "eventInfoChannelId",
+                    text.eventInfo,
+                    text.eventInfoHelp
+                )}
+                {clanWideRow(
+                    "calendarChannelId",
+                    text.calendar,
+                    text.calendarHelp
+                )}
+                {clanWideRow("errorsChannelId", text.errors, text.errorsHelp)}
+                {routingRow("forumCategoryId", text.forum, text.forumHelp)}
+            </Card>
+
+            <Card id="channels-voice" title={text.voiceTitle}>
+                {routingRow(
+                    "squadVoiceCategoryId",
+                    text.squadVoice,
+                    text.squadVoiceHelp
+                )}
+                {routingRow("meetingChannelId", text.meeting, text.meetingHelp)}
+            </Card>
+
+            <UnsavedChangesBar
+                changes={changes}
+                saving={saving || isPending}
+                onDiscard={discard}
+                onSave={() => void save()}
+                dictionary={dictionary}
+            />
+        </div>
     )
 }

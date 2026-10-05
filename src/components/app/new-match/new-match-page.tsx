@@ -85,6 +85,7 @@ export async function NewMatchPage({
             linkedTeams={linkedTeams}
             channelDefaults={channelDefaults}
             clanRoleId={config?.clanRoleId}
+            messageStyle={config?.messageStyle}
             draft={draft}
         />
     )

@@ -1,8 +1,8 @@
 "use client"
 
+import { ArrowRight, ChevronDown } from "lucide-react"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -21,14 +21,12 @@ import type {
     GameDiscordOverrides,
     PlayerStatsServer,
 } from "@/types/domain"
-import {
-    SettingsField,
-    SettingsPanel,
-} from "@/components/app/settings/settings-panel"
 import { saveDiscordSettings } from "@/components/app/settings/save-discord-settings"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
+import { StatsReplyPreview } from "@/components/app/settings/stats-reply-preview"
 import { GameExceptionList } from "@/components/app/settings/game-exception-list"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
+import { SettingsPanel } from "@/components/app/settings/settings-panel"
 import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -36,6 +34,7 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 type ServerExceptions = Partial<Record<GameId, PlayerStatsServer[]>>
 
@@ -97,6 +96,7 @@ export function StatsCommandSettingsForm({
         ),
     }))
     const [draft, setDraft] = useState<StatsDraft>(saved)
+    const [legacyOpen, setLegacyOpen] = useState(false)
     const { settings: statsSettings, servers, exceptions } = draft
     const exceptionsShown = showsGameExceptions(enabledGames, [exceptions])
     const legacyCount =
@@ -166,119 +166,187 @@ export function StatsCommandSettingsForm({
                     />
                 </div>
             </div>
-            <SettingsPanel id="stats-games" title={text.gamesTitle}>
-                <ul className="divide-y">
-                    {STATS_COMMAND_GAMES.map((game) => (
-                        <li
-                            key={game}
-                            className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
-                        >
-                            <Switch
-                                id={`stats-command-${game}`}
-                                className="mt-0.5"
-                                checked={statsSettings.games[game]}
-                                disabled={!statsSettings.enabled}
-                                onCheckedChange={(checked) =>
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+                <div className="min-w-0 space-y-6">
+                    <SettingsPanel id="stats-games" title={text.gamesTitle}>
+                        <ul className="divide-y">
+                            {STATS_COMMAND_GAMES.map((game) => (
+                                <li
+                                    key={game}
+                                    className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                                >
+                                    <Switch
+                                        id={`stats-command-${game}`}
+                                        className="mt-0.5"
+                                        checked={statsSettings.games[game]}
+                                        disabled={!statsSettings.enabled}
+                                        onCheckedChange={(checked) =>
+                                            updateSettings({
+                                                games: {
+                                                    ...statsSettings.games,
+                                                    [game]: checked,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    <div className="min-w-0 space-y-0.5">
+                                        <Label
+                                            htmlFor={`stats-command-${game}`}
+                                            className="font-medium"
+                                        >
+                                            {GAME_LABELS[game]}
+                                        </Label>
+                                        <p className="text-muted-foreground text-[13px]">
+                                            {game === "wardogs" ? (
+                                                <>
+                                                    {text.wardogsSource}{" "}
+                                                    <Link
+                                                        href={gameServersHref}
+                                                        className="text-foreground underline underline-offset-3"
+                                                    >
+                                                        {text.gameServersLink}
+                                                    </Link>
+                                                    .
+                                                </>
+                                            ) : (
+                                                text.hllSource
+                                            )}
+                                        </p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </SettingsPanel>
+                    <SettingsPanel id="stats-share" title={text.shareTitle}>
+                        <div className="space-y-2">
+                            <div className="text-sm font-medium">
+                                {text.defaultChannel}
+                            </div>
+                            <DiscordChannelSelect
+                                value={statsSettings.defaultShareChannelId}
+                                onChange={(value) =>
                                     updateSettings({
-                                        games: {
-                                            ...statsSettings.games,
-                                            [game]: checked,
-                                        },
+                                        defaultShareChannelId:
+                                            value || undefined,
                                     })
                                 }
+                                channels={metadata?.channels ?? []}
+                                placeholder={text.defaultChannel}
+                                noneLabel={text.noChannel}
                             />
-                            <div className="min-w-0 space-y-0.5">
-                                <Label
-                                    htmlFor={`stats-command-${game}`}
-                                    className="font-medium"
-                                >
-                                    {GAME_LABELS[game]}
-                                </Label>
-                                <p className="text-muted-foreground text-[13px]">
-                                    {game === "wardogs" ? (
-                                        <>
-                                            {text.wardogsSource}{" "}
-                                            <Link
-                                                href={gameServersHref}
-                                                className="text-foreground underline underline-offset-3"
-                                            >
-                                                {text.gameServersLink}
-                                            </Link>
-                                            .
-                                        </>
-                                    ) : (
-                                        text.hllSource
-                                    )}
-                                </p>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            </SettingsPanel>
-            <SettingsPanel id="stats-share" title={text.shareTitle}>
-                <SettingsField
-                    label={text.defaultChannel}
-                    help={text.defaultChannelHelp}
-                >
-                    <DiscordChannelSelect
-                        value={statsSettings.defaultShareChannelId}
-                        onChange={(value) =>
-                            updateSettings({
-                                defaultShareChannelId: value || undefined,
-                            })
+                            <p className="text-muted-foreground text-[13px]">
+                                {text.defaultChannelHelp}
+                            </p>
+                        </div>
+                    </SettingsPanel>
+                    <SettingsPanel
+                        id="stats-legacy"
+                        title={text.legacyTitle.replace(
+                            "{count}",
+                            String(legacyCount)
+                        )}
+                        description={text.legacyHelp}
+                        className={
+                            legacyCount
+                                ? "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 [&_h2]:text-amber-900 dark:[&_h2]:text-amber-100"
+                                : undefined
                         }
-                        channels={metadata?.channels ?? []}
-                        placeholder={text.defaultChannel}
-                        noneLabel={text.noChannel}
-                    />
-                </SettingsField>
-            </SettingsPanel>
-            <SettingsPanel
-                id="stats-legacy"
-                title={text.legacyTitle.replace("{count}", String(legacyCount))}
-                description={text.legacyHelp}
-                actions={
-                    <Button asChild variant="outline" className="rounded-xl">
-                        <Link href={gameServersHref}>
-                            {text.openGameServers}
-                            <ArrowRight className="size-4" aria-hidden="true" />
-                        </Link>
-                    </Button>
-                }
-            >
-                <StatsServerList
-                    idPrefix="stats-server"
-                    servers={servers}
-                    onChange={(next) => update({ servers: next })}
-                    dictionary={dictionary}
-                />
-                {exceptionsShown ? (
-                    <div className="space-y-2 pt-2">
-                        <h3 className="text-sm font-medium">
-                            {dictionary.settingsHub.statsServersPerGame}
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                            {dictionary.settingsHub.statsServersPerGameHelp}
-                        </p>
-                        <GameExceptionList<PlayerStatsServer[]>
-                            enabledGames={enabledGames}
-                            exceptions={exceptions}
-                            onChange={(next) => update({ exceptions: next })}
-                            emptyValue={[{ token: "", url: "" }]}
-                            canAdd={enabledGames.length > 1}
-                            dictionary={dictionary}
-                            renderValue={(game, value, setValue) => (
+                    >
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <Link href={gameServersHref}>
+                                    {text.openGameServers}
+                                    <ArrowRight
+                                        className="size-4"
+                                        aria-hidden="true"
+                                    />
+                                </Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="rounded-xl"
+                                aria-expanded={legacyOpen}
+                                aria-controls="stats-legacy-list"
+                                onClick={() => setLegacyOpen((open) => !open)}
+                            >
+                                {legacyOpen
+                                    ? text.hideConnections
+                                    : text.showConnections}
+                                <ChevronDown
+                                    className={cn(
+                                        "size-4 transition-transform",
+                                        legacyOpen && "rotate-180"
+                                    )}
+                                    aria-hidden="true"
+                                />
+                            </Button>
+                        </div>
+                        {legacyOpen ? (
+                            <div id="stats-legacy-list" className="space-y-3">
                                 <StatsServerList
-                                    idPrefix={`stats-server-${game}`}
-                                    servers={value ?? []}
-                                    onChange={setValue}
+                                    idPrefix="stats-server"
+                                    servers={servers}
+                                    onChange={(next) =>
+                                        update({ servers: next })
+                                    }
                                     dictionary={dictionary}
                                 />
-                            )}
-                        />
-                    </div>
-                ) : null}
-            </SettingsPanel>
+                                {exceptionsShown ? (
+                                    <div className="space-y-2 pt-2">
+                                        <h3 className="text-sm font-medium">
+                                            {
+                                                dictionary.settingsHub
+                                                    .statsServersPerGame
+                                            }
+                                        </h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            {
+                                                dictionary.settingsHub
+                                                    .statsServersPerGameHelp
+                                            }
+                                        </p>
+                                        <GameExceptionList<PlayerStatsServer[]>
+                                            enabledGames={enabledGames}
+                                            exceptions={exceptions}
+                                            onChange={(next) =>
+                                                update({ exceptions: next })
+                                            }
+                                            emptyValue={[
+                                                { token: "", url: "" },
+                                            ]}
+                                            canAdd={enabledGames.length > 1}
+                                            dictionary={dictionary}
+                                            renderValue={(
+                                                game,
+                                                value,
+                                                setValue
+                                            ) => (
+                                                <StatsServerList
+                                                    idPrefix={`stats-server-${game}`}
+                                                    servers={value ?? []}
+                                                    onChange={setValue}
+                                                    dictionary={dictionary}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </SettingsPanel>
+                </div>
+                <div className="xl:sticky xl:top-4">
+                    <StatsReplyPreview
+                        settings={statsSettings}
+                        dictionary={dictionary}
+                    />
+                </div>
+            </div>
             <UnsavedChangesBar
                 changes={countChanges(draft, saved)}
                 saving={saving || isPending}

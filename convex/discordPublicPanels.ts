@@ -2,14 +2,20 @@ import {
     publicPanelSettingsSchema,
     type PublicPanelSaveResult,
 } from "../src/domain/discord-publications/settings"
+import {
+    mutation,
+    query,
+    type MutationCtx,
+    type QueryCtx,
+} from "./_generated/server"
+import { buildResultCardFacts } from "../src/domain/discord-publications/result-card"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
-import { mutation, query, type MutationCtx } from "./_generated/server"
 import { attachableAsset, syncAssetReferences } from "./imageAssets"
+import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelSettingsInput } from "./discordPublicationTable"
+import type { Doc, Id } from "./_generated/dataModel"
 import { connectionSource } from "./gameDataCatalog"
-import type { Id } from "./_generated/dataModel"
-import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
 
 function secretGuard(secret: string) {
@@ -241,6 +247,45 @@ export const forGuild = query({
         )
     },
 })
+/** Category, sides, confirming admin and public page of one reviewed result. */
+async function resultCard(
+    ctx: QueryCtx,
+    event: Doc<"events">,
+    version: number,
+    guild: Doc<"guilds">,
+    guildDiscordId: string
+) {
+    const [revision, stats] = await Promise.all([
+        ctx.db
+            .query("eventResultRevisions")
+            .withIndex("eventId_version", (q) =>
+                q.eq("eventId", event._id).eq("version", version)
+            )
+            .unique(),
+        ctx.db
+            .query("matchStats")
+            .withIndex("eventId", (q) => q.eq("eventId", event._id))
+            .unique(),
+    ])
+    // The reviewer is the confirming admin's Discord user ID.
+    const reviewerId =
+        revision && revision.guildId === event.guildId
+            ? revision.revision.reviewerId
+            : null
+    const reviewer = reviewerId
+        ? await getUserByDiscordId(ctx, reviewerId)
+        : null
+    return buildResultCardFacts({
+        event,
+        categories: guild.eventCategories,
+        reviewer,
+        guildDiscordId,
+        // The public match page exists only for matches with linked stats.
+        publicMatch: Boolean(
+            stats && event.matchStatsId && event.matchStatsId === stats._id
+        ),
+    })
+}
 export const resultsPage = query({
     args: {
         secret: v.string(),
@@ -258,25 +303,40 @@ export const resultsPage = query({
             .query("events")
             .withIndex("guildId", (q) => q.eq("guildId", String(guild._id)))
             .paginate({ cursor: args.cursor, numItems: 100 })
+        const events = []
+        for (const e of page.page) {
+            // Unpublished drafts never reach a public panel.
+            if (
+                e.isDraft === true ||
+                (e.gameId ?? "hell_let_loose") !== panel.gameId
+            )
+                continue
+            const result =
+                e.reviewedResultGameId === panel.gameId &&
+                e.reviewedResult?.status !== "provisional"
+                    ? (e.reviewedResult ?? null)
+                    : null
+            events.push({
+                id: String(e._id),
+                name: e.name,
+                map: e.map ?? null,
+                updatedAt: e.updatedAt ?? e.createdAt,
+                result,
+                // Added for the result card; older bots ignore it.
+                card: result
+                    ? await resultCard(
+                          ctx,
+                          e,
+                          result.version,
+                          guild,
+                          panel.guildId
+                      )
+                    : null,
+            })
+        }
         return {
             cursor: page.isDone ? null : page.continueCursor,
-            events: page.page
-                .filter(
-                    (e) =>
-                        e.isDraft !== true &&
-                        (e.gameId ?? "hell_let_loose") === panel.gameId
-                )
-                .map((e) => ({
-                    id: String(e._id),
-                    name: e.name,
-                    map: e.map ?? null,
-                    updatedAt: e.updatedAt ?? e.createdAt,
-                    result:
-                        e.reviewedResultGameId === panel.gameId &&
-                        e.reviewedResult?.status !== "provisional"
-                            ? (e.reviewedResult ?? null)
-                            : null,
-                })),
+            events,
         }
     },
 })

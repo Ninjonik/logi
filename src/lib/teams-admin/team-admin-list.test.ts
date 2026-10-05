@@ -1,7 +1,9 @@
 import {
     appendUnique,
+    catalogueRowFacts,
     fillTemplate,
     formatAdminDate,
+    formatAdminDay,
     linkableWorkspaces,
     mergeCandidates,
     removeById,
@@ -145,4 +147,36 @@ test("dates are localized and invalid values are shown as stored", () => {
         /4 Oct 2026/
     )
     assert.equal(formatAdminDate("not a date", "en"), "not a date")
+})
+
+test("catalogue rows list the short code, clan link, competitions and a waiting change", () => {
+    assert.deepEqual(
+        catalogueRowFacts(
+            { shortCode: "VLK", linkedGuildId: "123456789012345678" },
+            { competitionCount: 1, pendingRequests: 0 }
+        ),
+        [
+            { kind: "code", value: "VLK" },
+            { kind: "linked" },
+            { kind: "competitions", count: 1 },
+        ]
+    )
+    assert.deepEqual(
+        catalogueRowFacts(
+            { shortCode: null, linkedGuildId: null },
+            { competitionCount: 0, pendingRequests: 2 }
+        ),
+        [{ kind: "pending" }]
+    )
+    // Before usage loads only the record's own facts show.
+    assert.deepEqual(
+        catalogueRowFacts({ shortCode: "ROG", linkedGuildId: null }, undefined),
+        [{ kind: "code", value: "ROG" }]
+    )
+})
+
+test("admin days are short and localized, unparsable values stay as stored", () => {
+    assert.equal(formatAdminDay("2026-09-28T12:00:00.000Z", "cs"), "28. 9.")
+    assert.equal(formatAdminDay("2026-09-28T12:00:00.000Z", "en"), "9/28")
+    assert.equal(formatAdminDay("not a date", "cs"), "not a date")
 })

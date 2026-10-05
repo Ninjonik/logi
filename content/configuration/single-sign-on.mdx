@@ -18,6 +18,13 @@ the exact HTTPS callback URL supplied by the website backend. Fragments,
 credentials in URLs, and wildcard callbacks are rejected. The client secret is
 shown once; store it in the website backend's secret configuration.
 
+**Edit** on an application changes its name, website address and return
+addresses (one per line, up to ten). The client ID and the client secret stay
+the same, so the website keeps working; a removed return address stops working
+for new sign-ins at once. **Remove application** is in the same editor and asks
+for confirmation first. Editing, like creating and removing, is available only
+to the clan's dashboard administrators and is not part of the `/api/v1` API.
+
 Register the website only with the minimum required access. SSO authenticates the
 person; it does not grant an administrator role. Website authorization uses the
 separately configured membership API and its current game-specific role policy.

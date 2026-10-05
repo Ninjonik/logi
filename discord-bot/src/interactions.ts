@@ -34,6 +34,7 @@ import {
     getClanDiscordMessages,
     type ClanLanguage,
 } from "../../src/lib/clan-language"
+import { skipsPendingOnApply } from "../../src/domain/membership/membership-options"
 import { withGameOverrides, type GameId } from "../../src/domain/games/game"
 
 import {
@@ -73,6 +74,12 @@ import {
     resolveSupportMemberIds,
     rollbackMembershipApplicationSetup,
 } from "./interactions/shared"
+import {
+    ATTENDANCE_DECLINE_MODAL_PREFIX,
+    ATTENDANCE_DECLINE_PREFIX,
+    handleAttendanceDeclineButton,
+    handleAttendanceDeclineModalSubmit,
+} from "./interactions/attendance-decline"
 import {
     handleEventButtonInteraction,
     handleCheckSignupInteraction,
@@ -591,6 +598,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await handleMatchRecapPreference(interaction)
                 return
             }
+            if (interaction.customId.startsWith(ATTENDANCE_DECLINE_PREFIX)) {
+                await handleAttendanceDeclineButton(interaction)
+                return
+            }
             if (interaction.customId.startsWith("attendance-late:")) {
                 const eventId = interaction.customId.replace(
                     "attendance-late:",
@@ -690,6 +701,10 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                 await handlePlatformLinkMockApplyModalSubmit(interaction)
             } else if (interaction.customId.startsWith("notice-modal:")) {
                 await handleNoticeModalSubmit(interaction)
+            } else if (
+                interaction.customId.startsWith(ATTENDANCE_DECLINE_MODAL_PREFIX)
+            ) {
+                await handleAttendanceDeclineModalSubmit(interaction, options)
             }
         },
 
@@ -3511,11 +3526,9 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
             return
         }
 
-        const initialStatus =
-            category.assignmentType === "member" &&
-            membershipSettings.autoAssignRecruitOnApply
-                ? "recruit"
-                : "pending"
+        const initialStatus = skipsPendingOnApply(membershipSettings, category)
+            ? "recruit"
+            : "pending"
 
         const assignmentId = (await convex
             .mutation(references.upsertAssignment, {

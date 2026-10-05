@@ -3,6 +3,7 @@ import { ButtonStyle } from "discord.js"
 import {
     getClanDiscordMessages,
     getIntlLocaleForClanLanguage,
+    isClanLanguage,
 } from "../../src/lib/clan-language"
 import { eventInfoMessageRenderVersion } from "../../src/domain/discord-sync/render-version"
 
@@ -127,6 +128,15 @@ export function buildRosterImageUrl(eventId: string, rosterUpdatedAt?: string) {
 
 export function buildPublicRosterUrl(eventId: string, language: ClanLanguage) {
     return new URL(`/${language}/rosters/${eventId}`, env.appSiteUrl).toString()
+}
+
+/** Public match page (exists only for matches with linked statistics). */
+export function buildPublicMatchUrl(eventId: string, language?: string) {
+    const locale = isClanLanguage(language) ? language : "en"
+    return new URL(
+        `/${locale}/matches/${encodeURIComponent(eventId)}`,
+        env.appSiteUrl
+    ).toString()
 }
 
 export async function warmRosterImage(

@@ -11,6 +11,11 @@ import {
     type TeamGame,
 } from "@/domain/teams/team"
 import {
+    TEAM_USAGE_IDS_MAX,
+    teamCatalogueStateSchema,
+    type TeamCatalogueState,
+} from "@/domain/teams/team-usage"
+import {
     isSameOrigin,
     noStore,
     superadminCommandResponse,
@@ -19,13 +24,18 @@ import {
 import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 
-/** A catalogue read: one record by ID, or a page of one game's entries. */
+/**
+ * A catalogue read: one record by ID, where listed teams are used, or a page
+ * of one game's entries (by `state` when given, else the `archived` flag).
+ */
 export type SuperadminTeamsQuery =
     | { kind: "get"; teamId: string }
+    | { kind: "usage"; teamIds: string[] }
     | {
           kind: "list"
           gameId: TeamGame
           archived: boolean
+          state?: TeamCatalogueState
           search?: string
           cursor: string | null
           limit: number
@@ -39,6 +49,7 @@ const flag = z.enum(["true", "false"]).transform((value) => value === "true")
 const listQuerySchema = z.object({
     game: teamGameSchema,
     archived: flag.default(false),
+    state: teamCatalogueStateSchema.optional(),
     search: z
         .string()
         .trim()
@@ -54,6 +65,9 @@ const listQuerySchema = z.object({
         .default(TEAM_PAGE_DEFAULT),
 })
 
+/** `?usage=` takes comma-separated catalogue IDs, one catalogue page at most. */
+const usageSchema = z.array(teamIdSchema).min(1).max(TEAM_USAGE_IDS_MAX)
+
 /** `null` means the query is malformed; a bad `game` or an out-of-range limit is rejected, not clamped. */
 export function parseSuperadminTeamsQuery(
     params: URLSearchParams
@@ -63,9 +77,17 @@ export function parseSuperadminTeamsQuery(
         const parsed = teamIdSchema.safeParse(teamId)
         return parsed.success ? { kind: "get", teamId: parsed.data } : null
     }
+    const usage = params.get("usage")
+    if (usage !== null) {
+        const parsed = usageSchema.safeParse(usage.split(","))
+        return parsed.success
+            ? { kind: "usage", teamIds: [...new Set(parsed.data)] }
+            : null
+    }
     const parsed = listQuerySchema.safeParse({
         game: params.get("game") ?? undefined,
         archived: params.get("archived") ?? undefined,
+        state: params.get("state") ?? undefined,
         search: params.get("search") ?? undefined,
         cursor: params.get("cursor") ?? undefined,
         limit: params.get("limit") ?? undefined,
@@ -75,6 +97,7 @@ export function parseSuperadminTeamsQuery(
         kind: "list",
         gameId: parsed.data.game,
         archived: parsed.data.archived,
+        ...(parsed.data.state ? { state: parsed.data.state } : {}),
         ...(parsed.data.search ? { search: parsed.data.search } : {}),
         cursor: parsed.data.cursor ?? null,
         limit: parsed.data.limit,
@@ -123,6 +146,8 @@ export type SuperadminTeamsPorts<Access> = {
     /** The attested global administrator, or null to deny the request. */
     access(): Promise<Access | null>
     get(access: Access, teamId: string): Promise<unknown>
+    /** Competition registrations and pending requests of the listed teams. */
+    usage(access: Access, teamIds: string[]): Promise<unknown>
     list(access: Access, query: SuperadminTeamsListQuery): Promise<unknown>
     command(
         access: Access,
@@ -139,7 +164,7 @@ export function superadminTeamsHandlers<Access>(
     ports: SuperadminTeamsPorts<Access>
 ) {
     return {
-        /** `?teamId=` reads one record as `{ team }`; otherwise `?game=` pages one game's catalogue. */
+        /** `?teamId=` reads one record as `{ team }`, `?usage=` where teams are used; otherwise `?game=` pages one game's catalogue. */
         async GET(request: Request): Promise<Response> {
             try {
                 const access = await ports.access()
@@ -154,6 +179,8 @@ export function superadminTeamsHandlers<Access>(
                         ? noStore({ team })
                         : noStore({ error: "not_found" }, 404)
                 }
+                if (query.kind === "usage")
+                    return noStore(await ports.usage(access, query.teamIds))
                 return noStore(await ports.list(access, query))
             } catch {
                 return noStore({ error: "unavailable" }, 503)

@@ -1,6 +1,7 @@
 export type Timestamp = string
 
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { MatchTemplate } from "@/domain/events/match-templates"
 import type { GameId } from "@/domain/games/game"
@@ -160,6 +161,8 @@ export type MembershipCategory = {
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
     assignmentType: "member" | "reserve_member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
 }
 
 export type TicketSettings = {
@@ -184,6 +187,8 @@ export type MembershipSettings = {
     /** Ask infantry/tank preference for supported games during application. */
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     /** Defaults to true for legacy configurations. */
     inviteSupportMembersIndividually?: boolean
     rosterScoreSettings?: {
@@ -235,6 +240,8 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
     createdAt: Timestamp
     updatedAt: Timestamp
 }
