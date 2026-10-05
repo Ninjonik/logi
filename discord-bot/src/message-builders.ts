@@ -670,16 +670,18 @@ export function buildEventCardText(
         )
     }
 
-    const status = [
+    const statusLines = [
         options?.hideSignupDetails
             ? undefined
             : formatSignupCountsLine(event, groups, messages),
         registrationOpen
             ? undefined
             : `${messages.embed.status}: ${formatEventStatus(event.status, config.defaultLanguage)}`,
-    ]
-        .filter(Boolean)
-        .join("\n")
+    ].filter(Boolean)
+    // With per-line icons, the sign-up block starts with its own icon.
+    const status = statusLines.length
+        ? `${icon("status")}${statusLines.join("\n")}`
+        : ""
     const footer = [
         options?.forumChannelId
             ? `${icon("forum")}<#${options.forumChannelId}>`

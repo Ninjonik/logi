@@ -290,13 +290,11 @@ test("buildEventEmbed uses the clan colour and icon density of the message style
     // Without a category the clan colour is the accent.
     assert.equal(plain.color, 0x5865f2)
     const [header] = (plain.description ?? "").split(/\n-{20,}\n/)
-    assert.match(header ?? "", /^\*\*⚔️ Side:\*\* Allies$/m)
-    assert.match(header ?? "", /^\*\*🕒 Match Start:\*\* <t:\d+:F>$/m)
+    // Rich icons lead the sides, start, details and sign-up lines.
+    assert.match(header ?? "", /^⚔️ \*\*Side:\*\* .*Allies$/m)
+    assert.match(header ?? "", /^🕒 \*\*<t:\d+:F>\*\*$/m)
     assert.match(header ?? "", /^🗺️ Foy · /m)
-    assert.match(
-        plain.description ?? "",
-        /^📋 \*\*Signed up 0\*\* · Status: Registration$/m
-    )
+    assert.match(plain.description ?? "", /^📋 \*\*Signed up 0\*\*/m)
 
     // An event category keeps its own colour.
     assert.equal(
