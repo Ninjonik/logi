@@ -327,6 +327,16 @@ export type EventRecord = {
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: MatchRecurrence
+    /** Generated weekly occurrence: the event that carries the recurrence. */
+    recurrenceSeriesId?: string
+    /** Signup group caps by group ID; a full group offers a reserve place. */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    /** Attendance DM offsets in hours before the meeting; missing means all four. */
+    attendanceReminderHours?: number[]
+    /** Missing means the bot creates the attendee and reserve roles. */
+    createParticipantRoles?: boolean
+    /** The squad preset the event's roster starts from. */
+    squadPresetId?: string
     attendeeRoleId?: string
     reserveRoleId?: string
     status: EventStatus

@@ -9,7 +9,11 @@ export const overview = query({
         const [users, guilds, events] = await Promise.all([
             ctx.db.query("users").collect(),
             ctx.db.query("guilds").collect(),
-            ctx.db.query("events").collect(),
+            ctx.db
+                .query("events")
+                .collect()
+                // Unpublished drafts are not counted on public pages.
+                .then((rows) => rows.filter((row) => row.isDraft !== true)),
         ])
 
         return {

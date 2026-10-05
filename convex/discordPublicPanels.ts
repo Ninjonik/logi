@@ -261,7 +261,11 @@ export const resultsPage = query({
         return {
             cursor: page.isDone ? null : page.continueCursor,
             events: page.page
-                .filter((e) => (e.gameId ?? "hell_let_loose") === panel.gameId)
+                .filter(
+                    (e) =>
+                        e.isDraft !== true &&
+                        (e.gameId ?? "hell_let_loose") === panel.gameId
+                )
                 .map((e) => ({
                     id: String(e._id),
                     name: e.name,

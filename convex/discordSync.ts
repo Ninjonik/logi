@@ -8,6 +8,7 @@ import {
     normalizeUserDoc,
 } from "./discord_shared"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
+import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
 import { applyGatewayObservation } from "./memberObservations"
 import { mutation } from "./integrationMutation"
@@ -54,7 +55,8 @@ export const listSyncPayloads = query({
             const guildGroups = groups
                 .filter((group) => group.guildId === config.guildId)
                 .map(normalizeDoc)
-            const guildEvents = events
+            // Drafts are not announced: the bot never sees them.
+            const guildEvents = withoutDrafts(events)
                 .filter((event) => event.guildId === config.guildId)
                 .map(normalizeEventDoc)
             const guildCalendarItems = calendarItems
@@ -196,7 +198,7 @@ export const listEventSyncIndex = query({
         ])
 
         return {
-            events: events.map((event) => {
+            events: withoutDrafts(events).map((event) => {
                 const normalized = normalizeEventDoc(event)
                 return {
                     id: normalized.id,
@@ -220,7 +222,7 @@ export const getEventSyncContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event) {
+        if (!event || isDraftEvent(event)) {
             return null
         }
 
@@ -255,7 +257,11 @@ export const getEventSignupContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event || (args.guildId && event.guildId !== args.guildId)) {
+        if (
+            !event ||
+            isDraftEvent(event) ||
+            (args.guildId && event.guildId !== args.guildId)
+        ) {
             return null
         }
         const guildId = event.guildId

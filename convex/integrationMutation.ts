@@ -30,6 +30,8 @@ export function projectIntegrationRow(
     if (table === "userAssignments") return [] // Per-key membership projection is read separately.
     if (table === "events") {
         const event = row as Doc<"events">
+        // Drafts are not part of the website feed until they are published.
+        if (event.isDraft === true) return []
         return [
             { resource: "event-summaries", data: projectEventSummary(event) },
             ...((event.kind ?? "match") === "match"
