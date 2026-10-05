@@ -648,7 +648,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             },
             closedTitle: "Die Anmeldung ist beendet",
             closedBody:
-                "Sie endete {time}. Wenn du noch spielen willst, schreib der Führung.",
+                "Die Anmeldung endete {time}. Wenn du noch spielen willst, schreib der Führung.",
             notSignedUpTitle: "Du bist noch nicht angemeldet",
             notSignedUpBody: "Die Anmeldung ist offen bis {time}.",
             declinedTitle: "Du bist als abwesend eingetragen",

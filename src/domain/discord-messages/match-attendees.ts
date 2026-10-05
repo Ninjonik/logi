@@ -351,7 +351,8 @@ export function buildAttendeesView(input: AttendeesViewInput): {
             },
         },
     ]
-    if (!chunks.length) {
+    // Empty group headers alone would read as a broken list.
+    if (!chunks.some((chunk) => chunk.entries.length)) {
         blocks.push({
             kind: "text",
             markdown:
