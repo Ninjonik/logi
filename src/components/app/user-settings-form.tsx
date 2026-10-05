@@ -56,14 +56,18 @@ function Section({
     title,
     children,
     className,
+    anchor,
 }: {
     title: string
     children: ReactNode
     className?: string
+    /** Fragment other pages and bot messages link to. */
+    anchor?: string
 }) {
     const headingId = useId()
     return (
         <section
+            id={anchor}
             aria-labelledby={headingId}
             className={`bg-card rounded-[14px] border px-4 py-2 sm:px-[22px] ${className ?? ""}`}
         >
@@ -495,7 +499,8 @@ export function UserSettingsForm({
                 </div>
             </Section>
 
-            <Section title={t.botDmTitle}>
+            {/* Linked as `#zpravy-od-bota` from Zprávy a panely and bot DMs. */}
+            <Section title={t.botDmTitle} anchor="zpravy-od-bota">
                 <div className="flex items-center gap-3 border-t py-3.5">
                     <div className="flex flex-1 flex-col">
                         <span className="text-sm">{t.recapTitle}</span>
