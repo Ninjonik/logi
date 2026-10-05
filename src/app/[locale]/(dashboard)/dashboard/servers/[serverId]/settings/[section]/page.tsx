@@ -170,6 +170,7 @@ export default async function ServerSettingsSectionPage({
                     serverId={serverId}
                     config={discordConfig}
                     dictionary={dictionary}
+                    rolesHref={settingsHref(locale, serverId, "roles", gameId)}
                 />
             )
             break
