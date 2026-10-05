@@ -19,13 +19,13 @@ The three inputs share one stored match and one managed Discord card. A restart 
 
 ## Native Logi matches
 
-**Create a native Logi match** opens the normal match editor. For an existing Wardogs match in this workspace, enter its Logi record ID and save the link. Only one League fixture may link to a given native match. Clearing the ID unlinks it.
+**Create a native Logi match** opens the normal match editor. To link a tracked fixture to an existing Wardogs match in this workspace, choose the match in **Logi match for this fixture** (newest first) and press **Save link**. Only one League fixture may link to a given native match. Choosing **Not linked** and saving removes the link.
 
 This link does not fabricate registration, headcount or end times, overwrite rosters or attendance, or copy League statuses into the native workflow. The website can use the optional `eventId` to display the related native match.
 
 ## Data and freshness
 
-Cards show the public kickoff time, teams and factions, map, voting/rules preparation, host and the source timestamp. Times in Discord adapt to the viewer; the dashboard uses Europe/Prague. Team member counts are not match attendance. Unknown fields remain unknown. Scores, finishing places, no-show and disputes are not inferred; completed-result extraction has not been accepted.
+Cards show the public kickoff time, teams and factions, map, voting/rules preparation, host and the source timestamp. Card labels and the **View match** button use the server's Discord language (English, Czech or German). Times in Discord adapt to the viewer; the dashboard uses Europe/Prague. Team member counts are not match attendance. Unknown fields remain unknown. Scores, finishing places, no-show and disputes are not inferred; completed-result extraction has not been accepted.
 
 Provider failures and incomplete HTML retain the last valid snapshot with a stale indicator. Rate limits respect `Retry-After`. Missing entries in an index never mean a fixture was cancelled. Tracking automatically archives seven days after a known kickoff, or fourteen days after first discovery when kickoff is unknown. **Refresh once** on an archived match requests a fresh snapshot without extending that horizon. Received reference removals still work after disabling intake or changing its room; edits missed while the bot is offline are not backfilled.
 

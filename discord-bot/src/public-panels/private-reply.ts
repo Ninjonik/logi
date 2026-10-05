@@ -2,7 +2,8 @@ import type { InteractionEditReplyOptions } from "discord.js"
 export async function completePrivatePlayerReply(
     editReply: (reply: InteractionEditReplyOptions) => Promise<unknown>,
     load: () => Promise<InteractionEditReplyOptions>,
-    timeoutMs = 12_000
+    timeoutMs = 12_000,
+    fallbackContent = "Player details unavailable. Please try again later."
 ) {
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
@@ -18,7 +19,7 @@ export async function completePrivatePlayerReply(
         await editReply(reply)
     } catch {
         await editReply({
-            content: "Player details unavailable. Please try again later.",
+            content: fallbackContent,
             components: [],
             allowedMentions: { parse: [] },
         })

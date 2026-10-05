@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation"
+
 import { CompleteTrainingButton } from "@/components/app/complete-training-button"
 import { EventFormPanel } from "@/components/app/event-form-panel"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -25,13 +27,13 @@ export default async function TrainingDetailPage({
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
     const { events, canAdmin, topicPresets, stratmaps, discordConfig, groups } =
         context
     const event = events.find(
         (item) => item.id === eventId && item.kind === "training"
     )
-    if (!event) return null
+    if (!event) notFound()
     const attendingParticipants = event.participants.filter(
         (participant) => participant.status === "attending"
     )

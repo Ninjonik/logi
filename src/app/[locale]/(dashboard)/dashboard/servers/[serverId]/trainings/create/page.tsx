@@ -3,6 +3,7 @@ import { EventFormPanel } from "@/components/app/event-form-panel"
 import { createDraftEventSchedule } from "@/lib/event-draft"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
+import { withGameOverrides } from "@/domain/games/game"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
@@ -32,7 +33,14 @@ export default async function CreateTrainingPage({
     const stratmaps = context?.stratmaps ?? []
     const groups = context?.groups ?? []
     const timezone = context?.discordConfig?.timezone ?? "UTC"
-    const discordConfig = context?.discordConfig ?? null
+    // Game-specific channels (for example a separate announcements channel) apply to new trainings too.
+    const discordConfig = context?.discordConfig
+        ? withGameOverrides(
+              context.discordConfig,
+              context.discordConfig.gameOverrides,
+              gameId
+          )
+        : null
     const draftSchedule = createDraftEventSchedule()
 
     const draftEvent = {
@@ -83,6 +91,7 @@ export default async function CreateTrainingPage({
                     stratmaps={stratmaps}
                     groups={groups}
                     eventCategories={context?.server.eventCategories ?? []}
+                    templates={context?.server.matchTemplates ?? []}
                     timezone={timezone}
                     canEdit={canAdmin}
                     dictionary={dictionary}

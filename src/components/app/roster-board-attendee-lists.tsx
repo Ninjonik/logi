@@ -117,8 +117,14 @@ export function RosterBoardAttendeeLists({
             >
                 <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
                     <div className="flex h-6 items-center justify-between">
-                        <CardTitle className="text-sm">
+                        <CardTitle className="flex items-baseline gap-2 text-sm">
                             {dictionary.common.reserves}
+                            <span className="text-muted-foreground text-xs font-normal">
+                                {dictionary.matchDetail.roster.reservesCount.replace(
+                                    "{count}",
+                                    String(reserveUsers.length)
+                                )}
+                            </span>
                         </CardTitle>
                         {isAssignmentMode && (
                             <Popover
@@ -240,8 +246,14 @@ export function RosterBoardAttendeeLists({
             >
                 <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
                     <div className="flex h-6 items-center justify-between">
-                        <CardTitle className="text-sm">
+                        <CardTitle className="flex items-baseline gap-2 text-sm">
                             {dictionary.roster.notAttending}
+                            <span className="text-muted-foreground text-xs font-normal">
+                                {dictionary.matchDetail.roster.notAttendingCount.replace(
+                                    "{count}",
+                                    String(groupedNotAttendingUsers.length)
+                                )}
+                            </span>
                         </CardTitle>
                         {isAssignmentMode && (
                             <Popover

@@ -1,16 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
+import { Plus, Trash2, TriangleAlert, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
-import type {
-    DiscordConfig,
-    MembershipCategory,
-    MembershipSettings,
-    TicketModalQuestion,
-} from "@/types/domain"
 import {
     Select,
     SelectContent,
@@ -18,43 +13,39 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import type {
+    DiscordConfig,
+    MembershipCategory,
+    MembershipSettings,
+} from "@/types/domain"
+import { ModalQuestionsEditor } from "@/components/app/settings/modal-questions-editor"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
-import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
+import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
-import { ExpandableItemCard } from "@/components/app/expandable-item-card"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
+import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
 import { DiscordChannelSelect } from "./discord-channel-select"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
-import { Card, CardContent } from "@/components/ui/card"
+import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-
-type DiscordMetadata = {
-    roles: DiscordSelectOption[]
-    channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
-    emojis: DiscordSelectOption[]
-}
+import { cn } from "@/lib/utils"
 
 const MAX_FIELD_LENGTH = 1024
+const ASSIGNMENT_TYPES = ["member", "reserve_member", "mercenary"] as const
+type AssignmentType = (typeof ASSIGNMENT_TYPES)[number]
+type ScoreKey = keyof NonNullable<MembershipSettings["rosterScoreSettings"]>
 
 function makeId(prefix: string) {
     return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function buildDefaultQuestion(): TicketModalQuestion {
-    return {
-        id: makeId("question"),
-        label: "",
-        placeholder: "",
-        style: "short",
-        required: true,
-    }
 }
 
 function buildDefaultCategory(): MembershipCategory {
@@ -166,42 +157,83 @@ function buildFieldPreview(categories: MembershipCategory[]) {
     }
 }
 
+function categoryInitials(category: MembershipCategory) {
+    const words = (category.label ?? "").trim().split(/\s+/).filter(Boolean)
+    const initials = words
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join("")
+    return initials.toUpperCase() || "?"
+}
+
+function needsRecruitRole(category: MembershipCategory) {
+    return (
+        category.assignmentType === "member" ||
+        category.assignmentType === "reserve_member"
+    )
+}
+
+const SCORE_FIELDS: Array<{
+    key: ScoreKey
+    label: (dictionary: Dictionary) => string
+}> = [
+    {
+        key: "noCategory",
+        label: (d) => d.membershipSettings.rosterScoreNoCategory,
+    },
+    {
+        key: "declined",
+        label: (d) => d.serverSettings.rosterScoreDeclined,
+    },
+    {
+        key: "rosterPresent",
+        label: (d) => d.membershipSettings.rosterScorePresentRoster,
+    },
+    {
+        key: "reservePresent",
+        label: (d) => d.membershipSettings.rosterScorePresentReserve,
+    },
+    {
+        key: "rosterAbsent",
+        label: (d) => d.membershipSettings.rosterScoreAbsentRoster,
+    },
+    {
+        key: "reserveAbsent",
+        label: (d) => d.membershipSettings.rosterScoreAbsentReserve,
+    },
+    {
+        key: "excusedAbsence",
+        label: (d) => d.membershipSettings.rosterScoreExcusedAbsence,
+    },
+]
+
 export function MembershipSettingsForm({
     serverId,
     config,
     dictionary,
+    rolesHref,
 }: {
     serverId: string
     config: DiscordConfig | null
     dictionary: Dictionary
+    /** The Roles and access page, where the clan role is chosen. */
+    rolesHref: string
 }) {
+    const t = dictionary.membershipSettings
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
-    const [settings, setSettings] = useState<MembershipSettings>(
-        buildDefaultSettings(dictionary, config)
+    const [saving, setSaving] = useState(false)
+    const metadata = useDiscordMetadata(serverId)
+    const initial = useMemo(
+        () => buildDefaultSettings(dictionary, config),
+        [dictionary, config]
     )
-    const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>(
-        []
+    const [settings, setSettings] = useState<MembershipSettings>(initial)
+    const [selectedId, setSelectedId] = useState<string | null>(
+        initial.categories[0]?.id ?? null
     )
-
-    useEffect(() => {
-        fetch(`/api/servers/${serverId}/discord-metadata`)
-            .then(async (response) => {
-                const body = await response.json()
-                if (
-                    !response.ok ||
-                    !body ||
-                    !Array.isArray(body.channels) ||
-                    !Array.isArray(body.roles) ||
-                    !Array.isArray(body.emojis)
-                ) {
-                    throw new Error("Unable to load Discord metadata.")
-                }
-                setMetadata(body)
-            })
-            .catch(() => setMetadata(null))
-    }, [serverId])
+    const [tab, setTab] = useState("categories")
+    const dirty = JSON.stringify(settings) !== JSON.stringify(initial)
 
     const roles = metadata?.roles ?? []
     const emojiOptions = metadata?.emojis ?? []
@@ -209,24 +241,39 @@ export function MembershipSettingsForm({
         () => buildFieldPreview(settings.categories),
         [settings.categories]
     )
+    const selected =
+        settings.categories.find((category) => category.id === selectedId) ??
+        settings.categories[0]
+    const clanRole = config?.clanRoleId
+        ? roles.find((role) => role.id === config.clanRoleId)
+        : undefined
+    const submitChannel = metadata?.channels.find(
+        (channel) => channel.id === settings.submitChannelId
+    )
+    const assignmentLabels: Record<AssignmentType, string> = {
+        member: dictionary.userManagement.memberLabel,
+        reserve_member: dictionary.userManagement.reserveMemberLabel,
+        mercenary: dictionary.userManagement.mercLabel,
+    }
+
     const missingMembershipParts: string[] = []
-    if (!settings.submitChannelId)
-        missingMembershipParts.push(dictionary.membershipSettings.submitChannel)
+    if (!settings.submitChannelId) missingMembershipParts.push(t.submitChannel)
     if (!settings.applicationParentChannelId)
-        missingMembershipParts.push(dictionary.membershipSettings.parentChannel)
+        missingMembershipParts.push(t.parentChannel)
     if (!settings.categories.length)
-        missingMembershipParts.push(
-            dictionary.membershipSettings.categoriesTitle
+        missingMembershipParts.push(t.categoriesTitle)
+    const categoryName = (category: MembershipCategory) =>
+        category.label?.trim() || category.id
+    const categoriesMissingRecruitRole = settings.categories
+        .filter(
+            (category) =>
+                needsRecruitRole(category) &&
+                category.recruitRoleIds.length === 0
         )
-    const memberCategoriesMissingRecruitRole = settings.categories.filter(
-        (category) =>
-            (category.assignmentType === "member" ||
-                category.assignmentType === "reserve_member") &&
-            category.recruitRoleIds.length === 0
-    ).length
-    const categoriesMissingFinalRole = settings.categories.filter(
-        (category) => category.finalRoleIds.length === 0
-    ).length
+        .map(categoryName)
+    const categoriesMissingFinalRole = settings.categories
+        .filter((category) => category.finalRoleIds.length === 0)
+        .map(categoryName)
 
     function patchSettings(patch: Partial<MembershipSettings>) {
         setSettings((current) => ({ ...current, ...patch }))
@@ -246,37 +293,34 @@ export function MembershipSettingsForm({
         }))
     }
 
-    function patchQuestion(
-        categoryId: string,
-        questionId: string,
-        patch: Partial<TicketModalQuestion>
-    ) {
+    function patchScore(key: ScoreKey, value: string) {
         setSettings((current) => ({
             ...current,
-            categories: current.categories.map((category) =>
-                category.id !== categoryId
-                    ? category
-                    : {
-                          ...category,
-                          modalQuestions: category.modalQuestions.map(
-                              (question) =>
-                                  question.id === questionId
-                                      ? { ...question, ...patch }
-                                      : question
-                          ),
-                      }
-            ),
+            rosterScoreSettings: {
+                ...current.rosterScoreSettings!,
+                [key]: Number.parseInt(value || "0", 10) || 0,
+            },
         }))
     }
 
-    function setCategoryCollapsed(categoryId: string, collapsed: boolean) {
-        setCollapsedCategoryIds((current) =>
-            collapsed
-                ? current.includes(categoryId)
-                    ? current
-                    : [...current, categoryId]
-                : current.filter((id) => id !== categoryId)
+    function addCategory() {
+        const category = buildDefaultCategory()
+        patchSettings({ categories: [...settings.categories, category] })
+        setSelectedId(category.id)
+    }
+
+    function removeCategory(categoryId: string) {
+        const remaining = settings.categories.filter(
+            (category) => category.id !== categoryId
         )
+        patchSettings({ categories: remaining })
+        setSelectedId(remaining[0]?.id ?? null)
+    }
+
+    function discard() {
+        setSettings(initial)
+        if (!initial.categories.some((category) => category.id === selectedId))
+            setSelectedId(initial.categories[0]?.id ?? null)
     }
 
     async function handleSave() {
@@ -320,1019 +364,743 @@ export function MembershipSettingsForm({
                   enabled: false,
               }
 
-        const response = await fetch(
-            `/api/servers/${serverId}/discord-settings`,
-            {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ membershipSettings }),
+        setSaving(true)
+        try {
+            const response = await fetch(
+                `/api/servers/${serverId}/discord-settings`,
+                {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ membershipSettings }),
+                }
+            )
+            const body = await response.json().catch(() => ({}))
+            if (!response.ok) {
+                toast.error(body.error ?? t.saveError)
+                return
             }
-        )
-
-        const body = await response.json()
-        if (!response.ok) {
-            toast.error(body.error ?? dictionary.membershipSettings.saveError)
-            return
+            toast.success(t.saved)
+            startTransition(() => router.refresh())
+        } catch {
+            toast.error(t.saveError)
+        } finally {
+            setSaving(false)
         }
-
-        toast.success(dictionary.membershipSettings.saved)
-        startTransition(() => router.refresh())
     }
 
+    const clanRoleChip = clanRole ? (
+        <span className="bg-muted rounded-md px-2 py-1 text-xs font-medium">
+            @{clanRole.name}
+        </span>
+    ) : (
+        <span className="rounded-md bg-amber-500/15 px-2 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+            {t.clanRoleMissingChip}
+        </span>
+    )
+    const [noteBefore, noteAfter] = t.clanRoleNote.split("{role}")
+
     return (
-        <Card className="border-border/60 rounded-2xl">
-            <CardContent className="space-y-6 py-6">
-                <MemberRoleOperations
-                    serverId={serverId}
-                    dictionary={dictionary}
-                />
-                {settings.enabled && missingMembershipParts.length ? (
-                    <ConfigNotice
-                        title={dictionary.membershipSettings.incompleteTitle}
-                    >
-                        {dictionary.membershipSettings.incompleteDescription.replace(
-                            "{items}",
-                            missingMembershipParts.join(", ")
-                        )}
-                    </ConfigNotice>
-                ) : null}
-                <ConfigNotice
-                    tone="info"
-                    title={dictionary.membershipSettings.roleSyncTitle}
-                >
-                    {dictionary.membershipSettings.roleSyncDescription}
+        <div className="space-y-6">
+            {settings.enabled && missingMembershipParts.length ? (
+                <ConfigNotice title={t.incompleteTitle}>
+                    {t.incompleteDescription.replace(
+                        "{items}",
+                        missingMembershipParts.join(", ")
+                    )}
                 </ConfigNotice>
-                {settings.enabled &&
-                (!config?.clanRoleId ||
-                    memberCategoriesMissingRecruitRole > 0 ||
-                    categoriesMissingFinalRole > 0) ? (
-                    <ConfigNotice
-                        title={dictionary.membershipSettings.rolesMissingTitle}
-                    >
-                        {!config?.clanRoleId
-                            ? dictionary.membershipSettings.rolesMissingClanRole
-                            : ""}
-                        {memberCategoriesMissingRecruitRole > 0
-                            ? dictionary.membershipSettings.rolesMissingRecruitRole
-                                  .replace(
-                                      "{count}",
-                                      String(memberCategoriesMissingRecruitRole)
-                                  )
-                                  .replace(
-                                      "{noun}",
-                                      memberCategoriesMissingRecruitRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleCategory
-                                          : dictionary.membershipSettings
-                                                .multipleCategories
-                                  )
-                                  .replace(
-                                      "{verb}",
-                                      memberCategoriesMissingRecruitRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleIs
-                                          : dictionary.membershipSettings
-                                                .pluralAre
-                                  )
-                            : ""}
-                        {categoriesMissingFinalRole > 0
-                            ? dictionary.membershipSettings.rolesMissingFinalRole
-                                  .replace(
-                                      "{count}",
-                                      String(categoriesMissingFinalRole)
-                                  )
-                                  .replace(
-                                      "{noun}",
-                                      categoriesMissingFinalRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleCategory
-                                          : dictionary.membershipSettings
-                                                .multipleCategories
-                                  )
-                                  .replace(
-                                      "{verb}",
-                                      categoriesMissingFinalRole === 1
-                                          ? dictionary.membershipSettings
-                                                .singleIs
-                                          : dictionary.membershipSettings
-                                                .pluralAre
-                                  )
-                            : ""}
-                        {dictionary.membershipSettings.rolesMissingSummary}
-                    </ConfigNotice>
-                ) : null}
-                <div className="border-border/60 space-y-3 rounded-2xl border p-4">
-                    <div>
-                        <div className="font-medium">
-                            {dictionary.serverSettings.rosterScoreTitle}
-                        </div>
-                        <div className="text-muted-foreground text-sm">
-                            {dictionary.membershipSettings
-                                .rosterScoreDescription ??
-                                dictionary.serverSettings
-                                    .rosterScoreDescription}
-                        </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScoreNoCategory ??
-                                    "No category / no reaction"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings?.noCategory ??
-                                        0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            noCategory:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.serverSettings.rosterScoreDeclined}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings?.declined ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            declined:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScorePresentRoster ??
-                                    "Reacted and present in roster"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings
-                                        ?.rosterPresent ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            rosterPresent:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScorePresentReserve ??
-                                    "Reacted and present in reserves"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings
-                                        ?.reservePresent ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            reservePresent:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScoreAbsentRoster ??
-                                    "Reacted and absent from roster"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings
-                                        ?.rosterAbsent ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            rosterAbsent:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScoreAbsentReserve ??
-                                    "Reacted and absent from reserves"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings
-                                        ?.reserveAbsent ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            reserveAbsent:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                            <Label>
-                                {dictionary.membershipSettings
-                                    .rosterScoreExcusedAbsence ??
-                                    "Reacted, absent, but had notice"}
-                            </Label>
-                            <Input
-                                value={String(
-                                    settings.rosterScoreSettings
-                                        ?.excusedAbsence ?? 0
-                                )}
-                                onChange={(event) =>
-                                    patchSettings({
-                                        rosterScoreSettings: {
-                                            ...settings.rosterScoreSettings!,
-                                            excusedAbsence:
-                                                Number.parseInt(
-                                                    event.target.value || "0",
-                                                    10
-                                                ) || 0,
-                                        },
-                                    })
-                                }
-                                className="rounded-xl"
-                                inputMode="numeric"
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div className="border-border/60 flex items-center justify-between gap-4 rounded-2xl border p-4">
-                    <div className="space-y-1">
-                        <h3 className="font-semibold">
-                            {dictionary.membershipSettings.enableTitle}
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                            {dictionary.membershipSettings.enableDescription}
-                        </p>
-                    </div>
+            ) : null}
+            {settings.enabled &&
+            (!config?.clanRoleId ||
+                categoriesMissingRecruitRole.length > 0 ||
+                categoriesMissingFinalRole.length > 0) ? (
+                <ConfigNotice title={t.rolesMissingTitle}>
+                    {!config?.clanRoleId ? t.rolesMissingClanRole : ""}
+                    {categoriesMissingRecruitRole.length
+                        ? t.rolesMissingRecruitRole.replace(
+                              "{categories}",
+                              categoriesMissingRecruitRole.join(", ")
+                          )
+                        : ""}
+                    {categoriesMissingFinalRole.length
+                        ? t.rolesMissingFinalRole.replace(
+                              "{categories}",
+                              categoriesMissingFinalRole.join(", ")
+                          )
+                        : ""}
+                    {t.rolesMissingSummary}
+                </ConfigNotice>
+            ) : null}
+
+            <div className="border-border/60 bg-card divide-border/60 divide-y rounded-2xl border">
+                <div className="flex items-start gap-3 p-4">
                     <Switch
+                        id="membership-enabled"
                         checked={settings.enabled}
                         onCheckedChange={(checked) =>
                             patchSettings({ enabled: checked })
                         }
+                        className="mt-0.5"
                     />
-                </div>
-
-                <div className="border-border/60 flex items-center justify-between gap-4 rounded-2xl border p-4">
-                    <div className="space-y-1">
-                        <h3 className="font-semibold">
-                            {
-                                dictionary.membershipSettings
-                                    .inviteSupportMembersIndividuallyTitle
-                            }
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                            {
-                                dictionary.membershipSettings
-                                    .inviteSupportMembersIndividuallyDescription
-                            }
-                        </p>
-                    </div>
-                    <Switch
-                        checked={
-                            settings.inviteSupportMembersIndividually ?? true
-                        }
-                        onCheckedChange={(checked) =>
-                            patchSettings({
-                                inviteSupportMembersIndividually: checked,
-                            })
-                        }
-                    />
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.membershipSettings.submitChannel}
-                        </Label>
-                        <DiscordChannelSelect
-                            value={settings.submitChannelId}
-                            onChange={(value) =>
-                                patchSettings({ submitChannelId: value ?? "" })
-                            }
-                            channels={metadata?.channels ?? []}
-                            placeholder={
-                                dictionary.membershipSettings.submitChannel
-                            }
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.membershipSettings.parentChannel}
-                        </Label>
-                        <DiscordChannelSelect
-                            value={settings.applicationParentChannelId}
-                            purpose="private-thread"
-                            onChange={(value) =>
-                                patchSettings({
-                                    applicationParentChannelId: value ?? "",
-                                })
-                            }
-                            channels={metadata?.channels ?? []}
-                            placeholder={
-                                dictionary.membershipSettings.parentChannel
-                            }
-                        />
-                    </div>
-                </div>
-
-                <div className="border-border/60 flex items-center justify-between gap-4 rounded-2xl border p-4">
-                    <div className="space-y-1">
-                        <h3 className="font-semibold">
-                            {dictionary.membershipSettings.skipPendingTitle}
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                            {
-                                dictionary.membershipSettings
-                                    .skipPendingDescription
-                            }
-                        </p>
-                    </div>
-                    <Switch
-                        checked={settings.autoAssignRecruitOnApply}
-                        onCheckedChange={(checked) =>
-                            patchSettings({ autoAssignRecruitOnApply: checked })
-                        }
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label>{dictionary.membershipSettings.panelTitle}</Label>
-                    <Input
-                        value={settings.panelTitle}
-                        onChange={(event) =>
-                            patchSettings({ panelTitle: event.target.value })
-                        }
-                        maxLength={256}
-                        className="rounded-xl"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>
-                        {dictionary.membershipSettings.panelDescription}
+                    <Label
+                        htmlFor="membership-enabled"
+                        className="block space-y-1 font-normal"
+                    >
+                        <span className="block font-semibold">
+                            {t.applicationsTitle}
+                        </span>
+                        <span className="text-muted-foreground block text-sm">
+                            {submitChannel
+                                ? t.applicationsChannel.replace(
+                                      "{channel}",
+                                      submitChannel.name
+                                  )
+                                : t.applicationsNoChannel}
+                        </span>
                     </Label>
-                    <DiscordMarkdownTextarea
-                        value={settings.panelDescription}
-                        onChange={(value) =>
-                            patchSettings({ panelDescription: value })
-                        }
-                        maxLength={4096}
-                        className="min-h-32 rounded-xl"
-                        rows={8}
-                    />
                 </div>
-                <div className="space-y-2">
-                    <div>
-                        <Label>
-                            {dictionary.membershipSettings.welcomeMessage}
-                        </Label>
-                        <p className="text-muted-foreground mt-1 text-sm">
-                            {
-                                dictionary.membershipSettings
-                                    .welcomeMessageDescription
-                            }
+                <div className="flex items-start gap-3 p-4">
+                    <span
+                        className={cn(
+                            "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                            settings.enabled
+                                ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
+                                : "bg-muted text-muted-foreground"
+                        )}
+                    >
+                        {settings.enabled ? t.roleSyncOn : t.roleSyncOff}
+                    </span>
+                    <div className="space-y-1">
+                        <p className="font-semibold">{t.roleSyncToggleTitle}</p>
+                        <p className="text-muted-foreground text-sm">
+                            {t.roleSyncToggleDescription}
                         </p>
                     </div>
-                    <DiscordMarkdownTextarea
-                        value={settings.applicationWelcomeMessage}
-                        onChange={(value) =>
-                            patchSettings({ applicationWelcomeMessage: value })
-                        }
-                        maxLength={1200}
-                        className="min-h-28 rounded-xl"
-                        rows={6}
-                        placeholder={
-                            dictionary.membershipSettings
-                                .welcomeMessagePlaceholder
-                        }
-                    />
                 </div>
-                <div className="space-y-2">
-                    <Label>{dictionary.membershipSettings.image}</Label>
-                    <AvatarPicker
-                        value={settings.panelImageUrl ?? ""}
-                        onChange={(value) =>
-                            patchSettings({ panelImageUrl: value ?? "" })
-                        }
-                        fallback="CA"
-                        label={
-                            dictionary.membershipSettings.applicationThumbnail
-                        }
-                        buttonLabel={dictionary.common.upload}
-                    />
-                </div>
+            </div>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <h3 className="font-semibold">
-                                {dictionary.membershipSettings.categoriesTitle}
-                            </h3>
-                            <p className="text-muted-foreground text-sm">
-                                {
-                                    dictionary.membershipSettings
-                                        .categoriesDescription
-                                }
-                            </p>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="rounded-xl"
-                            onClick={() =>
-                                patchSettings({
-                                    categories: [
-                                        ...settings.categories,
-                                        buildDefaultCategory(),
-                                    ],
-                                })
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList
+                    aria-label={t.tabsLabel}
+                    className="h-auto w-full flex-wrap justify-start"
+                >
+                    <TabsTrigger value="categories" className="flex-none">
+                        {t.tabs.categories}
+                        <span className="bg-background text-muted-foreground rounded-full px-1.5 text-xs">
+                            {settings.categories.length}
+                        </span>
+                    </TabsTrigger>
+                    <TabsTrigger value="panel" className="flex-none">
+                        {t.tabs.panel}
+                    </TabsTrigger>
+                    <TabsTrigger value="scores" className="flex-none">
+                        {t.tabs.scores}
+                    </TabsTrigger>
+                    <TabsTrigger value="roleChanges" className="flex-none">
+                        {t.tabs.roleChanges}
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="categories" className="pt-2">
+                    {settings.categories.length === 0 ? (
+                        <EmptyState
+                            icon={UserPlus}
+                            title={t.noCategories}
+                            description={t.noCategoriesDescription}
+                            actions={
+                                <Button
+                                    type="button"
+                                    className="rounded-xl"
+                                    onClick={addCategory}
+                                >
+                                    <Plus className="size-4" />
+                                    {t.addCategory}
+                                </Button>
                             }
-                        >
-                            <Plus className="size-4" />
-                            {dictionary.membershipSettings.addCategory}
-                        </Button>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                        {dictionary.membershipSettings.embedFieldUsage
-                            .replace("{length}", String(preview.length))
-                            .replace("{max}", String(MAX_FIELD_LENGTH))}{" "}
-                        {preview.tooLong
-                            ? dictionary.membershipSettings.embedFieldTooLong
-                            : ""}
-                    </p>
-
-                    {settings.categories.length ? (
-                        settings.categories.map((category) => (
-                            <ExpandableItemCard
-                                key={category.id}
-                                open={
-                                    !collapsedCategoryIds.includes(category.id)
-                                }
-                                onOpenChange={(open) =>
-                                    setCategoryCollapsed(category.id, !open)
-                                }
-                                title={category.label?.trim() || category.id}
-                                subtitle={`ID: ${category.id}`}
-                                actions={
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="rounded-xl"
-                                        onClick={() =>
-                                            patchSettings({
-                                                categories:
-                                                    settings.categories.filter(
-                                                        (item) =>
-                                                            item.id !==
-                                                            category.id
-                                                    ),
-                                            })
-                                        }
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
-                                }
-                            >
-                                <section className="border-border/60 bg-muted/20 space-y-4 rounded-xl border p-4">
-                                    <div>
-                                        <h4 className="font-medium">
-                                            {
-                                                dictionary.membershipSettings
-                                                    .categoryDetails
-                                            }
-                                        </h4>
-                                    </div>
-                                    <div className="grid gap-4 lg:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .buttonLabel
-                                                }
-                                            </Label>
-                                            <Input
-                                                value={category.label}
-                                                onChange={(event) =>
-                                                    patchCategory(category.id, {
-                                                        label: event.target
-                                                            .value,
-                                                    })
-                                                }
-                                                className="rounded-xl"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary.emojiPicker
-                                                        .pickEmoji
-                                                }
-                                            </Label>
-                                            <EmojiPickerInput
-                                                value={category.emoji ?? ""}
-                                                onChange={(value) =>
-                                                    patchCategory(category.id, {
-                                                        emoji: value ?? "",
-                                                    })
-                                                }
-                                                customEmojis={emojiOptions}
-                                                placeholder="..."
-                                                labels={dictionary.emojiPicker}
-                                                hidePickerLabel
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .categoryGame
-                                                }
-                                            </Label>
-                                            <Select
-                                                value={
-                                                    category.gameId ??
-                                                    "hell_let_loose"
-                                                }
-                                                onValueChange={(value) =>
-                                                    patchCategory(category.id, {
-                                                        gameId: value as GameId,
-                                                    })
-                                                }
-                                            >
-                                                <SelectTrigger className="rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {GAME_IDS.map((id) => (
-                                                        <SelectItem
-                                                            key={id}
-                                                            value={id}
-                                                        >
-                                                            {GAME_LABELS[id]}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .applicationResult
-                                                }
-                                            </Label>
-                                            <Select
-                                                value={category.assignmentType}
-                                                onValueChange={(value) =>
-                                                    patchCategory(category.id, {
-                                                        assignmentType:
-                                                            value as
-                                                                | "member"
-                                                                | "reserve_member"
-                                                                | "mercenary",
-                                                    })
-                                                }
-                                            >
-                                                <SelectTrigger className="rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="member">
-                                                        {
-                                                            dictionary
-                                                                .userManagement
-                                                                .memberLabel
-                                                        }
-                                                    </SelectItem>
-                                                    <SelectItem value="reserve_member">
-                                                        {
-                                                            dictionary
-                                                                .userManagement
-                                                                .reserveMemberLabel
-                                                        }
-                                                    </SelectItem>
-                                                    <SelectItem value="mercenary">
-                                                        {
-                                                            dictionary
-                                                                .userManagement
-                                                                .mercLabel
-                                                        }
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div className="max-w-3xl space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.ticketSettings
-                                                    .categoryDescription
-                                            }
-                                        </Label>
-                                        <DiscordMarkdownTextarea
-                                            value={category.description}
-                                            onChange={(value) =>
-                                                patchCategory(category.id, {
-                                                    description: value,
-                                                })
-                                            }
-                                            className="rounded-xl"
-                                            maxLength={240}
-                                            rows={3}
-                                            height={120}
-                                            compactToolbar
-                                            preview="edit"
-                                        />
-                                    </div>
-                                </section>
-
-                                <section className="border-border/60 space-y-4 rounded-xl border p-4">
-                                    <div>
-                                        <h4 className="font-medium">
-                                            {
-                                                dictionary.membershipSettings
-                                                    .categoryRoles
-                                            }
-                                        </h4>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            {
-                                                dictionary.membershipSettings
-                                                    .categoryRolesDescription
-                                            }
-                                        </p>
-                                    </div>
-                                    <div className="grid gap-4 lg:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .recruitRole
-                                                }
-                                            </Label>
-                                            <DiscordMultiEntitySelect
-                                                value={category.recruitRoleIds}
-                                                onChange={(value) =>
-                                                    patchCategory(category.id, {
-                                                        recruitRoleIds: value,
-                                                    })
-                                                }
-                                                options={roles}
-                                                placeholder={
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .recruitRolePlaceholder
-                                                }
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .finalRole
-                                                }
-                                            </Label>
-                                            <DiscordMultiEntitySelect
-                                                value={category.finalRoleIds}
-                                                onChange={(value) =>
-                                                    patchCategory(category.id, {
-                                                        finalRoleIds: value,
-                                                    })
-                                                }
-                                                options={roles}
-                                                placeholder={
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .finalRolePlaceholder
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label>
-                                            {
-                                                dictionary.ticketSettings
-                                                    .supportRoles
-                                            }
-                                        </Label>
-                                        <DiscordMultiEntitySelect
-                                            value={category.supportRoleIds}
-                                            onChange={(value) =>
-                                                patchCategory(category.id, {
-                                                    supportRoleIds: value,
-                                                })
-                                            }
-                                            options={roles}
-                                            placeholder={
-                                                dictionary.ticketSettings
-                                                    .supportRoles
-                                            }
-                                        />
-                                    </div>
-                                </section>
-
-                                <section className="border-border/60 bg-muted/10 space-y-3 rounded-xl border p-4">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div>
-                                            <h5 className="font-medium">
-                                                {
-                                                    dictionary.ticketSettings
-                                                        .modalQuestions
-                                                }
-                                            </h5>
-                                            <p className="text-muted-foreground text-sm">
-                                                {
-                                                    dictionary
-                                                        .membershipSettings
-                                                        .modalQuestionsDescription
-                                                }
-                                            </p>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="rounded-xl"
-                                            disabled={
-                                                category.modalQuestions
-                                                    .length >= 5
-                                            }
-                                            onClick={() =>
-                                                patchCategory(category.id, {
-                                                    modalQuestions: [
-                                                        ...category.modalQuestions,
-                                                        buildDefaultQuestion(),
-                                                    ],
-                                                })
-                                            }
-                                        >
-                                            <Plus className="size-4" />
-                                            {
-                                                dictionary.ticketSettings
-                                                    .addQuestion
-                                            }
-                                        </Button>
-                                    </div>
-
-                                    {category.modalQuestions.length ? (
-                                        category.modalQuestions.map(
-                                            (question) => (
-                                                <div
-                                                    key={question.id}
-                                                    className="border-border/60 bg-muted/10 space-y-3 rounded-xl border p-3"
-                                                >
-                                                    <div className="flex items-start gap-2">
-                                                        <div className="flex-1 space-y-2">
-                                                            <Input
-                                                                value={
-                                                                    question.label
-                                                                }
-                                                                onChange={(
-                                                                    event
-                                                                ) =>
-                                                                    patchQuestion(
-                                                                        category.id,
-                                                                        question.id,
-                                                                        {
-                                                                            label: event
-                                                                                .target
-                                                                                .value,
-                                                                        }
-                                                                    )
-                                                                }
-                                                                placeholder={
-                                                                    dictionary
-                                                                        .ticketSettings
-                                                                        .questionText
-                                                                }
-                                                                className="border-border/60 bg-background h-10 rounded-lg"
-                                                            />
-                                                            <Input
-                                                                value={
-                                                                    question.placeholder
-                                                                }
-                                                                onChange={(
-                                                                    event
-                                                                ) =>
-                                                                    patchQuestion(
-                                                                        category.id,
-                                                                        question.id,
-                                                                        {
-                                                                            placeholder:
-                                                                                event
-                                                                                    .target
-                                                                                    .value,
-                                                                        }
-                                                                    )
-                                                                }
-                                                                placeholder={
-                                                                    dictionary
-                                                                        .ticketSettings
-                                                                        .placeholder
-                                                                }
-                                                                className="border-border/60 bg-background h-9 rounded-lg text-sm"
-                                                            />
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="mt-0.5 shrink-0 rounded-lg"
-                                                            onClick={() =>
-                                                                patchCategory(
-                                                                    category.id,
-                                                                    {
-                                                                        modalQuestions:
-                                                                            category.modalQuestions.filter(
-                                                                                (
-                                                                                    item
-                                                                                ) =>
-                                                                                    item.id !==
-                                                                                    question.id
-                                                                            ),
-                                                                    }
-                                                                )
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </Button>
-                                                    </div>
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Select
-                                                            value={
-                                                                question.style
-                                                            }
-                                                            onValueChange={(
-                                                                value
-                                                            ) =>
-                                                                patchQuestion(
-                                                                    category.id,
-                                                                    question.id,
-                                                                    {
-                                                                        style: value as
-                                                                            | "short"
-                                                                            | "paragraph",
-                                                                    }
-                                                                )
-                                                            }
-                                                        >
-                                                            <SelectTrigger className="border-border/60 bg-background h-8 min-w-32 rounded-lg px-2.5 text-xs">
-                                                                <SelectValue
-                                                                    placeholder={
-                                                                        dictionary
-                                                                            .ticketSettings
-                                                                            .inputStyle
-                                                                    }
-                                                                />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="short">
-                                                                    {
-                                                                        dictionary
-                                                                            .ticketSettings
-                                                                            .shortInput
-                                                                    }
-                                                                </SelectItem>
-                                                                <SelectItem value="paragraph">
-                                                                    {
-                                                                        dictionary
-                                                                            .ticketSettings
-                                                                            .paragraphInput
-                                                                    }
-                                                                </SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <label className="border-border/60 bg-background text-muted-foreground inline-flex h-8 items-center gap-2 rounded-lg border px-2.5 text-xs">
-                                                            <Switch
-                                                                checked={
-                                                                    question.required
-                                                                }
-                                                                onCheckedChange={(
-                                                                    checked
-                                                                ) =>
-                                                                    patchQuestion(
-                                                                        category.id,
-                                                                        question.id,
-                                                                        {
-                                                                            required:
-                                                                                checked,
-                                                                        }
-                                                                    )
-                                                                }
-                                                            />
-                                                            <span>
-                                                                {
-                                                                    dictionary
-                                                                        .ticketSettings
-                                                                        .required
-                                                                }
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            )
-                                        )
-                                    ) : (
-                                        <div className="border-border/60 text-muted-foreground rounded-2xl border border-dashed p-4 text-sm">
-                                            {
-                                                dictionary.membershipSettings
-                                                    .noQuestions
-                                            }
-                                        </div>
-                                    )}
-                                </section>
-                            </ExpandableItemCard>
-                        ))
+                        />
                     ) : (
-                        <div className="border-border/60 text-muted-foreground rounded-2xl border border-dashed p-4 text-sm">
-                            {dictionary.membershipSettings.noCategories}
+                        <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+                            <div className="space-y-2">
+                                <ul className="space-y-1">
+                                    {settings.categories.map((category) => {
+                                        const current =
+                                            category.id === selected?.id
+                                        const missing =
+                                            category.finalRoleIds.length === 0
+                                                ? t.missingFinalRole
+                                                : needsRecruitRole(category) &&
+                                                    category.recruitRoleIds
+                                                        .length === 0
+                                                  ? t.missingRecruitRole
+                                                  : null
+                                        return (
+                                            <li key={category.id}>
+                                                <button
+                                                    type="button"
+                                                    aria-current={
+                                                        current
+                                                            ? "true"
+                                                            : undefined
+                                                    }
+                                                    onClick={() =>
+                                                        setSelectedId(
+                                                            category.id
+                                                        )
+                                                    }
+                                                    className={cn(
+                                                        "hover:bg-accent flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors",
+                                                        current
+                                                            ? "border-primary/50 bg-accent"
+                                                            : "border-transparent"
+                                                    )}
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
+                                                    >
+                                                        {category.emoji?.trim() &&
+                                                        !category.emoji.startsWith(
+                                                            "<"
+                                                        )
+                                                            ? category.emoji
+                                                            : categoryInitials(
+                                                                  category
+                                                              )}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-sm font-medium">
+                                                            {category.label?.trim() ||
+                                                                category.id}
+                                                        </span>
+                                                        <span
+                                                            className={cn(
+                                                                "block truncate text-xs",
+                                                                missing
+                                                                    ? "text-amber-700 dark:text-amber-400"
+                                                                    : "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {
+                                                                GAME_LABELS[
+                                                                    category.gameId ??
+                                                                        "hell_let_loose"
+                                                                ]
+                                                            }{" "}
+                                                            ·{" "}
+                                                            {missing ??
+                                                                assignmentLabels[
+                                                                    category
+                                                                        .assignmentType
+                                                                ]}
+                                                        </span>
+                                                    </span>
+                                                    {missing ? (
+                                                        <TriangleAlert
+                                                            className="size-4 shrink-0 text-amber-600"
+                                                            aria-hidden="true"
+                                                        />
+                                                    ) : null}
+                                                </button>
+                                            </li>
+                                        )
+                                    })}
+                                </ul>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full rounded-xl"
+                                    disabled={settings.categories.length >= 20}
+                                    onClick={addCategory}
+                                >
+                                    <Plus className="size-4" />
+                                    {t.addCategory}
+                                </Button>
+                                <p className="text-muted-foreground text-xs">
+                                    {t.embedFieldUsage
+                                        .replace(
+                                            "{length}",
+                                            String(preview.length)
+                                        )
+                                        .replace(
+                                            "{max}",
+                                            String(MAX_FIELD_LENGTH)
+                                        )}{" "}
+                                    {preview.tooLong ? t.embedFieldTooLong : ""}
+                                </p>
+                            </div>
+                            {selected ? (
+                                <CategoryEditor
+                                    key={selected.id}
+                                    category={selected}
+                                    dictionary={dictionary}
+                                    roles={roles}
+                                    emojiOptions={emojiOptions}
+                                    assignmentLabels={assignmentLabels}
+                                    clanRoleChip={clanRoleChip}
+                                    clanRoleNote={
+                                        clanRole ? (
+                                            <>
+                                                {noteBefore}
+                                                <strong>
+                                                    @{clanRole.name}
+                                                </strong>
+                                                {noteAfter}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t.clanRoleMissingNote}{" "}
+                                                <Link
+                                                    href={rolesHref}
+                                                    className="text-primary font-medium underline-offset-4 hover:underline"
+                                                >
+                                                    {t.clanRoleLink}
+                                                </Link>
+                                            </>
+                                        )
+                                    }
+                                    onChange={(patch) =>
+                                        patchCategory(selected.id, patch)
+                                    }
+                                    onRemove={() => removeCategory(selected.id)}
+                                />
+                            ) : null}
                         </div>
                     )}
-                </div>
+                </TabsContent>
 
-                <Button
-                    className="rounded-xl"
-                    onClick={handleSave}
-                    disabled={isPending}
+                <TabsContent value="panel" className="space-y-6 pt-2">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label>{t.submitChannel}</Label>
+                            <DiscordChannelSelect
+                                value={settings.submitChannelId}
+                                onChange={(value) =>
+                                    patchSettings({
+                                        submitChannelId: value ?? "",
+                                    })
+                                }
+                                channels={metadata?.channels ?? []}
+                                placeholder={t.submitChannel}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t.parentChannel}</Label>
+                            <DiscordChannelSelect
+                                value={settings.applicationParentChannelId}
+                                purpose="private-thread"
+                                onChange={(value) =>
+                                    patchSettings({
+                                        applicationParentChannelId: value ?? "",
+                                    })
+                                }
+                                channels={metadata?.channels ?? []}
+                                placeholder={t.parentChannel}
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="membership-panel-title">
+                            {t.panelTitle}
+                        </Label>
+                        <Input
+                            id="membership-panel-title"
+                            value={settings.panelTitle}
+                            onChange={(event) =>
+                                patchSettings({
+                                    panelTitle: event.target.value,
+                                })
+                            }
+                            maxLength={256}
+                            className="rounded-xl"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{t.panelDescription}</Label>
+                        <DiscordMarkdownTextarea
+                            value={settings.panelDescription}
+                            onChange={(value) =>
+                                patchSettings({ panelDescription: value })
+                            }
+                            maxLength={4096}
+                            className="min-h-32 rounded-xl"
+                            rows={8}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <div>
+                            <Label>{t.welcomeMessage}</Label>
+                            <p className="text-muted-foreground mt-1 text-sm">
+                                {t.welcomeMessageDescription}
+                            </p>
+                        </div>
+                        <DiscordMarkdownTextarea
+                            value={settings.applicationWelcomeMessage}
+                            onChange={(value) =>
+                                patchSettings({
+                                    applicationWelcomeMessage: value,
+                                })
+                            }
+                            maxLength={1200}
+                            className="min-h-28 rounded-xl"
+                            rows={6}
+                            placeholder={t.welcomeMessagePlaceholder}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{t.image}</Label>
+                        <AvatarPicker
+                            value={settings.panelImageUrl ?? ""}
+                            onChange={(value) =>
+                                patchSettings({ panelImageUrl: value ?? "" })
+                            }
+                            fallback="CA"
+                            label={t.applicationThumbnail}
+                            buttonLabel={dictionary.common.upload}
+                        />
+                    </div>
+                    <div className="border-border/60 divide-border/60 divide-y rounded-2xl border">
+                        <SwitchRow
+                            id="membership-skip-pending"
+                            title={t.skipPendingTitle}
+                            description={t.skipPendingDescription}
+                            checked={settings.autoAssignRecruitOnApply}
+                            onChange={(checked) =>
+                                patchSettings({
+                                    autoAssignRecruitOnApply: checked,
+                                })
+                            }
+                        />
+                        <SwitchRow
+                            id="membership-invite-individually"
+                            title={t.inviteSupportMembersIndividuallyTitle}
+                            description={
+                                t.inviteSupportMembersIndividuallyDescription
+                            }
+                            checked={
+                                settings.inviteSupportMembersIndividually ??
+                                true
+                            }
+                            onChange={(checked) =>
+                                patchSettings({
+                                    inviteSupportMembersIndividually: checked,
+                                })
+                            }
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="scores" className="space-y-4 pt-2">
+                    <p className="text-muted-foreground text-sm">
+                        {t.rosterScoreDescription}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {SCORE_FIELDS.map((field) => (
+                            <div key={field.key} className="space-y-2">
+                                <Label
+                                    htmlFor={`membership-score-${field.key}`}
+                                >
+                                    {field.label(dictionary)}
+                                </Label>
+                                <Input
+                                    id={`membership-score-${field.key}`}
+                                    type="number"
+                                    step={1}
+                                    inputMode="numeric"
+                                    className="rounded-xl"
+                                    value={String(
+                                        settings.rosterScoreSettings?.[
+                                            field.key
+                                        ] ?? 0
+                                    )}
+                                    onChange={(event) =>
+                                        patchScore(
+                                            field.key,
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="roleChanges" className="pt-2">
+                    <MemberRoleOperations
+                        serverId={serverId}
+                        dictionary={dictionary}
+                    />
+                </TabsContent>
+            </Tabs>
+
+            <SettingsSaveBar
+                note={t.saveNote}
+                dirty={dirty}
+                saving={saving || isPending}
+                discardLabel={t.discard}
+                saveLabel={t.saveShort}
+                unsavedLabel={t.unsaved}
+                onDiscard={discard}
+                onSave={() => void handleSave()}
+            />
+        </div>
+    )
+}
+
+function SwitchRow({
+    id,
+    title,
+    description,
+    checked,
+    onChange,
+}: {
+    id: string
+    title: string
+    description: string
+    checked: boolean
+    onChange(checked: boolean): void
+}) {
+    return (
+        <div className="flex items-start gap-3 p-4">
+            <Switch
+                id={id}
+                checked={checked}
+                onCheckedChange={onChange}
+                className="mt-0.5"
+            />
+            <Label htmlFor={id} className="block space-y-1 font-normal">
+                <span className="block font-semibold">{title}</span>
+                <span className="text-muted-foreground block text-sm">
+                    {description}
+                </span>
+            </Label>
+        </div>
+    )
+}
+
+function CategoryEditor({
+    category,
+    dictionary,
+    roles,
+    emojiOptions,
+    assignmentLabels,
+    clanRoleChip,
+    clanRoleNote,
+    onChange,
+    onRemove,
+}: {
+    category: MembershipCategory
+    dictionary: Dictionary
+    roles: Array<{ id: string; name: string }>
+    emojiOptions: Array<{ id: string; name: string }>
+    assignmentLabels: Record<AssignmentType, string>
+    clanRoleChip: ReactNode
+    clanRoleNote: ReactNode
+    onChange(patch: Partial<MembershipCategory>): void
+    onRemove(): void
+}) {
+    const t = dictionary.membershipSettings
+    const id = `membership-category-${category.id}`
+    const finalLabel = assignmentLabels[category.assignmentType]
+    return (
+        <section
+            aria-labelledby={`${id}-title`}
+            className="border-border/60 bg-card min-w-0 space-y-6 rounded-2xl border p-4 sm:p-5"
+        >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <h2
+                    id={`${id}-title`}
+                    className="min-w-0 text-lg font-semibold break-words"
                 >
-                    {dictionary.membershipSettings.save}
+                    {category.label?.trim() || category.id}
+                </h2>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive rounded-lg"
+                    onClick={onRemove}
+                >
+                    <Trash2 className="size-4" />
+                    {t.removeCategory}
                 </Button>
-            </CardContent>
-        </Card>
+            </div>
+
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold">
+                    {t.categoryButtonTitle}
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="space-y-2">
+                        <Label htmlFor={`${id}-label`}>{t.categoryText}</Label>
+                        <Input
+                            id={`${id}-label`}
+                            value={category.label ?? ""}
+                            maxLength={80}
+                            onChange={(event) =>
+                                onChange({ label: event.target.value })
+                            }
+                            className="rounded-xl"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{dictionary.emojiPicker.pickEmoji}</Label>
+                        <EmojiPickerInput
+                            value={category.emoji ?? ""}
+                            onChange={(value) =>
+                                onChange({ emoji: value ?? "" })
+                            }
+                            customEmojis={emojiOptions}
+                            placeholder="..."
+                            labels={dictionary.emojiPicker}
+                            hidePickerLabel
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${id}-game`}>{t.categoryGame}</Label>
+                    <Select
+                        value={category.gameId ?? "hell_let_loose"}
+                        onValueChange={(value) => {
+                            const gameId = GAME_IDS.find(
+                                (game) => game === value
+                            )
+                            if (gameId) onChange({ gameId: gameId as GameId })
+                        }}
+                    >
+                        <SelectTrigger
+                            id={`${id}-game`}
+                            className="w-full rounded-xl sm:max-w-xs"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {GAME_IDS.map((game) => (
+                                <SelectItem key={game} value={game}>
+                                    {GAME_LABELS[game]}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label>{t.categoryDescriptionLabel}</Label>
+                    <DiscordMarkdownTextarea
+                        value={category.description ?? ""}
+                        onChange={(value) => onChange({ description: value })}
+                        className="rounded-xl"
+                        maxLength={240}
+                        rows={3}
+                        height={120}
+                        compactToolbar
+                        preview="edit"
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 id={`${id}-result`} className="text-sm font-semibold">
+                    {t.resultTitle}
+                </h3>
+                <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    aria-labelledby={`${id}-result`}
+                    className="w-full sm:w-fit"
+                    value={category.assignmentType}
+                    onValueChange={(value) => {
+                        const assignmentType = ASSIGNMENT_TYPES.find(
+                            (type) => type === value
+                        )
+                        if (assignmentType) onChange({ assignmentType })
+                    }}
+                >
+                    {ASSIGNMENT_TYPES.map((type) => (
+                        <ToggleGroupItem
+                            key={type}
+                            value={type}
+                            className="px-3"
+                        >
+                            {assignmentLabels[type]}
+                        </ToggleGroupItem>
+                    ))}
+                </ToggleGroup>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-sm font-semibold">{t.rolesByStatus}</h3>
+                <ol className="border-border/60 divide-border/60 divide-y rounded-xl border">
+                    <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                        <span className="text-sm font-medium">
+                            {t.statusPending}
+                        </span>
+                        <span className="text-muted-foreground text-sm">
+                            {t.noRoles}
+                        </span>
+                    </li>
+                    {needsRecruitRole(category) ? (
+                        <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                            <span className="text-sm font-medium">
+                                {t.statusRecruit}
+                            </span>
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                {clanRoleChip}
+                                <div className="min-w-0 flex-1 basis-48">
+                                    <DiscordMultiEntitySelect
+                                        value={category.recruitRoleIds}
+                                        onChange={(value) =>
+                                            onChange({ recruitRoleIds: value })
+                                        }
+                                        options={roles}
+                                        placeholder={t.rolePlaceholder}
+                                    />
+                                </div>
+                            </div>
+                        </li>
+                    ) : null}
+                    <li className="grid gap-2 p-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
+                        <span className="text-sm font-medium">
+                            {finalLabel}
+                        </span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            {clanRoleChip}
+                            <div className="min-w-0 flex-1 basis-48">
+                                <DiscordMultiEntitySelect
+                                    value={category.finalRoleIds}
+                                    onChange={(value) =>
+                                        onChange({ finalRoleIds: value })
+                                    }
+                                    options={roles}
+                                    placeholder={t.rolePlaceholder}
+                                />
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+                <div className="grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center sm:px-3">
+                    <span className="text-sm font-medium">{t.handledBy}</span>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <div className="min-w-0 flex-1 basis-48">
+                            <DiscordMultiEntitySelect
+                                value={category.supportRoleIds}
+                                onChange={(value) =>
+                                    onChange({ supportRoleIds: value })
+                                }
+                                options={roles}
+                                placeholder={t.rolePlaceholder}
+                            />
+                        </div>
+                        <span className="text-muted-foreground text-sm">
+                            {t.handledByAdmins}
+                        </span>
+                    </div>
+                </div>
+                <p className="text-muted-foreground text-xs">{clanRoleNote}</p>
+            </div>
+
+            <ModalQuestionsEditor
+                questions={category.modalQuestions}
+                onChange={(modalQuestions) => onChange({ modalQuestions })}
+                dictionary={dictionary}
+            />
+        </section>
     )
 }

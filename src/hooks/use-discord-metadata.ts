@@ -10,9 +10,19 @@ export type DiscordMetadata = {
     emojis: DiscordSelectOption[]
 }
 
-/** Channels, roles and emoji of the clan's Discord server, or `null` until loaded or if Discord is unavailable. */
-export function useDiscordMetadata(serverId: string) {
-    const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
+export type DiscordMetadataState =
+    | { status: "loading"; metadata: null }
+    | { status: "ready"; metadata: DiscordMetadata }
+    | { status: "failed"; metadata: null }
+
+/** Channels, roles and emoji of the clan's Discord server, with whether loading failed. */
+export function useDiscordMetadataState(
+    serverId: string
+): DiscordMetadataState {
+    const [state, setState] = useState<{
+        serverId: string
+        value: DiscordMetadataState
+    }>({ serverId, value: { status: "loading", metadata: null } })
     useEffect(() => {
         let active = true
         fetch(`/api/servers/${serverId}/discord-metadata`)
@@ -25,14 +35,29 @@ export function useDiscordMetadata(serverId: string) {
                     !Array.isArray(body?.emojis)
                 )
                     throw new Error("Unable to load Discord metadata.")
-                if (active) setMetadata(body)
+                if (active)
+                    setState({
+                        serverId,
+                        value: { status: "ready", metadata: body },
+                    })
             })
             .catch(() => {
-                if (active) setMetadata(null)
+                if (active)
+                    setState({
+                        serverId,
+                        value: { status: "failed", metadata: null },
+                    })
             })
         return () => {
             active = false
         }
     }, [serverId])
-    return metadata
+    return state.serverId === serverId
+        ? state.value
+        : { status: "loading", metadata: null }
+}
+
+/** Channels, roles and emoji of the clan's Discord server, or `null` until loaded or if Discord is unavailable. */
+export function useDiscordMetadata(serverId: string) {
+    return useDiscordMetadataState(serverId).metadata
 }

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, stratmapId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const stratmap = await getPublicStratmapDetail(stratmapId)
+    const stratmap = await getPublicStratmapDetail(stratmapId).catch(() => null)
 
     if (!stratmap) {
         return {
@@ -87,7 +87,7 @@ export default async function PublicStratmapPage({ params }: Props) {
     const { locale, stratmapId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const stratmap = await getPublicStratmapDetail(stratmapId)
+    const stratmap = await getPublicStratmapDetail(stratmapId).catch(() => null)
 
     if (!stratmap) {
         notFound()

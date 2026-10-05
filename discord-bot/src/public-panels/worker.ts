@@ -16,6 +16,10 @@ import {
     type ButtonInteraction,
     type Client,
 } from "discord.js"
+import {
+    cachedClanLanguage,
+    clanLanguageForGuild,
+} from "../runtime/clan-language"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
 import type { ReportObservation } from "../../../src/domain/player-reports/report"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
@@ -31,6 +35,7 @@ import { loadPlayerDetails } from "./player-details"
 import { logWarn as writeWarning } from "../log"
 import { env } from "../environment"
 import { convex } from "../convex"
+import { panelCopy } from "./copy"
 
 function logWarn(...args: Parameters<typeof writeWarning>) {
     try {
@@ -175,7 +180,11 @@ export function startPublicPanelWorker(client: Client) {
                 iconsAt = Date.now() + 3_600_000
             }
             for (const guild of client.guilds.cache.values()) {
-                for (const panel of await panels(guild.id)) {
+                const guildPanels = await panels(guild.id)
+                const language = guildPanels.length
+                    ? await clanLanguageForGuild(guild.id)
+                    : undefined
+                for (const panel of guildPanels) {
                     const previous = due.get(panel._id)
                     if (
                         previous &&
@@ -185,7 +194,12 @@ export function startPublicPanelWorker(client: Client) {
                         continue
                     try {
                         if (panel.kind === "results")
-                            await syncResults(client, panel, cachedIcons)
+                            await syncResults(
+                                client,
+                                panel,
+                                cachedIcons,
+                                language
+                            )
                         else {
                             const current = await live(panel)
                             const hllRead = await hllLiveRead(panel)
@@ -223,7 +237,8 @@ export function startPublicPanelWorker(client: Client) {
                                         ? renderHllPanel(
                                               { ...panel, id: panel._id },
                                               hll,
-                                              artwork?.url
+                                              artwork?.url,
+                                              language
                                           )
                                         : renderPanel(
                                               { ...panel, id: panel._id },
@@ -231,7 +246,8 @@ export function startPublicPanelWorker(client: Client) {
                                               current,
                                               cachedIcons,
                                               env.appSiteUrl,
-                                              artwork?.url
+                                              artwork?.url,
+                                              language
                                           )),
                                     ...(artwork
                                         ? {
@@ -279,7 +295,12 @@ export function startPublicPanelWorker(client: Client) {
     void tick()
     return () => clearInterval(timer)
 }
-async function syncResults(client: Client, panel: Panel, emoji: FactionIcons) {
+async function syncResults(
+    client: Client,
+    panel: Panel,
+    emoji: FactionIcons,
+    language?: string
+) {
     await synchronizeResults(
         { ...panel, id: panel._id },
         {
@@ -305,7 +326,8 @@ async function syncResults(client: Client, panel: Panel, emoji: FactionIcons) {
                         ? renderResult(
                               { ...event, result: event.result },
                               emoji,
-                              panel
+                              panel,
+                              language
                           )
                         : {},
                 })
@@ -318,6 +340,7 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
     if (interaction.message.flags.has(MessageFlags.Ephemeral))
         await interaction.deferUpdate()
     else await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    const copy = panelCopy(cachedClanLanguage(interaction.guildId))
     await completePrivatePlayerReply(
         (reply) => interaction.editReply(reply),
         async () => {
@@ -367,10 +390,10 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
             )
             if (!result)
                 return {
-                    content:
-                        "Player details unavailable or this panel changed. Open the current panel in its channel.",
+                    content: copy.panelChanged,
                     components: [],
                 }
+            const language = await clanLanguageForGuild(result.panel.guildId)
             if ("statusFreshness" in result.data)
                 return renderHllPlayers(
                     {
@@ -379,7 +402,8 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                         presentation: result.panel.presentation,
                     },
                     result.data,
-                    result.page
+                    result.page,
+                    language
                 )
             return renderPlayers(
                 {
@@ -388,9 +412,12 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                     presentation: result.panel.presentation,
                 },
                 result.data,
-                result.page
+                result.page,
+                language
             )
-        }
+        },
+        undefined,
+        copy.detailsUnavailable
     )
     return true
 }

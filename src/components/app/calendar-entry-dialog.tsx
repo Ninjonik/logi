@@ -1,7 +1,7 @@
 "use client"
 
+import { useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import type { ReactNode } from "react"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -14,15 +14,20 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    getCalendarEntryTiles,
+    InfoTile,
+} from "@/components/app/calendar-entry-tiles"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { EventSignupActions } from "@/components/app/event-signup-actions"
 import type { CalendarDisplayEntry } from "@/lib/calendar-entries"
-import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { getClanDiscordMessages } from "@/lib/clan-language"
 import { getSignupDisplayLabel } from "@/lib/event-signup"
 import { EmojiValue } from "@/components/app/emoji-value"
-import { formatDateTime, formatTime } from "@/lib/format"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { toIntlLocale } from "@/lib/intl-locale"
 import { Button } from "@/components/ui/button"
+import { formatDateTime } from "@/lib/format"
 import type { Group } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 
@@ -50,6 +55,7 @@ export function CalendarEntryDialog({
     canAdmin?: boolean
 }) {
     const router = useRouter()
+    const [open, setOpen] = useState(false)
     const currentSignup =
         entry.kind === "event"
             ? entry.event.signUps.find(
@@ -61,14 +67,33 @@ export function CalendarEntryDialog({
         entry.kind === "event"
             ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`
             : null
+    const intlLocale = toIntlLocale(locale)
+    const tiles = getCalendarEntryTiles(entry, dictionary, (value) =>
+        formatDateTime(value, timezone, intlLocale)
+    )
+
+    async function deleteManualItem() {
+        if (entry.kind !== "manual") return false
+        const response = await fetch(
+            `/api/servers/${serverId}/calendar-items/${encodeURIComponent(entry.item.id)}`,
+            { method: "DELETE" }
+        ).catch(() => null)
+        if (!response?.ok) {
+            toast.error(dictionary.calendarPage.itemDeleteFailed)
+            return false
+        }
+        toast.success(dictionary.calendarPage.itemDeleted)
+        setOpen(false)
+        router.refresh()
+    }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent className="max-w-2xl rounded-2xl">
-                <DialogHeader className="pr-12">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-2">
+            <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto rounded-2xl">
+                <DialogHeader className="pr-8">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+                        <div className="min-w-0 space-y-2">
                             {entry.label ? (
                                 <div
                                     className="inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
@@ -82,14 +107,22 @@ export function CalendarEntryDialog({
                                     <span>{entry.label}</span>
                                 </div>
                             ) : null}
-                            <DialogTitle>{entry.title}</DialogTitle>
-                            <DialogDescription>
-                                {entry.description ||
-                                    dictionary.event.listDescription}
+                            <DialogTitle className="break-words">
+                                {entry.title}
+                            </DialogTitle>
+                            {/* Without a description, screen readers hear the title instead of filler text. */}
+                            <DialogDescription
+                                className={
+                                    entry.description
+                                        ? "break-words"
+                                        : "sr-only"
+                                }
+                            >
+                                {entry.description || entry.title}
                             </DialogDescription>
                         </div>
                         {detailPath ? (
-                            <Button asChild className="rounded-xl">
+                            <Button asChild className="shrink-0 rounded-xl">
                                 <Link href={detailPath}>
                                     {dictionary.common.viewDetails}
                                 </Link>
@@ -98,58 +131,14 @@ export function CalendarEntryDialog({
                     </div>
                 </DialogHeader>
 
-                <div className="grid gap-3 md:grid-cols-2">
-                    <InfoTile
-                        label={dictionary.calendarCards.meeting}
-                        value={formatDateTime(entry.startAt, timezone)}
-                    />
-                    <InfoTile
-                        label={dictionary.calendarCards.gameStart}
-                        value={
-                            entry.allDay
-                                ? dictionary.calendarPage.allDay
-                                : formatDateTime(entry.endAt, timezone)
-                        }
-                    />
-                    {entry.kind === "event" ? (
-                        <>
-                            <InfoTile
-                                label={
-                                    dictionary.calendarCards.registrationEnds
-                                }
-                                value={formatDateTime(
-                                    entry.event.registrationEnd,
-                                    timezone
-                                )}
-                            />
-                            <InfoTile
-                                label={dictionary.calendarCards.map}
-                                value={
-                                    entry.event.kind === "training"
-                                        ? entry.event.meetingChannelId ||
-                                          "Discord"
-                                        : `${formatHllPresetLabel(entry.event.map) ?? entry.event.map ?? "TBD"} • ${entry.event.side ?? "TBD"}`
-                                }
-                            />
-                        </>
-                    ) : (
-                        <>
-                            <InfoTile
-                                label={
-                                    dictionary.calendarCards.registrationEnds
-                                }
-                                value={
-                                    entry.allDay
-                                        ? dictionary.calendarPage.allDay
-                                        : formatTime(entry.startAt, timezone)
-                                }
-                            />
-                            <InfoTile
-                                label={dictionary.calendarCards.map}
-                                value={entry.label ?? dictionary.shared.notSet}
-                            />
-                        </>
-                    )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {tiles.map((tile) => (
+                        <InfoTile
+                            key={tile.key}
+                            label={tile.label}
+                            value={tile.value}
+                        />
+                    ))}
                 </div>
 
                 {entry.kind === "event" ? (
@@ -190,44 +179,44 @@ export function CalendarEntryDialog({
                         />
                     </div>
                 ) : canAdmin ? (
-                    <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                    <div className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-muted-foreground text-sm">
                             {dictionary.calendarPage.manualItemAdminHint}
                         </p>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            className="shrink-0 rounded-xl"
-                            onClick={async () => {
-                                const response = await fetch(
-                                    `/api/servers/${serverId}/calendar-items/${entry.item.id}`,
-                                    { method: "DELETE" }
-                                )
-                                if (!response.ok) {
-                                    toast.error(dictionary.common.error)
-                                    return
-                                }
-                                toast.success(dictionary.common.save)
-                                router.refresh()
-                            }}
+                        <ConfirmActionDialog
+                            trigger={
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="shrink-0 rounded-xl"
+                                >
+                                    <Trash2 className="size-4" />
+                                    {dictionary.calendarPage.deleteItem}
+                                </Button>
+                            }
+                            title={dictionary.calendarPage.deleteItemTitle.replace(
+                                "{title}",
+                                entry.title
+                            )}
+                            description={
+                                dictionary.calendarPage.deleteItemDescription
+                            }
+                            confirmLabel={dictionary.calendarPage.deleteItem}
+                            cancelLabel={dictionary.common.cancel}
+                            onConfirm={deleteManualItem}
                         >
-                            <Trash2 className="size-4" />
-                            {dictionary.serverSettings.ssoRemove}
-                        </Button>
+                            {entry.item.recurrence ? (
+                                <p className="text-sm">
+                                    {
+                                        dictionary.calendarPage
+                                            .deleteRecurringNote
+                                    }
+                                </p>
+                            ) : null}
+                        </ConfirmActionDialog>
                     </div>
                 ) : null}
             </DialogContent>
         </Dialog>
-    )
-}
-
-function InfoTile({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="border-border/60 rounded-xl border p-3">
-            <div className="text-muted-foreground text-xs tracking-[0.2em] uppercase">
-                {label}
-            </div>
-            <div className="mt-2 font-semibold">{value}</div>
-        </div>
     )
 }

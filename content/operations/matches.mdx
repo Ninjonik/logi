@@ -9,15 +9,53 @@ import { Callout, Steps } from "nextra/components"
 
 A match is a competitive event with additional match details. Members can use the list to find upcoming or previous matches. Managers can create, edit, prepare and conclude matches; Logi's global administrators link matches to competition fixtures.
 
+## The match list
+
+**Matches** lists matches and trainings together, soonest first, grouped by
+week in the clan's time zone (**This week**, **Next week**, then **Week of …**).
+Each row shows the date and start time, the name and category, the game, map
+and side, how many players signed up and the event's phase:
+
+- **Sign-ups until …** while registration is open;
+- **Roster missing** or **Roster · draft** once registration has closed and the
+  roster is not published yet;
+- **Roster published**, or how many rostered players have not confirmed;
+- after play, the result and score, **No result yet**, or for a training how
+  many passed.
+
+**Upcoming** shows what is still ahead with the most recently played events
+below it; **Played** shows past events. Filter by **Matches** and
+**Trainings**, by game, or search by name, opponent or map.
+
+For managers, **Waiting for you** at the top lists matches whose roster still
+needs publishing and published rosters with players who have not confirmed.
+Confirming imported results is reached from the match itself.
+
+## Recurring matches
+
+**Recurring** lists matches set to repeat. To change or stop a series, open its
+match with **Edit series** and change or switch off the repeat settings, then
+save. Matches that already exist stay as they are.
+
 ## Create a match (manager)
 
 <Steps>
 
 ### Open Matches
 
-Select **Matches** in the active workspace and start a new match. From
+Select **Matches** in the active workspace and choose **New match**. From
 **All games**, choose the target game when prompted; the match is then created
 only in that game.
+
+### Pick a template
+
+Choose one of the clan's [match templates](/wiki/configuration/presets-and-templates#match-templates)
+at the top of the form. It fills the times, category, sign-up options and
+Discord options; every field can still be changed. On a wide screen the
+**Preview in Discord** beside the form shows the registration announcement the
+bot will post, with the same lines and buttons, in the clan's bot language.
+Discord shows the times in each reader's own time zone. Signed-up players and
+the forum link appear in Discord once the match exists.
 
 ### Set the essential information
 
@@ -31,11 +69,75 @@ Lonestar, and Manticore sides.
 
 Attach topic presets, stratmaps, and a roster as needed. These are separate resources, so check each one rather than assuming that creating a match creates them automatically. A match creates a Discord forum post by default when the bot and forum category are configured; disable that event option if you do not want one. Use the optional registration announcement start when the match should appear in calendars before its Discord registration message and forum post are published.
 
+### Create it
+
+Choose **Create match**. The bot posts the announcement when the registration
+announcement start is reached, or straight away when none is set.
+
 ### Record the outcome
 
 After play, enter the result and conclude the event when your workflow is complete.
 
 </Steps>
+
+## The match page
+
+Opening a match shows its name, game, map, side and time (meeting and start, or
+when it was played), and **View in Discord** once the bot has posted the sign-up
+announcement. Below is the match's progress in five steps:
+
+| Step     | Shows                                                                       |
+| -------- | --------------------------------------------------------------------------- |
+| Draft    | When the match was created, or when its sign-ups open                       |
+| Sign-ups | Until when people can sign up, then how many signed up                      |
+| Roster   | Not created yet, a draft to publish before the meeting, or the player count |
+| Match    | The meeting time, then how many players attended                            |
+| Result   | Import from the server, awaiting confirmation, confirmed or corrected       |
+
+The current step is highlighted; earlier steps are ticked. A match counts as
+closed 15 minutes after its game end even before Logi records it, and a match
+with a confirmed or corrected result has every step done. Members see the
+result step without the review state, which only managers can read.
+
+The page has five tabs:
+
+- **Overview**: the match form (details, schedule, Discord options, teams).
+- **Sign-ups and attendance**: see below.
+- **Roster**: the [roster board](/wiki/operations/rosters), or a prompt to
+  create the roster. Members see only a published roster.
+- **Discord**: which messages the bot posted for the match (sign-up
+  announcement, match info, match thread, roster update and the Discord event
+  with its state), each with a link into Discord, and the channels in use.
+- **Result**: the result review (managers) and a link to the imported match
+  statistics.
+
+## Sign-ups and attendance (manager)
+
+The **Sign-ups and attendance** tab counts roster players who attended, were
+excused or did not attend, reserves who attended, people who declined and
+members who never answered. The table lists the roster players in squad order,
+then the reserves, with their place, what they said before the match, their
+attendance and the points it gives under the workspace's
+[membership score rules](/wiki/configuration/members). Filters switch to the
+people who declined or did not answer; **Sign-up history** opens the event's
+sign-up activity.
+
+- **Attended** records manager-confirmed attendance on the roster, the same
+  status as **Confirmed** on the roster board.
+- **Excused** applies only to players who sent an absence notice in Discord;
+  managers cannot excuse someone themselves. Without a notice, a player who did
+  not come is **Did not attend**.
+- Changes show as **Unsaved changes: N** until you **Save attendance**.
+- **Load from voice channel** marks roster players and reserves who are in the
+  meeting voice channel as attended (see
+  [rosters](/wiki/operations/rosters#attendance-and-late-changes)).
+
+Attendance can change until the match is closed. **Close match and award
+points** (also in the match header) first shows how many players each rule
+covers and the points it gives, for example "19 attended from the roster +3",
+and how many players' points change. Save attendance first: closing is not
+available with unsaved changes. Closing cannot be undone. A match nobody closes
+closes itself 15 minutes after its end, with the same points.
 
 ## Teams
 
@@ -155,18 +257,22 @@ failure between sending and recording success can cause a duplicate.
 
 ## Review a result (manager)
 
-On a concluded match, open **Review result**. Choose a collected HLL session,
-load an existing imported result, or enter scores manually. Selecting a source
-does not approve it. Save a provisional version, check the displayed scores and
-then confirm that version. Unsaved changes must be saved before confirmation.
-An empty score is unknown; zero is a known score.
+Open the match's **Result** tab. **Where the result comes from** names the
+collected HLL server game the scores came from. Before anything is saved, Logi
+suggests the game that started closest to the match start (within three hours)
+and fills in its scores; **Other game** picks a different game, an existing
+imported result, or manual entry. Selecting a source does not approve it.
+**Save without confirming** stores a provisional version; **Confirm result**
+saves any unsaved edits as a provisional version and then confirms it. An empty
+score is unknown; zero is a known score. The **History** column lists each
+saved version with its time and who saved or reviewed it.
 
 The form supports two to sixteen participants, including manual Wardogs factions.
 Current Wardogs collection supplies server status, not match history. HLL source
 candidates are the fifty most recently fetched sessions. A changed or incomplete
 source cannot be confirmed; refresh, select the current source and review again.
 
-After confirmation, use **Save reviewed correction** with a reason. The previous
+After confirmation, enter a reason and use **Save correction**. The previous
 version remains in the recent revision history with its reviewer and timestamp.
 A later import does not silently replace a reviewed result. Another manager's
 concurrent save requires you to refresh before saving your version.

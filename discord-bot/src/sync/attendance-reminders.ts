@@ -1,5 +1,11 @@
-import type { Client } from "discord.js"
+import { EmbedBuilder, escapeMarkdown, type Client } from "discord.js"
 
+import {
+    DEFAULT_MESSAGE_ACCENT_COLOR,
+    discordTimestamp,
+    fillTemplate,
+    resolveMessageAccentColor,
+} from "../../../src/domain/discord-messages/format"
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
 import { buildAttendanceReminderComponents } from "../message-builders"
 import { ATTENDANCE_OFFSETS_HOURS } from "../constants"
@@ -15,35 +21,62 @@ type RosterAssignment = {
     note?: string
 }
 
+/**
+ * Attendance reminder DM in the clan language and accent colour: event and
+ * start, meeting time, the player's squad and role, notes and a link back to
+ * the event card. It never carries the server password.
+ */
 export function buildAttendanceReminderMessage(input: {
     eventName: string
     meetingStartMs: number
+    gameStartMs?: number
     eventMessageUrl?: string
     assignment?: RosterAssignment
     messages: ReturnType<typeof getClanDiscordMessages>
+    accentColor?: number
 }) {
+    const { messages } = input
+    const start = discordTimestamp(input.gameStartMs, "t")
+    const startRelative = discordTimestamp(input.gameStartMs, "R")
+    const meeting = discordTimestamp(input.meetingStartMs, "t")
     const assignment = input.assignment
         ? [input.assignment.squadName, input.assignment.roleName]
+              .map((part) => part?.trim())
               .filter(Boolean)
-              .join(" — ")
-        : null
-
-    return [
-        `${input.messages.reminders.title} **${input.eventName}**.`,
-        input.messages.reminders.body,
-        `${input.messages.reminders.meeting}: <t:${Math.floor(input.meetingStartMs / 1000)}:F>`,
-        assignment
-            ? `${input.messages.reminders.assignment}: **${assignment}**`
-            : null,
-        input.assignment?.note?.trim()
-            ? `${input.messages.reminders.notes}: ${input.assignment.note.trim()}`
-            : null,
+              .join(" · ")
+        : ""
+    const summary = [
+        start
+            ? `${messages.reminders.start} ${start}${startRelative ? ` (${startRelative})` : ""}`
+            : undefined,
+        meeting
+            ? fillTemplate(messages.embed.meetingAt, { time: meeting })
+            : undefined,
+        assignment ? `**${escapeMarkdown(assignment)}**` : undefined,
+    ].filter(Boolean)
+    const summaryLine = summary.join(" · ")
+    const note = input.assignment?.note?.trim()
+    const lines = [
+        summaryLine
+            ? summaryLine[0]!.toLocaleUpperCase(messages.locale) +
+              summaryLine.slice(1)
+            : undefined,
+        note ? `${messages.reminders.notes}: ${escapeMarkdown(note)}` : null,
         input.eventMessageUrl
-            ? `${input.messages.reminders.eventThread}: [${input.messages.reminders.openInDiscord}](${input.eventMessageUrl})`
+            ? `${messages.reminders.eventThread}: [${messages.reminders.openInDiscord}](${input.eventMessageUrl})`
             : null,
-    ]
-        .filter((line): line is string => Boolean(line))
-        .join("\n")
+    ].filter((line): line is string => Boolean(line))
+
+    const embed = new EmbedBuilder()
+        .setColor(input.accentColor ?? DEFAULT_MESSAGE_ACCENT_COLOR)
+        .setTitle(
+            fillTemplate(messages.reminders.upcomingTitle, {
+                event: input.eventName,
+            }).slice(0, 256)
+        )
+        .setFooter({ text: messages.reminders.upcomingHint })
+    if (lines.length) embed.setDescription(lines.join("\n").slice(0, 4096))
+    return embed
 }
 
 export async function processAttendanceReminders(
@@ -103,6 +136,15 @@ export async function processAttendanceReminders(
         }
 
         const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+        const matchType = event.matchType?.trim().toLowerCase()
+        const accentColor = resolveMessageAccentColor({
+            categoryColor: matchType
+                ? payload.guild.eventCategories?.find(
+                      (category) =>
+                          category.id.trim().toLowerCase() === matchType
+                  )?.color
+                : undefined,
+        })
         const assignmentsByUserId = new Map<string, RosterAssignment>()
         for (const squad of roster.squads) {
             for (const player of squad.players) {
@@ -124,7 +166,7 @@ export async function processAttendanceReminders(
         for (const userId of roster.reservePlayerIds) {
             if (reserveAttendanceByUserId.get(userId)?.ack) continue
             assignmentsByUserId.set(userId, {
-                squadName: messages.embed.assignmentReserve,
+                squadName: messages.assignment.reserveTitle,
             })
         }
         const unacknowledgedUserIds = new Set(assignmentsByUserId.keys())
@@ -187,14 +229,17 @@ export async function processAttendanceReminders(
             const message = buildAttendanceReminderMessage({
                 eventName: event.name,
                 meetingStartMs,
+                gameStartMs: Date.parse(event.gameStart),
                 eventMessageUrl: eventMessageUrl ?? undefined,
                 assignment: assignmentsByUserId.get(userId),
                 messages,
+                accentColor,
             })
 
             try {
                 await user.send({
-                    content: message,
+                    embeds: [message],
+                    allowedMentions: { parse: [] },
                     components: buildAttendanceReminderComponents(
                         event.id,
                         payload.config.defaultLanguage

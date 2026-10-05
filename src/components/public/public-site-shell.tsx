@@ -100,7 +100,7 @@ export async function PublicSiteShell({
                         <span className="hidden sm:inline-flex">
                             <LogiStatusLink status={status} showLabel={false} />
                         </span>
-                        <ThemeSwitcher />
+                        <ThemeSwitcher dictionary={dictionary} />
                         <LocaleSwitcher
                             locale={locale}
                             dictionary={dictionary}

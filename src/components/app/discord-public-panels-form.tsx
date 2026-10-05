@@ -48,6 +48,7 @@ const defaults: PublicPanelSettings = {
     artwork: true,
     refreshSeconds: 60,
 }
+const fieldClass = "bg-background mt-1 block w-full rounded-lg border p-2"
 export function DiscordPublicPanelsForm({
     serverId,
     gameId,
@@ -57,7 +58,8 @@ export function DiscordPublicPanelsForm({
     gameId?: string
     dictionary: Dictionary
 }) {
-    const cs = useLocale() === "cs"
+    const locale = useLocale()
+    const t = dictionary.settingsHub.panelsForm
     const appearanceText = dictionary.publicPanelAppearance
     // Null until edited or loaded: an untouched new panel keeps the legacy look.
     const [appearance, setAppearance] = useState<PanelAppearanceDraft | null>(
@@ -110,13 +112,9 @@ export function DiscordPublicPanelsForm({
                     }))
             )
         } catch {
-            setMessage(
-                cs
-                    ? "Nelze načíst panely. Ověř přístup bota a zdroje dat."
-                    : "Cannot load panels. Check bot access and data sources."
-            )
+            setMessage(t.loadError)
         }
-    }, [base, serverId, gameId, cs])
+    }, [base, serverId, gameId, t.loadError])
     useEffect(() => {
         // load updates state only after awaiting HTTP responses.
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -153,11 +151,7 @@ export function DiscordPublicPanelsForm({
             presentation,
         })
         if (!parsed.success) {
-            setMessage(
-                cs
-                    ? "Vyber zdroj a platné ID místnosti."
-                    : "Select a source and valid channel ID."
-            )
+            setMessage(t.invalid)
             return
         }
         setBusy(true)
@@ -172,76 +166,49 @@ export function DiscordPublicPanelsForm({
             )
             const result = await response.json()
             if (!response.ok) throw new Error(result.error)
-            setMessage(
-                verify
-                    ? cs
-                        ? "Bot má potřebná oprávnění."
-                        : "Bot permissions verified."
-                    : cs
-                      ? "Uloženo. Bot změnu načte do 15 sekund; případný přesun čeká na odstranění původní zprávy."
-                      : "Saved. Bot picks up changes within 15 seconds; moves wait for removal of the original message."
-            )
+            setMessage(verify ? t.verified : t.saved)
             if (!verify) setAppearanceKey((key) => key + 1)
             await load()
         } catch (error) {
             setMessage(
-                error instanceof Error
+                error instanceof Error && error.message
                     ? error.message === "asset_unavailable"
                         ? uploadErrorMessage(
                               appearanceText,
                               "asset_unavailable"
                           )
                         : error.message
-                    : "Request failed."
+                    : t.requestFailed
             )
         } finally {
             setBusy(false)
         }
     }
-    const label = (kind: string) =>
-        kind === "server"
-            ? cs
-                ? "Server + skóre"
-                : "Server + score"
-            : kind === "scoreboard"
-              ? cs
-                  ? "Samostatné skóre"
-                  : "Separate scoreboard"
-              : cs
-                ? "Potvrzené výsledky"
-                : "Confirmed results"
+    const label = (kind: PublicPanelSettings["kind"]) => t.kinds[kind]
     const preview = sources.find(
         (source) => source.id === settings.connectionId
     )?.snapshot
     return (
         <section
             className="space-y-4 rounded-xl border p-4"
-            aria-label={cs ? "Veřejné Discord panely" : "Public Discord panels"}
+            aria-label={t.regionLabel}
         >
-            <div className="flex justify-between gap-4">
-                <h3 className="font-semibold">
-                    {cs ? "Veřejné panely" : "Public panels"}
-                </h3>
+            <div className="flex flex-wrap justify-between gap-4">
+                <h3 className="font-semibold">{t.title}</h3>
                 <Button
                     type="button"
                     variant="outline"
                     onClick={() => void load()}
                 >
-                    {cs
-                        ? "Obnovit místnosti a stav"
-                        : "Refresh channels and status"}
+                    {t.refresh}
                 </Button>
             </div>
-            <p className="text-muted-foreground text-sm">
-                {cs
-                    ? "Jeden kompaktní panel na zdroj. Samostatné skóre vytvoř jen v další místnosti. Výsledky se zveřejňují až po potvrzení v Logim; historické výsledky se zpětně neposílají."
-                    : "One compact panel per source. Use a separate scoreboard only in another channel. Results publish after review in Logi; historic results are not backfilled."}
-            </p>
+            <p className="text-muted-foreground text-sm">{t.intro}</p>
             <div className="grid gap-3 md:grid-cols-2">
-                <label>
-                    {cs ? "Funkce" : "Feature"}
+                <label className="text-sm font-medium">
+                    {t.kind}
                     <select
-                        className="bg-background block w-full rounded border p-2"
+                        className={fieldClass}
                         value={settings.kind}
                         onChange={(e) =>
                             setSettings((s) => ({
@@ -254,17 +221,19 @@ export function DiscordPublicPanelsForm({
                             }))
                         }
                     >
-                        {["server", "scoreboard", "results"].map((k) => (
-                            <option key={k} value={k}>
-                                {label(k)}
-                            </option>
-                        ))}
+                        {(["server", "scoreboard", "results"] as const).map(
+                            (k) => (
+                                <option key={k} value={k}>
+                                    {label(k)}
+                                </option>
+                            )
+                        )}
                     </select>
                 </label>
-                <label>
-                    {cs ? "Zdroj dat" : "Data source"}
+                <label className="text-sm font-medium">
+                    {t.source}
                     <select
-                        className="bg-background block w-full rounded border p-2"
+                        className={fieldClass}
                         value={settings.connectionId}
                         onChange={(e) =>
                             setSettings((s) => ({
@@ -273,9 +242,7 @@ export function DiscordPublicPanelsForm({
                             }))
                         }
                     >
-                        <option value="">
-                            {cs ? "Vyber zdroj" : "Select source"}
-                        </option>
+                        <option value="">{t.selectSource}</option>
                         {sources.map((s) => (
                             <option key={s.id} value={s.id}>
                                 {s.name} · {s.gameId}
@@ -290,15 +257,13 @@ export function DiscordPublicPanelsForm({
                 onChange={(channelId) =>
                     setSettings((s) => ({ ...s, channelId: channelId ?? "" }))
                 }
-                placeholder={cs ? "Cílová místnost" : "Destination channel"}
+                placeholder={t.destination}
             />
             <div className="flex flex-wrap gap-4">
-                <label>
-                    {cs
-                        ? "Report Player · kategorie soukromého ticketu"
-                        : "Report Player · private ticket category"}
+                <label className="text-sm font-medium">
+                    {t.reportCategory}
                     <select
-                        className="bg-background block rounded border p-2"
+                        className={fieldClass}
                         value={settings.reportCategoryId ?? ""}
                         onChange={(e) =>
                             setSettings((s) => ({
@@ -308,22 +273,18 @@ export function DiscordPublicPanelsForm({
                         }
                         disabled={settings.kind === "results"}
                     >
-                        <option value="">{cs ? "Vypnuto" : "Disabled"}</option>
+                        <option value="">{t.reportOff}</option>
                         {reportCategories.map((c) => (
                             <option key={c.id} value={c.id}>
                                 {c.label} ·{" "}
                                 {channels.find(
                                     (ch) => ch.id === c.parentChannelId
-                                )?.name ??
-                                    c.parentChannelId ??
-                                    "—"}
+                                )?.name ?? "—"}
                             </option>
                         ))}
                     </select>
-                    <p className="text-muted-foreground text-xs">
-                        {cs
-                            ? "Místnost a role správců nastavíš v sekci Tickety. Bot před odesláním ověří soukromí a přístup."
-                            : "Choose the destination channel and staff roles in Tickets. The bot checks privacy and access before submission."}
+                    <p className="text-muted-foreground mt-1 text-xs font-normal">
+                        {t.reportHelp}
                     </p>
                 </label>
                 {(
@@ -334,7 +295,10 @@ export function DiscordPublicPanelsForm({
                         "artwork",
                     ] as const
                 ).map((key) => (
-                    <label key={key} className="flex gap-2">
+                    <label
+                        key={key}
+                        className="flex items-center gap-2 text-sm"
+                    >
                         <input
                             type="checkbox"
                             checked={settings[key]}
@@ -345,25 +309,13 @@ export function DiscordPublicPanelsForm({
                                 }))
                             }
                         />
-                        {key === "enabled"
-                            ? cs
-                                ? "Zapnuto"
-                                : "Enabled"
-                            : key === "showPlayers"
-                              ? cs
-                                  ? "Soukromý detail hráčů (Warcon / CRCON)"
-                                  : "Private player details (Warcon / CRCON)"
-                              : key === "showLeaders"
-                                ? cs
-                                    ? "Veřejní TOP hráči (jména + statistiky)"
-                                    : "Public leaders (names + stats)"
-                                : appearanceText.mapArtwork}
+                        {key === "artwork" ? appearanceText.mapArtwork : t[key]}
                     </label>
                 ))}
-                <label>
-                    {cs ? "Obnova" : "Refresh"}{" "}
+                <label className="flex items-center gap-2 text-sm">
+                    {t.refreshRate}
                     <select
-                        className="bg-background rounded border"
+                        className="bg-background rounded-lg border p-1"
                         value={settings.refreshSeconds}
                         onChange={(e) =>
                             setSettings((s) => ({
@@ -396,13 +348,13 @@ export function DiscordPublicPanelsForm({
                 }
                 onUploadingChange={setUploading}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 <Button
                     type="button"
                     disabled={busy || uploading}
                     onClick={() => void save()}
                 >
-                    {cs ? "Uložit / obnovit panel" : "Save / refresh panel"}
+                    {t.save}
                 </Button>
                 <Button
                     type="button"
@@ -410,17 +362,15 @@ export function DiscordPublicPanelsForm({
                     disabled={busy || uploading}
                     onClick={() => void save(true)}
                 >
-                    {cs ? "Ověřit místnost" : "Verify channel"}
+                    {t.verify}
                 </Button>
             </div>
             <p role="status" className="text-sm">
                 {message}
             </p>
             {preview && settings.kind !== "results" && (
-                <details className="rounded border p-3 text-sm">
-                    <summary>
-                        {cs ? "Náhled dat panelu" : "Panel data preview"}
-                    </summary>
+                <details className="rounded-lg border p-3 text-sm">
+                    <summary>{t.previewTitle}</summary>
                     <p className="mt-2 font-semibold">
                         {preview.displayName ?? "—"}
                     </p>
@@ -441,7 +391,7 @@ export function DiscordPublicPanelsForm({
             {panels
                 .filter((p) => sources.some((s) => s.id === p.connectionId))
                 .map((p) => (
-                    <div key={p._id} className="rounded border p-3 text-sm">
+                    <div key={p._id} className="rounded-lg border p-3 text-sm">
                         <Button
                             type="button"
                             variant="outline"
@@ -458,12 +408,15 @@ export function DiscordPublicPanelsForm({
                                 setAppearanceKey((key) => key + 1)
                             }}
                         >
-                            {label(p.kind)} · {p.enabled ? "●" : "⏸"} · #
-                            {channels.find((c) => c.id === p.channelId)?.name ??
-                                p.channelId}
+                            {label(p.kind)} ·{" "}
+                            {p.enabled ? t.panelOn : t.panelPaused} ·{" "}
+                            {channels.find((c) => c.id === p.channelId)
+                                ? `#${channels.find((c) => c.id === p.channelId)?.name}`
+                                : dictionary.settingsHub.messagesPage
+                                      .channelUnknown}
                         </Button>
                         {p.publications.map((state, index) => (
-                            <p key={index}>
+                            <p key={index} className="mt-1">
                                 {state.messageId && state.channelId && (
                                     <a
                                         className="underline"
@@ -471,19 +424,17 @@ export function DiscordPublicPanelsForm({
                                         rel="noreferrer"
                                         href={`https://discord.com/channels/${p.guildId}/${state.channelId}/${state.messageId}`}
                                     >
-                                        {cs ? "Zpráva" : "Message"}
+                                        {t.message}
                                     </a>
                                 )}{" "}
                                 ·{" "}
                                 {state.lastSuccessAt
                                     ? new Date(
                                           state.lastSuccessAt
-                                      ).toLocaleString()
-                                    : cs
-                                      ? "Čeká na bota"
-                                      : "Awaiting bot"}{" "}
+                                      ).toLocaleString(locale)
+                                    : t.awaitingBot}{" "}
                                 {state.pending
-                                    ? "· pending reconciliation"
+                                    ? `· ${t.pendingReconciliation}`
                                     : ""}{" "}
                                 {state.error}
                             </p>

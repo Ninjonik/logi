@@ -11,7 +11,6 @@ import {
     type SettingsSnapshot,
 } from "@/domain/workspaces/settings-sections"
 import {
-    SETTINGS_PRESET_LINKS,
     SETTINGS_SECTION_ICONS,
     settingsHref,
 } from "@/components/app/settings/settings-section-meta"
@@ -158,9 +157,7 @@ export function SettingsOverview({
                     const items = sections.filter(
                         (section) => section.group === group
                     )
-                    const presets =
-                        group === "matches" ? SETTINGS_PRESET_LINKS : []
-                    if (!items.length && !presets.length) return null
+                    if (!items.length) return null
                     return (
                         <section
                             key={group}
@@ -226,24 +223,6 @@ export function SettingsOverview({
                                         </li>
                                     )
                                 })}
-                                {presets.map((preset) => (
-                                    <li key={preset.key}>
-                                        <Link
-                                            href={`/${locale}/dashboard/servers/${serverId}/${preset.path}`}
-                                            className={tileClass}
-                                        >
-                                            <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-xl">
-                                                <preset.icon
-                                                    className="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </span>
-                                            <span className="self-center font-medium">
-                                                {text.presetLinks[preset.key]}
-                                            </span>
-                                        </Link>
-                                    </li>
-                                ))}
                             </ul>
                         </section>
                     )

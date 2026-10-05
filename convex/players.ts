@@ -1,4 +1,5 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { canOpenWorkspace } from "../src/domain/workspaces/workspace-access"
 import { parseSteamId } from "../src/domain/player-stats/player-stats"
 import { revokePlatformIdentity } from "./platformIdentityStore"
 import { invalidateUserSessions } from "./dashboardSessionStore"
@@ -840,27 +841,6 @@ async function resolveAndPersistDefaultWorkspace(
 ) {
     if (!user) return null
 
-    if (options.useStoredDefault && user.defaultWorkspaceRecordId) {
-        const workspace = await ctx.db.get(
-            user.defaultWorkspaceRecordId as Id<"guilds">
-        )
-        if (workspace) return String(workspace._id)
-    }
-
-    if (options.useStoredDefault && user.defaultWorkspaceId) {
-        const workspace = await getGuildByDiscordId(
-            ctx,
-            user.defaultWorkspaceId
-        )
-        if (workspace) {
-            await ctx.db.patch(user._id, {
-                defaultWorkspaceRecordId: String(workspace._id),
-                updatedAt: new Date().toISOString(),
-            })
-            return String(workspace._id)
-        }
-    }
-
     const [memberships, dashboardAccess] = await Promise.all([
         ctx.db
             .query("userAssignments")
@@ -871,6 +851,49 @@ async function resolveAndPersistDefaultWorkspace(
             .withIndex("userId", (q) => q.eq("userId", getUserDiscordId(user)))
             .collect(),
     ])
+    // A stored default is only reused while the person can still open it.
+    const canOpenStored = (workspace: Doc<"guilds">) =>
+        options.allowAnyWorkspace ||
+        canOpenWorkspace(
+            {
+                userDiscordId: getUserDiscordId(user),
+                primaryGuildId: user.guildId,
+                managedGuildIds: user.managedGuildIds,
+                mercenaryGuildIds: user.mercenaryGuildIds,
+                memberGuildIds:
+                    getDefaultWorkspaceCandidatesFromMemberships(memberships),
+                dashboardAccessGuildIds: dashboardAccess
+                    .filter((access) => access.hasDashboardAccess)
+                    .map((access) => access.guildId),
+            },
+            {
+                discordId: getGuildDiscordId(workspace),
+                adminIds: workspace.adminIds,
+                dashboardAdminIds: workspace.dashboardAdminIds,
+            }
+        )
+
+    if (options.useStoredDefault && user.defaultWorkspaceRecordId) {
+        const workspace = await ctx.db.get(
+            user.defaultWorkspaceRecordId as Id<"guilds">
+        )
+        if (workspace && canOpenStored(workspace)) return String(workspace._id)
+    }
+
+    if (options.useStoredDefault && user.defaultWorkspaceId) {
+        const workspace = await getGuildByDiscordId(
+            ctx,
+            user.defaultWorkspaceId
+        )
+        if (workspace && canOpenStored(workspace)) {
+            await ctx.db.patch(user._id, {
+                defaultWorkspaceRecordId: String(workspace._id),
+                updatedAt: new Date().toISOString(),
+            })
+            return String(workspace._id)
+        }
+    }
+
     let workspace = await findFirstWorkspace(ctx, [
         user.guildId,
         ...getDefaultWorkspaceCandidatesFromMemberships(memberships),

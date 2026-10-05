@@ -1,24 +1,31 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { RefreshCw } from "lucide-react"
+import { useTransition } from "react"
 import { toast } from "sonner"
 
+import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 
 /** Rebuilds dashboard admin access from the current members of the dashboard role. */
 export function ResyncDashboardAdminsButton({
     serverId,
+    dictionary,
+    disabled = false,
 }: {
     serverId: string
+    dictionary: Dictionary
+    disabled?: boolean
 }) {
+    const text = dictionary.settingsHub.rolesPage
     const [isPending, startTransition] = useTransition()
-    const [clicked, setClicked] = useState(false)
 
     return (
         <Button
+            type="button"
             variant="outline"
             className="rounded-xl"
-            disabled={isPending}
+            disabled={disabled || isPending}
             onClick={() => {
                 startTransition(async () => {
                     const response = await fetch(
@@ -26,15 +33,18 @@ export function ResyncDashboardAdminsButton({
                         { method: "POST" }
                     ).catch(() => null)
                     if (!response?.ok) {
-                        toast.error("Unable to resync admin access.")
+                        toast.error(text.resyncError)
                         return
                     }
-                    setClicked(true)
-                    toast.success("Admin access resynced.")
+                    toast.success(text.resynced)
                 })
             }}
         >
-            {clicked ? "Resynced" : "Resync admin access"}
+            <RefreshCw
+                className={isPending ? "size-4 animate-spin" : "size-4"}
+                aria-hidden="true"
+            />
+            {text.resync}
         </Button>
     )
 }

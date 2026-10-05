@@ -155,3 +155,24 @@ test("HLL appearance applies team emoji, accent, banner and layout toggles", () 
     assert.ok(!hidden.includes("TEAM SCORE"))
     assert.match(hidden, /👥 \*\*2 \/ 100\*\* players/)
 })
+test("HLL panels and private pages use the clan language", () => {
+    const data = hllLiveFixture()
+    const czech = JSON.stringify(
+        renderHllPanel(
+            { ...panel, showLeaders: true, showPlayers: true },
+            data,
+            undefined,
+            "cs"
+        )
+    )
+    assert.match(czech, /SKÓRE TÝMŮ/)
+    assert.match(czech, /Spojenci/)
+    assert.match(czech, /zbývá \*\*51m 0s\*\*/)
+    assert.match(czech, /Hráči \(jen pro tebe\)/)
+    assert.doesNotMatch(czech, /TEAM SCORE|remaining|private details/)
+
+    const german = JSON.stringify(renderHllPlayers(panel, data, 0, "de"))
+    assert.match(german, /HELL LET LOOSE · Verbundene Spieler/)
+    assert.match(german, /Unterstützung/)
+    assert.doesNotMatch(german, /Connected players|Support /)
+})

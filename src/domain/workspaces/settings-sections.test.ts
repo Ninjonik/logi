@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     SETTINGS_SECTIONS,
     isSettingsSectionId,
+    mergedSettingsSection,
     settingsSectionForRequirement,
     settingsSectionStatus,
     settingsSetupProgress,
@@ -32,6 +33,13 @@ test("section ids are unique and recognised", () => {
     assert.ok(isSettingsSectionId("channels"))
     assert.ok(!isSettingsSectionId("system"))
     assert.ok(!isSettingsSectionId("__proto__"))
+})
+
+test("sign-in settings live on the website page and old links redirect there", () => {
+    assert.ok(!isSettingsSectionId("login"))
+    assert.equal(mergedSettingsSection("login"), "website")
+    assert.equal(mergedSettingsSection("website"), undefined)
+    assert.equal(mergedSettingsSection("constructor"), undefined)
 })
 
 test("the Wardogs League page appears only for Wardogs clans", () => {
@@ -77,4 +85,23 @@ test("each requirement points at the page that fixes it", () => {
     assert.equal(settingsSectionForRequirement("announcements"), "channels")
     assert.equal(settingsSectionForRequirement("clanRole"), "roles")
     assert.equal(settingsSectionForRequirement("enabledGames"), "games")
+})
+
+test("the Matches group holds templates, presets and Discord messages in menu order", () => {
+    assert.deepEqual(
+        SETTINGS_SECTIONS.filter((section) => section.group === "matches").map(
+            (section) => section.id
+        ),
+        ["match-templates", "presets", "messages"]
+    )
+    assert.ok(isSettingsSectionId("event-categories"))
+    assert.equal(
+        SETTINGS_SECTIONS.find((section) => section.id === "event-categories")
+            ?.group,
+        "clan"
+    )
+    assert.equal(
+        settingsSectionStatus("match-templates", configured).state,
+        "none"
+    )
 })

@@ -8,16 +8,26 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
+import {
+    SettingsField,
+    SettingsPanel,
+} from "@/components/app/settings/settings-panel"
 import { ResyncDashboardAdminsButton } from "@/components/app/resync-dashboard-admins-button"
+import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { DiscordEntitySelect } from "@/components/app/discord-entity-select"
-import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
-import { Card, CardContent } from "@/components/ui/card"
+import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 
-/** The clan role and the Discord role that grants dashboard access; both apply to the whole clan. */
+type RoleSettings = {
+    clanRoleId?: string
+    dashboardAdminRoleId?: string
+}
+
+/**
+ * Roles and access (design G2): the clan role every member has and the role
+ * that lets people manage Logi. Both apply to the whole clan.
+ */
 export function DiscordRoleSettingsForm({
     serverId,
     dictionary,
@@ -27,75 +37,115 @@ export function DiscordRoleSettingsForm({
     dictionary: Dictionary
     config: DiscordConfig | null
 }) {
+    const text = dictionary.settingsHub.rolesPage
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const metadata = useDiscordMetadata(serverId)
-    const roles = metadata?.roles ?? []
-    const [clanRoleId, setClanRoleId] = useState(config?.clanRoleId)
-    const [dashboardAdminRoleId, setDashboardAdminRoleId] = useState(
-        config?.dashboardAdminRoleId
-    )
+    const [saving, setSaving] = useState(false)
+    const metadata = useDiscordMetadataState(serverId)
+    const roles = metadata.metadata?.roles ?? []
+    const [saved, setSaved] = useState<RoleSettings>({
+        clanRoleId: config?.clanRoleId,
+        dashboardAdminRoleId: config?.dashboardAdminRoleId,
+    })
+    const [draft, setDraft] = useState<RoleSettings>(saved)
+    const changes = (["clanRoleId", "dashboardAdminRoleId"] as const).filter(
+        (key) => (draft[key] || undefined) !== (saved[key] || undefined)
+    ).length
 
     async function save() {
-        const result = await saveDiscordSettings(serverId, {
-            clanRoleId: clearableId(clanRoleId),
-            dashboardAdminRoleId: clearableId(dashboardAdminRoleId),
-        })
-        if (!result.ok) {
-            toast.error(
-                result.error ??
-                    dictionary.serverSettings.discordSettingsSaveError
-            )
-            return
+        setSaving(true)
+        try {
+            const result = await saveDiscordSettings(serverId, {
+                clanRoleId: clearableId(draft.clanRoleId),
+                dashboardAdminRoleId: clearableId(draft.dashboardAdminRoleId),
+            })
+            if (!result.ok) {
+                toast.error(
+                    result.error ??
+                        dictionary.serverSettings.discordSettingsSaveError
+                )
+                return
+            }
+            setSaved(draft)
+            toast.success(dictionary.serverSettings.discordSettingsSaved)
+            startTransition(() => router.refresh())
+        } finally {
+            setSaving(false)
         }
-        toast.success(dictionary.serverSettings.discordSettingsSaved)
-        startTransition(() => router.refresh())
+    }
+
+    function rolePicker(key: keyof RoleSettings) {
+        return (
+            <DiscordEntitySelect
+                value={draft[key]}
+                onChange={(value) =>
+                    setDraft((current) => ({ ...current, [key]: value }))
+                }
+                options={roles}
+                placeholder={text.chooseRole}
+                noneLabel={text.noRole}
+                emptyLabel={text.noResults}
+            />
+        )
     }
 
     return (
-        <Card className="border-border/60 rounded-2xl">
-            <CardContent className="space-y-6">
-                <p className="text-muted-foreground text-sm">
-                    {dictionary.settingsHub.clanWideOnly}
-                </p>
-                <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>{dictionary.serverSettings.clanRoleId}</Label>
-                        <DiscordEntitySelect
-                            value={clanRoleId}
-                            onChange={setClanRoleId}
-                            options={roles}
-                            placeholder={dictionary.serverSettings.clanRoleId}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>
-                            {dictionary.serverSettings.dashboardAdminRoleId}
-                        </Label>
-                        <DiscordEntitySelect
-                            value={dashboardAdminRoleId}
-                            onChange={setDashboardAdminRoleId}
-                            options={roles}
-                            placeholder={
-                                dictionary.serverSettings.dashboardAdminRoleId
-                            }
-                        />
-                    </div>
-                </div>
-                <Button
-                    className="rounded-xl"
-                    onClick={save}
-                    disabled={isPending}
+        <div className="space-y-6">
+            {metadata.status === "failed" ? (
+                <p
+                    role="alert"
+                    className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100"
                 >
-                    {dictionary.serverSettings.saveDiscordSettings}
-                </Button>
-                <div className="border-border/60 space-y-3 border-t pt-6">
-                    <p className="text-muted-foreground text-sm">
-                        {dictionary.settingsHub.resyncHelp}
-                    </p>
-                    <ResyncDashboardAdminsButton serverId={serverId} />
+                    {text.rolesUnavailable}
+                </p>
+            ) : null}
+            <SettingsPanel id="roles-members" title={text.membersTitle}>
+                <SettingsField label={text.clanRole} help={text.clanRoleHelp}>
+                    {rolePicker("clanRoleId")}
+                </SettingsField>
+            </SettingsPanel>
+            <SettingsPanel id="roles-admins" title={text.adminsTitle}>
+                <SettingsField
+                    label={
+                        <>
+                            {text.adminRole}
+                            {draft.dashboardAdminRoleId ? null : (
+                                <span className="text-muted-foreground font-normal">
+                                    {" "}
+                                    · {text.notSet}
+                                </span>
+                            )}
+                        </>
+                    }
+                    help={text.adminRoleHelp}
+                >
+                    {rolePicker("dashboardAdminRoleId")}
+                </SettingsField>
+                <div className="bg-muted/40 space-y-3 rounded-xl border p-4">
+                    <div className="space-y-1">
+                        <h3 className="text-sm font-medium">
+                            {text.resyncTitle}
+                        </h3>
+                        <p className="text-muted-foreground text-[13px]">
+                            {saved.dashboardAdminRoleId
+                                ? text.resyncHelp
+                                : text.resyncNeedsRole}
+                        </p>
+                    </div>
+                    <ResyncDashboardAdminsButton
+                        serverId={serverId}
+                        dictionary={dictionary}
+                        disabled={!saved.dashboardAdminRoleId || changes > 0}
+                    />
                 </div>
-            </CardContent>
-        </Card>
+            </SettingsPanel>
+            <UnsavedChangesBar
+                changes={changes}
+                saving={saving || isPending}
+                onDiscard={() => setDraft(saved)}
+                onSave={() => void save()}
+                dictionary={dictionary}
+            />
+        </div>
     )
 }

@@ -26,6 +26,7 @@ import {
     discordPublicPanels,
 } from "./discordPublicationTable"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
+import { matchTemplateValidator } from "./matchTemplateValidators"
 import { defineSchema, defineTable } from "convex/server"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { v } from "convex/values"
@@ -668,6 +669,8 @@ export default defineSchema({
         avatar: v.string(),
         description: v.optional(v.string()),
         eventCategories: v.optional(v.array(eventCategory)),
+        // Create-form defaults per match or training type; events never read them.
+        matchTemplates: v.optional(v.array(matchTemplateValidator)),
         enabledGames: v.optional(v.array(gameId)),
         botInside: v.boolean(),
         adminIds: v.array(v.string()),

@@ -5,11 +5,11 @@ import type { LogiStatus } from "@/lib/logi-status"
 const statusDetails = {
     operational: {
         label: "All services operational",
-        className: "text-emerald-600 dark:text-emerald-400",
+        className: "text-status-success",
     },
     degraded: {
         label: "Some services are degraded",
-        className: "text-amber-600 dark:text-amber-400",
+        className: "text-status-warning",
     },
     unknown: {
         label: "Service status unavailable",

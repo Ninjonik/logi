@@ -30,6 +30,8 @@ test("buildScheduledEventDescription includes match metadata and trims empty lin
             description: "Briefing",
             map: "Kharkov",
             side: "Allies",
+            server: "Clan Scrim",
+            serverPassword: "k7-secret",
         },
         "en"
     )
@@ -37,6 +39,9 @@ test("buildScheduledEventDescription includes match metadata and trims empty lin
     assert.match(description, /Briefing/)
     assert.match(description, /Kharkov/)
     assert.match(description, /Allies/)
+    assert.match(description, /Server: Clan Scrim/)
+    // Every guild member can read scheduled events.
+    assert.doesNotMatch(description, /k7-secret|Password/)
 })
 
 test("resolveScheduledEventEndTime falls back to ninety minutes after meeting start", () => {

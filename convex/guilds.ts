@@ -4,6 +4,8 @@ import {
     getUserByDiscordId,
 } from "./identity"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
+import { normalizeMatchTemplates } from "../src/domain/events/match-templates"
+import { matchTemplateValidator } from "./matchTemplateValidators"
 import { mutation, query } from "./_generated/server"
 import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
@@ -671,5 +673,60 @@ export const backfillRosterScoreSettings = mutation({
         return {
             patchedCount,
         }
+    },
+})
+
+/**
+ * Replaces a clan's match templates. Signup groups and topic presets that do
+ * not belong to this clan are dropped, so a template cannot point elsewhere.
+ */
+export const saveMatchTemplates = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.id("guilds"),
+        templates: v.array(matchTemplateValidator),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const guild = await ctx.db.get(args.guildId)
+        if (!guild) {
+            throw new Error("Server not found.")
+        }
+        const result = normalizeMatchTemplates(args.templates)
+        if (!result.ok) return result
+
+        const guildDiscordId = getGuildDiscordId(guild)
+        const [groups, topicPresets] = await Promise.all([
+            ctx.db
+                .query("groups")
+                .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+                .collect(),
+            ctx.db
+                .query("topicPresets")
+                .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+                .collect(),
+        ])
+        const groupIds = new Set(groups.map((group) => String(group._id)))
+        const topicPresetIds = new Set(
+            topicPresets.map((preset) => String(preset._id))
+        )
+        const templates = result.templates.map((template) => ({
+            ...template,
+            signupGroupIds: template.signupGroupIds?.filter((groupId) =>
+                groupIds.has(groupId)
+            ),
+            topicPresetId:
+                template.topicPresetId &&
+                topicPresetIds.has(template.topicPresetId)
+                    ? template.topicPresetId
+                    : undefined,
+        }))
+
+        await ctx.db.patch(guild._id, {
+            matchTemplates: templates,
+            updatedAt: new Date().toISOString(),
+        })
+        return { ok: true as const, templates }
     },
 })

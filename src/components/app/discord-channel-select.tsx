@@ -5,8 +5,8 @@ import {
 } from "@/domain/discord-publications/channel-types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
-import { useLocale } from "next-intl"
 export type SelectableDiscordChannel = {
     id: string
     name: string
@@ -30,7 +30,9 @@ export function DiscordChannelSelect({
     allowNone?: boolean
     purpose?: ChannelPurpose
 }) {
-    const cs = useLocale() === "cs",
+    // The picker's own copy comes from the reader's dictionary
+    // (settingsHub.channelPicker), so every caller is translated.
+    const t = useTranslations("settingsHub.channelPicker"),
         controlId = useId()
     const [manual, setManual] = useState(false),
         [search, setSearch] = useState("")
@@ -51,24 +53,8 @@ export function DiscordChannelSelect({
                 </label>
                 <Input
                     id={manual ? controlId : undefined}
-                    aria-label={
-                        manual
-                            ? cs
-                                ? "ID místnosti"
-                                : "Channel ID"
-                            : cs
-                              ? "Hledat místnost"
-                              : "Search channels"
-                    }
-                    placeholder={
-                        manual
-                            ? cs
-                                ? "Vložit ID místnosti"
-                                : "Paste channel ID"
-                            : cs
-                              ? "Hledat název nebo ID"
-                              : "Search name or ID"
-                    }
+                    aria-label={manual ? t("channelId") : t("search")}
+                    placeholder={manual ? t("pasteId") : t("searchPlaceholder")}
                     value={manual ? (value ?? "") : search}
                     onChange={(e) =>
                         manual
@@ -81,7 +67,7 @@ export function DiscordChannelSelect({
                     type="button"
                     onClick={() => setManual(!manual)}
                 >
-                    {manual ? (cs ? "Seznam" : "List") : "ID"}
+                    {manual ? t("showList") : t("enterId")}
                 </Button>
             </div>
             {!manual && (
@@ -97,16 +83,13 @@ export function DiscordChannelSelect({
                     </option>
                     {value && !matches.some((c) => c.id === value) && (
                         <option value={value}>
-                            {value} · {cs ? "ověřit přístup" : "verify access"}
+                            {value} · {t("checkAccess")}
                         </option>
                     )}
                     {groups.map((group) => (
                         <optgroup
                             key={group}
-                            label={
-                                categories.get(group) ??
-                                (cs ? "Bez kategorie" : "No category")
-                            }
+                            label={categories.get(group) ?? t("noCategory")}
                         >
                             {matches
                                 .filter((c) => (c.parentId ?? "") === group)
@@ -120,9 +103,7 @@ export function DiscordChannelSelect({
                                     >
                                         #{c.name}
                                         {!canUseChannelType(purpose, c.type)
-                                            ? cs
-                                                ? " · nepodporovaný typ"
-                                                : " · unsupported type"
+                                            ? ` · ${t("unsupportedType")}`
                                             : ""}
                                     </option>
                                 ))}
@@ -132,9 +113,7 @@ export function DiscordChannelSelect({
             )}
             {manual && (
                 <p className="text-muted-foreground text-xs">
-                    {cs
-                        ? "Použij ID místnosti z tohoto Discord serveru."
-                        : "Use a channel ID from this Discord server."}
+                    {t("manualHelp")}
                 </p>
             )}
         </div>

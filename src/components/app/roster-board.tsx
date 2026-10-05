@@ -2,6 +2,7 @@
 
 import {
     Check,
+    CheckCircle2,
     Circle,
     CircleDot,
     Loader2,
@@ -12,6 +13,7 @@ import {
     Trash2,
     EyeOff,
     WandSparkles,
+    XCircle,
 } from "lucide-react"
 import {
     useDeferredValue,
@@ -68,12 +70,14 @@ import { PublicShareLinkButton } from "@/components/app/public-share-link-button
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import { SquadCard } from "@/components/app/roster-board-squad-card"
+import { countRosterChanges } from "@/domain/rosters/roster-changes"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { getUserScoreForGuild } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatDateTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 function getCustomPlayerName(
     player: Roster["squads"][number]["players"][number]
@@ -557,6 +561,8 @@ export function RosterBoard({
             signupGroupByUserId,
         ]
     )
+
+    const changeCount = isDirty ? countRosterChanges(roster, board) : 0
 
     if (!event) {
         return (
@@ -1388,10 +1394,10 @@ export function RosterBoard({
     const canConfirmFromMeetingChannel = Boolean(
         meetingChannelId && board?.id && event?.id
     )
-    const shouldShowMeetingChannelConfirmation = canAdmin && mode === "view"
+    const shouldShowMeetingChannelConfirmation = canAdmin && mode !== "layout"
     const actionControlClass =
-        "h-10 min-h-10 w-full shrink-0 rounded-xl px-4 text-xs sm:w-56"
-    const actionSelectTriggerClass = `${actionControlClass} data-[size=default]:h-10`
+        "h-9 min-h-9 w-full shrink-0 rounded-xl px-3 text-xs sm:w-auto"
+    const actionSelectTriggerClass = `${actionControlClass} data-[size=default]:h-9`
     const confirmFromMeetingChannelButton = (
         <Button
             variant="outline"
@@ -1492,34 +1498,51 @@ export function RosterBoard({
     }
 
     return (
-        <div className="space-y-2">
+        <div
+            className={cn(
+                "space-y-2",
+                canAdmin && (!board.published || isDirty) && "pb-20 md:pb-0"
+            )}
+        >
             {canAdmin ? (
-                <div className="flex justify-center md:justify-end">
-                    <div className="flex w-full flex-wrap justify-center gap-3 md:w-auto md:justify-end">
-                        <Select
-                            value={mode}
-                            onValueChange={(value) =>
-                                setMode(value as RosterBoardMode)
-                            }
+                <div className="flex flex-col gap-2 md:items-end">
+                    <div className="flex w-full flex-wrap justify-center gap-2 md:w-auto md:justify-end">
+                        <div
+                            role="radiogroup"
+                            aria-label={dictionary.matchDetail.roster.modeLabel}
+                            className="border-border/70 bg-muted/40 flex h-9 w-full items-center gap-0.5 overflow-x-auto rounded-xl border p-0.5 sm:w-auto"
                         >
-                            <SelectTrigger className={actionSelectTriggerClass}>
-                                <Settings2 className="size-4" />
-                                <SelectValue
-                                    placeholder={dictionary.roster.modeView}
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="view">
-                                    {dictionary.roster.modeView}
-                                </SelectItem>
-                                <SelectItem value="layout">
-                                    {dictionary.roster.modeLayout}
-                                </SelectItem>
-                                <SelectItem value="assignment">
-                                    {dictionary.roster.modeAssignment}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <Settings2
+                                className="text-muted-foreground mx-1.5 size-4 shrink-0"
+                                aria-hidden
+                            />
+                            {(
+                                [
+                                    ["view", dictionary.roster.modeView],
+                                    ["layout", dictionary.roster.modeLayout],
+                                    [
+                                        "assignment",
+                                        dictionary.roster.modeAssignment,
+                                    ],
+                                ] as const
+                            ).map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={mode === value}
+                                    onClick={() => setMode(value)}
+                                    className={cn(
+                                        "h-full shrink-0 rounded-lg px-2.5 text-xs whitespace-nowrap transition-colors",
+                                        mode === value
+                                            ? "bg-background text-foreground font-semibold shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                         {board && squadPresets.length > 0 ? (
                             <Select
                                 value={board.squadPresetId}
@@ -1579,6 +1602,19 @@ export function RosterBoard({
                                 {dictionary.roster.autoFill}
                             </Button>
                         ) : null}
+                    </div>
+                    <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto md:justify-end">
+                        {isDirty && changeCount > 0 ? (
+                            <span
+                                role="status"
+                                className="text-muted-foreground text-xs"
+                            >
+                                {dictionary.matchDetail.roster.unsavedChanges.replace(
+                                    "{count}",
+                                    String(changeCount)
+                                )}
+                            </span>
+                        ) : null}
                         {board?.published && event ? (
                             <PublicShareLinkButton
                                 href={`/${locale}/rosters/${event.id}`}
@@ -1621,8 +1657,12 @@ export function RosterBoard({
                                 </Button>
                                 {board?.id !== "draft-roster" ? (
                                     <Button
-                                        variant="destructive"
-                                        className={actionControlClass}
+                                        variant="outline"
+                                        className="text-destructive hover:text-destructive size-9 shrink-0 rounded-xl"
+                                        aria-label={
+                                            dictionary.roster.deleteRoster
+                                        }
+                                        title={dictionary.roster.deleteRoster}
                                         onClick={() =>
                                             setDeleteDialogOpen(true)
                                         }
@@ -1637,7 +1677,6 @@ export function RosterBoard({
                                         ) : (
                                             <Trash2 className="size-4" />
                                         )}
-                                        {dictionary.roster.deleteRoster}
                                     </Button>
                                 ) : null}
                             </>
@@ -1661,6 +1700,23 @@ export function RosterBoard({
                     </div>
                 </div>
             ) : null}
+            <p className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 className="size-3.5 text-emerald-500" />
+                    {dictionary.matchDetail.roster.legendAdmin}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 className="text-foreground size-3.5" />
+                    {dictionary.matchDetail.roster.legendPlayer}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <XCircle className="text-muted-foreground size-3.5" />
+                    {dictionary.matchDetail.roster.legendPending}
+                </span>
+                {isAssignmentMode ? (
+                    <span>{dictionary.matchDetail.roster.hint}</span>
+                ) : null}
+            </p>
             <Card className="border-border/60 bg-card text-card-foreground rounded-2xl">
                 <CardHeader className="border-border/70 flex flex-col gap-5 border-b pb-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -1959,6 +2015,32 @@ export function RosterBoard({
                     </div>
                 </CardContent>
             </Card>
+            {canAdmin && (!board.published || isDirty) ? (
+                // On phones the main action stays at the bottom, in reach.
+                <div className="bg-background/95 border-border/70 fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t p-3 md:hidden">
+                    {isDirty ? (
+                        <Button
+                            variant="outline"
+                            className="h-11 flex-1 rounded-xl"
+                            onClick={() => handleSave(board.published)}
+                            disabled={isPending || isConfirmingMeetingChannel}
+                        >
+                            <Save className="size-4" />
+                            {dictionary.common.save}
+                        </Button>
+                    ) : null}
+                    {!board.published ? (
+                        <Button
+                            className="h-11 flex-1 rounded-xl"
+                            onClick={() => setPublishDialogOpen(true)}
+                            disabled={isPending || isConfirmingMeetingChannel}
+                        >
+                            <Send className="size-4" />
+                            {dictionary.roster.publishRoster}
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
             <Dialog
                 open={templateChangeDialogOpen}
                 onOpenChange={setTemplateChangeDialogOpen}

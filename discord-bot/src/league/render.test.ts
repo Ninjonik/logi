@@ -83,3 +83,41 @@ test("received human edits remain available for backend receipt cleanup after in
         null
     )
 })
+test("League cards use the clan language for labels, footer and button", () => {
+    const snapshot = {
+        ...parseMatchHtml(
+            readFileSync(
+                new URL(
+                    "../../../src/infrastructure/wardogs-league/fixtures/scheduled.html",
+                    import.meta.url
+                ),
+                "utf8"
+            ),
+            "https://wardogsleague.net/matches/cmuqt8ep605e1lf018w2nlywu"
+        ),
+        fetchedAt: "2026-10-03T12:00:00Z",
+    }
+    const fixture = {
+        id: snapshot.id,
+        guildId: "123",
+        gameId: "wardogs" as const,
+        eventId: null,
+        revision: "1",
+        state: "tracked" as const,
+        snapshot,
+        stale: false,
+        ageSeconds: 0,
+        lastAttemptAt: null,
+        error: null,
+    }
+    const czech = JSON.stringify(renderLeagueCard(fixture, undefined, {}, "cs"))
+    assert.match(czech, /"title":"Zápas /)
+    assert.match(czech, /Kontrola připravenosti/)
+    assert.match(czech, /Otevřít na webu ligy/)
+    assert.match(czech, /Zdroj ověřen/)
+    assert.doesNotMatch(czech, /View match|Preparation|Source checked/)
+    assert.match(
+        JSON.stringify(renderLeagueCard(fixture)),
+        /"title":"Match #.*View match/
+    )
+})

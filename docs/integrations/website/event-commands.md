@@ -59,7 +59,7 @@ configuration is deliberately unavailable: a service key cannot grant itself
 permission. GET on the same path with `?applicationRecordId=...` returns bounded
 nonsecret policy metadata to the current workspace administrator.
 
-The dashboard form **Settings → Clan website and API → Website event commands** uses exactly these two
+The dashboard form **Settings → Clan website and sign-in → Create and edit events** uses exactly these two
 endpoints. It lists the workspace's registered SSO applications and its live
 restricted API keys (legacy unrestricted keys are not offered), shows the current
 policy and granted games per key, and saves the enabled flag with one Discord

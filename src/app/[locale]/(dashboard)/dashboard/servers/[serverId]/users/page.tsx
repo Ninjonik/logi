@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 import {
@@ -60,7 +61,7 @@ export default async function ServerUsersPage({
         serverId,
         typeof game === "string" && isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
 
     const { groups, canAdmin } = context
     const assignments = context.assignments

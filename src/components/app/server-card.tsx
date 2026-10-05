@@ -17,12 +17,15 @@ export function ServerCard({
     guild,
     label,
     dictionary,
+    canInviteBot,
     inviteRoleHierarchyRelevant = false,
 }: {
     locale: Locale
     guild: Guild
     label: string
     dictionary: Dictionary
+    /** Only clan admins can add the bot; everyone else is told to ask one. */
+    canInviteBot: boolean
     inviteRoleHierarchyRelevant?: boolean
 }) {
     return (
@@ -94,6 +97,10 @@ export function ServerCard({
                             <ArrowRight className="size-4" />
                         </Link>
                     </Button>
+                ) : !canInviteBot ? (
+                    <p className="text-muted-foreground text-sm">
+                        {dictionary.dashboard.askAdminForBot}
+                    </p>
                 ) : (
                     <div className="flex w-full gap-2">
                         <BotInviteButton

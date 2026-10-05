@@ -8,6 +8,9 @@ import { getInternalAuthSecret } from "@/lib/env"
 const upsertSquadPresetReference = makeFunctionReference<"mutation">(
     "squadPresets:upsert"
 )
+const removeSquadPresetReference = makeFunctionReference<"mutation">(
+    "squadPresets:remove"
+)
 
 export async function saveSquadPreset(
     input: SquadPresetInput & {
@@ -24,4 +27,16 @@ export async function saveSquadPreset(
         name: input.name,
         squads: input.squads,
     })
+}
+
+/** Deletes a clan's squad preset; rosters keep the squads they copied. */
+export async function deleteSquadPreset(input: {
+    serverId: string
+    presetId: string
+}): Promise<{ ok: true } | { ok: false; error: "not_found" }> {
+    return (await fetchMutation(removeSquadPresetReference, {
+        secret: getInternalAuthSecret(),
+        serverId: input.serverId as never,
+        presetId: input.presetId as never,
+    })) as { ok: true } | { ok: false; error: "not_found" }
 }

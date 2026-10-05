@@ -1,8 +1,11 @@
 "use client"
 
+import { CalendarSync, Check, Copy } from "lucide-react"
 import { useState, useTransition } from "react"
-import { Check, Copy } from "lucide-react"
 import { toast } from "sonner"
+
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
+import { EmptyState } from "@/components/app/empty-state"
 
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -22,6 +25,7 @@ export function CalendarFeedSettings({
 }) {
     const [copied, setCopied] = useState(false)
     const [isPending, startTransition] = useTransition()
+    const copy = dictionary.integrationSettings.calendar
     const feedUrl = calendarFeedToken
         ? new URL(
               `/api/calendar/${server.id}?token=${calendarFeedToken}`,
@@ -44,9 +48,13 @@ export function CalendarFeedSettings({
                 }),
             }
         )
-        if (!response.ok) return toast.error(dictionary.common.error)
+        if (!response.ok) {
+            toast.error(dictionary.common.error)
+            return false
+        }
         toast.success(dictionary.common.save)
         startTransition(() => window.location.reload())
+        return true
     }
     return (
         <div className="space-y-3">
@@ -54,40 +62,68 @@ export function CalendarFeedSettings({
                 {dictionary.serverSettings.googleCalendarInstructions}
             </p>
             {feedUrl ? (
-                <div className="flex gap-2">
-                    <Input value={feedUrl} readOnly className="rounded-xl" />
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="shrink-0 rounded-xl"
-                        onClick={async () => {
-                            await navigator.clipboard.writeText(feedUrl)
-                            setCopied(true)
-                            window.setTimeout(() => setCopied(false), 1600)
-                        }}
-                    >
-                        {copied ? (
-                            <Check className="size-4" />
-                        ) : (
-                            <Copy className="size-4" />
-                        )}
-                        {copied
-                            ? dictionary.serverSettings.copiedCalendarFeed
-                            : dictionary.serverSettings.copyCalendarFeed}
-                    </Button>
-                </div>
-            ) : null}
-            <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl"
-                disabled={isPending}
-                onClick={() => void save(true)}
-            >
-                {calendarFeedToken
-                    ? dictionary.serverSettings.rotateCalendarFeed
-                    : dictionary.serverSettings.createCalendarFeed}
-            </Button>
+                <>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <Input
+                            value={feedUrl}
+                            readOnly
+                            className="min-w-0 rounded-xl"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0 rounded-xl"
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(feedUrl)
+                                setCopied(true)
+                                window.setTimeout(() => setCopied(false), 1600)
+                            }}
+                        >
+                            {copied ? (
+                                <Check className="size-4" />
+                            ) : (
+                                <Copy className="size-4" />
+                            )}
+                            {copied
+                                ? dictionary.serverSettings.copiedCalendarFeed
+                                : dictionary.serverSettings.copyCalendarFeed}
+                        </Button>
+                    </div>
+                    <ConfirmActionDialog
+                        trigger={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-xl"
+                                disabled={isPending}
+                            >
+                                {dictionary.serverSettings.rotateCalendarFeed}
+                            </Button>
+                        }
+                        title={copy.rotateTitle}
+                        description={copy.rotateDescription}
+                        confirmLabel={copy.rotateConfirm}
+                        cancelLabel={dictionary.integrationSettings.cancel}
+                        onConfirm={() => save(true)}
+                    />
+                </>
+            ) : (
+                <EmptyState
+                    icon={CalendarSync}
+                    title={copy.emptyTitle}
+                    description={copy.emptyDescription}
+                    actions={
+                        <Button
+                            type="button"
+                            className="rounded-xl"
+                            disabled={isPending}
+                            onClick={() => void save(true)}
+                        >
+                            {dictionary.serverSettings.createCalendarFeed}
+                        </Button>
+                    }
+                />
+            )}
         </div>
     )
 }

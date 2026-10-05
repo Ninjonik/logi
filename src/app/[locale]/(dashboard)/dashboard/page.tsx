@@ -9,6 +9,10 @@ import {
     isCurrentUserSuperadmin,
     resolveDefaultWorkspaceForCurrentPlayer,
 } from "@/lib/auth"
+import {
+    CLAN_LIST_QUERY,
+    chooseDashboardLanding,
+} from "@/domain/workspaces/dashboard-landing"
 import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button"
 import { BotInviteButton } from "@/components/app/bot-invite-button"
 import { ServerCard } from "@/components/app/server-card"
@@ -50,8 +54,10 @@ export const metadata: Metadata = {
 
 export default async function DashboardHomePage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { locale } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
@@ -62,16 +68,32 @@ export default async function DashboardHomePage({
         return null
     }
 
-    const defaultWorkspaceId =
-        user.defaultWorkspaceRecordId ??
-        (await resolveDefaultWorkspaceForCurrentPlayer(user.id))
-    if (defaultWorkspaceId) {
-        redirect(`/${safeLocale}/dashboard/servers/${defaultWorkspaceId}`)
-    }
+    const showClanList =
+        (await searchParams)[CLAN_LIST_QUERY.key] === CLAN_LIST_QUERY.value
     const [superadmin, visibleGuilds] = await Promise.all([
         isCurrentUserSuperadmin(),
         getVisibleGuildsForLoggedInUser(),
     ])
+    // Redirect only into a clan the person can still see; a stale stored
+    // default falls back to the resolved one, then to this clan list.
+    const visibleWorkspaceIds = new Set(visibleGuilds.map((guild) => guild.id))
+    let landing = chooseDashboardLanding({
+        showClanList,
+        visibleWorkspaceIds,
+        candidates: [user.defaultWorkspaceRecordId],
+    })
+    if (landing.kind === "clanList" && !showClanList) {
+        landing = chooseDashboardLanding({
+            showClanList,
+            visibleWorkspaceIds,
+            candidates: [
+                await resolveDefaultWorkspaceForCurrentPlayer(user.id),
+            ],
+        })
+    }
+    if (landing.kind === "workspace") {
+        redirect(`/${safeLocale}/dashboard/servers/${landing.workspaceId}`)
+    }
     const managedServers = superadmin
         ? visibleGuilds
         : visibleGuilds.filter((guild) =>
@@ -83,8 +105,21 @@ export default async function DashboardHomePage({
     const managedServersMissingBot = managedServers.filter(
         (guild) => !guild.botInside
     )
-    const mercenaryServers = visibleGuilds.filter((guild) =>
-        user.mercenaryGuildIds.includes(guild.discordId)
+    const managedIds = new Set(managedServers.map((guild) => guild.id))
+    const mercenaryServers = visibleGuilds.filter(
+        (guild) =>
+            !managedIds.has(guild.id) &&
+            user.mercenaryGuildIds.includes(guild.discordId)
+    )
+    const mercenaryIds = new Set(mercenaryServers.map((guild) => guild.id))
+    // Clans the person belongs to without managing them (primary clan, bot-
+    // granted dashboard access); only clans the bot is in can be opened.
+    const memberServers = visibleGuilds.filter(
+        (guild) =>
+            guild.botInside &&
+            guild.name &&
+            !managedIds.has(guild.id) &&
+            !mercenaryIds.has(guild.id)
     )
     const inviteRoleHierarchyByGuildId = new Map<string, boolean>(
         await Promise.all(
@@ -107,7 +142,9 @@ export default async function DashboardHomePage({
                 description={dictionary.dashboard.description}
             />
             <div className="space-y-8 px-4 lg:px-6">
-                {!managedServers.length && !mercenaryServers.length ? (
+                {!managedServers.length &&
+                !memberServers.length &&
+                !mercenaryServers.length ? (
                     <EmptyState
                         title={dictionary.dashboard.noServerTitle}
                         description={dictionary.dashboard.noServerDescription}
@@ -178,6 +215,7 @@ export default async function DashboardHomePage({
                                             dictionary.dashboard.managedServers
                                         }
                                         dictionary={dictionary}
+                                        canInviteBot
                                         inviteRoleHierarchyRelevant={
                                             inviteRoleHierarchyByGuildId.get(
                                                 guild.id
@@ -187,6 +225,25 @@ export default async function DashboardHomePage({
                                 ))}
                             </div>
                         ) : null}
+                    </section>
+                ) : null}
+                {memberServers.length ? (
+                    <section className="space-y-4">
+                        <h2 className="text-muted-foreground text-sm font-semibold tracking-[0.24em] uppercase">
+                            {dictionary.dashboard.memberServers}
+                        </h2>
+                        <div className="grid gap-4 xl:grid-cols-2">
+                            {memberServers.map((guild) => (
+                                <ServerCard
+                                    key={guild.id}
+                                    locale={safeLocale}
+                                    guild={guild}
+                                    label={dictionary.dashboard.memberServers}
+                                    dictionary={dictionary}
+                                    canInviteBot={false}
+                                />
+                            ))}
+                        </div>
                     </section>
                 ) : null}
                 {mercenaryServers.length ? (
@@ -204,6 +261,7 @@ export default async function DashboardHomePage({
                                         dictionary.dashboard.mercenaryServers
                                     }
                                     dictionary={dictionary}
+                                    canInviteBot={false}
                                 />
                             ))}
                         </div>

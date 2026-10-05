@@ -15,6 +15,12 @@ import {
 } from "discord.js"
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
+import {
+    discordTimestamp,
+    fillTemplate,
+    formatCount,
+    resolveMessageAccentColor,
+} from "../../src/domain/discord-messages/format"
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
 import { getClanDiscordMessages } from "../../src/lib/clan-language"
@@ -120,7 +126,30 @@ export function buildAnnouncementV2Message(
         .split(/\n?-{20,}\n?/)
         .map((block) => block.trim())
         .filter(Boolean)
-    const heading = [`# ${event.name}`, descriptionBlocks.shift()]
+    const publishedRoster = payload.rosters.find(
+        (item) => item.eventId === event.id && item.published
+    )
+    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
+    // The event information card turns into the roster card once the roster
+    // is published: roster title, meeting, squads and reserves.
+    const rosterSummary =
+        options?.showPublishedRosterImage && publishedRoster
+            ? buildRosterSummaryText(
+                  payload.config,
+                  event,
+                  publishedRoster,
+                  userDisplayNames
+              )
+            : undefined
+    const title = embed.title ?? event.name
+    const heading = [
+        `# ${
+            rosterSummary === undefined
+                ? title
+                : fillTemplate(messages.rosterSummary.title, { event: title })
+        }`,
+        descriptionBlocks.shift(),
+    ]
         .filter(Boolean)
         .join("\n")
         .slice(0, 4000)
@@ -141,6 +170,12 @@ export function buildAnnouncementV2Message(
     } else {
         container.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(heading)
+        )
+    }
+    if (rosterSummary) {
+        container.addSeparatorComponents(new SeparatorBuilder())
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(rosterSummary.slice(0, 4000))
         )
     }
     for (const block of descriptionBlocks) {
@@ -172,18 +207,17 @@ export function buildAnnouncementV2Message(
         )
     }
 
-    const rosterText = buildCompactV2FieldText(embed.fields ?? [])
-    if (rosterText) {
+    // The roster card lists squads instead of the sign-up names.
+    const signupText =
+        rosterSummary === undefined
+            ? buildCompactV2FieldText(embed.fields ?? [])
+            : ""
+    if (signupText) {
         container.addSeparatorComponents(new SeparatorBuilder())
         container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(rosterText.slice(0, 4000))
+            new TextDisplayBuilder().setContent(signupText.slice(0, 4000))
         )
     }
-
-    const publishedRoster = payload.rosters.find(
-        (item) => item.eventId === event.id && item.published
-    )
-    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
 
     const generatedRosterImageUrl = publishedRoster
         ? buildRosterImageUrl(
@@ -259,7 +293,6 @@ export function buildAnnouncementV2Message(
                                 `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}:${payload.config.guildId}`
                             )
                             .setStyle(ButtonStyle.Success)
-                            .setEmoji("✅")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -269,8 +302,7 @@ export function buildAnnouncementV2Message(
                             .setCustomId(
                                 `check-signup:${event.id}:${payload.config.guildId}`
                             )
-                            .setStyle(ButtonStyle.Primary)
-                            .setEmoji("🔎")
+                            .setStyle(ButtonStyle.Secondary)
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -281,7 +313,6 @@ export function buildAnnouncementV2Message(
                                 `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${payload.config.guildId}`
                             )
                             .setStyle(ButtonStyle.Danger)
-                            .setEmoji("❌")
                             .setLabel(
                                 getClanDiscordMessages(
                                     payload.config.defaultLanguage
@@ -345,6 +376,82 @@ export function buildCompactV2FieldText(fields: APIEmbedField[]) {
         .join("\n\n")
 }
 
+function formatRosterPlayerName(
+    player: Roster["squads"][number]["players"][number],
+    userDisplayNames: Record<string, string>
+) {
+    const customName = player.customName?.trim()
+    if (customName) return escapeDisplayName(customName)
+    return player.id
+        ? resolveAnnouncementDisplayName(player.id, userDisplayNames)
+        : undefined
+}
+
+/**
+ * Published roster overview: meeting time and channel, one line per squad
+ * with its player count (a one-player squad such as Command shows the name)
+ * and the reserves. Empty slots are not counted.
+ */
+export function buildRosterSummaryText(
+    config: DiscordConfig,
+    event: EventRecord,
+    roster: Roster,
+    userDisplayNames: Record<string, string> = {}
+) {
+    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const lines: string[] = []
+    const meeting = discordTimestamp(event.meetingStart, "t")
+    const meetingRelative = discordTimestamp(event.meetingStart, "R")
+    if (meeting) {
+        const time = meetingRelative
+            ? `${meeting} (${meetingRelative})`
+            : meeting
+        const channelId =
+            event.meetingChannelId?.trim() || config.meetingChannelId?.trim()
+        lines.push(
+            channelId
+                ? fillTemplate(messages.rosterSummary.meetingInChannel, {
+                      time,
+                      channel: `<#${channelId}>`,
+                  })
+                : fillTemplate(messages.rosterSummary.meeting, { time })
+        )
+    }
+    const squads = [...roster.squads].sort(
+        (left, right) => left.order - right.order
+    )
+    for (const squad of squads) {
+        const players = squad.players.filter(
+            (player) => player.id || player.customName?.trim()
+        )
+        if (!players.length) continue
+        const onlyName =
+            players.length === 1
+                ? formatRosterPlayerName(players[0]!, userDisplayNames)
+                : undefined
+        lines.push(
+            `**${escapeDisplayName(toSingleLine(squad.name))}** · ${
+                onlyName ??
+                formatCount(
+                    messages.locale,
+                    players.length,
+                    messages.rosterSummary.players
+                )
+            }`
+        )
+    }
+    if (roster.reservePlayerIds.length) {
+        lines.push(
+            `**${messages.rosterImage.reserves}** · ${formatCount(
+                messages.locale,
+                roster.reservePlayerIds.length,
+                messages.rosterSummary.players
+            )}`
+        )
+    }
+    return lines.join("\n")
+}
+
 function escapeDisplayName(value: string) {
     return value.replace(/([\\`*_{}[\]()#+\-.!|>~])/g, "\\$1")
 }
@@ -354,9 +461,12 @@ function resolveAnnouncementDisplayName(
     userDisplayNames: Record<string, string>
 ) {
     const displayName = userDisplayNames[userId]?.trim()
-    return escapeDisplayName(
-        displayName && displayName.length > 0 ? displayName : userId
-    )
+    if (displayName) return escapeDisplayName(displayName)
+    // Without a stored name a Discord mention still shows the member's name
+    // (messages are sent without pinging); never print a raw snowflake.
+    return /^\d{17,20}$/.test(userId)
+        ? `<@${userId}>`
+        : escapeDisplayName(userId)
 }
 
 function normalizeCategoryId(value?: string) {
@@ -454,6 +564,101 @@ function buildInlineFieldPadding(fieldCount: number): APIEmbedField[] {
     }))
 }
 
+/** Separates the header, notes and status blocks (also splits V2 cards). */
+const DESCRIPTION_BLOCK_SEPARATOR = "----------------------------------------"
+const DISCORD_EMBED_TITLE_LIMIT = 256
+const DISCORD_EMBED_DESCRIPTION_LIMIT = 4096
+
+/** "Name · Category"; trainings and uncategorised events keep the name. */
+export function formatEventTitle(
+    categories: SyncPayload["guild"]["eventCategories"],
+    event: EventRecord
+) {
+    const categoryLabel = resolveEventCategoryLabel(categories, event)?.trim()
+    return truncateUtf16(
+        categoryLabel && categoryLabel !== event.name.trim()
+            ? `${event.name} · ${categoryLabel}`
+            : event.name,
+        DISCORD_EMBED_TITLE_LIMIT
+    )
+}
+
+/**
+ * Public event card text in the clan language. Times are Discord timestamps,
+ * so every reader sees them in their own zone. A match server and its password
+ * never appear here: rostered players see both under "My assignment".
+ */
+function buildEventDescription(
+    config: DiscordConfig,
+    event: EventRecord,
+    options: { signedUpCount?: number; forumChannelId?: string }
+) {
+    const messages = getClanDiscordMessages(config.defaultLanguage)
+    const header: string[] = []
+    if (event.kind === "match" && event.side) {
+        header.push(`**${messages.embed.side}:** ${event.side}`)
+    }
+    const matchTeamsSummary = formatMatchTeamsSummary(event)
+    if (matchTeamsSummary) {
+        header.push(`**🛡️ ${messages.embed.teams}:** ${matchTeamsSummary}`)
+    }
+    const start = discordTimestamp(event.gameStart, "F")
+    if (start) {
+        header.push(
+            `**${event.kind === "training" ? messages.embed.trainingStart : messages.embed.matchStart}:** ${start}`
+        )
+    }
+    const meeting = discordTimestamp(event.meetingStart, "t")
+    // A closed registration is shown by the status, not a past deadline.
+    const registrationEnd = isSignupOpen(event)
+        ? discordTimestamp(event.registrationEnd, "R")
+        : undefined
+    const facts = [
+        event.kind === "match" && event.map
+            ? (formatHllPresetLabel(event.map) ?? event.map)
+            : undefined,
+        event.kind === "match" && event.cap
+            ? `${messages.embed.cap} ${event.cap}`
+            : undefined,
+        meeting
+            ? fillTemplate(messages.embed.meetingAt, { time: meeting })
+            : undefined,
+        registrationEnd
+            ? fillTemplate(messages.embed.registrationCloses, {
+                  time: registrationEnd,
+              })
+            : undefined,
+    ].filter((fact): fact is string => Boolean(fact))
+    if (facts.length) header.push(facts.join(" · "))
+    // Trainings have no roster assignment to carry the server privately.
+    if (event.kind === "training" && event.server) {
+        header.push(`**${messages.embed.server}:** ${event.server}`)
+    }
+
+    const notes = formatDiscordMarkdown(event.notes || event.description)
+    const status = [
+        options.signedUpCount === undefined
+            ? undefined
+            : `**${fillTemplate(messages.embed.signedUpTotal, {
+                  count: String(options.signedUpCount),
+              })}**`,
+        `${messages.embed.status}: ${formatEventStatus(event.status, config.defaultLanguage)}`,
+    ]
+        .filter(Boolean)
+        .join(" · ")
+    const footer = [
+        status,
+        options.forumChannelId
+            ? `${messages.embed.eventForum}: <#${options.forumChannelId}>`
+            : undefined,
+    ].filter(Boolean)
+
+    return [header.join("\n"), notes, footer.join("\n")]
+        .filter(Boolean)
+        .join(`\n${DESCRIPTION_BLOCK_SEPARATOR}\n`)
+        .slice(0, DISCORD_EMBED_DESCRIPTION_LIMIT)
+}
+
 export function buildEventEmbed(
     config: DiscordConfig,
     groups: Group[],
@@ -498,97 +703,25 @@ export function buildEventEmbed(
         )
     }
 
-    const gameStartUnix = Math.floor(new Date(event.gameStart).getTime() / 1000)
-    const meetingUnix = Math.floor(
-        new Date(event.meetingStart).getTime() / 1000
-    )
-    const regEndUnix = Math.floor(
-        new Date(event.registrationEnd).getTime() / 1000
-    )
-    const descriptionLines: string[] = []
-
-    if (event.kind === "match") {
-        descriptionLines.push(
-            `**👥 ${messages.embed.headcountStart}:** <t:${meetingUnix}:F>`
-        )
-        descriptionLines.push(
-            `**🎮 ${messages.embed.matchStart}:** <t:${gameStartUnix}:F>`
-        )
-        descriptionLines.push(
-            `**🔒 ${messages.embed.registrationEnds}:** <t:${regEndUnix}:F>`
-        )
-        descriptionLines.push("----------------------------------------")
-    }
-
-    if (event.kind === "match" && event.map)
-        descriptionLines.push(
-            `**🗺️ ${messages.embed.map}:** ${formatHllPresetLabel(event.map) ?? event.map}`
-        )
-    if (event.kind === "match" && event.side)
-        descriptionLines.push(`**⚔️ ${messages.embed.side}:** ${event.side}`)
-    const matchTeamsSummary = formatMatchTeamsSummary(event)
-    if (matchTeamsSummary)
-        descriptionLines.push(
-            `**🛡️ ${messages.embed.teams}:** ${matchTeamsSummary}`
-        )
-    if (event.kind === "match" && event.cap)
-        descriptionLines.push(`**🎯 ${messages.embed.cap}:** ${event.cap}`)
-    if (event.server)
-        descriptionLines.push(
-            `**🖥️ ${messages.embed.server}:** ${event.server}`
-        )
-    if (event.kind === "match" && event.serverPassword) {
-        descriptionLines.push(
-            `**🔑 ${messages.embed.password}:** \`${event.serverPassword}\``
-        )
-    }
-    if (event.description || event.notes) {
-        descriptionLines.push(
-            `**📝 ${messages.embed.description}:** ${formatDiscordMarkdown(event.notes || event.description)}`
-        )
-    }
-    if (descriptionLines.length > 0) {
-        descriptionLines.push("----------------------------------------")
-    }
-
-    if (event.kind === "training") {
-        descriptionLines.push(
-            `**🔒 ${messages.embed.registrationEnds}:** <t:${regEndUnix}:R> (<t:${regEndUnix}:f>)`
-        )
-        descriptionLines.push(
-            `**👥 ${messages.embed.meeting}:** <t:${meetingUnix}:t>`
-        )
-        descriptionLines.push(
-            `**🎯 ${messages.embed.trainingStart}:** <t:${gameStartUnix}:F>`
-        )
-    }
-    const categoryLabel = resolveEventCategoryLabel(categories, event)
-    if (categoryLabel) {
-        descriptionLines.push(
-            `**🏷️ ${messages.calendar.matchLabel}:** ${categoryLabel}`
-        )
-    }
-    descriptionLines.push(
-        `**📌 ${messages.embed.status}:** ${formatEventStatus(event.status, config.defaultLanguage)}`
-    )
-    if (!options?.hideSignupDetails) {
-        const signedUpCount = signups.filter(
-            (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
-        ).length
-        descriptionLines.push(
-            `**👥 ${messages.embed.signupCount}:** ${signedUpCount}`
-        )
-    }
-    if (options?.forumChannelId) {
-        descriptionLines.push(
-            `**💬 ${messages.embed.eventForum}:** <#${options.forumChannelId}>`
-        )
-    }
-
+    const signedUpCount = signups.filter(
+        (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
+    ).length
     const embed = new EmbedBuilder()
-        .setTitle(`📅 ${event.name}`)
-        .setDescription(formatDiscordMarkdown(descriptionLines.join("\n")))
-        .setColor(toDiscordColor(resolveEventCategoryColor(categories, event)))
+        .setTitle(formatEventTitle(categories, event))
+        .setDescription(
+            buildEventDescription(config, event, {
+                signedUpCount: options?.hideSignupDetails
+                    ? undefined
+                    : signedUpCount,
+                forumChannelId: options?.forumChannelId,
+            })
+        )
+        .setColor(
+            resolveMessageAccentColor({
+                categoryColor: findEventCategory(categories, event.matchType)
+                    ?.color,
+            })
+        )
         .setFooter({ text: messages.embed.managedFooter })
 
     if (event.thumbnailUrl) {
@@ -629,7 +762,7 @@ export function buildEventEmbed(
             const members = signupsByGroup.get(group.name) ?? []
             signupSections.push(
                 buildInlineSignupFields(
-                    `${group.discordEmoji ?? "👥"} ${group.name} (${members.length})`,
+                    `${group.discordEmoji ? `${group.discordEmoji} ` : ""}${group.name} (${members.length})`,
                     members,
                     messages.embed.nobodyYet
                 )
@@ -912,7 +1045,6 @@ export function buildEventComponents(
                 new ButtonBuilder()
                     .setStyle(ButtonStyle.Link)
                     .setLabel(messages.buttons.addToCalendar)
-                    .setEmoji("➕")
                     .setURL(generateCalendarUrl(event, config.defaultLanguage))
             ),
         ]
@@ -923,7 +1055,6 @@ export function buildEventComponents(
             new ButtonBuilder()
                 .setStyle(ButtonStyle.Link)
                 .setLabel(messages.buttons.addToCalendar)
-                .setEmoji("➕")
                 .setURL(generateCalendarUrl(event, config.defaultLanguage))
         ),
     ]
@@ -981,17 +1112,23 @@ export function buildForumInfoEmbed(
                 inline: true,
             },
             {
+                // Forum channels inherit their category's permissions, so the
+                // password stays in the private "My assignment" reply.
                 name: messages.forum.serverPassword,
-                value: event.serverPassword ?? messages.forum.notSet,
+                value: event.serverPassword?.trim()
+                    ? messages.forum.passwordInAssignment
+                    : messages.forum.notSet,
                 inline: true,
             },
             {
                 name: messages.forum.gameStart,
-                value: formatInTimezone(
-                    event.gameStart,
-                    config.timezone,
-                    config.defaultLanguage
-                ),
+                value:
+                    discordTimestamp(event.gameStart, "F") ??
+                    formatInTimezone(
+                        event.gameStart,
+                        config.timezone,
+                        config.defaultLanguage
+                    ),
                 inline: true,
             }
         )
@@ -1003,22 +1140,23 @@ export function buildForumInfoEmbed(
             })
         }
     } else {
-        embed.addFields(
-            {
-                name: messages.embed.meeting,
-                value: formatInTimezone(
-                    event.meetingStart,
-                    config.timezone,
-                    config.defaultLanguage
-                ),
-                inline: true,
-            },
-            {
-                name: messages.forum.server,
-                value: event.meetingChannelId ?? messages.forum.notSet,
-                inline: true,
-            }
-        )
+        const meetingChannelId = event.meetingChannelId?.trim()
+        embed.addFields({
+            name: messages.embed.meeting,
+            value: [
+                discordTimestamp(event.meetingStart, "F") ??
+                    formatInTimezone(
+                        event.meetingStart,
+                        config.timezone,
+                        config.defaultLanguage
+                    ),
+                // A channel mention shows the channel name, never a raw ID.
+                meetingChannelId ? `<#${meetingChannelId}>` : undefined,
+            ]
+                .filter(Boolean)
+                .join(" · "),
+            inline: true,
+        })
     }
 
     return embed
@@ -1733,24 +1871,20 @@ function buildSignupButtons(
                         `signup:${eventId}:${encodeURIComponent(TRAINING_ATTEND)}`
                     )
                     .setStyle(ButtonStyle.Success)
-                    .setEmoji("✅")
                     .setLabel(messages.buttons.attend),
                 new ButtonBuilder()
                     .setCustomId(`check-signup:${eventId}`)
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji("🔎")
+                    .setStyle(ButtonStyle.Secondary)
                     .setLabel(messages.buttons.checkSignup),
                 new ButtonBuilder()
                     .setCustomId(
                         `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
                     )
                     .setStyle(ButtonStyle.Danger)
-                    .setEmoji("❌")
                     .setLabel(messages.buttons.decline),
                 new ButtonBuilder()
                     .setStyle(ButtonStyle.Link)
                     .setLabel(messages.buttons.addToCalendar)
-                    .setEmoji("➕")
                     .setURL(generateCalendarUrl(event, config.defaultLanguage))
             ),
         ]
@@ -1770,7 +1904,6 @@ function buildSignupButtons(
                           `signup:${eventId}:${encodeURIComponent(SIGNUP_GENERAL)}`
                       )
                       .setStyle(ButtonStyle.Success)
-                      .setEmoji("✅")
                       .setLabel(messages.buttons.generalSignup),
               ]
             : []),
@@ -1791,20 +1924,17 @@ function buildSignupButtons(
         }),
         new ButtonBuilder()
             .setCustomId(`check-signup:${eventId}`)
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji("🔎")
+            .setStyle(ButtonStyle.Secondary)
             .setLabel(messages.buttons.checkSignup),
         new ButtonBuilder()
             .setCustomId(
                 `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
             )
             .setStyle(ButtonStyle.Danger)
-            .setEmoji("❌")
             .setLabel(messages.buttons.decline),
         new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel(messages.buttons.addToCalendar)
-            .setEmoji("➕")
             .setURL(generateCalendarUrl(event, config.defaultLanguage)),
     ]
 

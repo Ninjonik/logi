@@ -14,6 +14,9 @@ export type SettingsGroupId = (typeof SETTINGS_GROUPS)[number]
 export const SETTINGS_SECTIONS = [
     { id: "profile", group: "clan" },
     { id: "games", group: "clan" },
+    { id: "event-categories", group: "clan" },
+    { id: "match-templates", group: "matches" },
+    { id: "presets", group: "matches" },
     { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
     { id: "roles", group: "discord" },
@@ -23,7 +26,6 @@ export const SETTINGS_SECTIONS = [
     { id: "game-servers", group: "gameData" },
     { id: "league", group: "gameData", games: ["wardogs"] },
     { id: "website", group: "web" },
-    { id: "login", group: "web" },
     { id: "calendar", group: "web" },
     { id: "webhooks", group: "web" },
     { id: "imports", group: "maintenance" },
@@ -38,6 +40,17 @@ export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]["id"]
 
 export function isSettingsSectionId(value: string): value is SettingsSectionId {
     return SETTINGS_SECTIONS.some((section) => section.id === value)
+}
+
+/** Pages that were merged into another page; old links redirect to it. */
+const MERGED_SETTINGS_SECTIONS: ReadonlyMap<string, SettingsSectionId> =
+    new Map([["login", "website"]])
+
+/** The page that now holds a merged page's settings, if `value` names one. */
+export function mergedSettingsSection(
+    value: string
+): SettingsSectionId | undefined {
+    return MERGED_SETTINGS_SECTIONS.get(value)
 }
 
 /** Sections a clan can open; game-specific pages appear only for clans playing that game. */
