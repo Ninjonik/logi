@@ -3,6 +3,7 @@ import type { MessageCreateOptions } from "discord.js"
 import {
     isNewMap,
     nextMapChange,
+    planPanelAttachments,
     resolvePanelAccent,
     resolvePanelMapImage,
     resolvePanelStyle,
@@ -342,20 +343,29 @@ async function serverFacts(
     return { facts: fallback(), busyMs: null }
 }
 
-function filesOf(
-    images: Array<{
-        name: string
-        bytes: Uint8Array
-        description: string
-    } | null>
-) {
-    return images
-        .filter((image): image is NonNullable<typeof image> => Boolean(image))
-        .map((image) => ({
-            attachment: Buffer.from(image.bytes),
-            name: image.name,
-            description: image.description.slice(0, 1024),
-        }))
+type PanelFile = {
+    name: string
+    bytes: Uint8Array
+    description: string
+}
+
+/** The images of one message within Discord's attachment limit, score first (P7-B06). */
+function filesOf(images: {
+    score: PanelFile | null
+    banner: PanelFile | null
+    thumbnail: PanelFile | null
+}) {
+    const planned = (["score", "banner", "thumbnail"] as const).flatMap(
+        (role) => {
+            const image = images[role]
+            return image ? [{ ...image, role }] : []
+        }
+    )
+    return planPanelAttachments(planned).attached.map((image) => ({
+        attachment: Buffer.from(image.bytes),
+        name: image.name,
+        description: image.description.slice(0, 1024),
+    }))
 }
 
 async function runLive(
@@ -645,7 +655,7 @@ async function runLive(
             report: `report:open:${panel._id}:${panel.revision}`,
         },
     })
-    const files = filesOf([score, banner, thumbFile])
+    const files = filesOf({ score, banner, thumbnail: thumbFile })
     const message: MessageCreateOptions = {
         ...messagePayload(view, {
             language: pass.language,
@@ -680,11 +690,16 @@ async function runCombined(
     handledRequestAt: number | null
 ): Promise<PanelRunResult> {
     if (!panel.servers.length) throw new PanelPassError("source_missing")
+    const channel = await ports.channelAccess(panel.channelId)
+    if (!channel) throw new PanelPassError("channel_missing")
     const copy = getPanelMessages(pass.language)
     const look = resolvePanelPresentation(panel)
     const content = resolvePanelContent(panel.content)
+    const warnings: PanelWarning[] = []
+    if (!channel.canAttach) warnings.push("attach_files_missing")
+    const thumbFiles: PanelFile[] = []
     // Public data only: snapshots, no live roster, no password, no match (P4-B08).
-    const servers = panel.servers.map((server) => {
+    const rows = panel.servers.map((server) => {
         const facts = server.snapshot
             ? snapshotLiveFacts(server.snapshot)
             : {
@@ -735,6 +750,41 @@ async function runCombined(
             ),
         }
     })
+    // Each row carries its current map on the right (P7-B09).
+    const servers = await Promise.all(
+        rows.map(async (row) => {
+            const mapKey = row.facts.map?.key ?? null
+            const image =
+                look.layout.showMap && panel.artwork && mapKey
+                    ? resolvePanelMapImage({
+                          game: row.facts.game,
+                          mapKey,
+                          overrides: pass.graphics.mapOverrides,
+                      })
+                    : null
+            let thumbnail: MessageMedia | null = null
+            if (image?.kind === "override")
+                thumbnail = {
+                    url: image.url,
+                    description: panelImageCopy(pass.language).alt.map(
+                        row.facts.map?.name ?? ""
+                    ),
+                }
+            else if (image && channel.canAttach) {
+                const file = await ports
+                    .mapImage(row.facts.game, mapKey, "thumb")
+                    .catch(() => null)
+                if (file) {
+                    thumbFiles.push(file)
+                    thumbnail = {
+                        url: `attachment://${file.name}`,
+                        description: file.description,
+                    }
+                }
+            }
+            return { ...row, thumbnail }
+        })
+    )
     const view = combinedPanelView({
         copy: copy.live,
         language: pass.language,
@@ -749,15 +799,39 @@ async function runCombined(
     })
     if (isPanelPaused(panel) && view.header)
         view.header.chips = [{ label: copy.live.state.paused, tone: "neutral" }]
+    // Attach only the maps the view shows; a loose file would appear under it.
+    const shown = new Set(
+        view.blocks.flatMap((block) =>
+            block.kind === "fields"
+                ? block.items.flatMap((item) =>
+                      item.thumbnail?.url.startsWith("attachment://")
+                          ? [item.thumbnail.url.slice("attachment://".length)]
+                          : []
+                  )
+                : []
+        )
+    )
+    const files = planPanelAttachments(
+        thumbFiles
+            .filter((file) => shown.has(file.name))
+            .map((file) => ({ ...file, role: "thumbnail" as const }))
+    ).attached.map((file) => ({
+        attachment: Buffer.from(file.bytes),
+        name: file.name,
+        description: file.description.slice(0, 1024),
+    }))
     await ports.publish({
         key: keyOf(panel),
         revision: panel.revision,
         channelId: panel.channelId,
-        message: messagePayload(view, {
-            language: pass.language,
-            style: pass.style,
-            chipIcons: chipIcons(pass.emoji),
-        }),
+        message: {
+            ...messagePayload(view, {
+                language: pass.language,
+                style: pass.style,
+                chipIcons: chipIcons(pass.emoji),
+            }),
+            ...(files.length ? { files } : {}),
+        },
     })
     const dataAt = Math.max(
         0,
@@ -767,6 +841,7 @@ async function runCombined(
         attempt: attempt(pass, {
             handledRequestAt,
             dataAt: dataAt || null,
+            warnings,
             messages: 1,
             nextAt: isPanelPaused(panel) ? null : pass.now + REFRESH_MS,
         }),

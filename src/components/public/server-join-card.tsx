@@ -80,8 +80,9 @@ export function ServerJoinCard({
         }
     }
 
+    // The name is the heading when Steam is not being opened.
     const facts = [
-        name,
+        connectUrl ? name : null,
         players !== null && capacity !== null
             ? copy.players
                   .replace("{players}", String(players))
@@ -127,7 +128,7 @@ export function ServerJoinCard({
                             ? copy.addressLabel
                             : copy.joinCodeLabel}
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                         <Input
                             id={inputId}
                             readOnly
@@ -139,6 +140,7 @@ export function ServerJoinCard({
                             type="button"
                             variant="outline"
                             onClick={copyValue}
+                            className="self-start sm:self-auto"
                         >
                             {copied === "copied" ? (
                                 <Check aria-hidden="true" />

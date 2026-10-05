@@ -440,6 +440,66 @@ test("Naše servery lists public data only, never a password or players", async 
     )
 })
 
+test("each Naše servery row shows its map, attached once and only when shown", async () => {
+    const fake = fakes({
+        mapImage: async () => ({
+            name: "mapa-utah-beach-0f1e2d.webp",
+            bytes: new Uint8Array([1, 2, 3]),
+            description: "Utah Beach",
+        }),
+    })
+    const base = panel({ artwork: true })
+    await runPanel(
+        panel({
+            kind: "servers",
+            artwork: true,
+            connectionId: undefined,
+            connectionIds: ["hll-1"],
+            servers: [base.servers[0]!],
+        }),
+        pass,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    const message = fake.published[0]!.message
+    assert.deepEqual(
+        (message.files ?? []).map((file) =>
+            typeof file === "object" && file && "name" in file
+                ? file.name
+                : null
+        ),
+        ["mapa-utah-beach-0f1e2d.webp"]
+    )
+    assert.match(
+        JSON.stringify(
+            message.components?.map((c) => ("toJSON" in c ? c.toJSON() : c))
+        ),
+        /attachment:\/\/mapa-utah-beach-0f1e2d\.webp/
+    )
+    // Without Attach Files the rows stay text only.
+    const plain = fakes({
+        channelAccess: async () => ({
+            everyoneCanView: true,
+            canAttach: false,
+        }),
+        mapImage: fake.ports.mapImage,
+    })
+    const outcome = await runPanel(
+        panel({
+            kind: "servers",
+            artwork: true,
+            connectionId: undefined,
+            connectionIds: ["hll-1"],
+            servers: [base.servers[0]!],
+        }),
+        pass,
+        plain.ports,
+        createPanelRunMemory()
+    )
+    assert.equal(plain.published[0]!.message.files, undefined)
+    assert.deepEqual(outcome?.attempt.warnings, ["attach_files_missing"])
+})
+
 const result = (index: number): ResultEvent => ({
     id: `events:${index}`,
     name: `Zápas ${index}`,

@@ -2,7 +2,49 @@
 
 Public server/score panels and reviewed results are configured in the Discord
 settings of a Logi workspace. This implementation follows the
-[approved compact design](roadmap/discord-public-panels.md).
+[approved compact design](roadmap/discord-public-panels.md) and, since the
+Discord redesign, the panel contract in
+[PANELS-API.md](../../superpowers/specs/discord-redesign/PANELS-API.md).
+
+## Panels in Discord (redesign)
+
+The redesign (spec `docs/superpowers/specs/2026-10-05-discord-redesign-design.md`,
+boards L3, P4–P8) turns the panels into one model with explicit delivery:
+
+- **Kinds**: `server` (one per game server; live score and server status are
+  one kind, old `scoreboard` rows read as `server`), `servers` ("Naše servery"),
+  `results` (one per game), `league`, `calendar` and `competition`. All use the
+  shared `panelFrame` (Components V2) with a state chip: Živě, Prázdný,
+  Seedujeme, Nedostupný, Pozastaveno. Every live panel refreshes every 60 s.
+- **Delivery**: a new panel is a draft until "Odeslat do kanálu". Dashboard
+  actions (send, refresh, pause/resume, retry, delete message, remove) are
+  application use-cases (`src/application/discord-publications/panel-actions.ts`)
+  behind dashboard-authenticated Convex mutations; each stamps `requestedAt`,
+  which the bot answers within 15 s and reports as `handledRequestAt`. Pause is
+  a real `paused` flag (legacy rows read `!enabled`).
+- **Status**: the bot reports every pass (`discordPanelBot:report`) with a typed
+  error code, missing permission names, warnings and timing; the dashboard
+  turns the code into a plain sentence with its fix step. The bot writes a
+  heartbeat with its version every 30 s.
+- **Test fetch**: `discordPanels:testFetch` runs the CRCON or Warcon live read
+  with the admin's session and returns the provider status, a summary and the
+  rendered preview, never a key, address or password. HLL live reads accept a
+  current clan admin (`actor`) in addition to scoped keys and panels.
+- **Server password**: sealed with the AES-256-GCM credential keyring
+  (`LOGI_CREDENTIAL_KEYRING`, AAD bound to the workspace and server) in the
+  Next server, stored in `discordPanelServers`, decrypted only by the
+  `discordPanelSecrets:serverPassword` action after the bot confirmed that
+  `@everyone` cannot view the channel, re-checked on every refresh. When the
+  channel turns public the password is withheld and the errors channel is told
+  once. Never on "Naše servery", the join page or in any response.
+- **Join page**: `/join/<slug>` opens `steam://connect/<ip:port>` with a manual
+  fallback, shows the Wardogs join code, needs no login and reads only
+  `discordPanelBot:joinPage`.
+- **Clan-only facts**: in a channel `@everyone` cannot view, the live panel
+  shows the running Logi match and "Z klanu hraje" (verified Steam links of
+  workspace members) and drops the report button.
+- **Results**: a new results panel posts the last five confirmed results, then
+  each new one; corrections edit the card and say the previous score.
 
 ## Configuration
 
@@ -27,8 +69,8 @@ Publishing verifies the current guild, bot ownership and permissions again.
 Disabling remains possible after the bot loses access; the resulting paused card
 can only be displayed after access is restored.
 
-The refresh selector supports 30, 60 and 300 seconds. An independent bot worker
-checks settings every 15 seconds. Saving an existing feature requests a refresh.
+Every panel refreshes every 60 s; the `refreshSeconds` stored by older forms is
+ignored. An independent bot worker checks settings every 15 seconds. Saving an existing feature requests a refresh.
 Discord errors back off; changing settings never discards an uncertain create.
 Last success, pending recovery, the owned message link and delivery errors are
 visible in settings. HLL CRCON and Warcon use scoped live reads with their shared
@@ -36,8 +78,9 @@ cache, lease and provider budget. See [HLL live data and private reports](hll-li
 
 ## Content and privacy
 
-- Combined server/score and separate score panels show game/server, map,
-  players/capacity, supported faction scores and an observation timestamp.
+- Server panels show game/server, map, players/capacity, supported faction
+  scores and an observation timestamp; HLL also the queue, next map and day or
+  night when CRCON reports them.
 - Missing counts are unknown, never fabricated zeroes. Old values are labeled.
 - Public Warcon leaders are a separate **off-by-default** setting (`showLeaders`):
   top three by kills and cash overall, plus the best killer and cash holder for
@@ -69,10 +112,10 @@ cache, lease and provider budget. See [HLL live data and private reports](hll-li
 - Results use only explicitly reviewed, game-matching event results. New reviews
   since feature creation publish one message per event. Corrections edit that
   binding. Withdrawal, deletion or disabling the results feature removes its
-  owned messages. Existing historical results are not backfilled automatically.
+  owned messages. A new results panel backfills the last five confirmed
+  results, oldest first.
 - The dashboard controls have Czech and English labels; the Appearance section
-  also has German labels. Public bot copy currently uses an intentional English
-  fallback, consistent across supported games.
+  also has German labels. Bot copy follows the clan language (cs, en, de).
 - Website deep links are not guessed: different Logi guilds have different public
   sites and event identifiers. This iteration exposes player details and the
   dashboard's exact Discord message link; public site links need a confirmed
@@ -261,17 +304,22 @@ current draft and is dropped if the editor was remounted for another panel.
 
 ## API and activation
 
-The dashboard session API is `GET/POST
-/api/servers/{serverId}/discord-public-panels`; `POST ?verify=1` verifies a channel
-without saving. Input is bounded to 4 KiB and strictly validated. Write requests
+The redesigned dashboard routes are under
+`/api/servers/{serverId}/discord-panels` (overview, save, actions, test fetch,
+channel check, server join details); see
+[PANELS-API.md](../../superpowers/specs/discord-redesign/PANELS-API.md). The
+older form's session API `GET/POST
+/api/servers/{serverId}/discord-public-panels` keeps working; `POST ?verify=1`
+verifies a channel without saving. Input is bounded to 4 KiB and strictly validated. Write requests
 reject cross-origin callers. The final mutation takes the server-attested actor,
 never an actor supplied in the request body.
 
 **Deliberate v1 exclusion:** existing website bearer read grants cannot configure
 Discord publication, panel appearance, banner uploads or application emoji.
-These actions cause messages in a
-third-party guild and require the current interactive administrator, including
-revocation checks. There is no new bearer management endpoint or broadened key
+These actions, and the redesign's live actions (send, refresh, pause, retry,
+delete message, test fetch, channel check, server password), cause messages or
+provider reads for a third-party guild and require the current interactive
+administrator, including revocation checks. There is no new bearer management endpoint or broadened key
 scope. Game-data and reviewed-result read APIs remain unchanged.
 
 Deploy the schema/functions to the intended backend, deploy the matching bot and

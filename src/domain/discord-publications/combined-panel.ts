@@ -1,4 +1,5 @@
 import {
+    DISCORD_MESSAGE_LIMITS,
     escapeMarkdownText,
     panelFrame,
     type MessageButton,
@@ -32,6 +33,8 @@ export type CombinedServer = {
     joinUrl: string | null
     /** The server can be joined: an address (HLL) or a join code (Wardogs). */
     joinable: boolean
+    /** The current map on the right of the row (P7-B09); null without one. */
+    thumbnail: MessageMedia | null
 }
 
 export type CombinedPanelInput = {
@@ -75,6 +78,38 @@ function rowText(server: CombinedServer, input: CombinedPanelInput) {
     return parts.join(" · ")
 }
 
+/**
+ * How many rows may carry their map: a row with a thumbnail is a section
+ * (three components instead of one) and the whole message holds at most 40
+ * components, so the first rows keep their map while it fits.
+ */
+export function combinedThumbnailBudget(input: {
+    servers: number
+    joinButtons: number
+    banner: boolean
+    description: boolean
+}) {
+    const rows = Math.ceil(input.joinButtons / 5)
+    const base =
+        1 + // container
+        1 + // header
+        (input.banner ? 1 : 0) +
+        (input.description ? 1 : 0) +
+        input.servers + // one text per row
+        Math.max(0, input.servers - 1) + // dividers between rows
+        1 + // divider above the buttons
+        rows +
+        input.joinButtons +
+        1 // footer
+    return Math.max(
+        0,
+        Math.min(
+            input.servers,
+            Math.floor((DISCORD_MESSAGE_LIMITS.components - base) / 2)
+        )
+    )
+}
+
 export function combinedPanelView(input: CombinedPanelInput): MessageView {
     const { copy } = input
     const fields: MessageField[] = input.servers.map((server) => {
@@ -104,11 +139,27 @@ export function combinedPanelView(input: CombinedPanelInput): MessageView {
                     ? copy.buttons.joinServer(server.title)
                     : copy.buttons.join,
         }))
+    const description = input.description?.trim()
+    const thumbnails = combinedThumbnailBudget({
+        servers: input.servers.length,
+        joinButtons: Math.min(joins.length, 10),
+        banner: Boolean(input.banner),
+        description: Boolean(description),
+    })
+    input.servers.forEach((server, index) => {
+        const field = fields[index]
+        if (
+            field &&
+            server.thumbnail &&
+            index < thumbnails &&
+            server.facts.freshness !== "unavailable"
+        )
+            field.thumbnail = server.thumbnail
+    })
     const dataAt = Math.max(
         0,
         ...input.servers.map((server) => server.facts.dataAt ?? 0)
     )
-    const description = input.description?.trim()
     return panelFrame({
         accentColor: input.accentColor,
         label: `${copy.labelCombined} · ${input.clanName}`,

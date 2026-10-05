@@ -1,8 +1,12 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import {
+    combinedPanelView,
+    combinedThumbnailBudget,
+    type CombinedServer,
+} from "./combined-panel"
 import { renderedView } from "../../infrastructure/testing/message-views"
-import { combinedPanelView, type CombinedServer } from "./combined-panel"
 import { hllLiveFixture } from "../../infrastructure/testing/hll-live"
 import { getPanelMessages } from "../../lib/clan-language/panels"
 import { hllLiveFacts } from "./live-panel"
@@ -25,6 +29,7 @@ function server(
         liveFrom: 40,
         joinUrl: `https://logi.app/join/vlci-${index}`,
         joinable: true,
+        thumbnail: null,
         ...overrides,
     }
 }
@@ -96,4 +101,51 @@ test("an unavailable or unjoinable server has no join button and says why", () =
     assert.match(view.text, /server neodpovídá/)
     assert.match(view.text, /Nedostupný/)
     assert.deepEqual(view.buttons, [])
+})
+
+const map = (index: number) => ({
+    url: `attachment://mapa-utah-${index}.webp`,
+    description: "Utah Beach",
+})
+
+test("each row carries its map on the right while Discord's component limit allows", () => {
+    const few = combinedPanelView({
+        ...base,
+        servers: [1, 2, 3].map((i) => server(i, { thumbnail: map(i) })),
+    })
+    const out = renderedView(few)
+    assert.deepEqual(out.validation, { ok: true, issues: [] })
+    assert.equal(
+        out.layout.nodes.filter((node) => node.type === "section").length,
+        3
+    )
+    const many = combinedPanelView({
+        ...base,
+        servers: Array.from({ length: 10 }, (_, i) =>
+            server(i + 1, { thumbnail: map(i + 1) })
+        ),
+    })
+    const crowded = renderedView(many)
+    assert.deepEqual(crowded.validation, { ok: true, issues: [] })
+    const sections = crowded.layout.nodes.filter(
+        (node) => node.type === "section"
+    ).length
+    assert.equal(
+        sections,
+        combinedThumbnailBudget({
+            servers: 10,
+            joinButtons: 10,
+            banner: false,
+            description: false,
+        })
+    )
+    assert.ok(sections < 10)
+    // An unreachable server shows no map.
+    const down = server(1, { thumbnail: map(1) })
+    down.facts = { ...down.facts, freshness: "unavailable" }
+    assert.equal(
+        renderedView(combinedPanelView({ ...base, servers: [down] })).media
+            .length,
+        0
+    )
 })
