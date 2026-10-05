@@ -10,11 +10,11 @@ import {
     invalidateMembershipGuild,
 } from "./sync/member-access"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
-import { interactionLanguage, replyUnknownError } from "./ui/replies"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
 import { DiscordSyncService } from "./runtime/sync-service"
 import { createInteractionHandler } from "./interactions"
+import { runInteraction } from "./interactions/registry"
 import { logError, logInfo, logWarn } from "./log"
 import { client } from "./discord-client"
 import { env } from "./environment"
@@ -194,8 +194,9 @@ client.once(Events.ClientReady, async (readyClient) => {
     }
 })
 
-client.on(Events.InteractionCreate, async (interaction) => {
-    try {
+client.on(Events.InteractionCreate, (interaction) =>
+    // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
+    runInteraction(interaction, async () => {
         if (interaction.isButton()) {
             if (await handlePublicPanelButton(interaction)) return
             await interactionHandler.handleButtonInteraction(interaction)
@@ -226,35 +227,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return
         }
 
-        if (interaction.isChatInputCommand()) {
+        if (interaction.isChatInputCommand())
             await interactionHandler.handleChatInputCommand(interaction)
-        }
-    } catch (error) {
-        logError("interaction", "Discord interaction failed", {
-            type: interaction.type,
-            customId:
-                "customId" in interaction ? interaction.customId : undefined,
-            commandName:
-                "commandName" in interaction
-                    ? interaction.commandName
-                    : undefined,
-            guildId: interaction.guildId,
-            channelId: interaction.channelId,
-            error,
-        })
-
-        // "Tohle se nepovedlo" in the clan language, private (M3-08).
-        if (interaction.isRepliable())
-            await replyUnknownError(interaction, {
-                language: await interactionLanguage(interaction.guildId),
-            }).catch((replyError) =>
-                logWarn("interaction", "Unknown error reply failed", {
-                    guildId: interaction.guildId,
-                    error: replyError,
-                })
-            )
-    }
-})
+    })
+)
 
 registerMembershipInvalidationEvents(client, {
     invalidate: invalidateMembershipGuild,

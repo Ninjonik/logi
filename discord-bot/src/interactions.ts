@@ -93,6 +93,11 @@ import type {
     TicketThreadRecord,
 } from "./types"
 import {
+    createInteractionRegistry,
+    type InteractionFeatureContext,
+    type InteractionRegistry,
+} from "./interactions/registry"
+import {
     buildMembershipCategorySelectionMessage,
     buildMembershipGameSelectionMessage,
 } from "./message-builders"
@@ -111,6 +116,7 @@ import {
 import { buildMembershipApplicationWelcomeContent } from "./interactions/membership-welcome"
 import { handleMatchRecapPreference } from "./interactions/match-recap-preference"
 import { checkCloseAuthority } from "./interactions/close-authority"
+import { interactionFeatures } from "./interactions/features"
 import { statsController } from "./interactions/stats-live"
 import { reportClanDiscordError } from "./error-reporting"
 import { buildStatsCommand } from "./interactions/stats"
@@ -123,9 +129,9 @@ import { revalidateAppData } from "./cache"
 import { client } from "./discord-client"
 import { env } from "./environment"
 
-type InteractionHandlerOptions = {
-    enqueueEventSync: (eventId: string) => void
-    triggerPollSoon: () => void
+type InteractionHandlerOptions = InteractionFeatureContext & {
+    /** Feature routes; defaults to every module in `interactions/features.ts`. */
+    registry?: InteractionRegistry
 }
 
 type TicketAnswer = {
@@ -588,8 +594,14 @@ async function resolveEventButtonLanguage(
 }
 
 export function createInteractionHandler(options: InteractionHandlerOptions) {
+    // Feature modules register their routes; registered routes win and the
+    // rest of this dispatch stays as it is (interactions/registry.ts).
+    const registry =
+        options.registry ??
+        createInteractionRegistry(interactionFeatures, options)
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
+            if (await registry.routeButton(interaction)) return
             if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("stats:")) {
                 await statsController.button(interaction)
@@ -670,6 +682,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleStringSelectMenuInteraction(
             interaction: StringSelectMenuInteraction
         ) {
+            if (await registry.routeStringSelect(interaction)) return
             if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("signup:")) {
                 await handleEventButtonInteraction(interaction, options)
@@ -681,6 +694,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleModalSubmit(interaction: ModalSubmitInteraction) {
+            if (await registry.routeModal(interaction)) return
             if (await handlePlayerReport(interaction)) return
             if (interaction.customId.startsWith("stats:")) {
                 await statsController.modal(interaction)
@@ -712,6 +726,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleAutocompleteInteraction(
             interaction: AutocompleteInteraction
         ) {
+            if (await registry.routeAutocomplete(interaction)) return
             if (interaction.commandName === "stats") {
                 await statsController.autocomplete(interaction)
             } else if (interaction.commandName === "notice") {
@@ -722,6 +737,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         },
 
         async handleChatInputCommand(interaction: ChatInputCommandInteraction) {
+            if (await registry.routeCommand(interaction)) return
             if (interaction.commandName === "stats") {
                 await statsController.command(interaction)
             } else if (interaction.commandName === "server-status") {
@@ -742,6 +758,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
         async handleChannelSelectMenuInteraction(
             interaction: ChannelSelectMenuInteraction
         ) {
+            if (await registry.routeChannelSelect(interaction)) return
             if (interaction.customId.startsWith("stats:"))
                 await statsController.channel(interaction)
         },
