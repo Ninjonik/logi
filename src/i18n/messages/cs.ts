@@ -2812,9 +2812,9 @@ export const csMessages = {
         noQuestions:
             "Zatím tu nejsou žádné modal otázky. Když to necháte prázdné, kliknutí na tlačítko vytvoří ticket hned.",
         noCategories: "Zatím tu nejsou žádné ticket kategorie.",
-        defaultPanelTitle: "Odeslat ticket",
+        defaultPanelTitle: "Potřebuješ pomoc?",
         defaultPanelDescription:
-            "Vyberte kategorii, která nejlépe odpovídá vašemu problému, a otevřeme pro vás soukromý support thread.",
+            "Vyber, s čím potřebuješ pomoct. Otevře se soukromé vlákno, které vidíš jen ty a správci.",
         incompleteTitle: "Nastavení ticket panelu není kompletní",
         incompleteDescription:
             "Ticket systém je zapnutý, ale Discord ticket panel se nezveřejní a ticket thready nepůjde otevírat, dokud nedokončíte: {items}.",

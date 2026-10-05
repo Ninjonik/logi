@@ -2824,9 +2824,9 @@ export const enMessages = {
         noQuestions:
             "No modal questions yet. If you leave this empty, clicking the button will create the ticket immediately.",
         noCategories: "No ticket categories yet.",
-        defaultPanelTitle: "Submit a ticket",
+        defaultPanelTitle: "Need help?",
         defaultPanelDescription:
-            "Pick the category that fits your issue best and we will open a private support thread for you.",
+            "Choose what you need help with. A private thread opens that only you and the admins can see.",
         incompleteTitle: "Ticket panel setup is incomplete",
         incompleteDescription:
             "The ticket system is enabled, but the Discord ticket panel will not be posted and ticket threads cannot open until you finish: {items}.",

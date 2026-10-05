@@ -13,10 +13,11 @@ The bot creates and maintains the Discord panels after the configuration is
 complete. Configure them in **Settings → Tickets** and **Settings → Membership**.
 
 **Settings → Tickets** shows the on switch, the four steps of a ticket, the
-panel (channel, thread channel, heading, text and optional image) beside a
-preview of the Discord message, and the categories as a table: who answers and
-how many questions each has. **Edit** opens a category's button text, emoji,
-description, support roles and form questions. **Settings → Membership** has
+panel (channel, thread channel, heading, text, optional image and the panel's
+own colour) beside a preview of the exact Discord card the bot posts, and the
+categories as a table: who answers and how many questions each has. **Edit**
+opens a category's button text, emoji, description, the title of its thread
+card, support roles and form questions. **Settings → Membership** has
 the join-request switch at the top and tabs for **Categories**, **Panel and
 threads**, **Attendance points** and **Role changes**; the categories tab lists
 the categories on the left (a category missing a role is flagged) and edits the
@@ -31,10 +32,10 @@ Both workflows require the bot to be running and the selected submit channel to
 be a normal Discord text channel. An incomplete configuration is simply
 skipped: no panel is posted and no partial fallback panel is created.
 
-| Workflow                | Required settings                                                              | What each category adds                                                             |
-| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, support roles, and up to five modal questions    |
-| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles, and up to five modal questions |
+| Workflow                | Required settings                                                              | What each category adds                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, thread card title, support roles, up to five questions |
+| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles, and up to five modal questions       |
 
 The bot posts or updates one panel message in each configured submit channel.
 If its saved panel message is deleted, the next successful sync creates a new
@@ -52,21 +53,51 @@ one. Test after changing channels so staff do not leave an old panel in use.
 
 ### Support ticket
 
+The panel is one card in the clan colour, or in the colour set under **Panel
+colour** (leave it empty for the clan colour). It shows the heading, the text,
+one line per category ("**Report a player** · behaviour on the server") and one
+grey button per category, all equally important, with **Managed in Logi** at
+the bottom. With more than ten categories the buttons become one select. The
+card follows the clan language and has no "Automatic updates" button.
+
 1. The member chooses a category. If the category has questions, Discord shows
-   a modal; otherwise Logi creates the ticket immediately.
+   its window with the category's name, questions and placeholders; otherwise
+   Logi creates the ticket immediately.
 2. The bot creates a private thread under the configured ticket parent channel,
    assigns it a sequential workspace ticket number, and adds the requester plus
    configured category support members where Discord permissions allow.
-   Dashboard administrators are not automatically added.
-3. Logi stores the category, answers, creator, thread, and open state. Staff
-   close the tracked thread with `/close_ticket`, optionally providing a reason.
-4. Logi records who closed it and when, posts a closing record, renames the
-   Discord thread to `closed-<number>`, and attempts to DM the requester. A
-   failed DM does not stop the ticket from closing.
+   Dashboard administrators are not automatically added. The thread is named
+   after the category and number, for example **Report a player #12**.
+3. The thread opens with a card: "TICKET #12 · REPORT A PLAYER", the
+   category's **thread card title** (for example
+   `{author} is reporting a player`; empty reads "Player 17 · Report a
+   player"), the **Open** chip with the time, the questions with their answers and "Support closes the ticket
+   with /close_ticket". Above the card the bot mentions only the author and
+   the category's support roles; nobody else is pinged.
+4. The member gets a private "Ticket #12 is open" with **Open thread**. When
+   tickets are switched off they read "Tickets are switched off right now".
+   If the thread cannot be created or stored, the member reads only "The
+   ticket couldn't be opened. Nothing was saved. The admins have been
+   notified" and the cause (for example a missing bot permission) goes to the
+   errors channel.
 
-Before closing, the bot reloads the current server owner, role permissions and
-staff membership. If Discord cannot confirm them, it leaves the ticket open;
-previously cached administrator access does not authorize closure.
+Staff close the tracked thread with `/close_ticket`, optionally with a reason.
+Logi records who closed it and when, posts the close card in the thread
+("Resolved", the **Closed** chip, who closed it and when, the reason as a
+quote), DMs the author a card with the category, who closed it, the quoted
+reason and **Open thread**, renames the thread to **closed · Report a player
+#12**, then locks and archives it. Without a reason the quote is left out.
+The private reply says whether the author got the DM ("The author can't
+receive DMs; they'll find the summary in the thread"); a failed DM never
+stops the ticket from closing and is not posted to the errors channel.
+
+Before closing, the bot reloads the server, its role definitions and the
+member, the same check as `/close_application`. If Discord cannot confirm
+them, it leaves the ticket open ("Your roles can't be checked right now");
+previously cached administrator access does not authorize closure. Someone
+outside the category's support roles reads who closes that category's
+tickets. Used outside a ticket thread, in a thread that is not a ticket or on
+a closed ticket, the command says so in the clan language.
 
 ### Player reports
 
@@ -196,8 +227,9 @@ can see it.
 ### Test staff closure
 
 Use a configured support role to close the test thread. Then test that an
-unrelated member cannot close it. Confirm the close record, renamed thread, and
-optional DM behavior.
+unrelated member cannot close it. Confirm the close card, the renamed thread
+(**closed · …**), the DM card and, with DMs closed on the test account, the
+reply that the DM could not be delivered.
 
 ### Test a disposable membership role
 

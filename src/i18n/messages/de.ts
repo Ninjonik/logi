@@ -2912,9 +2912,9 @@ export const deMessages = {
         noQuestions:
             "Noch keine Modal-Fragen. Wenn du dies leer lässt, erstellt der Button-Klick sofort das Ticket.",
         noCategories: "Noch keine Ticket-Kategorien.",
-        defaultPanelTitle: "Ticket einreichen",
+        defaultPanelTitle: "Brauchst du Hilfe?",
         defaultPanelDescription:
-            "Wähle die Kategorie, die am besten zu deinem Anliegen passt, und wir öffnen einen privaten Support-Thread für dich.",
+            "Wähle, wobei du Hilfe brauchst. Es öffnet sich ein privater Thread, den nur du und die Admins sehen.",
         incompleteTitle: "Ticket-Panel-Setup ist unvollständig",
         incompleteDescription:
             "Das Ticket-System ist aktiviert, aber das Discord-Ticket-Panel wird nicht gepostet und Ticket-Threads können nicht geöffnet werden, bis du fertigstellst: {items}.",

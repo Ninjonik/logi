@@ -148,7 +148,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             membershipIntro:
                 "Before we can continue your clan application, you need to link a platform ID here in Discord.",
             linkIntro:
-                "Link your platform ID here in Discord. No website or DM handoff is needed anymore.",
+                "Link your platform ID here in Discord.",
             startButton: "Link your platform ID",
             addAnotherButton: "Add another platform ID",
             unlinkButton: "Unlink a platform ID",
@@ -230,7 +230,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             membershipIntro:
                 "Než budeme pokračovat s vaší klanovou přihláškou, musíte si tady v Discordu propojit platform ID.",
             linkIntro:
-                "Propojte si platform ID přímo tady v Discordu. Už není potřeba web ani DM odkaz.",
+                "Propojte si platform ID přímo tady v Discordu.",
             startButton: "Propojit platform ID",
             addAnotherButton: "Přidat další platform ID",
             unlinkButton: "Odpojit platform ID",
@@ -266,7 +266,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             platformPlaystation: "PlayStation",
             guideLinkLabel: "Návod",
             submitIdButton: "Zadat platform ID",
-            continueWithIdButton: "Zadat platform ID a pokračovat",
+            continueWithIdButton: "Zadat ID a pokračovat",
             linkedSuccess: "Vaše platform ID bylo úspěšně propojeno.",
             linkedAndContinuing:
                 "Vaše platform ID bylo propojeno. Pokračuji s klanovou přihláškou.",
@@ -295,14 +295,14 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
                 },
                 xbox: {
                     label: "Xbox ID",
-                    help: "Použijte stejný postup jako v aktuálním flow pro Xbox.",
+                    help: "Je to identifikátor vašeho Xbox profilu.",
                     stepOne: "Otevřete návod.",
                     stepTwo: "Potvrďte správný identifikátor Xbox profilu.",
                     stepThree: "Vložte tento identifikátor do dalšího kroku.",
                 },
                 playstation: {
                     label: "PlayStation ID",
-                    help: "Použijte stejný postup jako v aktuálním flow pro PlayStation.",
+                    help: "Je to identifikátor vašeho PlayStation profilu.",
                     stepOne: "Otevřete návod.",
                     stepTwo:
                         "Potvrďte správný identifikátor PlayStation profilu.",
@@ -465,7 +465,7 @@ const membershipMessages: Record<ClanLanguage, MembershipMessages> = {
             membershipIntro:
                 "Bevor wir mit Ihrer Clan-Bewerbung fortfahren können, müssen Sie hier in Discord eine Platform ID verknüpfen.",
             linkIntro:
-                "Verknüpfen Sie Ihre Platform ID hier in Discord. Eine Website oder DM-Übergabe ist nicht mehr nötig.",
+                "Verknüpfen Sie Ihre Platform ID hier in Discord.",
             startButton: "Platform ID verknüpfen",
             addAnotherButton: "Weitere Platform ID hinzufügen",
             unlinkButton: "Platform ID trennen",
