@@ -296,6 +296,11 @@ in `docs/integrations/website/configuration-coverage.md`.
   both close commands.
 - `DEFAULT_MESSAGE_ACCENT_COLOR` / `DEFAULT_MESSAGE_ACCENT_HEX` (`#E8A33D`) and
   `SYSTEM_MESSAGE_ACCENT_COLOR` (`#80848E`) in `format.ts`.
+- `discordWeekdayTimestamp(iso, locale, timeZone)` in `format.ts`: the boards'
+  "ne 11. 10. · 20:00" as `ne <t:…:d> · <t:…:t>` (weekday in the clan language
+  and zone, date and time as Discord timestamps).
+- `factionEmblem(label, emoji)` (`faction-emblem.ts`): installed application
+  emoji, else the monochrome ★ Allies / ✚ Axis / ◈ Wardogs. No coloured squares.
 
 ## 10. Tests to copy
 

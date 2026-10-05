@@ -63,6 +63,37 @@ export function discordTimestamp(
         : undefined
 }
 
+/**
+ * A short date and time with the weekday, the boards' "ne 11. 10. · 20:00":
+ * the weekday is written in the clan language and time zone, the date and
+ * time are Discord timestamps every reader sees in their own zone. `locale`
+ * is the clan language's Intl locale (`cs-CZ`, …). Undefined for an invalid
+ * date.
+ */
+export function discordWeekdayTimestamp(
+    value: string | number | null | undefined,
+    locale: string,
+    timeZone: string
+): string | undefined {
+    const date = discordTimestamp(value, "d")
+    const time = discordTimestamp(value, "t")
+    if (!date || !time) return undefined
+    const ms = typeof value === "number" ? value : Date.parse(value!)
+    let weekday: string
+    try {
+        weekday = new Intl.DateTimeFormat(locale, {
+            weekday: "short",
+            timeZone,
+        }).format(ms)
+    } catch {
+        weekday = new Intl.DateTimeFormat(locale, {
+            weekday: "short",
+            timeZone: "UTC",
+        }).format(ms)
+    }
+    return `${weekday.replace(/\.$/, "")} ${date} · ${time}`
+}
+
 /** Plural forms keyed by `Intl.PluralRules` categories; `{count}` is replaced. */
 export type PluralForms = {
     one: string
