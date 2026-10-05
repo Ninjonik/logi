@@ -327,6 +327,12 @@ export type EventRecord = {
         offsetHours: number
         sentAt: string
     }>
+    /** Late and "can't make it" notices; older payloads may omit them. */
+    absenceNotices?: Array<{
+        userId: string
+        reason: string
+        createdAt: string
+    }>
     signUps: Array<{
         userId: string
         group?: string | null
@@ -451,4 +457,6 @@ export type EventInteractionContext = {
         status?: "pending" | "recruit" | "active"
     }>
     roster: Roster | null
+    /** Colour of the event's category; absent from older backends. */
+    categoryColor?: string | null
 }

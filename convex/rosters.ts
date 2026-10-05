@@ -1,12 +1,16 @@
 import {
+    DeclineRosterAttendanceUseCase,
     UpdateRosterAttendanceUseCase,
     UpsertRosterUseCase,
 } from "../src/application/rosters/roster-commands.use-case"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
+import { ConvexEventWorkflowRepository } from "../src/infrastructure/convex/event-workflow-repositories"
+import { AttendanceDeclineRejected } from "../src/domain/rosters/attendance-decline"
 import { deriveEventStatus } from "../src/domain/events/status"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { authorizeRosterManager } from "./rosterWriterAccess"
 import { resolveGameScope } from "../src/domain/games/game"
+import { systemClock } from "../src/domain/shared/clock"
 import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
 
@@ -136,6 +140,53 @@ export const acknowledgeAttendance = mutation({
         return await new UpdateRosterAttendanceUseCase(
             new ConvexRosterCommandRepository(ctx)
         ).acknowledge(String(args.eventId), args.userId)
+    },
+})
+
+/**
+ * The bot's "Can't make it" button: a player on the published roster declines
+ * before the game starts. Internal secret only; the guild comes from the
+ * event's own Discord context and must match. Returns `changed: false` for a
+ * repeated identical decline, and a rejection code instead of throwing for
+ * expected refusals so the bot can answer the player in their language.
+ */
+export const declineAttendance = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        eventId: v.id("events"),
+        userId: v.string(),
+        reason: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertSessionGateway(args.secret)
+        const roster = await ctx.db
+            .query("rosters")
+            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+            .unique()
+        if (roster?.guildId !== undefined && roster.guildId !== args.guildId)
+            throw new Error("Attendance unavailable.")
+        try {
+            const result = await new DeclineRosterAttendanceUseCase(
+                new ConvexRosterCommandRepository(ctx),
+                new ConvexEventWorkflowRepository(ctx),
+                systemClock
+            ).execute({
+                guildId: args.guildId,
+                eventId: String(args.eventId),
+                userId: args.userId,
+                reason: args.reason,
+            })
+            return { ...result, rejected: null }
+        } catch (error) {
+            if (error instanceof AttendanceDeclineRejected)
+                return {
+                    ok: false as const,
+                    changed: false,
+                    rejected: error.code,
+                }
+            throw error
+        }
     },
 })
 

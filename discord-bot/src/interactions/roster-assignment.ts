@@ -100,6 +100,8 @@ export function buildRosterAssignmentReply(input: {
     event: EventRecord
     roster: Roster | null
     userId: string
+    /** The event category colour, so the reply matches the event card. */
+    categoryColor?: string | null
 }): RosterAssignmentReply {
     const { config, event, roster, userId } = input
     const messages = getClanDiscordMessages(config.defaultLanguage)
@@ -156,6 +158,7 @@ export function buildRosterAssignmentReply(input: {
         .setTitle(title.slice(0, 256) || messages.embed.myAssignment)
         .setColor(
             resolveMessageAccentColor({
+                categoryColor: input.categoryColor,
                 messageStyle: config.messageStyle,
             })
         )

@@ -262,6 +262,7 @@ export async function handleRosterAssignmentInteraction(
             event: context.event,
             roster: context.roster,
             userId: interaction.user.id,
+            categoryColor: context.categoryColor,
         }),
         ephemeral: true,
     })
