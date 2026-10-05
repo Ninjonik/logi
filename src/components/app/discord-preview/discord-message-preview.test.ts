@@ -173,3 +173,27 @@ test("without a fixed now, relative times show the absolute time so renders stay
     const html = render({ view: frame, now: undefined })
     assert.match(textOf(html), /Aktualizováno 11\. října 2026 v 20:00/)
 })
+
+test("a code block table keeps its columns and shows the ANSI-marked row bold", () => {
+    const html = render({
+        view: panelFrame({
+            label: "Wardogs League · sezóna 2026",
+            title: "WD League · tabulka",
+            content: [
+                {
+                    kind: "text",
+                    markdown:
+                        "```ansi\n #  Tým    B\n\u001b[1;37m›3  VLK   13\u001b[0m\n```",
+                },
+            ],
+            updatedAt: now,
+        }),
+    })
+    assert.match(html, /<pre[^>]*>/)
+    assert.match(html, /> #  Tým    B</)
+    assert.match(
+        html,
+        /<span class="font-bold text-white">›3  VLK   13<\/span>/
+    )
+    assert.doesNotMatch(html, /\u001b|```|\[1;37m/)
+})

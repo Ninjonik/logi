@@ -66,6 +66,14 @@ export const upsert = mutation({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The dashboard's per-publish choice for the Discord roster message
+        // (board D5). Not part of /api/v1: a live publish action.
+        discordPublish: v.optional(
+            v.object({
+                variant: v.union(v.literal("photo_text"), v.literal("photo")),
+                mentionPlayers: v.boolean(),
+            })
+        ),
     },
     handler: async (ctx, args) => {
         const { event, guildId } = await authorizeRosterManager(ctx, args)
@@ -99,7 +107,7 @@ export const upsert = mutation({
         const useCase = new UpsertRosterUseCase(
             new ConvexRosterCommandRepository(ctx)
         )
-        return await useCase.execute({
+        const rosterId = await useCase.execute({
             rosterId: args.rosterId ? String(args.rosterId) : undefined,
             eventId: String(args.eventId),
             squadPresetId: args.squadPresetId
@@ -112,6 +120,21 @@ export const upsert = mutation({
             streamerId: args.streamerId,
             published: args.published,
         })
+        // Saving a published roster publishes it again; the bot reads the
+        // chosen look and the publish time for the roster message.
+        const savedId = ctx.db.normalizeId("rosters", String(rosterId))
+        if (args.published && savedId)
+            await ctx.db.patch(savedId, {
+                publishedAt: new Date().toISOString(),
+                ...(args.discordPublish
+                    ? {
+                          discordMessageVariant: args.discordPublish.variant,
+                          discordMentionPlayers:
+                              args.discordPublish.mentionPlayers,
+                      }
+                    : {}),
+            })
+        return rosterId
     },
 })
 

@@ -75,6 +75,21 @@ export function encryptCredential(
     const key = providerKeySchema.safeParse(plaintext)
     // Callers validate first; the message never repeats the rejected value.
     if (!key.success) throw new Error("Invalid provider key.")
+    return sealSecret(keyring, key.data, aad)
+}
+
+/**
+ * The same AES-256-GCM envelope for another workspace secret (a panel's
+ * server password): the caller validates the plaintext and chooses an AAD
+ * that binds it to its owner. 8–4096 bytes, as the envelope schema allows.
+ */
+export function sealSecret(
+    keyring: Keyring,
+    plaintext: string,
+    aad: string
+): CredentialEnvelope {
+    const bytes = Buffer.byteLength(plaintext, "utf8")
+    if (bytes < 8 || bytes > 4096) throw new Error("Invalid secret length.")
     const material = keyring.keys.get(keyring.current)
     if (!material) throw new CredentialCipherError("key_unavailable")
     const nonce = randomBytes(12)
@@ -83,7 +98,7 @@ export function encryptCredential(
     })
     cipher.setAAD(Buffer.from(aad, "utf8"))
     const ciphertext = Buffer.concat([
-        cipher.update(key.data, "utf8"),
+        cipher.update(plaintext, "utf8"),
         cipher.final(),
     ])
     return {
@@ -101,6 +116,22 @@ export function encryptCredential(
  * `decrypt_failed`. There is no fallback to another key or credential.
  */
 export function decryptCredential(
+    keyring: Keyring | null,
+    envelope: CredentialEnvelope,
+    aad: string
+): string {
+    const plaintext = openSecret(keyring, envelope, aad)
+    const key = providerKeySchema.safeParse(plaintext)
+    if (!key.success || key.data !== plaintext)
+        throw new CredentialCipherError("decrypt_failed")
+    return plaintext
+}
+
+/**
+ * Opens an envelope from {@link sealSecret}. The same failures as a provider
+ * key: `key_unavailable` or `decrypt_failed`, never a fallback.
+ */
+export function openSecret(
     keyring: Keyring | null,
     envelope: CredentialEnvelope,
     aad: string
@@ -126,9 +157,6 @@ export function decryptCredential(
     } catch {
         throw new CredentialCipherError("decrypt_failed")
     }
-    const key = providerKeySchema.safeParse(plaintext)
-    if (!key.success || key.data !== plaintext)
-        throw new CredentialCipherError("decrypt_failed")
     return plaintext
 }
 

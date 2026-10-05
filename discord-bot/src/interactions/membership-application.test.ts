@@ -15,6 +15,7 @@ import { defaultApplicationForm } from "../../../src/domain/membership/applicati
 import { getApplicationMessages } from "../../../src/lib/clan-language/application"
 
 import {
+    continueApplicationAfterLink,
     handleApplicationButton,
     handleApplicationStart,
     handleWindowModal,
@@ -513,4 +514,53 @@ test("Odeslat přihlášku creates the thread, the intro and the card (L6-41..46
         texts(replies.at(-1)),
         /### Přihláška odeslána\nNábor se ti ozve ve vlákně <#999>\. Rozhodnutí ti přijde i do DM\./
     )
+})
+
+test("after /link inside the application the guide becomes the progress message again (L4-60)", async (t) => {
+    const answers: ApplicationAnswers = {
+        games: ["hell_let_loose"],
+        categoryId: "main",
+        inGameName: "Hráč 17",
+        accounts: {},
+        answers: { source: ["source-1"] },
+        completedWindows: ["about"],
+    }
+    backend(t, [
+        state({
+            draft: {
+                id: "d1",
+                answers,
+                source: "discord",
+                submissionStatus: null,
+                submissionError: null,
+            },
+            linkedPlatformIds: ["epic:vlk17"],
+        }),
+    ])
+    const { value, replies } = interaction({
+        customId: "link-modal:a.d1:epic",
+        ephemeralMessage: true,
+        fields: {},
+    })
+    await continueApplicationAfterLink(
+        value as unknown as ModalSubmitInteraction,
+        "d1"
+    )
+    assert.equal(replies.length, 1)
+    const body = texts(replies[0])
+    assert.match(body, /### Herní účty/)
+    assert.match(JSON.stringify(replies[0]), /application:d1:open:accounts/)
+})
+
+test("a stale draft after /link gets the expired card", async (t) => {
+    backend(t, [state({ draft: null })])
+    const { value, replies } = interaction({
+        customId: "link:a.d1:pick",
+        ephemeralMessage: true,
+    })
+    await continueApplicationAfterLink(
+        value as unknown as ButtonInteraction,
+        "d1"
+    )
+    assert.match(texts(replies[0]), /vypršel|vypršela/)
 })

@@ -615,6 +615,49 @@ export async function handleLegacyApplication(
     )
 }
 
+/**
+ * After the `/link` guide linked an account inside the application (L4-60,
+ * "Zadat ID a pokračovat"): the guide's message becomes the application's
+ * progress message again, and window 2 opens with the linked account filled
+ * in (N4-15).
+ */
+export async function continueApplicationAfterLink(
+    interaction:
+        | ButtonInteraction
+        | ModalSubmitInteraction
+        | StringSelectMenuInteraction,
+    draftId: string
+) {
+    if (!interaction.guildId) return
+    const state = await loadApplicationState(
+        interaction.guildId,
+        interaction.user.id
+    )
+    const options: Kit = state
+        ? kit(state)
+        : {
+              language:
+                  (await interactionLanguage(interaction.guildId)) ?? "en",
+              style: null,
+          }
+    if (!state?.enabled || !state.draft || state.draft.id !== draftId) {
+        await show(
+            interaction,
+            applicationErrors.expired(
+                getApplicationMessages(options.language),
+                state?.panelChannelId
+            ),
+            options
+        )
+        return
+    }
+    await show(
+        interaction,
+        progressView(state, state.draft.id, state.draft.answers),
+        options
+    )
+}
+
 export { applicationThreadName }
 
 export const membershipApplicationInteractions: InteractionFeature = {
@@ -630,6 +673,12 @@ export const membershipApplicationInteractions: InteractionFeature = {
             // Old wizard windows that asked for the account and the questions together.
             .modal("plink-apply:", handleLegacyApplication)
             .modal("plink-mock-apply:", handleLegacyApplication)
+            // The old wizard's account step; `/link`'s own old IDs
+            // (`plink:<step>:l:`) are longer and route to link.ts.
+            .button("plink:", handleLegacyApplication)
+            .stringSelect("plink:", handleLegacyApplication)
+            .modal("plink-modal:", handleLegacyApplication)
+            .modal("plink-search:", handleLegacyApplication)
             .button(APPLICATION_BUTTON_PREFIX, handleApplicationButton)
             .modal(APPLICATION_WINDOW_PREFIX, handleWindowModal)
     },

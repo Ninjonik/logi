@@ -269,14 +269,20 @@ function blockNodes(
                     : []),
                 field.action
                     ? {
-                          type: "section-button",
+                          type: "section-button" as const,
                           texts: [fieldText(field, options.chipIcons)],
                           button: field.action,
                       }
-                    : {
-                          type: "text",
-                          content: fieldText(field, options.chipIcons),
-                      },
+                    : field.thumbnail
+                      ? {
+                            type: "section" as const,
+                            texts: [fieldText(field, options.chipIcons)],
+                            thumbnail: field.thumbnail,
+                        }
+                      : {
+                            type: "text" as const,
+                            content: fieldText(field, options.chipIcons),
+                        },
             ])
         case "separator":
             return [

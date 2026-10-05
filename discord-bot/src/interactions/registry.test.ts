@@ -88,29 +88,58 @@ test("anything not registered falls through to the existing dispatch unchanged",
     let routed = false
     const handler = createInteractionHandler({
         ...context,
-        registry: new InteractionRegistry().command("help", () => {
+        registry: new InteractionRegistry().button("help", () => {
             routed = true
         }),
     })
-    let deferred: unknown
-    let answer: { content?: string } | undefined
-    await handler.handleChatInputCommand(
-        fake<ChatInputCommandInteraction>({
-            commandName: "server-status",
+    let answered = false
+    await handler.handleButtonInteraction(
+        fake<ButtonInteraction>({
+            // The recap preference button is still answered by the old
+            // dispatch; a stale one gets the "unavailable" card.
+            customId: "match-recap:",
             guildId: null,
-            memberPermissions: null,
-            options: { getString: () => "wardogs" },
-            deferReply: async (value: { flags: unknown }) => {
-                deferred = value.flags
+            user: { id: "111111111111111111" },
+            client: { guilds: { cache: new Map() } },
+            isRepliable: () => true,
+            replied: false,
+            deferred: false,
+            reply: async () => {
+                answered = true
             },
-            editReply: async (value: { content?: string }) => {
-                answer = value
+            followUp: async () => {
+                answered = true
             },
         })
     )
     assert.equal(routed, false)
-    assert.equal(deferred, MessageFlags.Ephemeral)
-    assert.match(answer?.content ?? "", /Manage Server/)
+    assert.ok(answered, "the existing match-recap dispatch answered")
+})
+
+test("every command is a feature's; the old dispatch has none left", async () => {
+    const handler = createInteractionHandler({
+        ...context,
+        registry: new InteractionRegistry(),
+    })
+    let answered = false
+    await handler.handleChatInputCommand(
+        fake<ChatInputCommandInteraction>({
+            commandName: "close_application",
+            reply: async () => {
+                answered = true
+            },
+        })
+    )
+    assert.equal(answered, false)
+    const routes = createInteractionRegistry(
+        interactionFeatures,
+        context
+    ).routes()
+    for (const name of ["close_application", "close_ticket", "link"])
+        assert.ok(
+            routes.includes(`command:${name}`),
+            `/${name} is routed by a feature`
+        )
 })
 
 test("selects, channel selects, modals and autocomplete route by their own keys", async () => {

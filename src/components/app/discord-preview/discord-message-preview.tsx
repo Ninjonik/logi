@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
 
 import {
     parseDiscordMarkdown,
-    type MarkdownBlock,
+    type MarkdownLineBlock,
     type MarkdownInline,
 } from "./markdown"
 import { formatPreviewTimestamp } from "./timestamp"
@@ -39,6 +39,11 @@ export type DiscordPreviewMentions = {
 
 export type DiscordMessagePreviewProps = {
     view: MessageView
+    /**
+     * Markdown sent above the card as plain message content, e.g. the role
+     * ping of a match announcement ("@Klan").
+     */
+    content?: string
     /** The clan language: the bot's words and every timestamp follow it. */
     language: string
     /** The clan's message style (clan colour and icon density). */
@@ -206,7 +211,7 @@ function MarkdownText({
     className?: string
 }) {
     const blocks = parseDiscordMarkdown(markdown)
-    const line = (block: MarkdownBlock) =>
+    const line = (block: MarkdownLineBlock) =>
         block.lines.map((nodes, index) => (
             <span key={index} className="block min-h-[1em]">
                 <Inline nodes={nodes} context={context} />
@@ -216,6 +221,35 @@ function MarkdownText({
         <div className={cn("min-w-0 [overflow-wrap:anywhere]", className)}>
             {blocks.map((block, index) => {
                 switch (block.type) {
+                    case "code":
+                        return (
+                            <pre
+                                key={index}
+                                className="overflow-x-auto rounded border border-[#1e1f22] bg-[#2b2d31] px-2.5 py-2 font-mono text-[12.5px] leading-[19px] whitespace-pre text-[#dbdee1]"
+                            >
+                                {block.lines.map((segments, row) => (
+                                    <span
+                                        key={row}
+                                        className="block min-h-[1em]"
+                                    >
+                                        {segments.map((segment, part) =>
+                                            segment.strong ? (
+                                                <span
+                                                    key={part}
+                                                    className="font-bold text-white"
+                                                >
+                                                    {segment.text}
+                                                </span>
+                                            ) : (
+                                                <span key={part}>
+                                                    {segment.text}
+                                                </span>
+                                            )
+                                        )}
+                                    </span>
+                                ))}
+                            </pre>
+                        )
                     case "h1":
                         return (
                             <p
@@ -371,11 +405,16 @@ function Field({
     field: MessageField
     context: RenderContext
 }) {
+    // One accessory per row, as in Discord: the button wins over an image.
     if (field.action)
         return (
             <div className="flex min-w-0 items-start justify-between gap-3">
                 <Field
-                    field={{ ...field, action: undefined }}
+                    field={{
+                        ...field,
+                        action: undefined,
+                        thumbnail: undefined,
+                    }}
                     context={context}
                 />
                 <ul
@@ -389,8 +428,8 @@ function Field({
                 </ul>
             </div>
         )
-    return (
-        <div className="flex min-w-0 flex-col gap-1">
+    const body = (
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-[#f2f3f5]">
                     {field.title}
@@ -405,6 +444,17 @@ function Field({
                 />
             )}
         </div>
+    )
+    return field.thumbnail ? (
+        <div className="flex min-w-0 items-start gap-3">
+            {body}
+            <Media
+                media={field.thumbnail}
+                className="size-16 shrink-0 rounded-md"
+            />
+        </div>
+    ) : (
+        body
     )
 }
 
@@ -537,6 +587,7 @@ function Block({
  */
 export function DiscordMessagePreview({
     view,
+    content,
     language,
     style,
     labels,
@@ -623,6 +674,9 @@ export function DiscordMessagePreview({
                                 </span>
                             )}
                         </p>
+                    )}
+                    {content?.trim() && (
+                        <MarkdownText markdown={content} context={context} />
                     )}
                     <article
                         className="flex min-w-0 flex-col gap-2.5 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5 [overflow-wrap:anywhere]"

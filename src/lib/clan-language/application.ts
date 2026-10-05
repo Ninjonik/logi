@@ -135,6 +135,7 @@ const cs: Copy = {
         cancel: "Zrušit",
         verifySteam: "Ověřit Steam přes web (doporučeno)",
         verifySteamRequired: "Ověřit Steam přes web",
+        findAccount: "Najít ID účtu",
         keepNote: "Rozpracovanou přihlášku držíme 24 h.",
     },
     review: {
@@ -484,6 +485,7 @@ const en: Copy = {
         cancel: "Cancel",
         verifySteam: "Verify Steam on the web (recommended)",
         verifySteamRequired: "Verify Steam on the web",
+        findAccount: "Find my account ID",
         keepNote: "We keep an unfinished application for 24 h.",
     },
     review: {
@@ -839,6 +841,7 @@ const de: Copy = {
         cancel: "Abbrechen",
         verifySteam: "Steam im Web bestätigen (empfohlen)",
         verifySteamRequired: "Steam im Web bestätigen",
+        findAccount: "Konto-ID finden",
         keepNote: "Eine angefangene Bewerbung heben wir 24 h auf.",
     },
     review: {

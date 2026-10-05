@@ -11,6 +11,10 @@ import type {
     StoredSeedRun,
 } from "../src/application/discord-seed/ports"
 import {
+    isPanelPaused,
+    normalizePanelKind,
+} from "../src/domain/discord-publications/settings"
+import {
     initialSeedPlanState,
     type SeedPlanState,
 } from "../src/domain/discord-seed/plan"
@@ -163,8 +167,9 @@ export function seedStoreReader(ctx: Reader): SeedStoreReader {
             return resolveClanTimeZone(config?.timezone)
         },
         async isPaused(server) {
-            // A server panel that is turned off renders the paused card; the
-            // panels workstream owns that switch ("Pozastavit panel").
+            // "Pozastavit panel" (P5-B06) is the panel's own pause flag; rows
+            // saved before it read their old "enabled" switch. Live score and
+            // server status are one kind (L3-02), so `scoreboard` counts too.
             const panels = (
                 await ctx.db
                     .query("discordPublicPanels")
@@ -174,10 +179,15 @@ export function seedStoreReader(ctx: Reader): SeedStoreReader {
                     .collect()
             ).filter(
                 (panel) =>
-                    panel.kind === "server" &&
-                    panel.connectionId === server.connectionId
+                    normalizePanelKind(panel.kind) === "server" &&
+                    panel.connectionId === server.connectionId &&
+                    !panel.draft &&
+                    !panel.removing
             )
-            return panels.length > 0 && panels.every((panel) => !panel.enabled)
+            return (
+                panels.length > 0 &&
+                panels.every((panel) => isPanelPaused(panel))
+            )
         },
     }
 }

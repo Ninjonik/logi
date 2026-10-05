@@ -101,10 +101,8 @@ test("tiles show counts, missing settings and on/off", () => {
         kind: "templates",
         count: 3,
     })
-    assert.deepEqual(settingsTileBadge("stats", snapshot, facts), {
-        tone: "neutral",
-        kind: "on",
-    })
+    // The commands page has no setup state of its own.
+    assert.equal(settingsTileBadge("commands", snapshot, facts), null)
     assert.deepEqual(settingsTileBadge("league", snapshot, facts), {
         tone: "neutral",
         kind: "off",

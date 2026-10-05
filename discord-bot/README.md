@@ -43,11 +43,13 @@ else Logi amber `#E8A33D`), Discord timestamps and icons only where they carry m
 Shared rules live in `src/domain/discord-messages/format.ts`. Bot copy in the
 clan language lives in feature modules under `src/lib/clan-language/`:
 `events.ts` (announcements, rosters, reminders and their DMs), `panels.ts`
-(calendar panel), `membership.ts` (tickets, applications, account linking),
+(live server, combined, results, calendar and competition panels, the player
+list and the report flow), `membership.ts` (applications), `tickets.ts` (tickets
+and `/close_ticket`), `game-accounts.ts` (`/link`),
 `commands.ts` (slash commands and player stats) and `system.ts` (team request
 decisions and the shared message kit); `core.ts` resolves the language and its
-locale. Each workstream edits only its own module. Live panel copy is in
-`src/public-panels/copy.ts` and League copy in `src/league/render.ts`.
+locale. Each workstream edits only its own module. League copy is in
+`src/league/render.ts`.
 Background workers read the language through `src/runtime/clan-language.ts`
 (five-minute cache).
 
@@ -113,6 +115,10 @@ npm run dev:all
 - `NEXT_PUBLIC_CONVEX_URL` or `CONVEX_SELF_HOSTED_URL`
 - `INTERNAL_AUTH_SECRET`
 
+Optional: `LOGI_BOT_VERSION` (letters, digits, `.`, `_`, `+`, `-`; at most 40
+characters) is the version the panel heartbeat reports to "Panely v Discordu";
+without it the bot reports its package version.
+
 ## Current responsibilities
 
 - Poll Discord-related Convex config and events
@@ -126,11 +132,13 @@ npm run dev:all
 - Handle `/stats` for linked HLL/Wardogs players, late Steam registration,
   recorded Wardogs player/server search and explicit sharing to a selected channel;
   see [player statistics](../docs/integrations/website/discord-player-stats.md)
-- Refresh configured public server/score panels, optional player leaders and
-  private Wardogs player pages; publish reviewed results with durable message
-  ownership and restart recovery. Each panel's optional appearance (layout,
-  accent color, workspace banner, faction emoji) is applied at render time;
-  panels without one render as before
+- Run "Panely v Discordu" (`src/public-panels/worker.ts`, one pass per panel in
+  `panel-runner.ts`): live server panels, "Naše servery", results per game with
+  a backfill of the last five, competition tables and calendar refreshes, every
+  60 s and within 15 s of a dashboard request; report each pass and a heartbeat
+  with the bot version; private "Zobrazit hráče" pages and the private
+  "Nahlásit hráče" flow (`interactions.ts`, `../player-reports.ts`). See the
+  [panels contract](../docs/superpowers/specs/discord-redesign/PANELS-API.md)
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
@@ -181,8 +189,10 @@ attempt instead of continuing with stale Discord permissions.
 
 - `src/index.ts` boots the bot and wires events
 - `src/sync.ts` runs the polling loop and guild/event sync
-- `src/interactions.ts` handles signup and attendance button actions
-- `src/message-builders.ts` builds embeds, buttons, and reminder components
+- `src/interactions.ts` routes every interaction through the registry
+  (`src/interactions/features.ts`) and keeps the remaining sign-up, attendance
+  and recap buttons; Discord messages are built from the shared message model
+  through `src/ui/message-kit.ts`
 - `src/manual-reminders.ts` watches the reminders managers ask for from the
   match page (`eventReminders:listPending`), claims one at a time and sends the
   sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
@@ -196,6 +206,11 @@ attempt instead of continuing with stale Discord permissions.
   `membership-web-submissions.ts` turns web-form submissions (Variant B) into
   the same thread and card; `membership-steam-watch.ts` updates the progress
   message when the applicant verifies Steam on the website
+- `src/interactions/tickets.ts` opens tickets from the panel (button, select,
+  category window) and `tickets-panel.ts` builds the panel card;
+  `close-ticket.ts` handles `/close_ticket`; `link.ts` and `link-search.ts`
+  handle `/link` and its search on the clan's stats servers. All are routed
+  through the interaction registry (`src/interactions/features.ts`)
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data

@@ -1,10 +1,11 @@
 /**
  * The Discord markdown subset the bot's messages use, parsed for the
  * dashboard preview: headings, subtext (`-#`), quotes, bold, italic,
- * underline, strikethrough, inline code, masked and bare links, timestamps
- * (`<t:…:R>`), user, role and channel mentions, custom emoji and backslash
- * escapes. Nothing is rendered as HTML, so text from the bot can never inject
- * markup into the dashboard.
+ * underline, strikethrough, inline code, fenced code blocks (with the bold
+ * and bright ANSI styles of an `ansi` block, as the WD League table uses),
+ * masked and bare links, timestamps (`<t:…:R>`), user, role and channel
+ * mentions, custom emoji and backslash escapes. Nothing is rendered as HTML,
+ * so text from the bot can never inject markup into the dashboard.
  */
 
 export type TimestampStyle = "t" | "T" | "d" | "D" | "f" | "F" | "R"
@@ -21,9 +22,41 @@ export type MarkdownInline =
     | { type: "mention"; kind: "user" | "role" | "channel"; id: string }
     | { type: "emoji"; name: string; id: string; animated: boolean }
 
-export type MarkdownBlock = {
+export type MarkdownLineBlock = {
     type: "paragraph" | "subtext" | "h1" | "h2" | "h3" | "quote"
     lines: MarkdownInline[][]
+}
+/** One run of a code block line; `strong` for ANSI bold or bright white. */
+export type CodeSegment = { text: string; strong: boolean }
+export type MarkdownCodeBlock = {
+    type: "code"
+    language: string | null
+    lines: CodeSegment[][]
+}
+export type MarkdownBlock = MarkdownLineBlock | MarkdownCodeBlock
+
+/**
+ * A code block line split at ANSI SGR sequences. Only bold (1) and bright
+ * white (37/97) are kept, as emphasis; every other escape is dropped, never
+ * shown as text.
+ */
+export function parseAnsiLine(line: string, ansi: boolean): CodeSegment[] {
+    if (!ansi)
+        return [{ text: line.replace(/\u001b\[[\d;]*m/g, ""), strong: false }]
+    const segments: CodeSegment[] = []
+    let strong = false
+    for (const part of line.split(/(\u001b\[[\d;]*m)/)) {
+        const sgr = /^\u001b\[([\d;]*)m$/.exec(part)
+        if (sgr) {
+            const codes = sgr[1].split(";").filter(Boolean).map(Number)
+            if (!codes.length || codes.includes(0)) strong = false
+            if (codes.some((code) => code === 1 || code === 37 || code === 97))
+                strong = true
+            continue
+        }
+        if (part) segments.push({ text: part, strong })
+    }
+    return segments
 }
 
 const ESCAPABLE = /[\\*_~`|[\]()<>#\-.:>!@&]/
@@ -182,7 +215,7 @@ export function parseInlineMarkdown(src: string): MarkdownInline[] {
     return out
 }
 
-const BLOCK_PREFIX: Array<[RegExp, MarkdownBlock["type"]]> = [
+const BLOCK_PREFIX: Array<[RegExp, MarkdownLineBlock["type"]]> = [
     [/^-# /, "subtext"],
     [/^### /, "h3"],
     [/^## /, "h2"],
@@ -192,11 +225,24 @@ const BLOCK_PREFIX: Array<[RegExp, MarkdownBlock["type"]]> = [
 
 /**
  * A message text as blocks: one block per heading, subtext or paragraph
- * line; consecutive quote lines form one quote.
+ * line; consecutive quote lines form one quote; a fenced block is one code block.
  */
 export function parseDiscordMarkdown(src: string): MarkdownBlock[] {
     const blocks: MarkdownBlock[] = []
+    let code: MarkdownCodeBlock | null = null
     for (const line of src.replace(/\r\n?/g, "\n").split("\n")) {
+        // Fenced code blocks: ```lang … ``` keep their spaces and line breaks.
+        if (code) {
+            if (line.trim() === "```") code = null
+            else code.lines.push(parseAnsiLine(line, code.language === "ansi"))
+            continue
+        }
+        const fence = /^```([\w-]*)\s*$/.exec(line)
+        if (fence) {
+            code = { type: "code", language: fence[1] || null, lines: [] }
+            blocks.push(code)
+            continue
+        }
         const prefix = BLOCK_PREFIX.find(([pattern]) => pattern.test(line))
         const type = prefix?.[1] ?? "paragraph"
         const inline = parseInlineMarkdown(

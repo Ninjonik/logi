@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import type { ContainerBuilder } from "discord.js"
+
 import type { EventRecord, Roster, SyncPayload } from "../types"
 import { deliverManualReminder } from "./manual-reminders"
 
@@ -37,7 +39,10 @@ const roster = {
             group: "Infantry",
             order: 0,
             color: "#dc2626",
-            players: [{ id: "slot-1", ack: false, roleName: "Medic" }],
+            players: [
+                { id: "100000000000000001", ack: true, roleName: "Officer" },
+                { id: "slot-1", ack: false, roleName: "Medic" },
+            ],
         },
     ],
 } as unknown as Roster
@@ -47,14 +52,14 @@ const payload = {
         id: "config-1",
         guildId: "guild-1",
         timezone: "Europe/Prague",
-        defaultLanguage: "en",
+        defaultLanguage: "cs",
         calendarCategories: [],
         updatedAt: "2026-07-29T10:00:00.000Z",
     },
     groups: [],
-    guild: { eventCategories: [] },
+    guild: { name: "Vlci", eventCategories: [] },
     rosters: [roster],
-    userDisplayNames: {},
+    userDisplayNames: { "100000000000000001": "Rex_CZ" },
     events: [event],
     calendarItems: [],
     topicPresets: [],
@@ -73,9 +78,16 @@ function recorder(failFor: string[] = []) {
     }
 }
 
-test("unanswered members get the sign-up reminder and failed DMs are not counted", async () => {
+const json = (message: unknown) =>
+    JSON.stringify(
+        (message as { components: ContainerBuilder[] }).components.map((item) =>
+            item.toJSON()
+        )
+    )
+
+test("unanswered members get the sign-up reminder; closed DMs are returned by name", async () => {
     const { sent, send } = recorder(["closed-dm"])
-    const count = await deliverManualReminder({
+    const delivery = await deliverManualReminder({
         payload,
         request: {
             id: "request-1",
@@ -86,18 +98,16 @@ test("unanswered members get the sign-up reminder and failed DMs are not counted
         },
         send,
     })
-    assert.equal(count, 1)
-    assert.deepEqual(
-        sent.map((entry) => entry.userId),
-        ["member-1", "closed-dm"]
-    )
-    const message = sent[0]!.message as { components?: unknown[] }
-    assert.ok(message.components?.length)
+    assert.deepEqual(delivery, { sent: 1, failedUserIds: ["closed-dm"] })
+    const content = json(sent[0]!.message)
+    assert.match(content, /PŘIPOMÍNKA PŘIHLÁŠKY/)
+    assert.match(content, /Připomínku poslalo velení z Logi\./)
+    assert.match(content, /Klan Vlci/)
 })
 
-test("unconfirmed players get the attendance reminder with their place and buttons", async () => {
+test("unconfirmed players get the attendance reminder with their place, leader and buttons", async () => {
     const { sent, send } = recorder()
-    const count = await deliverManualReminder({
+    const delivery = await deliverManualReminder({
         payload,
         request: {
             id: "request-2",
@@ -107,28 +117,28 @@ test("unconfirmed players get the attendance reminder with their place and butto
             recipientIds: ["slot-1", "reserve-1"],
         },
         send,
+        now: Date.parse("2099-01-01T11:00:00.000Z"),
     })
-    assert.equal(count, 2)
-    const first = sent[0]!.message as {
-        embeds: Array<{ toJSON(): { description?: string } }>
-        components: Array<{
-            toJSON(): { components: Array<{ custom_id?: string }> }
-        }>
-    }
-    assert.match(first.embeds[0]!.toJSON().description ?? "", /Able · Medic/)
-    assert.deepEqual(
-        first.components[0]!.toJSON().components.map((c) => c.custom_id),
-        [
-            "attendance:event-1:ack",
-            "attendance-late:event-1",
-            "attendance-decline:event-1",
-        ]
+    assert.deepEqual(delivery, { sent: 2, failedUserIds: [] })
+    const first = json(sent[0]!.message)
+    assert.match(first, /Dnes hraješ VLK vs ROG/)
+    assert.match(first, /\*\*Able · Medic\*\* · velitel čety Rex\\\\_CZ/)
+    assert.match(first, /Připomínku poslalo velení z Logi\./)
+    for (const id of [
+        "attendance-confirm:event-1",
+        "attendance-late:event-1",
+        "attendance-decline:event-1",
+    ])
+        assert.match(first, new RegExp(id))
+    assert.match(
+        json(sent[1]!.message),
+        /\*\*Záloha\*\* · když se uvolní místo/
     )
 })
 
 test("nothing is sent for an unknown match or an empty recipient list", async () => {
     const { sent, send } = recorder()
-    assert.equal(
+    assert.deepEqual(
         await deliverManualReminder({
             payload,
             request: {
@@ -140,7 +150,21 @@ test("nothing is sent for an unknown match or an empty recipient list", async ()
             },
             send,
         }),
-        0
+        { sent: 0, failedUserIds: [] }
+    )
+    assert.deepEqual(
+        await deliverManualReminder({
+            payload,
+            request: {
+                id: "request-4",
+                eventId: "event-1",
+                guildId: "guild-1",
+                audience: "unconfirmed",
+                recipientIds: [],
+            },
+            send,
+        }),
+        { sent: 0, failedUserIds: [] }
     )
     assert.equal(sent.length, 0)
 })

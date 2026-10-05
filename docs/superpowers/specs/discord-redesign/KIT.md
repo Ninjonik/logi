@@ -11,7 +11,7 @@ command reply or Discord preview. Never hand-roll a container.
 src/domain/discord-messages/message-view.ts        MessageView types, standard cards, panel frame, paging
 src/domain/discord-messages/message-layout.ts      view + clan copy -> Components V2 tree (shared text helpers)
 src/domain/discord-messages/message-validation.ts  board rules + Discord limits
-src/lib/clan-language/{core,events,panels,membership,commands,system}.ts   copy in cs/en/de
+src/lib/clan-language/{core,events,panels,application,commands,system}.ts  copy in cs/en/de
 discord-bot/src/ui/message-kit.ts                  layout -> discord.js builders and payloads
 discord-bot/src/ui/replies.ts                      private replies, error path, errors-channel hook
 discord-bot/src/interactions/registry.ts           interaction routing per feature
@@ -74,7 +74,10 @@ const view = panelFrame({
 - **Blocks:** `text` (markdown), `meta` (lines whose icons follow the clan's icon
   density: `{ text, line: "start" }` or `{ text, icon, iconAlways }`), `list`
   (`marker: "number" | "bullet" | "none"`), `fields` (title, chip, text, as the
-  `/server-status` rows), `separator`, `gallery`, `buttons` (one row), `select`.
+  `/server-status` rows; an optional `thumbnail` makes the row a section with
+  the image on the right, as the server rows of "Naše servery"; each such row
+  costs three of the 40 components), `separator`, `gallery`, `buttons` (one
+  row), `select`.
 - **Plain vs markdown:** titles, labels, chip labels and field titles are plain
   and get escaped. Everything else is markdown: escape user data with
   `escapeMarkdownText`. Timestamps: `discordTimestamp(iso, "R")` from
@@ -181,14 +184,14 @@ invisible component `id` (`discord-bot/src/sync/publication-marker.ts`).
 `src/lib/clan-language/` replaced `clan-language.ts`. Each module exports its
 typed copy and one getter; the getter adds `locale`.
 
-| Module          | Getter                                                                                                | Owner                                                                                  |
-| --------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `events.ts`     | `getEventMessages`                                                                                    | W6 (announcements, rosters, reminders, DMs)                                            |
-| `panels.ts`     | `getPanelMessages`                                                                                    | W1 (calendar panel)                                                                    |
-| `membership.ts` | `getMembershipMessages`                                                                               | W7 (tickets, applications, /link flow)                                                 |
-| `commands.ts`   | `getCommandMessages`                                                                                  | W8 (commands, stats, /server-status)                                                   |
-| `system.ts`     | `getSystemMessages`                                                                                   | W0 kit (`kit`, `paging`, `errors`, `publication`), W9 (team requests, system messages) |
-| `core.ts`       | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` | W0                                                                                     |
+| Module           | Getter                                                                                                | Owner                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `events.ts`      | `getEventMessages`                                                                                    | W6 (announcements, rosters, reminders, DMs)                                            |
+| `panels.ts`      | `getPanelMessages`                                                                                    | W1 (calendar panel)                                                                    |
+| `application.ts` | `getApplicationMessages`                                                                              | W7a (clan application, decisions, `/close_application`)                                |
+| `commands.ts`    | `getCommandMessages`                                                                                  | W8 (commands, stats, /server-status)                                                   |
+| `system.ts`      | `getSystemMessages`                                                                                   | W0 kit (`kit`, `paging`, `errors`, `publication`), W9 (team requests, system messages) |
+| `core.ts`        | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` | W0                                                                                     |
 
 Edit only your module; keep cs (board verbatim), en and de in step; bot copy
 says "ty"/"du". There is no barrel: import the module you need.
@@ -311,3 +314,12 @@ in `docs/integrations/website/configuration-coverage.md`.
 - Preview markup: `src/components/app/discord-preview/discord-message-preview.test.ts`
   (`renderToStaticMarkup`).
 - Settings slices: `src/domain/api/settings-slices.test.ts`.
+- A view laid out with the real clan copy (text, buttons, validation):
+  `renderedView(view, language)` in `src/infrastructure/testing/message-views.ts`.
+
+## 11. Panels
+
+Panels (live servers, "Naše servery", results, calendar, competition tables)
+are built on `panelFrame` and documented, with their dashboard routes, Convex
+functions, bot worker and the hand-offs to W3, W4 and W5, in
+[PANELS-API.md](PANELS-API.md).

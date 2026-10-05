@@ -18,6 +18,8 @@ export type TicketCategory = {
     description?: string
     supportRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
+    /** The title of the thread card, e.g. "{author} nahlašuje hráče". */
+    threadTitle?: string
 }
 
 export type MembershipCategory = {
@@ -44,6 +46,8 @@ export type TicketSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour (`#RRGGBB`); missing means the clan colour. */
+    panelAccentColor?: string
     categories: TicketCategory[]
 }
 
@@ -141,6 +145,11 @@ export type DiscordConfig = {
     membershipApplicationCounter?: number
     /** Clan colour and icon density of every bot message. */
     messageStyle?: MessageStyle
+    /** Match message settings (board N1); missing reads the defaults. */
+    rosterMessageVariant?: "photo_text" | "photo"
+    rosterChangesPostDefault?: boolean
+    rosterChangesDmDefault?: boolean
+    attendanceNoticesInThread?: boolean
     updatedAt: string
 }
 
@@ -241,6 +250,9 @@ export type Group = {
     guildId: string
     name: string
     color: string
+    /** Order and parent group; the roster text groups squads by them. */
+    order?: number
+    parentId?: string
     discordRoleId?: string
     discordEmoji?: string
     updatedAt: string
@@ -370,6 +382,8 @@ export type EventRecord = {
         userId: string
         reason: string
         createdAt: string
+        /** "late" or "cannot_come"; older notices have none and read as late. */
+        kind?: "late" | "cannot_come"
     }>
     signUps: Array<{
         userId: string
@@ -379,6 +393,8 @@ export type EventRecord = {
         userId: string
         status: "attending" | "not_attending"
         group?: string | null
+        /** The full capped group a reserve chose. */
+        requestedGroup?: string | null
         completed?: "passed" | "failed"
         updatedAt: string
     }>
@@ -395,6 +411,14 @@ export type Roster = {
         ack: boolean
         confirmed?: boolean
     }>
+    /** Players marked as not coming; older payloads may omit it. */
+    notAttendingPlayerIds?: string[]
+    /** The publish dialog's choice of roster message (board D5). */
+    discordMessageVariant?: "photo_text" | "photo"
+    /** Whether the first roster post mentions the rostered players. */
+    discordMentionPlayers?: boolean
+    /** When the roster was last published from the dashboard. */
+    publishedAt?: string
     updatedAt: string
     squads: Array<{
         name: string

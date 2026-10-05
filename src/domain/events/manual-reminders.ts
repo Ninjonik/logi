@@ -16,8 +16,12 @@ import { canAcceptSignups } from "./status"
 export const MANUAL_REMINDER_AUDIENCES = ["unanswered", "unconfirmed"] as const
 export type ManualReminderAudience = (typeof MANUAL_REMINDER_AUDIENCES)[number]
 
-/** One manual reminder per match and audience in this window. */
-export const MANUAL_REMINDER_COOLDOWN_MS = 30 * 60 * 1000
+/**
+ * One manual reminder per match and audience in this window: at most once an
+ * hour, whether leadership asks from the match page or from "Připomenout bez
+ * odpovědi" in Discord (board L1, L1-B11).
+ */
+export const MANUAL_REMINDER_COOLDOWN_MS = 60 * 60 * 1000
 /** A queued reminder the bot has not picked up in this time no longer blocks a new one. */
 export const MANUAL_REMINDER_STALE_MS = 10 * 60 * 1000
 

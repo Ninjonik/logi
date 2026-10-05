@@ -9,6 +9,11 @@ import {
     syncGuildMemberAccessMember,
     invalidateMembershipGuild,
 } from "./sync/member-access"
+import {
+    registerJoinedGuild,
+    startCommandRegistration,
+} from "./commands/runtime"
+import { RosterChangeRequestService } from "./rosters/roster-change-service"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
@@ -24,6 +29,10 @@ const meetingAttendanceRequestService = new MeetingAttendanceRequestService(
     client
 )
 const manualReminderRequestService = new ManualReminderRequestService(
+    client,
+    (eventId) => syncService.loadEventPayload(eventId)
+)
+const rosterChangeRequestService = new RosterChangeRequestService(
     client,
     (eventId) => syncService.loadEventPayload(eventId)
 )
@@ -146,20 +155,21 @@ function startFallbackWorker() {
     return fallbackWorker
 }
 
-import {
-    startPublicPanelWorker,
-    handlePublicPanelButton,
-} from "./public-panels/worker"
 import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
+import { startAnnouncementMigration } from "./events/announcement-migration"
+import { startPublicPanelWorker } from "./public-panels/worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
     startApplicationWebSubmissionWorker(client)
     startLeagueWorker(client)
-    startPublicPanelWorker(client)
+    // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
+    startPublicPanelWorker(client, {
+        refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
+    })
     startManagedRoleWorker(client)
     startTeamRequestNotificationWorker(client)
     startApplicationEmojiProvisioning(client)
@@ -169,24 +179,31 @@ client.once(Events.ClientReady, async (readyClient) => {
             guildCount: readyClient.guilds.cache.size,
         })
 
-        for (const guild of readyClient.guilds.cache.values()) {
+        for (const guild of readyClient.guilds.cache.values())
             await invalidateMembershipGuild(guild.id)
-            await interactionHandler
-                .registerGuildCommands(guild)
-                .catch((error) => {
-                    logError("bot", "Failed to register guild commands", {
-                        guildId: guild.id,
-                        error,
-                    })
-                })
-        }
+        // Slash commands in every server, then again whenever the clan
+        // language or the command settings change (M1-17, M1-19, M1-B01).
+        await startCommandRegistration(readyClient).catch((error) =>
+            logError("bot", "Failed to register guild commands", { error })
+        )
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
+        // Redraws pre-redesign match announcements once, a few a minute.
+        startAnnouncementMigration({
+            queueEventSync: (eventId) => syncService.queueEventSync(eventId),
+            triggerSoon: () => syncService.triggerSoon(250),
+        })
         // A backend without the reminder queue must not stop the rest of the
         // bot from starting; reminders then simply wait for the deploy.
         await manualReminderRequestService.start().catch((error) =>
             logError("bot", "Manual reminder requests failed to start", {
+                error,
+            })
+        )
+        // The roster change digest and DMs the dashboard asks for (W6b).
+        await rosterChangeRequestService.start().catch((error) =>
+            logError("bot", "Roster change requests failed to start", {
                 error,
             })
         )
@@ -202,7 +219,7 @@ client.on(Events.InteractionCreate, (interaction) =>
     // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
     runInteraction(interaction, async () => {
         if (interaction.isButton()) {
-            if (await handlePublicPanelButton(interaction)) return
+            // Panel buttons route through the registry (public-panels/interactions.ts).
             await interactionHandler.handleButtonInteraction(interaction)
             return
         }
@@ -235,6 +252,16 @@ client.on(Events.InteractionCreate, (interaction) =>
             await interactionHandler.handleChatInputCommand(interaction)
     })
 )
+
+// A server that adds the bot gets the commands at once (M1-18).
+client.on(Events.GuildCreate, (guild) => {
+    void registerJoinedGuild(client, guild).catch((error) =>
+        logError("bot", "Failed to register guild commands", {
+            guildId: guild.id,
+            error,
+        })
+    )
+})
 
 registerMembershipInvalidationEvents(client, {
     invalidate: invalidateMembershipGuild,

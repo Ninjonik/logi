@@ -30,6 +30,14 @@ export function componentAttachments(value: unknown): ExistingAttachment[] {
     return found.concat(Object.values(value).flatMap(componentAttachments))
 }
 
+/**
+ * Versioned file names: the content hash is part of the name, so a file with
+ * the same name is the same image (map art, panel thumbnails and banners,
+ * score images; P7-23, P8-30).
+ */
+const REUSABLE_FILE =
+    /^(?:logi-panel-[a-z0-9-]+-[a-f0-9]{12}\.(?:webp|jpg)|(?:skore|banner|mapa)-[a-z0-9-]+-[a-f0-9]{1,8}\.(?:png|webp))$/
+
 /** Reuse immutable catalog assets already attached to this owned message. */
 export function publicationFiles(
     files: MessageCreateOptions["files"],
@@ -43,7 +51,7 @@ export function publicationFiles(
             typeof file !== "object" ||
             !("name" in file) ||
             typeof file.name !== "string" ||
-            !/^logi-panel-[a-z0-9-]+-[a-f0-9]{12}\.(webp|jpg)$/.test(file.name)
+            !REUSABLE_FILE.test(file.name)
         )
             return true
         const match = previous.find((a) => a.name === file.name)

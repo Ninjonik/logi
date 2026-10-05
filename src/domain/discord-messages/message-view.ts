@@ -105,13 +105,16 @@ export type MessageMetaLine = {
  * A row of a field block: a bold title, an optional chip and a markdown line
  * below. `action` puts one button on the right of the row (a Components V2
  * section accessory), e.g. "Upravit" next to a finished step; it counts
- * towards the one primary action but not towards the button rows.
+ * towards the one primary action but not towards the button rows. A row has
+ * one accessory: `action` wins over `thumbnail`.
  */
 export type MessageField = {
     title: string
     chip?: MessageChip
     text?: string
     action?: MessageButton
+    /** An image on the right of this row (a section), e.g. a server's map (P7-B09). */
+    thumbnail?: MessageMedia
 }
 
 export type MessageBlock =

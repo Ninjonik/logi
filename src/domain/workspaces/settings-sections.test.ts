@@ -38,6 +38,8 @@ test("section ids are unique and recognised", () => {
 test("sign-in settings live on the website page and old links redirect there", () => {
     assert.ok(!isSettingsSectionId("login"))
     assert.equal(mergedSettingsSection("login"), "website")
+    // The /stats page became the commands page (N3).
+    assert.equal(mergedSettingsSection("stats"), "commands")
     assert.equal(mergedSettingsSection("website"), undefined)
     assert.equal(mergedSettingsSection("constructor"), undefined)
 })
@@ -68,7 +70,7 @@ test("a new clan sees every required setting as missing", () => {
 })
 
 test("optional features read as on or off and tools have no state", () => {
-    assert.equal(settingsSectionStatus("stats", configured).state, "ready")
+    assert.equal(settingsSectionStatus("commands", configured).state, "none")
     assert.equal(settingsSectionStatus("tickets", configured).state, "off")
     assert.equal(settingsSectionStatus("imports", configured).state, "none")
 })

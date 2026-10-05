@@ -4,6 +4,7 @@ import {
 } from "../src/domain/wardogs-league/panels"
 import { convexLeaguePanelSource } from "../src/infrastructure/convex/league-fixture-store"
 import { loadLeaguePanels } from "../src/application/wardogs-league/league-panels"
+import { leaguePanelsOn } from "../src/application/wardogs-league/tracking"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { trackingConfig } from "./leagueTrackingStore"
 import { query } from "./_generated/server"
@@ -12,7 +13,8 @@ import { v } from "convex/values"
 /**
  * View-models of the two WD League panels for one guild (bot worker,
  * dashboard preview). The League data is shared; the guild's watched team
- * codes mark "our" team. Requires the internal secret.
+ * codes mark "our" team. `enabled: false` when the workspace turned Wardogs
+ * League off. Requires the internal secret.
  */
 export const forGuild = query({
     args: {
@@ -33,11 +35,17 @@ export const forGuild = query({
             args.options ?? DEFAULT_LEAGUE_PANEL_OPTIONS
         )
         const config = await trackingConfig(ctx, args.guildId)
+        // Wardogs League turned off: the bot deletes the panel messages (L3-55).
+        if (!leaguePanelsOn(config))
+            return { enabled: false, standings: null, fixtures: null }
         const now = Date.now()
-        return loadLeaguePanels(convexLeaguePanelSource(ctx, now), {
-            now,
-            ourTeamCodes: config?.teamCodes ?? [],
-            options,
-        })
+        return {
+            enabled: true,
+            ...(await loadLeaguePanels(convexLeaguePanelSource(ctx, now), {
+                now,
+                ourTeamCodes: config?.teamCodes ?? [],
+                options,
+            })),
+        }
     },
 })

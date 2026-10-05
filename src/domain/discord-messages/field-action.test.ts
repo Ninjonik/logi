@@ -7,6 +7,7 @@ import { getSystemMessages } from "../../lib/clan-language/system"
 import { countLayoutComponents, layoutMessageView } from "./message-layout"
 import { validateMessageView } from "./message-validation"
 import type { MessageView } from "./message-view"
+import { messageApiBody } from "./message-api"
 
 const options = {
     copy: getSystemMessages("cs").kit,
@@ -69,5 +70,37 @@ test("field actions count towards the one primary action and unique IDs, not row
             (issue) => issue.code
         ),
         ["too-many-primary"]
+    )
+})
+
+test("the API body sends the field's button as the section accessory", () => {
+    const body = messageApiBody(view("secondary"), options)
+    const container = body.components[0] as {
+        components: Array<Record<string, unknown>>
+    }
+    const section = container.components.find(
+        (component) =>
+            component.type === 9 &&
+            (component.accessory as { type?: number } | undefined)?.type === 2
+    ) as { accessory: Record<string, unknown> } | undefined
+    assert.ok(section)
+    assert.equal(section.accessory.label, "Upravit")
+    assert.equal(section.accessory.custom_id, "application:d:open:about")
+    assert.equal(section.accessory.style, 2)
+})
+
+test("a row has one accessory: the button wins over a thumbnail", () => {
+    const withBoth = view("secondary")
+    const fields = withBoth.blocks[0]
+    assert.ok(fields?.kind === "fields")
+    fields.items[0] = {
+        ...fields.items[0]!,
+        thumbnail: { url: "https://cdn.example/map.webp" },
+    }
+    const layout = layoutMessageView(withBoth, options)
+    assert.ok(layout.nodes.some((node) => node.type === "section-button"))
+    assert.equal(
+        layout.nodes.some((node) => node.type === "section"),
+        false
     )
 })

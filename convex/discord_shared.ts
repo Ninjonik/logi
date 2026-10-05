@@ -67,6 +67,7 @@ export const ticketCategoryValidator = v.object({
     description: v.optional(v.string()),
     supportRoleIds: v.array(v.string()),
     modalQuestions: v.array(ticketModalQuestionValidator),
+    threadTitle: v.optional(v.string()),
 })
 
 export const membershipCategoryValidator = v.object({
@@ -101,6 +102,7 @@ export const ticketSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    panelAccentColor: v.optional(v.string()),
     categories: v.array(ticketCategoryValidator),
 })
 

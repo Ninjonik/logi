@@ -33,22 +33,33 @@ const saved: Roster = {
 
 const memberIds = new Set(["member-1", "member-2"])
 
+const grant = {
+    roster: saved,
+    guildId: "123456789012345678",
+    actorId: "223456789012345678",
+    memberIds,
+}
+
 function setup(
-    access: Awaited<ReturnType<RosterUpdateNotificationPorts["access"]>> = {
-        roster: saved,
-        memberIds,
-    }
+    access: Awaited<ReturnType<RosterUpdateNotificationPorts["access"]>> = grant
 ) {
     const calls: Parameters<RosterUpdateNotificationPorts["notify"]>[0][] = []
-    const handler = rosterUpdateNotificationsHandler({
+    const statusCalls: Array<[string, string]> = []
+    const routes = rosterUpdateNotificationsHandler({
         origin,
         access: async () => access,
         notify: async (input) => {
             calls.push(input)
-            return { ok: true, hasChanges: true }
+            return { ok: true, hasChanges: true, requestId: "req1" }
+        },
+        status: async (guildId, requestId) => {
+            statusCalls.push([guildId, requestId])
+            return requestId === "req1"
+                ? { status: "sent", dmSent: 2, dmFailedUserIds: ["member-2"] }
+                : null
         },
     })
-    return { handler, calls }
+    return { handler: routes.POST, get: routes.GET, calls, statusCalls }
 }
 
 function request(body: unknown, requestOrigin = origin) {
@@ -129,8 +140,8 @@ test("an unknown roster, an invalid body or another match's roster is refused", 
 
 test("only a published roster sends notifications", async () => {
     const { handler, calls } = setup({
+        ...grant,
         roster: { ...saved, published: false },
-        memberIds,
     })
     assert.equal(
         (await handler(request({ previousRoster: previous }), params)).status,
@@ -162,6 +173,52 @@ test("the saved roster is used, never the one the request sends", async () => {
     assert.equal(calls[0].roster, saved)
     assert.equal(calls[0].postAnnouncement, true)
     assert.equal(calls[0].notifyPlayers, true)
+    assert.equal(calls[0].mentionPlayers, false)
+    // The bot sends; the request carries the clan and the admin from the session.
+    assert.equal(calls[0].guildId, grant.guildId)
+    assert.equal(calls[0].actorId, grant.actorId)
+    assert.deepEqual(await response.json(), {
+        ok: true,
+        hasChanges: true,
+        requestId: "req1",
+    })
+})
+
+test("a re-publish can ask the bot to mention the rostered players again", async () => {
+    const { handler, calls } = setup()
+    await handler(
+        request({ previousRoster: previous, mentionPlayers: true }),
+        params
+    )
+    assert.equal(calls[0].mentionPlayers, true)
+})
+
+test("the publish dialog reads how the change DMs went, for its own clan only", async () => {
+    const { get, statusCalls } = setup()
+    const url =
+        "https://logi.test/api/servers/s1/rosters/roster-1/update-notifications"
+    const ok = await get(new Request(`${url}?requestId=req1`), params)
+    assert.equal(ok.status, 200)
+    assert.deepEqual(await ok.json(), {
+        status: "sent",
+        dmSent: 2,
+        dmFailedUserIds: ["member-2"],
+    })
+    assert.deepEqual(statusCalls, [[grant.guildId, "req1"]])
+    assert.equal(
+        (await get(new Request(`${url}?requestId=other`), params)).status,
+        404
+    )
+    assert.equal(
+        (await get(new Request(`${url}?requestId=bad id`), params)).status,
+        400
+    )
+    const outsider = setup(null)
+    assert.equal(
+        (await outsider.get(new Request(`${url}?requestId=req1`), params))
+            .status,
+        403
+    )
 })
 
 test("players who are not clan members are dropped from the previous roster", () => {

@@ -145,6 +145,16 @@ const ticketCategorySchema = z.object({
         .max(5, "Discord modals can have up to 5 questions."),
 })
 
+/** A ticket category with the title of its thread card (L4-42). */
+const ticketCategoryWithTitleSchema = ticketCategorySchema.extend({
+    threadTitle: z
+        .string()
+        .trim()
+        .max(200, "The thread card title can be up to 200 characters.")
+        .optional()
+        .transform((value) => value || undefined),
+})
+
 const membershipCategorySchema = ticketCategorySchema.extend({
     gameId: z
         .enum(["hell_let_loose", "hell_let_loose_vietnam", "wardogs"])
@@ -187,8 +197,17 @@ const ticketSettingsSchema = z
                 "Discord embed descriptions can be up to 4096 characters."
             ),
         panelImageUrl: imageUrlField,
+        panelAccentColor: z
+            .string()
+            .trim()
+            .regex(
+                /^(#[0-9a-f]{6})?$/i,
+                "The panel colour must be a hex colour such as #E8A33D."
+            )
+            .optional()
+            .transform((value) => normalizeAccentColor(value)),
         categories: z
-            .array(ticketCategorySchema)
+            .array(ticketCategoryWithTitleSchema)
             .max(20, "Keep ticket categories to 20 or fewer buttons."),
     })
     .superRefine((value, ctx) => {

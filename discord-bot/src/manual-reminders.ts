@@ -3,6 +3,7 @@ import type { Client } from "discord.js"
 import {
     deliverManualReminder,
     discordDmSender,
+    manualReminderNames,
     type ClaimedManualReminder,
 } from "./sync/manual-reminders"
 import { logError, logInfo, logWarn } from "./log"
@@ -94,15 +95,23 @@ export class ManualReminderRequestService {
         try {
             const payload = await this.loadEventPayload(claimed.eventId)
             if (!payload) throw new Error("Match context is not available.")
-            const sentCount = await deliverManualReminder({
+            const delivery = await deliverManualReminder({
                 payload,
                 request: claimed,
                 send: discordDmSender(this.client, claimed.eventId),
+                names: await manualReminderNames(
+                    this.client,
+                    payload,
+                    claimed.eventId
+                ),
             })
+            const sentCount = delivery.sent
+            // Closed DMs are shown on the match page, never as a bot error.
             await convex.mutation(references.completeManualReminder, {
                 secret: env.internalSecret,
                 requestId: claimed.id,
                 sentCount,
+                failedUserIds: delivery.failedUserIds,
             })
             logInfo("manual-reminders", "Sent manual reminders", {
                 eventId: claimed.eventId,
@@ -121,7 +130,8 @@ export class ManualReminderRequestService {
                 .mutation(references.failManualReminder, {
                     secret: env.internalSecret,
                     requestId: claimed.id,
-                    error: "The bot could not send the reminders.",
+                    // A code the match page words in the dashboard language.
+                    error: "send_failed",
                 })
                 .catch((failure) =>
                     logError(

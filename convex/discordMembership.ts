@@ -17,23 +17,6 @@ const gameIdValidator = v.union(
     v.literal("wardogs")
 )
 
-export const getTicketCategoryContext = query({
-    args: { secret: v.string(), guildId: v.string(), categoryId: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const config = await ctx.db
-            .query("discordConfigs")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .unique()
-        if (!config?.ticketSettings?.enabled) return null
-        const category = config.ticketSettings.categories.find(
-            (item) => item.id === args.categoryId
-        )
-        if (!category) return null
-        return { config: normalizeConfigDoc(config), category }
-    },
-})
-
 export const createTicketThread = mutation({
     args: {
         secret: v.string(),

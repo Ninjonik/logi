@@ -440,6 +440,7 @@ export const searchClanPlayers = query({
             ReturnType<typeof toPlayer> & {
                 assignmentType?: "member" | "reserve_member" | "mercenary"
                 assignmentStatus?: "pending" | "recruit" | "active"
+                assignmentPaused?: boolean
                 searchScore: number
             }
         > = []
@@ -471,6 +472,7 @@ export const searchClanPlayers = query({
                 ...player,
                 assignmentType: assignment.type,
                 assignmentStatus: assignment.status,
+                assignmentPaused: assignment.paused,
                 searchScore,
             })
         }
@@ -494,6 +496,7 @@ export const searchClanPlayers = query({
             platformIds: player.platformIds,
             assignmentType: player.assignmentType,
             assignmentStatus: player.assignmentStatus,
+            assignmentPaused: player.assignmentPaused ?? false,
             matchesPlayed: player.performance?.matchesPlayed ?? 0,
             averageKills: player.performance?.averages.kills ?? 0,
             averageKd: player.performance?.averages.killDeathRatio ?? 0,
@@ -549,6 +552,7 @@ export const getClanPlayerProfile = query({
                 new Date(left.endedAt ?? left.importedAt).getTime()
         )
         const recentMatches = sortedMatches.slice(0, 5)
+        const firstMatch = sortedMatches.at(-1)
         const score = player.scores[args.guildId] ?? player.score ?? 0
 
         return {
@@ -593,6 +597,10 @@ export const getClanPlayerProfile = query({
                 support: match.support,
                 sourceUrl: match.sourceUrl,
             })),
+            // The oldest imported match, for /player's "48 zápasů od 2. 6.".
+            firstMatchAt: firstMatch
+                ? (firstMatch.endedAt ?? firstMatch.importedAt)
+                : undefined,
             updatedAt: player.updatedAt,
             createdAt: player.createdAt,
         }

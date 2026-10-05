@@ -180,9 +180,14 @@ test("between windows: step 2, the done row with Upravit, Pokračovat and the St
             "Upravit",
             "Pokračovat",
             "Ověřit Steam přes web (doporučeno)",
+            "Najít ID účtu",
             "Zrušit",
         ]
     )
+    // The /link guide inside the application (L4-60) knows the draft.
+    const find = buttons(view)[3]!
+    assert.ok(find.kind === "action")
+    assert.equal(find.id, "link:a.draft1:start")
     const continueButton = buttons(view)[1]!
     assert.ok(continueButton.kind === "action")
     assert.deepEqual(parseApplicationButton(continueButton.id), {

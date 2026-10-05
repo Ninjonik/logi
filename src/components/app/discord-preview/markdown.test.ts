@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { parseDiscordMarkdown, parseInlineMarkdown } from "./markdown"
+import {
+    parseAnsiLine,
+    parseDiscordMarkdown,
+    parseInlineMarkdown,
+} from "./markdown"
 import { formatPreviewTimestamp } from "./timestamp"
 
 test("bold, italic, underline, strikethrough and code", () => {
@@ -148,4 +152,30 @@ test("underscores inside names never start italics, as in Discord", () => {
     assert.deepEqual(parseInlineMarkdown("_x_y z_"), [
         { type: "em", children: [{ type: "text", text: "x_y z" }] },
     ])
+})
+
+test("fenced code blocks keep spacing and turn ANSI bold white into emphasis, never into text", () => {
+    const blocks = parseDiscordMarkdown(
+        "Po 5 zápasech\n```ansi\n #  Tým    B\n\u001b[1;37m›2  VLK    5\u001b[0m\n```\n-# legenda"
+    )
+    assert.deepEqual(blocks, [
+        {
+            type: "paragraph",
+            lines: [[{ type: "text", text: "Po 5 zápasech" }]],
+        },
+        {
+            type: "code",
+            language: "ansi",
+            lines: [
+                [{ text: " #  Tým    B", strong: false }],
+                [{ text: "›2  VLK    5", strong: true }],
+            ],
+        },
+        { type: "subtext", lines: [[{ type: "text", text: "legenda" }]] },
+    ])
+    assert.deepEqual(parseAnsiLine("\u001b[31mred\u001b[0m plain", false), [
+        { text: "red plain", strong: false },
+    ])
+    // An unclosed fence keeps the rest as code instead of losing it.
+    assert.equal(parseDiscordMarkdown("```\n**x**").at(0)?.type, "code")
 })

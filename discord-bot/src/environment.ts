@@ -24,10 +24,22 @@ if (!convexUrl || !internalSecret || !botToken) {
 }
 
 const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000"
+/**
+ * The version the bot reports in its heartbeat ("verze 1.0.268", P1-04):
+ * an operator-set build label, else the package version. Never a secret.
+ */
+const versionLabel = (
+    process.env.LOGI_BOT_VERSION ??
+    process.env.npm_package_version ??
+    "1.0.0"
+)
+    .replace(/[^A-Za-z0-9._+-]/g, "")
+    .slice(0, 40)
 
 export const env = {
     leagueMessageContent: process.env.LOGI_LEAGUE_MESSAGE_CONTENT === "true",
     appSiteUrl,
+    botVersion: versionLabel || "1.0.0",
     // The public URL is embedded in Discord. A colocated bot can use a private
     // origin to pre-render images without relying on public hairpin routing.
     internalAppSiteUrl: process.env.INTERNAL_SITE_URL ?? appSiteUrl,

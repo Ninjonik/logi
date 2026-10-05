@@ -2661,7 +2661,7 @@ export const csMessages = {
             title: "Sledování Wardogs League",
             cadence:
                 "Nové zápasy kontrolujeme po {scan} minutách, sledované detaily po {refresh} minutách. Web i Discord používají stejný záznam.",
-            enable: "Sledovat zápasy a posílat karty do Discordu",
+            enable: "Sledovat Wardogs League a odkazy na zápasy",
             teamCodes: "Kódy sledovaných týmů (oddělené čárkou)",
             scanEvery: "Hledat nové zápasy každých",
             refreshEvery: "Obnovovat sledované detaily každých",
@@ -2670,8 +2670,8 @@ export const csMessages = {
                 "Společné procházení seznamu běží v nejkratším intervalu, který si některý zapnutý klan přeje; tento klan převezme nový seznam až po uplynutí vlastního intervalu. Omezení zdroje může intervaly prodloužit.",
             intakeChannel: "Kanál, kam lidé posílají odkazy",
             intakePlaceholder: "Vyberte kanál pro odkazy",
-            outputChannel: "Kanál pro karty zápasů",
-            outputPlaceholder: "Vyberte kanál pro karty",
+            panelsNote:
+                "Tabulku a nejbližší zápasy celé ligy posílá do Discordu panel WD League v Nastavení → Panely v Discordu. Karty jednotlivých zápasů se už neposílají. Když sledování vypnete, bot zprávy panelu smaže.",
             intakeNote:
                 "Zprávy botů ignorujeme. Automatické čtení zpráv lidí musí provozovatel bota zapnout (Message Content). Procházení seznamu a ruční přidání fungují i bez toho.",
             save: "Uložit nastavení",
@@ -2745,6 +2745,13 @@ export const csMessages = {
         textLabel: "Text",
         imageOptional: "volitelné",
         previewTitle: "Náhled v Discordu",
+        panelColor: "Barva panelu",
+        panelColorHint: "Prázdné = barva klanu. Hex, např. #E8A33D.",
+        panelColorInvalid: "Barva musí být hex, např. #E8A33D.",
+        threadTitle: "Nadpis karty ve vlákně",
+        threadTitlePlaceholder: "{author} nahlašuje hráče",
+        threadTitleHint:
+            "{author} je jméno autora, {category} název kategorie. Prázdné pole napíše „{author} · {category}“.",
         columns: {
             button: "Tlačítko",
             handledBy: "Kdo odpovídá",
@@ -2773,7 +2780,7 @@ export const csMessages = {
         panelDescriptionPlaceholder:
             "Vysvětlete, jak mají členové tento ticket panel používat.",
         image: "Náhledový obrázek",
-        embedLimitNotice: "Pole s vysvětlením kategorií v embedu právě používá",
+        embedLimitNotice: "Text panelu v Discordu právě používá",
         embedLimitExceeded:
             "(příliš dlouhé, před uložením zkraťte některé popisy kategorií).",
         categoriesTitle: "Kategorie ticketů",
@@ -2788,7 +2795,7 @@ export const csMessages = {
         typeAnyEmoji: "nebo napište libovolné emoji",
         categoryDescription: "Popis",
         categoryDescriptionPlaceholder:
-            "Zobrazí se v embed fieldu jako vysvětlení, k čemu tato kategorie slouží.",
+            "Zobrazí se v panelu za názvem kategorie, třeba „chování na serveru“.",
         supportRoles: "Role podpory pozvané do ticketu",
         modalQuestions: "Modal otázky",
         modalQuestionsDescription:
@@ -2805,9 +2812,9 @@ export const csMessages = {
         noQuestions:
             "Zatím tu nejsou žádné modal otázky. Když to necháte prázdné, kliknutí na tlačítko vytvoří ticket hned.",
         noCategories: "Zatím tu nejsou žádné ticket kategorie.",
-        defaultPanelTitle: "Odeslat ticket",
+        defaultPanelTitle: "Potřebuješ pomoc?",
         defaultPanelDescription:
-            "Vyberte kategorii, která nejlépe odpovídá vašemu problému, a otevřeme pro vás soukromý support thread.",
+            "Vyber, s čím potřebuješ pomoct. Otevře se soukromé vlákno, které vidíš jen ty a správci.",
         incompleteTitle: "Nastavení ticket panelu není kompletní",
         incompleteDescription:
             "Ticket systém je zapnutý, ale Discord ticket panel se nezveřejní a ticket thready nepůjde otevírat, dokud nedokončíte: {items}.",
@@ -3220,70 +3227,6 @@ export const csMessages = {
         themeDark: "Tmavý",
         themeSystem: "Podle systému",
     },
-    platformIdLink: {
-        title: "Propojte své platform ID",
-        description:
-            "Nejdřív vyberte platformu. Pak vám přesně ukážeme, co zkopírovat a kde to najít.",
-        userPrefix: "Odesíláte za",
-        expired:
-            "Tento odkaz už není platný. Vraťte se na Discord a klikněte znovu na tlačítko klanové přihlášky, aby se vytvořil nový odkaz.",
-        platformLabel: "Platforma",
-        platformPlaceholder: "Vyberte svou platformu",
-        submit: "Odeslat platform ID",
-        success:
-            "Platform ID bylo uloženo. Tuto stránku můžete zavřít a vrátit se na Discord.",
-        closePage: "Tuto stránku můžete nyní zavřít.",
-        genericError: "Platform ID se nepodařilo uložit.",
-        guideLabel: "Otevřít návod",
-        steam: {
-            label: "Steam",
-            idLabel: "Steam64 ID",
-            placeholder: "7656119...",
-            guideLabel: "Otevřít Steam návod",
-            help: "Potřebujete dlouhé číselné Steam ID svého účtu.",
-            steps: [
-                "Otevřete návod níže.",
-                "Postupujte podle obrázků, dokud neuvidíte své Steam64 ID.",
-                "Zkopírujte to dlouhé číslo a vložte ho sem.",
-            ],
-        },
-        epic: {
-            label: "Epic Games",
-            idLabel: "Epic Account ID",
-            placeholder: "Epic account ID",
-            guideLabel: "Otevřít Epic návod",
-            help: "Potřebujete své Epic Account ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete stránku svého Epic účtu.",
-                "Zkopírujte zobrazené Account ID a vložte ho sem.",
-            ],
-        },
-        xbox: {
-            label: "Xbox",
-            idLabel: "Xbox gamertag / account ID",
-            placeholder: "Xbox gamertag nebo account ID",
-            guideLabel: "Otevřít Xbox návod",
-            help: "Použijte Xbox identitu, pod kterou hrajete hru. Ve většině případů je to váš gamertag.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete svůj Xbox profil.",
-                "Zkopírujte gamertag nebo účetní hodnotu, kterou používáte ve hře, a vložte ji sem.",
-            ],
-        },
-        playstation: {
-            label: "PlayStation",
-            idLabel: "PlayStation online ID",
-            placeholder: "PlayStation online ID",
-            guideLabel: "Otevřít PlayStation návod",
-            help: "Potřebujete své PlayStation online ID.",
-            steps: [
-                "Otevřete návod níže.",
-                "Otevřete nastavení svého PlayStation profilu.",
-                "Zkopírujte své online ID a vložte ho sem.",
-            ],
-        },
-    },
     calendarPage: {
         title: "Kalendář",
         description:
@@ -3359,7 +3302,8 @@ export const csMessages = {
             forum: "Kategorie pro fóra akcí",
             forumHelp: "Kde bot zakládá vlákna k akcím.",
             squadVoice: "Kategorie pro hlasové kanály čet",
-            squadVoiceHelp: "Sem bot vytváří kanály čet před akcí.",
+            squadVoiceHelp:
+                "Každý zápas dostane pro kanály čet vlastní kategorii hned pod touto, se stejnými oprávněními.",
             meeting: "Kanál pro sraz",
             meetingHelp: "Kam se hráči sejdou před akcí.",
             addChannelException: "Jiný kanál pro hru",
@@ -3470,10 +3414,10 @@ export const csMessages = {
                     description:
                         "Klanová role a role, která smí spravovat Logi.",
                 },
-                stats: {
-                    title: "Příkaz /stats",
+                commands: {
+                    title: "Příkazy",
                     description:
-                        "Statistiky hráčů v Discordu: pro které hry a kam se sdílí.",
+                        "Které příkazy bot nabízí, kdo je smí použít a kde.",
                 },
                 membership: {
                     title: "Členství",
@@ -3671,32 +3615,148 @@ export const csMessages = {
             unknownMember: "Člen bez účtu v Logi",
             moreManagers: "a další: {count}",
         },
-        statsPage: {
-            enable: "Povolit /stats",
-            on: "Zapnuto",
-            off: "Vypnuto",
-            gamesTitle: "Hry a zdroj dat",
-            hllSource:
-                "Z veřejných profilů HLL Records podle Steam účtu hráče.",
-            wardogsSource: "Z her uložených z vašich",
-            gameServersLink: "herních serverů",
-            shareTitle: "Sdílení",
-            defaultChannel: "Výchozí kanál",
-            defaultChannelHelp:
-                "Tlačítko Sdílet nabídne tento kanál jako první.",
-            noChannel: "Bez výchozího kanálu",
-            legacyTitle: "Stará připojení ke stats serverům · {count}",
-            legacyHelp:
-                "Zadaná tokenem a adresou v nastavení bota. Nová připojení patří do Herních serverů, kde se klíč ukládá šifrovaně a dá se otestovat.",
-            openGameServers: "Otevřít Herní servery",
-            previewTitle: "Náhled odpovědi v Discordu",
-            previewExample: "Ukázková data",
-            previewEphemeral: "Vidíš jen ty · Zahodit",
-            previewPlayer: "Ukázkový hráč",
-            previewNote:
-                "Čísla jsou jen ukázka. Skutečná odpověď ukáže statistiky hráče z vašich herních serverů.",
-            showConnections: "Zobrazit připojení",
-            hideConnections: "Skrýt připojení",
+        commandsPage: {
+            title: "Příkazy v Discordu",
+            description:
+                "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
+            registration: {
+                title: "Registrace příkazů",
+                phoneTitle: "Příkazy jsou zaregistrované",
+                registered:
+                    "Zaregistrováno {when} · {count} na serveru {server}. Po uložení změn je bot zaregistruje znovu sám; Discord je ukáže do minuty.",
+                registeredShort: "{when} · {count}",
+                count: {
+                    one: "{count} příkaz",
+                    few: "{count} příkazy",
+                    other: "{count} příkazů",
+                },
+                today: "dnes v {time}",
+                yesterday: "včera v {time}",
+                neverTitle: "Příkazy zatím nejsou zaregistrované",
+                never: "Bot je zaregistruje, jakmile poběží a uvidí tento server. Po uložení změn je zaregistruje znovu sám.",
+                pending: "Bot příkazy zaregistruje znovu do minuty.",
+                failedTitle: "Registrace příkazů se nepovedla",
+                failed: "{reason} Zkontrolujte, že bot je na serveru a má oprávnění pro příkazy, a zkuste to znovu.",
+                failures: {
+                    forbidden: "Discord botovi registraci nepovolil.",
+                    rate_limited: "Discord dočasně omezil požadavky.",
+                    unavailable: "Discord neodpověděl.",
+                },
+                reregister: "Znovu zaregistrovat",
+                requested: "Bot příkazy zaregistruje znovu do minuty.",
+                requestFailed: "Požadavek se nepodařilo odeslat.",
+            },
+            legacy: {
+                title: "Stará připojení ke stats serverům · {count}",
+                help: "Používá je jen hledání hráče v /link a v přihlášce do klanu, /stats ne. Po převodu do Herních serverů se klíč uloží šifrovaně a dá se otestovat.",
+                convert: "Převést do Herních serverů",
+                show: "Zobrazit připojení",
+                hide: "Skrýt připojení",
+                converted:
+                    "Převedeno: {converted}. Otestujte je v Herních serverech; stará připojení pak můžete odebrat.",
+                nothingToConvert:
+                    "Všechna připojení už v Herních serverech jsou, nebo se převést nedají.",
+                skipped:
+                    "Nepřevedeno: {count} (nejsou přes https, nemají klíč nebo patří jiné hře).",
+                encryptionUnavailable:
+                    "Šifrování klíčů teď není dostupné, převod se nespustil.",
+                failed: "Převod se nepodařil.",
+            },
+            commands: {
+                title: "Příkazy",
+                intro: "Logi ověří oprávnění při každém použití, čerstvě z Discordu. Nabídka po napsání „/“ je pro všechny stejná; kdo příkaz použít nesmí, dostane krátké vysvětlení a /help mu ho nenabídne.",
+                members: "Pro členy",
+                staff: "Pro správce",
+                new: "Nový",
+                on: "Zapnuto",
+                off: "Vypnuto",
+                who: "Kdo smí použít",
+                reply: "Odpověď",
+                where: "Kde jde použít",
+                audiences: {
+                    everyone: {
+                        label: "Všichni na serveru",
+                        description: "Každý člen Discord serveru",
+                    },
+                    clanMembers: {
+                        label: "Členové klanu",
+                        description: "S klanovou rolí z Role a přístup",
+                    },
+                    logiAdmins: {
+                        label: "Správci Logi",
+                        description: "Administrator nebo Role správců",
+                    },
+                },
+                rolesHint: "K tomu můžete přidat konkrétní role.",
+                audienceWithRoles: "{group} a k tomu role {roles}.",
+                addRole: "Role",
+                addRoleAria: "Přidat roli k {command}",
+                removeRole: "Odebrat roli {role}",
+                searchRoles: "Hledat roli",
+                noRoles: "Žádná další role",
+                replies: {
+                    private: "Jen autor příkazu",
+                    privateShare: "Jen autor, s tlačítkem Sdílet",
+                },
+                fixedWho: {
+                    help: "Všichni na serveru · každý uvidí jen své příkazy",
+                    link: "Všichni na serveru · potřebují ho i uchazeči o vstup",
+                    notice: "Přihlášení na akci, která ještě nezačala",
+                },
+                allChannels: "Všechny kanály",
+                someChannels: "Jen vybrané kanály",
+                addChannel: "Kanál",
+                addChannelAria: "Přidat kanál k {command}",
+                removeChannel: "Odebrat kanál {channel}",
+                searchChannels: "Hledat kanál",
+                noChannels: "Žádný další kanál",
+                channelsHint: "Jinde bot odpoví, kde příkaz jde použít.",
+                playerShareHint:
+                    "Sdílet pošle profil do kanálu, kde padl příkaz.",
+                whoLabel: "Kdo smí použít {command}",
+                replyLabel: "Odpověď {command}",
+                whereLabel: "Kde jde použít {command}",
+                closeTicket: {
+                    toggle: "zapíná se s Tickety",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Tickety",
+                    reply: "Potvrzení autorovi příkazu, shrnutí ve vlákně, DM autorovi ticketu",
+                    where: "Jen ve vláknech ticketů",
+                },
+                closeApplication: {
+                    toggle: "zapíná se s Členstvím",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Členství",
+                    reply: "Potvrzení autorovi příkazu, rozhodnutí ve vlákně, DM uchazeči",
+                    where: "Jen ve vláknech přihlášek",
+                },
+            },
+            stats: {
+                gamesTitle: "Hry a zdroj dat",
+                gameSwitch: "Statistiky {game}",
+                hllSource:
+                    "Z veřejných profilů HLL Records podle Steam účtu hráče.",
+                wardogsSource: "Z her uložených z vašich",
+                gameServersLink: "herních serverů",
+                shareChannel: "Kanál pro Sdílet",
+                shareChannelHelp:
+                    "Sdílet pošle kartu rovnou sem. Bez kanálu se bot hráče zeptá, kam.",
+                noShareChannel: "Bez kanálu",
+                previewTitle: "Náhled odpovědi · ukázková data",
+                previewPlayer: "Hráč 17",
+            },
+            descriptions: {
+                title: "Popisy příkazů v Discordu",
+                intro: "Discord ukáže popis v jazyce klanu všem členům, bez ohledu na jazyk jejich aplikace. Jazyk klanu je {language}; při změně v {channels} bot příkazy zaregistruje znovu. Dovětek „(pro správce)“ bot přidá jen příkazům, které smí jen Správci Logi.",
+                channelsLink: "Kanály a jazyk",
+                languages: { cs: "čeština", en: "angličtina", de: "němčina" },
+                command: "Příkaz",
+                clanLanguage: "jazyk klanu",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote: "Po uložení bot příkazy znovu zaregistruje.",
+            saved: "Nastavení příkazů je uložené. Bot je zaregistruje znovu.",
+            saveError: "Nastavení příkazů se nepodařilo uložit.",
         },
         messagesPage: {
             lookTitle: "Vzhled všech zpráv",
@@ -3831,10 +3891,10 @@ export const csMessages = {
                 title: "Role a přístup",
                 description: "Role klanu a role, která otevírá správu v Logi.",
             },
-            stats: {
-                title: "Příkaz /stats",
+            commands: {
+                title: "Příkazy",
                 description:
-                    "Pro které hry /stats odpovídá, kam se výsledky sdílejí a ze kterých serverů čte statistiky.",
+                    "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
             },
             membership: {
                 title: "Členství",
@@ -4367,8 +4427,6 @@ export const csMessages = {
         changeSquadTemplateAction: "Změnit šablonu a resetovat přiřazení",
         squadTemplateChanged:
             "Šablona jednotek byla změněna. Pro použití změny soupisku uložte.",
-        publishConfirmTitle: "Publikovat soupisku?",
-        publishConfirmDescription: "Členové okamžitě uvidí publikovanou verzi.",
         setupRoster: "Nastavení soupisky",
         selectEvent: "Vybrat událost",
         selectEventPlaceholder: "Vyberte událost",
@@ -4426,21 +4484,6 @@ export const csMessages = {
         saved: "Soupiska uložena",
         published: "Soupiska publikována",
         attendanceUpdated: "Docházka byla upravena",
-        updatePublishedPromptTitle: "Poslat i update soupisky?",
-        updatePublishedPromptDescription:
-            "Tato soupiska už je publikovaná. Vyberte, jestli se má do stejného announce kanálu poslat nový fotbalový update. Dotčení hráči dostanou DM v obou případech.",
-        updatePublishedPromptAnnounce: "Uložit a poslat update",
-        updatePublishedPromptSkip: "Uložit bez příspěvku",
-        updatePublishedPromptCancel: "Pokračovat v úpravách",
-        updatePublishedPromptHint:
-            "⚽ Umíme vypsat, kdo se dostal dovnitř, kdo vypadl, přesuny mezi squady i změny rolí.",
-        notifyRosterChanges: "Poslat dotčeným hráčům DM",
-        postRosterChanges:
-            "Poslat update soupisky do informačního kanálu události",
-        updatePosted: "Soupiska uložena a update byl odeslán.",
-        updateSavedWithoutPost: "Soupiska uložena. DM hráčům byly odeslány.",
-        updateDmDeliveryFailed:
-            "Soupiska byla uložena, ale jednomu nebo více hráčům se nepodařilo doručit DM.",
     },
     newMatch: {
         title: "Nový zápas",
@@ -4685,7 +4728,7 @@ export const csMessages = {
         preview: {
             title: "Náhled v Discordu",
             hint: "Časy uvidí každý ve svém pásmu",
-            note: "Zvýrazněná část se mění podle kroku, který právě vyplňujete. Ve zprávě nikdy není heslo serveru.",
+            note: "Přesně tuto zprávu bot pošle po zveřejnění. Ve zprávě nikdy není heslo serveru.",
             today: "dnes",
             meetingAt: "sraz {time}",
             registrationCloses: "přihlášky končí {time}",
@@ -5914,6 +5957,94 @@ export const csMessages = {
         rosterPageDescription:
             "Inspirováno tabulemi kompetitivních týmů: seskupené jednotky, viditelné zálohy, stav zařazení a systém pro potvrzování účasti připravený na budoucí integraci.",
     },
+    rosterPublish: {
+        publishTitle: "Publikovat soupisku",
+        republishTitle: "Publikovat znovu",
+        publishedAt: "zveřejněno {time}",
+        close: "Zavřít",
+        contentLabel: "Co se pošle do Discordu",
+        variantPhotoText: "Fotka a soupiska textem",
+        variantPhotoTextDescription:
+            "Obrázek soupisky a pod ním čety textem. Jde vyhledávat a číst i na telefonu.",
+        variantPhoto: "Jen fotka",
+        variantPhotoDescription:
+            "Jen obrázek soupisky, jako ho posílal starý bot.",
+        defaultChip: "výchozí",
+        defaultNote: "Výchozí podobu nastavíte v",
+        defaultNoteLink: "Zprávy a panely → Soupiska",
+        channelLabel: "Kanál",
+        channelFrom: "z",
+        channelFromLink: "Kanály a jazyk",
+        channelMissing: "kanál není nastavený",
+        mentionLabel: "Označit zařazené hráče",
+        mentionFirstHint: {
+            one: "Ve zprávě bude zmínka {count} hráče ze soupisky.",
+            few: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+            many: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+            other: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+        },
+        mentionRepeatHint: "Při opakování zbytečně ruší; DM stačí.",
+        laterNote:
+            "DM o změnách a přehled změn se nabídnou až při dalším zveřejnění.",
+        dmLabel: "Oznámit hráčům změny do DM",
+        dmHint: {
+            one: "Jen {count} hráči, kterého se změna týká.",
+            few: "Jen {count} hráčům, kterých se změna týká.",
+            many: "Jen {count} hráčům, kterých se změna týká.",
+            other: "Jen {count} hráčům, kterých se změna týká.",
+        },
+        postLabel: "Poslat přehled změn do kanálu",
+        postHint: "Krátká zpráva pod soupiskou.",
+        rostered: "v soupisce",
+        reserves: {
+            one: "záloha",
+            few: "zálohy",
+            many: "záloh",
+            other: "záloh",
+        },
+        notAttending: "neúčastní",
+        changesTitle: "Změny od poslední verze",
+        changesMoved: "{count} přesunuto",
+        changesAgainst: "Proti verzi zveřejněné {time}.",
+        noChanges: "Hráči se od poslední verze nezměnili.",
+        toReserves: "do záloh",
+        previewTitle: "Náhled v {channel}",
+        previewCaption: "Zjednodušený náhled zprávy.",
+        republishCaption:
+            "Zpráva v {channel} se upraví, nová nevznikne. Přehled změn přijde pod ni.",
+        photoPlaceholder: "fotka soupisky (PNG)",
+        cancel: "Zrušit",
+        publish: "Publikovat soupisku",
+        republish: "Publikovat znovu",
+        published: "Soupiska publikována",
+        republished: "Soupiska znovu zveřejněna",
+        dmFailed: {
+            one: "DM nedošla {count} hráči: {names}. Má vypnuté soukromé zprávy od členů serveru.",
+            few: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+            many: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+            other: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+        },
+        requestFailed:
+            "Soupiska je uložená, ale změny se do Discordu neodeslaly. Zkuste to znovu.",
+    },
+    reminderDelivery: {
+        title: "Připomínka došla {sent} z {total} hráčů",
+        body: "{names} mají v Discordu vypnuté soukromé zprávy od členů serveru. Napiš jim jinak, nebo je požádej, ať si zprávy od serveru {clan} zapnou.",
+        bodyOne:
+            "{names} má v Discordu vypnuté soukromé zprávy od členů serveru. Napiš mu jinak, nebo ho požádej, ať si zprávy od serveru {clan} zapne.",
+        failedAll:
+            "Připomínku se nepodařilo odeslat. Zkuste to za chvíli znovu.",
+        copyNames: "Zkopírovat jména",
+        copied: "Jména zkopírována",
+        howTo: "Jak zapnout zprávy od serveru",
+        meta: "{kind} · odeslána {time} · poslal {name}",
+        kindUnanswered: "Připomínka přihlášky",
+        kindUnconfirmed: "Připomínka docházky",
+        unknownSender: "správce",
+        and: "a",
+        sentAt: "{date} v {time}",
+        unknownPlayer: "neznámý hráč",
+    },
     discordPreview: {
         regionLabel: "Náhled zprávy v Discordu",
         appTag: "APP",
@@ -5927,6 +6058,127 @@ export const csMessages = {
         unknownUser: "uživatel",
         unknownRole: "role",
         unknownChannel: "kanál",
+    },
+    joinPage: {
+        metaTitle: "Připojit se na {name}",
+        metaDescription: "Připoj se na herní server {name}.",
+        opening: "Otevírám {game}…",
+        players: "{players} / {capacity} hráčů",
+        map: "mapa {map}",
+        steamPrompt: "Steam se zeptá, jestli odkaz otevřít. Potvrď Otevřít.",
+        openAgain: "Otevřít znovu",
+        manualTitle: "Připojit ručně",
+        addressLabel: "Adresa serveru",
+        copy: "Kopírovat",
+        copied: "Zkopírováno",
+        copyFailed:
+            "Kopírování se nepovedlo. Označ adresu a zkopíruj ji ručně.",
+        steamInstructions:
+            "Ve Steamu: Zobrazit → Herní servery → Oblíbené → Přidat server a vložit adresu.",
+        backToDiscord: "Zpět do Discordu",
+        joinCodeTitle: "Kód pro připojení",
+        joinCodeLabel: "Kód pro připojení do hry",
+        joinCodeHelp: "Ve hře otevři připojení ke hře a zadej tento kód.",
+        noAddress:
+            "Adresa serveru zatím není nastavená. Zeptej se správce klanu.",
+        noJoinCode:
+            "Kód pro připojení zatím není nastavený. Zeptej se správce klanu.",
+        notFoundTitle: "Server nenalezen",
+    },
+    discordPanelStatus: {
+        states: {
+            published: "Zveřejněno",
+            error: "Chyba",
+            waiting: "Čeká na bota",
+            unsent: "Neodesláno",
+            paused: "Pozastaveno",
+        },
+        botOnline: "Bot online",
+        botVersion: "verze {version} · poslední kontakt {ago}",
+        refreshEvery: "Panely se obnovují každých 60 s",
+        botOffline:
+            "Bot neodpovídá · poslední kontakt {ago}. Panely se teď neobnovují a nové se neodešlou. Zkontrolujte, že bot běží; po aktualizaci ho restartujte.",
+        botNeverSeen:
+            "Bot se zatím neozval. Panely se neobnovují a nové se neodešlou, dokud bot neběží.",
+        botOutdated:
+            "Bot běží starší verzi {version}. Panely v Discordu potřebují novější verzi. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
+        permissions: {
+            view_channel: "Zobrazit kanál",
+            send_messages: "Posílat zprávy",
+            embed_links: "Vkládat odkazy",
+            attach_files: "Přikládat soubory",
+            read_message_history: "Číst historii zpráv",
+        },
+        errors: {
+            bot_not_in_server: {
+                title: "Bot není na Discord serveru.",
+                fix: "Pozvěte bota Logi znovu na server a pak klikněte Zkusit znovu.",
+            },
+            channel_missing: {
+                title: "Kanál {channel} už neexistuje nebo ho bot nevidí.",
+                fix: "V editoru vyberte jiný kanál a uložte.",
+            },
+            channel_type: {
+                title: "Do kanálu {channel} nejde poslat zprávu.",
+                fix: "V editoru vyberte textový kanál nebo kanál s oznámeními.",
+            },
+            missing_permissions: {
+                title: "Bot nemá oprávnění {permissions} v {channel}.",
+                fix: "Na Discordu otevřete Upravit kanál → Oprávnění → Logi a zapněte {permissions}. Pak klikněte Zkusit znovu.",
+            },
+            delivery_uncertain: {
+                title: "Discord nepotvrdil, jestli zprávu přijal.",
+                fix: "Bot zprávu při další obnově najde, nebo ji pošle znovu. Nic nemusíte dělat.",
+            },
+            discord_unavailable: {
+                title: "Discord teď neodpovídá.",
+                fix: "Bot to zkusí znovu sám. Když to trvá dlouho, klikněte Zkusit znovu.",
+            },
+            source_missing: {
+                title: "Herní server panelu už v Logi není.",
+                fix: "V editoru vyberte jiný server, nebo panel odstraňte.",
+            },
+            source_not_collecting: {
+                title: "Logi z herního serveru nesbírá data.",
+                fix: "Zapněte sběr dat v Herní servery a pak klikněte Zkusit znovu.",
+            },
+            provider_unreachable: {
+                title: "Herní server neodpovídá.",
+                fix: "Panel ukazuje poslední data. Zkontrolujte adresu a klíč v Herní servery.",
+            },
+            provider_rate_limited: {
+                title: "Poskytovatel dat teď odmítá další dotazy.",
+                fix: "Panel ukazuje poslední data a zkusí to znovu. Když to trvá přes hodinu, zvyšte limit klíče, nebo ho vyměňte v Herní servery.",
+            },
+            render_failed: {
+                title: "Panel se nepodařilo sestavit.",
+                fix: "Zkraťte název nebo popis panelu. Když chyba trvá, nahlaste ji podpoře Logi.",
+            },
+            unsupported_kind: {
+                title: "Bot tento druh panelu ještě neumí.",
+                fix: "Aktualizujte bota a restartujte ho.",
+            },
+            competition_missing: {
+                title: "Soutěž panelu už neexistuje.",
+                fix: "V editoru vyberte jinou soutěž, nebo panel odstraňte.",
+            },
+            league_disabled: {
+                title: "Wardogs League je v Nastavení vypnutá, bot zprávy panelu smazal.",
+                fix: "Zapněte Wardogs League v Nastavení → Wardogs League, bot pak obě zprávy pošle znovu.",
+            },
+            unknown: {
+                title: "Zprávu se nepodařilo odeslat.",
+                fix: "Klikněte Zkusit znovu. Když chyba trvá, nahlaste ji podpoře Logi.",
+            },
+        },
+        warnings: {
+            password_hidden_public_channel:
+                "Kanál je teď veřejný, proto jsme heslo z panelu odebrali. Přesuňte panel do soukromého kanálu a heslo se znovu ukáže.",
+            live_data_unavailable:
+                "Živá data teď nejsou dostupná; panel ukazuje poslední sebraná data.",
+            attach_files_missing:
+                "Bot nemá oprávnění Přikládat soubory, panel je bez obrázku.",
+        },
     },
     membershipApplication: {
         title: "Přihláška do klanu",

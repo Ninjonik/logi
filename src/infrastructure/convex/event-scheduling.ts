@@ -4,6 +4,7 @@ import {
     resolveAttendanceReminderHours,
     resolveSignupReminderStatuses,
 } from "@/domain/events/scheduled-job-policy"
+import { announcementRefreshTimes } from "@/domain/events/announcement-state"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 
@@ -49,6 +50,11 @@ export async function refreshEventSchedule(
                 new Date(event.gameEnd).getTime() + EVENT_CONCLUSION_RESERVE_MS
             ).toISOString(),
         ],
+        // The announcement card changes at the meeting and at the start
+        // without any stored change; redraw it then (board L1-B03).
+        ...announcementRefreshTimes(event, nowDate).map(
+            (dueAt) => ["refresh-announcement", dueAt] as const
+        ),
         ...resolveAttendanceReminderHours(
             event.attendanceReminderHours
         ).flatMap((hours) => {
@@ -63,7 +69,9 @@ export async function refreshEventSchedule(
             const dueAt = getSignupReminderDueAt(
                 event.createdAt,
                 event.registrationEnd,
-                nowDate
+                nowDate,
+                false,
+                event.registrationStart
             )
             return event.kind === "match" &&
                 resolveSignupReminderStatuses(event.signupReminderStatuses)

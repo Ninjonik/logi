@@ -35,7 +35,7 @@ export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
     channels: Hash,
     "panel-graphics": Images,
     roles: ShieldCheck,
-    stats: SquareTerminal,
+    commands: SquareTerminal,
     membership: UserCheck,
     tickets: Ticket,
     "game-servers": Server,

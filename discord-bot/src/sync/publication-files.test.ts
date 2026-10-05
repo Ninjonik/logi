@@ -53,6 +53,37 @@ test("unchanged content-addressed artwork is retained instead of uploaded on eve
         attachments: [],
     })
 })
+test("versioned panel images are kept while unchanged and uploaded when their hash changes", () => {
+    const score = {
+        attachment: Buffer.from("png"),
+        name: "skore-vlci-1-3fa9c2.png",
+    }
+    assert.deepEqual(
+        publicationFiles([score], [{ id: "kept", name: score.name }]),
+        { files: [], attachments: [{ id: "kept", filename: score.name }] }
+    )
+    assert.deepEqual(
+        publicationFiles(
+            [score],
+            [{ id: "old", name: "skore-vlci-1-000000.png" }]
+        ),
+        { files: [score], attachments: [] }
+    )
+    for (const name of ["banner-vlci-1-ab12.webp", "mapa-foy-0f.png"])
+        assert.deepEqual(
+            publicationFiles(
+                [{ attachment: Buffer.from("x"), name }],
+                [{ id: "kept", name }]
+            ).attachments,
+            [{ id: "kept", filename: name }]
+        )
+    // Not a versioned name: always uploaded again.
+    const plain = { attachment: Buffer.from("x"), name: "skore.png" }
+    assert.deepEqual(
+        publicationFiles([plain], [{ id: "old", name: plain.name }]),
+        { files: [plain], attachments: [] }
+    )
+})
 test("arbitrary mutable filenames are never assumed identical", () => {
     const asset = { attachment: "/catalog/map.webp", name: "map.webp" }
     assert.deepEqual(

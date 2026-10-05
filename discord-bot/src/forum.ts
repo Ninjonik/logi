@@ -1,30 +1,63 @@
 import {
     AttachmentBuilder,
+    ChannelFlags,
     ChannelType,
-    EmbedBuilder,
+    FileBuilder,
     ForumChannel,
+    MediaGalleryBuilder,
+    MediaGalleryItemBuilder,
     MessageFlags,
+    TextDisplayBuilder,
+    type Client,
 } from "discord.js"
 
-import { getEventMessages } from "../../src/lib/clan-language/events"
-
+import {
+    attendanceNoticeView,
+    debriefView,
+    forumInfoView,
+    forumTopicView,
+    type ForumContext,
+    type ForumEvent,
+} from "../../src/domain/discord-messages/match-forum"
 import {
     DISCORD_LEVEL_ZERO_ATTACHMENT_MAX_BYTES,
     DISCORD_MESSAGE_MAX_ATTACHMENTS,
     DISCORD_MESSAGE_MAX_UPLOAD_BYTES,
 } from "../../src/domain/discord-sync/attachment-limits"
 import {
-    buildForumInfoEmbed,
-    buildForumInfoV2Message,
-    buildForumThreadName,
-} from "./message-builders"
+    editPayload,
+    messageKitLayoutOptions,
+    messagePayload,
+    renderMessageView,
+    type MessageKitOptions,
+} from "./ui/message-kit"
 import type {
-    ClanLanguage,
     DiscordConfig,
+    EventCategory,
+    EventInteractionContext,
     EventRecord,
+    SyncState,
     TopicPreset,
 } from "./types"
+import {
+    eventCategory,
+    eventMapLabel,
+    meetingChannelOf,
+    memberNames,
+} from "./events/match-context"
+import {
+    matchForumChannelName,
+    matchTitle,
+} from "../../src/domain/discord-messages/match-text"
+import { resolveMatchMessageSettings } from "../../src/domain/discord-messages/notification-settings"
+import type { MessageView } from "../../src/domain/discord-messages/message-view"
+import { footerText } from "../../src/domain/discord-messages/message-layout"
+import { getRosterMessages } from "../../src/lib/clan-language/rosters"
+import { getEventMessages } from "../../src/lib/clan-language/events"
+import { applicationFactionEmoji } from "./runtime/faction-emoji"
 import { reportClanDiscordError } from "./error-reporting"
+import { convex, references } from "./convex"
+import { buildPublicMatchUrl } from "./utils"
 import { env } from "./environment"
 import { logWarn } from "./log"
 
@@ -39,6 +72,17 @@ type ForumChannelCandidate = {
     parentId: string | null
     type: ChannelType
     createdTimestamp: number
+}
+
+/** What the forum shows besides the event (Convex `discordMatchForum`). */
+export type MatchForumContext = {
+    stratmaps: Array<{ id: string; title: string }>
+    result: { outcome: "win" | "loss" | "draw"; score: string } | null
+    provider: string | null
+    publicMatch: boolean
+    serverId: string | null
+    clanName: string | null
+    category: { label: string; color: string | null } | null
 }
 
 /**
@@ -61,6 +105,18 @@ export function findRecoverableEventForum(
         .sort(
             (left, right) => left.createdTimestamp - right.createdTimestamp
         )[0]
+}
+
+/** The match forum's channel name, "vlk-vs-rog-11-10" (L1-127). */
+export function buildMatchForumName(
+    config: Pick<DiscordConfig, "timezone">,
+    event: Pick<EventRecord, "name" | "matchTeams" | "gameStart">
+) {
+    return matchForumChannelName(
+        matchTitle(event),
+        event.gameStart,
+        config.timezone || "UTC"
+    )
 }
 
 function attachmentFilename(url: string, index: number) {
@@ -135,6 +191,112 @@ async function sendForumMessage(
     })
 }
 
+const IMAGE_FILE = /\.(png|jpe?g|gif|webp)$/i
+
+/**
+ * A topic card with its attachments inside it: pictures as a gallery,
+ * other files (a PDF) as file cards, then the footer. Components V2 show
+ * only the files a component references.
+ */
+export function buildTopicMessage(
+    view: MessageView,
+    files: readonly { name: string }[],
+    options: MessageKitOptions
+) {
+    const { footer, ...body } = view
+    const { container } = renderMessageView(body, options)
+    const images = files.filter((file) => IMAGE_FILE.test(file.name))
+    const others = files.filter((file) => !IMAGE_FILE.test(file.name))
+    if (images.length)
+        container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+                images
+                    .slice(0, 10)
+                    .map((file) =>
+                        new MediaGalleryItemBuilder().setURL(
+                            `attachment://${file.name}`
+                        )
+                    )
+            )
+        )
+    for (const file of others)
+        container.addFileComponents(
+            new FileBuilder().setURL(`attachment://${file.name}`)
+        )
+    if (footer)
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                `-# ${footerText(footer, messageKitLayoutOptions(options).copy)}`
+            )
+        )
+    return container
+}
+
+function kitOptions(config: DiscordConfig): MessageKitOptions {
+    return { language: config.defaultLanguage, style: config.messageStyle }
+}
+
+function forumContextOf(
+    config: DiscordConfig,
+    emoji?: ForumContext["emoji"]
+): ForumContext {
+    return {
+        copy: getRosterMessages(config.defaultLanguage),
+        timeZone: config.timezone || "UTC",
+        emoji,
+    }
+}
+
+function forumEventOf(
+    config: DiscordConfig,
+    event: EventRecord,
+    categories?: readonly EventCategory[]
+): ForumEvent {
+    return {
+        id: event.id,
+        title: matchTitle(event),
+        category: eventCategory(event, categories),
+        teams: event.matchTeams,
+        side: event.side,
+        mapLabel: eventMapLabel(event, config.defaultLanguage),
+        meetingStart: event.meetingStart,
+        gameStart: event.gameStart,
+        meetingChannelId: meetingChannelOf(event, config),
+        server: event.server,
+        hasPassword: Boolean(event.serverPassword?.trim()),
+        notes: event.notes,
+        description: event.description,
+        imageUrl: event.kind === "match" ? event.imageUrl : undefined,
+    }
+}
+
+export async function loadForumContext(eventId: string) {
+    return (await convex
+        .query(references.getMatchForumContext, {
+            secret: env.internalSecret,
+            eventId,
+        })
+        .catch(() => null)) as MatchForumContext | null
+}
+
+const infoPostNames = () => [
+    ...new Set(
+        (["en", "cs", "de"] as const).flatMap((language) => [
+            getRosterMessages(language).forum.info,
+            getEventMessages(language).forum.matchInformation,
+        ])
+    ),
+]
+
+const debriefPostNames = () => [
+    ...new Set(
+        (["en", "cs", "de"] as const).flatMap((language) => [
+            getRosterMessages(language).forum.debrief,
+            getEventMessages(language).forum.debrief,
+        ])
+    ),
+]
+
 export async function syncForumChannel(input: {
     config: DiscordConfig
     event: EventRecord
@@ -145,6 +307,8 @@ export async function syncForumChannel(input: {
     topicPreset?: TopicPreset
     attendeeRoleId?: string
     reserveRoleId?: string
+    /** The clan's event categories, for the category chip. */
+    categories?: readonly EventCategory[]
 }) {
     const {
         config,
@@ -157,8 +321,8 @@ export async function syncForumChannel(input: {
         attendeeRoleId,
         reserveRoleId,
     } = input
-    const messages = getEventMessages(config.defaultLanguage)
-    const forumName = buildForumThreadName(config, event)
+    const copy = getRosterMessages(config.defaultLanguage)
+    const forumName = buildMatchForumName(config, event)
     const existingForumChannel = forumChannelId
         ? await guild.channels.fetch(forumChannelId).catch(() => null)
         : null
@@ -324,31 +488,29 @@ export async function syncForumChannel(input: {
     const existingPosts = activePosts?.threads
         ? [...activePosts.threads.values()]
         : []
-    const infoPostNames = [
-        messages.forum.matchInformation,
-        getEventMessages("en").forum.matchInformation,
-        getEventMessages("cs").forum.matchInformation,
-        getEventMessages("de").forum.matchInformation,
-    ]
-    const infoPost = existingPosts.find((post) =>
-        infoPostNames.includes(post.name)
-    )
-    const stratmapLinks = (event.stratmapIds ?? []).map(
-        (stratmapId) =>
-            `${env.appSiteUrl}/${config.defaultLanguage}/stratmaps/${stratmapId}`
-    )
-    const infoEmbed = buildForumInfoEmbed(config, event, stratmapLinks)
-    const infoV2Message = buildForumInfoV2Message(config, event, stratmapLinks)
+    const infoNames = infoPostNames()
+    const infoPost = existingPosts.find((post) => infoNames.includes(post.name))
+    const forumContext = await loadForumContext(event.id)
+    const stratmaps = (event.stratmapIds ?? []).map((stratmapId) => ({
+        title: forumContext?.stratmaps.find((map) => map.id === stratmapId)
+            ?.title,
+        url: `${env.appSiteUrl}/${config.defaultLanguage}/stratmaps/${stratmapId}`,
+    }))
+    const options = kitOptions(config)
+    const infoView = forumInfoView({
+        event: forumEventOf(config, event, input.categories),
+        stratmaps,
+        context: forumContextOf(
+            config,
+            await applicationFactionEmoji(guild.client)
+        ),
+    })
 
     if (infoPost) {
         const starter = await infoPost.fetchStarterMessage().catch(() => null)
         if (starter) {
             await starter
-                .edit(
-                    starter.flags.has(MessageFlags.IsComponentsV2)
-                        ? infoV2Message
-                        : { embeds: [infoEmbed] }
-                )
+                .edit(editPayload(infoView, options))
                 .catch((error) => {
                     logWarn(
                         "forum",
@@ -381,11 +543,8 @@ export async function syncForumChannel(input: {
     } else {
         const createdPost = await forumChannel.threads
             .create({
-                name: messages.forum.matchInformation,
-                message: {
-                    ...infoV2Message,
-                    flags: MessageFlags.IsComponentsV2,
-                },
+                name: copy.forum.info,
+                message: messagePayload(infoView, options),
             })
             .catch((error) => {
                 logWarn("forum", "Failed to create forum info post", {
@@ -426,7 +585,8 @@ export async function syncForumChannel(input: {
     const syncedTopicMessageIds = await ensureForumTopicPosts(
         forumChannel,
         topicPreset,
-        topicMessageIds
+        topicMessageIds,
+        config
     )
     if (syncedTopicMessageIds.join(",") !== topicMessageIds.join(",")) {
         stateChanged = true
@@ -434,11 +594,10 @@ export async function syncForumChannel(input: {
     topicMessageIds = syncedTopicMessageIds
 
     if (event.status === "concluded") {
-        await finalizeForumAfterConclusion(
-            forumChannel,
-            event,
-            config.defaultLanguage
-        )
+        await finalizeForumAfterConclusion(forumChannel, event, config, {
+            categories: input.categories,
+            forumContext,
+        })
     }
 
     return {
@@ -449,10 +608,38 @@ export async function syncForumChannel(input: {
     }
 }
 
+/** A topic's first message as the clan card with its attachments. */
+async function topicMessage(
+    topic: TopicPreset["topics"][number],
+    first: TopicMessage,
+    presetName: string | undefined,
+    config: DiscordConfig
+) {
+    const files = await buildDiscordAttachments(first)
+    const options = kitOptions(config)
+    const container = buildTopicMessage(
+        forumTopicView({
+            title: topic.title,
+            body: first.body,
+            presetName,
+            copy: getRosterMessages(config.defaultLanguage),
+        }),
+        files.map((file) => ({ name: file.name ?? "" })),
+        options
+    )
+    return {
+        components: [container],
+        files,
+        flags: MessageFlags.IsComponentsV2 as const,
+        allowedMentions: { parse: [] as never[] },
+    }
+}
+
 export async function ensureForumTopicPosts(
     forumChannel: ForumChannel,
     topicPreset: TopicPreset | undefined,
-    existingTopicMessageIds: string[] = []
+    existingTopicMessageIds: string[] = [],
+    config?: DiscordConfig
 ) {
     const topicMessages: string[] = []
 
@@ -480,13 +667,32 @@ export async function ensureForumTopicPosts(
                 .fetchStarterMessage()
                 .catch(() => null)
             if (starter) {
+                const card = config
+                    ? await topicMessage(
+                          topic,
+                          firstMessage,
+                          topicPreset?.name,
+                          config
+                      )
+                    : null
                 await starter
-                    .edit({
-                        content: firstMessage.body || undefined,
-                        attachments: [],
-                        files: await buildDiscordAttachments(firstMessage),
-                        embeds: [],
-                    })
+                    .edit(
+                        card
+                            ? {
+                                  content: null,
+                                  embeds: [],
+                                  attachments: [],
+                                  ...card,
+                              }
+                            : {
+                                  content: firstMessage.body || undefined,
+                                  attachments: [],
+                                  files: await buildDiscordAttachments(
+                                      firstMessage
+                                  ),
+                                  embeds: [],
+                              }
+                    )
                     .catch(() => null)
                 topicMessages.push(starter.id)
                 continue
@@ -495,10 +701,17 @@ export async function ensureForumTopicPosts(
 
         const createdPost = await forumChannel.threads.create({
             name: topic.title,
-            message: {
-                content: firstMessage.body || undefined,
-                files: await buildDiscordAttachments(firstMessage),
-            },
+            message: config
+                ? await topicMessage(
+                      topic,
+                      firstMessage,
+                      topicPreset?.name,
+                      config
+                  )
+                : {
+                      content: firstMessage.body || undefined,
+                      files: await buildDiscordAttachments(firstMessage),
+                  },
         })
         const starter = await createdPost
             .fetchStarterMessage()
@@ -525,46 +738,172 @@ export async function ensureForumTopicPosts(
     return topicMessages
 }
 
+/**
+ * After the match: the Debrief post, pinned so it stays on top, as the clan
+ * card. Every later sync edits it, so the confirmed result and the match
+ * link appear once the leaders confirm the result (L1-137).
+ */
 export async function finalizeForumAfterConclusion(
     forumChannel: ForumChannel,
     event: EventRecord,
-    language: ClanLanguage
+    config: DiscordConfig,
+    extra: {
+        categories?: readonly EventCategory[]
+        forumContext?: MatchForumContext | null
+    } = {}
 ) {
-    const messages = getEventMessages(language)
+    const copy = getRosterMessages(config.defaultLanguage)
     const activePosts = await forumChannel.threads
         .fetchActive()
         .catch(() => null)
     const existingPosts = activePosts?.threads
         ? [...activePosts.threads.values()]
         : []
-    const debriefNames = [
-        messages.forum.debrief,
-        getEventMessages("en").forum.debrief,
-        getEventMessages("cs").forum.debrief,
-        getEventMessages("de").forum.debrief,
-    ]
+    const names = debriefPostNames()
+    const forumContext =
+        extra.forumContext === undefined
+            ? await loadForumContext(event.id)
+            : extra.forumContext
+    const view = debriefView({
+        event: forumEventOf(config, event, extra.categories),
+        result: forumContext?.result
+            ? {
+                  ...forumContext.result,
+                  matchUrl: forumContext.publicMatch
+                      ? buildPublicMatchUrl(event.id, config.defaultLanguage)
+                      : undefined,
+              }
+            : null,
+        context: forumContextOf(config),
+    })
+    const options = kitOptions(config)
 
-    let debriefPost = existingPosts.find((post) =>
-        debriefNames.includes(post.name)
-    )
-    if (!debriefPost) {
+    let debriefPost = existingPosts.find((post) => names.includes(post.name))
+    if (debriefPost) {
+        const starter = await debriefPost
+            .fetchStarterMessage()
+            .catch(() => null)
+        await starter?.edit(editPayload(view, options)).catch((error) =>
+            logWarn("forum", "Failed to edit the debrief post", {
+                eventId: event.id,
+                threadId: debriefPost?.id,
+                error,
+            })
+        )
+    } else {
         debriefPost = await forumChannel.threads.create({
-            name: messages.forum.debrief,
-            message: {
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle(
-                            `${messages.forum.debriefTitle}: ${event.name}`
-                        )
-                        .setDescription(messages.forum.debriefDescription),
-                ],
-            },
+            name: copy.forum.debrief,
+            message: messagePayload(view, options),
         })
     }
 
-    for (const post of [...existingPosts, debriefPost]) {
-        if ("setPinned" in post && typeof post.setPinned === "function") {
-            await post.setPinned(post.id === debriefPost.id).catch(() => null)
+    await pinForumPost(existingPosts, debriefPost, event.id)
+}
+
+type PinnablePost = {
+    id: string
+    flags?: { has(flag: ChannelFlags): boolean } | null
+    pin(): Promise<unknown>
+    unpin(): Promise<unknown>
+}
+
+/**
+ * A forum holds one pinned post: unpin any other, then pin `target` (L1-129).
+ * Discord answers an unchanged pin with an error, so the flags decide.
+ */
+export async function pinForumPost(
+    posts: readonly PinnablePost[],
+    target: PinnablePost,
+    eventId: string
+) {
+    for (const post of posts) {
+        if (post.id !== target.id && post.flags?.has(ChannelFlags.Pinned)) {
+            await post.unpin().catch(() => null)
         }
+    }
+    if (target.flags?.has(ChannelFlags.Pinned)) return
+    await target.pin().catch((error) =>
+        logWarn("forum", "Failed to pin the debrief post", {
+            eventId,
+            threadId: target.id,
+            error,
+        })
+    )
+}
+
+/**
+ * The optional attendance post in the match thread (board L5-43, N1-15):
+ * after "Přijdu později", "Nemůžu" or /notice, when the clan turned it on,
+ * the match's "Informace o zápasu" thread gets who is late or not coming,
+ * with their place and never the reason. Failures are logged only: the
+ * player's own reply never depends on it.
+ */
+export async function postAttendanceNotice(
+    client: Client,
+    input: {
+        context: Pick<EventInteractionContext, "config" | "event" | "roster">
+        userId: string
+        kind: "late" | "absent"
+    }
+) {
+    const { config, event, roster } = input.context
+    if (!resolveMatchMessageSettings(config).attendanceNoticesInThread) return
+    try {
+        const sync = (await convex.query(references.getEventSyncContext, {
+            secret: env.internalSecret,
+            eventId: event.id as never,
+        })) as { syncState: SyncState | null } | null
+        // A forum post's thread has the ID of its starter message.
+        const threadId = sync?.syncState?.infoMessageId
+        if (!threadId) return
+        const thread = await client.channels.fetch(threadId).catch(() => null)
+        if (!thread?.isThread()) return
+        const guild = await client.guilds.fetch(event.guildId).catch(() => null)
+        const names = await memberNames(guild, [input.userId])
+        const user = names[input.userId]
+            ? null
+            : await client.users.fetch(input.userId).catch(() => null)
+        const name =
+            names[input.userId] ?? user?.globalName ?? user?.username ?? null
+        // Never an ID in a public post: without a name there is no post.
+        if (!name) return
+        const squad = roster?.squads.find((item) =>
+            item.players.some((player) => player.id === input.userId)
+        )
+        const role = squad?.players
+            .find((player) => player.id === input.userId)
+            ?.roleName?.trim()
+        const forumContext = await loadForumContext(event.id)
+        const language = config.defaultLanguage
+        const attendanceUrl = forumContext?.serverId
+            ? new URL(
+                  `/${language}/dashboard/servers/${forumContext.serverId}/${event.kind === "training" ? "events" : "matches"}/${event.id}?tab=attendance`,
+                  env.appSiteUrl
+              ).toString()
+            : undefined
+        await thread.send(
+            messagePayload(
+                attendanceNoticeView({
+                    kind: input.kind,
+                    name,
+                    event: {
+                        title: matchTitle(event),
+                        gameStart: event.gameStart,
+                    },
+                    place: squad
+                        ? { squad: squad.name, ...(role ? { role } : {}) }
+                        : undefined,
+                    attendanceUrl,
+                    context: forumContextOf(config),
+                }),
+                kitOptions(config)
+            )
+        )
+    } catch (error) {
+        logWarn("forum", "Failed to post an attendance notice", {
+            eventId: event.id,
+            guildId: event.guildId,
+            error,
+        })
     }
 }

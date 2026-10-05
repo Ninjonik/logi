@@ -148,6 +148,7 @@ export function validateMessageView(
             }
         } else if (block.kind === "fields") {
             for (const field of block.items) {
+                if (field.thumbnail) checkMedia(field.thumbnail, issues)
                 if (!field.action) continue
                 if (
                     field.action.kind === "action" &&

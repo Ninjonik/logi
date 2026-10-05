@@ -12,6 +12,7 @@ import {
     fillTemplate,
     formatCount,
 } from "../discord-messages/format"
+import { linkFlowId } from "../game-accounts/account-views"
 import { GAME_LABELS, type GameId } from "../games/game"
 
 import {
@@ -556,6 +557,24 @@ export function applicationProgressView(
                                   label: input.plan.steamLocked
                                       ? copy.progress.verifySteamRequired
                                       : copy.progress.verifySteam,
+                              },
+                          ]
+                        : []),
+                    // The `/link` guide inside the application (L4-60): it
+                    // links the account, then this message comes back.
+                    ...(next.kind === "accounts"
+                        ? [
+                              {
+                                  kind: "action" as const,
+                                  id: linkFlowId(
+                                      {
+                                          kind: "application",
+                                          draftId: input.draftId,
+                                      },
+                                      "start"
+                                  ),
+                                  label: copy.progress.findAccount,
+                                  style: "secondary" as const,
                               },
                           ]
                         : []),

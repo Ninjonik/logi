@@ -85,6 +85,8 @@ export type ApplicationCopy = {
         cancel: string
         verifySteam: string
         verifySteamRequired: string
+        /** Opens the `/link` guide inside the application (L4-60). */
+        findAccount: string
         keepNote: string
     }
     review: {

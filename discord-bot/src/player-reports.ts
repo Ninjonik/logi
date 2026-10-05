@@ -1,24 +1,31 @@
 import {
     ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
     ChannelType,
-    EmbedBuilder,
     MessageFlags,
     ModalBuilder,
-    StringSelectMenuBuilder,
+    TextDisplayBuilder,
     TextInputBuilder,
     TextInputStyle,
     PermissionFlagsBits,
-    escapeMarkdown,
     type Client,
     type ButtonInteraction,
     type StringSelectMenuInteraction,
     type ModalSubmitInteraction,
     type Guild,
+    type MessageCreateOptions,
     type TextChannel,
     type ThreadChannel,
 } from "discord.js"
+import {
+    reportFailureView,
+    reportPickerView,
+    reportSavedView,
+    reportSentView,
+    reportThreadName,
+    reportThreadView,
+    type ReportFailure,
+    type ReportThreadContext,
+} from "../../src/domain/player-reports/report-views"
 import {
     reportSubmissionSchema,
     type ReportObservation,
@@ -28,13 +35,32 @@ import {
     type FunctionReturnType,
     type ApiFromModules,
 } from "convex/server"
+import {
+    editPayload,
+    interactionReplyPayload,
+    renderMessageView,
+} from "./ui/message-kit"
+import {
+    findPublicationMessage,
+    publicationComponentId,
+} from "./sync/publication-marker"
 import { deliverPlayerReport } from "../../src/application/player-reports/deliver-report"
-import { listReportMembers } from "./interactions/report-members"
+import { interactionLanguage, reportToErrorsChannel } from "./ui/replies"
+import { getSystemMessages } from "../../src/lib/clan-language/system"
+import { getPanelMessages } from "../../src/lib/clan-language/panels"
+import { listReportMembers } from "./interactions/tickets-report-members"
 import { readReportObservation } from "./public-panels/worker"
 import type * as reports from "../../convex/playerReports"
 import { env } from "./environment"
 import { convex } from "./convex"
 
+/**
+ * "Nahlásit hráče" (L3-58..68, L3-B09): a fully private flow in the clan
+ * language. The picker and the form are seen only by the reporter; the
+ * report goes to a private thread "Hlášení #17 · Hans_88" with the staff,
+ * who are pinged once. Each failure has its own sentence; causes only an
+ * admin can fix go to the errors channel.
+ */
 type ReportsApi = ApiFromModules<{
     playerReports: typeof reports
 }>["playerReports"]
@@ -55,11 +81,6 @@ const mutation = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
         makeFunctionReference<"mutation">(`playerReports:${name}`),
         { secret: env.internalSecret, ...args }
     )
-const clean = (v: string | null | undefined, max = 1000) =>
-    escapeMarkdown((v || "—").replace(/@/g, "＠").replace(/[<>]/g, "")).slice(
-        0,
-        max
-    )
 type Policy = Pick<
     Entry,
     | "guildId"
@@ -69,8 +90,15 @@ type Policy = Pick<
     | "dashboardAdminRoleId"
 >
 
+/** A failure with its own sentence (L3-64). */
+class ReportFailureError extends Error {
+    constructor(readonly failure: ReportFailure) {
+        super(`Report failed: ${failure}`)
+    }
+}
+
 async function verifyAccess(guild: Guild, policy: Policy, reporterId: string) {
-    if (guild.id !== policy.guildId) throw Error("wrong_guild")
+    if (guild.id !== policy.guildId) throw new ReportFailureError("expired")
     await guild.fetch()
     const [source, parent, member, all] = await Promise.all([
         guild.channels.fetch(policy.channelId, { force: true }),
@@ -90,12 +118,13 @@ async function verifyAccess(guild: Guild, policy: Policy, reporterId: string) {
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.ReadMessageHistory,
     ]
+    if (parent?.type !== ChannelType.GuildText)
+        throw new ReportFailureError("admin")
     if (
         !source?.permissionsFor(member)?.has(visibility) ||
-        parent?.type !== ChannelType.GuildText ||
         !parent.permissionsFor(member)?.has(visibility)
     )
-        throw Error("reporter_access_unavailable")
+        throw new ReportFailureError("no_access")
     const me = await guild.members.fetchMe({ force: true })
     if (
         !parent
@@ -106,10 +135,9 @@ async function verifyAccess(guild: Guild, policy: Policy, reporterId: string) {
                 PermissionFlagsBits.CreatePrivateThreads,
                 PermissionFlagsBits.SendMessagesInThreads,
                 PermissionFlagsBits.ManageThreads,
-                PermissionFlagsBits.EmbedLinks,
             ])
     )
-        throw Error("private_thread_permissions_missing")
+        throw new ReportFailureError("admin")
     const staff: string[] = []
     for (const candidate of all.values()) {
         const permitted =
@@ -126,7 +154,7 @@ async function verifyAccess(guild: Guild, policy: Policy, reporterId: string) {
             !permitted &&
             permissions?.has([...visibility, PermissionFlagsBits.ManageThreads])
         )
-            throw Error("nonstaff_can_manage_private_threads")
+            throw new ReportFailureError("admin")
         if (
             permitted &&
             !candidate.user.bot &&
@@ -138,141 +166,169 @@ async function verifyAccess(guild: Guild, policy: Policy, reporterId: string) {
             staff.push(candidate.id)
     }
     if (!staff.length || staff.length > 80)
-        throw Error("staff_access_unavailable")
+        throw new ReportFailureError("admin")
     return { parent, staff }
 }
 
+/** Localized side of a reported player ("Osa"); null when unknown. */
+function sideNameFor(language: string | undefined) {
+    const copy = getPanelMessages(language).live
+    return (team: string | null) => {
+        const key = team?.trim().toLowerCase()
+        if (!key) return null
+        return key === "allies" || key === "allied"
+            ? copy.allies
+            : key === "axis"
+              ? copy.axis
+              : team!.trim()
+    }
+}
+
+/** The private picker "Koho chceš nahlásit?" (L3-58..60). */
 export function buildReportPicker(
     id: string,
     observation: ReportObservation,
-    requestedPage = 0
+    requestedPage = 0,
+    language?: string
 ) {
-    const size = 20,
-        pages = Math.max(1, Math.ceil(observation.players.length / size)),
-        page = Math.max(0, Math.min(requestedPage, pages - 1))
-    const choices = observation.players
-        .slice(page * size, (page + 1) * size)
-        .map((p, i) => ({
-            label: p.name.slice(0, 100),
-            description: clean(p.team, 80),
-            value: String(page * size + i),
-        }))
-    choices.push({
-        label: "Jiný hráč / Other player",
-        description: "Ruční údaj · unverified manual identity",
-        value: "-1",
-    })
-    return {
-        content: `**Report Player · soukromé hlášení / private report**\n${clean(observation.serverName, 100)} · ${clean(observation.map, 100)}\nVyber hráče nebo zadej vlastní jméno/ID. Důkazy můžeš přiložit do soukromého ticketu.\nChoose a player or enter a name/ID. Evidence files can be attached in the private ticket.\n${page + 1}/${pages}`,
-        components: [
-            new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId(`report:pick:${id}`)
-                    .setPlaceholder("Hráč / Player")
-                    .addOptions(choices)
-            ),
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(
-                        `report:page:${id}:${Math.max(0, page - 1)}:prev`
-                    )
-                    .setLabel("Previous")
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(page === 0),
-                new ButtonBuilder()
-                    .setCustomId(
-                        `report:page:${id}:${Math.min(pages - 1, page + 1)}:next`
-                    )
-                    .setLabel("Next")
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(page === pages - 1)
-            ),
-        ],
-        allowedMentions: { parse: [] as [] },
-    }
+    return editPayload(
+        reportPickerView({
+            copy: getPanelMessages(language).report,
+            draftId: id,
+            serverTitle: observation.serverName ?? "—",
+            observation,
+            page: requestedPage,
+            sideName: sideNameFor(language),
+        }),
+        { language }
+    )
 }
-function reportModal(id: string, choice: number) {
+
+/** "Nahlásit hráče Hans_88" with placeholders (L3-61). */
+export function reportModal(
+    id: string,
+    choice: number,
+    player: string | null,
+    language?: string
+) {
+    const copy = getPanelMessages(language).report
+    const title =
+        choice === -1 || !player
+            ? copy.modalTitleOther
+            : copy.modalTitle(player)
     const modal = new ModalBuilder()
         .setCustomId(`report:submit:${id}:${choice}`)
-        .setTitle("Report Player · soukromě / private")
+        .setTitle(
+            title.length <= 45
+                ? title
+                : `${Array.from(title).slice(0, 44).join("")}…`
+        )
     const input = (
         id: string,
         label: string,
         max: number,
-        required = true,
-        paragraph = false
-    ) =>
-        new ActionRowBuilder<TextInputBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId(id)
-                .setLabel(label)
-                .setStyle(
-                    paragraph ? TextInputStyle.Paragraph : TextInputStyle.Short
-                )
-                .setMaxLength(max)
-                .setRequired(required)
-        )
+        options: {
+            required?: boolean
+            paragraph?: boolean
+            placeholder?: string
+        } = {}
+    ) => {
+        const field = new TextInputBuilder()
+            .setCustomId(id)
+            .setLabel(label)
+            .setStyle(
+                options.paragraph
+                    ? TextInputStyle.Paragraph
+                    : TextInputStyle.Short
+            )
+            .setMaxLength(max)
+            .setRequired(options.required ?? true)
+        if (options.placeholder) field.setPlaceholder(options.placeholder)
+        return new ActionRowBuilder<TextInputBuilder>().addComponents(field)
+    }
     if (choice === -1)
-        modal.addComponents(input("player", "Hráč / Player name or ID", 200))
+        modal.addComponents(input("player", copy.playerField, 200))
     modal.addComponents(
-        input("reason", "Důvod / Reason (min. 10 znaků)", 1000, true, true),
-        input("incident", "Kdy / Approximate incident time", 100, false),
-        input("evidence", "Důkazy / Evidence HTTPS link", 1000, false)
+        input("reason", copy.reasonField, 1000, {
+            paragraph: true,
+            placeholder: copy.reasonPlaceholder,
+        }),
+        input("incident", copy.whenField, 100, {
+            required: false,
+            placeholder: copy.whenPlaceholder,
+        }),
+        input("evidence", copy.evidenceField, 1000, {
+            required: false,
+            placeholder: copy.evidencePlaceholder,
+        })
     )
     return modal
 }
-export function buildReportEmbed(
-    claim: Pick<Claimed, "contextJson" | "marker" | "createdAt">,
-    reporterId: string
-) {
-    const value = JSON.parse(claim.contextJson) as {
-        gameId: string
-        connectionId: string
-        serverName: string | null
-        map: string | null
-        observedAt: string | null
-        player: {
-            name: string
-            playerId: string | null
-            team: string | null
-            provenance: string
-        }
-        reason: string
-        incident: string
-        evidence: string
+
+/**
+ * The first message of the private thread (L3-65..67): the staff ping above
+ * the card, the card tagged invisibly so an uncertain send is found again.
+ */
+export function buildReportThreadMessage(
+    claim: Pick<
+        Claimed,
+        "contextJson" | "marker" | "createdAt" | "reportNumber"
+    >,
+    reporterId: string,
+    options: {
+        language?: string
+        staffRoleIds: string[]
+        serverTitle?: string | null
     }
-    return new EmbedBuilder()
-        .setTitle("Report Player · soukromý ticket / private ticket")
-        .setColor(0xe0a13b)
-        .setDescription(
-            "Hlášení k prověření, nikoli prokázané porušení. / Report for investigation; not a finding of wrongdoing."
-        )
-        .addFields(
-            {
-                name: "Hráč / Player",
-                value: `**${clean(value.player.name, 200)}**\n${clean(value.player.team, 100)}\n${value.player.playerId ? `ID: ${clean(value.player.playerId, 200)}\n` : ""}${value.player.provenance === "observed" ? "Observed in provider data; not verified Discord identity" : "Manual input · identity unverified"}`,
-            },
-            {
-                name: "Server / Map",
-                value: `${clean(value.serverName, 200)}\n${clean(value.map, 200)}\n${value.gameId === "hell_let_loose" ? "Hell Let Loose" : "Wardogs"}`,
-            },
-            {
-                name: "Oznamovatel / Reporter",
-                value: `<@${reporterId}>`,
-                inline: true,
-            },
-            {
-                name: "Pozorováno / Observed",
-                value: clean(value.observedAt, 100),
-                inline: true,
-            },
-            { name: "Důvod / Reason", value: clean(value.reason) },
-            { name: "Kdy / Incident", value: clean(value.incident, 100) },
-            { name: "Důkazy / Evidence", value: clean(value.evidence) }
-        )
-        .setFooter({ text: claim.marker })
-        .setTimestamp(new Date(claim.createdAt))
+): MessageCreateOptions {
+    const copy = getPanelMessages(options.language)
+    const context = JSON.parse(claim.contextJson) as ReportThreadContext
+    const observed = context.observedAt
+        ? `<t:${Math.floor(Date.parse(context.observedAt) / 1000)}:f>`
+        : null
+    const view = reportThreadView({
+        copy: copy.report,
+        number: claim.reportNumber ?? 0,
+        context,
+        reporterId,
+        sideName: sideNameFor(options.language)(context.player.team),
+        observedText: observed,
+        serverTitle: options.serverTitle ?? null,
+    })
+    const { container } = renderMessageView(view, {
+        language: options.language,
+    })
+    const roles = options.staffRoleIds.slice(0, 5)
+    return {
+        components: [
+            ...(roles.length
+                ? [
+                      new TextDisplayBuilder().setContent(
+                          roles.map((role) => `<@&${role}>`).join(" ")
+                      ),
+                  ]
+                : []),
+            { ...container.toJSON(), id: publicationComponentId(claim.marker) },
+        ],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: [], roles },
+    }
 }
+
+/** The thread's name: "Hlášení #17 · Hans_88"; older reports keep their marker. */
+export function reportThreadTitle(
+    claim: Pick<Claimed, "contextJson" | "marker" | "reportNumber">,
+    language?: string
+) {
+    if (claim.reportNumber == null) return claim.marker
+    const context = JSON.parse(claim.contextJson) as ReportThreadContext
+    return reportThreadName(
+        getPanelMessages(language).report,
+        claim.reportNumber,
+        context.player.name
+    )
+}
+
 export async function deliverReport(
     client: Client,
     scope: Scope,
@@ -308,10 +364,14 @@ export async function deliverReport(
                 await getThread(claim.threadId)
                 return claim.threadId
             }
+            const names = new Set([
+                claim.marker,
+                reportThreadTitle(claim, claim.language),
+            ])
             const active = await parent.threads.fetchActive()
             const found = active.threads.filter(
                 (t) =>
-                    t.name === claim.marker &&
+                    names.has(t.name) &&
                     t.parentId === parent!.id &&
                     t.ownerId === client.user?.id
             )
@@ -325,7 +385,7 @@ export async function deliverReport(
         create: async (claim) => {
             if (!parent) throw Error("missing_parent")
             const thread = await parent.threads.create({
-                name: claim.marker,
+                name: reportThreadTitle(claim, claim.language),
                 type: ChannelType.PrivateThread,
                 invitable: false,
                 autoArchiveDuration: 1440,
@@ -371,17 +431,26 @@ export async function deliverReport(
         starter: async (claim, threadId) => {
             const thread = await getThread(threadId),
                 messages = await thread.messages.fetch({ limit: 100 })
-            const found = messages.find(
+            const tagged = findPublicationMessage(
+                messages.values(),
+                claim.marker,
+                client.user?.id
+            )
+            if (tagged) return tagged
+            // Reports started before the redesign carry the marker in an embed footer.
+            const legacy = messages.find(
                 (m) =>
                     m.author.id === client.user?.id &&
                     m.embeds.some((e) => e.footer?.text === claim.marker)
             )
-            if (found) return found.id
+            if (legacy) return legacy.id
             if (messages.size >= 100) throw Error("report_history_incomplete")
             return (
                 await thread.send({
-                    embeds: [buildReportEmbed(claim, scope.reporterId)],
-                    allowedMentions: { parse: [] },
+                    ...buildReportThreadMessage(claim, scope.reporterId, {
+                        language: claim.language,
+                        staffRoleIds: claim.supportRoleIds,
+                    }),
                     nonce: reportId.slice(-24),
                     enforceNonce: true,
                 })
@@ -412,16 +481,65 @@ export async function deliverReport(
     })
 }
 
+/**
+ * Which sentence a failure gets. Backend refusals name their reason; a
+ * form value Zod rejects names its field; anything else is "Hlášení teď
+ * nejde poslat" without guessing.
+ */
+export function reportFailureOf(error: unknown): ReportFailure {
+    if (error instanceof ReportFailureError) return error.failure
+    const message = error instanceof Error ? error.message : ""
+    if (message.includes("Three reports are already open")) return "limit"
+    if (message.includes("Wait one minute")) return "wait"
+    if (message.includes("Too many report forms")) return "too_many_forms"
+    if (
+        message.includes("expired") ||
+        message.includes("configuration changed") ||
+        message.includes("Report panel changed")
+    )
+        return "expired"
+    const issues =
+        typeof error === "object" && error && "issues" in error
+            ? (error as { issues: Array<{ path: PropertyKey[] }> }).issues
+            : null
+    if (issues?.length) {
+        const field = String(issues[0]!.path[0] ?? "")
+        if (field === "reason") return "reason"
+        if (field === "evidence") return "evidence"
+        if (field === "manualPlayer") return "player"
+    }
+    return "unavailable"
+}
+
 export async function handlePlayerReport(
     interaction:
         ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction
 ) {
     if (!interaction.customId.startsWith("report:")) return false
+    const language = await interactionLanguage(interaction.guildId)
+    const copy = getPanelMessages(language).report
+    const fail = async (failure: ReportFailure, error?: unknown) => {
+        const view = reportFailureView(
+            copy,
+            failure,
+            getSystemMessages(language).errors.adminNotified
+        )
+        if (interaction.deferred || interaction.replied)
+            await interaction.editReply(editPayload(view, { language }))
+        else
+            await interaction.reply(interactionReplyPayload(view, { language }))
+        if (failure === "admin" && interaction.guildId)
+            await reportToErrorsChannel({
+                client: interaction.client,
+                guildId: interaction.guildId,
+                error,
+                action: "Create a player report thread",
+                location: "Player reports",
+                scope: "player-report",
+            })
+    }
     if (!interaction.guildId || !interaction.guild) {
-        await interaction.reply({
-            content: "Use the current server panel in its Discord channel.",
-            flags: MessageFlags.Ephemeral,
-        })
+        await fail("expired")
         return true
     }
     const scope = {
@@ -439,17 +557,24 @@ export async function handlePlayerReport(
             choice < -1 ||
             choice > 299
         ) {
-            await interaction.reply({
-                content: "Invalid report selection.",
-                flags: MessageFlags.Ephemeral,
-            })
+            await fail("expired")
             return true
         }
-        await interaction.showModal(reportModal(match[1], choice))
+        // The form's title names the chosen player (L3-61).
+        const draft = await query<Draft | null>("draft", {
+            ...scope,
+            draftId: match[1],
+        }).catch(() => null)
+        const player =
+            choice >= 0
+                ? (draft?.observation.players[choice]?.name ?? null)
+                : null
+        await interaction.showModal(
+            reportModal(match[1]!, choice, player, language)
+        )
         return true
     }
     await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-    let stage = "resolve_control"
     try {
         if (interaction.isButton()) {
             const open = /^report:open:([a-zA-Z0-9_-]{1,64}):(\d{1,16})$/.exec(
@@ -466,55 +591,52 @@ export async function handlePlayerReport(
                     revision: Number(open[2]),
                     channelId: interaction.channelId,
                 }
-                stage = "load_configuration"
                 const entry = await query<Entry | null>("entry", args)
-                if (!entry) throw Error("unavailable")
-                stage = "verify_access"
+                if (!entry) throw new ReportFailureError("expired")
                 await verifyAccess(interaction.guild, entry, scope.reporterId)
-                stage = "read_players"
                 const observation = await readReportObservation(
                     scope.guildId,
-                    open[1],
+                    open[1]!,
                     Number(open[2])
                 )
-                stage = "recheck_access"
                 await verifyAccess(interaction.guild, entry, scope.reporterId)
-                stage = "save_draft"
                 const id = await mutation<string>("createDraft", {
                     ...args,
                     interactionId: interaction.id,
                     observationJson: JSON.stringify(observation),
                 })
-                stage = "show_picker"
-                await interaction.editReply(buildReportPicker(id, observation))
+                await interaction.editReply(
+                    buildReportPicker(id, observation, 0, language)
+                )
             } else if (page) {
                 const data = await query<Draft | null>("draft", {
                     ...scope,
                     draftId: page[1],
                 })
                 if (!data || data.channelId !== interaction.channelId)
-                    throw Error("expired")
+                    throw new ReportFailureError("expired")
                 await verifyAccess(interaction.guild, data, scope.reporterId)
                 await interaction.editReply(
                     buildReportPicker(
-                        page[1],
+                        page[1]!,
                         data.observation,
-                        Number(page[2])
+                        Number(page[2]),
+                        language
                     )
                 )
-            } else throw Error("invalid_control")
+            } else throw new ReportFailureError("expired")
         } else {
             const match =
                 /^report:submit:([a-zA-Z0-9_-]{1,64}):(-1|\d{1,3})$/.exec(
                     interaction.customId
                 )
-            if (!match) throw Error("invalid_control")
+            if (!match) throw new ReportFailureError("expired")
             const data = await query<Draft | null>("draft", {
                 ...scope,
                 draftId: match[1],
             })
             if (!data || data.channelId !== interaction.channelId)
-                throw Error("expired")
+                throw new ReportFailureError("expired")
             await verifyAccess(interaction.guild, data, scope.reporterId)
             const submission = reportSubmissionSchema.parse({
                 choice: Number(match[2]),
@@ -536,61 +658,37 @@ export async function handlePlayerReport(
                 scope,
                 reportId
             )
-            await interaction.editReply({
-                content:
-                    result.kind === "open"
-                        ? `Soukromý ticket / Private ticket: https://discord.com/channels/${scope.guildId}/${result.threadId}`
-                        : "Hlášení je uložené, ale vytvoření ticketu čeká na ověření. Bot zkusí dohledat původní vlákno; pokud chybí, je nutná kontrola správce. / Report saved; thread recovery or staff review is required.",
-                components: [],
-                allowedMentions: { parse: [] },
-            })
+            if (result.kind === "open") {
+                const thread = await interaction.client.channels
+                    .fetch(result.threadId)
+                    .catch(() => null)
+                await interaction.editReply(
+                    editPayload(
+                        reportSentView({
+                            copy,
+                            threadName:
+                                thread && "name" in thread && thread.name
+                                    ? thread.name
+                                    : copy.threadName("…", ""),
+                            threadUrl: `https://discord.com/channels/${scope.guildId}/${result.threadId}`,
+                        }),
+                        { language }
+                    )
+                )
+            } else
+                await interaction.editReply(
+                    editPayload(reportSavedView(copy), { language })
+                )
         }
     } catch (error) {
         // Never log report text, provider responses, interaction tokens or raw errors.
-        const discordCode =
-            typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            typeof error.code === "number"
-                ? error.code
-                : undefined
-        console.warn("[player-reports] Interaction unavailable", {
-            stage,
-            discordCode,
-        })
-        if (
-            discordCode === 50035 &&
-            typeof error === "object" &&
-            error !== null &&
-            "rawError" in error
-        ) {
-            const collect = (value: unknown, path = ""): string[] => {
-                if (!value || typeof value !== "object") return []
-                return Object.entries(value).flatMap(([key, item]) =>
-                    key === "_errors" && Array.isArray(item)
-                        ? item.map(
-                              (e) =>
-                                  `${path}:${typeof e?.code === "string" ? e.code.replace(/[^A-Z0-9_]/g, "") : "invalid"}`
-                          )
-                        : collect(
-                              item,
-                              `${path}.${key.replace(/[^a-zA-Z0-9_]/g, "")}`
-                          )
-                )
-            }
-            console.warn(
-                "[player-reports] Invalid Discord form paths",
-                collect(error.rawError)
-            )
-        }
-        await interaction.editReply({
-            content:
-                "Hlášení nelze odeslat. Otevři aktuální panel, zkontroluj důvod (10–1000 znaků), HTTPS odkaz a limit 3 otevřených hlášení. Správce musí ověřit přístup do soukromých ticketů. / Reporting unavailable: reopen the current panel, check the reason/evidence and report limits, or ask staff to verify private-ticket access.",
-            components: [],
-        })
+        const failure = reportFailureOf(error)
+        console.warn("[player-reports] Interaction unavailable", { failure })
+        await fail(failure, error)
     }
     return true
 }
+
 export function startReportRecovery(client: Client) {
     let running = false
     const tick = async () => {
@@ -598,18 +696,22 @@ export function startReportRecovery(client: Client) {
         running = true
         try {
             for (const guild of client.guilds.cache.values()) {
-                const items = await query<
-                    { reportId: string; reporterId: string }[]
-                >("pending", { guildId: guild.id })
-                for (const item of items)
-                    await deliverReport(
-                        client,
-                        { guildId: guild.id, reporterId: item.reporterId },
-                        item.reportId
+                try {
+                    const items = await query<
+                        { reportId: string; reporterId: string }[]
+                    >("pending", { guildId: guild.id })
+                    for (const item of items)
+                        await deliverReport(
+                            client,
+                            { guildId: guild.id, reporterId: item.reporterId },
+                            item.reportId
+                        )
+                } catch {
+                    console.warn(
+                        "[player-reports] Recovery unavailable; will retry."
                     )
+                }
             }
-        } catch {
-            console.warn("[player-reports] Recovery unavailable; will retry.")
         } finally {
             running = false
         }

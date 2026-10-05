@@ -1,10 +1,15 @@
-import { MessageFlags, type Client } from "discord.js"
+import type { Client } from "discord.js"
 
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
-import { getEventMessages } from "../../../src/lib/clan-language/events"
+import { signupReminderView } from "../../../src/domain/discord-messages/direct-message-views"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { dmFrame, eventCategory, eventMapLabel } from "../events/match-context"
+import { matchTitle } from "../../../src/domain/discord-messages/match-text"
+import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
 import { matchesGameScope } from "../../../src/domain/games/game"
-import { buildAnnouncementV2Message } from "../message-builders"
+import { SIGNUP_NOT_ATTENDING } from "../constants"
+import { messagePayload } from "../ui/message-kit"
 import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
@@ -41,46 +46,57 @@ export function isSignupReminderRecipient(input: {
 }
 
 /**
- * The sign-up reminder DM: the match announcement without its sign-up
- * details, with links to the registration channel and the match forum. Used
- * by the scheduled reminder and by reminders an admin sends from the
- * dashboard.
+ * The sign-up reminder DM (board L2-06..15): "Připomínka přihlášky" with the
+ * match, its sides, the weekday start, the sign-up deadline, why the DM came
+ * and "Přihlásit se", "Nepřijdu" and "Otevřít ohlášení", which answer in the
+ * same DM. Used by the scheduled reminder and by reminders leadership sends
+ * from the dashboard or with "Připomenout bez odpovědi" under "Zobrazit
+ * přihlášené" ("Připomínku poslalo velení z Logi.").
  */
 export function buildSignupReminderMessage(
     payload: SyncPayload,
-    event: SyncPayload["events"][number]
+    event: SyncPayload["events"][number],
+    options: { sentByLeaders?: boolean } = {}
 ) {
     const syncState = payload.syncStates.find(
         (state) => state.eventId === event.id
     )
-    const registrationUrl = buildDiscordMessageLink(
-        payload.config.guildId,
-        event.announcementChannelId ?? payload.config.announcementsChannelId
-    )
-    const forumUrl = buildDiscordMessageLink(
-        payload.config.guildId,
-        syncState?.forumChannelId
-    )
-    const messages = getEventMessages(payload.config.defaultLanguage)
-    const eventLinks = [
-        registrationUrl
-            ? {
-                  label: messages.buttons.openRegistrationChannel,
-                  url: registrationUrl,
-              }
-            : null,
-        forumUrl
-            ? { label: messages.buttons.openEventForum, url: forumUrl }
-            : null,
-    ].filter((link): link is { label: string; url: string } => link !== null)
-    return buildAnnouncementV2Message(
-        payload,
-        event,
-        {},
-        {
-            hideSignupDetails: true,
-            eventLinks,
-        }
+    const language = payload.config.defaultLanguage
+    const guildId = payload.config.guildId
+    const announcementUrl =
+        buildDiscordMessageLink(
+            guildId,
+            syncState?.announcementChannelId ??
+                event.announcementChannelId ??
+                payload.config.announcementsChannelId,
+            syncState?.announcementMessageId
+        ) ?? undefined
+    return messagePayload(
+        signupReminderView({
+            event: {
+                id: event.id,
+                title: matchTitle(event),
+                category: eventCategory(event, payload.guild.eventCategories),
+                teams: event.matchTeams,
+                side: event.side,
+                mapLabel: eventMapLabel(event, language),
+                registrationEnd: event.registrationEnd,
+                meetingStart: event.meetingStart,
+                gameStart: event.gameStart,
+            },
+            // The same sign-up buttons as the announcement; they answer in the
+            // DM ("Přihlásit se" opens the group picker there, board L1-87).
+            ids: {
+                signUp: `signup-picker:${event.id}:${guildId}`,
+                decline: `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${guildId}`,
+            },
+            announcementUrl,
+            sentByLeaders: options.sentByLeaders,
+            copy: getDirectMessages(language),
+            rosterCopy: getRosterMessages(language),
+            frame: dmFrame(payload.config, payload.guild.name),
+        }),
+        { language, style: payload.config.messageStyle }
     )
 }
 
@@ -123,7 +139,7 @@ export async function processSignupReminders(
                 .catch(() => null)
             if (!user) continue
             await user
-                .send({ ...message, flags: MessageFlags.IsComponentsV2 })
+                .send(message)
                 .then(() =>
                     logInfo("signup-reminders", "Sent signup reminder", {
                         eventId: event.id,

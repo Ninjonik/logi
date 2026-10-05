@@ -12,6 +12,7 @@ import type {
     SquadPreset,
 } from "@/types/domain"
 import type { ReminderAudienceState } from "@/components/app/match-detail/reminder-button"
+import type { RosterPublishContext } from "@/components/app/roster-publish-dialog"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import type { Dictionary } from "@/i18n/dictionaries"
 
@@ -36,6 +37,8 @@ type LiveRosterBoardProps = {
     initialDiscordConfig: BoardDiscordConfig | null
     meetingChannelName?: string
     reminder?: ReminderAudienceState
+    /** The clan's Discord settings for the publish dialog (D5); admins only. */
+    publishContext?: RosterPublishContext
 }
 
 type LiveRosterDetail = {
@@ -85,6 +88,7 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
             meetingChannelId={discordConfig?.meetingChannelId}
             meetingChannelName={props.meetingChannelName}
             reminder={props.reminder}
+            publishContext={props.publishContext}
             defaultMode="view"
         />
     )

@@ -59,18 +59,24 @@ reads; Convex also checks the internal secret, configured guild and a membership
 observation no older than ten seconds. There is no anonymous Convex history path.
 
 **Share** uses the selected slash-command channel, else the default sharing
-channel from **Clan settings → Discord → Player statistics command**, else opens
-a Discord channel picker. The same settings let a manager switch the command off
-for the server or for one game; the bot then answers privately that statistics are
-unavailable, before any source read. Missing settings keep both games enabled. The requester and bot must currently be able to view, send messages and
-embed links there; artwork also needs Attach Files. Cross-guild destinations,
-threads, voice channels and missing permissions are rejected. Shared cards have
-no account-management controls and suppress mentions. HLL's explicit public
-profile link contains its Steam ID; Wardogs cards do not print raw IDs.
+channel from **Settings → Discord → Commands** (`/stats`), else opens a Discord
+channel picker. The same page lets a manager switch the command off for the
+server or for one game, choose who may use it (everyone, clan members or Logi
+managers, plus extra roles), whether the reply offers Share, and the channels
+where it works; the bot checks these with fresh Discord facts and answers a
+refusal privately in the clan language, before any source read. Missing
+settings keep both games enabled. The requester and bot must currently be able
+to view, send messages (in threads: send messages in threads) and embed links
+there. Cross-guild destinations, private threads, voice channels and missing
+permissions are rejected with "Do #kanál teď sdílet nejde" and a button to pick
+another channel. Shared cards have no controls, name who shared them and
+suppress mentions. HLL's explicit public profile link contains its Steam ID;
+Wardogs cards do not print raw IDs. The card carries no map artwork.
 
 These are on-demand snapshots, not scheduled public panels. The private view
-expires after 15 minutes or a bot restart. One view allows one share attempt;
-concurrent clicks are reserved before acknowledgement. Ambiguous send outcomes
+expires after 15 minutes or a bot restart. One view allows one successful share;
+concurrent clicks are reserved before acknowledgement, and a refused channel
+frees the view for another choice. Ambiguous send outcomes
 are not automatically retried. After restart, old controls ask for a new command
 instead of recreating messages. Existing durable public panels retain their own
 separate restart reconciliation.

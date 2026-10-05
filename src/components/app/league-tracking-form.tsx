@@ -297,22 +297,9 @@ export function LeagueTrackingForm({
                             placeholder={t.intakePlaceholder}
                         />
                     </div>
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium">{t.outputChannel}</p>
-                        <DiscordChannelSelect
-                            channels={channels}
-                            value={settings.outputChannelId ?? undefined}
-                            onChange={(v) =>
-                                setSettings({
-                                    ...settings,
-                                    outputChannelId: v ?? null,
-                                })
-                            }
-                            placeholder={t.outputPlaceholder}
-                        />
-                    </div>
                 </div>
                 <p className="text-muted-foreground text-xs">{t.intakeNote}</p>
+                <p className="text-muted-foreground text-xs">{t.panelsNote}</p>
                 <Button disabled={busy} type="submit">
                     {t.save}
                 </Button>
