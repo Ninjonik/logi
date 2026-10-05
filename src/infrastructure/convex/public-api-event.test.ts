@@ -298,6 +298,61 @@ test("settings API queues the documented settings payload", async () => {
     assert.ok(payload.createdAt)
 })
 
+test("settings responses carry the feature slices and refuse unknown slices", async () => {
+    const db = new FakeDb()
+    db.tables.discordConfigs.set("config-a", {
+        _id: "config-a",
+        guildId: "guild-a",
+        playerStatsServers: [{ token: "secret" }],
+    })
+    const read = (await (
+        publicApi.getClanSettings as unknown as {
+            _handler: (
+                ctx: { db: FakeDb },
+                args: Record<string, unknown>
+            ) => Promise<Record<string, unknown> | null>
+        }
+    )._handler(
+        { db },
+        { secret: "dev-internal-auth-secret", keyHash: "key" }
+    )) as { slices: unknown; discordConfig: Record<string, unknown> }
+    // No redesign slice is registered yet; the key is always present.
+    assert.deepEqual(read.slices, {})
+    assert.equal("playerStatsServers" in read.discordConfig, false)
+
+    const refused = await handler(publicApi.mutateClanSettings)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "slice-key",
+            bodyHash: "slice-body",
+            methodPath: "PATCH /clan/settings",
+            slices: { notASlice: { enabled: true } },
+        }
+    )
+    assert.equal(refused?.status, 400)
+    assert.equal(
+        JSON.parse(refused!.body).error.message,
+        "Settings patch contains an unsupported field."
+    )
+    assert.equal(db.tables.discordConfigs.get("config-a")!.notASlice, undefined)
+
+    const updated = await handler(publicApi.mutateClanSettings)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "slice-key-2",
+            bodyHash: "slice-body-2",
+            methodPath: "PATCH /clan/settings",
+            timezone: "Europe/Prague",
+        }
+    )
+    assert.equal(updated?.status, 200)
+    assert.deepEqual(JSON.parse(updated!.body).data.slices, {})
+})
+
 test("event signup queues a roster update through the shared queue", async () => {
     const db = new FakeDb()
     db.tables.webhookSubscriptions.get("hook-1")!.eventTypes = [

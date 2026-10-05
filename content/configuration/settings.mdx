@@ -372,7 +372,10 @@ that updates at least one open roster.
 `PATCH /api/v1/clan/settings` changes only explicitly supplied safe workspace
 and Discord fields. It cannot write runtime credentials, player-stat tokens,
 ticket or membership workflows, or game overrides; omitted settings remain
-unchanged.
+unchanged. Feature settings come in named groups: `GET` returns them under
+`data.slices`, and `PATCH` changes one group with `{ "<group>": { … } }`, again
+only the supplied fields. The OpenAPI reference lists every group and its
+fields.
 
 <Callout type="warning">
     Do not rotate, delete, or reveal an API key unless you understand every
@@ -429,7 +432,7 @@ your endpoint to accept them before enabling the subscription:
 | `event.created`    | Successful `POST /api/v1/clan/events`                                                                | Created [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
 | `event.updated`    | Successful `PATCH /api/v1/clan/events/{id}` or `POST /api/v1/clan/events/{id}/actions/conclude`      | Updated [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
 | `roster.updated`   | Successful roster update/delete, event signup write, or assignment write that affects an open roster | [Roster API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Rosters) or `{ id, deleted: true }`; signup result from [Events](/api/v1/docs#tag/Clan-API-%E2%80%94-Events); or [assignment API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Assignments), respectively. |
-| `settings.updated` | Successful `PATCH /api/v1/clan/settings`                                                             | `{ guild, discordConfig }`, with sensitive Discord data removed; see [Settings](/api/v1/docs#tag/Clan-API-%E2%80%94-Settings).                                                                                                                                   |
+| `settings.updated` | Successful `PATCH /api/v1/clan/settings`                                                             | `{ guild, discordConfig, slices }`, with sensitive Discord data removed; see [Settings](/api/v1/docs#tag/Clan-API-%E2%80%94-Settings).                                                                                                                           |
 | `webhook.test`     | A manager presses **Send test**                                                                      | `{ "test": true }`; sent only to that selected webhook, regardless of its subscribed types.                                                                                                                                                                      |
 
 The article, event, roster, and assignment API object schemas are the same as

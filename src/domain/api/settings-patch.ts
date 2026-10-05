@@ -1,4 +1,12 @@
-const supportedTimezones = new Set([
+import {
+    isClanSettingsSliceKey,
+    parseClanSettingsSlicePatches,
+    type AnyClanSettingsSlice,
+} from "./settings-slices"
+import { CLAN_SETTINGS_SLICES } from "./clan-settings-slices"
+
+/** Time zones a clan can choose through the API. */
+export const SUPPORTED_SETTINGS_TIMEZONES = [
     "UTC",
     "Europe/Bratislava",
     "Europe/London",
@@ -9,9 +17,13 @@ const supportedTimezones = new Set([
     "America/Denver",
     "America/Los_Angeles",
     "Australia/Sydney",
-])
+] as const
+const supportedTimezones: ReadonlySet<string> = new Set(
+    SUPPORTED_SETTINGS_TIMEZONES
+)
 
-const discordFields = [
+/** Discord channel and role IDs the API can set or clear (`null`). */
+export const SETTINGS_DISCORD_FIELDS = [
     "announcementsChannelId",
     "eventInfoChannelId",
     "errorsChannelId",
@@ -21,6 +33,7 @@ const discordFields = [
     "clanRoleId",
     "dashboardAdminRoleId",
 ] as const
+const discordFields = SETTINGS_DISCORD_FIELDS
 
 type DiscordField = (typeof discordFields)[number]
 
@@ -30,14 +43,26 @@ export type ClanSettingsPatch = {
     description?: string | null
     timezone?: string
     defaultLanguage?: "en" | "cs" | "de"
+    /** Validated patches of feature slices, by slice key. */
+    slices?: Record<string, unknown>
 } & Partial<Record<DiscordField, string | null>>
 
+/**
+ * Validates a `PATCH /clan/settings` body: the plain settings fields plus one
+ * object per settings slice (`{ "<slice key>": { … } }`).
+ */
 export function parseClanSettingsPatch(
-    value: unknown
+    value: unknown,
+    slices: readonly AnyClanSettingsSlice[] = CLAN_SETTINGS_SLICES
 ): { ok: true; value: ClanSettingsPatch } | { ok: false; error: string } {
     if (!value || typeof value !== "object" || Array.isArray(value))
         return { ok: false, error: "Settings patch must be an object." }
-    const input = value as Record<string, unknown>
+    const body = value as Record<string, unknown>
+    const input: Record<string, unknown> = {}
+    const sliceInput: Record<string, unknown> = {}
+    for (const [key, raw] of Object.entries(body))
+        if (isClanSettingsSliceKey(key, slices)) sliceInput[key] = raw
+        else input[key] = raw
     const allowed = new Set([
         "name",
         "avatar",
@@ -47,7 +72,7 @@ export function parseClanSettingsPatch(
         ...discordFields,
     ])
     if (
-        !Object.keys(input).length ||
+        !Object.keys(body).length ||
         Object.keys(input).some((key) => !allowed.has(key))
     )
         return {
@@ -96,6 +121,11 @@ export function parseClanSettingsPatch(
         else if (field === "avatar") patch.avatar = trimmed
         else if (field === "description") patch.description = trimmed
         else patch[field as DiscordField] = trimmed
+    }
+    if (Object.keys(sliceInput).length) {
+        const parsed = parseClanSettingsSlicePatches(sliceInput, slices)
+        if (!parsed.ok) return parsed
+        patch.slices = parsed.value
     }
     return { ok: true, value: patch }
 }

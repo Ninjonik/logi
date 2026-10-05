@@ -17,9 +17,9 @@ const handler = () =>
     })
 const actorId = "222222222222222222"
 const cs = getMembershipMessages("cs")
-let nextGuild = 700000000000000000n
+let nextGuild = 0
 /** A fresh guild per test, so the five-minute language cache never leaks. */
-const newGuildId = () => String(nextGuild++)
+const newGuildId = () => `7000000000000${String(nextGuild++).padStart(5, "0")}`
 
 function backend(
     t: TestContext,
