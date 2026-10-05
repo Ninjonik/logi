@@ -13,6 +13,7 @@ import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-butt
 import { BotInviteButton } from "@/components/app/bot-invite-button"
 import { ServerCard } from "@/components/app/server-card"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { buildDiscordBotInviteUrl } from "@/lib/discord"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -107,24 +108,22 @@ export default async function DashboardHomePage({
             />
             <div className="space-y-8 px-4 lg:px-6">
                 {!managedServers.length && !mercenaryServers.length ? (
-                    <section className="border-border/60 bg-card/50 flex flex-col items-start gap-3 rounded-2xl border p-6">
-                        <h2 className="text-lg font-semibold">
-                            {dictionary.dashboard.noServerTitle}
-                        </h2>
-                        <p className="text-muted-foreground max-w-prose text-sm">
-                            {dictionary.dashboard.noServerDescription}
-                        </p>
-                        <Button
-                            asChild
-                            variant="outline"
-                            className="rounded-xl"
-                        >
-                            <Link href="/wiki/discord-bot-setup">
-                                <BookOpen className="size-4" />
-                                {dictionary.dashboard.noServerSetupGuide}
-                            </Link>
-                        </Button>
-                    </section>
+                    <EmptyState
+                        title={dictionary.dashboard.noServerTitle}
+                        description={dictionary.dashboard.noServerDescription}
+                        actions={
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <Link href="/wiki/discord-bot-setup">
+                                    <BookOpen className="size-4" />
+                                    {dictionary.dashboard.noServerSetupGuide}
+                                </Link>
+                            </Button>
+                        }
+                    />
                 ) : null}
                 {managedServers.length ? (
                     <section className="space-y-4">

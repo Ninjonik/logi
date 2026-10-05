@@ -15,14 +15,6 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -39,6 +31,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { UserSettingsPatch } from "@/lib/validation/user-settings"
 import { LocaleSwitcher } from "@/components/app/locale-switcher"
 import { AvatarPicker } from "@/components/app/avatar-picker"
@@ -83,8 +76,6 @@ export function UserSettingsForm({
     const [defaultWorkspaceId, setDefaultWorkspaceId] = useState(
         user.defaultWorkspaceId ?? "automatic"
     )
-    const [isErasureDialogOpen, setIsErasureDialogOpen] = useState(false)
-    const [isRequestingErasure, setIsRequestingErasure] = useState(false)
     const [isSavingMatchRecaps, setIsSavingMatchRecaps] = useState(false)
 
     /** Saves only the given settings; the API keeps every omitted one. */
@@ -125,16 +116,6 @@ export function UserSettingsForm({
             setMatchRecapNotificationsEnabled(!enabled)
         } finally {
             setIsSavingMatchRecaps(false)
-        }
-    }
-
-    async function confirmErasure() {
-        setIsRequestingErasure(true)
-        try {
-            await requestPrivacy("erasure")
-        } finally {
-            setIsRequestingErasure(false)
-            setIsErasureDialogOpen(false)
         }
     }
 
@@ -426,58 +407,27 @@ export function UserSettingsForm({
                                 <p>{dictionary.userSettings.erasureWarning}</p>
                             </div>
                         </div>
-                        <Button
-                            variant="destructive"
-                            className="w-full rounded-xl"
-                            disabled={isPending}
-                            onClick={() => setIsErasureDialogOpen(true)}
-                        >
-                            {dictionary.userSettings.requestErasure}
-                        </Button>
-                        <Dialog
-                            open={isErasureDialogOpen}
-                            onOpenChange={(open) =>
-                                !isRequestingErasure &&
-                                setIsErasureDialogOpen(open)
+                        <ConfirmActionDialog
+                            trigger={
+                                <Button
+                                    variant="destructive"
+                                    className="w-full rounded-xl"
+                                    disabled={isPending}
+                                >
+                                    {dictionary.userSettings.requestErasure}
+                                </Button>
                             }
-                        >
-                            <DialogContent className="rounded-2xl">
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {
-                                            dictionary.userSettings
-                                                .erasureConfirmTitle
-                                        }
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {
-                                            dictionary.userSettings
-                                                .erasureConfirmDescription
-                                        }
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-xl"
-                                        disabled={isRequestingErasure}
-                                        onClick={() =>
-                                            setIsErasureDialogOpen(false)
-                                        }
-                                    >
-                                        {dictionary.common.cancel}
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        className="rounded-xl"
-                                        disabled={isRequestingErasure}
-                                        onClick={confirmErasure}
-                                    >
-                                        {dictionary.userSettings.erasureConfirm}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                            title={dictionary.userSettings.erasureConfirmTitle}
+                            description={
+                                dictionary.userSettings
+                                    .erasureConfirmDescription
+                            }
+                            confirmLabel={
+                                dictionary.userSettings.erasureConfirm
+                            }
+                            cancelLabel={dictionary.common.cancel}
+                            onConfirm={() => requestPrivacy("erasure")}
+                        />
                     </CardContent>
                 </Card>
             </div>
