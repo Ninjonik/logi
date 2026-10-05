@@ -180,3 +180,78 @@ test("the overview never carries a password or a key", () => {
     const text = JSON.stringify(result)
     assert.doesNotMatch(text, /envelope|ciphertext|secret/i)
 })
+
+test("the overview lists seed control messages, names and the editor's flags (P1-18, P1-22, P2-05)", () => {
+    const result = buildPanelOverview({
+        now,
+        heartbeat: null,
+        defaultStyle: "a",
+        panels: [
+            {
+                panel: panel({ pausedBy: "u1", draft: false }),
+                status: status({
+                    channelPrivate: true,
+                    lastError: { code: "discord_unavailable", at: 70_000 },
+                    recoveredAt: 71_000,
+                }),
+                publications: [publication()],
+            },
+            {
+                panel: panel({ id: "p2", draft: true }),
+                status: null,
+                publications: [],
+            },
+        ],
+        sources: [],
+        servers: [],
+        controls: [
+            {
+                connectionId: "hll-1",
+                channelId: "323456789012345678",
+                message: {
+                    channelId: "323456789012345678",
+                    messageId: "423456789012345678",
+                    revision: 3,
+                    deliveredRevision: 3,
+                    lastSuccessAt: 95_000,
+                    error: null,
+                    pending: false,
+                },
+            },
+            {
+                connectionId: "hll-2",
+                channelId: "323456789012345679",
+                message: {
+                    channelId: null,
+                    messageId: null,
+                    revision: 1,
+                    deliveredRevision: 0,
+                    lastSuccessAt: null,
+                    error: null,
+                    pending: false,
+                },
+            },
+            { connectionId: "wd-1", channelId: null, message: null },
+        ],
+        people: { u1: "Hráč 01" },
+    })
+    const [sent, draft] = result.panels
+    assert.equal(sent!.sent, true)
+    assert.equal(sent!.channelPrivate, true)
+    assert.equal(sent!.lastError?.code, "discord_unavailable")
+    assert.equal(sent!.recoveredAt, 71_000)
+    assert.equal(draft!.sent, false)
+    assert.equal(draft!.channelPrivate, null)
+    assert.deepEqual(result.people, { u1: "Hráč 01" })
+    assert.deepEqual(
+        result.controls.map((control) => [control.connectionId, control.state]),
+        [
+            ["hll-1", "published"],
+            ["hll-2", "waiting"],
+        ]
+    )
+    assert.deepEqual(result.controls[0]!.message, {
+        channelId: "323456789012345678",
+        messageId: "423456789012345678",
+    })
+})

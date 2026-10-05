@@ -575,12 +575,14 @@ function leaderBlocks(input: LiveServerPanelInput): MessageBlock[] {
 function connectionLines(input: LiveServerPanelInput) {
     const { server, copy, panel, facts } = input
     const lines: string[] = []
-    if (panel.content.address) {
-        if (facts.game === "hell_let_loose" && server.address)
-            lines.push(`${copy.address} ${code(server.address)}`)
-        if (facts.game === "wardogs" && server.joinCode)
-            lines.push(`${copy.joinCode} ${code(server.joinCode)}`)
-    }
+    if (
+        panel.content.address &&
+        facts.game === "hell_let_loose" &&
+        server.address
+    )
+        lines.push(`${copy.address} ${code(server.address)}`)
+    if (panel.content.joinCode && facts.game === "wardogs" && server.joinCode)
+        lines.push(`${copy.joinCode} ${code(server.joinCode)}`)
     // The password reaches the view only for a private channel (P4-B06).
     if (
         input.privateChannel &&

@@ -80,6 +80,12 @@ export const panelAttemptSchema = z.strictObject({
     warnings: z.array(z.enum(PANEL_WARNINGS)).max(PANEL_WARNINGS.length),
     /** Messages the panel owns in Discord after this pass. */
     messages: z.number().int().min(0).max(1000),
+    /**
+     * Whether `@everyone` cannot view the panel's channel, as the bot saw it
+     * on this pass ("veřejný kanál" / "soukromý kanál", P1-13, P1-14).
+     * Absent when the pass did not look at the channel.
+     */
+    channelPrivate: z.boolean().optional(),
 })
 export type PanelAttempt = z.infer<typeof panelAttemptSchema>
 
@@ -96,6 +102,16 @@ export type PanelStatusRecord = {
     messages: number
     /** First time a message of this panel was confirmed in Discord. */
     sentAt: number | null
+    /**
+     * The most recent failure, kept after a later success so the editor can
+     * say "Poslední chyba … Další pokus … prošel" (P2-32). Absent on rows
+     * stored before it existed.
+     */
+    lastError?: PanelError | null
+    /** The first success after `lastError` ("Další pokus … prošel"); null while it still fails. */
+    recoveredAt?: number | null
+    /** The last privacy the bot saw for the channel; null before it looked. */
+    channelPrivate?: boolean | null
 }
 
 /** Folds one attempt into the stored record; `claimedAt` is when the bot took a request. */
@@ -122,6 +138,16 @@ export function nextPanelStatus(
         sentAt:
             previous?.sentAt ??
             (attempt.ok && attempt.messages > 0 ? attempt.attemptAt : null),
+        lastError: attempt.ok
+            ? (previous?.lastError ?? previous?.error ?? null)
+            : attempt.error,
+        recoveredAt: attempt.ok
+            ? previous?.error
+                ? attempt.attemptAt
+                : (previous?.recoveredAt ?? null)
+            : null,
+        channelPrivate:
+            attempt.channelPrivate ?? previous?.channelPrivate ?? null,
     }
 }
 

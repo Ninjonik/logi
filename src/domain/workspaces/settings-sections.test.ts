@@ -5,7 +5,9 @@ import {
     SETTINGS_SECTIONS,
     isSettingsSectionId,
     mergedSettingsSection,
+    settingsMenuSection,
     settingsSectionForRequirement,
+    settingsSectionParent,
     settingsSectionStatus,
     settingsSetupProgress,
     visibleSettingsSections,
@@ -106,4 +108,18 @@ test("the Matches group holds templates, presets and Discord messages in menu or
         settingsSectionStatus("match-templates", configured).state,
         "none"
     )
+})
+
+test("Panely v Discordu sits in the Discord group with Grafika panelů and Seed under it (P1-01, P3-01, P8-01)", () => {
+    const ids = SETTINGS_SECTIONS.filter(
+        (section) => section.group === "discord"
+    ).map((section) => section.id)
+    assert.ok(ids.indexOf("discord-panels") < ids.indexOf("commands"))
+    assert.equal(settingsSectionParent("panel-graphics"), "discord-panels")
+    assert.equal(settingsSectionParent("discord-seed"), "discord-panels")
+    assert.equal(settingsSectionParent("discord-panels"), undefined)
+    assert.equal(settingsMenuSection("panel-graphics"), "discord-panels")
+    assert.equal(settingsMenuSection("commands"), "commands")
+    assert.ok(isSettingsSectionId("discord-panels"))
+    assert.ok(isSettingsSectionId("discord-seed"))
 })

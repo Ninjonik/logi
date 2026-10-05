@@ -35,6 +35,12 @@ export type CombinedServer = {
     joinable: boolean
     /** The current map on the right of the row (P7-B09); null without one. */
     thumbnail: MessageMedia | null
+    /** "IP:port" of an HLL server when "Ukázat IP:port" is on (P2-43). */
+    address?: string | null
+    /** The Wardogs join code when "Ukázat join kód" is on (P2-45). */
+    joinCode?: string | null
+    /** The 10-segment seed bar of a running seed (P2-44), e.g. "🟩🟩⬛…". */
+    seedBar?: string | null
 }
 
 export type CombinedPanelInput = {
@@ -45,6 +51,11 @@ export type CombinedPanelInput = {
     description: string | null
     accentColor: string | null
     footerTiming: boolean
+    /**
+     * What a row shows (P2-38 "Skóre", "Další mapa", "Fronta"); absent shows
+     * the queue only, as panels saved before these switches.
+     */
+    show?: { score: boolean; nextMap: boolean; queue: boolean }
     servers: CombinedServer[]
     now: number
     banner: MessageMedia | null
@@ -68,14 +79,41 @@ function rowText(server: CombinedServer, input: CombinedPanelInput) {
         parts.push(
             copy.playersShort(number(facts.players), number(facts.capacity))
         )
+    const show = input.show ?? { score: false, nextMap: false, queue: true }
     if (server.seed) parts.push(copy.liveFrom(number(server.seed.liveFrom)))
-    else if (facts.queue) parts.push(copy.queue(number(facts.queue)))
+    else if (facts.queue && show.queue)
+        parts.push(copy.queue(number(facts.queue)))
+    // P2-43: "Spojenci 3 : 2 Osa" when "Skóre" is on.
+    if (
+        show.score &&
+        !server.seed &&
+        facts.hll &&
+        facts.hll.allies !== null &&
+        facts.hll.axis !== null
+    )
+        parts.push(
+            `${copy.allies} ${number(facts.hll.allies)} : ${number(facts.hll.axis)} ${copy.axis}`
+        )
     const minutes = minutesLeft(facts.timeLeftSeconds)
     if (minutes !== null && !server.seed && (facts.players ?? 0) > 0)
         parts.push(copy.timeLeft(String(minutes)))
     if (facts.freshness === "stale" && facts.dataAt)
         parts.push(copy.lastData(`<t:${Math.floor(facts.dataAt / 1000)}:R>`))
-    return parts.join(" · ")
+    if (show.nextMap && facts.nextMap)
+        parts.push(copy.nextMapInline(escapeMarkdownText(facts.nextMap.name)))
+    const lines = [parts.join(" · ")]
+    // P2-44: the seed's progress towards the live threshold.
+    if (server.seed && server.seedBar && facts.players !== null)
+        lines.push(
+            `${server.seedBar} **${number(facts.players)} / ${number(server.seed.liveFrom)}**`
+        )
+    // P2-43, P2-45: how to join, public data only (never a password).
+    const code = (value: string) => `\`${value.replace(/`/g, "ˋ")}\``
+    if (facts.game === "hell_let_loose" && server.address)
+        lines.push(`${copy.address} ${code(server.address)}`)
+    if (facts.game === "wardogs" && server.joinCode)
+        lines.push(`${copy.joinCode} ${code(server.joinCode)}`)
+    return lines.join("\n")
 }
 
 /**
@@ -124,19 +162,24 @@ export function combinedPanelView(input: CombinedPanelInput): MessageView {
             text: rowText(server, input),
         }
     })
+    // P2-39, P2-45: one join button per HLL server; Wardogs joins by code.
     const joins: MessageButton[] = input.servers
         .filter(
             (server) =>
                 server.joinUrl &&
                 server.joinable &&
+                server.facts.game === "hell_let_loose" &&
                 server.facts.freshness !== "unavailable"
         )
         .map((server) => ({
             kind: "link" as const,
             url: server.joinUrl!,
+            // "Připojit se: Vlci #1" (P2-45, P7-20): the name before " · ".
             label:
                 input.servers.length > 1
-                    ? copy.buttons.joinServer(server.title)
+                    ? copy.buttons.joinServer(
+                          server.title.split(" · ")[0]?.trim() || server.title
+                      )
                     : copy.buttons.join,
         }))
     const description = input.description?.trim()

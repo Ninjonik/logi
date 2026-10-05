@@ -678,6 +678,7 @@ async function runLive(
             warnings,
             messages: 1,
             nextAt: paused ? null : pass.now + REFRESH_MS,
+            channelPrivate: privateChannel,
         }),
         passwordNotified,
         passwordReset,
@@ -749,6 +750,19 @@ async function runCombined(
                     ? server.join?.joinCode
                     : server.join?.address
             ),
+            // P2-43..45: the address or join code under the row, when shown.
+            address:
+                content.address && server.gameId !== "wardogs"
+                    ? (server.join?.address ?? null)
+                    : null,
+            joinCode:
+                content.joinCode && server.gameId === "wardogs"
+                    ? (server.join?.joinCode ?? null)
+                    : null,
+            seedBar:
+                seed && content.seedProgress
+                    ? seedProgress(facts.players, seed.liveFrom).bar
+                    : null,
         }
     })
     // Each row carries its current map on the right (P7-B09).
@@ -794,6 +808,11 @@ async function runCombined(
         description: panel.description ?? null,
         accentColor: look.accentColor,
         footerTiming: content.footerTiming,
+        show: {
+            score: look.layout.showScoreboard,
+            nextMap: content.nextMap,
+            queue: content.queue,
+        },
         servers,
         now: pass.now,
         banner: null,
@@ -845,6 +864,7 @@ async function runCombined(
             warnings,
             messages: 1,
             nextAt: isPanelPaused(panel) ? null : pass.now + REFRESH_MS,
+            channelPrivate: !channel.everyoneCanView,
         }),
     }
 }

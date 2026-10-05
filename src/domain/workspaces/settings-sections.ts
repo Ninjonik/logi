@@ -19,8 +19,11 @@ export const SETTINGS_SECTIONS = [
     { id: "presets", group: "matches" },
     { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
-    // "Grafika panelů" (board P8); it sits under "Panely v Discordu".
-    { id: "panel-graphics", group: "discord" },
+    // "Panely v Discordu" (boards P1, P2): the panel list and editor.
+    { id: "discord-panels", group: "discord" },
+    // "Grafika panelů" (P8) and "Seed serverů" (P3) are pages under it.
+    { id: "panel-graphics", group: "discord", parent: "discord-panels" },
+    { id: "discord-seed", group: "discord", parent: "discord-panels" },
     { id: "commands", group: "discord" },
     { id: "roles", group: "discord" },
     { id: "membership", group: "discord" },
@@ -36,9 +39,24 @@ export const SETTINGS_SECTIONS = [
     id: string
     group: SettingsGroupId
     games?: readonly GameId[]
+    /** A page under another one: not in the menu, which marks the parent instead. */
+    parent?: string
 }>
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]["id"]
+
+/** The page a sub-page belongs under ("Grafika panelů" → "Panely v Discordu"). */
+export function settingsSectionParent(
+    id: SettingsSectionId
+): SettingsSectionId | undefined {
+    const section = SETTINGS_SECTIONS.find((item) => item.id === id)
+    return section && "parent" in section ? section.parent : undefined
+}
+
+/** The menu entry that is active on a page: its parent for a sub-page. */
+export function settingsMenuSection(id: SettingsSectionId): SettingsSectionId {
+    return settingsSectionParent(id) ?? id
+}
 
 export function isSettingsSectionId(value: string): value is SettingsSectionId {
     return SETTINGS_SECTIONS.some((section) => section.id === value)
