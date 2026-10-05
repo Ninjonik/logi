@@ -34,6 +34,9 @@ export function publicPanelSettingsInput(
             accentColor: presentation.accentColor,
             bannerAssetId: presentation.bannerAssetId,
             factionEmoji: presentation.factionEmoji,
+            ...(presentation.style !== undefined
+                ? { style: presentation.style }
+                : {}),
         },
     }
 }

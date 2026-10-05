@@ -1,7 +1,12 @@
 import { z } from "zod"
 
 /** Who may own an uploaded image and what it is normalized into. */
-export const IMAGE_ASSET_KINDS = ["team-logo", "panel-banner"] as const
+export const IMAGE_ASSET_KINDS = [
+    "team-logo",
+    "panel-banner",
+    /** A clan's own image for one map (P8 "Obrázky map"). */
+    "panel-map",
+] as const
 export type ImageAssetKind = (typeof IMAGE_ASSET_KINDS)[number]
 export const imageAssetKindSchema = z.enum(IMAGE_ASSET_KINDS)
 export const IMAGE_INPUT_TYPES = [
@@ -16,10 +21,15 @@ export const IMAGE_MAX_SOURCE_DIMENSION = 4096
 export const IMAGE_OUTPUT = {
     "team-logo": { width: 512, height: 512, format: "png" },
     "panel-banner": { width: 1920, height: 1080, format: "webp" },
+    "panel-map": { width: 1200, height: 1200, format: "webp" },
 } as const satisfies Record<
     ImageAssetKind,
     { width: number; height: number; format: "png" | "webp" }
 >
+/** Smallest accepted source per kind; a map image must be at least 160 × 160 (P8-19). */
+export const IMAGE_MIN_SOURCE: Partial<
+    Record<ImageAssetKind, { width: number; height: number }>
+> = { "panel-map": { width: 160, height: 160 } }
 export const IMAGE_OUTPUT_TYPES: Record<"png" | "webp", ImageInputType> = {
     png: "image/png",
     webp: "image/webp",
@@ -85,6 +95,8 @@ export function validateImageSource(input: {
     bytes: number
     sniffed: ImageInputType | null
     decoded: DecodedImage | null
+    /** When given, the kind's minimum source size applies. */
+    kind?: ImageAssetKind
 }): ImageValidationError | null {
     if (input.bytes <= 0 || input.bytes > IMAGE_MAX_INPUT_BYTES)
         return "too_large"
@@ -112,6 +124,9 @@ export function validateImageSource(input: {
         width > IMAGE_MAX_SOURCE_DIMENSION ||
         height > IMAGE_MAX_SOURCE_DIMENSION
     )
+        return "bad_dimensions"
+    const minimum = input.kind ? IMAGE_MIN_SOURCE[input.kind] : undefined
+    if (minimum && (width < minimum.width || height < minimum.height))
         return "bad_dimensions"
     if (pages !== undefined && pages > 1) return "animated"
     return null

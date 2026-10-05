@@ -2,6 +2,7 @@ import {
     canAttachImageAsset,
     cleanupDue,
     IMAGE_MAX_INPUT_BYTES,
+    IMAGE_OUTPUT,
     imageAssetPath,
     isStorableNormalizedImage,
     parseImageAssetFile,
@@ -115,6 +116,48 @@ test("size, dimension and animation bounds are enforced", () => {
         }),
         "undecodable"
     )
+})
+
+test("a map image must be at least 160 × 160; other kinds keep their bounds", () => {
+    const source = {
+        declaredType: "image/png",
+        bytes: 10,
+        sniffed: "image/png" as const,
+    }
+    const sized = (width: number, height: number) => ({
+        ...decoded,
+        width,
+        height,
+    })
+    assert.equal(
+        validateImageSource({
+            ...source,
+            decoded: sized(159, 400),
+            kind: "panel-map",
+        }),
+        "bad_dimensions"
+    )
+    assert.equal(
+        validateImageSource({
+            ...source,
+            decoded: sized(160, 160),
+            kind: "panel-map",
+        }),
+        null
+    )
+    assert.equal(
+        validateImageSource({
+            ...source,
+            decoded: sized(100, 100),
+            kind: "panel-banner",
+        }),
+        null
+    )
+    assert.deepEqual(IMAGE_OUTPUT["panel-map"], {
+        width: 1200,
+        height: 1200,
+        format: "webp",
+    })
 })
 
 test("attachment needs the owning workspace, matching kind and a live asset; cleanup spares referenced assets", () => {

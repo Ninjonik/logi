@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { panelStyleSchema, type PanelStyle } from "./panel-graphics"
+
 /** Faction keys the bot can label: Hell Let Loose sides and the Wardogs factions. */
 export const PANEL_FACTIONS = [
     "allies",
@@ -101,6 +103,11 @@ export const panelPresentationInputSchema = z.strictObject({
         .default(null),
     bannerAssetId: z.string().min(1).max(100).nullable().default(null),
     factionEmoji: panelFactionEmojiMapSchema.default(() => ({})),
+    /**
+     * Panel style A/B/C overriding the clan default (P2, P7-B01); null or
+     * absent follows the clan default from "Grafika panelů".
+     */
+    style: panelStyleSchema.nullable().optional(),
 })
 export type PanelPresentationInput = z.infer<
     typeof panelPresentationInputSchema
@@ -197,6 +204,7 @@ export type PanelPresentationDraft = {
     accentColor: string | null
     bannerAssetId: string | null
     factionEmoji: Partial<Record<string, string>>
+    style?: PanelStyle | null
 }
 export function isPanelAccentColorDraft(value: string | null): boolean {
     const trimmed = value?.trim() ?? ""
@@ -229,6 +237,7 @@ export function panelPresentationFromDraft(
         accentColor: draft.accentColor?.trim().toLowerCase() || null,
         bannerAssetId: draft.bannerAssetId,
         factionEmoji: cleanPanelFactionEmoji(visible),
+        ...(draft.style !== undefined ? { style: draft.style } : {}),
     })
     return parsed.success ? parsed.data : null
 }
