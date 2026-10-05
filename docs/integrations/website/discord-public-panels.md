@@ -138,9 +138,13 @@ banners; a workspace may upload its own banner (see [Appearance](#appearance)).
 Faction names are matched semantically; unknown/provider labels such as
 Alpha/Bravo/Charlie retain a neutral icon. Metric symbols use Unicode.
 
-The three existing faction marker assets keep their adjacent MIT license and
-upstream attribution in `public/stratmap/icons/wardogs/LICENSE`. Provision them
-once into the selected application (never automatically on restart):
+The Wardogs faction marker assets keep their adjacent MIT license and upstream
+attribution in `public/stratmap/icons/wardogs/LICENSE`. Since the panel
+graphics redesign (see [Panel graphics](#panel-graphics)) the bot provisions the
+whole fixed sign set itself: on start and then hourly it lists the
+application's emoji, reuses every exact `logi_<key>_<digest>` name and uploads
+only what is missing, so restarts upload nothing and unknown emoji are never
+deleted. The operator script remains as a fallback for the same set:
 
 ```text
 # Supply the intended application's DISCORD_BOT_TOKEN in this process only.
@@ -148,10 +152,59 @@ npx tsx scripts/provision-discord-panel-emoji.ts <expected-application-id>
 ```
 
 The script verifies application identity, uses a content hash in each name,
-reuses existing matching emoji and never deletes unknown emoji. The bot only
-looks up the exact current catalog names; absent assets fall back to text.
+reuses existing matching emoji and never deletes unknown emoji. Absent assets
+fall back to text.
 See [Discord's application emoji API](https://docs.discord.com/developers/resources/emoji#application-owned-emoji)
 and [channel permission rules](https://docs.discord.com/developers/topics/permissions).
+
+## Panel graphics
+
+Owner decision (spec `docs/superpowers/specs/2026-10-05-discord-redesign-design.md`,
+boards P7/P8): panels have three styles, **A** (a generated scoreboard image
+over the map art, the default for Hell Let Loose and Wardogs), **B** (banner
+and map thumbnail) and **C** (compact text). A panel's own
+`presentation.style` (`a`/`b`/`c`, absent or `null` = clan default) overrides
+the clan-wide default stored in `discordPanelGraphics.defaultStyle`.
+
+| Piece                                                                                                                                                                                                           | Location                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Styles, map catalogue and key matching, map/banner/background resolution, bar colour, server state, player gauge, nation detection, new-map badge, image hash, 60 s redraw rule, file names, 10-attachment plan | `src/domain/discord-publications/panel-graphics.ts`                                                     |
+| Fixed signs: Logi's HLL nation emblems (SVG), Wardogs icons, 4 status icons, 3 gauge pieces, emoji names                                                                                                        | `src/domain/discord-publications/panel-emblems.ts`                                                      |
+| Image model the panel worker fills (validated, provider-independent, no secrets) and alt text                                                                                                                   | `src/domain/discord-publications/panel-image-model.ts`, copy in `panel-image-copy.ts`                   |
+| Clan settings: default style, one banner per server (crop, map-image switch, style B bar colour), map overrides; patch merge                                                                                    | `src/domain/discord-publications/panel-graphics-settings.ts`, `convex/discordPanelGraphics.ts`          |
+| Renderer (`next/og` + `sharp`, Inter subset under OFL in `public/fonts/inter/`)                                                                                                                                 | `src/lib/panel-image/`                                                                                  |
+| Bot: emoji provisioning, image client with throttle, built-in map thumbnails                                                                                                                                    | `discord-bot/src/runtime/application-emoji.ts`, `discord-bot/src/public-panels/{score-image,assets}.ts` |
+
+**Score image route.** `POST /api/discord/panel-image` takes
+`{ secret, request }`, where `secret` is the internal secret (the bot sends it
+in the body exactly as for `/api/cache/revalidate`) and `request` is
+`{ kind: "score" | "banner", model }`. The secret is checked in constant time
+before the model is parsed, the body is bounded to 16 KiB, the model is a
+strict Zod schema (no URLs: a background is a catalogue map key or a 32-hex
+image asset public ID that the route resolves through Convex), and the route
+reads no workspace data by ID, so there is nothing to enumerate. The answer is
+a private `image/png` of at most 1200 × 400 with an `X-Logi-Image-Hash`
+content hash. Identical content (ignoring the corner time stamp) is served
+from an in-process cache and concurrent identical requests render once. The
+bot calls it over `INTERNAL_SITE_URL`, keeps the previous image unless the
+content changed **and** 60 s passed, and names every version
+`skore-<server>-<HHMM>-<hash>.png` so Discord never shows a cached old image.
+If rendering fails the last image stays; without one the text panel stands
+alone.
+
+**Graphics settings route.** `GET/PATCH
+/api/servers/{serverId}/discord-panel-graphics` (dashboard session, clan
+admin; PATCH also same-origin, 32 KiB bounded, Zod-validated) reads the page
+data (servers, banner files, all catalogue map tiles, emoji status) and applies
+a partial change with optional `expectedRevision` (409 on conflict). Banners
+upload with `kind=panel-banner`, map images with `kind=panel-map` (PNG, JPEG or
+WebP up to 2 MiB, at least 160 × 160 px, normalized to WebP within
+1200 × 1200) through `/api/servers/{serverId}/image-assets`; the mutation
+verifies each asset with `attachableAsset`, stores its public URL and keeps
+`imageAssetReferences` with owner `panelGraphics`, so referenced files survive
+the unattached-upload sweep and removed ones are released in the same
+transaction. The bot reads `discordPanelGraphics:forBot` and reports installed
+emoji through `discordPanelGraphics:reportEmoji` (both internal secret).
 
 ## Appearance
 
@@ -215,8 +268,8 @@ revocation checks. There is no new bearer management endpoint or broadened key
 scope. Game-data and reviewed-result read APIs remain unchanged.
 
 Deploy the schema/functions to the intended backend, deploy the matching bot and
-dashboard, provision application emoji, then configure the desired panels. Keep
-the old bot stopped during rollout. Production activation is separate from local
+dashboard (the bot provisions its application emoji on start), then configure
+the desired panels. Keep the old bot stopped during rollout. Production activation is separate from local
 test acceptance; this PR does not authorize production Convex writes.
 
 ## Verification

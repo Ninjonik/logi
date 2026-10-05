@@ -32,6 +32,10 @@ import {
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
 import {
+    discordApplicationEmoji,
+    discordPanelGraphics,
+} from "./discordPanelGraphicsTable"
+import {
     discordPublications,
     discordPublicPanels,
 } from "./discordPublicationTable"
@@ -1786,13 +1790,17 @@ export default defineSchema({
             v.literal("team"),
             v.literal("event"),
             v.literal("panel"),
-            v.literal("teamRequest")
+            v.literal("teamRequest"),
+            // Clan-wide panel graphics: server banners and map images.
+            v.literal("panelGraphics")
         ),
         ownerId: v.string(),
         createdAt: v.string(),
     })
         .index("assetId", ["assetId"])
         .index("owner_ownerId", ["owner", "ownerId"]),
+    discordPanelGraphics,
+    discordApplicationEmoji,
     gameHistorySettings: defineTable({
         guildId: v.string(),
         // null keeps retained games indefinitely.

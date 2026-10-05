@@ -26,11 +26,12 @@ embed colour for legacy embed messages, or a thumbnail section inside the
 Components V2 card, which cannot carry embeds. Registration cards keep only the
 text line, and the published roster card shows only the roster.
 
-Faction emblems are the application emoji installed with
-`scripts/provision-discord-panel-emoji.ts` (read through
-`src/runtime/faction-emoji.ts`, cached for an hour), else fixed markers: 🟦
-Allies, 🟥 Axis and `◈` for a Wardogs faction
-(`src/domain/discord-messages/faction-emblem.ts`).
+Faction emblems are the application emoji the bot provisions itself on start
+and re-checks hourly (`src/runtime/application-emoji.ts`, read through
+`src/runtime/faction-emoji.ts`): Logi's Allies/Axis signs and the Wardogs
+faction icons, out of the fixed set of 12 faction signs and 7 status and gauge
+pieces. Until they are installed the fixed markers apply: 🟦 Allies, 🟥 Axis
+and `◈` for a Wardogs faction (`src/domain/discord-messages/faction-emblem.ts`).
 
 ## Message style and server passwords
 

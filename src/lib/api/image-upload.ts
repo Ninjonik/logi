@@ -126,6 +126,7 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
             const invalid = validateImageSource({
                 ...source,
                 decoded: await inspectImage(bytes),
+                kind: kind.data,
             })
             if (invalid) return json({ error: invalid }, 400)
             let normalized: Awaited<ReturnType<typeof normalizeImage>>
