@@ -1,4 +1,4 @@
-import { CalendarPlus, Plus, Repeat } from "lucide-react"
+import { CalendarPlus, Plus, RefreshCw } from "lucide-react"
 import { connection } from "next/server"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -7,6 +7,7 @@ import {
     ClanListUnavailable,
     MatchListView,
 } from "@/components/app/match-list-view"
+import { getClanFixtureLabels } from "@/lib/read-models/competition-labels"
 import { getClanResultReviews } from "@/lib/read-models/result-reviews"
 import type { MatchListTab } from "@/components/app/match-list"
 import { GAME_LABELS, isGameId } from "@/domain/games/game"
@@ -49,9 +50,12 @@ export default async function MatchesPage({
     const base = `/${locale}/dashboard/servers/${serverId}`
     const createHref = `${base}/matches/create${gameId ? `?game=${gameId}` : ""}`
     // Result review state is read fresh, and only for the clan's managers.
-    const reviews = canAdmin
-        ? await getClanResultReviews(server.discordId)
-        : undefined
+    const [reviews, competitions] = await Promise.all([
+        canAdmin ? getClanResultReviews(server.discordId) : undefined,
+        context.events.some((event) => event.competitionFixtureId)
+            ? getClanFixtureLabels(server.discordId)
+            : undefined,
+    ])
     const { rows, drafts, queue } = buildMatchListRows({
         events: context.events,
         rosters: context.rosters,
@@ -63,6 +67,7 @@ export default async function MatchesPage({
         dictionary,
         now: new Date(),
         reviews,
+        competitions,
     })
     const games = (server.enabledGames ?? []).map((id) => ({
         id,
@@ -78,7 +83,7 @@ export default async function MatchesPage({
                     ? {
                           href: `${base}/matches/recurring`,
                           label: text.recurring,
-                          icon: Repeat,
+                          icon: RefreshCw,
                       }
                     : undefined
             }

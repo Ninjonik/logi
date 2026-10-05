@@ -3625,6 +3625,11 @@ export const enMessages = {
         },
         notAnnounced: "not announced",
         noOpponent: "no opponent yet",
+        competition: "competition {name}",
+        competitionPhases: {
+            playoff: "playoffs",
+            relegation: "relegation",
+        },
         training: "Training",
         participants: {
             one: "{count} participant",

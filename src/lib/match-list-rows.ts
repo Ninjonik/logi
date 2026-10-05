@@ -13,6 +13,7 @@ import {
     formatDeadline,
     formatListDate,
 } from "@/lib/match-list-format"
+import type { MatchCompetitionLabel } from "@/lib/read-models/competition-labels"
 import { DEFAULT_GAME_ID, GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { EventCategory, EventRecord, Roster } from "@/types/domain"
 import { getEventCategoryLabel } from "@/lib/event-categories"
@@ -192,6 +193,23 @@ function hasOpponent(event: EventRecord) {
     return Boolean(event.matchTeams?.some((team) => team.slot !== "a"))
 }
 
+/** "competition ECL 2026, playoffs"; the season is left out when the name has it. */
+function competitionText(label: MatchCompetitionLabel, dictionary: Dictionary) {
+    const text = dictionary.matchList
+    const season = label.season.trim()
+    const name =
+        season && !label.name.includes(season)
+            ? `${label.name} ${season}`
+            : label.name
+    const phase =
+        label.phase === "league"
+            ? undefined
+            : text.competitionPhases[label.phase]
+    return [text.competition.replace("{name}", name), phase]
+        .filter(Boolean)
+        .join(", ")
+}
+
 type BuildInput = {
     events: EventRecord[]
     rosters: Roster[]
@@ -204,6 +222,8 @@ type BuildInput = {
     now: Date
     /** Result review state by event, read only for clan managers. */
     reviews?: ReadonlyMap<string, MatchListResultReview>
+    /** Published competition of each linked match. */
+    competitions?: ReadonlyMap<string, MatchCompetitionLabel>
 }
 
 /**
@@ -244,6 +264,7 @@ export function buildMatchListRows(input: BuildInput) {
     }
 
     function details(event: EventRecord, phase: MatchPhase, gameId: GameId) {
+        const competition = input.competitions?.get(event.id)
         if (event.kind === "training")
             return [
                 text.training,
@@ -266,6 +287,7 @@ export function buildMatchListRows(input: BuildInput) {
             phase.kind === "draft" && !hasOpponent(event)
                 ? text.noOpponent
                 : undefined,
+            competition ? competitionText(competition, dictionary) : undefined,
         ]
     }
 

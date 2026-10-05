@@ -5,6 +5,8 @@ import {
     ClanListUnavailable,
     RecurringMatchesView,
 } from "@/components/app/match-list-view"
+import { getClanFixtureLabels } from "@/lib/read-models/competition-labels"
+import { getClanResultReviews } from "@/lib/read-models/result-reviews"
 import { buildRecurringMatchRows } from "@/lib/match-list-rows"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -28,6 +30,13 @@ export default async function RecurringMatchesPage({
     if (!context)
         return <ClanListUnavailable locale={locale} dictionary={dictionary} />
     const { canAdmin, discordConfig, server } = context
+    const series = context.events.some((event) => event.recurrence)
+    const [reviews, competitions] = await Promise.all([
+        series && canAdmin ? getClanResultReviews(server.discordId) : undefined,
+        series && context.events.some((event) => event.competitionFixtureId)
+            ? getClanFixtureLabels(server.discordId)
+            : undefined,
+    ])
     const rows = buildRecurringMatchRows({
         events: context.events,
         rosters: context.rosters,
@@ -38,6 +47,8 @@ export default async function RecurringMatchesPage({
         timeZone: discordConfig?.timezone ?? "UTC",
         dictionary,
         now: new Date(),
+        reviews,
+        competitions,
     })
     return (
         <RecurringMatchesView

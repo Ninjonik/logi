@@ -347,3 +347,35 @@ test("recurring rows lead with their schedule and skip drafts", () => {
         ]
     )
 })
+
+test("linked matches name their published competition in the details", () => {
+    const { rows } = buildMatchListRows({
+        events: [
+            event({ id: "league", gameId: "wardogs", map: "Zestafona" }),
+            event({ id: "playoff", gameId: "wardogs" }),
+            event({ id: "training", kind: "training" }),
+        ],
+        rosters: [],
+        categories,
+        canAdmin: false,
+        locale: "cs",
+        serverId: "server",
+        timeZone: "Europe/Prague",
+        dictionary,
+        now,
+        competitions: new Map([
+            ["league", { name: "ECL", season: "2026", phase: "league" }],
+            ["playoff", { name: "ECL 2026", season: "2026", phase: "playoff" }],
+            ["training", { name: "ECL", season: "2026", phase: "league" }],
+        ]),
+    })
+    assert.deepEqual(
+        rows.map((row) => row.details),
+        [
+            // A training never names a competition.
+            "Trénink · Hell Let Loose",
+            "Wardogs · Zestafona · soutěž ECL 2026",
+            "Wardogs · soutěž ECL 2026, play-off",
+        ]
+    )
+})

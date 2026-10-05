@@ -3724,6 +3724,11 @@ export const deMessages = {
         },
         notAnnounced: "nicht angekündigt",
         noOpponent: "noch kein Gegner",
+        competition: "Wettbewerb {name}",
+        competitionPhases: {
+            playoff: "Playoffs",
+            relegation: "Relegation",
+        },
         training: "Training",
         participants: {
             one: "{count} Teilnehmer",

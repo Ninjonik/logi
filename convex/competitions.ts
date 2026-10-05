@@ -290,6 +290,57 @@ export const listPublicSlugs = query({
     },
 })
 
+/** How many of a clan's newest events the fixture labels read at most. */
+const CLAN_FIXTURE_SCAN_LIMIT = 400
+
+/**
+ * Which published competition each of a clan's matches is played in, for the
+ * detail line of the dashboard match list. Reads the clan's newest events
+ * through the guild index, bounded; a fixture counts only when it links back
+ * to the same event. Unpublished competitions are left out.
+ */
+export const listClanFixtureLabels = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const events = await ctx.db
+            .query("events")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .order("desc")
+            .take(CLAN_FIXTURE_SCAN_LIMIT)
+        const competitions = new Map<
+            string,
+            Promise<Doc<"competitions"> | null>
+        >()
+        const labels = await Promise.all(
+            events.map(async (event) => {
+                if (
+                    !event.competitionFixtureId ||
+                    event.guildId !== args.guildId ||
+                    event.isDraft ||
+                    (event.kind ?? "match") !== "match"
+                )
+                    return null
+                const fixture = await ctx.db.get(event.competitionFixtureId)
+                if (!fixture || fixture.eventId !== event._id) return null
+                const key = String(fixture.competitionId)
+                if (!competitions.has(key))
+                    competitions.set(key, ctx.db.get(fixture.competitionId))
+                const competition = await competitions.get(key)
+                if (!competition || !isCompetitionPublished(competition))
+                    return null
+                return {
+                    eventId: String(event._id),
+                    name: competition.name,
+                    season: competition.season,
+                    phase: fixture.phase,
+                }
+            })
+        )
+        return labels.filter((label) => label !== null)
+    },
+})
+
 function summaryOf(competition: Doc<"competitions">): CompetitionSummary {
     return {
         id: String(competition._id),

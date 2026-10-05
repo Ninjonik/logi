@@ -3617,6 +3617,11 @@ export const csMessages = {
         },
         notAnnounced: "neohlášeno",
         noOpponent: "soupeř zatím nevybrán",
+        competition: "soutěž {name}",
+        competitionPhases: {
+            playoff: "play-off",
+            relegation: "baráž",
+        },
         training: "Trénink",
         participants: {
             one: "{count} účastník",
