@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { eventSchema, type EventParsedInput } from "@/lib/validation/event"
+import {
+    eventSchema,
+    eventUpdateSchema,
+    type EventParsedInput,
+} from "@/lib/validation/event"
 
 import {
     createServerEventPatchHandler,
@@ -345,6 +349,50 @@ test("server event PATCH updates an event and revalidates the updated tags", asy
         "event:event-9",
         "roster-image:event-9",
     ])
+})
+
+test("the strict PATCH schema forwards template settings and refuses unknown keys", async () => {
+    const { deps, calls } = createDeps()
+    const handler = createServerEventPatchHandler({
+        ...deps,
+        eventSchema: eventUpdateSchema,
+    })
+    const params = {
+        params: Promise.resolve({ serverId: "guild-1", eventId: "event-9" }),
+    }
+
+    const saved = await handler(
+        jsonRequest(
+            createEventBody({
+                signupGroupIds: ["g1"],
+                signupGroupLimits: [{ groupId: "g1", max: 4 }],
+                attendanceReminderHours: [24, 6],
+                createParticipantRoles: false,
+                squadPresetId: "",
+            })
+        ),
+        params
+    )
+    assert.equal(saved.status, 200)
+    assert.deepEqual(calls.savedEvents[0]?.signupGroupLimits, [
+        { groupId: "g1", max: 4 },
+    ])
+    assert.deepEqual(calls.savedEvents[0]?.attendanceReminderHours, [24, 6])
+    assert.equal(calls.savedEvents[0]?.createParticipantRoles, false)
+    assert.equal(calls.savedEvents[0]?.squadPresetId, "")
+
+    for (const body of [
+        createEventBody({ serverId: "guild-2" }),
+        createEventBody({ attendanceReminderHours: [5] }),
+        createEventBody({ signupGroupLimits: [{ groupId: "g1", max: 0 }] }),
+        createEventBody({
+            registrationEnd: "2026-07-23T11:30:00.000Z",
+        }),
+    ]) {
+        const refused = await handler(jsonRequest(body), params)
+        assert.equal(refused.status, 400)
+    }
+    assert.equal(calls.savedEvents.length, 1)
 })
 
 test("server event POST concludes an event", async () => {

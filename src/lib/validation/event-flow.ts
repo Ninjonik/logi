@@ -1,8 +1,5 @@
 import { z } from "zod"
 
-import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
-import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
-
 import { eventSchema } from "./event"
 
 const id = z.string().trim().min(1).max(64)
@@ -24,29 +21,7 @@ export const eventDraftSchema = z.strictObject({
     meetingStart: timestamp,
     gameStart: timestamp.optional(),
     gameEnd: timestamp.optional(),
-    signupGroupLimits: z
-        .array(
-            z.strictObject({
-                groupId: id,
-                max: z.number().int().min(1).max(MAX_SIGNUP_GROUP_LIMIT),
-            })
-        )
-        .max(50)
-        .optional(),
-    attendanceReminderHours: z
-        .array(
-            z
-                .number()
-                .int()
-                .refine((hours) =>
-                    (ATTENDANCE_REMINDER_OFFSETS as readonly number[]).includes(
-                        hours
-                    )
-                )
-        )
-        .max(ATTENDANCE_REMINDER_OFFSETS.length)
-        .optional(),
-    createParticipantRoles: z.boolean().optional(),
+    // A draft names a preset or none; it never clears a saved one.
     squadPresetId: id.optional(),
 })
 

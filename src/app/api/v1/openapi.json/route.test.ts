@@ -657,3 +657,28 @@ test("bearer event writes document read-only match teams and complete records th
         assert.match(operation.description, /ClanMatchTeam, logoUrl only/)
     }
 })
+
+test("OpenAPI documents the template settings of event writes", async () => {
+    const document = await (await GET()).json()
+    for (const operation of [
+        document.paths["/clan/events"].post,
+        document.paths["/clan/events/{id}"].patch,
+    ]) {
+        const properties =
+            operation.requestBody.content["application/json"].schema.properties
+        assert.deepEqual(
+            properties.attendanceReminderHours.items.enum,
+            [24, 18, 12, 6]
+        )
+        assert.equal(
+            properties.signupGroupLimits.items.properties.max.maximum,
+            100
+        )
+        assert.equal(properties.createParticipantRoles.type, "boolean")
+        assert.match(
+            properties.squadPresetId.description,
+            /empty string removes/
+        )
+        assert.match(properties.signupGroupLimits.description, /removes nobody/)
+    }
+})

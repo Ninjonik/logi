@@ -843,6 +843,47 @@ const eventMutation = {
                             type: "array",
                             items: { type: "string" },
                         },
+                        signupGroupLimits: {
+                            type: "array",
+                            maxItems: 50,
+                            description:
+                                "Caps of offered signup groups (matches only); caps of groups not in signupGroupIds are dropped. A full group offers a reserve place instead. On PATCH, omitted keeps the saved caps and [] removes them. Lowering a cap below the current sign-ups removes nobody: players with a place keep it and only new sign-ups go to the reserve.",
+                            items: {
+                                type: "object",
+                                additionalProperties: false,
+                                required: ["groupId", "max"],
+                                properties: {
+                                    groupId: {
+                                        type: "string",
+                                        minLength: 1,
+                                        maxLength: 64,
+                                    },
+                                    max: {
+                                        type: "integer",
+                                        minimum: 1,
+                                        maximum: 100,
+                                    },
+                                },
+                            },
+                        },
+                        attendanceReminderHours: {
+                            type: "array",
+                            maxItems: 4,
+                            items: { type: "integer", enum: [24, 18, 12, 6] },
+                            description:
+                                "Hours before the meeting when unconfirmed roster players get an attendance DM. Missing on the event means all four. On PATCH, omitted keeps the saved offsets, [] sends none, and a change reschedules the reminders that have not been sent yet.",
+                        },
+                        createParticipantRoles: {
+                            type: "boolean",
+                            description:
+                                "Whether the bot keeps attendee and reserve Discord roles for the event (missing means yes). Turning it off makes the bot delete the roles it created; on PATCH, omitted keeps the saved value.",
+                        },
+                        squadPresetId: {
+                            type: "string",
+                            maxLength: 64,
+                            description:
+                                "Squad preset of this clan that a new roster for the match starts from. It does not change a roster that already exists. On PATCH, omitted keeps the saved preset and an empty string removes it.",
+                        },
                         matchTeams: {
                             readOnly: true,
                             description:

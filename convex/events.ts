@@ -41,6 +41,7 @@ import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
+import { eventWriteFields } from "./eventValidators"
 import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
@@ -164,8 +165,28 @@ export const upsert = mutation({
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
         // Directory team selections (identity, slot, side); snapshots are captured here.
         matchTeams: v.optional(v.array(matchTeamInput)),
+        // Template settings; omitted keeps the saved value on an update, [] clears.
+        signupGroupLimits: eventWriteFields.signupGroupLimits,
+        attendanceReminderHours: eventWriteFields.attendanceReminderHours,
+        createParticipantRoles: eventWriteFields.createParticipantRoles,
+        // null clears the roster's squad preset on an update.
+        squadPresetId: v.optional(v.union(v.id("squadPresets"), v.null())),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        if (args.squadPresetId) {
+            // A preset of another clan is never stored on this clan's event.
+            const [guild, preset] = await Promise.all([
+                getGuildById(ctx, String(args.serverId)),
+                ctx.db.get(args.squadPresetId),
+            ])
+            if (
+                !guild ||
+                !preset ||
+                preset.guildId !== getGuildDiscordId(guild)
+            )
+                throw new Error("Referenced squad preset was not found.")
+        }
         const eventId = await handleUpsertEvent({
             secret: args.secret,
             expectedSecret: internalAuthSecret(),
@@ -178,6 +199,12 @@ export const upsert = mutation({
                     : undefined,
                 stratmapIds: args.stratmapIds?.map((value) => String(value)),
                 allowedSignupStatuses: args.allowedSignupStatuses,
+                squadPresetId:
+                    args.squadPresetId === null
+                        ? ""
+                        : args.squadPresetId
+                          ? String(args.squadPresetId)
+                          : undefined,
             },
             getGuildById: async (serverId) => await getGuildById(ctx, serverId),
             getGuildDiscordId,

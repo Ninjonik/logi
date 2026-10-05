@@ -547,6 +547,23 @@ export const mutateClanEvent = mutation({
                             "Referenced topic preset was not found."
                         )
                 }
+                // "" clears the squad preset on an update; an ID must be this clan's.
+                if (
+                    typeof event.squadPresetId === "string" &&
+                    event.squadPresetId.trim()
+                ) {
+                    const squadPresetId = ctx.db.normalizeId(
+                        "squadPresets",
+                        event.squadPresetId.trim()
+                    )
+                    const squadPreset = squadPresetId
+                        ? await ctx.db.get(squadPresetId)
+                        : null
+                    if (!squadPreset || squadPreset.guildId !== key.guildId)
+                        throw new Error(
+                            "Referenced squad preset was not found."
+                        )
+                }
                 const kept = await resolveEventMatchTeams(ctx, {
                     gameId:
                         (event as EventUpsertCommand).gameId ?? current?.gameId,
