@@ -673,6 +673,7 @@ test("public competitions carry global team IDs, short codes and logos, with leg
             status: "forfeit",
             scheduledAt: undefined,
             eventId: undefined,
+            round: undefined,
         },
         {
             id: "competitionFixtures:legacy",
@@ -684,6 +685,7 @@ test("public competitions carry global team IDs, short codes and logos, with leg
             status: "scheduled",
             scheduledAt: undefined,
             eventId: undefined,
+            round: undefined,
         },
     ])
     assert.equal(shown.divisions[1].teams.length, 0)
