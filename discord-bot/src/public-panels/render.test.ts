@@ -647,3 +647,68 @@ test("private player pages show only workspace faction emoji overrides and stay 
     assert.ok(!long.includes(emoji))
     assert.match(long, /\*\* · Valkyra\n/)
 })
+
+test("live panels, player pages and results speak the clan language", () => {
+    const live = {
+        ...warconLive(),
+        freshness: "fresh" as const,
+        playersFreshness: "stale" as const,
+    }
+    const panel = {
+        id: "panel",
+        revision: 1,
+        gameId: "wardogs",
+        enabled: true,
+        showPlayers: true,
+        showLeaders: true,
+        reportCategoryId: "report",
+        artwork: false,
+    }
+    const czech = JSON.stringify(
+        renderPanel(panel, null, live, {}, undefined, undefined, "cs")
+    )
+    assert.match(czech, /Živě · skóre se počítá/)
+    assert.match(czech, /SKÓRE FRAKCÍ A NEJLEPŠÍ HRÁČI/)
+    assert.match(czech, /Hráči \(jen pro tebe\)/)
+    assert.match(czech, /Nahlásit hráče/)
+    assert.match(czech, /NEJLEPŠÍ HRÁČI ŽIVĚ · zastaralé/)
+    assert.doesNotMatch(czech, /in progress|Report Player|private details/)
+
+    const german = JSON.stringify(
+        renderPlayers({ id: "panel", revision: 1 }, live, 0, "de")
+    )
+    assert.match(german, /Spieler · veraltet · 1\/1/)
+    assert.match(german, /Zurück/)
+    assert.doesNotMatch(german, /Previous|Observed/)
+
+    const result = JSON.stringify(
+        renderResult(
+            {
+                id: "e",
+                name: "VLK vs DEF",
+                map: "Carentan",
+                result: {
+                    status: "corrected",
+                    version: 2,
+                    reviewedAt: "2026-10-04T19:40:00.000Z",
+                    participants: [
+                        { label: "VLK", score: 3 },
+                        { label: "DEF", score: 2 },
+                    ],
+                },
+            },
+            {},
+            undefined,
+            "cs"
+        )
+    )
+    assert.match(result, /Opravený výsledek · v2/)
+    assert.match(result, /Potvrzeno <t:1791142800:R>/)
+    // Unknown languages keep the historical English copy.
+    assert.match(
+        JSON.stringify(
+            renderPanel(panel, null, live, {}, undefined, undefined, "xx")
+        ),
+        /Live · score in progress/
+    )
+})

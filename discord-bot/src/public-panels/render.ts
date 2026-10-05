@@ -27,6 +27,7 @@ import type { WarconRead } from "../../../src/domain/game-data/warcon-contracts"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import { playerLeaders } from "../../../src/domain/game-data/player-leaders"
 import { hllMapArtwork } from "../../../src/domain/game-data/hll-live"
+import { panelCopy, type PanelCopy } from "./copy"
 import { playerControl } from "./player-details"
 export type LiveData = Extract<WarconRead, { view: "live" }>["data"]
 type Panel = PanelPresentationCarrier & {
@@ -50,10 +51,10 @@ const clean = (value: string | null | undefined, max = 100) =>
     )
 const count = (value: number | null | undefined) =>
     value == null ? "—" : String(value)
-const at = (value: string | null | undefined) =>
+const at = (value: string | null | undefined, copy: PanelCopy = panelCopy()) =>
     value && Number.isFinite(Date.parse(value))
         ? `<t:${Math.floor(Date.parse(value) / 1000)}:R>`
-        : "unknown"
+        : copy.unknownTime
 /** Semantic faction icon; provider labels such as Alpha/Bravo keep the neutral marker. */
 export function factionIcon(name: string | null, icons: FactionIcons) {
     const faction = panelFactionOf(name)
@@ -67,9 +68,11 @@ export function panelArtworkWanted(
     return panel.artwork && look.layout.showMap && !panelBannerImage(look)
 }
 /** Full-width banner image placed above the header. */
-export function bannerGallery(url: string) {
+export function bannerGallery(url: string, copy: PanelCopy = panelCopy()) {
     return new MediaGalleryBuilder().addItems(
-        new MediaGalleryItemBuilder().setURL(url).setDescription("Panel banner")
+        new MediaGalleryItemBuilder()
+            .setURL(url)
+            .setDescription(copy.panelBanner)
     )
 }
 export function artworkPath(game: string, map?: string | null) {
@@ -92,8 +95,10 @@ export function renderPanel(
     live: LiveData | null,
     icons: FactionIcons = {},
     assetOrigin?: string,
-    attachmentUrl?: string
+    attachmentUrl?: string,
+    language?: string
 ): MessageCreateOptions {
+    const copy = panelCopy(language)
     const look = resolvePanelPresentation(panel)
     const { layout } = look
     const marks = panelFactionIcons(look, icons)
@@ -102,9 +107,9 @@ export function renderPanel(
     const age = live ? live.freshness : (snapshot?.freshness ?? "unavailable")
     const label = panel.enabled
         ? age === "fresh"
-            ? "Live · score in progress"
-            : `${age} · last known data`
-        : "Paused · automatic updates disabled"
+            ? copy.liveInProgress
+            : copy.lastKnownData(copy.freshness(age))
+        : copy.paused
     // The accent replaces the live color; stale and paused cards keep the warning.
     const container = new ContainerBuilder().setAccentColor(
         panel.enabled && age === "fresh"
@@ -117,17 +122,20 @@ export function renderPanel(
         ? [
               layout.showMap ? `🗺️ **${clean(map)}**` : null,
               layout.showPlayerCount
-                  ? `👥 **${count(status?.playerCount ?? snapshot?.players)} / ${count(status?.maxPlayers ?? snapshot?.capacity)}** players`
+                  ? copy.playerCount(
+                        count(status?.playerCount ?? snapshot?.players),
+                        count(status?.maxPlayers ?? snapshot?.capacity)
+                    )
                   : null,
           ].filter((fact): fact is string => fact !== null)
         : []
     const header = new TextDisplayBuilder().setContent(
         layout.compact
             ? `**${game} · ${server}**\n-# ${[label, ...facts].join(" · ")}`
-            : `### ${game} · SERVER LIVE\n**${server}**\n${label}${facts.length ? `\n${facts.join("  ·  ")}` : ""}`
+            : `### ${game} · ${copy.serverLive}\n**${server}**\n${label}${facts.length ? `\n${facts.join("  ·  ")}` : ""}`
     )
     const banner = panelBannerImage(look)
-    if (banner) container.addMediaGalleryComponents(bannerGallery(banner))
+    if (banner) container.addMediaGalleryComponents(bannerGallery(banner, copy))
     // A banner replaces the map thumbnail; hiding the map hides its artwork.
     const art =
         !banner &&
@@ -148,7 +156,7 @@ export function renderPanel(
                 .setThumbnailAccessory(
                     new ThumbnailBuilder()
                         .setURL(image)
-                        .setDescription(clean(map ?? "Game artwork"))
+                        .setDescription(clean(map ?? copy.gameArtwork))
                 )
         )
     else container.addTextDisplayComponents(header)
@@ -165,18 +173,18 @@ export function renderPanel(
             if (!layout.compact)
                 container.addSeparatorComponents(new SeparatorBuilder())
             const teamRows = scores.slice(0, 8).map((s) => {
-                const score = `${factionIcon(s.label, marks)} **${clean(s.label, 40)}** · **${count(s.score)}** pts`
+                const score = `${factionIcon(s.label, marks)} **${clean(s.label, 40)}** · **${count(s.score)}** ${copy.points}`
                 if (!panel.showLeaders || !live) return score
                 const kills = playerLeaders(live.players, "kills", s.label)[0]
                 const cash = playerLeaders(live.players, "cash", s.label)[0]
-                return `${score}\n-# ⚔ ${kills ? `${clean(kills.name, 28)} · ${count(kills.kills)} kills` : "—"}  |  💵 ${cash ? `${clean(cash.name, 28)} · ${count(cash.cash)} cash` : "—"}`
+                return `${score}\n-# ⚔ ${kills ? `${clean(kills.name, 28)} · ${count(kills.kills)} ${copy.kills}` : "—"}  |  💵 ${cash ? `${clean(cash.name, 28)} · ${count(cash.cash)} ${copy.cash}` : "—"}`
             })
-            const observed = `-# Score observed ${at(live?.statusAt ?? snapshot?.observedAt)}`
+            const observed = `-# ${copy.scoreObserved(at(live?.statusAt ?? snapshot?.observedAt, copy))}`
             container.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
                     layout.compact
-                        ? `${teamRows.join(withLeaders ? "\n" : "  ·  ") || "Scores unavailable"}\n${observed}`
-                        : `**FACTION SCORE${withLeaders ? " & TEAM LEADERS" : ""}**\n${teamRows.join("\n\n") || "Scores unavailable"}\n${observed}`
+                        ? `${teamRows.join(withLeaders ? "\n" : "  ·  ") || copy.scoresUnavailable}\n${observed}`
+                        : `**${withLeaders ? copy.factionScoreAndLeaders : copy.factionScore}**\n${teamRows.join("\n\n") || copy.scoresUnavailable}\n${observed}`
                 )
             )
         }
@@ -185,14 +193,14 @@ export function renderPanel(
                 container.addSeparatorComponents(new SeparatorBuilder())
             container.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
-                    `**LIVE LEADERS · ${live.playersFreshness}**\n-# Current connected players · observed ${at(live.playersAt)}`
+                    `**${copy.liveLeaders(copy.freshness(live.playersFreshness))}**\n-# ${copy.currentPlayersObserved(at(live.playersAt, copy))}`
                 )
             )
             for (const metric of ["kills", "cash"] as const) {
                 const leaders = playerLeaders(live.players, metric)
                 container.addTextDisplayComponents(
                     new TextDisplayBuilder().setContent(
-                        `### ${metric === "kills" ? "⚔ TOP 3 · Kills" : "💵 TOP 3 · Cash"}\n${leaders.map((p, i) => `${["🥇", "🥈", "🥉"][i]} **${clean(p.name, 28)}** · **${count(p[metric])}** ${metric} · ${factionIcon(p.faction, marks)} ${clean(p.faction, 20)}`).join("\n") || (live.playersFreshness === "fresh" ? "No players reported." : "Player data unavailable.")}`
+                        `### ${metric === "kills" ? copy.topKills : copy.topCash}\n${leaders.map((p, i) => `${["🥇", "🥈", "🥉"][i]} **${clean(p.name, 28)}** · **${count(p[metric])}** ${copy[metric]} · ${factionIcon(p.faction, marks)} ${clean(p.faction, 20)}`).join("\n") || (live.playersFreshness === "fresh" ? copy.noPlayers : copy.playerDataUnavailable)}`
                     )
                 )
             }
@@ -204,7 +212,7 @@ export function renderPanel(
                         .setCustomId(
                             playerControl(panel.id, panel.revision, 0, "open")
                         )
-                        .setLabel("Players · private details")
+                        .setLabel(copy.playersButton)
                         .setStyle(ButtonStyle.Secondary)
                 )
             )
@@ -214,7 +222,7 @@ export function renderPanel(
             new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`report:open:${panel.id}:${panel.revision}`)
-                    .setLabel("Report Player")
+                    .setLabel(copy.reportButton)
                     .setStyle(ButtonStyle.Danger)
             )
         )
@@ -227,8 +235,10 @@ export function renderPanel(
 export function renderPlayers(
     panel: PanelPresentationCarrier & { id: string; revision: number },
     live: LiveData,
-    requestedPage: number
+    requestedPage: number,
+    language?: string
 ) {
+    const copy = panelCopy(language)
     const size = 8
     const pages = Math.max(1, Math.ceil(live.players.length / size))
     const page = Math.max(0, Math.min(Math.floor(requestedPage), pages - 1))
@@ -238,10 +248,10 @@ export function renderPlayers(
         live.players.slice(page * size, (page + 1) * size).map((p) => {
             const faction = panelFactionOf(p.faction)
             const emoji = marked && faction ? overrides[faction] : undefined
-            return `**${clean(p.name, 45)}** · ${emoji ? `${emoji} ` : ""}${clean(p.faction, 20)}\n⚔ ${p.kills} kills · ☠ ${p.deaths} deaths · 💵 ${p.cash} cash · 📶 ${count(p.ping)} ms`
+            return `**${clean(p.name, 45)}** · ${emoji ? `${emoji} ` : ""}${clean(p.faction, 20)}\n⚔ ${p.kills} ${copy.kills} · ☠ ${p.deaths} ${copy.deaths} · 💵 ${p.cash} ${copy.cash} · 📶 ${count(p.ping)} ms`
         })
     const content = (lines: string[]) =>
-        `**Players · ${live.playersFreshness} · ${page + 1}/${pages}**\nObserved ${at(live.playersAt)}\n${lines.join("\n\n") || (live.playersFreshness === "fresh" ? "No players reported." : "Player data unavailable.")}`
+        `**${copy.playersPage(copy.freshness(live.playersFreshness), page + 1, pages)}**\n${copy.observed(at(live.playersAt, copy))}\n${lines.join("\n\n") || (live.playersFreshness === "fresh" ? copy.noPlayers : copy.playerDataUnavailable)}`
     const marked = content(rows(true))
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
@@ -253,7 +263,7 @@ export function renderPlayers(
                     "previous"
                 )
             )
-            .setLabel("Previous")
+            .setLabel(copy.previous)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === 0),
         new ButtonBuilder()
@@ -265,7 +275,7 @@ export function renderPlayers(
                     "next"
                 )
             )
-            .setLabel("Next")
+            .setLabel(copy.next)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === pages - 1)
     )
@@ -289,8 +299,10 @@ export function renderResult(
         }
     },
     icons: FactionIcons = {},
-    panel?: PanelPresentationCarrier
+    panel?: PanelPresentationCarrier,
+    language?: string
 ): MessageCreateOptions {
+    const copy = panelCopy(language)
     const result = event.result
     const look = resolvePanelPresentation(panel)
     const { layout } = look
@@ -299,8 +311,8 @@ export function renderResult(
         panelAccentColor(look, 0x77b255)
     )
     const banner = panelBannerImage(look)
-    if (banner) container.addMediaGalleryComponents(bannerGallery(banner))
-    const title = `${result.status === "corrected" ? "Corrected" : "Confirmed"} result · v${result.version}`
+    if (banner) container.addMediaGalleryComponents(bannerGallery(banner, copy))
+    const title = copy.result(result.status === "corrected", result.version)
     const rows = result.participants
         .slice(0, 16)
         .map(
@@ -310,8 +322,8 @@ export function renderResult(
     container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
             layout.compact
-                ? `**${title} · ${clean(event.name)}**${layout.showMap ? `\n-# 🗺️ ${clean(event.map)}` : ""}\n${rows.join("  ·  ")}\n-# Reviewed ${at(result.reviewedAt)}`
-                : `### ${title}\n**${clean(event.name)}**${layout.showMap ? `\n🗺️ ${clean(event.map)}` : ""}\n${rows.join("\n")}\n-# Reviewed ${at(result.reviewedAt)}`
+                ? `**${title} · ${clean(event.name)}**${layout.showMap ? `\n-# 🗺️ ${clean(event.map)}` : ""}\n${rows.join("  ·  ")}\n-# ${copy.reviewed(at(result.reviewedAt, copy))}`
+                : `### ${title}\n**${clean(event.name)}**${layout.showMap ? `\n🗺️ ${clean(event.map)}` : ""}\n${rows.join("\n")}\n-# ${copy.reviewed(at(result.reviewedAt, copy))}`
         )
     )
     return {

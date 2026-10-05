@@ -22,6 +22,7 @@ import type { HllServed } from "../../../src/application/game-data/read-hll-live
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import type { HllLive } from "../../../src/domain/game-data/hll-live"
 import type { Doc } from "../../../convex/_generated/dataModel"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { renderHllPanel, renderHllPlayers } from "./hll-render"
 import { completePrivatePlayerReply } from "./private-reply"
 import { publishManagedMessage } from "../sync/publication"
@@ -175,7 +176,11 @@ export function startPublicPanelWorker(client: Client) {
                 iconsAt = Date.now() + 3_600_000
             }
             for (const guild of client.guilds.cache.values()) {
-                for (const panel of await panels(guild.id)) {
+                const guildPanels = await panels(guild.id)
+                const language = guildPanels.length
+                    ? await clanLanguageForGuild(guild.id)
+                    : undefined
+                for (const panel of guildPanels) {
                     const previous = due.get(panel._id)
                     if (
                         previous &&
@@ -185,7 +190,12 @@ export function startPublicPanelWorker(client: Client) {
                         continue
                     try {
                         if (panel.kind === "results")
-                            await syncResults(client, panel, cachedIcons)
+                            await syncResults(
+                                client,
+                                panel,
+                                cachedIcons,
+                                language
+                            )
                         else {
                             const current = await live(panel)
                             const hllRead = await hllLiveRead(panel)
@@ -223,7 +233,8 @@ export function startPublicPanelWorker(client: Client) {
                                         ? renderHllPanel(
                                               { ...panel, id: panel._id },
                                               hll,
-                                              artwork?.url
+                                              artwork?.url,
+                                              language
                                           )
                                         : renderPanel(
                                               { ...panel, id: panel._id },
@@ -231,7 +242,8 @@ export function startPublicPanelWorker(client: Client) {
                                               current,
                                               cachedIcons,
                                               env.appSiteUrl,
-                                              artwork?.url
+                                              artwork?.url,
+                                              language
                                           )),
                                     ...(artwork
                                         ? {
@@ -279,7 +291,12 @@ export function startPublicPanelWorker(client: Client) {
     void tick()
     return () => clearInterval(timer)
 }
-async function syncResults(client: Client, panel: Panel, emoji: FactionIcons) {
+async function syncResults(
+    client: Client,
+    panel: Panel,
+    emoji: FactionIcons,
+    language?: string
+) {
     await synchronizeResults(
         { ...panel, id: panel._id },
         {
@@ -305,7 +322,8 @@ async function syncResults(client: Client, panel: Panel, emoji: FactionIcons) {
                         ? renderResult(
                               { ...event, result: event.result },
                               emoji,
-                              panel
+                              panel,
+                              language
                           )
                         : {},
                 })
@@ -371,6 +389,7 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                         "Player details unavailable or this panel changed. Open the current panel in its channel.",
                     components: [],
                 }
+            const language = await clanLanguageForGuild(result.panel.guildId)
             if ("statusFreshness" in result.data)
                 return renderHllPlayers(
                     {
@@ -379,7 +398,8 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                         presentation: result.panel.presentation,
                     },
                     result.data,
-                    result.page
+                    result.page,
+                    language
                 )
             return renderPlayers(
                 {
@@ -388,7 +408,8 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                     presentation: result.panel.presentation,
                 },
                 result.data,
-                result.page
+                result.page,
+                language
             )
         }
     )

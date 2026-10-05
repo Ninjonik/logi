@@ -24,6 +24,7 @@ import {
     hllLeaders,
     type HllLive,
 } from "../../../src/domain/game-data/hll-live"
+import { panelCopy, type PanelCopy } from "./copy"
 import { playerControl } from "./player-details"
 import { bannerGallery } from "./render"
 
@@ -35,10 +36,14 @@ const clean = (value: string | null, max = 80) =>
             .slice(0, max)
     )
 const metric = (value: number | null) => (value === null ? "—" : String(value))
-const at = (value: string | null) =>
-    value ? `<t:${Math.floor(Date.parse(value) / 1000)}:R>` : "unknown"
-const team = (value: string | null) =>
-    value === "allies" ? "Allies" : value === "axis" ? "Axis" : "Unknown team"
+const at = (value: string | null, copy: PanelCopy) =>
+    value ? `<t:${Math.floor(Date.parse(value) / 1000)}:R>` : copy.unknownTime
+const team = (value: string | null, copy: PanelCopy) =>
+    value === "allies"
+        ? copy.hllAllies
+        : value === "axis"
+          ? copy.hllAxis
+          : copy.hllUnknownTeam
 /** Workspace emoji override before a team label; HLL teams have no default emoji. */
 const teamMark = (
     look: Pick<ResolvedPanelPresentation, "factionEmoji">,
@@ -61,8 +66,10 @@ type Panel = PanelPresentationCarrier & {
 export function renderHllPanel(
     panel: Panel,
     data: HllLive,
-    artwork?: string
+    artwork?: string,
+    language?: string
 ): MessageCreateOptions {
+    const copy = panelCopy(language)
     const look = resolvePanelPresentation(panel)
     const { layout } = look
     // The accent replaces the live color; stale and paused cards keep the warning.
@@ -71,12 +78,19 @@ export function renderHllPanel(
             ? panelAccentColor(look, 0x77b255)
             : 0xd99a37
     )
-    const remaining = `⏱ **${data.status?.timeRemainingSeconds == null ? "—" : `${Math.floor(data.status.timeRemainingSeconds / 60)}m ${Math.floor(data.status.timeRemainingSeconds % 60)}s`}** remaining`
-    const players = `👥 **${metric(data.status?.playerCount ?? null)} / ${metric(data.status?.maxPlayers ?? null)}** players`
+    const remaining = copy.hllRemaining(
+        data.status?.timeRemainingSeconds == null
+            ? "—"
+            : `${Math.floor(data.status.timeRemainingSeconds / 60)}m ${Math.floor(data.status.timeRemainingSeconds % 60)}s`
+    )
+    const players = copy.playerCount(
+        metric(data.status?.playerCount ?? null),
+        metric(data.status?.maxPlayers ?? null)
+    )
     const mapLine = `🗺️ **${clean(data.status?.map ?? null)}**`
     const state = panel.enabled
-        ? `${data.statusFreshness} · current round`
-        : "Paused · automatic updates disabled"
+        ? copy.hllCurrentRound(copy.freshness(data.statusFreshness))
+        : copy.paused
     const server = clean(data.status?.serverName ?? null)
     const header = new TextDisplayBuilder().setContent(
         layout.compact
@@ -92,10 +106,10 @@ export function renderHllPanel(
               ]
                   .filter((part): part is string => part !== null)
                   .join(" · ")}`
-            : `### HELL LET LOOSE · SERVER LIVE\n**${server}**\n${state}${panel.enabled ? `${layout.showMap ? `\n${mapLine}` : ""}\n${layout.showPlayerCount ? `${players} · ` : ""}${remaining}` : ""}`
+            : `### HELL LET LOOSE · ${copy.serverLive}\n**${server}**\n${state}${panel.enabled ? `${layout.showMap ? `\n${mapLine}` : ""}\n${layout.showPlayerCount ? `${players} · ` : ""}${remaining}` : ""}`
     )
     const banner = panelBannerImage(look)
-    if (banner) box.addMediaGalleryComponents(bannerGallery(banner))
+    if (banner) box.addMediaGalleryComponents(bannerGallery(banner, copy))
     // A banner replaces the map thumbnail; hiding the map hides its artwork.
     if (!banner && layout.showMap && artwork?.startsWith("attachment://"))
         box.addSectionComponents(
@@ -116,13 +130,14 @@ export function renderHllPanel(
                 const leader = panel.showLeaders
                     ? hllLeaders(data.players, score.team)[0]
                     : null
-                return `${teamMark(look, score.team)}**${team(score.team)} · ${score.score}**${panel.showLeaders ? `\n-# ⚔ ${leader ? `${clean(leader.name, 28)} · ${metric(leader.kills)} kills` : "No connected leader reported"}` : ""}`
+                return `${teamMark(look, score.team)}**${team(score.team, copy)} · ${score.score}**${panel.showLeaders ? `\n-# ⚔ ${leader ? `${clean(leader.name, 28)} · ${metric(leader.kills)} ${copy.kills}` : copy.hllNoLeader}` : ""}`
             })
+            const observed = copy.statusObserved(at(data.statusAt, copy))
             box.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
                     layout.compact
-                        ? `${rows.join(panel.showLeaders ? "\n" : "  ·  ") || "Scores unavailable"}\n-# Status observed ${at(data.statusAt)}`
-                        : `**TEAM SCORE**\n${rows.join("\n\n") || "Scores unavailable"}\n-# Status observed ${at(data.statusAt)}`
+                        ? `${rows.join(panel.showLeaders ? "\n" : "  ·  ") || copy.scoresUnavailable}\n-# ${observed}`
+                        : `**${copy.teamScore}**\n${rows.join("\n\n") || copy.scoresUnavailable}\n-# ${observed}`
                 )
             )
         }
@@ -131,17 +146,17 @@ export function renderHllPanel(
                 box.addSeparatorComponents(new SeparatorBuilder())
             box.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
-                    `### ⚔ TOP 3 · Kills\n${
+                    `### ${copy.topKills}\n${
                         hllLeaders(data.players)
                             .map(
                                 (p, i) =>
-                                    `${["🥇", "🥈", "🥉"][i]} **${clean(p.name, 28)}** · **${metric(p.kills)}** kills · ${teamMark(look, p.team)}${team(p.team)}`
+                                    `${["🥇", "🥈", "🥉"][i]} **${clean(p.name, 28)}** · **${metric(p.kills)}** ${copy.kills} · ${teamMark(look, p.team)}${team(p.team, copy)}`
                             )
                             .join("\n") ||
                         (data.playersFreshness === "fresh"
-                            ? "No connected players reported."
-                            : "Player data unavailable.")
-                    }\n-# Players: ${data.playersFreshness} · observed ${at(data.playersAt)} · current round only`
+                            ? copy.noConnectedPlayers
+                            : copy.playerDataUnavailable)
+                    }\n-# ${copy.hllPlayersFooter(copy.freshness(data.playersFreshness), at(data.playersAt, copy))}`
                 )
             )
         }
@@ -152,7 +167,7 @@ export function renderHllPanel(
                         .setCustomId(
                             playerControl(panel.id, panel.revision, 0, "open")
                         )
-                        .setLabel("Players · private details")
+                        .setLabel(copy.playersButton)
                         .setStyle(ButtonStyle.Secondary)
                 )
             )
@@ -162,7 +177,7 @@ export function renderHllPanel(
             new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`report:open:${panel.id}:${panel.revision}`)
-                    .setLabel("Report Player")
+                    .setLabel(copy.reportButton)
                     .setStyle(ButtonStyle.Danger)
             )
         )
@@ -175,27 +190,36 @@ export function renderHllPanel(
 export function renderHllPlayers(
     panel: PanelPresentationCarrier & { id: string; revision: number },
     data: HllLive,
-    requestedPage: number
+    requestedPage: number,
+    language?: string
 ) {
+    const copy = panelCopy(language)
     const size = 8,
         pages = Math.max(1, Math.ceil(data.players.length / size)),
         page = Math.max(0, Math.min(requestedPage, pages - 1))
     const look = resolvePanelPresentation(panel)
     const embed = new EmbedBuilder()
         .setColor(panelAccentColor(look, 0x5865f2))
-        .setTitle("HELL LET LOOSE · Connected players")
+        .setTitle(copy.hllPlayersTitle)
         .setDescription(
-            `**${clean(data.status?.map ?? null)}**\nPlayers: **${data.playersFreshness}** · observed ${at(data.playersAt)}\nCurrent round only · page ${page + 1}/${pages}\n\n${
+            `**${clean(data.status?.map ?? null)}**\n${copy.hllPlayersSummary(copy.freshness(data.playersFreshness), at(data.playersAt, copy), page + 1, pages)}\n\n${
                 data.players
                     .slice(page * size, (page + 1) * size)
                     .map(
                         (p) =>
-                            `**${clean(p.name, 40)}** · ${teamMark(look, p.team)}${team(p.team)}\n⚔ ${metric(p.kills)} kills · ☠ ${metric(p.deaths)} deaths\nCombat ${metric(p.combat)} · Attack ${metric(p.offense)} · Defence ${metric(p.defense)} · Support ${metric(p.support)}`
+                            `**${clean(p.name, 40)}** · ${teamMark(look, p.team)}${team(p.team, copy)}\n⚔ ${metric(p.kills)} ${copy.kills} · ☠ ${metric(p.deaths)} ${copy.deaths}\n${copy.hllPlayerStats(
+                                {
+                                    combat: metric(p.combat),
+                                    offense: metric(p.offense),
+                                    defense: metric(p.defense),
+                                    support: metric(p.support),
+                                }
+                            )}`
                     )
                     .join("\n\n") ||
                 (data.playersFreshness === "fresh"
-                    ? "No connected players reported."
-                    : "Player data unavailable.")
+                    ? copy.noConnectedPlayers
+                    : copy.playerDataUnavailable)
             }`
         )
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -208,7 +232,7 @@ export function renderHllPlayers(
                     "previous"
                 )
             )
-            .setLabel("Previous")
+            .setLabel(copy.previous)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === 0),
         new ButtonBuilder()
@@ -220,7 +244,7 @@ export function renderHllPlayers(
                     "next"
                 )
             )
-            .setLabel("Next")
+            .setLabel(copy.next)
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(page === pages - 1)
     )
