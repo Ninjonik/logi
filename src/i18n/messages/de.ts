@@ -2844,6 +2844,13 @@ export const deMessages = {
         textLabel: "Text",
         imageOptional: "optional",
         previewTitle: "Vorschau in Discord",
+        panelColor: "Panelfarbe",
+        panelColorHint: "Leer = Clanfarbe. Hex, z. B. #E8A33D.",
+        panelColorInvalid: "Die Farbe muss hex sein, z. B. #E8A33D.",
+        threadTitle: "Titel der Karte im Thread",
+        threadTitlePlaceholder: "{author} meldet einen Spieler",
+        threadTitleHint:
+            "{author} ist der Name des Autors, {category} die Kategorie. Leer ergibt „{author} · {category}“.",
         columns: {
             button: "Button",
             handledBy: "Wer antwortet",
@@ -2873,7 +2880,7 @@ export const deMessages = {
         panelDescriptionPlaceholder:
             "Erkläre, wie Mitglieder dieses Ticket-Panel nutzen sollen.",
         image: "Thumbnail-Bild",
-        embedLimitNotice: "Das Kategorie-Erklärungsfeld im Embed nutzt derzeit",
+        embedLimitNotice: "Der Paneltext in Discord nutzt derzeit",
         embedLimitExceeded:
             "(zu lang, kürze einige Kategoriebeschreibungen vor dem Speichern).",
         categoriesTitle: "Ticket-Kategorien",
@@ -2888,7 +2895,7 @@ export const deMessages = {
         typeAnyEmoji: "oder ein beliebiges Emoji tippen",
         categoryDescription: "Beschreibung",
         categoryDescriptionPlaceholder:
-            "Im Embed-Feld gezeigt, um zu erklären, wofür diese Kategorie ist.",
+            "Steht im Panel hinter dem Kategorienamen, z. B. „Verhalten auf dem Server“.",
         supportRoles: "Support-Rollen für dieses Ticket",
         modalQuestions: "Modal-Fragen",
         modalQuestionsDescription:

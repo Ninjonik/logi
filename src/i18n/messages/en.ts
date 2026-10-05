@@ -2757,6 +2757,13 @@ export const enMessages = {
         textLabel: "Text",
         imageOptional: "optional",
         previewTitle: "Preview in Discord",
+        panelColor: "Panel colour",
+        panelColorHint: "Empty = the clan colour. Hex, e.g. #E8A33D.",
+        panelColorInvalid: "The colour must be hex, e.g. #E8A33D.",
+        threadTitle: "Thread card title",
+        threadTitlePlaceholder: "{author} is reporting a player",
+        threadTitleHint:
+            "{author} is the author's name, {category} the category. Empty reads “{author} · {category}”.",
         columns: {
             button: "Button",
             handledBy: "Who answers",
@@ -2785,8 +2792,7 @@ export const enMessages = {
         panelDescriptionPlaceholder:
             "Explain how members should use this ticket panel.",
         image: "Thumbnail image",
-        embedLimitNotice:
-            "The category explanation field in the embed is currently using",
+        embedLimitNotice: "The panel text in Discord is currently using",
         embedLimitExceeded:
             "(too long, trim some category descriptions before saving).",
         categoriesTitle: "Ticket categories",
@@ -2801,7 +2807,7 @@ export const enMessages = {
         typeAnyEmoji: "or type any emoji",
         categoryDescription: "Description",
         categoryDescriptionPlaceholder:
-            "Shown in the embed field to explain what this category is for.",
+            "Shown in the panel after the category name, e.g. “behaviour on the server”.",
         supportRoles: "Support roles invited to this ticket",
         modalQuestions: "Modal questions",
         modalQuestionsDescription:

@@ -131,14 +131,16 @@ export function ticketPanelView(input: {
                   .filter((row) => row.length)
                   .map((row) => ({ kind: "buttons" as const, buttons: row }))
     const description = input.description?.trim()
+    const image = input.imageUrl?.trim()
     return {
         accent: input.accentColor?.trim()
             ? { custom: input.accentColor.trim() }
             : "clan",
         header: {
             title: cut(oneLine(input.title), 256),
-            ...(input.imageUrl?.trim()
-                ? { thumbnail: { url: input.imageUrl.trim() } }
+            // The optional panel image; only a web address Discord can load.
+            ...(image && /^https?:\/\//i.test(image)
+                ? { thumbnail: { url: image } }
                 : {}),
         },
         blocks: [

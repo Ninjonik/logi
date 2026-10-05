@@ -2745,6 +2745,13 @@ export const csMessages = {
         textLabel: "Text",
         imageOptional: "volitelné",
         previewTitle: "Náhled v Discordu",
+        panelColor: "Barva panelu",
+        panelColorHint: "Prázdné = barva klanu. Hex, např. #E8A33D.",
+        panelColorInvalid: "Barva musí být hex, např. #E8A33D.",
+        threadTitle: "Nadpis karty ve vlákně",
+        threadTitlePlaceholder: "{author} nahlašuje hráče",
+        threadTitleHint:
+            "{author} je jméno autora, {category} název kategorie. Prázdné pole napíše „{author} · {category}“.",
         columns: {
             button: "Tlačítko",
             handledBy: "Kdo odpovídá",
@@ -2773,7 +2780,7 @@ export const csMessages = {
         panelDescriptionPlaceholder:
             "Vysvětlete, jak mají členové tento ticket panel používat.",
         image: "Náhledový obrázek",
-        embedLimitNotice: "Pole s vysvětlením kategorií v embedu právě používá",
+        embedLimitNotice: "Text panelu v Discordu právě používá",
         embedLimitExceeded:
             "(příliš dlouhé, před uložením zkraťte některé popisy kategorií).",
         categoriesTitle: "Kategorie ticketů",
@@ -2788,7 +2795,7 @@ export const csMessages = {
         typeAnyEmoji: "nebo napište libovolné emoji",
         categoryDescription: "Popis",
         categoryDescriptionPlaceholder:
-            "Zobrazí se v embed fieldu jako vysvětlení, k čemu tato kategorie slouží.",
+            "Zobrazí se v panelu za názvem kategorie, třeba „chování na serveru“.",
         supportRoles: "Role podpory pozvané do ticketu",
         modalQuestions: "Modal otázky",
         modalQuestionsDescription:
