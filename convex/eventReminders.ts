@@ -217,13 +217,63 @@ async function finish(
 }
 
 export const complete = mutation({
-    args: { secret: v.string(), requestId: v.string(), sentCount: v.number() },
+    args: {
+        secret: v.string(),
+        requestId: v.string(),
+        sentCount: v.number(),
+        // Recipients Discord refused (closed DMs); older bots omit it.
+        failedUserIds: v.optional(v.array(v.string())),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         await finish(ctx, args.requestId, {
             status: "sent",
             sentCount: Math.max(0, Math.floor(args.sentCount)),
+            ...(args.failedUserIds
+                ? { failedUserIds: args.failedUserIds.slice(0, 500) }
+                : {}),
         })
+    },
+})
+
+/** How long the match page keeps showing a reminder's delivery result. */
+const OUTCOME_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * The newest finished reminder of a match, for the match page (board
+ * L2-60..62): who sent it and when, how many DMs arrived and who has their
+ * DMs closed. The Next server reads it for a clan admin of the clan.
+ */
+export const latestOutcome = query({
+    args: { secret: v.string(), guildId: v.string(), eventId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const eventId = ctx.db.normalizeId("events", args.eventId)
+        const event = eventId ? await ctx.db.get(eventId) : null
+        if (!event || event.guildId !== args.guildId) return null
+        const recent = await ctx.db
+            .query("eventReminderRequests")
+            .withIndex("eventId_requestedAt", (q) => q.eq("eventId", event._id))
+            .order("desc")
+            .take(10)
+        const now = Date.now()
+        const finished = recent.find(
+            (row) =>
+                (row.status === "sent" || row.status === "failed") &&
+                now - Date.parse(row.completedAt ?? row.requestedAt) <
+                    OUTCOME_WINDOW_MS
+        )
+        if (!finished) return null
+        return {
+            audience: finished.audience,
+            status: finished.status,
+            requestedAt: finished.requestedAt,
+            completedAt: finished.completedAt ?? null,
+            requestedBy: finished.requestedBy,
+            recipientCount: finished.recipientIds.length,
+            sentCount: finished.sentCount ?? 0,
+            failedUserIds: finished.failedUserIds ?? [],
+        }
     },
 })
 

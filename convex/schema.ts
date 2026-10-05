@@ -22,15 +22,15 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
-    discordSeedMessages,
-    discordSeedPlans,
-    discordSeedRuns,
-} from "./discordSeedTable"
-import {
     leagueFixtures,
     leagueResults,
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
+import {
+    discordSeedMessages,
+    discordSeedPlans,
+    discordSeedRuns,
+} from "./discordSeedTable"
 import {
     discordApplicationEmoji,
     discordPanelGraphics,
@@ -755,6 +755,16 @@ export default defineSchema({
         // Clan colour and icon density of every bot message (Discord messages
         // settings). Missing means Logi amber and the sparse look.
         messageStyle: v.optional(messageStyle),
+        // Match message settings (board N1, see
+        // src/domain/discord-messages/notification-settings.ts). Missing means
+        // the board's default: photo with the text roster, change post and
+        // change DMs pre-selected, no attendance posts in the match thread.
+        rosterMessageVariant: v.optional(
+            v.union(v.literal("photo_text"), v.literal("photo"))
+        ),
+        rosterChangesPostDefault: v.optional(v.boolean()),
+        rosterChangesDmDefault: v.optional(v.boolean()),
+        attendanceNoticesInThread: v.optional(v.boolean()),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -1024,6 +1034,45 @@ export default defineSchema({
         claimedAt: v.optional(v.string()),
         completedAt: v.optional(v.string()),
         sentCount: v.optional(v.number()),
+        // Recipients whose DM Discord refused (closed DMs, blocked bot);
+        // the match page names them (board L2-60).
+        failedUserIds: v.optional(v.array(v.string())),
+        error: v.optional(v.string()),
+    })
+        .index("eventId_requestedAt", ["eventId", "requestedAt"])
+        .index("status", ["status"]),
+    // A re-published roster's change digest and change DMs, requested by the
+    // dashboard and sent by the bot (board L1-120..126, L2-35..40). `before`
+    // is the published version the dashboard replaced; the bot compares it
+    // with the saved roster. The earliest request with a digest is the
+    // digest's baseline, so one digest per match lists every change since.
+    rosterChangeRequests: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        rosterId: v.id("rosters"),
+        requestedBy: v.string(),
+        requestedAt: v.string(),
+        before: v.array(
+            v.object({
+                userId: v.string(),
+                squad: v.string(),
+                role: v.optional(v.string()),
+            })
+        ),
+        notifyPlayers: v.boolean(),
+        postDigest: v.boolean(),
+        mentionPlayers: v.boolean(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        claimedAt: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+        dmSentUserIds: v.optional(v.array(v.string())),
+        dmFailedUserIds: v.optional(v.array(v.string())),
+        digestPosted: v.optional(v.boolean()),
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
@@ -1077,6 +1126,15 @@ export default defineSchema({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The Discord roster message chosen at publish time (board D5):
+        // photo with the text roster or photo only, and whether the first
+        // post mentions the rostered players. Missing reads the clan default.
+        discordMessageVariant: v.optional(
+            v.union(v.literal("photo_text"), v.literal("photo"))
+        ),
+        discordMentionPlayers: v.optional(v.boolean()),
+        // When the roster was last published from the dashboard.
+        publishedAt: v.optional(v.string()),
         // The last time attendance was read from the meeting voice channel.
         meetingAttendance: v.optional(
             v.object({

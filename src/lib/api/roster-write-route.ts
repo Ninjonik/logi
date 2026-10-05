@@ -1,3 +1,4 @@
+import { ROSTER_MESSAGE_VARIANTS } from "../../domain/discord-messages/roster-message"
 import type { RosterDashboardActor } from "../../../convex/rosterWriterAccess"
 import { rosterMutationSchema } from "../../domain/api/roster-mutation"
 import { z } from "zod"
@@ -6,6 +7,15 @@ const inputSchema = rosterMutationSchema
     .extend({
         rosterId: z.string().min(1).max(200).optional(),
         eventId: z.string().min(1).max(200),
+        // The publish dialog's choice for the Discord roster message (D5);
+        // a live publish action, so it is not part of /api/v1.
+        discordPublish: z
+            .object({
+                variant: z.enum(ROSTER_MESSAGE_VARIANTS),
+                mentionPlayers: z.boolean(),
+            })
+            .strict()
+            .optional(),
     })
     .strict()
 export type RosterWriteInput = z.infer<typeof inputSchema>
