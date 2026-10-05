@@ -427,6 +427,8 @@ export type PublicCompetitionFixture = {
     scoreB?: number
     status: FixtureStatus
     scheduledAt?: string
+    /** Round number within the phase; missing on fixtures saved before rounds. */
+    round?: number
     eventId?: string
 }
 /** Public pages and `GET /api/v1/public/competitions/{slug}`; published competitions only. */

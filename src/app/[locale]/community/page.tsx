@@ -14,7 +14,6 @@ import {
 } from "@/components/public/public-site-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PublicPlayerSearch } from "@/components/public/public-player-search"
-import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
 import { GAME_IDS, GAME_LABELS, isGameId } from "@/domain/games/game"
 import { GAME_ICON_SOURCES } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -82,26 +81,18 @@ export default async function CommunityPage({ params, searchParams }: Props) {
     const displayedClans = query.length >= 2 ? searchedClans : clans
 
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} current="community">
             <PublicPage>
                 <div className="space-y-10">
-                    <PublicBreadcrumbs
-                        items={[
-                            {
-                                label: dictionary.app.name,
-                                href: `/${resolvedLocale}`,
-                            },
-                            { label: dictionary.publicProfiles.communityTitle },
-                        ]}
-                    />
-                    <div>
-                        <h1 className="text-3xl font-semibold">
+                    {/* The navigation marks Community; the heading follows the J1/J2 pages. */}
+                    <header className="flex flex-col gap-1.5">
+                        <h1 className="text-3xl leading-9 font-bold">
                             {dictionary.publicProfiles.communityTitle}
                         </h1>
-                        <p className="text-muted-foreground mt-2">
+                        <p className="text-muted-foreground max-w-[60ch] text-[15px] leading-[22px]">
                             {dictionary.publicProfiles.communityDescription}
                         </p>
-                    </div>
+                    </header>
                     {selectedGame ? (
                         <>
                             <section className="bg-card rounded-2xl border p-5 sm:p-6">

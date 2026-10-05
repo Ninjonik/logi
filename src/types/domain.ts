@@ -113,6 +113,8 @@ export type Guild = {
     /** Create-form defaults per match or training type (design D1). */
     matchTemplates?: MatchTemplate[]
     enabledGames?: GameId[]
+    /** Discord invite shown on the public clan page (canonical discord.gg link). */
+    publicInviteUrl?: string
     calendarItems?: CalendarItem[]
     botInside: boolean
     canAdmin?: boolean

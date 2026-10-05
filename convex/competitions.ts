@@ -268,6 +268,8 @@ export const getPublic = query({
                                 scoreB: row.scoreB,
                                 status: row.status,
                                 scheduledAt: row.scheduledAt,
+                                // Optional: fixtures saved before rounds have none.
+                                round: row.round,
                                 eventId: row.eventId
                                     ? String(row.eventId)
                                     : undefined,

@@ -643,6 +643,21 @@ export const csMessages = {
         recorded: "Zaznamenáno",
         noMatches: "Zatím nebyly zveřejněny žádné výsledky zápasů.",
         loadMore: "Načíst další",
+        inviteSettings: {
+            title: "Pozvánka na Discord",
+            description:
+                "Tlačítko Přidat se na Discordu na veřejné stránce klanu otevře tuto pozvánku.",
+            label: "Odkaz pozvánky",
+            help: "Jen odkazy discord.gg nebo discord.com/invite. Prázdné pole tlačítko skryje.",
+            invalid:
+                "Tohle není pozvánka na Discord. Zkopírujte odkaz z Discordu (Pozvat lidi).",
+            save: "Uložit pozvánku",
+            saving: "Ukládám…",
+            saved: "Pozvánka je uložená.",
+            removed: "Pozvánka je odebraná.",
+            saveError: "Pozvánku se nepodařilo uložit.",
+            viewPublicPage: "Zobrazit veřejnou stránku",
+        },
     },
     app: {
         name: "Logi",
@@ -1715,11 +1730,53 @@ export const csMessages = {
             emptyTitle: "Zatím žádné veřejné soutěže",
             emptyDescription:
                 "Soutěže se tu objeví, jakmile je správci Logi zveřejní.",
+            matchesColumn: "Zápasy",
+            winsColumn: "Výhry",
+            pointsColumn: "Body",
+            standingsNoteFor:
+                "Body podle pravidel {name}. Výsledky potvrzují klany, opravy se tu objeví do pár minut.",
+            round: "{round}. kolo",
+            resultsSuffix: "výsledky",
+            thisWeekend: "tento víkend",
+            thisWeek: "tento týden",
+            nextWeek: "příští týden",
+            undated: "Termín zatím není určený",
+            noFixturesTitle: "Zatím žádné zápasy",
+            noFixturesDescription:
+                "Rozpis se tu objeví, jakmile ho pořadatelé zveřejní.",
+            divisionsIn: {
+                one: "v {count} divizi",
+                few: "ve {count} divizích",
+                many: "ve {count} divizích",
+                other: "ve {count} divizích",
+            },
+            rules: "Pravidla",
+            statistics: "Statistiky",
+            moreRounds: "Další kola ({count})",
         },
         clan: {
             noMatchesTitle: "Zatím žádné zaznamenané zápasy",
             noMatchesDescription:
                 "Zápasy se tu objeví, jakmile klan zveřejní výsledky v Logi.",
+            joinDiscord: "Přidat se na Discordu",
+            activeMembers: {
+                one: "{count} aktivní člen",
+                few: "{count} aktivní členové",
+                many: "{count} aktivního člena",
+                other: "{count} aktivních členů",
+            },
+            statsLabel: "Statistiky klanu",
+            competition: "Soutěž",
+            place: "{place}. místo",
+            upcoming: "Nadcházející",
+            noUpcoming: "Klan zatím neohlásil žádný další zápas.",
+            recent: "Poslední zápasy",
+            versus: "vs {opponent}",
+            outcomeShort: {
+                victory: "V",
+                defeat: "P",
+                draw: "R",
+            },
         },
     },
     competition: {
