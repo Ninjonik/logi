@@ -1,4 +1,5 @@
 import {
+    appliesAsRecruit,
     canExecuteManagedRoles,
     desiredMembershipRoles,
     managedRolePolicy,
@@ -167,8 +168,11 @@ export async function enqueueManagedRoles(
                 : !assignment ||
                   assignment.status === "active" ||
                   (assignment.status === "recruit" &&
-                      (!policy.settings?.autoAssignRecruitOnApply ||
-                          assignment.type !== "member"))))
+                      !appliesAsRecruit(
+                          policy,
+                          assignment.membershipCategoryId,
+                          assignment.type
+                      ))))
     )
         throw new Error("Invalid self-application role intent.")
     const previousAssignment = await latest(ctx, guildId, gameId, userId)
@@ -289,9 +293,11 @@ async function evaluate(
                               current &&
                               (current.status === "pending" ||
                                   (current.status === "recruit" &&
-                                      current.type === "member" &&
-                                      policy.settings
-                                          ?.autoAssignRecruitOnApply))
+                                      appliesAsRecruit(
+                                          policy,
+                                          current.membershipCategoryId,
+                                          current.type
+                                      )))
                           ),
             })
         )

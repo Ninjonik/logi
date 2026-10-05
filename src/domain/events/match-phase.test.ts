@@ -56,7 +56,10 @@ test("closed sign-ups make the roster the current step until it is published", (
         steps.map((step) => step.state),
         ["done", "done", "current", "upcoming", "upcoming"]
     )
-    assert.deepEqual(steps[1]?.detail, { kind: "signedUp", count: 23 })
+    assert.deepEqual(steps[1]?.detail, {
+        kind: "closedAt",
+        at: base.registrationEnd,
+    })
     assert.deepEqual(steps[2]?.detail, { kind: "rosterDraft" })
 
     const published = {
@@ -66,6 +69,7 @@ test("closed sign-ups make the roster the current step until it is published", (
     const next = deriveMatchPhases(published, new Date("2026-10-10T20:00:00Z"))
     assert.equal(next[3]?.state, "current")
     assert.deepEqual(next[2]?.detail, { kind: "rosterPublished", count: 21 })
+    assert.deepEqual(next[1]?.detail, { kind: "signedUp", count: 23 })
 })
 
 test("the meeting starts the match even without a published roster", () => {

@@ -156,3 +156,17 @@ test("attendance buttons appear only while the event is starting", () => {
     assert.deepEqual(buttons, [])
     assert.match(embed?.description ?? "", /heslo `` with`tick ``/)
 })
+
+test("the private reply uses the event category colour like the event card", () => {
+    const colour = (categoryColor?: string | null) =>
+        buildRosterAssignmentReply({
+            config,
+            event,
+            roster,
+            userId: "player-1",
+            categoryColor,
+        }).embeds?.[0]?.toJSON().color
+    assert.equal(colour("#dc2626"), 0xdc2626)
+    assert.equal(colour(null), 0xffb000)
+    assert.equal(colour("not a colour"), 0xffb000)
+})

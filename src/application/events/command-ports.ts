@@ -3,6 +3,8 @@ import type { EventLike } from "@/domain/events/types"
 
 export type EventCommandRecord = EventLike & {
     id: string
+    /** Drafts keep their saved status until they are published. */
+    isDraft?: boolean
     name?: string
     guildId?: string
     meetingStart?: string

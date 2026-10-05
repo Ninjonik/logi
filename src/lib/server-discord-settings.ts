@@ -15,6 +15,9 @@ const getMembershipApplicationByAssignmentReference =
 const upsertConfigReference = makeFunctionReference<"mutation">(
     "discordConfig:upsertConfig"
 )
+const setMessageStyleReference = makeFunctionReference<"mutation">(
+    "discordConfig:setMessageStyle"
+)
 
 export async function getDiscordConfigByGuild(guildId: string) {
     return (await fetchQuery(getConfigByGuildReference, {
@@ -34,20 +37,34 @@ export async function getMembershipApplicationByAssignment(
 
 /**
  * Saves only the settings present in `patch`; omitted settings keep their stored
- * values and `null` clears a single Discord ID.
+ * values and `null` clears a single Discord ID. The message style has its own
+ * mutation, saved after the other settings so the configuration exists.
  */
 export async function saveDiscordConfig(
     guildId: string,
     patch: DiscordSettingsPatch
 ) {
+    const { messageStyle, ...settings } = patch
     const present = Object.fromEntries(
-        Object.entries(patch).filter(([, value]) => value !== undefined)
+        Object.entries(settings).filter(([, value]) => value !== undefined)
     )
-    return await fetchMutation(upsertConfigReference, {
+    const configId = await fetchMutation(upsertConfigReference, {
         secret: getInternalAuthSecret(),
         guildId: guildId as never,
         ...present,
     })
+    if (messageStyle)
+        await fetchMutation(setMessageStyleReference, {
+            secret: getInternalAuthSecret(),
+            guildId: guildId as never,
+            messageStyle: {
+                iconDensity: messageStyle.iconDensity,
+                ...(messageStyle.accentColor
+                    ? { accentColor: messageStyle.accentColor }
+                    : {}),
+            },
+        })
+    return configId
 }
 
 const confirmRosterAttendanceFromMeetingChannelReference =

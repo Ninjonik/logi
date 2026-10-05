@@ -153,3 +153,36 @@ test("a training starts at its meeting and an invalid start has no timeline", ()
     )
     assert.equal(templateSchedule(friendly, "not a date"), null)
 })
+
+test("template caps, reminders and roster settings are tidied", () => {
+    const result = normalizeMatchTemplates([
+        {
+            ...friendly,
+            signupGroupLimits: [
+                { groupId: "g2", max: 6 },
+                // Not an offered group, a fraction and too many places are dropped.
+                { groupId: "g9", max: 2 },
+                { groupId: "g1", max: 1.5 },
+                { groupId: "g1", max: 1000 },
+            ],
+            attendanceReminderHours: [6, 24, 5],
+            createParticipantRoles: false,
+            squadPresetId: " preset-1 ",
+        },
+        {
+            ...friendly,
+            id: "training",
+            kind: "training",
+            signupGroupLimits: [{ groupId: "g1", max: 2 }],
+            squadPresetId: "preset-1",
+        },
+    ])
+    assert.ok(result.ok)
+    const [match, training] = result.templates
+    assert.deepEqual(match.signupGroupLimits, [{ groupId: "g2", max: 6 }])
+    assert.deepEqual(match.attendanceReminderHours, [24, 6])
+    assert.equal(match.createParticipantRoles, false)
+    assert.equal(match.squadPresetId, "preset-1")
+    assert.equal(training.signupGroupLimits, undefined)
+    assert.equal(training.squadPresetId, undefined)
+})

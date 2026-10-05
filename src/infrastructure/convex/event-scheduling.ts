@@ -1,6 +1,7 @@
 import {
     getAttendanceReminderDueAt,
     getSignupReminderDueAt,
+    resolveAttendanceReminderHours,
     resolveSignupReminderStatuses,
 } from "@/domain/events/scheduled-job-policy"
 import type { MutationCtx } from "../../../convex/_generated/server"
@@ -27,6 +28,8 @@ export async function refreshEventSchedule(
         .withIndex("eventId", (q) => q.eq("eventId", event._id))
         .collect()
     await Promise.all(existingJobs.map((job) => ctx.db.delete(job._id)))
+    // A draft is never announced, so it has no deadlines until it is published.
+    if (event.isDraft === true) return
     const startAtMs = Math.max(
         new Date(event.registrationEnd).getTime(),
         new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000
@@ -46,7 +49,9 @@ export async function refreshEventSchedule(
                 new Date(event.gameEnd).getTime() + EVENT_CONCLUSION_RESERVE_MS
             ).toISOString(),
         ],
-        ...[24, 18, 12, 6].flatMap((hours) => {
+        ...resolveAttendanceReminderHours(
+            event.attendanceReminderHours
+        ).flatMap((hours) => {
             const dueAt = getAttendanceReminderDueAt(
                 event.meetingStart,
                 hours,

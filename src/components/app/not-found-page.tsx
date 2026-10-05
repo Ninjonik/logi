@@ -19,8 +19,13 @@ async function requestLocale(): Promise<Locale> {
 }
 
 /** 404 for public pages and unknown addresses, inside the public site shell. */
-export async function PublicNotFoundPage() {
-    const locale = await requestLocale()
+export async function PublicNotFoundPage({
+    locale: fixedLocale,
+}: {
+    /** Set above the `[locale]` layout, where reading the request would make every page dynamic. */
+    locale?: Locale
+} = {}) {
+    const locale = fixedLocale ?? (await requestLocale())
     const dictionary = getDictionary(locale)
     const t = dictionary.appStates
     return (

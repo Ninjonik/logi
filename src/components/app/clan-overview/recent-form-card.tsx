@@ -1,7 +1,10 @@
 import { Trophy } from "lucide-react"
 import Link from "next/link"
 
-import { fill } from "@/components/app/clan-overview/overview-format"
+import {
+    fill,
+    type OverviewFormat,
+} from "@/components/app/clan-overview/overview-format"
 import type { recentForm } from "@/domain/workspaces/clan-overview"
 import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -18,10 +21,12 @@ const tones = {
 export function RecentFormCard({
     form,
     matchHref,
+    format,
     dictionary,
 }: {
     form: ReturnType<typeof recentForm>
     matchHref: (eventId: string) => string
+    format: OverviewFormat
     dictionary: Dictionary
 }) {
     const text = dictionary.clanOverview
@@ -34,7 +39,12 @@ export function RecentFormCard({
                 className="flex-[1_1_360px]"
             />
         )
-    const hasPending = form.matches.some((match) => match.pending)
+    const pending = form.matches.filter((match) => match.pending)
+    const pendingLegend = !pending.length
+        ? null
+        : pending.length === 1 && form.matches.at(-1)?.pending
+          ? text.formLastPendingLegend
+          : text.formPendingLegend
     return (
         <section
             aria-labelledby="overview-form"
@@ -48,7 +58,7 @@ export function RecentFormCard({
                     {text.formTitle}
                 </h2>
                 <span className="text-sm font-semibold">
-                    {fill(text.wins, { count: form.wins })}
+                    {format.count(form.wins, text.wins)}
                 </span>
             </div>
             <ol
@@ -81,7 +91,7 @@ export function RecentFormCard({
                 })}
             </ol>
             <p className="text-muted-foreground text-xs">
-                {hasPending ? `${text.formPendingLegend} ` : null}
+                {pendingLegend ? `${pendingLegend} ` : null}
                 {text.formLegend}
             </p>
         </section>

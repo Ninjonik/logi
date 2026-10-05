@@ -1,6 +1,7 @@
 export type Timestamp = string
 
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { MatchTemplate } from "@/domain/events/match-templates"
 import type { GameId } from "@/domain/games/game"
@@ -112,6 +113,8 @@ export type Guild = {
     /** Create-form defaults per match or training type (design D1). */
     matchTemplates?: MatchTemplate[]
     enabledGames?: GameId[]
+    /** Discord invite shown on the public clan page (canonical discord.gg link). */
+    publicInviteUrl?: string
     calendarItems?: CalendarItem[]
     botInside: boolean
     canAdmin?: boolean
@@ -160,6 +163,8 @@ export type MembershipCategory = {
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
     assignmentType: "member" | "reserve_member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
 }
 
 export type TicketSettings = {
@@ -184,6 +189,8 @@ export type MembershipSettings = {
     /** Ask infantry/tank preference for supported games during application. */
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     /** Defaults to true for legacy configurations. */
     inviteSupportMembersIndividually?: boolean
     rosterScoreSettings?: {
@@ -235,6 +242,8 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -290,6 +299,8 @@ export type EventRecord = {
     /** Missing means the legacy Hell Let Loose game scope. */
     gameId?: GameId
     kind: EventKind
+    /** Saved but not published: shown only in the dashboard, never announced. */
+    isDraft?: boolean
     matchType?: MatchTypeCategory
     name: string
     description?: string
@@ -325,6 +336,16 @@ export type EventRecord = {
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: MatchRecurrence
+    /** Generated weekly occurrence: the event that carries the recurrence. */
+    recurrenceSeriesId?: string
+    /** Signup group caps by group ID; a full group offers a reserve place. */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    /** Attendance DM offsets in hours before the meeting; missing means all four. */
+    attendanceReminderHours?: number[]
+    /** Missing means the bot creates the attendee and reserve roles. */
+    createParticipantRoles?: boolean
+    /** The squad preset the event's roster starts from. */
+    squadPresetId?: string
     attendeeRoleId?: string
     reserveRoleId?: string
     status: EventStatus
@@ -369,6 +390,8 @@ export type EventRecord = {
         userId: string
         reason: string
         createdAt: Timestamp
+        /** The clan admin who excused the player; absent for late notices. */
+        excusedBy?: string
     }[]
     createdAt: Timestamp
     updatedAt: Timestamp
@@ -631,6 +654,15 @@ export type Roster = {
     notAttendingPlayerIds: string[]
     streamerId?: string
     published: boolean
+    /** The last time attendance was read from the meeting voice channel. */
+    meetingAttendance?: {
+        loadedAt: Timestamp
+        channelId: string
+        /** Everyone in the channel, members of the roster or not. */
+        voiceCount: number
+        /** Roster players and reserves found in the channel. */
+        foundUserIds: string[]
+    }
     createdAt: Timestamp
     updatedAt: Timestamp
 }

@@ -303,3 +303,117 @@ test("attendance follows current event times even before the status reconciler r
         })
     )
 })
+
+test("a rostered player's decline records one notice, withdraws attendance and informs the sign-up history once", async () => {
+    const ctx = fixture()
+    await ctx.db.patch(input.eventId, {
+        name: "VLK vs ROG",
+        kind: "match",
+        gameStart: new Date(Date.now() + 120_000).toISOString(),
+    })
+    await ctx.db.patch("rosters:one", {
+        squads: [
+            {
+                ...input.squads[0],
+                players: [{ id: subject, ack: true, roleName: "Medic" }],
+            },
+        ],
+    })
+    const args = {
+        secret,
+        guildId,
+        eventId: input.eventId,
+        userId: subject,
+        reason: "Nemoc",
+    }
+    await assert.rejects(
+        invoke(rosters.declineAttendance, ctx, { ...args, secret: "wrong" })
+    )
+    assert.deepEqual(await invoke(rosters.declineAttendance, ctx, args), {
+        ok: true,
+        changed: true,
+        rejected: null,
+    })
+    const event = ctx.db.tables.events[0]
+    assert.deepEqual(
+        event.absenceNotices.map(
+            (notice: { userId: string; reason: string }) => [
+                notice.userId,
+                notice.reason,
+            ]
+        ),
+        [[subject, "Nemoc"]]
+    )
+    assert.equal(ctx.db.tables.rosters[0].squads[0].players[0].ack, false)
+    assert.equal(ctx.db.tables.rosters[0].squads[0].players.length, 1)
+    assert.deepEqual(
+        ctx.db.tables.signupActivities.map((row) => [
+            row.action,
+            row.role,
+            row.eventName,
+        ]),
+        [["declined", "Alpha · Medic", "VLK vs ROG"]]
+    )
+
+    // Pressing again with the same reason writes nothing new.
+    assert.deepEqual(await invoke(rosters.declineAttendance, ctx, args), {
+        ok: true,
+        changed: false,
+        rejected: null,
+    })
+    assert.equal(ctx.db.tables.signupActivities.length, 1)
+})
+
+test("declines are refused for other guilds, players off the roster, drafts and started games", async () => {
+    const base = {
+        secret,
+        guildId,
+        eventId: input.eventId,
+        userId: subject,
+        reason: "Nemoc",
+    }
+    const started = fixture()
+    await started.db.patch(input.eventId, {
+        gameStart: new Date(Date.now() - 1_000).toISOString(),
+    })
+    assert.equal(
+        (await invoke(rosters.declineAttendance, started, base)).rejected,
+        "too_late"
+    )
+
+    const draft = fixture()
+    await draft.db.patch(input.eventId, {
+        gameStart: new Date(Date.now() + 120_000).toISOString(),
+    })
+    await draft.db.patch("rosters:one", { published: false })
+    assert.equal(
+        (await invoke(rosters.declineAttendance, draft, base)).rejected,
+        "roster_not_published"
+    )
+
+    const stranger = fixture()
+    await stranger.db.patch(input.eventId, {
+        gameStart: new Date(Date.now() + 120_000).toISOString(),
+    })
+    assert.equal(
+        (
+            await invoke(rosters.declineAttendance, stranger, {
+                ...base,
+                userId: "910000000000000003",
+            })
+        ).rejected,
+        "not_on_roster"
+    )
+
+    const foreign = fixture()
+    await assert.rejects(
+        invoke(rosters.declineAttendance, foreign, {
+            ...base,
+            guildId: "910000000000000009",
+        })
+    )
+    for (const ctx of [started, draft, stranger, foreign]) {
+        assert.equal(ctx.db.tables.events[0].absenceNotices, undefined)
+        assert.equal(ctx.db.tables.signupActivities, undefined)
+    }
+})

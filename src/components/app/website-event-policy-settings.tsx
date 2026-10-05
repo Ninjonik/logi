@@ -23,6 +23,7 @@ import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
 import { useCallback, useEffect, useId, useState } from "react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { GAME_LABELS } from "@/domain/games/game"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import type { z } from "zod"
@@ -185,11 +186,27 @@ function Settings({ serverId, dictionary }: Props) {
 
     const busy = loading || pending
     return (
-        <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">{t.description}</p>
-            <Button variant="outline" disabled={busy} onClick={refresh}>
-                {loading ? t.loading : t.refresh}
-            </Button>
+        <div className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                    <h3 className="text-sm">
+                        {dictionary.integrationSettings.web.eventsTitle}
+                    </h3>
+                    <p className="text-muted-foreground text-[13px] leading-5">
+                        {dictionary.integrationSettings.web.eventsHelp}
+                    </p>
+                    <p className="sr-only">{t.description}</p>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-lg"
+                    disabled={busy}
+                    onClick={refresh}
+                >
+                    {loading ? t.loading : t.refresh}
+                </Button>
+            </div>
             {failure && (
                 <p role="alert" className="text-destructive text-sm">
                     {t[failure]}
@@ -205,7 +222,7 @@ function Settings({ serverId, dictionary }: Props) {
                     {t.noApplications}
                 </p>
             )}
-            {applications && applications.length > 0 && (
+            {applications && applications.length > 1 && (
                 <div className="space-y-2">
                     <Label htmlFor={selectId}>{t.application}</Label>
                     <Select
@@ -303,7 +320,7 @@ function PolicyForm({
             : null
     return (
         <form
-            className="space-y-4 rounded-lg border p-4"
+            className="space-y-3 border-t pt-3"
             onSubmit={async (event) => {
                 event.preventDefault()
                 const input = websiteEventPolicyInputSchema.safeParse({
@@ -321,29 +338,40 @@ function PolicyForm({
                 if (input.success) await save(input.data)
             }}
         >
-            <h3 className="font-medium break-words">{entry.name}</h3>
-            <p className="text-muted-foreground text-sm">
-                {grantedGames
-                    ? t.granted.replace("{games}", grantedGames)
-                    : t.notGranted}
+            <p className="text-[13px] break-words">
+                {entry.name}
+                <span className="text-muted-foreground">
+                    {" "}
+                    ·{" "}
+                    {grantedGames
+                        ? t.granted.replace("{games}", grantedGames)
+                        : t.notGranted}
+                </span>
             </p>
-            <fieldset disabled={disabled} className="space-y-4">
-                <label className="flex items-center gap-2 text-sm">
-                    <input
-                        type="checkbox"
+            <fieldset disabled={disabled} className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Switch
+                        id={`${id}-enabled`}
                         checked={enabled}
-                        onChange={(event) => setEnabled(event.target.checked)}
+                        onCheckedChange={setEnabled}
                     />
-                    {t.enabled}
-                </label>
-                <p className="text-muted-foreground text-sm">{t.rolesHelp}</p>
+                    <Label
+                        htmlFor={`${id}-enabled`}
+                        className="text-[13px] font-normal"
+                    >
+                        {t.enabled}
+                    </Label>
+                </div>
+                <p className="text-muted-foreground text-[13px]">
+                    {t.rolesHelp}
+                </p>
                 {entry.gameIds.map((gameId) => (
-                    <div key={gameId} className="space-y-2">
+                    <div key={gameId} className="space-y-1.5">
                         <p
-                            className="text-sm font-medium"
+                            className="text-muted-foreground text-xs"
                             id={`${id}-${gameId}`}
                         >
-                            {GAME_LABELS[gameId]} · {t.roles}
+                            {GAME_LABELS[gameId]}
                         </p>
                         <PolicyRolePicker
                             labelId={`${id}-${gameId}`}
@@ -364,7 +392,9 @@ function PolicyForm({
                         {t.invalid}
                     </p>
                 )}
-                <Button type="submit">{disabled ? t.saving : t.save}</Button>
+                <Button type="submit" size="sm" className="rounded-lg">
+                    {disabled ? t.saving : t.save}
+                </Button>
             </fieldset>
         </form>
     )

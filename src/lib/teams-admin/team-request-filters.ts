@@ -3,6 +3,12 @@ import type { TeamGame } from "@/domain/teams/team"
 
 export type RequestFilters = { game: TeamGame | "all"; clan: string | "all" }
 
+/** Compact game names for list rows (design I2: "HLL · před 2 h"). */
+export const TEAM_GAME_SHORT_LABELS: Record<TeamGame, string> = {
+    hell_let_loose: "HLL",
+    wardogs: "Wardogs",
+}
+
 /** The loaded requests that match the game and clan filters, in queue order. */
 export function filterTeamRequests(
     items: readonly TeamRequestRecord[],

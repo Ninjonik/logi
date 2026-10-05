@@ -19,6 +19,11 @@ const handlers = superadminTeamRequestsHandlers({
             ...access,
             requestId,
         }),
+    context: async (access, requestIds) =>
+        await fetchQuery(
+            makeFunctionReference<"query">("teamRequests:queueContext"),
+            { ...access, requestIds }
+        ),
     queue: async (access, query) =>
         await fetchQuery(makeFunctionReference<"query">("teamRequests:queue"), {
             ...access,
@@ -33,7 +38,7 @@ const handlers = superadminTeamRequestsHandlers({
         ),
 })
 
-/** `?requestId=` reads one request; otherwise `?status=` pages the moderation queue. */
+/** `?requestId=` reads one request, `?context=` the moderation context; otherwise `?status=` pages the moderation queue. */
 export async function GET(request: Request) {
     return handlers.GET(request)
 }

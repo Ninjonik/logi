@@ -24,12 +24,14 @@ import {
     warmRosterImage,
     withTimeout,
 } from "../utils"
+import type { PanelFactionEmoji } from "../../../src/domain/discord-publications/panel-presentation"
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { publishManagedMessage, isUnknownMessage } from "./publication"
+import { applicationFactionEmoji } from "../runtime/faction-emoji"
 import { reportClanDiscordError } from "../error-reporting"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
@@ -150,9 +152,10 @@ export async function resolveAnnouncementDisplayNames(
 
 /**
  * Content of a split-channel event message. Legacy embed messages stay legacy
- * so their identity survives edits; new messages use Components V2. The event
- * information card (`includeSignup === false`) also carries one logo card per
- * assigned match team; events without assignments render exactly as before.
+ * so their identity survives edits; new messages use Components V2. Before the
+ * roster is published, the event information card (`includeSignup === false`)
+ * also carries one logo card per assigned match team; once it is published
+ * the card is the roster card (title, meeting, squads, image, buttons).
  */
 export function buildEventMessageContent(input: {
     payload: SyncPayload
@@ -162,8 +165,10 @@ export function buildEventMessageContent(input: {
     includeSignup: boolean
     forumChannelId?: string
     pingRoleIds: string[]
+    factionEmoji?: PanelFactionEmoji
 }) {
-    const { payload, event, includeSignup, forumChannelId } = input
+    const { payload, event, includeSignup, forumChannelId, factionEmoji } =
+        input
     if (input.legacyEmbeds) {
         const { embed, components } = buildAnnouncementMessage(
             payload,
@@ -172,12 +177,22 @@ export function buildEventMessageContent(input: {
             {
                 showPublishedRosterImage: !includeSignup,
                 forumChannelId,
+                factionEmoji,
             }
         )
+        const rosterCard =
+            event.kind === "match" &&
+            payload.rosters.some(
+                (roster) => roster.eventId === event.id && roster.published
+            )
         return {
-            embeds: includeSignup
-                ? [embed]
-                : [embed, ...buildMatchTeamLogoEmbeds(event, embed.data.color)],
+            embeds:
+                includeSignup || rosterCard
+                    ? [embed]
+                    : [
+                          embed,
+                          ...buildMatchTeamLogoEmbeds(event, embed.data.color),
+                      ],
             components: includeSignup ? components : [],
         }
     }
@@ -187,6 +202,7 @@ export function buildEventMessageContent(input: {
             forumChannelId,
             pingRoleIds: input.pingRoleIds,
             matchTeamCards: !includeSignup,
+            factionEmoji,
         }),
         flags: MessageFlags.IsComponentsV2 as const,
     }
@@ -289,6 +305,7 @@ async function syncEventMessage(
         includeSignup,
         forumChannelId,
         pingRoleIds,
+        factionEmoji: await applicationFactionEmoji(guild.client),
     })
     return (
         (await publishManagedMessage(guild.client, {
@@ -840,6 +857,7 @@ async function syncEvent(
                             // Without a separate event-info room this single
                             // message is the event information card.
                             matchTeamCards: true,
+                            factionEmoji: await applicationFactionEmoji(client),
                         }
                     ),
                     files: rosterImageAttachment

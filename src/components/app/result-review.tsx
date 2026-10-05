@@ -1,7 +1,17 @@
 "use client"
 
-import { CheckCircle2, Clock3, Loader2, Server } from "lucide-react"
+import {
+    Check,
+    CheckCircle2,
+    Clock3,
+    Loader2,
+    MessageSquareText,
+    Send,
+    Server,
+    Trophy,
+} from "lucide-react"
 import { useEffect, useId, useMemo, useState } from "react"
+import Link from "next/link"
 import { z } from "zod"
 
 import {
@@ -10,12 +20,18 @@ import {
     type ResultAction,
     type ResultRevision,
 } from "@/domain/match-results/result-revision"
+import {
+    arrangeResultSides,
+    resultFaction,
+    type ResultFaction,
+} from "@/domain/match-results/result-sides"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { suggestResultSession } from "@/domain/match-results/session-pick"
+import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 type ReviewData = z.infer<typeof resultReviewSchema>
@@ -32,6 +48,18 @@ type Props = {
     timeZone?: string
     /** Names of the admins and importers in the history, by Discord ID. */
     actorNames?: Record<string, string>
+    /** The faction the clan played, to put its side first. */
+    ourSide?: string
+    /** Teams picked for the match, for names and logos. */
+    matchTeams?: MatchTeamAssignment[]
+    clanName?: string
+    opponentName?: string
+    /** Discord results panel channel; null when none is set up. */
+    resultsChannelName?: string | null
+    /** Where the matched players are listed. */
+    playersHref?: string
+    /** The match is linked to a competition fixture. */
+    competitionLinked?: boolean
 }
 type ScoreInput = { id: string; label: string; score: string }
 
@@ -110,6 +138,13 @@ function Review({
     locale = "en",
     timeZone = "UTC",
     actorNames = {},
+    ourSide,
+    matchTeams,
+    clanName,
+    opponentName,
+    resultsChannelName,
+    playersHref,
+    competitionLinked = false,
 }: Props) {
     const t = dictionary.resultReview
     const m = dictionary.matchDetail.result
@@ -313,7 +348,9 @@ function Review({
     }
 
     function revisionTitle(revision: ResultRevision) {
-        const score = scoreText(revision.participants)
+        const score = scoreText(
+            arrangeResultSides(revision.participants, ourSide).ordered
+        )
         return revision.origin !== "manual" && revision.status === "provisional"
             ? m.historyImport.replace("{score}", score)
             : m.historyEntry[revision.status].replace("{score}", score)
@@ -325,7 +362,161 @@ function Review({
     }
 
     const editable = !loading && Boolean(data)
-    const confirmScore = scoreText(scores)
+    // The clan's side first (design E2), with the outcome from its view.
+    const sides = arrangeResultSides(
+        scores.map((row, index) => ({
+            id: row.id,
+            label: row.label,
+            score: row.score.trim() === "" ? null : Number(row.score),
+            index,
+        })),
+        ourSide
+    )
+    const confirmScore = scoreText(
+        sides.ordered.map((side) => scores[side.index]!)
+    )
+    const factionLabels: Record<ResultFaction, string> =
+        dictionary.publicPanelAppearance.factions
+    function teamFor(id: string, label: string, ours: boolean) {
+        const faction = resultFaction(id) ?? resultFaction(label)
+        const team =
+            (faction &&
+                matchTeams?.find(
+                    (assignment) => resultFaction(assignment.side) === faction
+                )) ||
+            undefined
+        const name =
+            team?.snapshot.name ??
+            (ours && clanName
+                ? clanName
+                : !ours && opponentName && faction
+                  ? opponentName
+                  : label)
+        const short =
+            team?.snapshot.shortCode ??
+            (faction ? name : label).slice(0, 3).toUpperCase()
+        return {
+            name,
+            short,
+            logoUrl: team?.snapshot.logoUrl ?? null,
+            side: faction ? factionLabels[faction] : null,
+        }
+    }
+    function updateScore(index: number, value: string) {
+        setScores(
+            scores.map((s, i) => (i === index ? { ...s, score: value } : s))
+        )
+        setDirty(true)
+    }
+    function updateLabel(index: number, value: string) {
+        setScores(
+            scores.map((s, i) => (i === index ? { ...s, label: value } : s))
+        )
+        setDirty(true)
+    }
+    const twoSides = scores.length === 2
+    const left = twoSides ? sides.ordered[0]! : null
+    const right = twoSides ? sides.ordered[1]! : null
+
+    // Plain render helpers, not components: a component declared here would
+    // remount on every keystroke and lose the input focus.
+    function scoreBox(side: { id: string; label: string; index: number }) {
+        const team = teamFor(
+            side.id,
+            side.label,
+            side.index === left?.index && sides.oursIndex === 0
+        )
+        return (
+            <label className="flex flex-col items-center gap-1">
+                <span className="text-muted-foreground text-[11px] font-medium uppercase">
+                    {team.short}
+                </span>
+                <Input
+                    aria-label={m.scoreLabel.replace("{name}", team.name)}
+                    type="number"
+                    step="any"
+                    inputMode="numeric"
+                    value={scores[side.index]?.score ?? ""}
+                    disabled={!editable}
+                    placeholder="—"
+                    className="bg-background h-14 w-16 rounded-xl text-center text-3xl font-semibold tabular-nums sm:w-20 md:text-3xl"
+                    onChange={(e) => updateScore(side.index, e.target.value)}
+                />
+            </label>
+        )
+    }
+
+    function teamBlock(
+        side: { id: string; label: string; index: number },
+        align: "left" | "right"
+    ) {
+        const ours = sides.oursIndex === 0 && side.index === left?.index
+        const team = teamFor(side.id, side.label, ours)
+        const logo = (
+            <Avatar aria-hidden="true" className="size-11 rounded-xl">
+                {team.logoUrl ? (
+                    <AvatarImage src={team.logoUrl} alt="" />
+                ) : null}
+                <AvatarFallback
+                    className={cn(
+                        "rounded-xl text-xs font-bold",
+                        ours
+                            ? "bg-foreground text-background"
+                            : "bg-muted-foreground/15 text-foreground/80"
+                    )}
+                >
+                    {team.short}
+                </AvatarFallback>
+            </Avatar>
+        )
+        return (
+            <div
+                className={cn(
+                    "flex min-w-0 items-center gap-2.5",
+                    align === "right" && "flex-row-reverse text-right"
+                )}
+            >
+                {logo}
+                <span className="flex min-w-0 flex-col">
+                    <span className="truncate font-semibold">{team.name}</span>
+                    {team.side ? (
+                        <span className="text-muted-foreground truncate text-xs">
+                            {team.side}
+                        </span>
+                    ) : null}
+                </span>
+            </div>
+        )
+    }
+
+    const correctionTargets: string[] = []
+    if (resultsChannelName) correctionTargets.push(m.correctionTargets.discord)
+    if (competitionLinked)
+        correctionTargets.push(m.correctionTargets.competition)
+    const correctionNote = correctionTargets.length
+        ? m.correctionNoteUpdates.replace(
+              "{targets}",
+              correctionTargets.join(m.correctionTargets.and)
+          )
+        : m.correctionNote
+    const effects: Array<{ icon: typeof MessageSquareText; text: string }> = [
+        resultsChannelName
+            ? {
+                  icon: MessageSquareText,
+                  text: m.effectResultsChannel.replace(
+                      "{channel}",
+                      resultsChannelName
+                  ),
+              }
+            : resultsChannelName === null
+              ? { icon: MessageSquareText, text: m.effectNoResultsChannel }
+              : null,
+        { icon: Send, text: m.effectRecaps },
+        competitionLinked ? { icon: Trophy, text: m.effectCompetition } : null,
+    ].filter(
+        (effect): effect is { icon: typeof MessageSquareText; text: string } =>
+            effect !== null
+    )
 
     return (
         <section
@@ -333,167 +524,162 @@ function Review({
             aria-labelledby={heading}
             aria-busy={loading}
         >
-            <div className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_18rem]">
-                <div className="border-border/60 bg-card space-y-4 rounded-2xl border p-4 sm:p-5">
+            <div className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_17.5rem] @5xl:grid-cols-[minmax(0,1fr)_18.5rem]">
+                <div className="border-border/70 bg-card space-y-5 rounded-2xl border p-5 sm:p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 id={heading} className="text-base font-semibold">
+                        <h2 id={heading} className="text-lg font-semibold">
                             {m.title}
                         </h2>
-                        <div className="flex items-center gap-2">
-                            <Badge
-                                variant={reviewed ? "default" : "secondary"}
-                                className="rounded-full"
-                                role="status"
-                            >
-                                {reviewed ? (
-                                    <CheckCircle2 className="size-3.5" />
-                                ) : (
-                                    <Clock3 className="size-3.5" />
-                                )}
-                                {m.status[status]}
-                            </Badge>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={reload}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <Loader2 className="size-4 animate-spin" />
-                                ) : null}
-                                {loading ? t.loading : t.refresh}
-                            </Button>
-                        </div>
+                        <span
+                            role="status"
+                            className={cn(
+                                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs",
+                                reviewed
+                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                            )}
+                        >
+                            {loading ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                            ) : reviewed ? (
+                                <CheckCircle2 className="size-3.5" />
+                            ) : (
+                                <Clock3 className="size-3.5" />
+                            )}
+                            {m.status[status]}
+                        </span>
                     </div>
                     {error ? (
-                        <p className="text-destructive text-sm" role="alert">
+                        <div
+                            className="text-destructive flex flex-wrap items-center gap-2 text-sm"
+                            role="alert"
+                        >
                             {t.error}
-                        </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg"
+                                onClick={reload}
+                            >
+                                {t.refresh}
+                            </Button>
+                        </div>
                     ) : null}
                     {data ? (
                         <>
-                            <div className="flex flex-wrap items-end gap-3">
-                                {scores.map((row, index) => (
-                                    <div
-                                        key={row.id}
-                                        className="flex items-end gap-2"
-                                    >
-                                        {index > 0 && scores.length === 2 ? (
+                            {left && right ? (
+                                <div className="bg-muted/50 flex flex-col items-center gap-3 rounded-2xl px-4 py-6">
+                                    {/* Phones stack team, scores, team (E2 phone). */}
+                                    <div className="flex w-full flex-col items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6">
+                                        <div className="flex min-w-0 justify-end">
+                                            {teamBlock(left, "left")}
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                            {scoreBox(left)}
                                             <span
                                                 aria-hidden="true"
-                                                className="pb-2 text-2xl font-semibold"
+                                                className="text-muted-foreground pb-3 text-2xl font-semibold"
                                             >
                                                 :
                                             </span>
-                                        ) : null}
-                                        <label className="flex flex-col gap-1">
-                                            <Input
-                                                aria-label={m.nameLabel.replace(
-                                                    "{index}",
-                                                    String(index + 1)
-                                                )}
-                                                value={row.label}
-                                                disabled={!editable}
-                                                className="h-7 w-32 text-xs"
-                                                onChange={(e) => {
-                                                    setScores(
-                                                        scores.map((s, i) =>
-                                                            i === index
-                                                                ? {
-                                                                      ...s,
-                                                                      label: e
-                                                                          .target
-                                                                          .value,
-                                                                  }
-                                                                : s
-                                                        )
-                                                    )
-                                                    setDirty(true)
-                                                }}
-                                            />
-                                            <Input
-                                                aria-label={m.scoreLabel.replace(
-                                                    "{name}",
-                                                    row.label
-                                                )}
-                                                type="number"
-                                                step="any"
-                                                value={row.score}
-                                                disabled={!editable}
-                                                placeholder="—"
-                                                className="h-12 w-32 text-center text-2xl font-semibold tabular-nums"
-                                                onChange={(e) => {
-                                                    setScores(
-                                                        scores.map((s, i) =>
-                                                            i === index
-                                                                ? {
-                                                                      ...s,
-                                                                      score: e
-                                                                          .target
-                                                                          .value,
-                                                                  }
-                                                                : s
-                                                        )
-                                                    )
-                                                    setDirty(true)
-                                                }}
-                                            />
-                                        </label>
-                                        {scores.length > 2 ? (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                aria-label={`${t.remove} ${index + 1}`}
-                                                disabled={!editable}
-                                                onClick={() => {
-                                                    setScores(
-                                                        scores.filter(
-                                                            (_, i) =>
-                                                                i !== index
-                                                        )
-                                                    )
-                                                    setDirty(true)
-                                                }}
-                                            >
-                                                −
-                                            </Button>
-                                        ) : null}
+                                            {scoreBox(right)}
+                                        </div>
+                                        <div className="flex min-w-0 justify-start">
+                                            {teamBlock(right, "right")}
+                                        </div>
                                     </div>
-                                ))}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={!editable || scores.length >= 16}
-                                    onClick={() => {
-                                        setScores([
-                                            ...scores,
-                                            {
-                                                id: crypto.randomUUID(),
-                                                label: `${t.participant} ${scores.length + 1}`,
-                                                score: "",
-                                            },
-                                        ])
-                                        setDirty(true)
-                                    }}
-                                >
-                                    {t.addParticipant}
-                                </Button>
-                            </div>
-                            <p className="text-muted-foreground text-xs">
-                                {t.scoreHelp}
-                            </p>
+                                    {sides.outcome ? (
+                                        <span
+                                            className={cn(
+                                                "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                                                sides.outcome === "win"
+                                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                                    : sides.outcome === "loss"
+                                                      ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                                                      : "border-border bg-background text-foreground"
+                                            )}
+                                        >
+                                            {m.outcome[sides.outcome]}
+                                        </span>
+                                    ) : null}
+                                </div>
+                            ) : (
+                                <div className="bg-muted/50 flex flex-wrap items-end gap-3 rounded-2xl p-4">
+                                    {scores.map((row, index) => (
+                                        <div
+                                            key={row.id}
+                                            className="flex items-end gap-1"
+                                        >
+                                            <label className="flex flex-col gap-1">
+                                                <Input
+                                                    aria-label={m.nameLabel.replace(
+                                                        "{index}",
+                                                        String(index + 1)
+                                                    )}
+                                                    value={row.label}
+                                                    disabled={!editable}
+                                                    className="h-7 w-28 text-xs"
+                                                    onChange={(e) =>
+                                                        updateLabel(
+                                                            index,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                                <Input
+                                                    aria-label={m.scoreLabel.replace(
+                                                        "{name}",
+                                                        row.label
+                                                    )}
+                                                    type="number"
+                                                    step="any"
+                                                    value={row.score}
+                                                    disabled={!editable}
+                                                    placeholder="—"
+                                                    className="bg-background h-12 w-28 text-center text-2xl font-semibold tabular-nums"
+                                                    onChange={(e) =>
+                                                        updateScore(
+                                                            index,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </label>
+                                            {scores.length > 2 ? (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-label={`${t.remove} ${index + 1}`}
+                                                    disabled={!editable}
+                                                    onClick={() => {
+                                                        setScores(
+                                                            scores.filter(
+                                                                (_, i) =>
+                                                                    i !== index
+                                                            )
+                                                        )
+                                                        setDirty(true)
+                                                    }}
+                                                >
+                                                    −
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             <div className="space-y-2">
-                                <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                <div className="text-sm font-medium">
                                     {m.source}
                                 </div>
-                                <div className="border-border/60 bg-muted/30 flex flex-wrap items-center gap-3 rounded-xl border px-3 py-2.5">
+                                <div className="border-border/70 flex flex-wrap items-center gap-3 rounded-xl border px-3 py-2.5">
                                     <Server
                                         className="text-muted-foreground size-4 shrink-0"
                                         aria-hidden
                                     />
                                     <span className="flex min-w-0 flex-1 flex-col">
-                                        <span className="text-sm font-medium break-words">
+                                        <span className="text-sm break-words">
                                             {sourceTitle()}
                                         </span>
                                         {sourceDetail() ? (
@@ -571,7 +757,7 @@ function Review({
                                     </select>
                                 ) : null}
                                 {current ? (
-                                    <p className="text-muted-foreground text-xs">
+                                    <p className="text-muted-foreground text-sm">
                                         {m.attribution
                                             .replace(
                                                 "{linked}",
@@ -581,9 +767,42 @@ function Review({
                                                 "{unlinked}",
                                                 String(unlinkedPlayers ?? 0)
                                             )}
+                                        {playersHref ? (
+                                            <>
+                                                {" "}
+                                                <Link
+                                                    href={playersHref}
+                                                    className="text-foreground underline underline-offset-2"
+                                                >
+                                                    {m.showPlayers}
+                                                </Link>
+                                            </>
+                                        ) : null}
                                     </p>
                                 ) : null}
                             </div>
+
+                            {!reviewed && effects.length > 0 ? (
+                                <div className="bg-muted/50 space-y-2 rounded-xl px-4 py-3">
+                                    <div className="text-sm font-semibold">
+                                        {m.afterConfirm}
+                                    </div>
+                                    <ul className="space-y-1.5 text-sm">
+                                        {effects.map((effect) => (
+                                            <li
+                                                key={effect.text}
+                                                className="flex items-start gap-2"
+                                            >
+                                                <effect.icon
+                                                    aria-hidden="true"
+                                                    className="text-muted-foreground mt-0.5 size-4 shrink-0"
+                                                />
+                                                {effect.text}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : null}
 
                             {reviewed ? (
                                 <label className="block space-y-1 text-sm">
@@ -605,7 +824,7 @@ function Review({
                                 </label>
                             ) : null}
 
-                            <div className="flex flex-wrap justify-end gap-2">
+                            <div className="border-border/70 flex flex-wrap justify-end gap-2 border-t pt-4">
                                 {reviewed ? (
                                     <Button
                                         className="rounded-xl"
@@ -639,7 +858,7 @@ function Review({
                                             disabled={!editable}
                                             onClick={() => run("confirm")}
                                         >
-                                            <CheckCircle2 className="size-4" />
+                                            <Check className="size-4" />
                                             {m.confirm.replace(
                                                 "{score}",
                                                 confirmScore
@@ -659,7 +878,7 @@ function Review({
 
                 <aside
                     aria-labelledby={`${heading}-history`}
-                    className="border-border/60 bg-card h-fit space-y-3 rounded-2xl border p-4 sm:p-5"
+                    className="border-border/70 bg-card h-fit space-y-4 rounded-2xl border p-5"
                 >
                     <h2
                         id={`${heading}-history`}
@@ -683,14 +902,12 @@ function Review({
                                         className={cn(
                                             "mt-1.5 size-2 shrink-0 rounded-full",
                                             revision.status === "provisional"
-                                                ? "bg-muted-foreground/60"
-                                                : "bg-primary"
+                                                ? "bg-amber-500"
+                                                : "bg-emerald-500"
                                         )}
                                     />
                                     <span className="flex min-w-0 flex-col text-sm">
-                                        <span className="font-medium">
-                                            {revisionTitle(revision)}
-                                        </span>
+                                        <span>{revisionTitle(revision)}</span>
                                         <span className="text-muted-foreground text-xs">
                                             {m.historyAt
                                                 .replace(
@@ -719,9 +936,7 @@ function Review({
                                         className="border-muted-foreground/50 mt-1.5 size-2 shrink-0 rounded-full border"
                                     />
                                     <span className="flex flex-col text-sm">
-                                        <span className="font-medium">
-                                            {m.historyNext}
-                                        </span>
+                                        <span>{m.historyNext}</span>
                                         <span className="text-muted-foreground text-xs">
                                             {m.historyNextDetail}
                                         </span>
@@ -730,8 +945,8 @@ function Review({
                             ) : null}
                         </ol>
                     )}
-                    <p className="text-muted-foreground border-border/60 border-t pt-3 text-xs">
-                        {m.correctionNote}
+                    <p className="text-muted-foreground border-border/70 border-t pt-3 text-sm">
+                        {correctionNote}
                     </p>
                 </aside>
             </div>

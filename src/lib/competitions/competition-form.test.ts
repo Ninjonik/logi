@@ -41,6 +41,7 @@ const stored: CompetitionFixtureView = {
     id: "f1",
     divisionId: "d1",
     phase: "playoff",
+    round: 2,
     sideA: team("t1"),
     sideB: team("guild:g1", true),
     scheduledAt: null,
@@ -54,6 +55,7 @@ test("the fixture form starts from a stored fixture or a scheduled league defaul
     assert.deepEqual(fixtureFormValues(null, "d2"), {
         divisionId: "d2",
         phase: "league",
+        round: "",
         sideATeamId: "",
         sideBTeamId: "",
         scheduledAt: "",
@@ -65,6 +67,7 @@ test("the fixture form starts from a stored fixture or a scheduled league defaul
     assert.deepEqual(fixtureFormValues(stored, "d2"), {
         divisionId: "d1",
         phase: "playoff",
+        round: "2",
         sideATeamId: "t1",
         sideBTeamId: "",
         scheduledAt: "",
@@ -72,12 +75,18 @@ test("the fixture form starts from a stored fixture or a scheduled league defaul
         scoreA: "5",
         scoreB: "0",
     })
+    // A new fixture starts in the phase and round being viewed.
+    const fresh = fixtureFormValues(null, "d1", { phase: "playoff", round: 3 })
+    assert.equal(fresh.phase, "playoff")
+    assert.equal(fresh.round, "3")
+    assert.equal(fixtureFormValues({ ...stored, round: null }, "d1").round, "")
 })
 
 test("the fixture form produces a domain-valid write or nothing", () => {
     const values: FixtureFormValues = {
         divisionId: "d1",
         phase: "league",
+        round: "",
         sideATeamId: "t1",
         sideBTeamId: "t2",
         scheduledAt: "",
@@ -94,7 +103,11 @@ test("the fixture form produces a domain-valid write or nothing", () => {
         status: "final",
         scoreA: 3,
         scoreB: 2,
+        round: null,
     })
+    assert.equal(fixtureFormInput({ ...values, round: " 4 " })?.round, 4)
+    assert.equal(fixtureFormInput({ ...values, round: "0" }), null)
+    assert.equal(fixtureFormInput({ ...values, round: "1.5" }), null)
     assert.equal(fixtureFormInput({ ...values, scoreB: "" }), null)
     assert.equal(fixtureFormInput({ ...values, scoreB: "2.5" }), null)
     assert.equal(fixtureFormInput({ ...values, sideBTeamId: "t1" }), null)

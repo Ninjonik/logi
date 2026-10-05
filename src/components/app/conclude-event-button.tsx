@@ -27,6 +27,7 @@ export function ConcludeEventButton({
     dictionary,
     summary,
     label,
+    primary = false,
 }: {
     serverId: string
     eventId: string
@@ -35,6 +36,8 @@ export function ConcludeEventButton({
     summary: RosterScoreChangeSummary
     /** Button text; defaults to the plain "conclude" action. */
     label?: string
+    /** The main action of the page (design E3): filled, without an icon. */
+    primary?: boolean
 }) {
     const router = useRouter()
     const t = dictionary.matchDetail.close
@@ -72,11 +75,11 @@ export function ConcludeEventButton({
         <ConfirmActionDialog
             trigger={
                 <Button
-                    variant="outline"
+                    variant={primary ? "default" : "outline"}
                     className="rounded-xl"
                     disabled={disabled}
                 >
-                    <SquareCheckBig className="size-4" />
+                    {primary ? null : <SquareCheckBig className="size-4" />}
                     {label ?? dictionary.event.conclude}
                 </Button>
             }

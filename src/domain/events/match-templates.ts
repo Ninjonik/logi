@@ -1,5 +1,7 @@
 import type { GameId } from "@/domain/games/game"
 
+import { normalizeAttendanceReminderHours } from "./scheduled-job-policy"
+import { MAX_SIGNUP_GROUP_LIMIT } from "./upsert-policy"
 import type { EventKind } from "./types"
 
 export const SIGNUP_STATUSES = [
@@ -50,6 +52,14 @@ export type MatchTemplate = {
     createForumChannel: boolean
     createSquadVoiceChannels: boolean
     topicPresetId?: string
+    /** Caps of offered groups; a full group gives the player a reserve place. */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    /** Attendance DM offsets in hours before the meeting; missing means all four. */
+    attendanceReminderHours?: number[]
+    /** Missing means the bot creates attendee and reserve roles. */
+    createParticipantRoles?: boolean
+    /** The squad preset a match's roster starts from. */
+    squadPresetId?: string
 }
 
 export type MatchTemplateError =
@@ -99,6 +109,20 @@ export function normalizeMatchTemplates(
         if (template.pingMode === "roles" && !pingRoleIds.length)
             return { ok: false, error: "missing_ping_roles", index }
         const isMatch = template.kind === "match"
+        const limits = new Map<string, number>()
+        for (const limit of template.signupGroupLimits ?? []) {
+            const groupId = limit.groupId.trim()
+            if (
+                isMatch &&
+                groupId &&
+                (!template.signupGroupIds ||
+                    template.signupGroupIds.includes(groupId)) &&
+                Number.isInteger(limit.max) &&
+                limit.max >= 1 &&
+                limit.max <= MAX_SIGNUP_GROUP_LIMIT
+            )
+                limits.set(groupId, limit.max)
+        }
         normalized.push({
             id,
             name,
@@ -128,6 +152,16 @@ export function normalizeMatchTemplates(
             createSquadVoiceChannels: template.createSquadVoiceChannels,
             topicPresetId: isMatch
                 ? template.topicPresetId?.trim() || undefined
+                : undefined,
+            signupGroupLimits: limits.size
+                ? [...limits].map(([groupId, max]) => ({ groupId, max }))
+                : undefined,
+            attendanceReminderHours: normalizeAttendanceReminderHours(
+                template.attendanceReminderHours
+            ),
+            createParticipantRoles: template.createParticipantRoles,
+            squadPresetId: isMatch
+                ? template.squadPresetId?.trim() || undefined
                 : undefined,
         })
     }

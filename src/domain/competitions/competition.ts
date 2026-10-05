@@ -23,6 +23,8 @@ export const COMPETITION_DIVISION_LIMIT = 50
 export const COMPETITION_REGISTRATION_LIMIT = 500
 export const COMPETITION_FIXTURE_LIMIT = 2000
 export const FIXTURE_SCORE_MAX = 999
+/** Highest round number a fixture can carry ("1. kolo" … "99. kolo"). */
+export const FIXTURE_ROUND_MAX = 99
 
 export const FIXTURE_PHASES = ["league", "playoff", "relegation"] as const
 export type FixturePhase = (typeof FIXTURE_PHASES)[number]
@@ -133,10 +135,14 @@ export const registrationUpdateSchema = z
 export type RegistrationUpdateInput = z.infer<typeof registrationUpdateSchema>
 
 const scoreSchema = z.number().int().min(0).max(FIXTURE_SCORE_MAX)
+/** Optional round number; fixtures saved before rounds existed have none. */
+export const fixtureRoundSchema = z.number().int().min(1).max(FIXTURE_ROUND_MAX)
 
 /**
  * A complete fixture write (create or edit). Final and forfeit results need
- * both scores; a scheduled fixture never keeps a score.
+ * both scores; a scheduled fixture never keeps a score. `round` is optional:
+ * a number or `null` sets it, leaving it out keeps the stored round on an
+ * edit (so callers that predate rounds never clear one).
  */
 export const fixtureInputSchema = z
     .strictObject({
@@ -148,6 +154,7 @@ export const fixtureInputSchema = z
         status: z.enum(FIXTURE_STATUSES),
         scoreA: scoreSchema.nullable().default(null),
         scoreB: scoreSchema.nullable().default(null),
+        round: fixtureRoundSchema.nullable().optional(),
     })
     .superRefine((value, ctx) => {
         if (value.sideATeamId === value.sideBTeamId)
@@ -420,6 +427,8 @@ export type PublicCompetitionFixture = {
     scoreB?: number
     status: FixtureStatus
     scheduledAt?: string
+    /** Round number within the phase; missing on fixtures saved before rounds. */
+    round?: number
     eventId?: string
 }
 /** Public pages and `GET /api/v1/public/competitions/{slug}`; published competitions only. */

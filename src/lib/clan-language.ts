@@ -14,6 +14,9 @@ type ClanDiscordMessages = {
         decline: string
         openRegistrationChannel: string
         openEventForum: string
+        confirmShort: string
+        cannotCome: string
+        matchDetail: string
     }
     interaction: {
         unableToLoadEventContext: string
@@ -28,6 +31,8 @@ type ClanDiscordMessages = {
         signupUpdatedWithType: string
         signupRemovedWithType: string
         markedNotAttending: string
+        /** `{group}`: a capped signup group that was already full. */
+        groupFullReserve: string
         changeSignupSelection: string
         attendanceNotOpen: string
         rosterNotPublished: string
@@ -45,6 +50,8 @@ type ClanDiscordMessages = {
         eventThread: string
         openInDiscord: string
         upcomingTitle: string
+        upcomingTitleToday: string
+        upcomingTitleTomorrow: string
         upcomingHint: string
         start: string
     }
@@ -79,6 +86,8 @@ type ClanDiscordMessages = {
         meetingAt: string
         registrationCloses: string
         signedUpTotal: string
+        withoutGroup: string
+        managedShort: string
     }
     forum: {
         matchInformation: string
@@ -104,6 +113,29 @@ type ClanDiscordMessages = {
         server: string
         serverPassword: string
         passwordNotice: string
+    }
+    attendanceDecline: {
+        modalTitle: string
+        reasonLabel: string
+        reasonPlaceholder: string
+        defaultReason: string
+        saved: string
+        alreadySaved: string
+        tooLate: string
+    }
+    factions: { allies: string; axis: string }
+    mapLabels: {
+        times: Record<
+            | "day"
+            | "morning"
+            | "dusk"
+            | "evening"
+            | "night"
+            | "rain"
+            | "overcast",
+            string
+        >
+        modes: Record<"offensive" | "skirmish" | "koth", string>
     }
     rosterSummary: {
         title: string
@@ -445,6 +477,9 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             decline: "Can't make it",
             openRegistrationChannel: "Open registration channel",
             openEventForum: "Open event forum",
+            confirmShort: "I'll be there",
+            cannotCome: "Can't make it",
+            matchDetail: "Match details",
         },
         interaction: {
             unableToLoadEventContext: "Unable to load event context.",
@@ -465,6 +500,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "You are signed up as {type}.",
             signupRemovedWithType: "Removed signup from {type}.",
             markedNotAttending: "Marked as not attending.",
+            groupFullReserve:
+                "{group} is full, so you are signed up as a reserve without a group.",
             changeSignupSelection:
                 "You are already signed up. Use the selector below only to change your role; choosing the same role keeps your signup.",
             attendanceNotOpen:
@@ -484,6 +521,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             eventThread: "Event thread",
             openInDiscord: "open in Discord",
             upcomingTitle: "You're playing {event}",
+            upcomingTitleToday: "You're playing {event} today",
+            upcomingTitleTomorrow: "You're playing {event} tomorrow",
             upcomingHint: "Confirm so command knows who to count on.",
             start: "start",
         },
@@ -518,6 +557,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             meetingAt: "meeting {time}",
             registrationCloses: "sign-ups close {time}",
             signedUpTotal: "Signed up {count}",
+            withoutGroup: "No group",
+            managedShort: "Managed in Logi",
         },
         forum: {
             matchInformation: "Match information",
@@ -545,6 +586,33 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             server: "Server: {server}",
             serverPassword: "password {password}",
             passwordNotice: "Only players on the roster can see the password.",
+        },
+        attendanceDecline: {
+            modalTitle: "Can't make it",
+            reasonLabel: "Reason (only the organisers see it)",
+            reasonPlaceholder: "e.g. ill, working late",
+            defaultReason: "Can't make it",
+            saved: "Thanks, the organisers know you can't make it and will fill your slot.",
+            alreadySaved: "The organisers already know you can't make it.",
+            tooLate:
+                "The match has already started. Tell the organisers directly.",
+        },
+        factions: { allies: "Allies", axis: "Axis" },
+        mapLabels: {
+            times: {
+                day: "day",
+                morning: "morning",
+                dusk: "dusk",
+                evening: "evening",
+                night: "night",
+                rain: "rain",
+                overcast: "overcast",
+            },
+            modes: {
+                offensive: "offensive",
+                skirmish: "skirmish",
+                koth: "KOTH",
+            },
         },
         rosterSummary: {
             title: "Roster · {event}",
@@ -1024,11 +1092,14 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             acknowledgeAttendance: "Potvrdím účast",
             attend: "Zúčastním se",
             generalSignup: "Přihlásit se",
-            addToCalendar: "Přidat do kalendáře",
+            addToCalendar: "Do kalendáře",
             viewFullRoster: "Celá soupiska na webu",
             decline: "Nepřijdu",
             openRegistrationChannel: "Otevřít registrační kanál",
             openEventForum: "Otevřít fórum akce",
+            confirmShort: "Potvrdím",
+            cannotCome: "Nemůžu",
+            matchDetail: "Detail zápasu",
         },
         interaction: {
             signupStatusSignedUp:
@@ -1052,6 +1123,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "Jste přihlášeni jako {type}.",
             signupRemovedWithType: "Odhlášeno z {type}.",
             markedNotAttending: "Označeno jako neúčast.",
+            groupFullReserve:
+                "Skupina {group} je plná, proto jsi přihlášen jako záloha bez skupiny.",
             changeSignupSelection:
                 "Už jste přihlášeni. Výběr níže použijte jen pro změnu role;",
             attendanceNotOpen: "Potvrzování účasti teď není otevřené.",
@@ -1069,6 +1142,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             eventThread: "Vlákno akce",
             openInDiscord: "otevřít na Discordu",
             upcomingTitle: "Hraješ {event}",
+            upcomingTitleToday: "Dnes hraješ {event}",
+            upcomingTitleTomorrow: "Zítra hraješ {event}",
             upcomingHint: "Potvrď, ať velení ví, s kým počítat.",
             start: "start",
         },
@@ -1104,6 +1179,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             meetingAt: "sraz {time}",
             registrationCloses: "přihlášky končí {time}",
             signedUpTotal: "Přihlášeno {count}",
+            withoutGroup: "Bez skupiny",
+            managedShort: "Spravováno v Logi",
         },
         forum: {
             matchInformation: "Informace o zápasu",
@@ -1131,6 +1208,32 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             server: "Server: {server}",
             serverPassword: "heslo {password}",
             passwordNotice: "Heslo vidí jen hráči na soupisce.",
+        },
+        attendanceDecline: {
+            modalTitle: "Nemůžu přijít",
+            reasonLabel: "Důvod (uvidí jen velení)",
+            reasonPlaceholder: "Např. nemoc, práce",
+            defaultReason: "Nemůže přijít",
+            saved: "Díky, velení ví, že nedorazíš, a tvoje místo obsadí.",
+            alreadySaved: "Velení už ví, že nedorazíš.",
+            tooLate: "Zápas už začal. Napiš velení přímo.",
+        },
+        factions: { allies: "Spojenci", axis: "Osa" },
+        mapLabels: {
+            times: {
+                day: "den",
+                morning: "ráno",
+                dusk: "soumrak",
+                evening: "večer",
+                night: "noc",
+                rain: "déšť",
+                overcast: "zataženo",
+            },
+            modes: {
+                offensive: "ofenziva",
+                skirmish: "skirmish",
+                koth: "KOTH",
+            },
         },
         rosterSummary: {
             title: "Soupiska · {event}",
@@ -1442,11 +1545,14 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             attend: "Teilnehmen",
             generalSignup: "Anmelden",
             checkSignup: "Meine Anmeldung",
-            addToCalendar: "Zum Kalender hinzufügen",
+            addToCalendar: "Zum Kalender",
             viewFullRoster: "Ganze Aufstellung im Web",
             decline: "Ich komme nicht",
             openRegistrationChannel: "Anmeldekanal öffnen",
             openEventForum: "Event-Forum öffnen",
+            confirmShort: "Bin dabei",
+            cannotCome: "Kann nicht",
+            matchDetail: "Spieldetails",
         },
         interaction: {
             unableToLoadEventContext:
@@ -1468,6 +1574,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             signupUpdatedWithType: "Sie sind als {type} angemeldet.",
             signupRemovedWithType: "Anmeldung für {type} entfernt.",
             markedNotAttending: "Als nicht teilnehmend markiert.",
+            groupFullReserve:
+                "{group} ist voll, deshalb bist du als Reserve ohne Gruppe angemeldet.",
             changeSignupSelection:
                 "Sie sind bereits angemeldet. Nutzen Sie die Auswahl unten nur, um Ihre Rolle zu ändern; bei gleicher Rolle bleibt Ihre Anmeldung bestehen.",
             attendanceNotOpen:
@@ -1489,6 +1597,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             eventThread: "Event-Thread",
             openInDiscord: "in Discord öffnen",
             upcomingTitle: "Du spielst {event}",
+            upcomingTitleToday: "Heute spielst du {event}",
+            upcomingTitleTomorrow: "Morgen spielst du {event}",
             upcomingHint:
                 "Bestätige, damit die Führung weiß, mit wem sie rechnen kann.",
             start: "Start",
@@ -1525,6 +1635,8 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             meetingAt: "Treffen {time}",
             registrationCloses: "Anmeldung endet {time}",
             signedUpTotal: "Angemeldet {count}",
+            withoutGroup: "Ohne Gruppe",
+            managedShort: "Verwaltet in Logi",
         },
         forum: {
             matchInformation: "Match-Informationen",
@@ -1553,6 +1665,33 @@ const clanDiscordMessages: Record<ClanLanguage, ClanDiscordMessages> = {
             serverPassword: "Passwort {password}",
             passwordNotice:
                 "Das Passwort sehen nur Spieler auf der Aufstellung.",
+        },
+        attendanceDecline: {
+            modalTitle: "Ich kann nicht kommen",
+            reasonLabel: "Grund (sieht nur die Führung)",
+            reasonPlaceholder: "z. B. krank, Arbeit",
+            defaultReason: "Kann nicht kommen",
+            saved: "Danke, die Führung weiß, dass du nicht kommst, und besetzt deinen Platz neu.",
+            alreadySaved: "Die Führung weiß schon, dass du nicht kommst.",
+            tooLate:
+                "Das Match hat schon begonnen. Sag der Führung direkt Bescheid.",
+        },
+        factions: { allies: "Alliierte", axis: "Achsenmächte" },
+        mapLabels: {
+            times: {
+                day: "Tag",
+                morning: "Morgen",
+                dusk: "Dämmerung",
+                evening: "Abend",
+                night: "Nacht",
+                rain: "Regen",
+                overcast: "bewölkt",
+            },
+            modes: {
+                offensive: "Offensive",
+                skirmish: "Skirmish",
+                koth: "KOTH",
+            },
         },
         rosterSummary: {
             title: "Aufstellung · {event}",

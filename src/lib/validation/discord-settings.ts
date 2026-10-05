@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+import {
+    MESSAGE_ICON_DENSITIES,
+    normalizeAccentColor,
+} from "@/domain/discord-messages/message-style"
 import { supportedTimezones } from "@/lib/discord-timezones"
 import { supportedClanLanguages } from "@/lib/clan-language"
 
@@ -57,6 +61,29 @@ const statsSettingsSchema = z.object({
         "Channel IDs must be 17 to 20 digits."
     ),
 })
+
+/**
+ * The clan's message style; the submitted style replaces the stored one. A
+ * blank or `null` colour means Logi amber.
+ */
+const messageStyleSchema = z
+    .object({
+        accentColor: z
+            .union([
+                z
+                    .string()
+                    .trim()
+                    .regex(
+                        /^(#[0-9a-f]{6})?$/i,
+                        "The clan colour must be a hex colour such as #E8A33D."
+                    ),
+                z.null(),
+            ])
+            .optional()
+            .transform((value) => normalizeAccentColor(value)),
+        iconDensity: z.enum(MESSAGE_ICON_DENSITIES),
+    })
+    .strict()
 
 const playerStatsServerSchema = z.object({
     token: z.string().trim().min(1, "Server stats token is required."),
@@ -134,6 +161,7 @@ const membershipCategorySchema = ticketCategorySchema.extend({
         )
         .max(25),
     assignmentType: z.enum(["member", "reserve_member", "mercenary"]),
+    autoAssignRecruitOnApply: z.boolean().optional(),
 })
 
 const ticketSettingsSchema = z
@@ -253,6 +281,7 @@ const membershipSettingsSchema = z
             .optional()
             .transform((value) => value || undefined),
         autoAssignRecruitOnApply: z.boolean(),
+        roleSyncEnabled: z.boolean().optional(),
         inviteSupportMembersIndividually: z.boolean().optional(),
         rosterScoreSettings: rosterScoreSettingsSchema.optional(),
         categories: z
@@ -378,6 +407,7 @@ export const discordSettingsPatchSchema = z.object({
     ticketSettings: ticketSettingsSchema.optional(),
     membershipSettings: membershipSettingsSchema.optional(),
     statsSettings: statsSettingsSchema.optional(),
+    messageStyle: messageStyleSchema.optional(),
     gameOverrides: z
         .object({
             hell_let_loose: gameDiscordOverridesSchema.optional(),

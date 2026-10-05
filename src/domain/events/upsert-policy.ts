@@ -6,6 +6,7 @@ import type {
     EventStatus,
     SignupMembershipStatus,
 } from "./types"
+import { normalizeAttendanceReminderHours } from "./scheduled-job-policy"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import { normalizeParticipants } from "./participants"
 import type { GameId } from "@/domain/games/game"
@@ -59,6 +60,53 @@ export type EventUpsertInput = {
     }
     /** Resolved at the write boundary; never raw client input. Undefined preserves, [] clears. */
     matchTeams?: MatchTeamAssignment[]
+    /**
+     * Settings only the new-match flow sets (from the match template). They
+     * are written when an event is created or a draft is published; edits
+     * through the older form never touch them.
+     */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    attendanceReminderHours?: number[]
+    createParticipantRoles?: boolean
+    squadPresetId?: string
+}
+
+export const MAX_SIGNUP_GROUP_LIMIT = 100
+
+/**
+ * The creation-only settings, tidied: caps only for offered groups of a
+ * match, reminder offsets from the supported set (largest first) and the
+ * roster's squad preset for matches.
+ */
+export function buildEventCreationSettings(input: EventUpsertInput) {
+    const kind = input.kind ?? "match"
+    const offered = new Set(
+        kind === "match" ? normalizeOptionalArray(input.signupGroupIds) : []
+    )
+    const limits = new Map<string, number>()
+    for (const limit of normalizeOptionalArray(input.signupGroupLimits)) {
+        const groupId = limit.groupId.trim()
+        if (
+            offered.has(groupId) &&
+            Number.isInteger(limit.max) &&
+            limit.max >= 1 &&
+            limit.max <= MAX_SIGNUP_GROUP_LIMIT
+        )
+            limits.set(groupId, limit.max)
+    }
+    return {
+        signupGroupLimits: limits.size
+            ? [...limits].map(([groupId, max]) => ({ groupId, max }))
+            : undefined,
+        attendanceReminderHours: normalizeAttendanceReminderHours(
+            input.attendanceReminderHours
+        ),
+        createParticipantRoles: input.createParticipantRoles,
+        squadPresetId:
+            kind === "match"
+                ? input.squadPresetId?.trim() || undefined
+                : undefined,
+    }
 }
 
 function trimOptional(value: string | undefined) {
@@ -136,7 +184,9 @@ export function buildEventBasePayload(input: EventUpsertInput) {
         signupReminderStatuses:
             kind === "match"
                 ? input.signupReminderStatuses === undefined
-                    ? ["member"]
+                    ? (["member"] as Array<
+                          "recruit" | "member" | "reserve_member"
+                      >)
                     : normalizeOptionalArray(
                           input.signupReminderStatuses
                       ).filter(
@@ -155,7 +205,10 @@ export function buildEventBasePayload(input: EventUpsertInput) {
 
 export function buildCreateEventRecord(input: EventUpsertInput, now: Date) {
     const nowIso = now.toISOString()
-    const base = buildEventBasePayload(input)
+    const base = {
+        ...buildEventBasePayload(input),
+        ...buildEventCreationSettings(input),
+    }
     const derivedStatus: EventStatus = deriveEventStatus(
         {
             registrationEnd: input.registrationEnd,

@@ -32,3 +32,28 @@ test("unknown fields, fractions and foreign role ids are refused", () => {
         )
     assert.equal(matchTemplatesSaveSchema.safeParse({}).success, false)
 })
+
+test("caps, reminder offsets and roster settings are checked", () => {
+    assert.ok(
+        matchTemplatesSaveSchema.safeParse({
+            templates: [
+                {
+                    ...template,
+                    signupGroupLimits: [{ groupId: "g1", max: 6 }],
+                    attendanceReminderHours: [24, 12],
+                    createParticipantRoles: false,
+                    squadPresetId: "preset_1",
+                },
+            ],
+        }).success
+    )
+    for (const bad of [
+        { ...template, signupGroupLimits: [{ groupId: "g1", max: 0 }] },
+        { ...template, signupGroupLimits: [{ groupId: "g1", max: 6, x: 1 }] },
+        { ...template, attendanceReminderHours: [5] },
+    ])
+        assert.equal(
+            matchTemplatesSaveSchema.safeParse({ templates: [bad] }).success,
+            false
+        )
+})

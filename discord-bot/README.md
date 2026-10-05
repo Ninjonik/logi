@@ -13,18 +13,24 @@ See the [operator wiki](../content/configuration/league-tracking.mdx) and [imple
 ## Native match team cards
 
 Native match events can carry `matchTeams`: server-captured team snapshots
-(name, short code, logo URL) with a slot and optional side. The event embed adds
-one `🛡️ Teams` line next to the side line, ordered by slot as
-`Name [CODE] (Side)` joined with `vs`; labels are Markdown-escaped, mentions are
-broken with zero-width spaces and no URL is ever written as text. The event
-information card (the separate event-info message, or the single announcement
-when no event-info room is configured) also shows one small logo card per team
-whose snapshot logo is an http(s) URL, at most two for HLL and three for
-Wardogs: an author-icon embed in the main embed colour for legacy embed
-messages, or a thumbnail section inside the Components V2 card, which cannot
-carry embeds. Registration cards keep only the text line. Sign-up components,
-map/banner details, rooms and durable message identity are unchanged, and
-events without assignments render exactly as before.
+(name, short code, logo URL) with a slot and optional side. The event card's
+first line lists them by slot as `emblem CODE Side`, joined with `vs` (the name
+when there is no short code; HLL sides in the clan language). Labels are
+Markdown-escaped, mentions are broken with zero-width spaces and no URL is ever
+written as text. Without teams the line shows the clan's own side. Until the
+roster is published, the event information card (the separate event-info
+message, or the single announcement when no event-info room is configured)
+also shows one small logo card per team whose snapshot logo is an http(s) URL,
+at most two for HLL and three for Wardogs: an author-icon embed in the main
+embed colour for legacy embed messages, or a thumbnail section inside the
+Components V2 card, which cannot carry embeds. Registration cards keep only the
+text line, and the published roster card shows only the roster.
+
+Faction emblems are the application emoji installed with
+`scripts/provision-discord-panel-emoji.ts` (read through
+`src/runtime/faction-emoji.ts`, cached for an hour), else fixed markers: 🟦
+Allies, 🟥 Axis and `◈` for a Wardogs faction
+(`src/domain/discord-messages/faction-emblem.ts`).
 
 ## Message style and server passwords
 
@@ -42,6 +48,28 @@ event-info and forum cards, scheduled events, the public roster image). Only
 `src/interactions/roster-assignment.ts` shows it, ephemerally, to players on the
 published roster. Bump `eventInfoMessageRenderVersion` when changing what public
 event messages or the roster image contain, so existing messages are re-rendered.
+
+The announcement counts sign-ups instead of listing names: `Signed up 23 ·
+Infantry 15 · Tanks 6/6`. A group shows `count/limit` when the event carries
+`signupGroupLimits: Array<{ groupId, max }>`; the field is read defensively
+(`src/domain/discord-messages/signup-counts.ts`), so a missing or malformed
+value shows plain counts. The bot does not enforce the limit.
+
+The attendance reminder DM offers **I'll be there**, **Running late** and
+**Can't make it**. The last uses its own custom ID prefix
+(`attendance-decline:<eventId>`, form `attendance-decline-modal:<eventId>`), so
+an older bot never treats it as a confirmation. It opens an optional reason form
+and calls `rosters:declineAttendance` (internal secret, the event's own guild):
+the player must be on the published roster and the game must not have started.
+It saves an absence notice, withdraws the attendance confirmation and appends a
+`declined` sign-up activity with the squad and role; a repeated identical
+decline writes nothing. Players with an absence notice get no further reminders.
+
+Reviewed result cards read `card` facts from `discordPublicPanels:resultsPage`
+(category, the clan's side, team codes, the confirming manager's name and
+whether a public match page exists). The outcome comes from
+`src/domain/discord-messages/match-result.ts` and is left out when the clan's
+side or a score is unknown; **Match details** appears only with a public page.
 
 ## Team request decision DMs
 
@@ -147,6 +175,11 @@ attempt instead of continuing with stale Discord permissions.
 - `src/sync.ts` runs the polling loop and guild/event sync
 - `src/interactions.ts` handles signup and attendance button actions
 - `src/message-builders.ts` builds embeds, buttons, and reminder components
+- `src/manual-reminders.ts` watches the reminders managers ask for from the
+  match page (`eventReminders:listPending`), claims one at a time and sends the
+  sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
+  players who answered or confirmed in the meantime are skipped
+- `src/interactions/attendance-decline.ts` handles **Can't make it** from reminder DMs
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data

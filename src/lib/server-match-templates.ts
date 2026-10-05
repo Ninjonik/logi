@@ -8,7 +8,7 @@ import type {
 import { getInternalAuthSecret } from "@/lib/env"
 
 const saveMatchTemplatesReference = makeFunctionReference<"mutation">(
-    "guilds:saveMatchTemplates"
+    "matchTemplates:save"
 )
 
 export type SaveMatchTemplatesResult =

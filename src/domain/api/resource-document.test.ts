@@ -37,3 +37,17 @@ test("resource document checks require each resource's persisted identity fields
         false
     )
 })
+
+test("an unpublished draft event is not an API document", () => {
+    const event = {
+        name: "Draft",
+        registrationEnd: "2026-10-10T18:00:00.000Z",
+        meetingStart: "2026-10-11T18:00:00.000Z",
+        gameEnd: "2026-10-11T20:00:00.000Z",
+    }
+    assert.equal(isClanApiResourceDocument("events", event), true)
+    assert.equal(
+        isClanApiResourceDocument("events", { ...event, isDraft: true }),
+        false
+    )
+})

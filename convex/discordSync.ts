@@ -8,10 +8,11 @@ import {
     normalizeUserDoc,
 } from "./discord_shared"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
+import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
+import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { applyGatewayObservation } from "./memberObservations"
 import { mutation } from "./integrationMutation"
-import { getGuildDiscordId } from "./identity"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -54,7 +55,8 @@ export const listSyncPayloads = query({
             const guildGroups = groups
                 .filter((group) => group.guildId === config.guildId)
                 .map(normalizeDoc)
-            const guildEvents = events
+            // Drafts are not announced: the bot never sees them.
+            const guildEvents = withoutDrafts(events)
                 .filter((event) => event.guildId === config.guildId)
                 .map(normalizeEventDoc)
             const guildCalendarItems = calendarItems
@@ -196,7 +198,7 @@ export const listEventSyncIndex = query({
         ])
 
         return {
-            events: events.map((event) => {
+            events: withoutDrafts(events).map((event) => {
                 const normalized = normalizeEventDoc(event)
                 return {
                     id: normalized.id,
@@ -220,7 +222,7 @@ export const getEventSyncContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event) {
+        if (!event || isDraftEvent(event)) {
             return null
         }
 
@@ -255,7 +257,11 @@ export const getEventSignupContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event || (args.guildId && event.guildId !== args.guildId)) {
+        if (
+            !event ||
+            isDraftEvent(event) ||
+            (args.guildId && event.guildId !== args.guildId)
+        ) {
             return null
         }
         const guildId = event.guildId
@@ -336,6 +342,15 @@ export const getEventInteractionContext = query({
         if (!config) {
             return null
         }
+        // The event category colour keeps private replies in the card's colour.
+        const guild = await getGuildByDiscordId(ctx, event.guildId)
+        const matchType = event.matchType?.trim().toLowerCase()
+        const categoryColor =
+            (matchType &&
+                guild?.eventCategories?.find(
+                    (category) => category.id.trim().toLowerCase() === matchType
+                )?.color) ||
+            null
 
         return {
             config: normalizeConfigDoc(
@@ -344,6 +359,7 @@ export const getEventInteractionContext = query({
             event: normalizeEventDoc(event),
             groups: groups.map(normalizeDoc),
             roster: roster ? normalizeDoc(roster) : null,
+            categoryColor,
         }
     },
 })

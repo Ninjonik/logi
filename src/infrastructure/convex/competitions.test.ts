@@ -535,6 +535,63 @@ test("fixtures need registered teams, keep league games in one division and clea
     )
 })
 
+test("fixture rounds are stored, kept when a write leaves them out, cleared with null and read by administration", async () => {
+    const ctx = setup()
+    const { competitionId, d1 } = await competitionWithDivisions(ctx)
+    await register(ctx, competitionId, "teamDirectory:omen", d1)
+    await register(ctx, competitionId, "teamDirectory:circle", d1)
+    const input = {
+        divisionId: d1,
+        phase: "league",
+        sideATeamId: "teamDirectory:omen",
+        sideBTeamId: "teamDirectory:circle",
+        status: "scheduled",
+    }
+    const created = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input: { ...input, round: 3 },
+    })
+    assert.equal(created.ok, true)
+    const stored = () =>
+        ctx.db.tables.competitionFixtures.find(
+            (row) => row._id === created.fixtureId
+        )!
+    assert.equal(stored().round, 3)
+    const update = (patch: Record<string, unknown>) =>
+        invoke(competitions.updateFixture, ctx, {
+            ...platform,
+            fixtureId: created.fixtureId,
+            input: { ...input, ...patch },
+        })
+    assert.equal((await update({})).ok, true)
+    assert.equal(stored().round, 3)
+    assert.equal((await update({ round: 4 })).ok, true)
+    assert.equal(stored().round, 4)
+    assert.deepEqual(await update({ round: 0 }), {
+        error: "invalid_competition",
+    })
+    const view = await invoke(competitions.adminGet, ctx, {
+        ...platform,
+        competitionId,
+    })
+    assert.equal(view.fixtures[0].round, 4)
+    assert.equal(view.fixtures[0].event, null)
+    assert.equal((await update({ round: null })).ok, true)
+    assert.equal(stored().round, undefined)
+    const unnumbered = await invoke(competitions.createFixture, ctx, {
+        ...platform,
+        competitionId,
+        input,
+    })
+    assert.equal(
+        ctx.db.tables.competitionFixtures.find(
+            (row) => row._id === unnumbered.fixtureId
+        )!.round,
+        undefined
+    )
+})
+
 test("public competitions carry global team IDs, short codes and logos, with legacy rows still readable", async () => {
     const ctx = setup()
     const { competitionId, d1 } = await competitionWithDivisions(ctx)
@@ -616,6 +673,7 @@ test("public competitions carry global team IDs, short codes and logos, with leg
             status: "forfeit",
             scheduledAt: undefined,
             eventId: undefined,
+            round: undefined,
         },
         {
             id: "competitionFixtures:legacy",
@@ -627,6 +685,7 @@ test("public competitions carry global team IDs, short codes and logos, with leg
             status: "scheduled",
             scheduledAt: undefined,
             eventId: undefined,
+            round: undefined,
         },
     ])
     assert.equal(shown.divisions[1].teams.length, 0)
@@ -996,4 +1055,80 @@ test("the ECL seed creates or reuses global catalogue teams instead of placehold
     assert.deepEqual(await invoke(competitions.seedEcl2026, ctx, platform), {
         error: "migration_pending",
     })
+})
+
+test("clan fixture labels name published competitions of the clan's linked matches only", async () => {
+    const ctx = testContext()
+    const competition = (id: string, published?: boolean) =>
+        ctx.db.seed("competitions", {
+            _id: id,
+            slug: id,
+            name: "ECL",
+            season: "2026",
+            published,
+            format: {
+                kind: "league_with_playoffs",
+                standings: "ecl_cap_score",
+            },
+            createdAt: NOW,
+            updatedAt: NOW,
+        })
+    competition("competitions:ecl")
+    competition("competitions:draft", false)
+    const linked = (
+        eventId: string,
+        fixtureId: string,
+        competitionId: string,
+        event: Record<string, unknown> = {},
+        fixtureEventId: string = eventId
+    ) => {
+        ctx.db.seed("events", {
+            _id: eventId,
+            guildId: "guild-a",
+            kind: "match",
+            name: eventId,
+            competitionFixtureId: fixtureId,
+            ...event,
+        })
+        ctx.db.seed("competitionFixtures", {
+            _id: fixtureId,
+            competitionId,
+            phase: "playoff",
+            status: "scheduled",
+            eventId: fixtureEventId,
+            createdAt: NOW,
+            updatedAt: NOW,
+        })
+    }
+    linked("events:a", "competitionFixtures:a", "competitions:ecl")
+    linked("events:hidden", "competitionFixtures:b", "competitions:draft")
+    linked("events:draft", "competitionFixtures:c", "competitions:ecl", {
+        isDraft: true,
+    })
+    linked(
+        "events:stale",
+        "competitionFixtures:d",
+        "competitions:ecl",
+        {},
+        "events:other"
+    )
+    linked("events:other-clan", "competitionFixtures:e", "competitions:ecl", {
+        guildId: "guild-b",
+    })
+    const list = (args: Record<string, unknown> = {}) =>
+        invoke(competitions.listClanFixtureLabels, ctx, {
+            secret,
+            guildId: "guild-a",
+            ...args,
+        })
+    assert.deepEqual(await list(), [
+        { eventId: "events:a", name: "ECL", season: "2026", phase: "playoff" },
+    ])
+    assert.deepEqual(
+        (await list({ guildId: "guild-b" })).map(
+            (row: { eventId: string }) => row.eventId
+        ),
+        ["events:other-clan"]
+    )
+    await assert.rejects(list({ secret: "wrong" }))
 })

@@ -89,6 +89,7 @@ export const membershipCategoryValidator = v.object({
         v.literal("reserve_member"),
         v.literal("mercenary")
     ),
+    autoAssignRecruitOnApply: v.optional(v.boolean()),
 })
 
 export const ticketSettingsValidator = v.object({
@@ -111,6 +112,7 @@ export const membershipSettingsValidator = v.object({
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
+    roleSyncEnabled: v.optional(v.boolean()),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(
         v.object({
@@ -132,6 +134,11 @@ export const statsSettingsValidator = v.object({
     enabled: v.boolean(),
     games: v.object({ hell_let_loose: v.boolean(), wardogs: v.boolean() }),
     defaultShareChannelId: v.optional(v.string()),
+})
+
+export const messageStyleValidator = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
 })
 
 export const playerStatsServerValidator = v.object({

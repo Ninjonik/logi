@@ -20,6 +20,7 @@ export type MatchPhaseDetail =
     | { kind: "createdAt"; at: string }
     | { kind: "opensAt"; at: string }
     | { kind: "closesAt"; at: string }
+    | { kind: "closedAt"; at: string }
     | { kind: "signedUp"; count: number }
     | { kind: "rosterMissing" }
     | { kind: "rosterDraft" }
@@ -100,10 +101,14 @@ export function deriveMatchPhases(
             !registrationOpen && input.registrationStart
                 ? { kind: "opensAt", at: input.registrationStart }
                 : { kind: "createdAt", at: input.createdAt },
+        // While the roster is built the step says when sign-ups closed
+        // (design D3); from the match on it counts them (E2).
         signups:
-            registrationClosed || status === "concluded"
+            currentIndex > MATCH_PHASES.indexOf("roster")
                 ? { kind: "signedUp", count: input.signedUpCount }
-                : { kind: "closesAt", at: input.registrationEnd },
+                : registrationClosed
+                  ? { kind: "closedAt", at: input.registrationEnd }
+                  : { kind: "closesAt", at: input.registrationEnd },
         roster: !input.roster
             ? { kind: "rosterMissing" }
             : input.roster.published

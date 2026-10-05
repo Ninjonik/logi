@@ -1,16 +1,16 @@
-import { ClipboardList, SearchX, Trophy } from "lucide-react"
+import { SearchX } from "lucide-react"
 import Link from "next/link"
 
-import {
-    isMatchDetailTab,
-    MatchDetailHeader,
-    type MatchDetailTab,
-} from "@/components/app/match-detail/match-detail-header"
 import {
     discordUrl,
     getEventDiscordMessages,
     getEventResultReview,
+    getResultsPanelChannelId,
 } from "@/lib/read-models/match-detail"
+import {
+    isMatchDetailTab,
+    type MatchDetailTab,
+} from "@/components/app/match-detail/match-detail-header"
 import {
     DEFAULT_ROSTER_SCORE_SETTINGS,
     summarizeRosterScoreChanges,
@@ -19,14 +19,13 @@ import {
     deriveMatchPhases,
     type MatchResultState,
 } from "@/domain/events/match-phase"
-import { MatchAttendancePanel } from "@/components/app/match-detail/match-attendance-panel"
-import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button"
-import { MatchDiscordPanel } from "@/components/app/match-detail/match-discord-panel"
-import { ConcludeEventButton } from "@/components/app/conclude-event-button"
+import { MatchDetailView } from "@/components/app/match-detail/match-detail-view"
+import { describeManualReminderAudience } from "@/domain/events/manual-reminders"
+import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
+import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
 import { EventFormPanel } from "@/components/app/event-form-panel"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
-import { ResultReview } from "@/components/app/result-review"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { currentEventStatus } from "@/domain/events/status"
 import { isGameId, type GameId } from "@/domain/games/game"
@@ -38,9 +37,9 @@ import { Button } from "@/components/ui/button"
 import { getSession } from "@/lib/auth"
 
 /**
- * The match detail (designs D3, E2, E3): one header with progress and tabs,
- * and the selected section below it. Used by the match and the event detail
- * routes, which differ only in their URLs.
+ * The match detail (designs D3, E2, E3): loads the match, its roster,
+ * attendance, Discord messages and result for `MatchDetailView`. Used by the
+ * match and the event detail routes, which differ only in their URLs.
  */
 export async function MatchDetailPage({
     locale,
@@ -104,7 +103,8 @@ export async function MatchDetailPage({
     const timeZone = discordConfig?.timezone ?? "UTC"
     const gameId: GameId = event.gameId ?? "hell_let_loose"
     const guildDiscordId = context.server.discordId
-    const roster = context.rosters.find((item) => item.eventId === eventId)
+    const roster =
+        context.rosters.find((item) => item.eventId === eventId) ?? null
     const attachedStratmaps = context.stratmaps.filter((stratmap) =>
         event.stratmapIds.includes(stratmap.id)
     )
@@ -129,20 +129,53 @@ export async function MatchDetailPage({
         settings: scoreSettings,
         participants: event.participants,
         notices: event.absenceNotices,
-        roster: roster ?? null,
+        roster,
     })
+    const reminderInput = {
+        event: { ...event, participants: event.participants },
+        roster,
+        assignments: allAssignments,
+        now,
+    }
+    const reminderState = (audience: "unanswered" | "unconfirmed") => {
+        const described = describeManualReminderAudience({
+            audience,
+            ...reminderInput,
+        })
+        return {
+            count: described.userIds.length,
+            unavailable: described.unavailable,
+        }
+    }
 
-    const [messages, review] = await Promise.all([
-        getEventDiscordMessages(event.id),
-        canAdmin
-            ? getEventResultReview({
-                  guildId: guildDiscordId,
-                  gameId,
-                  eventId: event.id,
-                  actorId: session.sub,
-              })
-            : Promise.resolve(null),
-    ])
+    const meetingChannelId =
+        event.meetingChannelId ?? discordConfig?.meetingChannelId
+    const actor = canAdmin ? await currentDashboardActor() : null
+    const [messages, review, channelNames, resultsChannelId] =
+        await Promise.all([
+            getEventDiscordMessages(event.id),
+            canAdmin
+                ? getEventResultReview({
+                      guildId: guildDiscordId,
+                      gameId,
+                      eventId: event.id,
+                      actorId: session.sub,
+                  })
+                : Promise.resolve(null),
+            canAdmin &&
+            (activeTab === "attendance" ||
+                activeTab === "roster" ||
+                activeTab === "result")
+                ? getDiscordChannelNames(serverId, guildDiscordId)
+                : Promise.resolve(new Map<string, string>()),
+            actor && activeTab === "result"
+                ? getResultsPanelChannelId({
+                      guildId: guildDiscordId,
+                      gameId,
+                      actor,
+                  })
+                : Promise.resolve(undefined),
+        ])
     const resultState: MatchResultState =
         review?.current?.status ?? (event.eventResult ? "imported" : "none")
     const rosterPlayerIds =
@@ -239,246 +272,115 @@ export async function MatchDetailPage({
               guildDiscordId
           )
         : []
+    const meetingChannelName = meetingChannelId
+        ? channelNames.get(meetingChannelId)
+        : undefined
+    const resultsChannelName =
+        resultsChannelId === undefined
+            ? undefined
+            : resultsChannelId === null
+              ? null
+              : (channelNames.get(resultsChannelId) ?? resultsChannelId)
 
     return (
-        <div className="flex flex-col gap-4 pb-6">
-            <MatchDetailHeader
-                event={event}
-                dictionary={dictionary}
-                locale={locale}
-                timeZone={timeZone}
-                listHref={listHref}
-                phases={phases}
-                activeTab={activeTab}
-                tabHref={tabHref}
-                tabCounts={{ attendance: signedUpCount }}
-                discordHref={discordHref}
-                actions={
-                    canAdmin &&
-                    event.status !== "concluded" &&
-                    activeTab !== "attendance" ? (
-                        <ConcludeEventButton
-                            serverId={serverId}
-                            eventId={event.id}
-                            disabled={!closeAvailable}
-                            dictionary={dictionary}
-                            summary={closeSummary}
-                        />
-                    ) : undefined
-                }
-            />
-            <div className="px-4 lg:px-6">
-                {activeTab === "overview" ? (
-                    <div className="space-y-3">
-                        {attachedStratmaps.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                                {attachedStratmaps.map((stratmap) => (
-                                    <Button
-                                        key={stratmap.id}
-                                        asChild
-                                        variant="outline"
-                                        size="sm"
-                                        className="rounded-xl"
-                                    >
-                                        <Link
-                                            href={`/${locale}/stratmaps/${stratmap.id}`}
-                                        >
-                                            {stratmap.title}
-                                        </Link>
-                                    </Button>
-                                ))}
-                            </div>
-                        ) : null}
-                        <EventFormPanel
-                            event={event}
-                            serverId={serverId}
-                            locale={locale}
-                            topicPresets={context.topicPresets}
-                            stratmaps={context.stratmaps}
-                            groups={context.groups}
-                            eventCategories={
-                                context.server.eventCategories ?? []
-                            }
-                            timezone={timeZone}
-                            canEdit={canAdmin}
-                            dictionary={dictionary}
-                            createMode={false}
-                            discordConfig={discordConfig}
-                        />
-                    </div>
-                ) : null}
-                {activeTab === "attendance" ? (
-                    <MatchAttendancePanel
+        <MatchDetailView
+            locale={locale}
+            serverId={serverId}
+            section={section}
+            dictionary={dictionary}
+            event={event}
+            activeTab={activeTab}
+            played={played}
+            closeAvailable={closeAvailable}
+            canAdmin={canAdmin}
+            timeZone={timeZone}
+            gameId={gameId}
+            guildDiscordId={guildDiscordId}
+            listHref={listHref}
+            basePath={basePath}
+            tabHref={tabHref}
+            phases={phases}
+            signedUpCount={signedUpCount}
+            discordHref={discordHref}
+            roster={roster}
+            users={users}
+            memberIds={memberIds}
+            scoreSettings={scoreSettings}
+            closeSummary={closeSummary}
+            messages={messages}
+            review={review}
+            reviewerNames={reviewerNames}
+            attachedStratmaps={attachedStratmaps}
+            meetingChannelId={meetingChannelId}
+            meetingChannelName={meetingChannelName}
+            eventInfoChannelId={
+                event.eventInfoChannelId ?? discordConfig?.eventInfoChannelId
+            }
+            resultsChannelName={resultsChannelName}
+            clanName={context.server.name}
+            reminders={{
+                unanswered: reminderState("unanswered"),
+                unconfirmed: reminderState("unconfirmed"),
+            }}
+            createRosterHref={createRosterHref}
+            rosterPageHref={
+                roster
+                    ? `/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`
+                    : undefined
+            }
+            signupHistoryHref={signupHistoryHref}
+            overview={
+                activeTab === "overview" ? (
+                    <EventFormPanel
+                        event={event}
                         serverId={serverId}
-                        event={event}
-                        roster={roster ?? null}
-                        users={users}
-                        memberIds={memberIds}
-                        scoreSettings={scoreSettings}
-                        closeSummary={closeSummary}
-                        canAdmin={canAdmin}
-                        closeAvailable={closeAvailable}
-                        meetingChannelConfigured={Boolean(
-                            discordConfig?.meetingChannelId
-                        )}
-                        signupHistoryHref={signupHistoryHref}
-                        createRosterHref={createRosterHref}
+                        locale={locale}
+                        topicPresets={context.topicPresets}
+                        stratmaps={context.stratmaps}
+                        groups={context.groups}
+                        eventCategories={context.server.eventCategories ?? []}
+                        timezone={timeZone}
+                        canEdit={canAdmin}
                         dictionary={dictionary}
+                        createMode={false}
+                        discordConfig={discordConfig}
                     />
-                ) : null}
-                {activeTab === "roster" ? (
-                    roster && (canAdmin || roster.published) ? (
-                        <LiveRosterBoard
-                            rosterId={roster.id}
-                            serverId={serverId}
-                            locale={locale}
-                            grant={issueClientGrant(
-                                { discordId: session.sub, sid: session.sid },
-                                clientGrantScopes.roster(serverId, roster.id)
-                            )}
-                            dictionary={dictionary}
-                            initialRoster={roster}
-                            initialEvent={event}
-                            initialUsers={users}
-                            initialAssignments={context.assignments}
-                            initialGroups={context.groups}
-                            initialSquadPresets={context.squadPresets}
-                            initialCanAdmin={canAdmin}
-                            initialDiscordConfig={
-                                discordConfig
-                                    ? {
-                                          timezone: discordConfig.timezone,
-                                          meetingChannelId:
-                                              discordConfig.meetingChannelId,
-                                      }
-                                    : null
-                            }
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={ClipboardList}
-                            title={
-                                canAdmin
-                                    ? dictionary.matchDetail.roster.missingTitle
-                                    : dictionary.roster.rosterNotAvailable
-                            }
-                            description={
-                                canAdmin
-                                    ? dictionary.matchDetail.roster
-                                          .missingDescription
-                                    : undefined
-                            }
-                            actions={
-                                createRosterHref ? (
-                                    <Button asChild className="rounded-xl">
-                                        <Link href={createRosterHref}>
-                                            {
-                                                dictionary.matchDetail.roster
-                                                    .create
-                                            }
-                                        </Link>
-                                    </Button>
-                                ) : undefined
-                            }
-                        />
-                    )
-                ) : null}
-                {activeTab === "discord" ? (
-                    <MatchDiscordPanel
-                        event={event}
-                        guildDiscordId={guildDiscordId}
-                        messages={messages}
-                        eventInfoChannelId={
-                            event.eventInfoChannelId ??
-                            discordConfig?.eventInfoChannelId
-                        }
-                        meetingChannelId={
-                            event.meetingChannelId ??
-                            discordConfig?.meetingChannelId
-                        }
-                        dictionary={dictionary}
-                    />
-                ) : null}
-                {activeTab === "result" ? (
-                    <div className="space-y-4">
-                        {canAdmin && !played && !review?.current ? (
-                            <EmptyState
-                                icon={Trophy}
-                                title={
-                                    dictionary.matchDetail.result.notYetTitle
-                                }
-                                description={
-                                    dictionary.matchDetail.result
-                                        .notYetDescription
-                                }
-                            />
-                        ) : canAdmin ? (
-                            <ResultReview
-                                serverId={serverId}
-                                eventId={event.id}
-                                gameId={gameId}
-                                dictionary={dictionary}
-                                initialData={review}
-                                matchStart={event.gameStart}
-                                locale={locale}
-                                timeZone={timeZone}
-                                actorNames={reviewerNames}
-                            />
-                        ) : (
-                            <EmptyState
-                                title={dictionary.matchDetail.result.title}
-                                description={
-                                    dictionary.matchDetail.result.membersOnly
-                                }
-                            />
+                ) : null
+            }
+            rosterBoard={
+                activeTab === "roster" && roster ? (
+                    <LiveRosterBoard
+                        rosterId={roster.id}
+                        serverId={serverId}
+                        locale={locale}
+                        grant={issueClientGrant(
+                            { discordId: session.sub, sid: session.sid },
+                            clientGrantScopes.roster(serverId, roster.id)
                         )}
-                        <section className="border-border/60 bg-card flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                            <div>
-                                <h2 className="text-base font-semibold">
-                                    {dictionary.matchDetail.result.stats}
-                                </h2>
-                                <p className="text-muted-foreground text-sm">
-                                    {event.matchStatsId
-                                        ? dictionary.matchDetail.result
-                                              .statsDescription
-                                        : dictionary.event.noMatchLinked}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {event.matchStatsId ? (
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        className="rounded-xl"
-                                    >
-                                        <Link
-                                            href={
-                                                section === "matches"
-                                                    ? `${basePath}/match-stats`
-                                                    : `${basePath}/match`
-                                            }
-                                        >
-                                            {
-                                                dictionary.matchDetail.result
-                                                    .openStats
-                                            }
-                                        </Link>
-                                    </Button>
-                                ) : null}
-                                {canAdmin && event.status === "concluded" ? (
-                                    <SubmitMatchResultsButton
-                                        serverId={serverId}
-                                        eventId={event.id}
-                                        gameId={gameId}
-                                        reviewable={false}
-                                        dictionary={dictionary}
-                                    />
-                                ) : null}
-                            </div>
-                        </section>
-                    </div>
-                ) : null}
-            </div>
-        </div>
+                        dictionary={dictionary}
+                        initialRoster={roster}
+                        initialEvent={event}
+                        initialUsers={users}
+                        initialAssignments={context.assignments}
+                        initialGroups={context.groups}
+                        initialSquadPresets={context.squadPresets}
+                        initialCanAdmin={canAdmin}
+                        initialDiscordConfig={
+                            discordConfig
+                                ? {
+                                      timezone: discordConfig.timezone,
+                                      meetingChannelId:
+                                          discordConfig.meetingChannelId,
+                                  }
+                                : null
+                        }
+                        meetingChannelName={meetingChannelName}
+                        reminder={
+                            canAdmin ? reminderState("unanswered") : undefined
+                        }
+                    />
+                ) : null
+            }
+        />
     )
 }

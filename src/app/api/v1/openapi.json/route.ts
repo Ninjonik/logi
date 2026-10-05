@@ -423,7 +423,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public clan profile",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited clan profile. Use collection=recentMatches for recent matches.",
+                "Public, rate-limited clan profile, the data of the public clan page. Besides the profile and recentMatches it carries inviteUrl (the clan's own Discord invite as https://discord.gg/<code>, or null), games, upcomingMatches (announced, non-draft matches that have not started: eventId, gameId, startsAt, opponent, name, label; trainings, drafts, server details and sign-ups are never included), clanResults (recent recorded matches from the clan's side: outcome, clanScore, opponentScore, opponent, mapName) and competitions (placements in published competitions: slug, name, season, divisionName, position, teamCount; position is null before the division has a result). Use collection=recentMatches, upcomingMatches, clanResults or competitions for a paginated list.",
             parameters: [
                 {
                     name: "clanId",
@@ -457,7 +457,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public competition",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId. An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
+                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId and carry an optional round number (missing on fixtures saved before rounds). An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
             parameters: [
                 {
                     name: "slug",

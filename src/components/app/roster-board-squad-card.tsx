@@ -1,17 +1,18 @@
 "use client"
 
 import {
+    AlarmClock,
     ArrowDown,
     ArrowUp,
     CalendarClock,
-    CheckCircle2,
+    Check,
+    CheckCheck,
     ChevronsUpDown,
-    Circle,
+    CircleX,
     Clock3,
     GripVertical,
     Plus,
     Trash2,
-    XCircle,
 } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
@@ -85,16 +86,21 @@ function getAttendanceStatus(
     return "pending"
 }
 
-function getAttendanceIcon(status: AttendanceStatus) {
+/** Confirmation icons of the legend (design D3): admin, player, pending. */
+export function getAttendanceIcon(status: AttendanceStatus) {
     if (status === "confirmed") {
-        return <CheckCircle2 className="size-4 text-emerald-500" />
+        return (
+            <CheckCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
+        )
     }
 
     if (status === "acknowledged") {
-        return <CheckCircle2 className="text-foreground size-4" />
+        return (
+            <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+        )
     }
 
-    return <XCircle className="text-muted-foreground size-4" />
+    return <Clock3 className="size-3.5 text-amber-600 dark:text-amber-400" />
 }
 
 function formatRosterScoreline(
@@ -210,6 +216,8 @@ export function SquadCard({
     setDragState,
     serverDiscordId,
     noticeReasonByUserId,
+    draggedName,
+    defaultExpanded = true,
 }: {
     squad: Roster["squads"][0]
     board: Roster
@@ -262,16 +270,19 @@ export function SquadCard({
     setDragState: (state: DragState | null) => void
     serverDiscordId: string
     noticeReasonByUserId: Map<string, string>
+    /** Name of the player being dragged, for the "Drop here" hint. */
+    draggedName?: string
+    /** Whether the squad starts unfolded on phones. */
+    defaultExpanded?: boolean
 }) {
     const [slotPickerOpen, setSlotPickerOpen] = useState<number | null>(null)
     const [slotSearches, setSlotSearches] = useState<Record<number, string>>({})
     const [slotVisibleCounts, setSlotVisibleCounts] = useState<
         Record<number, number>
     >({})
-    const [moveMenuOpen, setMoveMenuOpen] = useState<number | null>(null)
-    const [attendanceMenuOpen, setAttendanceMenuOpen] = useState<number | null>(
-        null
-    )
+    // On phones a squad folds to its header (Mobile board); desktop shows all.
+    const [expanded, setExpanded] = useState(defaultExpanded)
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
     const isLayoutMode = mode === "layout"
     const isAssignmentMode = mode === "assignment"
     const isViewMode = mode === "view"
@@ -376,21 +387,30 @@ export function SquadCard({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center justify-between gap-3">
-                        <div>
-                            <CardTitle
-                                className="cursor-pointer text-sm leading-none"
-                                onClick={() => setFocusedGroup(squad.group)}
-                            >
+                    <button
+                        type="button"
+                        aria-expanded={expanded}
+                        // Only phones fold squads; on wider screens the
+                        // header just focuses the squad's group.
+                        onClick={() => {
+                            setFocusedGroup(squad.group)
+                            setExpanded((current) => !current)
+                        }}
+                        className="flex w-full cursor-pointer items-center justify-between gap-3 text-left md:cursor-default"
+                    >
+                        <span className="min-w-0">
+                            <CardTitle className="flex items-center gap-1.5 text-sm leading-none">
                                 {squad.name}
+                                <span
+                                    aria-hidden="true"
+                                    className="size-2 rounded-full"
+                                    style={{ backgroundColor: squad.color }}
+                                />
                             </CardTitle>
-                            <div
-                                className="text-muted-foreground cursor-pointer pt-1 text-[11px] tracking-[0.18em] uppercase"
-                                onClick={() => setFocusedGroup(squad.group)}
-                            >
+                            <span className="text-muted-foreground block pt-1 text-[11px] tracking-[0.18em] uppercase">
                                 {squad.group}
-                            </div>
-                        </div>
+                            </span>
+                        </span>
                         <Badge
                             className="rounded-full border-0 px-2 py-0 text-[10px]"
                             style={{
@@ -400,10 +420,15 @@ export function SquadCard({
                         >
                             {filledSlotCount} / {squad.players.length}
                         </Badge>
-                    </div>
+                    </button>
                 )}
             </CardHeader>
-            <CardContent className="space-y-1.5 px-0">
+            <CardContent
+                className={cn(
+                    "space-y-1.5 px-0",
+                    !expanded && !isLayoutMode && "hidden md:block"
+                )}
+            >
                 {squad.players.map((player, playerIndex) => {
                     const slotUser = player.id
                         ? usersById.get(player.id)
@@ -454,6 +479,14 @@ export function SquadCard({
                             )
                         )
                     const visibleCount = slotVisibleCounts[playerIndex] ?? 5
+                    // "Pustit sem: {name}" while a player is dragged over a
+                    // free slot (design D3).
+                    const dropHint =
+                        isAssignmentMode &&
+                        draggedName &&
+                        dragOverIndex === playerIndex
+                            ? draggedName
+                            : null
 
                     return (
                         <div
@@ -461,9 +494,24 @@ export function SquadCard({
                             onDragOver={(event) => {
                                 if (isAssignmentMode) event.preventDefault()
                             }}
-                            onDrop={() =>
+                            onDragEnter={() => {
+                                if (isAssignmentMode)
+                                    setDragOverIndex(playerIndex)
+                            }}
+                            onDragLeave={(event) => {
+                                if (
+                                    !event.currentTarget.contains(
+                                        event.relatedTarget as Node | null
+                                    )
+                                )
+                                    setDragOverIndex((current) =>
+                                        current === playerIndex ? null : current
+                                    )
+                            }}
+                            onDrop={() => {
+                                setDragOverIndex(null)
                                 handleDropOnSlot(squadIndex, playerIndex)
-                            }
+                            }}
                             className={cn(
                                 "border-border/70 bg-muted/20 rounded-xl border",
                                 isViewMode ? "p-1" : "p-1.5"
@@ -525,11 +573,29 @@ export function SquadCard({
                             {slotUser || placeholderName ? (
                                 <div>
                                     {!isLayoutMode ? (
-                                        <div
-                                            draggable={
-                                                Boolean(slotUser) &&
-                                                isAssignmentMode &&
-                                                canAdmin
+                                        <FilledSlot
+                                            player={player}
+                                            slotUser={slotUser}
+                                            placeholderName={placeholderName}
+                                            assignment={assignment}
+                                            groupsById={groupsById}
+                                            signupRoleLabel={signupRoleLabel}
+                                            isReserveMember={isReserveMember}
+                                            noticeReason={noticeReason}
+                                            attendanceStatus={attendanceStatus}
+                                            isAssignmentMode={isAssignmentMode}
+                                            isViewMode={isViewMode}
+                                            canAdmin={canAdmin}
+                                            dictionary={dictionary}
+                                            serverDiscordId={serverDiscordId}
+                                            groupLabel={
+                                                slotUser
+                                                    ? getPrimaryGroupLabel(
+                                                          assignment,
+                                                          groupsById,
+                                                          dictionary
+                                                      )
+                                                    : undefined
                                             }
                                             onDragStart={() => {
                                                 if (!slotUser) return
@@ -540,359 +606,32 @@ export function SquadCard({
                                                 })
                                             }}
                                             onDragEnd={() => setDragState(null)}
-                                            className={cn(
-                                                "border-border/60 bg-background flex min-h-10 min-w-0 items-center rounded-lg border",
-                                                isAssignmentMode &&
-                                                    canAdmin &&
-                                                    slotUser
-                                                    ? "cursor-grab gap-1.5 px-1.5 py-1"
-                                                    : "gap-1 px-1.5 py-1"
-                                            )}
-                                        >
-                                            {isAssignmentMode &&
-                                            canAdmin &&
-                                            slotUser ? (
-                                                <GripVertical className="text-muted-foreground size-4" />
-                                            ) : null}
-                                            <Avatar
-                                                className={cn(
-                                                    "shrink-0 rounded-md",
-                                                    isViewMode
-                                                        ? "size-5"
-                                                        : "size-6"
-                                                )}
-                                            >
-                                                {slotUser ? (
-                                                    <AvatarImage
-                                                        src={slotUser.avatar}
-                                                        alt={slotUser.name}
-                                                    />
-                                                ) : null}
-                                                <AvatarFallback>
-                                                    {(
-                                                        slotUser?.name ??
-                                                        placeholderName ??
-                                                        "?"
-                                                    )
-                                                        .slice(0, 2)
-                                                        .toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            {slotUser ? (
-                                                <GroupInlineIcons
-                                                    assignment={assignment}
-                                                    groupsById={groupsById}
-                                                    signupGroupName={
-                                                        signupRoleLabel
-                                                    }
-                                                />
-                                            ) : null}
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    {slotUser?.note ? (
-                                                        <Tooltip>
-                                                            <TooltipTrigger
-                                                                asChild
-                                                            >
-                                                                <div className="truncate text-xs leading-none font-medium">
-                                                                    {
-                                                                        slotUser.name
-                                                                    }
-                                                                </div>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-64 text-xs whitespace-pre-wrap">
-                                                                {slotUser.note}
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    ) : (
-                                                        <div className="truncate text-xs leading-none font-medium">
-                                                            {slotUser
-                                                                ? slotUser.name
-                                                                : placeholderName}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-1">
-                                                        {isReserveMember ? (
-                                                            <Tooltip>
-                                                                <TooltipTrigger
-                                                                    asChild
-                                                                >
-                                                                    <CalendarClock className="size-3.5 text-amber-500" />
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    {
-                                                                        dictionary
-                                                                            .userManagement
-                                                                            .reserveMemberLabel
-                                                                    }
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        ) : null}
-                                                        {noticeReason ? (
-                                                            <Tooltip>
-                                                                <TooltipTrigger
-                                                                    asChild
-                                                                >
-                                                                    <Clock3 className="size-3.5 text-red-500" />
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="max-w-64 text-xs whitespace-pre-wrap">
-                                                                    {
-                                                                        noticeReason
-                                                                    }
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        ) : null}
-                                                    </div>
-                                                </div>
-                                                {slotUser ? (
-                                                    <div className="text-muted-foreground flex items-center text-[10px]">
-                                                        <span className="truncate">
-                                                            {formatRosterScoreline(
-                                                                slotUser,
-                                                                dictionary,
-                                                                serverDiscordId
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                ) : null}
-                                            </div>
-                                            {player.note &&
-                                            !isAssignmentMode ? (
-                                                <div className="text-muted-foreground max-w-28 truncate text-[10px]">
-                                                    {player.note}
-                                                </div>
-                                            ) : null}
-                                            {isAssignmentMode && canAdmin ? (
-                                                <Popover
-                                                    open={
-                                                        moveMenuOpen ===
-                                                        playerIndex
-                                                    }
-                                                    onOpenChange={(open) =>
-                                                        setMoveMenuOpen(
-                                                            open
-                                                                ? playerIndex
-                                                                : null
-                                                        )
-                                                    }
-                                                >
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="size-6 rounded-lg"
-                                                            onClick={(
-                                                                event
-                                                            ) => {
-                                                                event.stopPropagation()
-                                                            }}
-                                                            onPointerDown={(
-                                                                event
-                                                            ) => {
-                                                                event.stopPropagation()
-                                                            }}
-                                                        >
-                                                            <ChevronsUpDown className="size-4" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent
-                                                        className="w-56 p-2"
-                                                        align="end"
-                                                    >
-                                                        <div className="flex flex-col gap-1">
-                                                            {slotUser ? (
-                                                                <>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        className="justify-start rounded-lg"
-                                                                        onClick={() => {
-                                                                            moveSlotToReserve(
-                                                                                squadIndex,
-                                                                                playerIndex
-                                                                            )
-                                                                            setMoveMenuOpen(
-                                                                                null
-                                                                            )
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            dictionary
-                                                                                .roster
-                                                                                .moveToReserves
-                                                                        }
-                                                                    </Button>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        className="justify-start rounded-lg"
-                                                                        onClick={() => {
-                                                                            moveSlotToNotAttending(
-                                                                                squadIndex,
-                                                                                playerIndex
-                                                                            )
-                                                                            setMoveMenuOpen(
-                                                                                null
-                                                                            )
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            dictionary
-                                                                                .roster
-                                                                                .moveToNotAttending
-                                                                        }
-                                                                    </Button>
-                                                                </>
-                                                            ) : null}
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                className="justify-start rounded-lg"
-                                                                onClick={() => {
-                                                                    clearSlotAssignment(
-                                                                        squadIndex,
-                                                                        playerIndex
-                                                                    )
-                                                                    setMoveMenuOpen(
-                                                                        null
-                                                                    )
-                                                                }}
-                                                            >
-                                                                {
-                                                                    dictionary
-                                                                        .common
-                                                                        .clear
-                                                                }
-                                                            </Button>
-                                                        </div>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            ) : null}
-                                            {canAdmin && slotUser ? (
-                                                <Popover
-                                                    open={
-                                                        attendanceMenuOpen ===
-                                                        playerIndex
-                                                    }
-                                                    onOpenChange={(open) =>
-                                                        setAttendanceMenuOpen(
-                                                            open
-                                                                ? playerIndex
-                                                                : null
-                                                        )
-                                                    }
-                                                >
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="size-6 rounded-lg"
-                                                            onClick={(
-                                                                event
-                                                            ) => {
-                                                                event.stopPropagation()
-                                                            }}
-                                                            onPointerDown={(
-                                                                event
-                                                            ) => {
-                                                                event.stopPropagation()
-                                                            }}
-                                                        >
-                                                            {getAttendanceIcon(
-                                                                attendanceStatus
-                                                            )}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent
-                                                        className="w-44 p-1"
-                                                        align="end"
-                                                    >
-                                                        <div className="flex flex-col gap-1">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                className="justify-start rounded-lg px-2 py-1 text-xs"
-                                                                onClick={() => {
-                                                                    updatePlayerAttendanceStatus(
-                                                                        squadIndex,
-                                                                        playerIndex,
-                                                                        "pending"
-                                                                    )
-                                                                    setAttendanceMenuOpen(
-                                                                        null
-                                                                    )
-                                                                }}
-                                                            >
-                                                                {getAttendanceIcon(
-                                                                    "pending"
-                                                                )}
-                                                                {
-                                                                    dictionary
-                                                                        .roster
-                                                                        .attendancePending
-                                                                }
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                className="justify-start rounded-lg px-2 py-1 text-xs"
-                                                                onClick={() => {
-                                                                    updatePlayerAttendanceStatus(
-                                                                        squadIndex,
-                                                                        playerIndex,
-                                                                        "acknowledged"
-                                                                    )
-                                                                    setAttendanceMenuOpen(
-                                                                        null
-                                                                    )
-                                                                }}
-                                                            >
-                                                                {getAttendanceIcon(
-                                                                    "acknowledged"
-                                                                )}
-                                                                {
-                                                                    dictionary
-                                                                        .roster
-                                                                        .attendanceAcknowledged
-                                                                }
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                className="justify-start rounded-lg px-2 py-1 text-xs"
-                                                                onClick={() => {
-                                                                    updatePlayerAttendanceStatus(
-                                                                        squadIndex,
-                                                                        playerIndex,
-                                                                        "confirmed"
-                                                                    )
-                                                                    setAttendanceMenuOpen(
-                                                                        null
-                                                                    )
-                                                                }}
-                                                            >
-                                                                {getAttendanceIcon(
-                                                                    "confirmed"
-                                                                )}
-                                                                {
-                                                                    dictionary
-                                                                        .roster
-                                                                        .attendanceConfirmed
-                                                                }
-                                                            </Button>
-                                                        </div>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            ) : slotUser ? (
-                                                getAttendanceIcon(
-                                                    attendanceStatus
+                                            onRemove={() =>
+                                                clearSlotAssignment(
+                                                    squadIndex,
+                                                    playerIndex
                                                 )
-                                            ) : (
-                                                <Circle className="text-muted-foreground size-4" />
-                                            )}
-                                        </div>
+                                            }
+                                            onMoveToReserves={() =>
+                                                moveSlotToReserve(
+                                                    squadIndex,
+                                                    playerIndex
+                                                )
+                                            }
+                                            onMoveToNotAttending={() =>
+                                                moveSlotToNotAttending(
+                                                    squadIndex,
+                                                    playerIndex
+                                                )
+                                            }
+                                            onSetStatus={(status) =>
+                                                updatePlayerAttendanceStatus(
+                                                    squadIndex,
+                                                    playerIndex,
+                                                    status
+                                                )
+                                            }
+                                        />
                                     ) : null}
                                     {isLayoutMode ? (
                                         <div className="mt-2">
@@ -932,7 +671,14 @@ export function SquadCard({
                                 </div>
                             ) : (
                                 <div>
-                                    <div className="border-border/80 bg-background flex min-h-10 min-w-0 items-center gap-1 rounded-lg border border-dashed px-1.5 py-1">
+                                    <div
+                                        className={cn(
+                                            "flex min-h-10 min-w-0 items-center gap-1 rounded-lg border border-dashed px-1.5 py-1",
+                                            dropHint
+                                                ? "border-sky-500/70 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                                                : "border-border/80 bg-background"
+                                        )}
+                                    >
                                         <Popover
                                             open={
                                                 isAssignmentMode &&
@@ -949,7 +695,10 @@ export function SquadCard({
                                                     type="button"
                                                     disabled={!isAssignmentMode}
                                                     className={cn(
-                                                        "text-muted-foreground min-w-0 flex-1 text-left leading-none",
+                                                        "min-w-0 flex-1 text-left leading-none",
+                                                        dropHint
+                                                            ? "text-inherit"
+                                                            : "text-muted-foreground",
                                                         isAssignmentMode
                                                             ? "cursor-pointer text-xs"
                                                             : "cursor-default text-xs"
@@ -958,12 +707,15 @@ export function SquadCard({
                                                     {isAssignmentMode ? (
                                                         <span className="flex items-center justify-center gap-1 truncate">
                                                             <Plus className="size-3.5 shrink-0" />
-                                                            {
-                                                                dictionary
-                                                                    .matchDetail
-                                                                    .roster
-                                                                    .pickPlayer
-                                                            }
+                                                            {dropHint
+                                                                ? dictionary.matchDetail.roster.dropHere.replace(
+                                                                      "{name}",
+                                                                      dropHint
+                                                                  )
+                                                                : dictionary
+                                                                      .matchDetail
+                                                                      .roster
+                                                                      .pickPlayer}
                                                         </span>
                                                     ) : (
                                                         <span className="block truncate">
@@ -1377,5 +1129,276 @@ function RoleIconPreview({ value }: { value: string }) {
             height={14}
             className="h-3.5 w-5 object-contain invert dark:invert-0"
         />
+    )
+}
+
+/**
+ * A taken roster slot in Ninjonik's look (design D3): grip, Discord avatar,
+ * group icons, name with its confirmation icon, score and K/D, the player's
+ * group on the right and, in the roster editor, a remove button. Admins set
+ * the confirmation from the icon, which also offers moving the player out.
+ */
+function FilledSlot({
+    player,
+    slotUser,
+    placeholderName,
+    assignment,
+    groupsById,
+    signupRoleLabel,
+    isReserveMember,
+    noticeReason,
+    attendanceStatus,
+    isAssignmentMode,
+    isViewMode,
+    canAdmin,
+    dictionary,
+    serverDiscordId,
+    groupLabel,
+    onDragStart,
+    onDragEnd,
+    onRemove,
+    onMoveToReserves,
+    onMoveToNotAttending,
+    onSetStatus,
+}: {
+    player: Roster["squads"][number]["players"][number]
+    slotUser?: AppUser
+    placeholderName?: string
+    assignment?: ServerUserAssignment
+    groupsById: Map<string, Group>
+    signupRoleLabel: string | null
+    isReserveMember: boolean
+    noticeReason?: string
+    attendanceStatus: AttendanceStatus
+    isAssignmentMode: boolean
+    isViewMode: boolean
+    canAdmin: boolean
+    dictionary: Dictionary
+    serverDiscordId: string
+    groupLabel?: string
+    onDragStart: () => void
+    onDragEnd: () => void
+    onRemove: () => void
+    onMoveToReserves: () => void
+    onMoveToNotAttending: () => void
+    onSetStatus: (status: AttendanceStatus) => void
+}) {
+    const [menuOpen, setMenuOpen] = useState(false)
+    const name = slotUser?.name ?? placeholderName ?? "?"
+    const editable = isAssignmentMode && canAdmin
+    const statusLabels: Record<AttendanceStatus, string> = {
+        pending: dictionary.roster.attendancePending,
+        acknowledged: dictionary.roster.attendanceAcknowledged,
+        confirmed: dictionary.roster.attendanceConfirmed,
+    }
+
+    return (
+        <div
+            draggable={Boolean(slotUser) && editable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            className={cn(
+                "border-border/60 bg-background flex min-h-10 min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1",
+                editable && slotUser && "cursor-grab"
+            )}
+        >
+            {editable && slotUser ? (
+                <GripVertical
+                    aria-hidden="true"
+                    className="text-muted-foreground hidden size-4 shrink-0 md:block"
+                />
+            ) : null}
+            <Avatar
+                className={cn(
+                    "shrink-0 rounded-md",
+                    isViewMode ? "size-5" : "size-6"
+                )}
+            >
+                {slotUser ? (
+                    <AvatarImage src={slotUser.avatar} alt={slotUser.name} />
+                ) : null}
+                <AvatarFallback className="rounded-md text-[9px] font-semibold">
+                    {name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+            {slotUser ? (
+                <GroupInlineIcons
+                    assignment={assignment}
+                    groupsById={groupsById}
+                    signupGroupName={signupRoleLabel}
+                />
+            ) : null}
+            <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-1">
+                    {slotUser?.note ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className="truncate text-xs leading-none font-medium">
+                                    {name}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-64 text-xs whitespace-pre-wrap">
+                                {slotUser.note}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : (
+                        <span className="truncate text-xs leading-none font-medium">
+                            {name}
+                        </span>
+                    )}
+                    {slotUser && canAdmin ? (
+                        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label={`${dictionary.matchDetail.roster.playerActions.replace("{name}", name)}: ${statusLabels[attendanceStatus]}`}
+                                    title={statusLabels[attendanceStatus]}
+                                    className="hover:bg-muted -m-0.5 inline-flex shrink-0 rounded p-0.5"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onPointerDown={(event) =>
+                                        event.stopPropagation()
+                                    }
+                                >
+                                    {getAttendanceIcon(attendanceStatus)}
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-52 p-1" align="start">
+                                <div className="flex flex-col gap-0.5">
+                                    {(
+                                        [
+                                            "pending",
+                                            "acknowledged",
+                                            "confirmed",
+                                        ] as const
+                                    ).map((status) => (
+                                        <Button
+                                            key={status}
+                                            type="button"
+                                            variant="ghost"
+                                            aria-pressed={
+                                                attendanceStatus === status
+                                            }
+                                            className={cn(
+                                                "h-8 justify-start rounded-lg px-2 text-xs",
+                                                attendanceStatus === status &&
+                                                    "bg-muted font-semibold"
+                                            )}
+                                            onClick={() => {
+                                                onSetStatus(status)
+                                                setMenuOpen(false)
+                                            }}
+                                        >
+                                            {getAttendanceIcon(status)}
+                                            {statusLabels[status]}
+                                        </Button>
+                                    ))}
+                                    {editable ? (
+                                        <>
+                                            <div className="bg-border my-1 h-px" />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-8 justify-start rounded-lg px-2 text-xs"
+                                                onClick={() => {
+                                                    onMoveToReserves()
+                                                    setMenuOpen(false)
+                                                }}
+                                            >
+                                                {
+                                                    dictionary.roster
+                                                        .moveToReserves
+                                                }
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-8 justify-start rounded-lg px-2 text-xs"
+                                                onClick={() => {
+                                                    onMoveToNotAttending()
+                                                    setMenuOpen(false)
+                                                }}
+                                            >
+                                                {
+                                                    dictionary.roster
+                                                        .moveToNotAttending
+                                                }
+                                            </Button>
+                                        </>
+                                    ) : null}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    ) : slotUser ? (
+                        <span
+                            className="inline-flex shrink-0"
+                            title={statusLabels[attendanceStatus]}
+                        >
+                            {getAttendanceIcon(attendanceStatus)}
+                            <span className="sr-only">
+                                {statusLabels[attendanceStatus]}
+                            </span>
+                        </span>
+                    ) : null}
+                    {isReserveMember ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <CalendarClock className="size-3.5 shrink-0 text-amber-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {dictionary.userManagement.reserveMemberLabel}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : null}
+                    {noticeReason ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <AlarmClock className="size-3.5 shrink-0 text-red-500" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-64 text-xs whitespace-pre-wrap">
+                                {noticeReason}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : null}
+                </div>
+                {slotUser ? (
+                    <div className="text-muted-foreground truncate pt-0.5 text-[10px]">
+                        {formatRosterScoreline(
+                            slotUser,
+                            dictionary,
+                            serverDiscordId
+                        )}
+                    </div>
+                ) : null}
+            </div>
+            {player.note && !isAssignmentMode ? (
+                <span className="text-muted-foreground max-w-24 shrink-0 truncate text-[10px]">
+                    {player.note}
+                </span>
+            ) : groupLabel ? (
+                <span className="text-muted-foreground max-w-20 shrink-0 truncate text-[10px]">
+                    {groupLabel}
+                </span>
+            ) : null}
+            {editable ? (
+                <button
+                    type="button"
+                    aria-label={dictionary.matchDetail.roster.removeFromSlot.replace(
+                        "{name}",
+                        name
+                    )}
+                    title={dictionary.matchDetail.roster.removeFromSlot.replace(
+                        "{name}",
+                        name
+                    )}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-6 shrink-0 items-center justify-center rounded-md"
+                    onClick={(event) => {
+                        event.stopPropagation()
+                        onRemove()
+                    }}
+                >
+                    <CircleX className="size-4" />
+                </button>
+            ) : null}
+        </div>
     )
 }

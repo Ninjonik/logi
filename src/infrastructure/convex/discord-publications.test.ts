@@ -398,3 +398,102 @@ test("panels can share one workspace banner; clearing it on one keeps the other'
     await save("server", "100000000000000004", null)
     assert.deepEqual(references(), [`${board.id}:imageAssets:shared`])
 })
+
+test("result pages add the card facts: category, sides, confirming admin and public page", async () => {
+    const ctx = testContext()
+    seedDashboardActor(ctx.db)
+    ctx.db.seed("discordPublicPanels", {
+        _id: "discordPublicPanels:p",
+        guildId: "guild-a",
+        kind: "results",
+        gameId: "hell_let_loose",
+    })
+    await ctx.db.patch("guilds:admin", {
+        eventCategories: [{ id: "friendly", label: "Přátelák", color: "#000" }],
+    })
+    ctx.db.seed("users", {
+        _id: "users:reviewer",
+        discordId: "900000000000000001",
+        name: "Reviewer Account",
+        nicknames: { "guild-a": "Hráč 01" },
+    })
+    const reviewed = { status: "confirmed", version: 2 }
+    ctx.db.seed("events", {
+        _id: "events:card",
+        guildId: "guilds:admin",
+        gameId: "hell_let_loose",
+        name: "VLK vs DEF",
+        matchType: "Friendly",
+        side: "Allies",
+        matchStatsId: "matchStats:card",
+        eventResult: {
+            outcome: "victory",
+            score: { sideA: 2, sideB: 3 },
+        },
+        matchTeams: [
+            {
+                slot: "b",
+                side: "Axis",
+                snapshot: { name: "Defenders", shortCode: null },
+            },
+            {
+                slot: "a",
+                side: "Allies",
+                snapshot: { name: "Valkyrie", shortCode: "VLK" },
+            },
+        ],
+        reviewedResultGameId: "hell_let_loose",
+        reviewedResult: reviewed,
+    })
+    ctx.db.seed("matchStats", {
+        _id: "matchStats:card",
+        eventId: "events:card",
+    })
+    for (const [version, reviewerId] of [
+        [1, "900000000000000009"],
+        [2, "900000000000000001"],
+    ] as const)
+        ctx.db.seed("eventResultRevisions", {
+            _id: `eventResultRevisions:${version}`,
+            eventId: "events:card",
+            guildId: "guilds:admin",
+            gameId: "hell_let_loose",
+            version,
+            revision: { reviewerId },
+        })
+    ctx.db.seed("events", {
+        _id: "events:bare",
+        guildId: "guilds:admin",
+        gameId: "hell_let_loose",
+        name: "Bare",
+        reviewedResultGameId: "hell_let_loose",
+        reviewedResult: { status: "confirmed", version: 1 },
+    })
+
+    const page = await invoke(resultsPage, ctx, {
+        secret,
+        panelId: "discordPublicPanels:p",
+        cursor: null,
+    })
+    const card = (name: string) =>
+        page.events.find((event: { name: string }) => event.name === name)?.card
+    assert.deepEqual(card("VLK vs DEF"), {
+        category: "Přátelák",
+        side: "Allies",
+        teams: [
+            { code: "VLK", side: "Allies" },
+            { code: "Defenders", side: "Axis" },
+        ],
+        reviewer: "Hráč 01",
+        publicMatch: true,
+        imported: { outcome: "victory", score: { sideA: 2, sideB: 3 } },
+    })
+    assert.deepEqual(card("Bare"), {
+        category: null,
+        side: null,
+        teams: [],
+        reviewer: null,
+        publicMatch: false,
+        imported: null,
+    })
+})

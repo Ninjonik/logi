@@ -10,6 +10,7 @@ import {
     GAME_LABELS,
     type GameId,
 } from "@/domain/games/game"
+import { saveEnabledGames } from "@/components/app/settings/save-enabled-games"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -68,19 +69,11 @@ export function GameSettingsForm({
                     disabled={isPending}
                     onClick={() =>
                         startTransition(async () => {
-                            const response = await fetch(
-                                `/api/servers/${serverId}/enabled-games`,
-                                {
-                                    method: "POST",
-                                    headers: {
-                                        "content-type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                        enabledGames: selected,
-                                    }),
-                                }
-                            ).catch(() => null)
-                            if (!response?.ok) {
+                            const result = await saveEnabledGames(
+                                serverId,
+                                selected
+                            )
+                            if (!result.ok) {
                                 toast.error(dictionary.games.saveError)
                                 return
                             }

@@ -1,46 +1,47 @@
 import {
-    CalendarClock,
     CalendarSync,
-    ChartColumn,
     Database,
     Gamepad2,
-    Globe,
     Hash,
     IdCard,
-    Import,
+    KeyRound,
+    LayoutTemplate,
     MessageSquareText,
     Server,
     ShieldCheck,
-    Tags,
+    SquareTerminal,
+    Tag,
     Ticket,
     Trophy,
-    UserPlus,
-    Users,
+    Upload,
+    UserCheck,
+    UserRound,
     Webhook,
     type LucideIcon,
 } from "lucide-react"
 
 import type { SettingsSectionId } from "@/domain/workspaces/settings-sections"
+import type { GuidedSetupPosition } from "@/domain/workspaces/guided-setup"
 import type { GameId } from "@/domain/games/game"
 
 export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
     profile: IdCard,
     games: Gamepad2,
-    "event-categories": Tags,
-    "match-templates": CalendarClock,
-    presets: Users,
+    "event-categories": Tag,
+    "match-templates": LayoutTemplate,
+    presets: UserRound,
     messages: MessageSquareText,
     channels: Hash,
     roles: ShieldCheck,
-    stats: ChartColumn,
-    membership: UserPlus,
+    stats: SquareTerminal,
+    membership: UserCheck,
     tickets: Ticket,
     "game-servers": Server,
     league: Trophy,
-    website: Globe,
+    website: KeyRound,
     calendar: CalendarSync,
     webhooks: Webhook,
-    imports: Import,
+    imports: Upload,
     "helper-data": Database,
 }
 
@@ -53,4 +54,14 @@ export function settingsHref(
     const base = `/${locale}/dashboard/servers/${serverId}/settings`
     const path = section ? `${base}/${section}` : base
     return gameId ? `${path}?game=${encodeURIComponent(gameId)}` : path
+}
+
+/** The setup guide (design B), open at `step` or, without one, at the first unfinished step. */
+export function guidedSetupHref(
+    locale: string,
+    serverId: string,
+    step?: GuidedSetupPosition
+) {
+    const path = `/${locale}/dashboard/servers/${serverId}/settings/setup`
+    return step ? `${path}?step=${encodeURIComponent(step)}` : path
 }

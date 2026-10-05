@@ -94,8 +94,9 @@ export function RosterCreator({
 
     const availableEvents = useMemo(() => {
         const rosterEventIds = new Set(rosters.map((r) => r.eventId))
+        // Unpublished drafts get no roster until they are published.
         return events.filter(
-            (e) => e.kind === "match" && !rosterEventIds.has(e.id)
+            (e) => e.kind === "match" && !e.isDraft && !rosterEventIds.has(e.id)
         )
     }, [events, rosters])
 
@@ -208,7 +209,20 @@ export function RosterCreator({
                             <Label>{dictionary.roster.selectEvent}</Label>
                             <Select
                                 value={selectedEventId}
-                                onValueChange={setSelectedEventId}
+                                onValueChange={(eventId) => {
+                                    setSelectedEventId(eventId)
+                                    // A match created from a template starts from its squad preset.
+                                    const presetId = events.find(
+                                        (event) => event.id === eventId
+                                    )?.squadPresetId
+                                    if (
+                                        presetId &&
+                                        squadPresets.some(
+                                            (preset) => preset.id === presetId
+                                        )
+                                    )
+                                        setSelectedPresetId(presetId)
+                                }}
                             >
                                 <SelectTrigger className="rounded-xl">
                                     <SelectValue

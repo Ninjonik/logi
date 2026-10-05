@@ -207,7 +207,7 @@ export function PerformanceHistoryChart({
                                     }
                                     tickLine={false}
                                     axisLine={false}
-                                    width={38}
+                                    width="auto"
                                 />
                                 <Tooltip
                                     content={(props) => (

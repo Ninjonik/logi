@@ -1,4 +1,4 @@
-import { BookOpen, Github, Menu, X } from "lucide-react"
+import { BookOpen, Github } from "lucide-react"
 import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
@@ -14,31 +14,28 @@ import { Logo } from "@/components/logo"
 
 const githubHref = "https://github.com/ninjonik/logi"
 
-type NavigationItem = { href: string; label: string; external?: boolean }
+/** Public sections with their own navigation entry (designs J1, J2). */
+export type PublicSection = "community" | "competitions" | "wiki"
+
+type NavigationItem = { href: string; label: string; section: PublicSection }
 
 function NavigationLink({
     item,
     className,
+    current,
 }: {
     item: NavigationItem
     className: string
+    current?: PublicSection
 }) {
-    if (!item.external)
-        return (
-            <Link href={item.href} className={className}>
-                {item.label}
-            </Link>
-        )
     return (
-        <a
+        <Link
             href={item.href}
-            target="_blank"
-            rel="noreferrer"
+            aria-current={item.section === current ? "page" : undefined}
             className={className}
         >
-            <SiDiscord aria-hidden="true" className="size-3.5" />
             {item.label}
-        </a>
+        </Link>
     )
 }
 
@@ -46,57 +43,66 @@ export async function PublicSiteShell({
     children,
     locale,
     dashboardHref,
+    current,
 }: {
     children: React.ReactNode
     locale: Locale
     dashboardHref?: string
+    /** The section the page belongs to, marked in the navigation. */
+    current?: PublicSection
 }) {
     const dictionary = getDictionary(locale)
     const status = await getLogiStatus()
     const discordSupportUrl = getDiscordSupportUrl()
     const navigation: NavigationItem[] = [
-        { href: `/${locale}/community`, label: dictionary.home.community },
+        {
+            href: `/${locale}/community`,
+            label: dictionary.publicProfiles.communityTitle,
+            section: "community",
+        },
         {
             href: `/${locale}/competitions`,
-            label: dictionary.home.competitions,
+            label: dictionary.competition.title,
+            section: "competitions",
         },
-        { href: "/wiki", label: dictionary.publicNavigation.wiki },
         {
-            href: discordSupportUrl,
-            label: dictionary.publicNavigation.discordSupport,
-            external: true,
+            href: "/wiki",
+            label: dictionary.publicNavigation.wiki,
+            section: "wiki",
         },
     ]
+    const navLinkClass =
+        "text-muted-foreground hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground rounded-lg px-2.5 py-1.5 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
 
     return (
         <div className="bg-background text-foreground flex min-h-dvh flex-col">
             <header className="bg-background/90 sticky top-0 z-30 border-b backdrop-blur">
-                <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex h-16 w-full max-w-[75rem] items-center gap-4 px-4 sm:px-6 lg:gap-6 lg:px-8">
                     <Link
                         href={`/${locale}`}
                         aria-label={dictionary.app.name}
-                        className="inline-flex items-center gap-2.5 text-sm font-semibold tracking-wide"
+                        className="inline-flex shrink-0 items-center gap-2 text-base font-bold"
                     >
-                        <span className="bg-card flex size-9 items-center justify-center rounded-lg border">
-                            <Logo size={19} />
+                        <span className="bg-card flex size-8 items-center justify-center rounded-lg border">
+                            <Logo size={18} />
                         </span>
-                        <span className="hidden sm:inline">
-                            {dictionary.app.name}
-                        </span>
+                        <span aria-hidden="true">{dictionary.app.name}</span>
                     </Link>
+                    {/* Community, Competitions and Wiki (designs J1, J2); Discord support is in the footer. */}
                     <nav
                         aria-label="Main navigation"
-                        className="text-muted-foreground hidden items-center gap-5 text-sm lg:flex"
+                        className="hidden flex-1 items-center gap-1 text-sm md:flex"
                     >
                         {navigation.map((item) => (
                             <NavigationLink
                                 key={item.href}
                                 item={item}
-                                className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                                current={current}
+                                className={navLinkClass}
                             />
                         ))}
                     </nav>
-                    <div className="flex items-center gap-2">
+                    <div className="ml-auto flex items-center gap-2">
                         <span className="hidden sm:inline-flex">
                             <LogiStatusLink
                                 status={status}
@@ -117,34 +123,26 @@ export async function PublicSiteShell({
                                 {dictionary.home.openApp}
                             </Link>
                         </Button>
-                        {/* Below lg the links fold into this menu; <details> needs no client script. */}
-                        <details className="group relative lg:hidden">
-                            <summary
-                                aria-label={dictionary.publicNavigation.menu}
-                                className="hover:bg-muted flex size-9 cursor-pointer list-none items-center justify-center rounded-lg border [&::-webkit-details-marker]:hidden"
-                            >
-                                <Menu className="size-4 group-open:hidden" />
-                                <X className="hidden size-4 group-open:block" />
-                            </summary>
-                            <nav
-                                aria-label="Main navigation"
-                                className="bg-popover text-popover-foreground absolute top-full right-0 z-40 mt-2 flex w-60 flex-col gap-1 rounded-xl border p-2 text-sm shadow-lg"
-                            >
-                                {navigation.map((item) => (
-                                    <NavigationLink
-                                        key={item.href}
-                                        item={item}
-                                        className="hover:bg-muted flex items-center gap-2 rounded-md px-3 py-2"
-                                    />
-                                ))}
-                            </nav>
-                        </details>
                     </div>
                 </div>
+                {/* The menu stays visible on a phone, as its own row (design J1). */}
+                <nav
+                    aria-label="Main navigation"
+                    className="mx-auto flex w-full max-w-[75rem] items-center gap-1 overflow-x-auto px-4 pb-2 text-sm sm:px-6 md:hidden"
+                >
+                    {navigation.map((item) => (
+                        <NavigationLink
+                            key={item.href}
+                            item={item}
+                            current={current}
+                            className={navLinkClass}
+                        />
+                    ))}
+                </nav>
             </header>
             {children}
             <footer className="bg-background border-t">
-                <div className="text-muted-foreground mx-auto flex min-h-14 w-full max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3 text-xs sm:px-6 lg:px-8">
+                <div className="text-muted-foreground mx-auto flex min-h-14 w-full max-w-[75rem] flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3 text-xs sm:px-6 lg:px-8">
                     <span>
                         &copy; {new Date().getFullYear()} {dictionary.app.name}
                     </span>
@@ -205,7 +203,7 @@ export async function PublicSiteShell({
 
 export function PublicPage({
     children,
-    className = "max-w-6xl",
+    className = "max-w-[75rem]",
 }: {
     children: React.ReactNode
     className?: string

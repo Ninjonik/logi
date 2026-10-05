@@ -44,10 +44,13 @@ export const getCalendarFeed = query({
 
         return {
             clanName: guild.name,
-            events: events.map((event) => ({
-                ...event,
-                id: String(event._id),
-            })),
+            // The subscribed calendar never shows unpublished drafts.
+            events: events
+                .filter((event) => event.isDraft !== true)
+                .map((event) => ({
+                    ...event,
+                    id: String(event._id),
+                })),
             calendarItems: calendarItems.map((item) => ({
                 ...item,
                 id: String(item._id),

@@ -8,6 +8,7 @@ import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { fetchDiscordGuildChannels } from "@/lib/discord"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
+import { getSiteUrl } from "@/lib/env"
 
 export async function POST(
     request: Request,
@@ -17,7 +18,12 @@ export async function POST(
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
     const serverContext = await getServerContext(serverId)
-    if (!serverContext?.canAdmin) {
+    const origin = request.headers.get("origin")
+    if (
+        !serverContext?.canAdmin ||
+        // Browsers send Origin with every cross-site POST.
+        (origin && origin !== new URL(getSiteUrl()).origin)
+    ) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 

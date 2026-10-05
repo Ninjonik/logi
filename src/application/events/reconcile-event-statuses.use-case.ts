@@ -1,6 +1,7 @@
 import { normalizeEventRecord } from "@/domain/events/normalization"
 import { deriveEventStatus } from "@/domain/events/status"
 import type { Clock } from "@/application/ports/clock"
+import { isDraftEvent } from "@/domain/events/drafts"
 
 import type { EventCommandRepository, EventScorePort } from "./command-ports"
 
@@ -40,6 +41,7 @@ export class ReconcileEventStatusesUseCase {
         const scoreEventIds: string[] = []
 
         for (const event of records) {
+            if (isDraftEvent(event)) continue
             const normalizedEvent = normalizeEventRecord(event, now)
             const nextStatus = deriveEventStatus(normalizedEvent, now)
             const shouldPatch =

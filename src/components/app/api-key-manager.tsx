@@ -1,9 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useId, useState } from "react"
-import { Copy, KeyRound, Plus, Trash2, X } from "lucide-react"
+import { Copy, KeyRound, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+    API_KEY_RESOURCE_GROUP_IDS,
+    groupsOfResources,
+    resourcesForGroups,
+    type ApiKeyResourceGroup,
+} from "@/domain/api/key-access-groups"
 import {
     Select,
     SelectContent,
@@ -12,18 +18,19 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
-    API_KEY_READ_RESOURCES,
     isApiKeyReadAccess,
     type ApiKeyReadAccess,
 } from "@/domain/api/key-access"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
+import { SettingsStep } from "@/components/app/settings/settings-step"
 import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 type ApiKey = {
     id: string
@@ -35,30 +42,27 @@ type ApiKey = {
     readAccess?: ApiKeyReadAccess
 }
 
-type Props = { serverId: string; dictionary: Dictionary }
-type Resource = ApiKeyReadAccess["resources"][number]
-const summaryResources: Resource[] = ["event-summaries", "match-summaries"]
-const resources = [
-    ...summaryResources,
-    ...API_KEY_READ_RESOURCES.filter(
-        (resource) => !summaryResources.includes(resource)
-    ),
-]
+type Props = {
+    serverId: string
+    dictionary: Dictionary
+    /** Renders the manager as a numbered step with "New key" in its header (design G5). */
+    step?: { id: string; number: number; title: string }
+}
+const DEFAULT_GROUPS: ApiKeyResourceGroup[] = ["matches"]
 
 export function ApiKeyManager(props: Props) {
     // Workspace navigation must discard revealed credentials and pending form state.
     return <ApiKeyManagerForm key={props.serverId} {...props} />
 }
 
-function ApiKeyManagerForm({ serverId, dictionary }: Props) {
+function ApiKeyManagerForm({ serverId, dictionary, step }: Props) {
     const t = dictionary.apiKeys
     const web = dictionary.integrationSettings.web
     const id = useId()
     const [keys, setKeys] = useState<ApiKey[]>([])
     const [name, setName] = useState("")
     const [mode, setMode] = useState<"read-only" | "legacy">("read-only")
-    const [selectedResources, setSelectedResources] =
-        useState<Resource[]>(summaryResources)
+    const [groups, setGroups] = useState<ApiKeyResourceGroup[]>(DEFAULT_GROUPS)
     const [games, setGames] = useState<GameId[]>([])
     const [newKey, setNewKey] = useState<string | null>(null)
     const [pending, setPending] = useState(false)
@@ -68,7 +72,7 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
     // list loads it folds behind "New key" when keys already exist.
     const [formOpen, setFormOpen] = useState(true)
     const url = `/api/servers/${encodeURIComponent(serverId)}/api-keys`
-    const readAccess = { resources: selectedResources, gameIds: games }
+    const readAccess = { resources: resourcesForGroups(groups), gameIds: games }
     const valid =
         Boolean(name.trim()) &&
         name.trim().length <= 80 &&
@@ -159,31 +163,61 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
         }
     }
 
-    return (
-        <div className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <p className="text-muted-foreground max-w-prose min-w-0 flex-1 text-sm">
-                    {t.description}
-                </p>
-                <Button
-                    type="button"
-                    variant={formOpen ? "ghost" : "default"}
-                    className="rounded-xl"
-                    aria-expanded={formOpen}
-                    aria-controls={`${id}-form`}
-                    onClick={() => setFormOpen((open) => !open)}
-                >
-                    {formOpen ? (
-                        <X className="size-4" />
-                    ) : (
-                        <Plus className="size-4" />
-                    )}
-                    {formOpen ? web.closeForm : web.newKey}
-                </Button>
-            </div>
+    /** "read only · matches, rosters · both games" for a key's policy. */
+    function summary(access: ApiKeyReadAccess) {
+        const covered = groupsOfResources(access.resources)
+        const areas = [
+            ...covered.full.map((group) => t.groups[group].short),
+            ...covered.partial.map((group) =>
+                t.partialGroup.replace("{group}", t.groups[group].short)
+            ),
+        ].join(", ")
+        const gameText = GAME_IDS.every((game) => access.gameIds.includes(game))
+            ? t.everyGame
+            : access.gameIds.map((game) => GAME_LABELS[game]).join(", ")
+        return [t.readOnlyShort, areas, gameText].filter(Boolean).join(" · ")
+    }
+    const createdOn = (iso: string) =>
+        t.createdOn.replace(
+            "{date}",
+            new Intl.DateTimeFormat(undefined, {
+                day: "numeric",
+                month: "numeric",
+            }).format(new Date(iso))
+        )
+
+    const toggle = (
+        <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-lg"
+            aria-expanded={formOpen}
+            aria-controls={`${id}-form`}
+            onClick={() => setFormOpen((open) => !open)}
+        >
+            {formOpen ? (
+                <X className="size-4" aria-hidden="true" />
+            ) : (
+                <Plus className="size-4" aria-hidden="true" />
+            )}
+            {formOpen ? web.closeForm : web.newKey}
+        </Button>
+    )
+
+    const body = (
+        <div className="space-y-4">
+            {step ? null : (
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <p className="text-muted-foreground max-w-prose min-w-0 flex-1 text-sm">
+                        {t.description}
+                    </p>
+                    {toggle}
+                </div>
+            )}
             {newKey ? (
                 <div
-                    className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3"
+                    className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
                     role="status"
                 >
                     <p className="text-sm font-medium">{t.copyNow}</p>
@@ -279,59 +313,80 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                             </div>
                         </div>
                         {mode === "read-only" ? (
-                            <div className="space-y-4 rounded-lg border p-4">
-                                <p className="text-muted-foreground text-sm">
-                                    {t.readOnlyHelp}
-                                </p>
-                                <fieldset className="space-y-3">
+                            <div className="space-y-4">
+                                <fieldset className="space-y-2">
                                     <legend className="text-sm font-medium">
-                                        {t.resources}
+                                        {t.groupsLegend}
                                     </legend>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        {resources.map((resource) => (
-                                            <div
-                                                key={resource}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <Checkbox
-                                                    id={`${id}-${resource}`}
-                                                    checked={selectedResources.includes(
-                                                        resource
-                                                    )}
-                                                    disabled={pending}
-                                                    onCheckedChange={(
-                                                        checked
-                                                    ) =>
-                                                        setSelectedResources(
-                                                            (current) =>
-                                                                checked === true
-                                                                    ? [
-                                                                          ...current,
-                                                                          resource,
-                                                                      ]
-                                                                    : current.filter(
-                                                                          (
-                                                                              value
-                                                                          ) =>
-                                                                              value !==
-                                                                              resource
-                                                                      )
-                                                        )
-                                                    }
-                                                />
-                                                <Label
-                                                    htmlFor={`${id}-${resource}`}
-                                                >
-                                                    {t.resourceLabels[resource]}
-                                                </Label>
-                                            </div>
-                                        ))}
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        {API_KEY_RESOURCE_GROUP_IDS.map(
+                                            (group) => {
+                                                const checked =
+                                                    groups.includes(group)
+                                                return (
+                                                    <label
+                                                        key={group}
+                                                        htmlFor={`${id}-${group}`}
+                                                        className={cn(
+                                                            "hover:bg-accent/40 flex cursor-pointer items-start gap-3 rounded-lg border p-3",
+                                                            checked &&
+                                                                "border-foreground/40 bg-accent/30"
+                                                        )}
+                                                    >
+                                                        <Checkbox
+                                                            id={`${id}-${group}`}
+                                                            checked={checked}
+                                                            disabled={pending}
+                                                            className="mt-0.5"
+                                                            onCheckedChange={(
+                                                                value
+                                                            ) =>
+                                                                setGroups(
+                                                                    (
+                                                                        current
+                                                                    ) =>
+                                                                        value ===
+                                                                        true
+                                                                            ? [
+                                                                                  ...current,
+                                                                                  group,
+                                                                              ]
+                                                                            : current.filter(
+                                                                                  (
+                                                                                      item
+                                                                                  ) =>
+                                                                                      item !==
+                                                                                      group
+                                                                              )
+                                                                )
+                                                            }
+                                                        />
+                                                        <span className="space-y-0.5">
+                                                            <span className="block text-sm font-medium">
+                                                                {
+                                                                    t.groups[
+                                                                        group
+                                                                    ].label
+                                                                }
+                                                            </span>
+                                                            <span className="text-muted-foreground block text-xs">
+                                                                {
+                                                                    t.groups[
+                                                                        group
+                                                                    ].help
+                                                                }
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                )
+                                            }
+                                        )}
                                     </div>
                                     <p className="text-muted-foreground text-xs">
                                         {t.privateData}
                                     </p>
                                 </fieldset>
-                                <fieldset className="space-y-3">
+                                <fieldset className="space-y-2">
                                     <legend className="text-sm font-medium">
                                         {t.games}
                                     </legend>
@@ -393,105 +448,109 @@ function ApiKeyManagerForm({ serverId, dictionary }: Props) {
                     </fieldset>
                 </form>
             ) : null}
-            <div className="space-y-2">
-                <h3 className="text-sm font-medium">{t.existingKeys}</h3>
-                {loading ? (
-                    <p className="text-muted-foreground text-sm" role="status">
-                        {t.loading}
-                    </p>
-                ) : null}
-                {loadError ? (
-                    <div role="alert" className="space-y-2 text-sm">
-                        <p>{t.loadFailed}</p>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={pending}
-                            onClick={() => void load()}
-                        >
-                            {t.retry}
-                        </Button>
-                    </div>
-                ) : null}
-                {!loading && !loadError && keys.length === 0 ? (
-                    <EmptyState
-                        icon={KeyRound}
-                        title={t.emptyTitle}
-                        description={t.emptyDescription}
-                    />
-                ) : null}
-                {keys.map((key) => (
-                    <div
-                        key={key.id}
-                        className={`flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3 ${key.revokedAt ? "opacity-70" : ""}`}
-                    >
-                        <div className="min-w-0 flex-1 space-y-1">
-                            <p className="font-medium break-words">
-                                {key.name}
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                                {key.keyPrefix}… · {t.created}{" "}
-                                {new Date(key.createdAt).toLocaleDateString()}
-                                {key.revokedAt ? ` · ${t.revoked}` : ""}
-                            </p>
-                            {key.readAccess === undefined ? (
-                                <p className="text-sm font-medium">
-                                    {t.fullAccess} — {t.allGames}
-                                </p>
-                            ) : isApiKeyReadAccess(key.readAccess) ? (
-                                <div className="space-y-1 text-sm">
-                                    <p className="font-medium">{t.readOnly}</p>
-                                    <p>
-                                        {key.readAccess.resources
-                                            .map(
-                                                (resource) =>
-                                                    t.resourceLabels[resource]
-                                            )
-                                            .join(", ")}
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        {key.readAccess.gameIds
-                                            .map((game) => GAME_LABELS[game])
-                                            .join(", ")}
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="text-sm">{t.invalidPolicy}</p>
-                            )}
-                        </div>
-                        {!key.revokedAt ? (
-                            <ConfirmActionDialog
-                                trigger={
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={pending || loadError}
-                                        aria-label={`${t.revoke}: ${key.name}`}
-                                    >
-                                        <Trash2 className="size-4" />
-                                        {t.revoke}
-                                    </Button>
-                                }
-                                title={t.revokeTitle.replace(
-                                    "{name}",
-                                    key.name
-                                )}
-                                description={t.revokeDescription}
-                                confirmLabel={t.revokeConfirm}
-                                cancelLabel={
-                                    dictionary.integrationSettings.cancel
-                                }
-                                onConfirm={() => revoke(key.id)}
-                            />
-                        ) : null}
-                    </div>
-                ))}
-                <p className="text-muted-foreground text-xs">
-                    {web.keyShownOnce} {t.rotateHelp}
+            {loading ? (
+                <p className="text-muted-foreground text-sm" role="status">
+                    {t.loading}
                 </p>
-            </div>
+            ) : null}
+            {loadError ? (
+                <div role="alert" className="space-y-2 text-sm">
+                    <p>{t.loadFailed}</p>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={pending}
+                        onClick={() => void load()}
+                    >
+                        {t.retry}
+                    </Button>
+                </div>
+            ) : null}
+            {!loading && !loadError && keys.length === 0 ? (
+                <EmptyState
+                    icon={KeyRound}
+                    title={t.emptyTitle}
+                    description={t.emptyDescription}
+                />
+            ) : null}
+            {keys.length ? (
+                <ul className="divide-y rounded-xl border">
+                    {keys.map((key) => (
+                        <li
+                            key={key.id}
+                            className={cn(
+                                "flex flex-wrap items-center gap-3 p-4",
+                                key.revokedAt && "opacity-70"
+                            )}
+                        >
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                                <p className="text-sm break-words">
+                                    {key.name}
+                                    {key.revokedAt ? (
+                                        <span className="text-muted-foreground">
+                                            {" "}
+                                            · {t.revoked}
+                                        </span>
+                                    ) : null}
+                                </p>
+                                <p className="text-muted-foreground text-[13px]">
+                                    {key.readAccess === undefined
+                                        ? `${t.fullAccess} · ${t.allGames}`
+                                        : isApiKeyReadAccess(key.readAccess)
+                                          ? summary(key.readAccess)
+                                          : t.invalidPolicy}
+                                </p>
+                            </div>
+                            <span className="text-muted-foreground text-[13px]">
+                                {createdOn(key.createdAt)}
+                            </span>
+                            {!key.revokedAt ? (
+                                <ConfirmActionDialog
+                                    trigger={
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-destructive border-destructive/40 hover:text-destructive rounded-lg"
+                                            disabled={pending || loadError}
+                                            aria-label={`${t.revokeConfirm}: ${key.name}`}
+                                        >
+                                            {t.revokeConfirm}
+                                        </Button>
+                                    }
+                                    title={t.revokeTitle.replace(
+                                        "{name}",
+                                        key.name
+                                    )}
+                                    description={t.revokeDescription}
+                                    confirmLabel={t.revokeConfirm}
+                                    cancelLabel={
+                                        dictionary.integrationSettings.cancel
+                                    }
+                                    onConfirm={() => revoke(key.id)}
+                                />
+                            ) : null}
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+            <p className="text-muted-foreground text-xs">
+                {web.keyShownOnce} {t.rotateHelp}
+            </p>
         </div>
+    )
+
+    return step ? (
+        <SettingsStep
+            id={step.id}
+            number={step.number}
+            title={step.title}
+            actions={toggle}
+        >
+            {body}
+        </SettingsStep>
+    ) : (
+        body
     )
 }

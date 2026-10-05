@@ -268,6 +268,8 @@ export const getPublic = query({
                                 scoreB: row.scoreB,
                                 status: row.status,
                                 scheduledAt: row.scheduledAt,
+                                // Optional: fixtures saved before rounds have none.
+                                round: row.round,
                                 eventId: row.eventId
                                     ? String(row.eventId)
                                     : undefined,
@@ -287,6 +289,57 @@ export const listPublicSlugs = query({
         return (await ctx.db.query("competitions").take(200))
             .filter(isCompetitionPublished)
             .map((competition) => competition.slug)
+    },
+})
+
+/** How many of a clan's newest events the fixture labels read at most. */
+const CLAN_FIXTURE_SCAN_LIMIT = 400
+
+/**
+ * Which published competition each of a clan's matches is played in, for the
+ * detail line of the dashboard match list. Reads the clan's newest events
+ * through the guild index, bounded; a fixture counts only when it links back
+ * to the same event. Unpublished competitions are left out.
+ */
+export const listClanFixtureLabels = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const events = await ctx.db
+            .query("events")
+            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+            .order("desc")
+            .take(CLAN_FIXTURE_SCAN_LIMIT)
+        const competitions = new Map<
+            string,
+            Promise<Doc<"competitions"> | null>
+        >()
+        const labels = await Promise.all(
+            events.map(async (event) => {
+                if (
+                    !event.competitionFixtureId ||
+                    event.guildId !== args.guildId ||
+                    event.isDraft ||
+                    (event.kind ?? "match") !== "match"
+                )
+                    return null
+                const fixture = await ctx.db.get(event.competitionFixtureId)
+                if (!fixture || fixture.eventId !== event._id) return null
+                const key = String(fixture.competitionId)
+                if (!competitions.has(key))
+                    competitions.set(key, ctx.db.get(fixture.competitionId))
+                const competition = await competitions.get(key)
+                if (!competition || !isCompetitionPublished(competition))
+                    return null
+                return {
+                    eventId: String(event._id),
+                    name: competition.name,
+                    season: competition.season,
+                    phase: fixture.phase,
+                }
+            })
+        )
+        return labels.filter((label) => label !== null)
     },
 })
 
@@ -378,6 +431,7 @@ export const adminGet = query({
                                 ? String(row.divisionId)
                                 : null,
                             phase: row.phase,
+                            round: row.round ?? null,
                             sideA: await view(sideA),
                             sideB: await view(sideB),
                             scheduledAt: row.scheduledAt ?? null,
@@ -390,6 +444,8 @@ export const adminGet = query({
                                       name: event.name,
                                       gameStart: event.gameStart,
                                       workspace: workspace?.name ?? null,
+                                      hasResult: Boolean(event.eventResult),
+                                      reviewed: Boolean(event.reviewedResult),
                                   }
                                 : null,
                         }
@@ -473,6 +529,7 @@ export const linkCandidates = query({
                 for (const event of events) {
                     if (
                         candidates.has(String(event._id)) ||
+                        event.isDraft === true ||
                         event.kind === "training" ||
                         resolveGameScope(event.gameId) !== gameId ||
                         (event.competitionFixtureId &&
@@ -899,6 +956,7 @@ export const createFixture = mutation({
             competitionId: competition._id,
             ...write.fields,
             phase: write.fixture.phase,
+            round: write.fixture.round ?? undefined,
             scheduledAt: write.fixture.scheduledAt ?? undefined,
             scoreA: write.fixture.scoreA ?? undefined,
             scoreB: write.fixture.scoreB ?? undefined,
@@ -911,7 +969,7 @@ export const createFixture = mutation({
     },
 })
 
-/** Replaces a fixture's teams, division, phase, schedule, score and status; its event link stays. */
+/** Replaces a fixture's teams, division, phase, round, schedule, score and status; its event link stays. */
 export const updateFixture = mutation({
     args: { ...platformAccess, fixtureId: v.string(), input: v.any() },
     handler: async (ctx, args): Promise<Ok | Failure> => {
@@ -934,6 +992,10 @@ export const updateFixture = mutation({
             teamAId: undefined,
             teamBId: undefined,
             phase: write.fixture.phase,
+            // A write without `round` keeps the stored one.
+            ...(write.fixture.round !== undefined
+                ? { round: write.fixture.round ?? undefined }
+                : {}),
             scheduledAt: write.fixture.scheduledAt ?? undefined,
             scoreA: write.fixture.scoreA ?? undefined,
             scoreB: write.fixture.scoreB ?? undefined,

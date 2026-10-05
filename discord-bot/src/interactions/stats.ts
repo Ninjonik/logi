@@ -33,9 +33,13 @@ import {
     statsGameSchema,
     statsPeriodSchema,
 } from "../../../src/domain/player-stats/player-stats"
+import {
+    statsReplyButtons,
+    type StatsReplyButton,
+} from "../../../src/domain/player-stats/stats-reply"
 import { renderStats, safeStatsText, type StatsView } from "./stats-render"
+import { statsCopy } from "../../../src/domain/player-stats/stats-copy"
 import { randomBytes } from "node:crypto"
-import { statsCopy } from "./stats-copy"
 
 type Payload = ReturnType<typeof renderStats> & {
     files?: Array<{ attachment: string; name: string }>
@@ -218,29 +222,25 @@ export function createStatsController(ports: StatsPorts) {
         })
         const components: ActionRowBuilder<ButtonBuilder>[] = []
         if (controls) {
-            const navigation =
+            const [navigationButtons = [], actionButtons = []] =
+                statsReplyButtons(c, {
+                    game: s.request.game,
+                    publishable: publishable(s),
+                    self: self(s),
+                    shared: Boolean(s.shared),
+                })
+            const row = (items: StatsReplyButton[]) =>
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    button(s, "overview", c.overview),
-                    button(s, "refresh", c.refresh)
-                )
-            if (publishable(s))
-                navigation.addComponents(
-                    button(s, "recent", c.recent),
-                    button(
-                        s,
-                        s.request.game === "hll" ? "weapons" : "factions",
-                        s.request.game === "hll" ? c.weapons : c.factions
+                    items.map((item) =>
+                        item.primary
+                            ? button(s, item.action, item.label).setStyle(
+                                  ButtonStyle.Primary
+                              )
+                            : button(s, item.action, item.label)
                     )
                 )
-            if (publishable(s) && s.request.game === "hll")
-                navigation.addComponents(button(s, "maps", c.maps))
-            components.push(navigation)
-            const actions = new ActionRowBuilder<ButtonBuilder>()
-            if (self(s)) actions.addComponents(button(s, "link", c.add))
-            if (publishable(s) && !s.shared)
-                actions.addComponents(
-                    button(s, "share", c.share).setStyle(ButtonStyle.Primary)
-                )
+            components.push(row(navigationButtons))
+            const actions = row(actionButtons)
             if (r.kind === "hll")
                 actions.addComponents(
                     new ButtonBuilder()

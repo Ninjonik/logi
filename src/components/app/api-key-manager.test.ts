@@ -11,7 +11,7 @@ for (const [locale, readOnly, createLabel] of [
     ["cs", "Pouze pro čtení", "Vytvořit klíč pro čtení"],
     ["de", "Nur lesen", "Leseschlüssel erstellen"],
 ] as const) {
-    test(`API key form starts with localized read-only access in ${locale}`, () => {
+    test(`API key form starts with localized read-only access by area in ${locale}`, () => {
         const props = {
             serverId: "fixture-server",
             dictionary: getDictionary(locale),
@@ -24,13 +24,16 @@ for (const [locale, readOnly, createLabel] of [
             markup.match(/<button[^>]*aria-checked="true"[^>]*>/g) ?? []
         assert.equal(
             checked.length,
-            2,
-            "only the two summary resources are selected; games require an explicit choice"
+            1,
+            "only the matches area is selected; games require an explicit choice"
         )
-        for (const resource of ["event-summaries", "match-summaries"])
-            assert.ok(
-                checked.some((control) => control.includes(`-${resource}`))
-            )
+        assert.ok(checked[0]?.includes("-matches"))
+        // Areas replace one box per resource (design G5).
+        assert.equal(
+            (markup.match(/role="checkbox"/g) ?? []).length,
+            6 + 3,
+            "six areas and three games"
+        )
         assert.doesNotMatch(markup, /A key can read your clan’s website data/)
     })
 }
