@@ -29,8 +29,10 @@ import {
 import { useSettingsAttentionCount } from "@/components/app/settings-attention"
 import { globalAdminHref, isGlobalAdminPath } from "@/lib/global-admin-routes"
 import { NavMain, NavMenuItems, type NavItem } from "@/components/nav-main"
+import { globalAdminSection } from "@/lib/navigation/global-admin-routes"
 import { ServerSwitcher } from "@/components/app/server-switcher"
 import { GameSwitcher } from "@/components/app/game-switcher"
+import { AdminSidebar } from "@/components/app/admin-sidebar"
 import { canAdminWorkspace } from "@/lib/workspace-admin"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { NavUser } from "@/components/nav-user"
@@ -51,7 +53,6 @@ export function AppSidebar({
     activeServerId,
     canAdmin,
     isSuperadmin,
-    globalAdminSidebar,
     ...props
 }: React.ComponentProps<typeof Sidebar> & {
     locale: Locale
@@ -61,17 +62,15 @@ export function AppSidebar({
     activeServerId?: string
     canAdmin: boolean
     isSuperadmin: boolean
-    /**
-     * The global administration sidebar (design AdminSidebar). When given, it
-     * replaces this clan sidebar on global administration pages.
-     */
-    globalAdminSidebar?: React.ReactNode
 }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const { isMobile, setOpenMobile } = useSidebar()
     const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1]
     const selectedWorkspaceId = searchParams.get("workspace") ?? undefined
+    // Global administration has its own navigation (see AdminSidebar). It is
+    // swapped in at the end, after every hook of this component has run.
+    const adminSection = isSuperadmin ? globalAdminSection(pathname) : null
     const resolvedServerId =
         pathServerId ?? selectedWorkspaceId ?? activeServerId
     const resolvedServer = resolvedServerId
@@ -261,10 +260,8 @@ export function AppSidebar({
               ]
             : []
 
-    // Switch point: on global administration pages (`isGlobalAdminPath`) the
-    // shell's `globalAdminSidebar` replaces this one (see the end of this
-    // component). Until it is passed, global administration stays reachable
-    // from the "Global administration" entry and its sub-pages below.
+    // Global administration is reachable from the "Global administration"
+    // entry below; on its pages the AdminSidebar replaces this sidebar.
     const onGlobalAdminPage = isGlobalAdminPath(pathname)
     const footerItems: NavItem[] = [
         {
@@ -332,9 +329,18 @@ export function AppSidebar({
     const expandLabel = (title: string) =>
         t.showSubpages.replace("{item}", title)
 
-    if (globalAdminSidebar && isSuperadmin && onGlobalAdminPage) {
-        return globalAdminSidebar
-    }
+    if (adminSection)
+        return (
+            <AdminSidebar
+                locale={locale}
+                dictionary={dictionary}
+                user={user}
+                servers={servers}
+                activeSection={adminSection}
+                workspaceId={selectedWorkspaceId ?? activeServerId}
+                {...props}
+            />
+        )
 
     return (
         <Sidebar id="onboarding-sidebar" {...props}>

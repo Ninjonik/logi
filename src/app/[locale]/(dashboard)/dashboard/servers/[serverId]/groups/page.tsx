@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Groups | Logi",
+    title: "Groups",
     description: "Manage server groups.",
 }
 

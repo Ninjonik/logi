@@ -9,7 +9,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Topic preset | Logi",
+    title: "Topic preset",
     description: "Manage an event topic preset.",
 }
 

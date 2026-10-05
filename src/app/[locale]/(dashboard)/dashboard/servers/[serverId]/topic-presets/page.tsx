@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Topic presets | Logi",
+    title: "Topic presets",
     description: "Manage event topic presets.",
 }
 

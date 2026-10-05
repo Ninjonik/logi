@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!stratmap) {
         return {
-            title: `${dictionary.stratmaps.title} | ${dictionary.app.name}`,
+            title: dictionary.stratmaps.title,
             description: dictionary.stratmaps.pageDescription,
         }
     }
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 )?.label ?? stratmap.strongpointId)
               : undefined
 
-    const title = `${stratmap.title} · ${mapName} | ${dictionary.app.name}`
+    const title = `${stratmap.title} · ${mapName}`
     const descriptionParts = [
         stratmap.description,
         mapName,

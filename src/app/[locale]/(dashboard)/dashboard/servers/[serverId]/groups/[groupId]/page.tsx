@@ -10,7 +10,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Group | Logi",
+    title: "Group",
     description: "Manage a server group.",
 }
 

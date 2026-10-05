@@ -60,7 +60,9 @@ export default function RootLayout({
 }) {
     return (
         <html
+            // Localized routes correct this before the first paint; see HtmlLang.
             lang="en"
+            suppressHydrationWarning
             className={`${inter.variable} antialiased`}
             data-scroll-behavior="smooth"
         >

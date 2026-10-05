@@ -23,18 +23,28 @@ import {
     type TeamRequestStatus,
 } from "@/domain/teams/team-request"
 import {
+    filterTeamRequests,
+    requestClanOptions,
+    selectedTeamRequest,
+} from "@/lib/teams-admin/team-request-filters"
+import {
     appendUnique,
     fillTemplate,
     formatAdminDate,
     removeById,
 } from "@/lib/teams-admin/team-admin-list"
+import { TEAM_GAMES, teamGameSchema, type TeamGame } from "@/domain/teams/team"
+import { TEAM_REQUESTS_CHANGED_EVENT } from "@/components/app/admin-sidebar"
 import { proposalChanges } from "@/lib/teams-admin/team-editor"
+import { formatRelativeTime } from "@/lib/format/relative-time"
 import { useEffect, useId, useRef, useState } from "react"
+import { EmptyState } from "@/components/app/empty-state"
+import { TeamLogo } from "@/components/app/team-logo"
 import { GAME_LABELS } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2 } from "lucide-react"
+import { Inbox, Loader2 } from "lucide-react"
 
 const QUEUE_PAGE = 20
 
@@ -49,17 +59,35 @@ const errorCodeOf = (error: unknown): TeamRequestAdminErrorCode =>
         ? (error.code as TeamRequestAdminErrorCode)
         : "unavailable"
 
-/** The global moderation queue; pending requests are listed oldest first. */
+/** Decided requests can be listed by each final status. */
+const DECIDED_STATUSES = TEAM_REQUEST_STATUSES.filter(
+    (value) => value !== "pending"
+)
+type QueueView = "pending" | "decided"
+
+/**
+ * The global moderation queue (design I2): pending requests oldest first in
+ * a list, the chosen request with its comparison and decisions beside it.
+ */
 export function TeamRequestQueue({
     labels,
     locale,
+    allGamesLabel,
 }: {
     labels: RequestDialogLabels
     locale: string
+    allGamesLabel: string
 }) {
     const t = labels.requests
     const id = useId()
-    const [status, setStatus] = useState<TeamRequestStatus>("pending")
+    const [view, setView] = useState<QueueView>("pending")
+    const [decidedStatus, setDecidedStatus] =
+        useState<TeamRequestStatus>("approved")
+    const status: TeamRequestStatus =
+        view === "pending" ? "pending" : decidedStatus
+    const [game, setGame] = useState<TeamGame | "all">("all")
+    const [clan, setClan] = useState<string>("all")
+    const [selectedId, setSelectedId] = useState<string | null>(null)
     const [items, setItems] = useState<TeamRequestRecord[]>([])
     const [nextCursor, setNextCursor] = useState<string | null>(null)
     const [load, setLoad] = useState<"loading" | "ready" | "error">("loading")
@@ -123,10 +151,12 @@ export function TeamRequestQueue({
     function onDecided(request: TeamRequestRecord, decided: DecidedStatus) {
         setItems((loaded) => removeById(loaded, request.id))
         setNotice({ tone: "success", text: t.decidedNotice[decided] })
+        window.dispatchEvent(new Event(TEAM_REQUESTS_CHANGED_EVENT))
     }
 
     async function onStale(request: TeamRequestRecord) {
         setNotice({ tone: "error", text: t.staleRequest })
+        window.dispatchEvent(new Event(TEAM_REQUESTS_CHANGED_EVENT))
         const latest = await fetchTeamRequest(request.id).catch(() => undefined)
         if (latest === undefined) return
         setItems((loaded) =>
@@ -145,6 +175,12 @@ export function TeamRequestQueue({
         setDialog({ kind, request })
     }
 
+    function changeView(next: QueueView) {
+        setNotice(null)
+        setSelectedId(null)
+        setView(next)
+    }
+
     const dialogProps = dialogRequest
         ? {
               labels,
@@ -157,28 +193,109 @@ export function TeamRequestQueue({
               onStale: (request: TeamRequestRecord) => void onStale(request),
           }
         : null
+    const visible = filterTeamRequests(items, { game, clan })
+    const selected = selectedTeamRequest(visible, selectedId)
+    const clans = requestClanOptions(items)
+    const pendingCount =
+        view === "pending" && load === "ready" && items.length > 0
+            ? `${items.length}${nextCursor ? "+" : ""}`
+            : null
+    const select =
+        "border-input bg-background flex h-9 rounded-md border px-3 text-sm"
 
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-                <Label htmlFor={`${id}-status`}>{t.statusFilter}</Label>
+                <div
+                    role="tablist"
+                    aria-label={t.tabsLabel}
+                    className="bg-muted inline-flex rounded-lg p-1"
+                >
+                    {(["pending", "decided"] as const).map((value) => (
+                        <button
+                            key={value}
+                            type="button"
+                            role="tab"
+                            aria-selected={view === value}
+                            onClick={() => changeView(value)}
+                            className="aria-selected:bg-background aria-selected:text-foreground text-muted-foreground focus-visible:ring-ring rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none aria-selected:shadow-sm"
+                        >
+                            {value === "pending"
+                                ? pendingCount
+                                    ? fillTemplate(t.tabPending, {
+                                          count: pendingCount,
+                                      })
+                                    : t.tabPendingEmpty
+                                : t.tabDecided}
+                        </button>
+                    ))}
+                </div>
+                {view === "decided" ? (
+                    <>
+                        <Label htmlFor={`${id}-status`} className="sr-only">
+                            {t.statusFilter}
+                        </Label>
+                        <select
+                            id={`${id}-status`}
+                            value={decidedStatus}
+                            onChange={(event) => {
+                                const parsed =
+                                    teamRequestStatusSchema.safeParse(
+                                        event.target.value
+                                    )
+                                if (parsed.success) {
+                                    setNotice(null)
+                                    setSelectedId(null)
+                                    setDecidedStatus(parsed.data)
+                                }
+                            }}
+                            className={select}
+                        >
+                            {DECIDED_STATUSES.map((value) => (
+                                <option key={value} value={value}>
+                                    {t.statuses[value]}
+                                </option>
+                            ))}
+                        </select>
+                    </>
+                ) : null}
+                <Label htmlFor={`${id}-game`} className="sr-only">
+                    {t.gameFilter}
+                </Label>
                 <select
-                    id={`${id}-status`}
-                    value={status}
+                    id={`${id}-game`}
+                    value={game}
                     onChange={(event) => {
-                        const parsed = teamRequestStatusSchema.safeParse(
+                        const parsed = teamGameSchema.safeParse(
                             event.target.value
                         )
-                        if (parsed.success) {
-                            setNotice(null)
-                            setStatus(parsed.data)
-                        }
+                        setGame(parsed.success ? parsed.data : "all")
                     }}
-                    className="border-input bg-background flex h-9 rounded-md border px-3 text-sm"
+                    className={select}
                 >
-                    {TEAM_REQUEST_STATUSES.map((value) => (
+                    <option value="all">{allGamesLabel}</option>
+                    {TEAM_GAMES.map((value) => (
                         <option key={value} value={value}>
-                            {t.statuses[value]}
+                            {GAME_LABELS[value]}
+                        </option>
+                    ))}
+                </select>
+                <Label htmlFor={`${id}-clan`} className="sr-only">
+                    {t.clanFilter}
+                </Label>
+                <select
+                    id={`${id}-clan`}
+                    value={clan}
+                    onChange={(event) => setClan(event.target.value)}
+                    className={`${select} max-w-56`}
+                >
+                    <option value="all">{t.allClans}</option>
+                    {clans.map((option) => (
+                        <option key={option.id} value={option.id}>
+                            {option.name ??
+                                fillTemplate(t.unknownWorkspace, {
+                                    id: option.id,
+                                })}
                         </option>
                     ))}
                 </select>
@@ -206,8 +323,8 @@ export function TeamRequestQueue({
                     {t.loading}
                 </p>
             ) : load === "error" ? (
-                <div className="flex flex-wrap items-center gap-3">
-                    <p role="alert" className="text-destructive text-sm">
+                <div role="alert" className="flex flex-wrap items-center gap-3">
+                    <p className="text-destructive text-sm">
                         {t.errors[listError]}
                     </p>
                     <Button
@@ -220,35 +337,78 @@ export function TeamRequestQueue({
                     </Button>
                 </div>
             ) : items.length === 0 ? (
-                <p className="text-muted-foreground text-sm">{t.empty}</p>
+                view === "pending" ? (
+                    <EmptyState
+                        icon={Inbox}
+                        title={t.emptyPendingTitle}
+                        description={t.emptyPendingDescription}
+                    />
+                ) : (
+                    <EmptyState icon={Inbox} title={t.empty} />
+                )
             ) : (
-                <ul className="space-y-4" aria-busy={load === "loading"}>
-                    {items.map((request) => (
-                        <li key={request.id}>
-                            <RequestCard
-                                labels={labels}
-                                locale={locale}
-                                request={request}
-                                onAction={(kind) => open(kind, request)}
-                            />
-                        </li>
-                    ))}
-                </ul>
+                <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+                    <div className="space-y-3">
+                        {visible.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                {t.emptyFiltered}
+                            </p>
+                        ) : (
+                            <ul
+                                aria-label={t.listLabel}
+                                aria-busy={load === "loading"}
+                                className="space-y-2"
+                            >
+                                {visible.map((request) => (
+                                    <li key={request.id}>
+                                        <RequestListItem
+                                            labels={labels}
+                                            locale={locale}
+                                            request={request}
+                                            current={
+                                                selected?.id === request.id
+                                            }
+                                            onSelect={() =>
+                                                setSelectedId(request.id)
+                                            }
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {load === "ready" && nextCursor ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full rounded-xl"
+                                disabled={loadingMore}
+                                onClick={() => void loadMore()}
+                            >
+                                {loadingMore ? (
+                                    <Loader2
+                                        className="size-4 animate-spin"
+                                        aria-hidden
+                                    />
+                                ) : null}
+                                {t.loadMore}
+                            </Button>
+                        ) : null}
+                    </div>
+                    {selected ? (
+                        <RequestDetail
+                            key={selected.id}
+                            labels={labels}
+                            locale={locale}
+                            request={selected}
+                            onAction={(kind) => open(kind, selected)}
+                        />
+                    ) : (
+                        <p className="text-muted-foreground text-sm">
+                            {t.selectRequest}
+                        </p>
+                    )}
+                </div>
             )}
-            {load === "ready" && nextCursor ? (
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-xl"
-                    disabled={loadingMore}
-                    onClick={() => void loadMore()}
-                >
-                    {loadingMore ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : null}
-                    {t.loadMore}
-                </Button>
-            ) : null}
             {dialogProps ? (
                 <>
                     <ApproveRequestDialog
@@ -272,7 +432,75 @@ export function TeamRequestQueue({
     )
 }
 
-function RequestCard({
+/** One row of the list: kind, name, where it came from and how long ago. */
+function RequestListItem({
+    labels,
+    locale,
+    request,
+    current,
+    onSelect,
+}: {
+    labels: RequestDialogLabels
+    locale: string
+    request: TeamRequestRecord
+    current: boolean
+    onSelect(): void
+}) {
+    const t = labels.requests
+    // Read once when the row mounts; ages need no live ticking here.
+    const [now] = useState(() => Date.now())
+    const clan =
+        request.workspaceName ??
+        fillTemplate(t.unknownWorkspace, { id: request.guildId })
+    return (
+        <button
+            type="button"
+            aria-current={current ? "true" : undefined}
+            onClick={onSelect}
+            className="border-border/60 bg-card hover:bg-muted/50 aria-[current=true]:border-primary/60 aria-[current=true]:bg-primary/5 focus-visible:ring-ring flex w-full flex-col gap-1 rounded-xl border p-3 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        >
+            <span className="flex min-w-0 items-center gap-2">
+                <Badge
+                    variant={
+                        request.kind === "update" ? "outline" : "secondary"
+                    }
+                    className="shrink-0"
+                >
+                    {t.kinds[request.kind]}
+                </Badge>
+                <span className="truncate font-medium">
+                    {request.proposal.name}
+                </span>
+            </span>
+            <span className="text-muted-foreground truncate">
+                {fillTemplate(t.fromClan, { clan })}
+            </span>
+            <span
+                className="text-muted-foreground text-xs"
+                suppressHydrationWarning
+            >
+                {GAME_LABELS[request.gameId]} ·{" "}
+                {formatRelativeTime(request.createdAt, now, locale)}
+            </span>
+        </button>
+    )
+}
+
+const COMPARED_FIELDS = [
+    "logo",
+    "name",
+    "shortCode",
+    "links",
+    "description",
+] as const
+type ComparedField = (typeof COMPARED_FIELDS)[number]
+type ComparedTeam = Pick<
+    TeamRequestRecord["proposal"],
+    "name" | "shortCode" | "logoUrl" | "description" | "links"
+>
+
+/** The chosen request: who asks for what, the comparison and the decisions. */
+function RequestDetail({
     labels,
     locale,
     request,
@@ -285,6 +513,7 @@ function RequestCard({
 }) {
     const t = labels.requests
     const id = useId()
+    const [now] = useState(() => Date.now())
     const pending = request.status === "pending"
     const name = request.proposal.name
     // A pending change request is compared with the team as it is now.
@@ -292,101 +521,195 @@ function RequestCard({
         pending && request.kind === "update" ? request.teamId : null
     )
     const action = (template: string) => fillTemplate(template, { name })
+    const clan =
+        request.workspaceName ??
+        fillTemplate(t.unknownWorkspace, { id: request.guildId })
+    const currentTeam = current.team
+    const changed = currentTeam
+        ? proposalChanges(request.proposal, currentTeam)
+        : null
+    const fieldLabel: Record<ComparedField, string> = {
+        logo: labels.catalog.logo,
+        name: labels.catalog.name,
+        shortCode: labels.catalog.shortCode,
+        links: labels.catalog.links,
+        description: labels.catalog.descriptionField,
+    }
+    const value = (team: ComparedTeam, field: ComparedField) => {
+        if (field === "logo")
+            return (
+                <TeamLogo
+                    name={team.name}
+                    shortCode={team.shortCode}
+                    logoUrl={team.logoUrl}
+                    className="size-8"
+                />
+            )
+        const text =
+            field === "links"
+                ? team.links.join(", ")
+                : field === "name"
+                  ? team.name
+                  : team[field]
+        return text ? (
+            <span className="break-words whitespace-pre-line">{text}</span>
+        ) : (
+            <span className="text-muted-foreground">{t.emptyValue}</span>
+        )
+    }
+
     return (
-        <article
+        <section
             aria-labelledby={`${id}-title`}
-            className="border-border/60 bg-card space-y-4 rounded-2xl border p-4 sm:p-5"
+            className="border-border/60 bg-card min-w-0 space-y-4 rounded-2xl border p-4 sm:p-5"
         >
-            <header className="flex flex-wrap items-center gap-2">
-                <h2 id={`${id}-title`} className="sr-only">
-                    {fillTemplate(t.requestFor, { name })}
-                </h2>
-                <Badge variant="secondary">{t.kinds[request.kind]}</Badge>
-                <Badge variant="outline">{GAME_LABELS[request.gameId]}</Badge>
-                {pending ? null : (
-                    <Badge variant="outline">
-                        {t.statuses[request.status]}
-                    </Badge>
-                )}
+            <header className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                    <h2 id={`${id}-title`} className="text-lg font-semibold">
+                        {fillTemplate(
+                            request.kind === "update"
+                                ? t.titleUpdate
+                                : t.titleCreate,
+                            { name: request.teamName ?? name }
+                        )}
+                    </h2>
+                    {pending ? null : (
+                        <Badge variant="outline">
+                            {t.statuses[request.status]}
+                        </Badge>
+                    )}
+                </div>
+                <p
+                    className="text-muted-foreground text-sm break-words"
+                    suppressHydrationWarning
+                >
+                    {fillTemplate(t.requestedBy, {
+                        requester: request.requestedBy ?? t.hiddenRequester,
+                        clan,
+                    })}{" "}
+                    · {GAME_LABELS[request.gameId]} ·{" "}
+                    <time
+                        dateTime={request.createdAt}
+                        title={formatAdminDate(request.createdAt, locale)}
+                    >
+                        {formatRelativeTime(request.createdAt, now, locale)}
+                    </time>
+                </p>
             </header>
-            <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                <Fact label={t.workspace}>
-                    {request.workspaceName ??
-                        fillTemplate(t.unknownWorkspace, {
-                            id: request.guildId,
-                        })}
-                </Fact>
-                <Fact label={t.requester}>
-                    <span className="font-mono">
-                        {request.requestedBy ?? t.hiddenRequester}
-                    </span>
-                </Fact>
-                <Fact label={t.submitted}>
-                    {formatAdminDate(request.createdAt, locale)}
-                </Fact>
-                {request.decidedAt ? (
-                    <Fact label={t.decided}>
-                        {formatAdminDate(request.decidedAt, locale)}
-                    </Fact>
-                ) : null}
-                {request.status === "approved" ||
-                request.status === "merged" ||
-                request.status === "rejected" ? (
-                    <Fact label={t.notification}>
-                        {t.notifications[request.notification]}
-                    </Fact>
-                ) : null}
-            </dl>
-            <div className="grid gap-4 lg:grid-cols-2">
+            {request.note ? (
+                <blockquote className="border-primary/40 text-muted-foreground border-l-2 pl-3 text-sm break-words whitespace-pre-line italic">
+                    <span className="sr-only">{t.note}: </span>
+                    {request.note}
+                </blockquote>
+            ) : null}
+            {request.kind === "update" && pending ? (
+                currentTeam ? (
+                    <div className="space-y-2">
+                        <div className="overflow-x-auto rounded-xl border">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted/40 text-muted-foreground text-left">
+                                    <tr>
+                                        <th scope="col" className="px-3 py-2">
+                                            {t.field}
+                                        </th>
+                                        <th scope="col" className="px-3 py-2">
+                                            {t.now}
+                                        </th>
+                                        <th scope="col" className="px-3 py-2">
+                                            {t.proposed}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {COMPARED_FIELDS.map((field) => {
+                                        const differs =
+                                            changed?.has(field) ?? false
+                                        return (
+                                            <tr
+                                                key={field}
+                                                className="border-t align-top"
+                                            >
+                                                <th
+                                                    scope="row"
+                                                    className="text-muted-foreground px-3 py-2 text-left font-medium"
+                                                >
+                                                    {fieldLabel[field]}
+                                                </th>
+                                                <td className="px-3 py-2">
+                                                    {value(currentTeam, field)}
+                                                </td>
+                                                <td
+                                                    className={
+                                                        differs
+                                                            ? "bg-emerald-500/10 px-3 py-2"
+                                                            : "text-muted-foreground px-3 py-2"
+                                                    }
+                                                >
+                                                    {differs ? (
+                                                        <>
+                                                            <span className="sr-only">
+                                                                {t.changed}
+                                                                :{" "}
+                                                            </span>
+                                                            {value(
+                                                                request.proposal,
+                                                                field
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        t.unchanged
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                            {t.comparisonHint}
+                        </p>
+                        {currentTeam.archivedAt ? (
+                            <p className="text-destructive text-sm">
+                                {t.currentTeamArchived}
+                            </p>
+                        ) : null}
+                    </div>
+                ) : (
+                    <CurrentTeam labels={labels} current={current} />
+                )
+            ) : (
                 <section
                     aria-labelledby={`${id}-proposal`}
-                    className="space-y-2 rounded-md border p-3"
+                    className="space-y-2 rounded-xl border p-3"
                 >
                     <h3 id={`${id}-proposal`} className="text-sm font-medium">
                         {t.proposal}
                     </h3>
-                    <TeamSummary
-                        labels={labels}
-                        team={request.proposal}
-                        changed={
-                            current.team
-                                ? proposalChanges(
-                                      request.proposal,
-                                      current.team
-                                  )
-                                : undefined
-                        }
-                    />
+                    <TeamSummary labels={labels} team={request.proposal} />
                 </section>
-                {request.kind === "update" ? (
-                    <section
-                        aria-labelledby={`${id}-current`}
-                        className="space-y-2 rounded-md border p-3"
-                    >
-                        <h3
-                            id={`${id}-current`}
-                            className="text-sm font-medium"
-                        >
-                            {t.currentTeam}
-                        </h3>
-                        {pending ? (
-                            <CurrentTeam labels={labels} current={current} />
-                        ) : (
-                            <p className="text-sm">
-                                {request.teamName ?? t.currentTeamMissing}
-                            </p>
-                        )}
-                    </section>
-                ) : null}
-            </div>
-            {request.note ? (
-                <div className="space-y-1">
-                    <h3 className="text-sm font-medium">{t.note}</h3>
-                    <p className="text-muted-foreground text-sm break-words whitespace-pre-line">
-                        {request.note}
-                    </p>
-                </div>
-            ) : null}
+            )}
+            {pending ? null : (
+                <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    {request.decidedAt ? (
+                        <Fact label={t.decided}>
+                            {formatAdminDate(request.decidedAt, locale)}
+                        </Fact>
+                    ) : null}
+                    {request.status === "approved" ||
+                    request.status === "merged" ||
+                    request.status === "rejected" ? (
+                        <Fact label={t.notification}>
+                            {t.notifications[request.notification]}
+                        </Fact>
+                    ) : null}
+                    {request.kind === "update" ? (
+                        <Fact label={t.currentTeam}>
+                            {request.teamName ?? t.currentTeamMissing}
+                        </Fact>
+                    ) : null}
+                </dl>
+            )}
             {request.reason ? (
                 <div className="space-y-1">
                     <h3 className="text-sm font-medium">{t.reason}</h3>
@@ -400,38 +723,37 @@ function RequestCard({
                 <ResultTeam labels={labels} teamId={request.resultTeamId} />
             ) : null}
             {pending ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
                     <Button
                         type="button"
-                        size="sm"
-                        aria-label={action(t.approveRequest)}
-                        onClick={() => onAction("approve")}
-                    >
-                        {t.approve}
-                    </Button>
-                    {request.kind === "create" ? (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            aria-label={action(t.mergeRequest)}
-                            onClick={() => onAction("merge")}
-                        >
-                            {t.merge}
-                        </Button>
-                    ) : null}
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
+                        variant="outline"
                         aria-label={action(t.rejectRequest)}
                         onClick={() => onAction("reject")}
                     >
-                        {t.reject}
+                        {t.rejectWithReason}
                     </Button>
+                    <div className="flex flex-wrap gap-2">
+                        {request.kind === "create" ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                aria-label={action(t.mergeRequest)}
+                                onClick={() => onAction("merge")}
+                            >
+                                {t.merge}
+                            </Button>
+                        ) : null}
+                        <Button
+                            type="button"
+                            aria-label={action(t.approveRequest)}
+                            onClick={() => onAction("approve")}
+                        >
+                            {t.reviewAndApprove}
+                        </Button>
+                    </div>
                 </div>
             ) : null}
-        </article>
+        </section>
     )
 }
 

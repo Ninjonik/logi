@@ -67,15 +67,25 @@ export function PlatformIdLinkForm({
                     "content-type": "application/json",
                 },
                 body: JSON.stringify({ platform, platformId }),
-            })
-            const body = await response.json()
-            if (response.ok) {
-                setSuccessMessage(body.message ?? SUCCESS_CLOSE_COPY[locale])
+            }).catch(() => null)
+            // A proxy error page or a dropped connection has no JSON body.
+            const body = (await response?.json().catch(() => null)) as {
+                message?: unknown
+                error?: unknown
+            } | null
+            if (response?.ok) {
+                setSuccessMessage(
+                    typeof body?.message === "string"
+                        ? body.message
+                        : SUCCESS_CLOSE_COPY[locale]
+                )
                 setIsSuccess(true)
                 return
             }
             setErrorMessage(
-                body.error ?? dictionary.platformIdLink.genericError
+                typeof body?.error === "string"
+                    ? body.error
+                    : dictionary.platformIdLink.genericError
             )
         })
     }

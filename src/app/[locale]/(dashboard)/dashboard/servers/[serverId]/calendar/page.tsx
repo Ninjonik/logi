@@ -9,7 +9,7 @@ import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Calendar | Logi",
+    title: "Calendar",
     description: "View scheduled community events.",
 }
 

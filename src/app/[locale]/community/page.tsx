@@ -239,208 +239,109 @@ export default async function CommunityPage({ params, searchParams }: Props) {
                                         }
                                     </p>
                                 </div>
-                                {!selectedGame ? (
-                                    <div className="bg-card relative isolate overflow-hidden rounded-3xl border px-5 py-10 sm:px-10 sm:py-14">
-                                        <div className="bg-primary/10 absolute -top-24 -right-20 size-72 rounded-full blur-3xl" />
-                                        <div className="relative mx-auto max-w-4xl">
-                                            <p className="text-primary text-sm font-medium tracking-wide uppercase">
+                                <div className="bg-card mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3">
+                                    <div className="flex items-center gap-3">
+                                        <span className="flex size-10 overflow-hidden rounded-xl border">
+                                            <img
+                                                src={
+                                                    GAME_ICON_SOURCES[
+                                                        selectedGame
+                                                    ]
+                                                }
+                                                alt=""
+                                                className="size-full object-cover"
+                                            />
+                                        </span>
+                                        <div>
+                                            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                                                 {dictionary.games.filterLabel}
                                             </p>
-                                            <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                                                {dictionary.games.selectTitle}
-                                            </h3>
-                                            <p className="text-muted-foreground mt-2 max-w-xl">
-                                                {
-                                                    dictionary.games
-                                                        .selectDescription
-                                                }
+                                            <p className="font-semibold">
+                                                {GAME_LABELS[selectedGame]}
                                             </p>
-                                            <div className="mt-8 grid gap-4 md:grid-cols-3">
-                                                {GAME_IDS.map((gameId) => {
-                                                    const params =
-                                                        new URLSearchParams(
-                                                            query
-                                                                ? { q: query }
-                                                                : undefined
-                                                        )
-                                                    params.set("game", gameId)
-                                                    return (
-                                                        <Link
-                                                            key={gameId}
-                                                            href={`/${resolvedLocale}/community?${params.toString()}`}
-                                                            className="group bg-background hover:border-primary/50 focus-visible:ring-ring relative min-h-40 overflow-hidden rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:outline-none"
-                                                        >
-                                                            <img
-                                                                src={
-                                                                    GAME_ICON_SOURCES[
-                                                                        gameId
-                                                                    ]
-                                                                }
-                                                                alt=""
-                                                                className="absolute inset-0 size-full object-cover opacity-25 transition duration-300 group-hover:scale-105 group-hover:opacity-35"
-                                                            />
-                                                            <div className="from-background via-background/75 absolute inset-0 bg-gradient-to-t to-transparent" />
-                                                            <div className="relative flex h-full flex-col justify-end">
-                                                                <span className="bg-background/80 mb-auto flex size-11 items-center justify-center overflow-hidden rounded-xl border shadow-sm backdrop-blur">
-                                                                    <img
-                                                                        src={
-                                                                            GAME_ICON_SOURCES[
-                                                                                gameId
-                                                                            ]
-                                                                        }
-                                                                        alt=""
-                                                                        className="size-full object-cover"
-                                                                    />
-                                                                </span>
-                                                                <span className="mt-6 text-lg font-semibold">
-                                                                    {
-                                                                        GAME_LABELS[
-                                                                            gameId
-                                                                        ]
-                                                                    }
-                                                                </span>
-                                                                <span className="text-primary mt-1 text-sm font-medium">
-                                                                    {
-                                                                        dictionary
-                                                                            .publicProfiles
-                                                                            .search
-                                                                    }{" "}
-                                                                    →
-                                                                </span>
-                                                            </div>
-                                                        </Link>
-                                                    )
-                                                })}
-                                            </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="bg-card mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="flex size-10 overflow-hidden rounded-xl border">
-                                                    <img
-                                                        src={
-                                                            GAME_ICON_SOURCES[
-                                                                selectedGame
-                                                            ]
-                                                        }
-                                                        alt=""
-                                                        className="size-full object-cover"
-                                                    />
-                                                </span>
-                                                <div>
-                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                                        {
-                                                            dictionary.games
-                                                                .filterLabel
-                                                        }
+                                    <Link
+                                        href={`/${resolvedLocale}/community${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+                                        className="text-primary hover:bg-muted rounded-lg px-3 py-2 text-sm font-medium"
+                                    >
+                                        {dictionary.games.all}
+                                    </Link>
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    {matches.page.map((match) => (
+                                        <Link
+                                            key={match.eventId}
+                                            href={`/${resolvedLocale}/matches/${match.eventId}`}
+                                        >
+                                            <Card className="hover:bg-muted h-full transition-colors">
+                                                <CardHeader className="space-y-1">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <CardTitle className="line-clamp-1">
+                                                            {match.name}
+                                                        </CardTitle>
+                                                        <span
+                                                            className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${match.outcome === "victory" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : match.outcome === "defeat" ? "bg-red-500/15 text-red-700 dark:text-red-300" : "bg-muted text-muted-foreground"}`}
+                                                        >
+                                                            {match.outcome ===
+                                                            "victory"
+                                                                ? dictionary
+                                                                      .publicProfiles
+                                                                      .victory
+                                                                : match.outcome ===
+                                                                    "defeat"
+                                                                  ? dictionary
+                                                                        .publicProfiles
+                                                                        .defeat
+                                                                  : dictionary
+                                                                        .publicProfiles
+                                                                        .recorded}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-muted-foreground text-sm">
+                                                        {match.clan?.name ??
+                                                            dictionary.shared
+                                                                .notSet}
+                                                        {` · ${GAME_LABELS[match.gameId]}`}
+                                                        {match.category
+                                                            ? ` · ${match.category}`
+                                                            : ""}
                                                     </p>
-                                                    <p className="font-semibold">
-                                                        {
-                                                            GAME_LABELS[
-                                                                selectedGame
-                                                            ]
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Link
-                                                href={`/${resolvedLocale}/community${query ? `?q=${encodeURIComponent(query)}` : ""}`}
-                                                className="text-primary hover:bg-muted rounded-lg px-3 py-2 text-sm font-medium"
-                                            >
-                                                {dictionary.games.all}
-                                            </Link>
-                                        </div>
-                                        <div className="grid gap-3 md:grid-cols-2">
-                                            {matches.page.map((match) => (
-                                                <Link
-                                                    key={match.eventId}
-                                                    href={`/${resolvedLocale}/matches/${match.eventId}`}
-                                                >
-                                                    <Card className="hover:bg-muted h-full transition-colors">
-                                                        <CardHeader className="space-y-1">
-                                                            <div className="flex items-start justify-between gap-4">
-                                                                <CardTitle className="line-clamp-1">
-                                                                    {match.name}
-                                                                </CardTitle>
-                                                                <span
-                                                                    className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${match.outcome === "victory" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : match.outcome === "defeat" ? "bg-red-500/15 text-red-700 dark:text-red-300" : "bg-muted text-muted-foreground"}`}
-                                                                >
-                                                                    {match.outcome ===
-                                                                    "victory"
-                                                                        ? dictionary
-                                                                              .publicProfiles
-                                                                              .victory
-                                                                        : match.outcome ===
-                                                                            "defeat"
-                                                                          ? dictionary
-                                                                                .publicProfiles
-                                                                                .defeat
-                                                                          : dictionary
-                                                                                .publicProfiles
-                                                                                .recorded}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-muted-foreground text-sm">
-                                                                {match.clan
-                                                                    ?.name ??
-                                                                    dictionary
-                                                                        .shared
-                                                                        .notSet}
-                                                                {` · ${GAME_LABELS[match.gameId]}`}
-                                                                {match.category
-                                                                    ? ` · ${match.category}`
-                                                                    : ""}
-                                                            </p>
-                                                        </CardHeader>
-                                                        <CardContent className="flex items-end justify-between gap-4">
-                                                            <div>
-                                                                <p className="text-2xl font-semibold tabular-nums">
-                                                                    {
-                                                                        match
-                                                                            .score
-                                                                            .allied
-                                                                    }{" "}
-                                                                    –{" "}
-                                                                    {
-                                                                        match
-                                                                            .score
-                                                                            .axis
-                                                                    }
-                                                                </p>
-                                                                <p className="text-muted-foreground text-sm">
-                                                                    {
-                                                                        match.mapName
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                            <time className="text-muted-foreground text-right text-sm">
-                                                                {new Intl.DateTimeFormat(
-                                                                    resolvedLocale ===
-                                                                        "cs"
-                                                                        ? "cs-CZ"
-                                                                        : resolvedLocale ===
-                                                                            "de"
-                                                                          ? "de-DE"
-                                                                          : "en-GB",
-                                                                    {
-                                                                        dateStyle:
-                                                                            "medium",
-                                                                    }
-                                                                ).format(
-                                                                    new Date(
-                                                                        match.gameEnd
-                                                                    )
-                                                                )}
-                                                            </time>
-                                                        </CardContent>
-                                                    </Card>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
+                                                </CardHeader>
+                                                <CardContent className="flex items-end justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-2xl font-semibold tabular-nums">
+                                                            {match.score.allied}{" "}
+                                                            – {match.score.axis}
+                                                        </p>
+                                                        <p className="text-muted-foreground text-sm">
+                                                            {match.mapName}
+                                                        </p>
+                                                    </div>
+                                                    <time className="text-muted-foreground text-right text-sm">
+                                                        {new Intl.DateTimeFormat(
+                                                            resolvedLocale ===
+                                                                "cs"
+                                                                ? "cs-CZ"
+                                                                : resolvedLocale ===
+                                                                    "de"
+                                                                  ? "de-DE"
+                                                                  : "en-GB",
+                                                            {
+                                                                dateStyle:
+                                                                    "medium",
+                                                            }
+                                                        ).format(
+                                                            new Date(
+                                                                match.gameEnd
+                                                            )
+                                                        )}
+                                                    </time>
+                                                </CardContent>
+                                            </Card>
+                                        </Link>
+                                    ))}
+                                </div>
                                 {selectedGame && !matches.page.length ? (
                                     <p className="text-muted-foreground text-sm">
                                         {dictionary.publicProfiles.noMatches}
@@ -464,10 +365,16 @@ export default async function CommunityPage({ params, searchParams }: Props) {
                                     {dictionary.games.filterLabel}
                                 </p>
                                 <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                                    {dictionary.games.selectTitle}
+                                    {
+                                        dictionary.publicSite.community
+                                            .pickGameTitle
+                                    }
                                 </h2>
                                 <p className="text-muted-foreground mt-2 max-w-xl">
-                                    {dictionary.games.selectDescription}
+                                    {
+                                        dictionary.publicSite.community
+                                            .pickGameDescription
+                                    }
                                 </p>
                                 <div className="mt-8 grid gap-4 md:grid-cols-3">
                                     {GAME_IDS.map((gameId) => {
