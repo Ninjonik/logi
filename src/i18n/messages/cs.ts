@@ -2336,8 +2336,14 @@ export const csMessages = {
         backToOverview: "Všechna nastavení",
         sectionNavLabel: "Části nastavení",
         openSection: "Otevřít",
-        clanWideFieldsNote:
-            "Časové pásmo, jazyk a kanály pro chyby a kalendář platí pro celý klan. Pro tuto hru se mohou lišit jen kanály níže.",
+        gameExceptionsNote:
+            "Tato nastavení platí pro celý klan. Když jedna hra potřebuje jiný kanál, přidejte pod nastavením výjimku pro tuto hru.",
+        gameExceptionAdd: "Jinak pro hru",
+        gameExceptionRemove: "Odebrat výjimku pro {game}",
+        gameExceptionPlaceholder: "Vyberte pro {game}",
+        statsServersPerGame: "Servery pro jednu hru",
+        statsServersPerGameHelp:
+            "Každá hra čte servery výše, pokud tu nemá vlastní seznam.",
         clanWideOnly: "Tato nastavení platí pro celý klan.",
         resyncHelp:
             "Superadministrátor může znovu načíst přístup do správy podle aktuálních členů role pro správu.",

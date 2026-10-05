@@ -49,6 +49,16 @@ the change applies only to that selected game; a row of active game icons means
 the change is clan-wide. Confirm that scope before saving settings, ticket
 panels, membership workflows, or maintenance tools.
 
+**Channels and language** and **/stats command** always show the clan-wide
+settings, whichever game is selected. When one game needs a different
+announcement, event info, forum, squad voice or meeting room, or its own stats
+servers, add an exception for that game under the setting with **Different for a
+game**. A game without an exception uses the clan-wide value; removing the
+exception, or leaving it empty, returns the game to it when you save.
+Exceptions are offered when the clan plays more than one game. An exception
+stored earlier stays visible, so it can be removed, even after the clan is down
+to one game. Exceptions of a game that is switched off are kept but not shown.
+
 ## Change settings carefully
 
 <Steps>
@@ -99,10 +109,12 @@ The **Games** section controls which games are active for this workspace:
 **Hell Let Loose**, **Hell Let Loose: Vietnam**, and **Wardogs**. A workspace
 may enable any combination, including none while it is being configured.
 
-Game-specific settings are edited after choosing that game in the dashboard.
-This includes game-specific Discord channels/wording where configured and
-membership-application categories. Shared Discord identity, workspace-level
-settings, and platform links are not duplicated per game.
+Game-specific Discord channels and stats servers are exceptions on the
+**Channels and language** and **/stats command** pages (see above). Other
+game-specific settings, such as public panel wording and membership-application
+categories, are edited after choosing that game in the dashboard. Shared Discord
+identity, workspace-level settings, and platform links are not duplicated per
+game.
 
 When no games are active, Logi prevents creation of game-owned records and
 links to this settings section. When exactly one is active, creation pages

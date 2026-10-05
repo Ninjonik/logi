@@ -2339,8 +2339,14 @@ export const enMessages = {
         backToOverview: "All settings",
         sectionNavLabel: "Settings sections",
         openSection: "Open",
-        clanWideFieldsNote:
-            "Time zone, language and the error and calendar channels apply to the whole clan. Only the channels below can differ for this game.",
+        gameExceptionsNote:
+            "These settings apply to the whole clan. Where one game needs a different channel, add an exception for that game under the setting.",
+        gameExceptionAdd: "Different for a game",
+        gameExceptionRemove: "Remove the {game} exception",
+        gameExceptionPlaceholder: "Choose for {game}",
+        statsServersPerGame: "Servers for a single game",
+        statsServersPerGameHelp:
+            "Every game reads the servers above unless it has its own list here.",
         clanWideOnly: "These settings apply to the whole clan.",
         resyncHelp:
             "A super administrator can reload dashboard access from the current members of the dashboard role.",

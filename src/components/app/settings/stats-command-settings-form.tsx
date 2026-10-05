@@ -9,9 +9,19 @@ import {
     STATS_COMMAND_GAMES,
     type StatsCommandSettings,
 } from "@/domain/player-stats/command-settings"
+import {
+    gameExceptions,
+    showsGameExceptions,
+    withGameExceptions,
+} from "@/domain/workspaces/game-exceptions"
+import type {
+    DiscordConfig,
+    GameDiscordOverrides,
+    PlayerStatsServer,
+} from "@/types/domain"
 import { saveDiscordSettings } from "@/components/app/settings/save-discord-settings"
+import { GameExceptionList } from "@/components/app/settings/game-exception-list"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
-import type { DiscordConfig, PlayerStatsServer } from "@/types/domain"
 import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,54 +32,54 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
 /**
- * `/stats` availability and the stats servers it reads. The command switches
- * apply to the whole clan; with a game selected, the server list is that game's.
+ * `/stats` availability and the stats servers it reads. Everything applies to
+ * the whole clan; a game can read its own server list instead (an exception).
  */
 export function StatsCommandSettingsForm({
     serverId,
     dictionary,
     config,
-    baseConfig,
-    gameId,
+    enabledGames,
 }: {
     serverId: string
     dictionary: Dictionary
+    /** The clan-wide settings with the stored game overrides. */
     config: DiscordConfig | null
-    baseConfig: DiscordConfig | null
-    gameId?: GameId
+    enabledGames: readonly GameId[]
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const metadata = useDiscordMetadata(serverId)
     const [statsSettings, setStatsSettings] = useState<StatsCommandSettings>(
-        baseConfig?.statsSettings ?? DEFAULT_STATS_COMMAND_SETTINGS
+        config?.statsSettings ?? DEFAULT_STATS_COMMAND_SETTINGS
     )
     const [servers, setServers] = useState<PlayerStatsServer[]>(
         config?.playerStatsServers ?? []
     )
-
-    function updateServer(index: number, patch: Partial<PlayerStatsServer>) {
-        setServers((current) =>
-            current.map((server, serverIndex) =>
-                serverIndex === index ? { ...server, ...patch } : server
-            )
+    const [serverExceptions, setServerExceptions] = useState(() =>
+        gameExceptions<GameDiscordOverrides, "playerStatsServers">(
+            config?.gameOverrides,
+            "playerStatsServers",
+            enabledGames
         )
-    }
+    )
+    const exceptionsShown = showsGameExceptions(enabledGames, [
+        serverExceptions,
+    ])
 
     async function save() {
         const result = await saveDiscordSettings(serverId, {
             statsSettings,
-            ...(gameId && baseConfig
-                ? {
-                      gameOverrides: {
-                          ...baseConfig.gameOverrides,
-                          [gameId]: {
-                              ...baseConfig.gameOverrides?.[gameId],
-                              playerStatsServers: servers,
-                          },
-                      },
-                  }
-                : { playerStatsServers: servers }),
+            playerStatsServers: servers,
+            gameOverrides: withGameExceptions<
+                GameDiscordOverrides,
+                "playerStatsServers"
+            >(
+                config?.gameOverrides,
+                "playerStatsServers",
+                serverExceptions,
+                enabledGames
+            ),
         })
         if (!result.ok) {
             toast.error(
@@ -177,90 +187,38 @@ export function StatsCommandSettingsForm({
                             }
                         </p>
                     </div>
-                    {servers.map((server, index) => (
-                        <div
-                            key={index}
-                            className="border-border/60 grid gap-3 rounded-2xl border p-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
-                        >
-                            <div className="space-y-2">
-                                <Label htmlFor={`stats-server-${index}-url`}>
-                                    {
-                                        dictionary.serverSettings
-                                            .playerStatsServerUrl
-                                    }
-                                </Label>
-                                <Input
-                                    id={`stats-server-${index}-url`}
-                                    value={server.url}
-                                    onChange={(event) =>
-                                        updateServer(index, {
-                                            url: event.target.value,
-                                        })
-                                    }
-                                    placeholder={
-                                        dictionary.serverSettings
-                                            .playerStatsServerUrlPlaceholder
-                                    }
-                                    className="rounded-xl"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor={`stats-server-${index}-token`}>
-                                    {
-                                        dictionary.serverSettings
-                                            .playerStatsServerToken
-                                    }
-                                </Label>
-                                <Input
-                                    id={`stats-server-${index}-token`}
-                                    type="password"
-                                    autoComplete="off"
-                                    value={server.token}
-                                    onChange={(event) =>
-                                        updateServer(index, {
-                                            token: event.target.value,
-                                        })
-                                    }
-                                    placeholder={
-                                        dictionary.serverSettings
-                                            .playerStatsServerTokenPlaceholder
-                                    }
-                                    className="rounded-xl"
-                                />
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-xl"
-                                onClick={() =>
-                                    setServers((current) =>
-                                        current.filter(
-                                            (_, serverIndex) =>
-                                                serverIndex !== index
-                                        )
-                                    )
-                                }
-                            >
-                                {
-                                    dictionary.serverSettings
-                                        .removePlayerStatsServer
-                                }
-                            </Button>
+                    <StatsServerList
+                        idPrefix="stats-server"
+                        servers={servers}
+                        onChange={setServers}
+                        dictionary={dictionary}
+                    />
+                    {exceptionsShown ? (
+                        <div className="space-y-2 pt-2">
+                            <h4 className="text-sm font-medium">
+                                {dictionary.settingsHub.statsServersPerGame}
+                            </h4>
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.settingsHub.statsServersPerGameHelp}
+                            </p>
+                            <GameExceptionList<PlayerStatsServer[]>
+                                enabledGames={enabledGames}
+                                exceptions={serverExceptions}
+                                onChange={setServerExceptions}
+                                emptyValue={[{ token: "", url: "" }]}
+                                canAdd={enabledGames.length > 1}
+                                dictionary={dictionary}
+                                renderValue={(game, value, setValue) => (
+                                    <StatsServerList
+                                        idPrefix={`stats-server-${game}`}
+                                        servers={value ?? []}
+                                        onChange={setValue}
+                                        dictionary={dictionary}
+                                    />
+                                )}
+                            />
                         </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() =>
-                            setServers((current) => [
-                                ...current,
-                                { token: "", url: "" },
-                            ])
-                        }
-                    >
-                        {dictionary.serverSettings.addPlayerStatsServer}
-                    </Button>
+                    ) : null}
                 </section>
                 <Button
                     className="rounded-xl"
@@ -271,5 +229,98 @@ export function StatsCommandSettingsForm({
                 </Button>
             </CardContent>
         </Card>
+    )
+}
+
+/** Editable stats server rows with add and remove. */
+function StatsServerList({
+    idPrefix,
+    servers,
+    onChange,
+    dictionary,
+}: {
+    idPrefix: string
+    servers: PlayerStatsServer[]
+    onChange: (servers: PlayerStatsServer[]) => void
+    dictionary: Dictionary
+}) {
+    function updateServer(index: number, patch: Partial<PlayerStatsServer>) {
+        onChange(
+            servers.map((server, serverIndex) =>
+                serverIndex === index ? { ...server, ...patch } : server
+            )
+        )
+    }
+
+    return (
+        <div className="space-y-3">
+            {servers.map((server, index) => (
+                <div
+                    key={index}
+                    className="border-border/60 grid gap-3 rounded-2xl border p-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
+                >
+                    <div className="space-y-2">
+                        <Label htmlFor={`${idPrefix}-${index}-url`}>
+                            {dictionary.serverSettings.playerStatsServerUrl}
+                        </Label>
+                        <Input
+                            id={`${idPrefix}-${index}-url`}
+                            value={server.url}
+                            onChange={(event) =>
+                                updateServer(index, { url: event.target.value })
+                            }
+                            placeholder={
+                                dictionary.serverSettings
+                                    .playerStatsServerUrlPlaceholder
+                            }
+                            className="rounded-xl"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor={`${idPrefix}-${index}-token`}>
+                            {dictionary.serverSettings.playerStatsServerToken}
+                        </Label>
+                        <Input
+                            id={`${idPrefix}-${index}-token`}
+                            type="password"
+                            autoComplete="off"
+                            value={server.token}
+                            onChange={(event) =>
+                                updateServer(index, {
+                                    token: event.target.value,
+                                })
+                            }
+                            placeholder={
+                                dictionary.serverSettings
+                                    .playerStatsServerTokenPlaceholder
+                            }
+                            className="rounded-xl"
+                        />
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() =>
+                            onChange(
+                                servers.filter(
+                                    (_, serverIndex) => serverIndex !== index
+                                )
+                            )
+                        }
+                    >
+                        {dictionary.serverSettings.removePlayerStatsServer}
+                    </Button>
+                </div>
+            ))}
+            <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => onChange([...servers, { token: "", url: "" }])}
+            >
+                {dictionary.serverSettings.addPlayerStatsServer}
+            </Button>
+        </div>
     )
 }

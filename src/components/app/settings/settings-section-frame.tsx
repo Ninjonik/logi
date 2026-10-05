@@ -13,10 +13,11 @@ import { PageHeader } from "@/components/app/page-header"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { GameId } from "@/domain/games/game"
 
-/** Pages whose settings can differ per game show which game they apply to. */
+/**
+ * Pages that edit the selected game show which game they apply to. Channels
+ * and `/stats` are clan-wide with per-field game exceptions, so they do not.
+ */
 const GAME_SCOPED: ReadonlySet<SettingsSectionId> = new Set([
-    "channels",
-    "stats",
     "messages",
     "imports",
 ])

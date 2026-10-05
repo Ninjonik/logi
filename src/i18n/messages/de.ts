@@ -2413,8 +2413,14 @@ export const deMessages = {
         backToOverview: "Alle Einstellungen",
         sectionNavLabel: "Bereiche der Einstellungen",
         openSection: "Öffnen",
-        clanWideFieldsNote:
-            "Zeitzone, Sprache sowie Fehler- und Kalenderkanal gelten für den ganzen Clan. Nur die Kanäle unten können für dieses Spiel abweichen.",
+        gameExceptionsNote:
+            "Diese Einstellungen gelten für den ganzen Clan. Braucht ein Spiel einen anderen Kanal, füge unter der Einstellung eine Ausnahme für dieses Spiel hinzu.",
+        gameExceptionAdd: "Für ein Spiel abweichend",
+        gameExceptionRemove: "Ausnahme für {game} entfernen",
+        gameExceptionPlaceholder: "Für {game} wählen",
+        statsServersPerGame: "Server für ein einzelnes Spiel",
+        statsServersPerGameHelp:
+            "Jedes Spiel liest die Server oben, außer es hat hier eine eigene Liste.",
         clanWideOnly: "Diese Einstellungen gelten für den ganzen Clan.",
         resyncHelp:
             "Ein Superadministrator kann den Dashboard-Zugriff anhand der aktuellen Mitglieder der Dashboard-Rolle neu laden.",
