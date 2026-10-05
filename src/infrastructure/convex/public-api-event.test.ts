@@ -298,6 +298,13 @@ test("settings API queues the documented settings payload", async () => {
     assert.ok(payload.createdAt)
 })
 
+const PANEL_GRAPHICS_DEFAULT = {
+    defaultStyle: "a",
+    revision: 0,
+    servers: [],
+    maps: [],
+}
+
 test("settings responses carry the feature slices and refuse unknown slices", async () => {
     const db = new FakeDb()
     db.tables.discordConfigs.set("config-a", {
@@ -316,8 +323,11 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         { db },
         { secret: "dev-internal-auth-secret", keyHash: "key" }
     )) as { slices: unknown; discordConfig: Record<string, unknown> }
-    // No redesign slice is registered yet; the key is always present.
-    assert.deepEqual(read.slices, {})
+    // Every registered slice is present; panel graphics defaults to style A.
+    assert.deepEqual(
+        (read.slices as Record<string, unknown>).panelGraphics,
+        PANEL_GRAPHICS_DEFAULT
+    )
     assert.equal("playerStatsServers" in read.discordConfig, false)
 
     const refused = await handler(publicApi.mutateClanSettings)(
@@ -350,7 +360,10 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         }
     )
     assert.equal(updated?.status, 200)
-    assert.deepEqual(JSON.parse(updated!.body).data.slices, {})
+    assert.deepEqual(
+        JSON.parse(updated!.body).data.slices.panelGraphics,
+        PANEL_GRAPHICS_DEFAULT
+    )
 })
 
 test("event signup queues a roster update through the shared queue", async () => {
