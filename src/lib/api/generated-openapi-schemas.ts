@@ -30,6 +30,9 @@ export const generatedOpenApiSchemas = {
                     }
                 ]
             },
+            "isDraft": {
+                "type": "boolean"
+            },
             "matchType": {
                 "type": "string"
             },
@@ -576,6 +579,7 @@ export const generatedOpenApiSchemas = {
             "guildId": "string",
             "gameId": "hell_let_loose",
             "kind": "match",
+            "isDraft": true,
             "matchType": "string",
             "name": "string",
             "description": "string",
@@ -910,6 +914,32 @@ export const generatedOpenApiSchemas = {
             "published": {
                 "type": "boolean"
             },
+            "meetingAttendance": {
+                "type": "object",
+                "properties": {
+                    "loadedAt": {
+                        "type": "string"
+                    },
+                    "channelId": {
+                        "type": "string"
+                    },
+                    "voiceCount": {
+                        "type": "number"
+                    },
+                    "foundUserIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "loadedAt",
+                    "channelId",
+                    "voiceCount",
+                    "foundUserIds"
+                ]
+            },
             "createdAt": {
                 "type": "string"
             },
@@ -971,6 +1001,14 @@ export const generatedOpenApiSchemas = {
             ],
             "streamerId": "string",
             "published": true,
+            "meetingAttendance": {
+                "loadedAt": "string",
+                "channelId": "string",
+                "voiceCount": 0,
+                "foundUserIds": [
+                    "string"
+                ]
+            },
             "createdAt": "string",
             "updatedAt": "string",
             "id": "string"

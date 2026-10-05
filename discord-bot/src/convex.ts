@@ -108,6 +108,18 @@ export const references = {
     listPendingMeetingAttendanceRequests: makeFunctionReference<"query">(
         "meetingAttendance:listPendingMeetingAttendanceRequests"
     ),
+    listPendingManualReminders: makeFunctionReference<"query">(
+        "eventReminders:listPending"
+    ),
+    claimManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:claim"
+    ),
+    completeManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:complete"
+    ),
+    failManualReminder: makeFunctionReference<"mutation">(
+        "eventReminders:fail"
+    ),
     getPendingMatchRecaps: makeFunctionReference<"query">(
         "matchRecaps:listPendingForEvent"
     ),

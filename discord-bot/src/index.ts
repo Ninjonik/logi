@@ -10,6 +10,7 @@ import {
     invalidateMembershipGuild,
 } from "./sync/member-access"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
+import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
 import { DiscordSyncService } from "./runtime/sync-service"
 import { createInteractionHandler } from "./interactions"
@@ -20,6 +21,10 @@ import { env } from "./environment"
 const syncService = new DiscordSyncService(client)
 const meetingAttendanceRequestService = new MeetingAttendanceRequestService(
     client
+)
+const manualReminderRequestService = new ManualReminderRequestService(
+    client,
+    (eventId) => syncService.loadEventPayload(eventId)
 )
 const require = createRequire(import.meta.url)
 
@@ -173,6 +178,7 @@ client.once(Events.ClientReady, async (readyClient) => {
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
+        await manualReminderRequestService.start()
         startPlatformStatusMonitor(client)
 
         startFallbackWorker()

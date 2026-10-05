@@ -113,6 +113,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         let reserveCount = 0
         let updatedCount = 0
         const updatedUserIds = new Set<string>()
+        const foundUserIds = new Set<string>()
 
         const squads = roster.squads.map((squad) => ({
             ...squad,
@@ -120,6 +121,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
                 if (!player.id || !memberIdsInMeetingChannel.has(player.id))
                     return player
                 rosteredCount += 1
+                foundUserIds.add(player.id)
                 if (player.ack && player.confirmed) return player
                 updatedCount += 1
                 updatedUserIds.add(player.id)
@@ -131,6 +133,7 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
             (entry) => {
                 if (!memberIdsInMeetingChannel.has(entry.userId)) return entry
                 reserveCount += 1
+                foundUserIds.add(entry.userId)
                 if (entry.ack && entry.confirmed) return entry
                 updatedCount += 1
                 updatedUserIds.add(entry.userId)
@@ -147,16 +150,30 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
             reserveCount += 1
             updatedCount += 1
             updatedUserIds.add(userId)
+            foundUserIds.add(userId)
             reserveAttendances.push({ userId, ack: true, confirmed: true })
         }
 
-        if (updatedCount > 0) {
-            await ctx.db.patch(roster._id, {
-                squads,
-                reserveAttendances,
-                updatedAt: new Date().toISOString(),
-            })
+        const now = new Date().toISOString()
+        // The match page shows when attendance was last read and who was found.
+        const meetingAttendance = {
+            loadedAt: now,
+            channelId: config.meetingChannelId,
+            voiceCount: memberIdsInMeetingChannel.size,
+            foundUserIds: Array.from(foundUserIds),
         }
+        await ctx.db.patch(
+            roster._id,
+            updatedCount > 0
+                ? {
+                      squads,
+                      reserveAttendances,
+                      meetingAttendance,
+                      updatedAt: now,
+                  }
+                : // Nothing else changed, so the roster keeps its version.
+                  { meetingAttendance }
+        )
 
         return {
             matchedVoiceCount: memberIdsInMeetingChannel.size,

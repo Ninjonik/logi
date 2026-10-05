@@ -633,6 +633,15 @@ export type Roster = {
     notAttendingPlayerIds: string[]
     streamerId?: string
     published: boolean
+    /** The last time attendance was read from the meeting voice channel. */
+    meetingAttendance?: {
+        loadedAt: Timestamp
+        channelId: string
+        /** Everyone in the channel, members of the roster or not. */
+        voiceCount: number
+        /** Roster players and reserves found in the channel. */
+        foundUserIds: string[]
+    }
     createdAt: Timestamp
     updatedAt: Timestamp
 }

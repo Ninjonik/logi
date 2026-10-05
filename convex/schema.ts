@@ -958,6 +958,29 @@ export default defineSchema({
         .index("eventId", ["eventId"])
         .index("status_dueAt", ["status", "dueAt"])
         .index("status", ["status"]),
+    // Reminder DMs a clan admin asked for from the dashboard. The bot watches
+    // pending rows, sends the DMs and records the outcome; old rows keep the
+    // per-match cool-down.
+    eventReminderRequests: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        audience: v.union(v.literal("unanswered"), v.literal("unconfirmed")),
+        requestedBy: v.string(),
+        requestedAt: v.string(),
+        recipientIds: v.array(v.string()),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        claimedAt: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+        sentCount: v.optional(v.number()),
+        error: v.optional(v.string()),
+    })
+        .index("eventId_requestedAt", ["eventId", "requestedAt"])
+        .index("status", ["status"]),
     stratmaps: defineTable({
         guildId: v.string(),
         gameId: v.optional(gameId),
@@ -1007,6 +1030,15 @@ export default defineSchema({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The last time attendance was read from the meeting voice channel.
+        meetingAttendance: v.optional(
+            v.object({
+                loadedAt: v.string(),
+                channelId: v.string(),
+                voiceCount: v.number(),
+                foundUserIds: v.array(v.string()),
+            })
+        ),
         createdAt: v.string(),
         updatedAt: v.string(),
     })

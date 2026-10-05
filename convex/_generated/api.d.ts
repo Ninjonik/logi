@@ -33,6 +33,7 @@ import type * as discordPublications from "../discordPublications.js";
 import type * as discordRosters from "../discordRosters.js";
 import type * as discordSync from "../discordSync.js";
 import type * as discord_shared from "../discord_shared.js";
+import type * as eventReminders from "../eventReminders.js";
 import type * as eventResultStore from "../eventResultStore.js";
 import type * as eventResults from "../eventResults.js";
 import type * as events from "../events.js";
@@ -153,6 +154,7 @@ declare const fullApi: ApiFromModules<{
   discordRosters: typeof discordRosters;
   discordSync: typeof discordSync;
   discord_shared: typeof discord_shared;
+  eventReminders: typeof eventReminders;
   eventResultStore: typeof eventResultStore;
   eventResults: typeof eventResults;
   events: typeof events;
