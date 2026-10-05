@@ -22,15 +22,15 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
-    discordSeedMessages,
-    discordSeedPlans,
-    discordSeedRuns,
-} from "./discordSeedTable"
-import {
     leagueFixtures,
     leagueResults,
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
+import {
+    discordSeedMessages,
+    discordSeedPlans,
+    discordSeedRuns,
+} from "./discordSeedTable"
 import {
     discordApplicationEmoji,
     discordPanelGraphics,
@@ -173,6 +173,9 @@ const eventParticipant = v.object({
     userId: v.string(),
     status: v.union(v.literal("attending"), v.literal("not_attending")),
     group: v.optional(v.union(v.string(), v.null())),
+    // The capped group a player chose while it was full; they hold a reserve
+    // place without a group. Missing on older sign-ups.
+    requestedGroup: v.optional(v.union(v.string(), v.null())),
     completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
 })
@@ -508,6 +511,9 @@ const eventNotice = v.object({
     // Set when a clan admin excused the player after the match; the player's
     // own late notice has no admin.
     excusedBy: v.optional(v.string()),
+    // "Přijdu později" (late) or "Nemůžu" (cannot_come); older notices have
+    // none and read as late.
+    kind: v.optional(v.union(v.literal("late"), v.literal("cannot_come"))),
 })
 
 const rosterSquad = v.object({
@@ -993,7 +999,10 @@ export default defineSchema({
             v.literal("create-squad-voice-channels"),
             v.literal("conclude-event"),
             v.literal("attendance-reminder"),
-            v.literal("signup-reminder")
+            v.literal("signup-reminder"),
+            // Redraws the match announcement when its card changes by the
+            // clock alone: at the meeting ("Začíná") and the start ("Hraje se").
+            v.literal("refresh-announcement")
         ),
         dueAt: v.string(),
         status: v.union(v.literal("pending"), v.literal("processing")),
@@ -1118,6 +1127,17 @@ export default defineSchema({
     })
         .index("eventId", ["eventId"])
         .index("eventId_userId", ["eventId", "userId"]),
+    // The match announcement card the bot keeps in the announcement channel
+    // (board L1): whether its first post pinged the roles, so a re-created
+    // card never pings again, and the card layout it was last drawn with, so
+    // the one-time redraw of older cards runs once.
+    discordAnnouncements: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        pingedAt: v.optional(v.string()),
+        layoutVersion: v.optional(v.string()),
+        updatedAt: v.string(),
+    }).index("eventId", ["eventId"]),
     discordEventSyncs: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),

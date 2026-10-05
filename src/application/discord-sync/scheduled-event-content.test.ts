@@ -1,47 +1,112 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
+
 import {
-    buildScheduledEventDescription,
+    buildScheduledEventContent,
     resolveScheduledEventEndTime,
 } from "./scheduled-event-content"
 
-test("buildScheduledEventDescription includes match metadata and trims empty lines", () => {
-    const description = buildScheduledEventDescription(
-        {
-            id: "event-1",
-            guildId: "guild-1",
-            kind: "match",
-            name: "Operation Test",
-            requiredRoleIds: [],
-            rewardRoleIds: [],
-            registrationEnd: "2026-01-01T08:00:00.000Z",
-            meetingStart: "2026-01-01T10:00:00.000Z",
-            gameStart: "2026-01-01T10:30:00.000Z",
-            gameEnd: "2026-01-01T12:00:00.000Z",
-            pingClan: false,
-            createForumChannel: true,
-            status: "registration",
-            statusUpdatedAt: "2026-01-01T07:00:00.000Z",
-            attendanceReminderLog: [],
-            signUps: [],
-            participants: [],
-            updatedAt: "event-v1",
-            description: "Briefing",
-            map: "Kharkov",
-            side: "Allies",
-            server: "Clan Scrim",
-            serverPassword: "k7-secret",
-        },
-        "en"
-    )
+const base = {
+    kind: "match" as const,
+    title: "VLK vs ROG · Přátelák",
+    category: "Přátelák",
+    opponent: "ROG",
+    side: "Allies",
+    mapLabel: "Foy · den",
+    hasPassword: true,
+    meetingStart: "2026-10-11T17:30:00.000Z",
+    gameStart: "2026-10-11T18:00:00.000Z",
+    announcementChannelId: "111111111111111111",
+    locale: "cs-CZ",
+    timeZone: "Europe/Prague",
+    copy: getAnnouncementMessages("cs"),
+}
 
-    assert.match(description, /Briefing/)
-    assert.match(description, /Kharkov/)
-    assert.match(description, /Allies/)
-    assert.match(description, /Server: Clan Scrim/)
-    // Every guild member can read scheduled events.
-    assert.doesNotMatch(description, /k7-secret|Password/)
+test("the scheduled event reads like the board in the clan language (L1-138, L1-139)", () => {
+    const content = buildScheduledEventContent(base)
+    assert.equal(content.name, "VLK vs ROG · Přátelák")
+    assert.equal(
+        content.description,
+        [
+            "Přátelák proti ROG, hrajeme za Spojence.",
+            "Sraz 19:30, start 20:00 · Foy · den",
+            "Přihláška a soupiska: <#111111111111111111>",
+            "Heslo k serveru dostanou hráči na soupisce pod Zobrazit zařazení.",
+        ].join("\n")
+    )
+})
+
+test("the scheduled event never carries the raw map, the raw side or a password", () => {
+    const content = buildScheduledEventContent({
+        ...base,
+        server: "VLK Scrim",
+    })
+    assert.doesNotMatch(content.description, /foy_warfare_day|Allies|k7-sraz/)
+    assert.doesNotMatch(content.description, /VLK Scrim/)
+})
+
+test("missing facts drop their part of the sentence", () => {
+    const copy = getAnnouncementMessages("cs")
+    assert.match(
+        buildScheduledEventContent({ ...base, opponent: null }).description,
+        /^Přátelák, hrajeme za Spojence\./
+    )
+    assert.match(
+        buildScheduledEventContent({ ...base, side: null }).description,
+        /^Přátelák proti ROG\./
+    )
+    assert.match(
+        buildScheduledEventContent({
+            ...base,
+            category: null,
+            side: "Axis",
+        }).description,
+        /^Zápas proti ROG, hrajeme za Osu\./
+    )
+    assert.doesNotMatch(
+        buildScheduledEventContent({ ...base, hasPassword: false }).description,
+        new RegExp(copy.scheduledEvent.password)
+    )
+})
+
+test("a training names its server and its sign-up channel", () => {
+    const content = buildScheduledEventContent({
+        ...base,
+        kind: "training",
+        title: "Trénink · komunikace a souhra",
+        server: "Vlci Trénink",
+        meetingStart: "2026-10-12T16:45:00.000Z",
+        gameStart: "2026-10-12T17:00:00.000Z",
+    })
+    assert.equal(
+        content.description,
+        [
+            "Sraz 18:45, start 19:00",
+            "Přihláška: <#111111111111111111>",
+            "Server Vlci Trénink",
+        ].join("\n")
+    )
+})
+
+test("English and German clans read their own language", () => {
+    assert.match(
+        buildScheduledEventContent({
+            ...base,
+            locale: "en-GB",
+            copy: getAnnouncementMessages("en"),
+        }).description,
+        /^Přátelák against ROG, we play Allies\./
+    )
+    assert.match(
+        buildScheduledEventContent({
+            ...base,
+            locale: "de-DE",
+            copy: getAnnouncementMessages("de"),
+        }).description,
+        /Treffen 19:30, Start 20:00/
+    )
 })
 
 test("resolveScheduledEventEndTime falls back to ninety minutes after meeting start", () => {

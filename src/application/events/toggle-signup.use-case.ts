@@ -100,6 +100,7 @@ export class ToggleSignupUseCase {
             group: nextGroup,
             now,
             membershipStatus,
+            requestedGroup: fullGroup,
         })
 
         await this.events.saveSignupState(input.eventId, {

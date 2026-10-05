@@ -61,7 +61,12 @@ test("declining records a notice, withdraws the confirmation and keeps the slot"
     })
     assert.deepEqual(result.absenceNotices, [
         event.absenceNotices[0],
-        { userId: "medic", reason: "Nemoc", createdAt: now.toISOString() },
+        {
+            userId: "medic",
+            reason: "Nemoc",
+            createdAt: now.toISOString(),
+            kind: "cannot_come",
+        },
     ])
     const medic = result.roster.squads[0]?.players[0]
     assert.deepEqual(medic, {
@@ -103,7 +108,14 @@ test("repeating the same decline changes nothing; a new reason replaces the noti
         changedReason.absenceNotices.filter(
             (notice) => notice.userId === "medic"
         ),
-        [{ userId: "medic", reason: "Práce", createdAt: now.toISOString() }]
+        [
+            {
+                userId: "medic",
+                reason: "Práce",
+                createdAt: now.toISOString(),
+                kind: "cannot_come",
+            },
+        ]
     )
 })
 
@@ -126,8 +138,31 @@ test("a running-late notice followed by a decline is a change", () => {
             userId: "rifle",
             reason: "Nemůže přijít",
             createdAt: now.toISOString(),
+            kind: "cannot_come",
         },
     ])
+})
+
+test("a late notice with the same words as the decline is still replaced", () => {
+    const result = declineRosterAttendance({
+        roster,
+        event: {
+            ...event,
+            absenceNotices: [
+                {
+                    userId: "rifle",
+                    reason: "Nemoc",
+                    createdAt: "x",
+                    kind: "late",
+                },
+            ],
+        },
+        userId: "rifle",
+        reason: "Nemoc",
+        now,
+    })
+    assert.equal(result.changed, true)
+    assert.equal(result.absenceNotices[0]?.kind, "cannot_come")
 })
 
 test("reserves can decline; their attendance becomes pending", () => {

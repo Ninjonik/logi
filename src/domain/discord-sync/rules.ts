@@ -51,7 +51,9 @@ export function shouldSyncEvent(input: {
 }
 
 export function deriveScheduledEventLifecycle(
-    event: Pick<SyncEventLike, "meetingStart" | "gameEnd" | "status">,
+    event: Pick<SyncEventLike, "meetingStart" | "gameEnd" | "status"> & {
+        concludedAt?: string
+    },
     now?: Date
 ): SyncScheduledStatus {
     const nowValue = now ? now.getTime() : Date.now()
@@ -59,7 +61,13 @@ export function deriveScheduledEventLifecycle(
     const gameEnd = new Date(event.gameEnd).getTime()
 
     if (event.status === "concluded") {
-        return Number.isFinite(meetingStart) && nowValue < meetingStart
+        // A match ended before its meeting is cancelled, also when the bot
+        // only syncs it later (board L1-141, L1-B17).
+        const concludedAt = event.concludedAt
+            ? new Date(event.concludedAt).getTime()
+            : Number.NaN
+        const endedAt = Number.isFinite(concludedAt) ? concludedAt : nowValue
+        return Number.isFinite(meetingStart) && endedAt < meetingStart
             ? "canceled"
             : "completed"
     }

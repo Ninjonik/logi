@@ -189,6 +189,7 @@ test("upsertNotice replaces an existing notice for the same user and trims the r
             userId: "user-1",
             reason: "New reason",
             createdAt: "2026-01-01T10:30:00.000Z",
+            kind: "late",
         },
     ])
 })

@@ -42,6 +42,7 @@ import type * as discordSeedTable from "../discordSeedTable.js";
 import type * as discordSeedTick from "../discordSeedTick.js";
 import type * as discordSync from "../discordSync.js";
 import type * as discord_shared from "../discord_shared.js";
+import type * as eventAnnouncements from "../eventAnnouncements.js";
 import type * as eventAttendance from "../eventAttendance.js";
 import type * as eventDrafts from "../eventDrafts.js";
 import type * as eventRecurrence from "../eventRecurrence.js";
@@ -182,6 +183,7 @@ declare const fullApi: ApiFromModules<{
   discordSeedTick: typeof discordSeedTick;
   discordSync: typeof discordSync;
   discord_shared: typeof discord_shared;
+  eventAnnouncements: typeof eventAnnouncements;
   eventAttendance: typeof eventAttendance;
   eventDrafts: typeof eventDrafts;
   eventRecurrence: typeof eventRecurrence;

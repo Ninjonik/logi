@@ -5,14 +5,14 @@ import type { EventRecord, Roster } from "./types"
 import { convex, references } from "./convex"
 import { env } from "./environment"
 
-function roleName(event: EventRecord, kind: "Attendees" | "Reserves") {
-    return `${event.name} — ${kind}`.slice(0, 100)
-}
+/** Role names in the clan language: "VLK vs ROG · Hráči", "… · Zálohy" (L1-145). */
+export type EventRoleNames = { players: string; reserves: string }
 
 export async function syncEventRoles(
     guild: Guild,
     event: EventRecord,
-    roster: Roster | null
+    roster: Roster | null,
+    names: EventRoleNames
 ) {
     let attendeeRoleId = event.attendeeRoleId
     let reserveRoleId = event.reserveRoleId
@@ -39,26 +39,35 @@ export async function syncEventRoles(
                 })
             return { attendeeRoleId: undefined, reserveRoleId: undefined }
         }
-        if (
-            !attendeeRoleId ||
-            !(await guild.roles.fetch(attendeeRoleId).catch(() => null))
-        )
+        const existingAttendee = attendeeRoleId
+            ? await guild.roles.fetch(attendeeRoleId).catch(() => null)
+            : null
+        if (!existingAttendee)
             attendeeRoleId = (
                 await guild.roles.create({
-                    name: roleName(event, "Attendees"),
+                    name: names.players,
                     reason: `Event attendees for ${event.name}`,
                 })
             ).id
-        if (
-            !reserveRoleId ||
-            !(await guild.roles.fetch(reserveRoleId).catch(() => null))
-        )
+        else if (existingAttendee.name !== names.players)
+            // Roles made before the clan-language names, or after a rename.
+            await existingAttendee
+                .setName(names.players, "Match role name")
+                .catch(() => null)
+        const existingReserve = reserveRoleId
+            ? await guild.roles.fetch(reserveRoleId).catch(() => null)
+            : null
+        if (!existingReserve)
             reserveRoleId = (
                 await guild.roles.create({
-                    name: roleName(event, "Reserves"),
+                    name: names.reserves,
                     reason: `Event reserves for ${event.name}`,
                 })
             ).id
+        else if (existingReserve.name !== names.reserves)
+            await existingReserve
+                .setName(names.reserves, "Match role name")
+                .catch(() => null)
         if (
             attendeeRoleId !== event.attendeeRoleId ||
             reserveRoleId !== event.reserveRoleId

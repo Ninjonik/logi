@@ -100,7 +100,7 @@ test("syncScheduledDiscordEvent cancels unsupported meeting channels and clears 
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: baseEvent,
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: { type: ChannelType.GuildText } as never,
         scheduledEventId: "sched-1",
         desiredLifecycle: "scheduled",
@@ -127,7 +127,7 @@ test("syncScheduledDiscordEvent returns completed without creating past lifecycl
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: baseEvent,
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,
@@ -165,7 +165,7 @@ test("syncScheduledDiscordEvent creates and advances scheduled events when neede
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: baseEvent,
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,
@@ -184,7 +184,7 @@ test("syncScheduledDiscordEvent edits existing scheduled events and tolerates ed
     const scheduledEvent = {
         id: "sched-1",
         status: GuildScheduledEventStatus.Scheduled,
-        edit: async (input: any) => {
+        edit: async (input: { status?: unknown }) => {
             if (input.status) {
                 throw new Error("advance failed")
             }
@@ -201,7 +201,7 @@ test("syncScheduledDiscordEvent edits existing scheduled events and tolerates ed
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: baseEvent,
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,
@@ -238,7 +238,7 @@ test("syncScheduledDiscordEvent never edits schedule fields after Discord activa
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: { ...baseEvent, updatedAt: "event-v2" },
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,
@@ -291,7 +291,7 @@ test("syncScheduledDiscordEvent replaces an active Discord event when Logi is re
             meetingStart: "2026-01-02T10:00:00.000Z",
             gameEnd: "2026-01-02T12:00:00.000Z",
         },
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,
@@ -325,7 +325,7 @@ test("syncScheduledDiscordEvent keeps terminal Discord lifecycle when it matches
     const result = await syncScheduledDiscordEvent({
         guild: guild as never,
         event: baseEvent,
-        language: "en",
+        content: { name: "Operation Test", description: "Briefing" },
         meetingChannel: {
             id: "voice-1",
             type: ChannelType.GuildVoice,

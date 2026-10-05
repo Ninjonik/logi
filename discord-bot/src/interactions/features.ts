@@ -1,3 +1,4 @@
+import { matchAnnouncementInteractions } from "../events/interactions"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -6,4 +7,6 @@ import type { InteractionFeature } from "./registry"
  * the dispatch in `interactions.ts` stays untouched. Routes registered here
  * take precedence; anything else falls through to the existing dispatch.
  */
-export const interactionFeatures: readonly InteractionFeature[] = []
+export const interactionFeatures: readonly InteractionFeature[] = [
+    matchAnnouncementInteractions,
+]

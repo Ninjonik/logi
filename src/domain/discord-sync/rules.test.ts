@@ -22,6 +22,33 @@ test("deriveScheduledEventLifecycle derives canceled for concluded events before
     )
 })
 
+test("a match ended before its meeting cancels its Discord event even when synced later", () => {
+    assert.equal(
+        deriveScheduledEventLifecycle(
+            {
+                meetingStart: "2026-07-22T13:00:00.000Z",
+                gameEnd: "2026-07-22T15:00:00.000Z",
+                status: "concluded",
+                concludedAt: "2026-07-22T11:00:00.000Z",
+            },
+            new Date("2026-07-22T16:00:00.000Z")
+        ),
+        "canceled"
+    )
+    assert.equal(
+        deriveScheduledEventLifecycle(
+            {
+                meetingStart: "2026-07-22T13:00:00.000Z",
+                gameEnd: "2026-07-22T15:00:00.000Z",
+                status: "concluded",
+                concludedAt: "2026-07-22T15:15:00.000Z",
+            },
+            new Date("2026-07-22T12:00:00.000Z")
+        ),
+        "completed"
+    )
+})
+
 test("shouldSyncEvent matches current bot sync rule behavior", () => {
     assert.equal(
         shouldSyncEvent({

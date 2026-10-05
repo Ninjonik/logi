@@ -6,11 +6,8 @@ import {
     EmbedBuilder,
     MediaGalleryBuilder,
     MessageFlags,
-    SectionBuilder,
     SeparatorBuilder,
     TextDisplayBuilder,
-    ThumbnailBuilder,
-    escapeMarkdown,
     type APIEmbedField,
 } from "discord.js"
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
@@ -23,36 +20,17 @@ import {
     formatCount,
     resolveMessageAccentColor,
 } from "../../src/domain/discord-messages/format"
-import {
-    countSignups,
-    formatGroupCount,
-    readSignupGroupLimits,
-} from "../../src/domain/discord-messages/signup-counts"
-import {
-    panelFactionOf,
-    type PanelFactionEmoji,
-} from "../../src/domain/discord-publications/panel-presentation"
-import {
-    messageLineIcon,
-    type MessageLine,
-} from "../../src/domain/discord-messages/message-style"
-import { factionEmblem } from "../../src/domain/discord-messages/faction-emblem"
 import { getMembershipMessages } from "../../src/lib/clan-language/membership"
 import { formatDiscordMarkdown } from "../../src/lib/discord-markdown"
 import { getPanelMessages } from "../../src/lib/clan-language/panels"
 import { getEventMessages } from "../../src/lib/clan-language/events"
 import { formatHllPresetLabel } from "../../src/lib/hll-map-presets"
 import { expandCalendarItems } from "../../src/lib/calendar-items"
-import { canAcceptSignups } from "../../src/domain/events/status"
-import { formatMapLabel } from "./map-label"
 
 import type {
     ClanLanguage,
     DiscordConfig,
     EventRecord,
-    Group,
-    MatchTeamAssignment,
-    MatchTeamSlot,
     MembershipApplicationThreadRecord,
     MembershipCategory,
     Roster,
@@ -64,294 +42,127 @@ import {
     buildForumThreadName,
     getRosterImageVersion,
     buildRosterImageUrl,
-    formatEventStatus,
     formatInTimezone,
     generateCalendarUrl,
     buildPublicRosterUrl,
-    pickButtonStyle,
 } from "./utils"
-import {
-    SIGNUP_GENERAL,
-    SIGNUP_NOT_ATTENDING,
-    SIGNUP_PRIMARY_GROUP,
-    TRAINING_ATTEND,
-} from "./constants"
 
-type EventEmbedOptions = {
-    forumChannelId?: string
-    showPublishedRosterImage?: boolean
+type RosterInfoOptions = {
+    /** The roster picture uploaded with the message (`attachment://…`). */
     rosterImageUrl?: string
-    hideSignupDetails?: boolean
-    /** Faction emblems: installed application emoji or workspace overrides. */
-    factionEmoji?: PanelFactionEmoji
 }
-
-type EventLink = { label: string; url: string }
 
 type Messages = ReturnType<typeof getEventMessages>
 
-export function buildAnnouncementMessage(
-    payload: SyncPayload,
+function rosterImageUrlOf(
     event: EventRecord,
-    userDisplayNames: Record<string, string> = payload.userDisplayNames,
-    options?: EventEmbedOptions
+    roster: Roster,
+    options?: RosterInfoOptions
 ) {
-    const roster = payload.rosters.find((item) => item.eventId === event.id)
-    return {
-        embed: buildEventEmbed(
-            payload.config,
-            payload.groups,
-            payload.guild.eventCategories,
-            event,
-            roster,
-            userDisplayNames,
-            options
-        ),
-        components: buildEventComponents(
-            payload.config,
-            payload.groups,
-            event,
-            roster
-        ),
-    }
+    return (
+        options?.rosterImageUrl ??
+        buildRosterImageUrl(
+            event.id,
+            getRosterImageVersion(event, roster.updatedAt)
+        )
+    )
+}
+
+function rosterTitle(messages: Messages, event: EventRecord) {
+    return fillTemplate(messages.rosterSummary.title, {
+        event: toSingleLine(event.name),
+    })
 }
 
 /**
- * The published roster card (event information channel): roster title, the
- * meeting line, one line per squad and the reserves, the roster image and
- * "My assignment" / "Full roster on the web".
+ * The published roster card in the event information channel: roster title,
+ * the meeting line, one line per squad and the reserves, the roster image and
+ * "My assignment" / "Full roster on the web". The match announcement itself
+ * lives in `events/announcement.ts`.
  */
-function rosterCardOf(
+export function buildRosterInfoV2Message(
+    payload: Pick<SyncPayload, "config">,
     event: EventRecord,
-    roster: Roster | undefined,
-    options?: EventEmbedOptions
-) {
-    return options?.showPublishedRosterImage &&
-        event.kind === "match" &&
-        roster?.published
-        ? roster
-        : undefined
-}
-
-export function buildAnnouncementV2Message(
-    payload: SyncPayload,
-    event: EventRecord,
-    userDisplayNames: Record<string, string> = payload.userDisplayNames,
-    options?: EventEmbedOptions & {
-        pingRoleIds?: string[]
-        eventLinks?: EventLink[]
-        /** Adds one logo section per assigned team (event information cards). */
-        matchTeamCards?: boolean
-    }
+    roster: Roster,
+    userDisplayNames: Record<string, string> = {},
+    options?: RosterInfoOptions
 ) {
     const messages = getEventMessages(payload.config.defaultLanguage)
-    const publishedRoster = payload.rosters.find(
-        (item) => item.eventId === event.id && item.published
+    const container = new ContainerBuilder().setAccentColor(
+        resolveMessageAccentColor({
+            messageStyle: payload.config.messageStyle,
+        })
     )
-    const accent = resolveMessageAccentColor({
-        categoryColor: findEventCategory(
-            payload.guild.eventCategories,
-            event.matchType
-        )?.color,
-        messageStyle: payload.config.messageStyle,
-    })
-    const container = new ContainerBuilder().setAccentColor(accent)
-    // The ping sits above the card, as a normal message line.
-    const roleMentions = options?.pingRoleIds
-        ?.map((roleId) => `<@&${roleId}>`)
-        .join(" ")
-    const lead = roleMentions
-        ? [new TextDisplayBuilder().setContent(roleMentions)]
-        : []
-
-    const rosterCard = rosterCardOf(event, publishedRoster, options)
-    if (rosterCard) {
-        const title = escapeDisplayName(toSingleLine(event.name))
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                [
-                    `### ${fillTemplate(messages.rosterSummary.title, { event: title })}`,
-                    buildRosterSummaryText(
-                        payload.config,
-                        event,
-                        rosterCard,
-                        userDisplayNames
-                    ),
-                ]
-                    .filter(Boolean)
-                    .join("\n")
-                    .slice(0, 4000)
-            )
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+            [
+                `### ${escapeDisplayName(rosterTitle(messages, event))}`,
+                buildRosterSummaryText(
+                    payload.config,
+                    event,
+                    roster,
+                    userDisplayNames
+                ),
+            ]
+                .filter(Boolean)
+                .join("\n")
+                .slice(0, 4000)
         )
-        container.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems({
-                media: {
-                    url:
-                        options?.rosterImageUrl ??
-                        buildRosterImageUrl(
-                            event.id,
-                            getRosterImageVersion(event, rosterCard.updatedAt)
-                        ),
-                },
-                description: `${event.name} roster`,
-            })
-        )
-        container.addActionRowComponents(
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`roster-assignment:${event.id}`)
-                    .setStyle(ButtonStyle.Primary)
-                    .setLabel(messages.embed.myAssignment),
-                new ButtonBuilder()
-                    .setStyle(ButtonStyle.Link)
-                    .setLabel(messages.buttons.viewFullRoster)
-                    .setURL(
-                        buildPublicRosterUrl(
-                            event.id,
-                            payload.config.defaultLanguage
-                        )
+    )
+    container.addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems({
+            media: { url: rosterImageUrlOf(event, roster, options) },
+            description: `${event.name} roster`,
+        })
+    )
+    container.addActionRowComponents(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`roster-assignment:${event.id}`)
+                .setStyle(ButtonStyle.Primary)
+                .setLabel(messages.embed.myAssignment),
+            new ButtonBuilder()
+                .setStyle(ButtonStyle.Link)
+                .setLabel(messages.buttons.viewFullRoster)
+                .setURL(
+                    buildPublicRosterUrl(
+                        event.id,
+                        payload.config.defaultLanguage
                     )
-            )
-        )
-        return { components: [...lead, container] }
-    }
-
-    const card = buildEventCardText(
-        payload.config,
-        payload.groups,
-        payload.guild.eventCategories,
-        event,
-        options
-    )
-    const heading = `### ${card.title}\n${card.header}`.trim().slice(0, 4000)
-    if (event.thumbnailUrl) {
-        container.addSectionComponents(
-            new SectionBuilder()
-                .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(heading)
-                )
-                .setThumbnailAccessory(
-                    new ThumbnailBuilder({
-                        media: { url: event.thumbnailUrl },
-                        description: `${event.name} thumbnail`,
-                    })
                 )
         )
-    } else {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(heading)
-        )
-    }
-    if (card.notes) {
-        container.addSeparatorComponents(new SeparatorBuilder())
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(card.notes.slice(0, 4000))
-        )
-    }
-
-    // Components V2 messages cannot carry embeds, so the per-team logo cards
-    // are sections with a thumbnail inside the event card.
-    const teamSections = options?.matchTeamCards
-        ? buildMatchTeamV2Sections(event)
-        : []
-    if (teamSections.length) {
-        container.addSeparatorComponents(new SeparatorBuilder())
-        container.addSectionComponents(...teamSections)
-    }
-
-    if (options?.eventLinks?.length) {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-                options.eventLinks
-                    .map((link) => `[${link.label}](${link.url})`)
-                    .join(" • ")
-                    .slice(0, 4000)
-            )
-        )
-    }
-    if (card.status) {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(card.status.slice(0, 4000))
-        )
-    }
-    // Without a separate event-info room, this card also shows the published
-    // roster image below the event artwork.
-    const rosterImageUrl =
-        event.kind === "match" && publishedRoster
-            ? (options?.rosterImageUrl ??
-              buildRosterImageUrl(
-                  event.id,
-                  getRosterImageVersion(event, publishedRoster.updatedAt)
-              ))
-            : undefined
-    const gallery = [
-        event.kind === "match" && event.imageUrl
-            ? { url: event.imageUrl, description: `${event.name} image` }
-            : undefined,
-        rosterImageUrl
-            ? { url: rosterImageUrl, description: `${event.name} roster` }
-            : undefined,
-    ].filter((item): item is { url: string; description: string } =>
-        Boolean(item)
     )
-    if (gallery.length) {
-        container.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems(
-                gallery.map((item) => ({
-                    media: { url: item.url },
-                    description: item.description,
-                }))
+    return { components: [container] }
+}
+
+/** {@link buildRosterInfoV2Message} for a legacy embed message. */
+export function buildRosterInfoEmbed(
+    config: DiscordConfig,
+    event: EventRecord,
+    roster: Roster,
+    userDisplayNames: Record<string, string> = {},
+    options?: RosterInfoOptions
+) {
+    const messages = getEventMessages(config.defaultLanguage)
+    return new EmbedBuilder()
+        .setColor(
+            resolveMessageAccentColor({ messageStyle: config.messageStyle })
+        )
+        .setTitle(
+            truncateUtf16(
+                rosterTitle(messages, event),
+                DISCORD_EMBED_TITLE_LIMIT
             )
         )
-    }
-    if (card.footer) {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`-# ${card.footer}`)
+        .setDescription(
+            buildRosterSummaryText(
+                config,
+                event,
+                roster,
+                userDisplayNames
+            ).slice(0, DISCORD_EMBED_DESCRIPTION_LIMIT) || null
         )
-    }
-
-    const controls =
-        isSignupOpen(event) && event.kind === "match"
-            ? [
-                  new ActionRowBuilder<ButtonBuilder>().addComponents(
-                      new ButtonBuilder()
-                          .setCustomId(
-                              `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}:${payload.config.guildId}`
-                          )
-                          .setStyle(ButtonStyle.Success)
-                          .setLabel(messages.embed.chooseSignup),
-                      new ButtonBuilder()
-                          .setCustomId(
-                              `check-signup:${event.id}:${payload.config.guildId}`
-                          )
-                          .setStyle(ButtonStyle.Secondary)
-                          .setLabel(messages.buttons.checkSignup),
-                      new ButtonBuilder()
-                          .setCustomId(
-                              `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${payload.config.guildId}`
-                          )
-                          .setStyle(ButtonStyle.Danger)
-                          .setLabel(messages.buttons.decline),
-                      new ButtonBuilder()
-                          .setStyle(ButtonStyle.Link)
-                          .setLabel(messages.buttons.addToCalendar)
-                          .setURL(
-                              generateCalendarUrl(
-                                  event,
-                                  payload.config.defaultLanguage
-                              )
-                          )
-                  ),
-              ]
-            : buildEventComponents(
-                  payload.config,
-                  payload.groups,
-                  event,
-                  payload.rosters.find((item) => item.eventId === event.id)
-              )
-    for (const row of controls) container.addActionRowComponents(row)
-
-    return { components: [...lead, container] }
+        .setImage(rosterImageUrlOf(event, roster, options))
 }
 
 function formatRosterPlayerName(
@@ -466,21 +277,6 @@ function findEventCategory(
     )
 }
 
-function resolveEventCategoryLabel(
-    categories: SyncPayload["guild"]["eventCategories"],
-    event: EventRecord
-) {
-    if (event.kind === "training") {
-        return undefined
-    }
-
-    return (
-        findEventCategory(categories, event.matchType)?.label ??
-        event.matchType?.trim() ??
-        undefined
-    )
-}
-
 function resolveEventCategoryColor(
     categories: SyncPayload["guild"]["eventCategories"],
     event: EventRecord
@@ -510,297 +306,8 @@ function toDiscordColor(color: string) {
     return DEFAULT_MESSAGE_ACCENT_COLOR
 }
 
-/** Separates the header, notes and status blocks of a legacy embed. */
-const DESCRIPTION_BLOCK_SEPARATOR = "----------------------------------------"
 const DISCORD_EMBED_TITLE_LIMIT = 256
 const DISCORD_EMBED_DESCRIPTION_LIMIT = 4096
-
-/** "Name · Category"; trainings and uncategorised events keep the name. */
-export function formatEventTitle(
-    categories: SyncPayload["guild"]["eventCategories"],
-    event: EventRecord
-) {
-    const categoryLabel = resolveEventCategoryLabel(categories, event)?.trim()
-    return truncateUtf16(
-        categoryLabel && categoryLabel !== event.name.trim()
-            ? `${event.name} · ${categoryLabel}`
-            : event.name,
-        DISCORD_EMBED_TITLE_LIMIT
-    )
-}
-
-/** "Spojenci"/"Osa" for HLL sides; other sides (Wardogs factions) as stored. */
-export function formatSideLabel(side: string, messages: Messages) {
-    const faction = panelFactionOf(side)
-    return faction === "allies" || faction === "axis"
-        ? messages.factions[faction]
-        : escapeMatchTeamText(side)
-}
-
-/** Faction emblem of a side; nothing for sides that are not factions. */
-function sideEmblem(
-    side: string | null | undefined,
-    emoji: PanelFactionEmoji | undefined
-) {
-    return side ? factionEmblem(side, emoji) : undefined
-}
-
-/**
- * "Emblem VLK Spojenci vs Emblem ROG Osa": assigned teams by slot with their
- * side, or the clan's own side when the match has no teams.
- */
-export function formatMatchSidesLine(
-    event: EventRecord,
-    messages: Messages,
-    emoji?: PanelFactionEmoji
-) {
-    if (event.kind !== "match") return undefined
-    const teams = sortMatchTeams(event)
-    if (teams.length) {
-        return teams
-            .map((assignment) => {
-                const code = assignment.snapshot.shortCode?.trim()
-                const side = assignment.side?.trim()
-                return [
-                    sideEmblem(side, emoji),
-                    `**${escapeMatchTeamText(code || assignment.snapshot.name)}**`,
-                    side ? formatSideLabel(side, messages) : undefined,
-                ]
-                    .filter(Boolean)
-                    .join(" ")
-            })
-            .join("  vs  ")
-    }
-    const side = event.side?.trim()
-    return side
-        ? `**${messages.embed.side}:** ${[sideEmblem(side, emoji), formatSideLabel(side, messages)].filter(Boolean).join(" ")}`
-        : undefined
-}
-
-/** "Foy · den" (the mode only when it is not warfare), else the stored map. */
-export function formatEventMapLabel(event: EventRecord, messages: Messages) {
-    return formatMapLabel(event.map, event.gameId, messages)
-}
-
-/** Attending sign-ups of an event (participants, else legacy sign-ups). */
-function attendingSignups(event: EventRecord) {
-    return event.participants.length > 0
-        ? event.participants
-              .filter((participant) => participant.status === "attending")
-              .map((participant) => ({ group: participant.group }))
-        : event.signUps.filter(
-              (signUp) => signUp.group !== SIGNUP_NOT_ATTENDING
-          )
-}
-
-/** "**Přihlášeno 23** · Pěchota 15 · Tanky 6/6 · Recon 2/2". */
-export function formatSignupCountsLine(
-    event: EventRecord,
-    groups: Group[],
-    messages: Messages
-) {
-    const counts = countSignups({
-        groups:
-            event.kind === "match"
-                ? groups.map((group) => ({
-                      id: group.id,
-                      name: escapeDisplayName(toSingleLine(group.name)),
-                  }))
-                : [],
-        offeredGroupIds: event.signupGroupIds ?? null,
-        signups: attendingSignups(event),
-        limits: readSignupGroupLimits(
-            (event as { signupGroupLimits?: unknown }).signupGroupLimits
-        ),
-    })
-    return [
-        `**${fillTemplate(messages.embed.signedUpTotal, {
-            count: String(counts.total),
-        })}**`,
-        ...counts.groups.map(formatGroupCount),
-        ...(event.kind === "match" && counts.withoutGroup
-            ? [`${messages.embed.withoutGroup} ${counts.withoutGroup}`]
-            : []),
-    ].join(" · ")
-}
-
-/**
- * Text of the public event card in the clan language: title, the sides line,
- * the start, then map, cap, meeting and sign-up deadline on one line, the
- * organisers' notes, the sign-up counts (or the status once registration has
- * closed) and the forum link. Times are Discord timestamps, so every reader
- * sees them in their own zone. A match server and its password never appear
- * here: rostered players see both under "My assignment".
- */
-export function buildEventCardText(
-    config: DiscordConfig,
-    groups: Group[],
-    categories: SyncPayload["guild"]["eventCategories"],
-    event: EventRecord,
-    options?: EventEmbedOptions
-) {
-    const messages = getEventMessages(config.defaultLanguage)
-    const density = config.messageStyle?.iconDensity
-    const icon = (line: MessageLine) => messageLineIcon(line, density)
-    const header: string[] = []
-    const sides = formatMatchSidesLine(event, messages, options?.factionEmoji)
-    if (sides) header.push(`${icon("side")}${sides}`)
-    const start = discordTimestamp(event.gameStart, "F")
-    if (start) header.push(`${icon("start")}**${start}**`)
-    const meeting = discordTimestamp(event.meetingStart, "t")
-    // A closed registration is shown by the status, not a past deadline.
-    const registrationOpen = isSignupOpen(event)
-    const registrationEnd = registrationOpen
-        ? discordTimestamp(event.registrationEnd, "R")
-        : undefined
-    const facts = [
-        event.kind === "match"
-            ? formatEventMapLabel(event, messages)
-            : undefined,
-        event.kind === "match" && event.cap
-            ? `${messages.embed.cap} ${escapeDisplayName(toSingleLine(event.cap))}`
-            : undefined,
-        meeting
-            ? fillTemplate(messages.embed.meetingAt, { time: meeting })
-            : undefined,
-        registrationEnd
-            ? fillTemplate(messages.embed.registrationCloses, {
-                  time: registrationEnd,
-              })
-            : undefined,
-    ].filter((fact): fact is string => Boolean(fact))
-    if (facts.length) header.push(`${icon("details")}${facts.join(" · ")}`)
-    // Trainings have no roster assignment to carry the server privately.
-    if (event.kind === "training" && event.server) {
-        header.push(
-            `**${icon("server")}${messages.embed.server}:** ${event.server}`
-        )
-    }
-
-    const statusLines = [
-        options?.hideSignupDetails
-            ? undefined
-            : formatSignupCountsLine(event, groups, messages),
-        registrationOpen
-            ? undefined
-            : `${messages.embed.status}: ${formatEventStatus(event.status, config.defaultLanguage)}`,
-    ].filter(Boolean)
-    // With per-line icons, the sign-up block starts with its own icon.
-    const status = statusLines.length
-        ? `${icon("status")}${statusLines.join("\n")}`
-        : ""
-    const footer = [
-        options?.forumChannelId
-            ? `${icon("forum")}<#${options.forumChannelId}>`
-            : undefined,
-        messages.embed.managedShort,
-    ]
-        .filter(Boolean)
-        .join(" · ")
-
-    return {
-        title: formatEventTitle(categories, event),
-        header: header.join("\n"),
-        notes: formatDiscordMarkdown(event.notes || event.description) || "",
-        status,
-        footer,
-    }
-}
-
-export function buildEventEmbed(
-    config: DiscordConfig,
-    groups: Group[],
-    categories: SyncPayload["guild"]["eventCategories"],
-    event: EventRecord,
-    roster?: Roster,
-    userDisplayNames: Record<string, string> = {},
-    options?: EventEmbedOptions
-) {
-    const messages = getEventMessages(config.defaultLanguage)
-    const embed = new EmbedBuilder().setColor(
-        resolveMessageAccentColor({
-            categoryColor: findEventCategory(categories, event.matchType)
-                ?.color,
-            messageStyle: config.messageStyle,
-        })
-    )
-
-    const rosterCard = rosterCardOf(event, roster, options)
-    if (rosterCard) {
-        return embed
-            .setTitle(
-                truncateUtf16(
-                    fillTemplate(messages.rosterSummary.title, {
-                        event: toSingleLine(event.name),
-                    }),
-                    DISCORD_EMBED_TITLE_LIMIT
-                )
-            )
-            .setDescription(
-                buildRosterSummaryText(
-                    config,
-                    event,
-                    rosterCard,
-                    userDisplayNames
-                ).slice(0, DISCORD_EMBED_DESCRIPTION_LIMIT) || null
-            )
-            .setImage(
-                options?.rosterImageUrl ??
-                    buildRosterImageUrl(
-                        event.id,
-                        getRosterImageVersion(event, rosterCard.updatedAt)
-                    )
-            )
-    }
-
-    const card = buildEventCardText(config, groups, categories, event, options)
-    embed
-        .setTitle(card.title)
-        .setDescription(
-            [
-                card.header,
-                card.notes,
-                [card.status, card.footer ? `-# ${card.footer}` : undefined]
-                    .filter(Boolean)
-                    .join("\n"),
-            ]
-                .filter(Boolean)
-                .join(`\n${DESCRIPTION_BLOCK_SEPARATOR}\n`)
-                .slice(0, DISCORD_EMBED_DESCRIPTION_LIMIT) || null
-        )
-    if (event.thumbnailUrl) {
-        embed.setThumbnail(event.thumbnailUrl)
-    }
-    if (event.kind === "match" && roster?.published && !isSignupOpen(event)) {
-        embed.setImage(
-            options?.rosterImageUrl ??
-                buildRosterImageUrl(
-                    event.id,
-                    getRosterImageVersion(event, roster.updatedAt)
-                )
-        )
-    } else if (event.kind === "match" && event.imageUrl) {
-        embed.setImage(event.imageUrl)
-    }
-    return embed
-}
-
-const MATCH_TEAM_SLOT_ORDER: Record<MatchTeamSlot, number> = {
-    a: 0,
-    b: 1,
-    c: 2,
-}
-/** Discord rejects messages with more than ten embeds. */
-const DISCORD_MAX_EMBEDS = 10
-const DISCORD_EMBED_AUTHOR_NAME_LIMIT = 256
-const DISCORD_THUMBNAIL_DESCRIPTION_LIMIT = 1024
-
-function sortMatchTeams(event: EventRecord) {
-    return [...(event.matchTeams ?? [])].sort(
-        (left, right) =>
-            MATCH_TEAM_SLOT_ORDER[left.slot] - MATCH_TEAM_SLOT_ORDER[right.slot]
-    )
-}
 
 /** Keeps a stored label on one line so it cannot start Markdown blocks. */
 function toSingleLine(value: string) {
@@ -819,194 +326,6 @@ function truncateUtf16(value: string, maxLength: number) {
         truncated += codePoint
     }
     return truncated
-}
-
-/**
- * Makes user-supplied text render literally instead of as a mention, channel,
- * emoji, timestamp or command reference: every `@` and every `<@`, `<#`, `<:`,
- * `</` or `<t:`-style opener is broken with a zero-width space.
- */
-export function neutralizeDiscordMentions(value: string) {
-    return value
-        .replace(/@/g, "@\u200B")
-        .replace(/<(?=[@#:&/]|[a-z]+:)/gi, "<\u200B")
-}
-
-/** Breaks `://` with a zero-width space so text never becomes a URL. */
-function breakUrlSchemes(value: string) {
-    return value.replace(/:\/\//g, ":\u200B//")
-}
-
-/**
- * Escapes stored team text for Discord surfaces that render Markdown. Brackets
- * and parentheses are escaped so labels cannot form masked links, and `://` is
- * broken so a label never becomes a clickable URL. Every `-` is escaped (which
- * also covers bulleted lists) so stored text can never contain the `-{20,}`
- * run that splits Components V2 cards into separate blocks.
- */
-export function escapeMatchTeamText(value: string) {
-    const escaped = escapeMarkdown(toSingleLine(value), {
-        heading: true,
-        numberedList: true,
-    })
-        .replace(/[[\]()-]/g, "\\$&")
-        .replace(/^>/, "\\>")
-    return breakUrlSchemes(neutralizeDiscordMentions(escaped))
-}
-
-/** Plain-text label for Discord fields that do not render Markdown. */
-function plainMatchTeamLabel(assignment: MatchTeamAssignment) {
-    const name = toSingleLine(assignment.snapshot.name)
-    const code = toSingleLine(assignment.snapshot.shortCode ?? "")
-    return breakUrlSchemes(
-        neutralizeDiscordMentions(code ? `${name} [${code}]` : name)
-    )
-}
-
-function formatMatchTeamLabel(
-    assignment: MatchTeamAssignment,
-    includeSide: boolean
-) {
-    const parts = [escapeMatchTeamText(assignment.snapshot.name)]
-    const code = assignment.snapshot.shortCode?.trim()
-    if (code) parts.push(`[${escapeMatchTeamText(code)}]`)
-    const side = assignment.side?.trim()
-    if (includeSide && side) parts.push(`(${escapeMatchTeamText(side)})`)
-    return parts.join(" ")
-}
-
-/** "Name [CODE] (Side) vs …" ordered by slot; undefined without assignments. */
-export function formatMatchTeamsSummary(event: EventRecord) {
-    if (event.kind !== "match") return undefined
-    const teams = sortMatchTeams(event)
-    if (!teams.length) return undefined
-    return teams
-        .map((assignment) => formatMatchTeamLabel(assignment, true))
-        .join(" vs ")
-}
-
-/** Two teams play an HLL match; Wardogs matches have up to three. */
-export function getMatchTeamLogoLimit(event: Pick<EventRecord, "gameId">) {
-    return event.gameId === "wardogs" ? 3 : 2
-}
-
-function parseHttpUrl(value: string | null) {
-    if (!value) return undefined
-    try {
-        const url = new URL(value)
-        return url.protocol === "http:" || url.protocol === "https:"
-            ? url.href
-            : undefined
-    } catch {
-        return undefined
-    }
-}
-
-function listMatchTeamLogos(event: EventRecord) {
-    if (event.kind !== "match") return []
-    return sortMatchTeams(event)
-        .flatMap((assignment) => {
-            const logoUrl = parseHttpUrl(assignment.snapshot.logoUrl)
-            return logoUrl ? [{ assignment, logoUrl }] : []
-        })
-        .slice(0, getMatchTeamLogoLimit(event))
-}
-
-/**
- * One small embed per assigned team with a usable logo, for legacy (non
- * Components V2) event information messages. Never exceeds Discord's ten
- * embed limit together with `existingEmbedCount`.
- */
-export function buildMatchTeamLogoEmbeds(
-    event: EventRecord,
-    color: number | undefined,
-    existingEmbedCount = 1
-) {
-    const available = Math.max(0, DISCORD_MAX_EMBEDS - existingEmbedCount)
-    return listMatchTeamLogos(event)
-        .slice(0, available)
-        .map(({ assignment, logoUrl }) => {
-            // Embed author names render as plain text, so Markdown escaping
-            // would show literal backslashes; mentions are still neutralized.
-            const embed = new EmbedBuilder().setAuthor({
-                name: truncateUtf16(
-                    plainMatchTeamLabel(assignment),
-                    DISCORD_EMBED_AUTHOR_NAME_LIMIT
-                ),
-                iconURL: logoUrl,
-            })
-            if (color !== undefined) embed.setColor(color)
-            const side = assignment.side?.trim()
-            if (side) embed.setDescription(escapeMatchTeamText(side))
-            return embed
-        })
-}
-
-/** Components V2 equivalent of {@link buildMatchTeamLogoEmbeds}. */
-export function buildMatchTeamV2Sections(event: EventRecord) {
-    return listMatchTeamLogos(event).map(({ assignment, logoUrl }) => {
-        const side = assignment.side?.trim()
-        const content = [
-            `**${formatMatchTeamLabel(assignment, false)}**`,
-            side ? escapeMatchTeamText(side) : undefined,
-        ]
-            .filter(Boolean)
-            .join("\n")
-        return new SectionBuilder()
-            .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(content)
-            )
-            .setThumbnailAccessory(
-                new ThumbnailBuilder({
-                    media: { url: logoUrl },
-                    description: truncateUtf16(
-                        plainMatchTeamLabel(assignment),
-                        DISCORD_THUMBNAIL_DESCRIPTION_LIMIT
-                    ),
-                })
-            )
-    })
-}
-
-export function buildEventComponents(
-    config: DiscordConfig,
-    groups: Group[],
-    event: EventRecord,
-    roster?: Roster
-) {
-    const messages = getEventMessages(config.defaultLanguage)
-
-    if (isSignupOpen(event)) {
-        return buildSignupButtons(config, groups, event.id, event)
-    }
-
-    if (event.status === "starting" && roster?.published) {
-        return [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`attendance:${event.id}:ack`)
-                    .setStyle(ButtonStyle.Success)
-                    .setLabel(messages.buttons.acknowledgeAttendance),
-                new ButtonBuilder()
-                    .setCustomId(`attendance-late:${event.id}`)
-                    .setStyle(ButtonStyle.Secondary)
-                    .setLabel(messages.embed.runningLate),
-                new ButtonBuilder()
-                    .setStyle(ButtonStyle.Link)
-                    .setLabel(messages.buttons.addToCalendar)
-                    .setURL(generateCalendarUrl(event, config.defaultLanguage))
-            ),
-        ]
-    }
-
-    return [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-                .setStyle(ButtonStyle.Link)
-                .setLabel(messages.buttons.addToCalendar)
-                .setURL(generateCalendarUrl(event, config.defaultLanguage))
-        ),
-    ]
 }
 
 export function buildForumInfoEmbed(
@@ -1830,103 +1149,4 @@ export function buildMembershipApplicationThreadEmbed(input: {
         ),
     })
     return embed
-}
-
-function isSignupOpen(event: EventRecord) {
-    return canAcceptSignups(event, new Date(Date.now()))
-}
-
-function buildSignupButtons(
-    config: DiscordConfig,
-    groups: Group[],
-    eventId: string,
-    event: EventRecord
-) {
-    const messages = getEventMessages(config.defaultLanguage)
-
-    if (event.kind === "training") {
-        return [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(
-                        `signup:${eventId}:${encodeURIComponent(TRAINING_ATTEND)}`
-                    )
-                    .setStyle(ButtonStyle.Success)
-                    .setLabel(messages.buttons.attend),
-                new ButtonBuilder()
-                    .setCustomId(`check-signup:${eventId}`)
-                    .setStyle(ButtonStyle.Secondary)
-                    .setLabel(messages.buttons.checkSignup),
-                new ButtonBuilder()
-                    .setCustomId(
-                        `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
-                    )
-                    .setStyle(ButtonStyle.Danger)
-                    .setLabel(messages.buttons.decline),
-                new ButtonBuilder()
-                    .setStyle(ButtonStyle.Link)
-                    .setLabel(messages.buttons.addToCalendar)
-                    .setURL(generateCalendarUrl(event, config.defaultLanguage))
-            ),
-        ]
-    }
-
-    const configuredGroupIds = event.signupGroupIds
-        ? new Set(event.signupGroupIds)
-        : null
-    const visibleGroups = configuredGroupIds
-        ? groups.filter((group) => configuredGroupIds.has(group.id))
-        : groups
-    const allButtons = [
-        ...(event.useGeneralSignup
-            ? [
-                  new ButtonBuilder()
-                      .setCustomId(
-                          `signup:${eventId}:${encodeURIComponent(SIGNUP_GENERAL)}`
-                      )
-                      .setStyle(ButtonStyle.Success)
-                      .setLabel(messages.buttons.generalSignup),
-              ]
-            : []),
-        ...visibleGroups.map((group) => {
-            const button = new ButtonBuilder()
-                .setCustomId(
-                    `signup:${eventId}:${encodeURIComponent(group.id)}`
-                )
-                .setStyle(pickButtonStyle(group.color))
-
-            if (group.discordEmoji) {
-                button.setEmoji(group.discordEmoji)
-            } else {
-                button.setLabel(group.name.slice(0, 20))
-            }
-
-            return button
-        }),
-        new ButtonBuilder()
-            .setCustomId(`check-signup:${eventId}`)
-            .setStyle(ButtonStyle.Secondary)
-            .setLabel(messages.buttons.checkSignup),
-        new ButtonBuilder()
-            .setCustomId(
-                `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}`
-            )
-            .setStyle(ButtonStyle.Danger)
-            .setLabel(messages.buttons.decline),
-        new ButtonBuilder()
-            .setStyle(ButtonStyle.Link)
-            .setLabel(messages.buttons.addToCalendar)
-            .setURL(generateCalendarUrl(event, config.defaultLanguage)),
-    ]
-
-    const rows: Array<ActionRowBuilder<ButtonBuilder>> = []
-    for (let index = 0; index < allButtons.length; index += 5) {
-        rows.push(
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                allButtons.slice(index, index + 5)
-            )
-        )
-    }
-
-    return rows
 }

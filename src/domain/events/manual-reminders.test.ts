@@ -293,3 +293,47 @@ test("the bot skips recipients who answered after the reminder was queued", () =
         []
     )
 })
+
+test("the cool-down is one hour (board L1-B11)", () => {
+    assert.equal(MANUAL_REMINDER_COOLDOWN_MS, 60 * 60 * 1000)
+})
+
+test("a reminder sent 59 minutes ago still blocks, one sent an hour ago does not", () => {
+    const previous = (minutesAgo: number) => [
+        {
+            audience: "unanswered" as const,
+            requestedAt: new Date(
+                now.getTime() - minutesAgo * 60 * 1000
+            ).toISOString(),
+            status: "sent" as const,
+            recipientCount: 12,
+        },
+    ]
+    assert.deepEqual(
+        decideManualReminder({
+            audience: "unanswered",
+            previous: previous(59),
+            now,
+        }),
+        {
+            kind: "rate_limited",
+            retryAt: new Date(now.getTime() + 60 * 1000).toISOString(),
+        }
+    )
+    assert.equal(
+        decideManualReminder({
+            audience: "unanswered",
+            previous: previous(31),
+            now,
+        }).kind,
+        "rate_limited"
+    )
+    assert.deepEqual(
+        decideManualReminder({
+            audience: "unanswered",
+            previous: previous(60),
+            now,
+        }),
+        { kind: "queue" }
+    )
+})

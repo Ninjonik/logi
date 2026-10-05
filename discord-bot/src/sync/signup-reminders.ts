@@ -2,10 +2,11 @@ import { MessageFlags, type Client } from "discord.js"
 
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
-import { getEventMessages } from "../../../src/lib/clan-language/events"
+import {
+    announcementMessage,
+    buildAnnouncementCard,
+} from "../events/announcement"
 import { matchesGameScope } from "../../../src/domain/games/game"
-import { buildAnnouncementV2Message } from "../message-builders"
-import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
 
@@ -41,10 +42,11 @@ export function isSignupReminderRecipient(input: {
 }
 
 /**
- * The sign-up reminder DM: the match announcement without its sign-up
- * details, with links to the registration channel and the match forum. Used
- * by the scheduled reminder and by reminders an admin sends from the
- * dashboard.
+ * The sign-up reminder DM: the match announcement card with its sign-up
+ * buttons, which work inside the DM (board L1-87). Used by the scheduled
+ * reminder and by reminders leadership sends from the dashboard or with
+ * "Připomenout bez odpovědi". The DM's own look (board L2) is the DM
+ * workstream's.
  */
 export function buildSignupReminderMessage(
     payload: SyncPayload,
@@ -53,35 +55,13 @@ export function buildSignupReminderMessage(
     const syncState = payload.syncStates.find(
         (state) => state.eventId === event.id
     )
-    const registrationUrl = buildDiscordMessageLink(
-        payload.config.guildId,
-        event.announcementChannelId ?? payload.config.announcementsChannelId
-    )
-    const forumUrl = buildDiscordMessageLink(
-        payload.config.guildId,
-        syncState?.forumChannelId
-    )
-    const messages = getEventMessages(payload.config.defaultLanguage)
-    const eventLinks = [
-        registrationUrl
-            ? {
-                  label: messages.buttons.openRegistrationChannel,
-                  url: registrationUrl,
-              }
-            : null,
-        forumUrl
-            ? { label: messages.buttons.openEventForum, url: forumUrl }
-            : null,
-    ].filter((link): link is { label: string; url: string } => link !== null)
-    return buildAnnouncementV2Message(
-        payload,
-        event,
-        {},
-        {
-            hideSignupDetails: true,
-            eventLinks,
-        }
-    )
+    const { view } = buildAnnouncementCard(payload, event, {
+        forumChannelId: syncState?.forumChannelId,
+        announcementChannelId:
+            event.announcementChannelId ??
+            payload.config.announcementsChannelId,
+    })
+    return announcementMessage(view, { config: payload.config })
 }
 
 export async function processSignupReminders(

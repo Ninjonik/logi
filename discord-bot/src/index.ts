@@ -152,6 +152,7 @@ import {
 } from "./public-panels/worker"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
+import { startAnnouncementMigration } from "./events/announcement-migration"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 client.once(Events.ClientReady, async (readyClient) => {
@@ -181,6 +182,11 @@ client.once(Events.ClientReady, async (readyClient) => {
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
+        // Redraws pre-redesign match announcements once, a few a minute.
+        startAnnouncementMigration({
+            queueEventSync: (eventId) => syncService.queueEventSync(eventId),
+            triggerSoon: () => syncService.triggerSoon(250),
+        })
         // A backend without the reminder queue must not stop the rest of the
         // bot from starting; reminders then simply wait for the deploy.
         await manualReminderRequestService.start().catch((error) =>
