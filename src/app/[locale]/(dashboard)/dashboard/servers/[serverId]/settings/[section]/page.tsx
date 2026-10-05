@@ -11,10 +11,10 @@ import { DiscordChannelSettingsForm } from "@/components/app/settings/discord-ch
 import { StatsCommandSettingsForm } from "@/components/app/settings/stats-command-settings-form"
 import { MembershipIntegrationSettings } from "@/components/app/membership-integration-settings"
 import { DiscordRoleSettingsForm } from "@/components/app/settings/discord-role-settings-form"
+import { DiscordMessagesSettings } from "@/components/app/settings/discord-messages-settings"
 import { WebsiteEventPolicySettings } from "@/components/app/website-event-policy-settings"
 import { ServerFrontendSettingsForm } from "@/components/app/server-frontend-settings-form"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
-import { DiscordPublicPanelsForm } from "@/components/app/discord-public-panels-form"
 import { MaintenanceImports } from "@/components/app/settings/maintenance-imports"
 import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
@@ -123,9 +123,15 @@ export default async function ServerSettingsSectionPage({
             break
         case "messages":
             content = (
-                <DiscordPublicPanelsForm
+                <DiscordMessagesSettings
                     serverId={serverId}
                     gameId={gameId}
+                    config={discordConfig}
+                    enabledGames={snapshot.enabledGames}
+                    hrefs={{
+                        channels: `/${locale}/dashboard/servers/${serverId}/settings/channels${gameId ? `?game=${gameId}` : ""}`,
+                        league: `/${locale}/dashboard/servers/${serverId}/settings/league${gameId ? `?game=${gameId}` : ""}`,
+                    }}
                     dictionary={dictionary}
                 />
             )
@@ -156,6 +162,7 @@ export default async function ServerSettingsSectionPage({
                     dictionary={dictionary}
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
+                    gameServersHref={`/${locale}/dashboard/servers/${serverId}/settings/game-servers${gameId ? `?game=${gameId}` : ""}`}
                 />
             )
             break
