@@ -9,15 +9,53 @@ import { Callout, Steps } from "nextra/components"
 
 A match is a competitive event with additional match details. Members can use the list to find upcoming or previous matches. Managers can create, edit, prepare and conclude matches; Logi's global administrators link matches to competition fixtures.
 
+## The match list
+
+**Matches** lists matches and trainings together, soonest first, grouped by
+week in the clan's time zone (**This week**, **Next week**, then **Week of …**).
+Each row shows the date and start time, the name and category, the game, map
+and side, how many players signed up and the event's phase:
+
+- **Sign-ups until …** while registration is open;
+- **Roster missing** or **Roster · draft** once registration has closed and the
+  roster is not published yet;
+- **Roster published**, or how many rostered players have not confirmed;
+- after play, the result and score, **No result yet**, or for a training how
+  many passed.
+
+**Upcoming** shows what is still ahead with the most recently played events
+below it; **Played** shows past events. Filter by **Matches** and
+**Trainings**, by game, or search by name, opponent or map.
+
+For managers, **Waiting for you** at the top lists matches whose roster still
+needs publishing and published rosters with players who have not confirmed.
+Confirming imported results is reached from the match itself.
+
+## Recurring matches
+
+**Recurring** lists matches set to repeat. To change or stop a series, open its
+match with **Edit series** and change or switch off the repeat settings, then
+save. Matches that already exist stay as they are.
+
 ## Create a match (manager)
 
 <Steps>
 
 ### Open Matches
 
-Select **Matches** in the active workspace and start a new match. From
+Select **Matches** in the active workspace and choose **New match**. From
 **All games**, choose the target game when prompted; the match is then created
 only in that game.
+
+### Pick a template
+
+Choose one of the clan's [match templates](/wiki/configuration/presets-and-templates#match-templates)
+at the top of the form. It fills the times, category, sign-up options and
+Discord options; every field can still be changed. On a wide screen the
+**Preview in Discord** beside the form shows the registration announcement the
+bot will post, with the same lines and buttons, in the clan's bot language.
+Discord shows the times in each reader's own time zone. Signed-up players and
+the forum link appear in Discord once the match exists.
 
 ### Set the essential information
 
@@ -30,6 +68,11 @@ Lonestar, and Manticore sides.
 ### Prepare the match
 
 Attach topic presets, stratmaps, and a roster as needed. These are separate resources, so check each one rather than assuming that creating a match creates them automatically. A match creates a Discord forum post by default when the bot and forum category are configured; disable that event option if you do not want one. Use the optional registration announcement start when the match should appear in calendars before its Discord registration message and forum post are published.
+
+### Create it
+
+Choose **Create match**. The bot posts the announcement when the registration
+announcement start is reached, or straight away when none is set.
 
 ### Record the outcome
 
