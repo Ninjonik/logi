@@ -111,9 +111,9 @@ export const deMessages = {
         description:
             "Wähle die Discord-Rollen, die jede Integration lesen darf. Zusätzlich ist ein schreibgeschützter Schlüssel mit der Freigabe für Discord-Mitgliedschaft erforderlich. Die Website entscheidet über die Nutzung dieser Angaben.",
         enabled: "Mitgliedschaftsabfragen mit diesem Schlüssel erlauben",
-        roles: "Erlaubte Rollen-IDs",
+        roles: "Erlaubte Rollen",
         rolesHelp:
-            "Eine Rollen-ID pro Zeile. Eine leere Liste gibt nur Anwesenheit und Logi-Zuordnung frei. Änderungen werden beim Speichern wirksam.",
+            "Ohne Rollen werden nur Anwesenheit und Logi-Zuordnung geteilt. Änderungen werden beim Speichern wirksam.",
         empty: "Erstelle einen schreibgeschützten API-Schlüssel mit der Freigabe für Discord-Mitgliedschaft und aktualisiere die Liste.",
         loading: "Wird geladen…",
         refresh: "Aktualisieren",
@@ -134,9 +134,9 @@ export const deMessages = {
             "Registriere zuerst eine Single-Sign-on-Anwendung. Die Richtlinie bindet die Befehle der Website an diese Anwendung.",
         noKeys: "Erstelle einen eingeschränkten API-Schlüssel für das Website-Backend und aktualisiere die Liste. Ältere uneingeschränkte Schlüssel können keine Befehlsrichtlinie tragen.",
         enabled: "Event-Befehle mit diesem Schlüssel erlauben",
-        roles: "Erlaubte Rollen-IDs",
+        roles: "Erlaubte Rollen",
         rolesHelp:
-            "Eine Discord-Rollen-ID pro Zeile. Ein Spiel ohne Rollen bleibt schreibgeschützt. Das Speichern einer aktivierten Richtlinie gewährt Schreibzugriff für die genannten Spiele; das Deaktivieren entzieht ihn.",
+            "Ein Spiel ohne Rollen bleibt schreibgeschützt. Das Speichern einer aktivierten Richtlinie gewährt Schreibzugriff für die Spiele mit Rollen; das Deaktivieren entzieht ihn.",
         granted: "Schreibzugriff gewährt für: {games}",
         notGranted: "Kein Schreibzugriff für Event-Befehle gewährt.",
         loading: "Wird geladen…",
@@ -2624,14 +2624,9 @@ export const deMessages = {
                     "Verfolgte Liga-Matches und ihre Verknüpfung mit euren Events.",
             },
             website: {
-                title: "Clan-Website und API",
+                title: "Clan-Website und Anmeldung",
                 description:
-                    "API-Schlüssel, Event-Befehle von eurer Website und Mitglieder-Synchronisierung.",
-            },
-            login: {
-                title: "Anmeldung",
-                description:
-                    "Die Anmeldeseite eures Clans und Single-Sign-on-Anwendungen.",
+                    "Wenn euer Clan eine eigene Website hat, die Daten aus Logi liest oder Mitglieder über Logi anmeldet. Die Schritte bauen aufeinander auf.",
             },
             calendar: {
                 title: "Google Kalender",

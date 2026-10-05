@@ -111,9 +111,9 @@ export const csMessages = {
         description:
             "Vyberte, které role Discordu smí jednotlivé integrace číst. Přístup vyžaduje také klíč pouze pro čtení s oprávněním ke členství Discordu. O využití těchto údajů rozhoduje web.",
         enabled: "Povolit tomuto klíči ověřování členství",
-        roles: "Povolená ID rolí",
+        roles: "Povolené role",
         rolesHelp:
-            "Zadejte jedno ID role na řádek. Prázdný seznam zpřístupní jen přítomnost a zařazení v Logi. Změny použijete uložením.",
+            "Bez rolí web uvidí jen přítomnost a zařazení v Logi. Změny použijete uložením.",
         empty: "Vytvořte API klíč pouze pro čtení s oprávněním ke členství Discordu a obnovte seznam.",
         loading: "Načítání…",
         refresh: "Obnovit",
@@ -133,9 +133,9 @@ export const csMessages = {
             "Nejdřív zaregistrujte aplikaci jednotného přihlášení. Pravidlo váže příkazy webu na tuto aplikaci.",
         noKeys: "Vytvořte omezený API klíč pro backend webu a obnovte seznam. Starší neomezené klíče pravidlo pro příkazy nést nemohou.",
         enabled: "Povolit tomuto klíči příkazy pro události",
-        roles: "Povolená ID rolí",
+        roles: "Povolené role",
         rolesHelp:
-            "Zadejte jedno ID role Discordu na řádek. Hra bez rolí zůstává jen pro čtení. Uložení zapnutého pravidla udělí zápis příkazů pro uvedené hry; vypnutí oprávnění odebere.",
+            "Hra bez rolí zůstává jen pro čtení. Uložení zapnutého pravidla udělí zápis příkazů pro hry s rolemi; vypnutí oprávnění odebere.",
         granted: "Zápis udělen pro: {games}",
         notGranted: "Zápis příkazů pro události není udělen.",
         loading: "Načítání…",
@@ -2542,14 +2542,9 @@ export const csMessages = {
                     "Sledované ligové zápasy a jejich propojení s vašimi akcemi.",
             },
             website: {
-                title: "Web klanu a API",
+                title: "Web klanu a přihlášení",
                 description:
-                    "API klíče, příkazy z vašeho webu a synchronizace členů.",
-            },
-            login: {
-                title: "Přihlášení",
-                description:
-                    "Přihlašovací stránka klanu a aplikace jednotného přihlášení.",
+                    "Když má klan vlastní web, který čte data z Logi nebo přes něj přihlašuje členy. Kroky na sebe navazují.",
             },
             calendar: {
                 title: "Google Kalendář",

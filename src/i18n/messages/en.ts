@@ -111,9 +111,9 @@ export const enMessages = {
         description:
             "Choose which Discord roles each integration may read. Access also requires a read-only key with the Discord membership grant. The website decides how to use these observations.",
         enabled: "Allow membership lookups with this key",
-        roles: "Allowed role IDs",
+        roles: "Allowed roles",
         rolesHelp:
-            "Enter one role ID per line. An empty list shares presence and Logi assignment only. Save to apply changes.",
+            "Without roles, only presence and the Logi assignment are shared. Save to apply changes.",
         empty: "Create a read-only API key with the Discord membership grant, then refresh this list.",
         loading: "Loading…",
         refresh: "Refresh",
@@ -133,9 +133,9 @@ export const enMessages = {
             "Register a single sign-on application first. The policy binds the website's commands to that application.",
         noKeys: "Create a restricted API key for the website backend, then refresh. Legacy unrestricted keys cannot carry a command policy.",
         enabled: "Allow event commands with this key",
-        roles: "Allowed role IDs",
+        roles: "Allowed roles",
         rolesHelp:
-            "Enter one Discord role ID per line. A game without roles stays read-only. Saving an enabled policy grants event-command write access for the listed games; disabling it removes the grant.",
+            "A game without roles stays read-only. Saving an enabled policy grants event-command write access for the games with roles; disabling it removes the grant.",
         granted: "Write access granted for: {games}",
         notGranted: "No event-command write access granted.",
         loading: "Loading…",
@@ -2546,14 +2546,9 @@ export const enMessages = {
                     "Tracked league matches and their links to your events.",
             },
             website: {
-                title: "Clan website and API",
+                title: "Clan website and sign-in",
                 description:
-                    "API keys, event commands from your website and membership sync.",
-            },
-            login: {
-                title: "Sign-in",
-                description:
-                    "Your clan's sign-in page and single sign-on applications.",
+                    "For a clan website that reads data from Logi or signs members in through it. The steps build on each other.",
             },
             calendar: {
                 title: "Google Calendar",
