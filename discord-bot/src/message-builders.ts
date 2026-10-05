@@ -461,9 +461,12 @@ function resolveAnnouncementDisplayName(
     userDisplayNames: Record<string, string>
 ) {
     const displayName = userDisplayNames[userId]?.trim()
-    return escapeDisplayName(
-        displayName && displayName.length > 0 ? displayName : userId
-    )
+    if (displayName) return escapeDisplayName(displayName)
+    // Without a stored name a Discord mention still shows the member's name
+    // (messages are sent without pinging); never print a raw snowflake.
+    return /^\d{17,20}$/.test(userId)
+        ? `<@${userId}>`
+        : escapeDisplayName(userId)
 }
 
 function normalizeCategoryId(value?: string) {
@@ -606,7 +609,10 @@ function buildEventDescription(
         )
     }
     const meeting = discordTimestamp(event.meetingStart, "t")
-    const registrationEnd = discordTimestamp(event.registrationEnd, "R")
+    // A closed registration is shown by the status, not a past deadline.
+    const registrationEnd = isSignupOpen(event)
+        ? discordTimestamp(event.registrationEnd, "R")
+        : undefined
     const facts = [
         event.kind === "match" && event.map
             ? (formatHllPresetLabel(event.map) ?? event.map)

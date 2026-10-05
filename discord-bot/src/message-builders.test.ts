@@ -238,6 +238,16 @@ test("buildEventEmbed shows the match start, meeting and sign-up deadline as sho
     )
     // Decorative line icons are gone; times stay Discord timestamps.
     assert.doesNotMatch(embed.description ?? "", /🗺️|🎮|🔒|📌|👥|🏷️/)
+    // Once registration closes the status says so; no past deadline.
+    assert.doesNotMatch(
+        buildEventEmbed(
+            { ...config, defaultLanguage: "en" },
+            groups,
+            eventCategories,
+            createMatchEvent({ status: "closed" })
+        ).toJSON().description ?? "",
+        /sign-ups close/
+    )
 })
 
 test("public event cards never contain the server or its password", () => {
@@ -1226,6 +1236,28 @@ test("match team logo labels stay within Discord UTF-16 limits and never contain
             : "",
         /:\/\//
     )
+})
+
+test("members without a stored name appear as a mention, never as a raw ID", () => {
+    const fields =
+        buildEventEmbed(
+            config,
+            groups,
+            eventCategories,
+            createMatchEvent({
+                participants: [
+                    {
+                        userId: "123456789012345678",
+                        status: "attending",
+                        updatedAt: "2026-07-29T10:00:00.000Z",
+                    },
+                ],
+            })
+        ).toJSON().fields ?? []
+    const values = fields.map((field) => field.value).join("\n")
+
+    assert.match(values, /<@123456789012345678>/)
+    assert.doesNotMatch(values, /(^|[^@])123456789012345678/)
 })
 
 test("published roster cards list meeting, squads with counts and reserves", () => {
