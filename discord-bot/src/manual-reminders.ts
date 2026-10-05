@@ -34,8 +34,21 @@ export class ManualReminderRequestService {
             secret: env.internalSecret,
         })
         this.unsubscribe = watch.onUpdate(() => {
-            const pending = watch.localQueryResult() as
-                PendingReminder[] | undefined
+            let pending: PendingReminder[] | undefined
+            try {
+                pending = watch.localQueryResult() as
+                    PendingReminder[] | undefined
+            } catch (error) {
+                // The query failed, for example before the backend deploy.
+                logWarn(
+                    "manual-reminders",
+                    "Could not read pending reminders",
+                    {
+                        error,
+                    }
+                )
+                return
+            }
             if (pending) void this.processAll(pending)
         })
         const pending = (await convex.query(
