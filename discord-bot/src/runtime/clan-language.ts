@@ -4,6 +4,11 @@ import { env } from "../environment"
 const LANGUAGE_TTL_MS = 5 * 60_000
 const languages = new Map<string, { value?: string; until: number }>()
 
+/** The last known language without a backend read, for time-critical replies. */
+export function cachedClanLanguage(guildId: string | null | undefined) {
+    return guildId ? languages.get(guildId)?.value : undefined
+}
+
 /**
  * The clan's Discord language for messages published by background workers
  * (score panels, results, League cards), cached for a few minutes. Returns the

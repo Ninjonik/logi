@@ -30,6 +30,8 @@ export type PanelCopy = {
     noPlayers: string
     noConnectedPlayers: string
     playerDataUnavailable: string
+    detailsUnavailable: string
+    panelChanged: string
     playersButton: string
     reportButton: string
     unknownTime: string
@@ -88,6 +90,9 @@ const en: PanelCopy = {
     noPlayers: "No players reported.",
     noConnectedPlayers: "No connected players reported.",
     playerDataUnavailable: "Player data unavailable.",
+    detailsUnavailable: "Player details unavailable. Please try again later.",
+    panelChanged:
+        "Player details unavailable or this panel changed. Open the current panel in its channel.",
     playersButton: "Players · private details",
     reportButton: "Report Player",
     unknownTime: "unknown",
@@ -146,6 +151,10 @@ const cs: PanelCopy = {
     noPlayers: "Žádní hráči nejsou hlášeni.",
     noConnectedPlayers: "Žádní připojení hráči nejsou hlášeni.",
     playerDataUnavailable: "Data o hráčích nejsou k dispozici.",
+    detailsUnavailable:
+        "Podrobnosti o hráčích teď nejsou k dispozici. Zkus to prosím později.",
+    panelChanged:
+        "Podrobnosti o hráčích nejsou k dispozici nebo se panel změnil. Otevři aktuální panel v jeho kanálu.",
     playersButton: "Hráči (jen pro tebe)",
     reportButton: "Nahlásit hráče",
     unknownTime: "neznámo",
@@ -204,6 +213,10 @@ const de: PanelCopy = {
     noPlayers: "Keine Spieler gemeldet.",
     noConnectedPlayers: "Keine verbundenen Spieler gemeldet.",
     playerDataUnavailable: "Spielerdaten nicht verfügbar.",
+    detailsUnavailable:
+        "Spielerdetails sind gerade nicht verfügbar. Bitte versuche es später erneut.",
+    panelChanged:
+        "Spielerdetails nicht verfügbar oder das Panel hat sich geändert. Öffne das aktuelle Panel in seinem Kanal.",
     playersButton: "Spieler (nur für dich)",
     reportButton: "Spieler melden",
     unknownTime: "unbekannt",

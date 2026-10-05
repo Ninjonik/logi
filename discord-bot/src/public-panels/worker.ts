@@ -16,13 +16,16 @@ import {
     type ButtonInteraction,
     type Client,
 } from "discord.js"
+import {
+    cachedClanLanguage,
+    clanLanguageForGuild,
+} from "../runtime/clan-language"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
 import type { ReportObservation } from "../../../src/domain/player-reports/report"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import type { HllLive } from "../../../src/domain/game-data/hll-live"
 import type { Doc } from "../../../convex/_generated/dataModel"
-import { clanLanguageForGuild } from "../runtime/clan-language"
 import { renderHllPanel, renderHllPlayers } from "./hll-render"
 import { completePrivatePlayerReply } from "./private-reply"
 import { publishManagedMessage } from "../sync/publication"
@@ -32,6 +35,7 @@ import { loadPlayerDetails } from "./player-details"
 import { logWarn as writeWarning } from "../log"
 import { env } from "../environment"
 import { convex } from "../convex"
+import { panelCopy } from "./copy"
 
 function logWarn(...args: Parameters<typeof writeWarning>) {
     try {
@@ -336,6 +340,7 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
     if (interaction.message.flags.has(MessageFlags.Ephemeral))
         await interaction.deferUpdate()
     else await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    const copy = panelCopy(cachedClanLanguage(interaction.guildId))
     await completePrivatePlayerReply(
         (reply) => interaction.editReply(reply),
         async () => {
@@ -385,8 +390,7 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
             )
             if (!result)
                 return {
-                    content:
-                        "Player details unavailable or this panel changed. Open the current panel in its channel.",
+                    content: copy.panelChanged,
                     components: [],
                 }
             const language = await clanLanguageForGuild(result.panel.guildId)
@@ -411,7 +415,9 @@ export async function handlePublicPanelButton(interaction: ButtonInteraction) {
                 result.page,
                 language
             )
-        }
+        },
+        undefined,
+        copy.detailsUnavailable
     )
     return true
 }

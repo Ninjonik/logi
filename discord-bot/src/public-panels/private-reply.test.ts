@@ -1,6 +1,7 @@
 import type { InteractionEditReplyOptions } from "discord.js"
 import { completePrivatePlayerReply } from "./private-reply"
 import assert from "node:assert/strict"
+import { panelCopy } from "./copy"
 import test from "node:test"
 test("a deferred player response resolves to a private error on rejection or timeout instead of spinning", async () => {
     for (const load of [
@@ -33,4 +34,21 @@ test("a rejected render payload is replaced with a plain-text fallback", async (
         async () => ({ content: "players" })
     )
     assert.equal(calls, 2)
+})
+test("the private fallback can use the clan language", async () => {
+    const replies: InteractionEditReplyOptions[] = []
+    await completePrivatePlayerReply(
+        async (reply) => {
+            replies.push(reply)
+        },
+        async () => {
+            throw Error("provider down")
+        },
+        2,
+        panelCopy("cs").detailsUnavailable
+    )
+    assert.equal(
+        replies[0]?.content,
+        "Podrobnosti o hráčích teď nejsou k dispozici. Zkus to prosím později."
+    )
 })
