@@ -14,7 +14,7 @@ Dates display in **Europe/Prague**, including daylight saving time.
 For the website, create a restricted key in **System → Website API** with:
 
 ```json
-{"readAccess":{"resources":["league-matches"],"gameIds":["wardogs"]}}
+{ "readAccess": { "resources": ["league-matches"], "gameIds": ["wardogs"] } }
 ```
 
 Then call from the website backend:
@@ -34,18 +34,18 @@ slashes normalize to the same ID. Unknown or repeated query parameters fail.
 
 ## What the data means
 
-| Field | Public observation |
-| --- | --- |
-| `snapshot.id`, `fixtureNumber`, `title`, `type`, `status`, `request` | URL ID, fixture number, heading, match type/status and originating request |
-| `scheduledAt` | Exact UTC ISO date from header/briefing; conflicting or invalid dates become null |
-| `teams` | Profile code/link/name, displayed nations and member count, faction and ready-check text |
-| `map` | Name, zone, lighting from briefing definitions |
-| `hosting`, `moderator` | Allowlisted public hosting mode/team and moderator state |
-| `mapVote` | Public state, separate UTC closing time, choices keyed by team code |
-| `rules` | Public summary and choices keyed by team code |
-| `readyCheck`, `progress`, `scoringRule` | Preparation state and published scoring rule, not actual awarded points |
-| `results` | Always null in parser version 1; no inferred placements or no-show results |
-| `sourceUrl`, `fetchedAt`, `parserVersion`, `warnings` | Canonical source, actual observation time and parsing provenance |
+| Field                                                                | Public observation                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `snapshot.id`, `fixtureNumber`, `title`, `type`, `status`, `request` | URL ID, fixture number, heading, match type/status and originating request                                                                                                                                                                                             |
+| `scheduledAt`                                                        | Exact UTC ISO date from header/briefing; conflicting or invalid dates become null                                                                                                                                                                                      |
+| `teams`                                                              | Profile code/link/name, displayed nations and member count, faction and ready-check text                                                                                                                                                                               |
+| `map`                                                                | Name, zone, lighting from briefing definitions                                                                                                                                                                                                                         |
+| `hosting`, `moderator`                                               | Allowlisted public hosting mode/team and moderator state                                                                                                                                                                                                               |
+| `mapVote`                                                            | Public state, separate UTC closing time, choices keyed by team code                                                                                                                                                                                                    |
+| `rules`                                                              | Public summary and choices keyed by team code                                                                                                                                                                                                                          |
+| `readyCheck`, `progress`, `scoringRule`                              | Preparation state and published scoring rule, not actual awarded points                                                                                                                                                                                                |
+| `results`                                                            | Nullable `{placements: [{place, teamCode}], confirmed}`; always null in parser version 1 because no finished page has been captured (see [League-wide collection](../league-discovery.md#results-parser-not-available-yet)); no inferred placements or no-show results |
+| `sourceUrl`, `fetchedAt`, `parserVersion`, `warnings`                | Canonical source, actual observation time and parsing provenance                                                                                                                                                                                                       |
 
 All optional missing fields are **null**, including missing collections. Team
 membership is not the roster or match player count. The reference fixture has

@@ -1,10 +1,23 @@
+import type { IndexTab } from "../../domain/wardogs-league/all-fixtures"
 import { LeagueError } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
 import { indexUrl } from "../../domain/wardogs-league/discovery"
 import { load } from "cheerio"
-export type LeagueIndex = { matchUrls: string[]; incomplete: boolean }
+/**
+ * One public index tab. `fixtures` lists upcoming matches and `results`
+ * finished ones; the League-wide collector uses the tab as a phase hint
+ * before a match page has been read. The index carries no dates or
+ * placements that Logi relies on, only match links.
+ */
+export type LeagueIndex = {
+    tab: IndexTab
+    matchUrls: string[]
+    incomplete: boolean
+}
 export function parseLeagueIndex(html: string, sourceUrl: string): LeagueIndex {
-    indexUrl(sourceUrl)
+    const tab = indexUrl(sourceUrl).id
+    if (tab !== "fixtures" && tab !== "results")
+        throw new Error("Invalid League index URL.")
     const $ = load(html),
         main = $("main").first()
     main.find("script,style,footer,form,[role=dialog]").remove()
@@ -38,5 +51,5 @@ export function parseLeagueIndex(html: string, sourceUrl: string): LeagueIndex {
     // rather than interpreting an app shell / truncated response as an empty list.
     if (!urls.size) throw new LeagueError("invalid_html")
     if (urls.size > 500) incomplete = true
-    return { matchUrls: [...urls].slice(0, 500), incomplete }
+    return { tab, matchUrls: [...urls].slice(0, 500), incomplete }
 }

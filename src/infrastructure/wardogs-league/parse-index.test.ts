@@ -7,6 +7,7 @@ const url = "https://wardogsleague.net/matches?tab=fixtures"
 const html = `<nav><a href="/matches/outside">outside</a></nav><main><h1>Find your next match</h1><a href="/matches?tab=fixtures">Fixtures</a><a href="/matches?tab=results">Results</a><a href="/matches/one">Match #1</a><a href="/matches/one/">Duplicate</a><a href="/matches/requests/no">Request</a><a href="https://evil.test/matches/no">wrong host</a></main>`
 test("index reads only main-content match details and rejects unrecognized HTML", () => {
     assert.deepEqual(parseLeagueIndex(html, url), {
+        tab: "fixtures",
         matchUrls: ["https://wardogsleague.net/matches/one"],
         incomplete: false,
     })
@@ -28,9 +29,21 @@ test("real site navigation retains structural tab evidence but contributes no ma
         "utf8"
     )
     assert.deepEqual(parseLeagueIndex(actual, url), {
+        tab: "fixtures",
         matchUrls: ["https://wardogsleague.net/matches/one"],
         incomplete: false,
     })
+})
+test("the results tab is reported as such so finished matches are classified before their page is read", () => {
+    const results = "https://wardogsleague.net/matches?tab=results"
+    assert.deepEqual(parseLeagueIndex(html, results), {
+        tab: "results",
+        matchUrls: ["https://wardogsleague.net/matches/one"],
+        incomplete: false,
+    })
+    assert.throws(() =>
+        parseLeagueIndex(html, "https://wardogsleague.net/matches?tab=live")
+    )
 })
 test("index fetch retains the query and rejects switching tabs on redirect", async () => {
     const data = await fetchLeagueIndex(url, {

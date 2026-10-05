@@ -4,6 +4,10 @@ import {
     SYNC_RESOURCES,
 } from "@/domain/integrations/change"
 import {
+    DEFAULT_LEAGUE_PANEL_OPTIONS,
+    leagueOverviewSchema,
+} from "@/domain/wardogs-league/panels"
+import {
     clanEventSummarySchema,
     clanMatchSummarySchema,
 } from "@/domain/api/event-summaries"
@@ -24,6 +28,7 @@ import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
+import { PANEL_WINDOW } from "@/domain/wardogs-league/all-fixtures"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
@@ -129,6 +134,7 @@ const summaryResponseSchemas = {
     ...historyResponseSchemas,
     LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
     LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
+    LeagueOverview: z.toJSONSchema(leagueOverviewSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
     HllLiveEnvelope: z.toJSONSchema(hllLiveEnvelopeSchema),
     WarconQuery: z.toJSONSchema(warconQuerySchema),
@@ -1619,6 +1625,65 @@ paths["/clan/league-fixtures"] = {
                 },
             },
             "400": { description: "Invalid game or pagination" },
+            "401": { description: "Invalid or revoked key" },
+            "403": { description: "Missing explicit grant" },
+            "429": { description: "API rate limit" },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
+paths["/clan/league-fixtures/overview"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary:
+            "Read the whole Wardogs League as the WD League panels show it",
+        description:
+            "Requires explicit league-fixtures and wardogs grants (the same grant as the tracked collection). Website parity of the two WD League Discord panels: `standings` is the table of the current season (calendar year in Europe/Prague) that Logi computes from League placements with the points rule published on each match page (1st 3 · 2nd 2 · 3rd 1 by default), sorted by points, then 1st, 2nd and 3rd places, then fewer matches; teams equal on all of these share the rank. Until the first result of the season exists `standings.state` is waiting_for_results. `fixtures` lists the nearest live and upcoming fixtures of the whole League (not only the clan's) with teams, nationality, member count, faction, map, host and League preparation chips (rules, map vote, moderator, ready check; done/running/pending), plus the podiums of the last seven days. Results are read from wardogsleague.net and are not verified by Logi; the parser does not read placements yet, so results stay empty until it does. `ours` marks this guild's watched team codes. Data is shared across guilds and refreshed by a one-minute collector through the shared five-minute detail cache; `stale` marks shown fixtures whose last read failed or is older than fifteen minutes. Panel placement, posting and refreshing in Discord are live Discord actions and are not part of the API. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-fixtures",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "limit",
+                in: "query",
+                description:
+                    "Nearest fixtures to return (the panel default is 6).",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: PANEL_WINDOW,
+                    default: DEFAULT_LEAGUE_PANEL_OPTIONS.fixtureCount,
+                },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "League table, nearest fixtures and recent results",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/LeagueOverview",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid game or limit" },
             "401": { description: "Invalid or revoked key" },
             "403": { description: "Missing explicit grant" },
             "429": { description: "API rate limit" },

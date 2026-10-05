@@ -9,6 +9,34 @@ const nullableText = text.nullable()
 const timestamp = z.iso.datetime()
 const count = z.number().int().nonnegative().nullable()
 const choice = z.object({ teamCode: text, value: nullableText })
+/**
+ * Finishing places the League publishes for a completed fixture. Parser
+ * version 1 never produces it: no completed match page has been captured yet
+ * (see `src/infrastructure/wardogs-league/parse-results.ts`). Places may tie;
+ * a team finishes at most once. Points are not stored: Logi derives them from
+ * the published scoring rule (`scoring.ts`).
+ */
+export const leagueResultsSchema = z
+    .object({
+        placements: z
+            .array(
+                z.object({
+                    place: z.number().int().min(1).max(20),
+                    teamCode: text,
+                })
+            )
+            .min(1)
+            .max(20),
+        /** The League's own "Confirmed" step is done; unconfirmed places may still change. */
+        confirmed: z.boolean(),
+    })
+    .refine(
+        (value) =>
+            new Set(value.placements.map((entry) => entry.teamCode)).size ===
+            value.placements.length,
+        { message: "A team can finish only once." }
+    )
+export type LeagueResults = z.infer<typeof leagueResultsSchema>
 export const leagueMatchSchema = z.object({
     id: text,
     sourceUrl: z.url(),
@@ -69,7 +97,7 @@ export const leagueMatchSchema = z.object({
         .max(30)
         .nullable(),
     scoringRule: nullableText,
-    results: z.null(),
+    results: leagueResultsSchema.nullable(),
     warnings: z.array(text).max(100),
 })
 export type LeagueMatch = z.infer<typeof leagueMatchSchema>
@@ -124,6 +152,7 @@ export function losesMatchStructure(previous: LeagueMatch, next: LeagueMatch) {
                 "mapVote",
                 "rules",
                 "progress",
+                "results",
             ] as const
         ).some((field) => previous[field] !== null && next[field] === null) ||
         (previous.teams !== null &&

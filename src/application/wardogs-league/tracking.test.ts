@@ -1,4 +1,4 @@
-import { trackingDecision } from "./tracking"
+import { leagueCollectionWanted, trackingDecision } from "./tracking"
 import assert from "node:assert/strict"
 import test from "node:test"
 const now = Date.parse("2026-10-03T12:00:00Z")
@@ -53,4 +53,13 @@ test("paused records remain readable without scheduling refresh and unknown star
         ).state,
         "archived"
     )
+})
+test("League-wide collection runs while any workspace is enabled or has a WD League panel", () => {
+    assert.equal(leagueCollectionWanted([]), false)
+    assert.equal(
+        leagueCollectionWanted([{ enabled: false }, { enabled: true }]),
+        true
+    )
+    assert.equal(leagueCollectionWanted([{ enabled: false }]), false)
+    assert.equal(leagueCollectionWanted([{ enabled: false }], 1), true)
 })

@@ -56,8 +56,28 @@ Service-key tracking administration is deliberately excluded: changing rooms/pub
 
 **Consumer status:** Logi's collection/feed is implemented. Valkyria's website still needs an explicit consumer and presentation for this new external-fixture resource. Existing native-event sync does not automatically ingest it. No production deployment is claimed by this increment.
 
+## League-wide collection for the WD League panels
+
+The Discord redesign replaces the per-match cards with two self-updating WD League panels in one channel: **tabulka** and **nejbližší zápasy** with the recent results (spec `docs/superpowers/specs/2026-10-05-discord-redesign-design.md`, board P6). They cover every fixture of the League, not only the clan's. Phase 1 builds the data behind them; the Discord rendering, the dashboard and the copy follow in phase 2.
+
+- **Store.** `leagueFixtures` keeps one guild-independent row per League match from both index tabs (`?tab=fixtures`, `?tab=results`; the scan now also stores `resultUrls`). `leagueResults` keeps the placements of finished matches and `leagueCollectionState` the admitted index and the fixture/result revisions. At most 600 fixtures; finished and cancelled fixtures leave 30 days after kickoff unless still listed, results before the previous season are pruned. All tables are additive.
+- **Collector.** `leagueDiscoveryFixtureJobs:collectDue` runs every minute while any workspace has Wardogs League enabled (`leagueCollectionWanted`; disabling everywhere stops collection). It admits a new index scan once, prunes, then reads at most six due fixtures through the shared detail cache, fetch budget and cooldown (`sharedLeagueRead`), so a page is never fetched twice for the tracked and the League-wide flows. Claims are fenced (30 s lease); live fixtures go first, then upcoming, then finished ones. Cadence (`nextFixtureRefreshAt`): live fixtures and the ten nearest upcoming ones as often as the five-minute cache allows, other upcoming ones every 30 minutes, finished ones every 30 minutes for two days and then every six hours until placements appear (at most 14 days), confirmed placements every six hours for seven days, cancelled ones for a day. The panels redraw every 60 s from the store. A failed read keeps the last good page and retries after the cooldown; losing previously parsed placements is treated as HTML drift.
+- **Phase.** `fixturePhase` uses published placements, then the League status label, then the progress steps (Live, Placements, Confirmed), then the index tab. Only "Scheduled" pages are verified against real HTML.
+- **Preparation.** The League's own preparation, not the clan's sign-up: rules ("2 of 3 picked"), map vote (open until it closes), moderator and ready check, each done, running or pending; when none has started a single "not started" chip replaces them.
+- **Table.** `computeStandings` counts every result of the season (calendar year in Europe/Prague) with the points rule published on its page ("1st 3 · 2nd 2 · 3rd 1", 3/2/1 when missing): points, matches and 1st/2nd/3rd counts. Order: points, then more 1st, 2nd and 3rd places, then fewer matches; teams equal on all of these share the rank and are listed by code. The table is laid out as a code block (`layoutStandingsTable`), untrusted names cannot close the block or inject terminal escapes, and the clan's row is marked "›" (ANSI bold white on desktop).
+- **Recent results.** Podiums (places 1–3) of the last seven days, newest first, shown under the fixtures. They come from the League site and are not verified by Logi; the clan's confirmed results stay in its own results panels.
+
+### Results parser: not available yet
+
+`src/infrastructure/wardogs-league/parse-results.ts` returns `results: null` with the warning `results_not_supported`, because no finished match page has been captured and the League site is blocked in the development sandbox. Until it exists the fixtures panel works and the table shows its waiting state ("Tabulka se zobrazí po prvních výsledcích"). Adding the parser is a change to that one file and its test: read the places from a captured completed page, then change `RESULTS_PARSER_ID`. The collector then re-reads finished pages without placements once, so earlier results of the season are backfilled. The required captures are listed in `src/infrastructure/wardogs-league/fixtures/README.md`.
+
+### Reads
+
+- Bot and dashboard: `leagueDiscoveryPanels:forGuild` (internal secret) returns both panel view-models for a guild; `options` (`table`, `fixtures`, `recentResults`, `fixtureCount` 1–10, default all on and 6) selects the content. The guild's watched team codes mark its own team.
+- Website: `GET /api/v1/clan/league-fixtures/overview?game=wardogs&limit=6` with the same explicit `league-fixtures` + `wardogs` grant returns `{ data: { standings, fixtures } }` (`LeagueOverview` in the served OpenAPI). `limit` is 1–10. Responses are no-store. Posting, refreshing or pausing the panels in Discord are live Discord actions and stay outside the API.
+
 ## Verification and remaining work
 
 Run `node --import tsx scripts/smoke-league-discovery.ts` for credential-free live source verification. Colocated parser, transport, tracking, snapshot, intake, DTO, API query and renderer tests cover the key boundaries. See [dated acceptance](evidence/2026-10-03-league-discovery/README.md) for live provider/test Discord versus isolated database/HTTP evidence and production limits.
 
-Completed-result extraction, no-show/dispute interpretation, private Report Player tickets and HLL-specific live player/map presentation remain follow-up work. Their approved design is not implemented behavior.
+Completed-result extraction (blocked on a captured finished page, see above), no-show/dispute interpretation, private Report Player tickets and HLL-specific live player/map presentation remain follow-up work. Their approved design is not implemented behavior.
