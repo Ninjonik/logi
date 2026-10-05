@@ -955,12 +955,25 @@ export function SquadCard({
                                                             : "cursor-default text-xs"
                                                     )}
                                                 >
-                                                    <span className="block truncate">
-                                                        {
-                                                            dictionary.common
-                                                                .openSlot
-                                                        }
-                                                    </span>
+                                                    {isAssignmentMode ? (
+                                                        <span className="flex items-center justify-center gap-1 truncate">
+                                                            <Plus className="size-3.5 shrink-0" />
+                                                            {
+                                                                dictionary
+                                                                    .matchDetail
+                                                                    .roster
+                                                                    .pickPlayer
+                                                            }
+                                                        </span>
+                                                    ) : (
+                                                        <span className="block truncate">
+                                                            {
+                                                                dictionary
+                                                                    .common
+                                                                    .openSlot
+                                                            }
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </PopoverTrigger>
                                             <PopoverContent

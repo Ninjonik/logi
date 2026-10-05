@@ -64,6 +64,27 @@ starting pool. The initial reserve and not-attending lists are sorted by the
 workspace score, then name; that order is a starting point, not an automatic
 team-selection decision.
 
+## The roster board
+
+The roster opens on the match page under **Roster**, and on its own roster page.
+Managers switch the board between three modes at the top: **View only**,
+**Squad editor** (squads and slots) and **Roster editor** (who plays where).
+Next to them are the squad preset, **Confirm from meeting VC** and, in the
+roster editor, **Auto-fill roster**.
+
+- **Unsaved changes: N** counts the edits since the last save: each changed
+  slot or squad, and each player moved in or out of the reserves or the
+  not-attending list. Save keeps the roster a draft; **Publish roster** asks
+  first. Deleting a draft is the bin icon and also asks first.
+- The line under the toolbar explains the status icons: confirmed by a manager,
+  confirmed by the player, and not confirmed yet.
+- The reserves and not-attending lists show how many people they hold.
+- In the roster editor, drag a player from the reserves into a slot, or tap a
+  free slot (**Pick player**) and choose from the list. Tapping works on
+  phones, where dragging does not.
+- On phones, **Publish roster** (and **Save** while there are unsaved changes)
+  stays at the bottom of the screen.
+
 ## Three roster lists
 
 <Tabs items={["Assigned", "Reserve", "Not attending"]}>
@@ -96,7 +117,9 @@ the roster is published, and the person is assigned to a squad or reserve. It
 cannot add someone to the roster. Managers can update attendance status
 directly for a rostered player or reserve.
 
-Managers can also use **Confirm from meeting channel**. It checks only the
+Managers can also use **Confirm from meeting VC** in the roster's view and
+roster editor modes, or **Load from voice channel** under **Sign-ups and
+attendance** on the match page. It checks only the
 people already assigned to a squad or reserve and marks those currently in the
 configured meeting voice/stage channel as confirmed. It does not inspect other
 voice channels, move people, add anyone to the roster, or prove that a person

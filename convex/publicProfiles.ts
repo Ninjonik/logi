@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server"
 
+import { query, type QueryCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
-import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
@@ -20,6 +20,7 @@ import {
     filterCollection,
     paginateCollection,
 } from "../src/domain/shared/collection-query"
+import { selectPlayerMatchWindow } from "../src/domain/player-stats/match-window"
 import { assertInternalSecret } from "./discord_shared"
 
 const gameIdValidator = v.union(
@@ -28,12 +29,65 @@ const gameIdValidator = v.union(
     v.literal("wardogs")
 )
 
-function sortedMatches(matches: Array<Record<string, unknown>>) {
+function sortedMatches<T extends Record<string, unknown>>(matches: T[]): T[] {
     return [...matches].sort(
         (left, right) =>
             new Date(String(right.endedAt ?? right.importedAt)).getTime() -
             new Date(String(left.endedAt ?? left.importedAt)).getTime()
     )
+}
+
+/** A player's public matches, newest first: only matches of real (non
+ * training) events that still have their imported match statistics. */
+async function loadPublicPlayerMatches(
+    ctx: Pick<QueryCtx, "db">,
+    userId: string
+) {
+    const statDocs = await ctx.db
+        .query("playerStats")
+        .withIndex("userId", (q) => q.eq("userId", userId))
+        .collect()
+    const candidateMatches = statDocs.flatMap((doc) =>
+        Object.entries(doc.matches).map(([eventId, match]) => ({
+            eventId,
+            ...match,
+        }))
+    )
+    return sortedMatches(
+        (
+            await Promise.all(
+                candidateMatches.map(async (match) => {
+                    const event = await ctx.db.get(
+                        match.eventId as Id<"events">
+                    )
+                    return event &&
+                        event.kind !== "training" &&
+                        event.matchStatsId
+                        ? match
+                        : null
+                })
+            )
+        ).filter((match): match is NonNullable<typeof match> => Boolean(match))
+    )
+}
+
+async function toPublicMatchSummary(
+    ctx: Pick<QueryCtx, "db">,
+    match: Record<string, unknown> & { eventId: string }
+) {
+    const event = await ctx.db.get(match.eventId as Id<"events">)
+    return {
+        eventId: match.eventId,
+        name: event?.name ?? "Match",
+        endedAt: String(match.endedAt ?? event?.gameEnd ?? match.importedAt),
+        mapName: typeof match.mapName === "string" ? match.mapName : undefined,
+        kills: Number(match.kills ?? 0),
+        deaths: Number(match.deaths ?? 0),
+        killDeathRatio: Number(match.killDeathRatio ?? 0),
+        offense: Number(match.offense ?? 0),
+        defense: Number(match.defense ?? 0),
+        support: Number(match.support ?? 0),
+    }
 }
 
 /** Public, intentionally limited player data. Never add Discord IDs, notes,
@@ -46,34 +100,7 @@ export const getPlayer = query({
         if (!user) return null
 
         const userId = getUserStableId(user)
-        const statDocs = await ctx.db
-            .query("playerStats")
-            .withIndex("userId", (q) => q.eq("userId", userId))
-            .collect()
-        const candidateMatches = statDocs.flatMap((doc) =>
-            Object.entries(doc.matches).map(([eventId, match]) => ({
-                eventId,
-                ...match,
-            }))
-        )
-        const matches = sortedMatches(
-            (
-                await Promise.all(
-                    candidateMatches.map(async (match) => {
-                        const event = await ctx.db.get(
-                            match.eventId as Id<"events">
-                        )
-                        return event &&
-                            event.kind !== "training" &&
-                            event.matchStatsId
-                            ? match
-                            : null
-                    })
-                )
-            ).filter((match): match is NonNullable<typeof match> =>
-                Boolean(match)
-            )
-        )
+        const matches = await loadPublicPlayerMatches(ctx, userId)
         if (!matches.length) return null
 
         const assignments = await ctx.db
@@ -100,26 +127,9 @@ export const getPlayer = query({
             }))
 
         const recentMatches = await Promise.all(
-            matches.slice(0, 30).map(async (match) => {
-                const event = await ctx.db.get(match.eventId as Id<"events">)
-                return {
-                    eventId: match.eventId,
-                    name: event?.name ?? "Match",
-                    endedAt: String(
-                        match.endedAt ?? event?.gameEnd ?? match.importedAt
-                    ),
-                    mapName:
-                        typeof match.mapName === "string"
-                            ? match.mapName
-                            : undefined,
-                    kills: Number(match.kills ?? 0),
-                    deaths: Number(match.deaths ?? 0),
-                    killDeathRatio: Number(match.killDeathRatio ?? 0),
-                    offense: Number(match.offense ?? 0),
-                    defense: Number(match.defense ?? 0),
-                    support: Number(match.support ?? 0),
-                }
-            })
+            matches
+                .slice(0, 30)
+                .map(async (match) => await toPublicMatchSummary(ctx, match))
         )
 
         const totals = matches.reduce<{ kills: number; deaths: number }>(
@@ -142,6 +152,37 @@ export const getPlayer = query({
             },
             recentMatches,
             updatedAt: user.updatedAt,
+        }
+    },
+})
+
+/** One public match of a player and the ten older matches it is compared
+ * with. Unlike `getPlayer`, which lists only the latest 30 matches, this finds
+ * the match anywhere in the player's history, so every match linked from a
+ * public match page resolves. Same public field limits as `getPlayer`. */
+export const getPlayerMatch = query({
+    args: { secret: v.string(), playerId: v.string(), eventId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const user = await getUserByIdentifier(ctx, args.playerId)
+        if (!user) return null
+
+        const userId = getUserStableId(user)
+        const window = selectPlayerMatchWindow(
+            await loadPublicPlayerMatches(ctx, userId),
+            args.eventId,
+            10
+        )
+        if (!window) return null
+
+        return {
+            player: { id: userId, name: user.name, avatar: user.avatar },
+            match: await toPublicMatchSummary(ctx, window.match),
+            previousMatches: await Promise.all(
+                window.previous.map(
+                    async (match) => await toPublicMatchSummary(ctx, match)
+                )
+            ),
         }
     },
 })

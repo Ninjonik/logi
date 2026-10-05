@@ -1,6 +1,7 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import Link from "next/link"
 
-import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -9,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { getServerContext } from "@/lib/server-context"
 import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 import { getSession } from "@/lib/auth"
@@ -37,7 +39,7 @@ export default async function RosterDetailPage({
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
     const {
         rosters,
         events,
@@ -70,14 +72,22 @@ export default async function RosterDetailPage({
         context.server.discordId
     )
     const session = await getSession()
-    if (!session) return null
+    if (!session) notFound()
+    // An admin sees every roster of the clan, so a missing one does not exist.
+    if (!roster && canAdmin) notFound()
+    const title = event
+        ? dictionary.matchDetail.roster.pageTitle.replace("{name}", event.name)
+        : dictionary.roster.title
+    const matchHref = event
+        ? `/${locale}/dashboard/servers/${serverId}/${event.kind === "training" ? "events" : "matches"}/${event.id}?tab=roster`
+        : undefined
 
     // Members never receive an unpublished roster, not even hidden in props;
     // the clan context already leaves drafts out for them.
     if (!canAdmin && (!roster || !roster.published))
         return (
             <>
-                <PageHeader title={event ? `${event.name} roster` : "Roster"} />
+                <PageHeader title={title} />
                 <div className="px-4 lg:px-6">
                     <Card className="border-border/80 rounded-2xl border-dashed">
                         <CardContent className="text-muted-foreground py-16 text-center">
@@ -90,7 +100,22 @@ export default async function RosterDetailPage({
 
     return (
         <>
-            <PageHeader title={event ? `${event.name} roster` : "Roster"} />
+            <PageHeader
+                title={title}
+                actions={
+                    matchHref ? (
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <Link href={matchHref}>
+                                {dictionary.matchDetail.roster.openMatch}
+                            </Link>
+                        </Button>
+                    ) : undefined
+                }
+            />
             <div className="px-4 lg:px-6">
                 <LiveRosterBoard
                     rosterId={rosterId}
