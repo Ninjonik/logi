@@ -36,6 +36,7 @@ test("start answers carry no actor IDs and name the next allowed time", async ()
         status: "started",
         runId: result.run.id,
         startedAt: NOW.toISOString(),
+        channelId: result.run.channelId,
         pinged: true,
     })
     assert.equal(JSON.stringify(view).includes("100000000000000001"), false)

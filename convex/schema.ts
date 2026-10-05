@@ -22,6 +22,11 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
+    discordSeedMessages,
+    discordSeedPlans,
+    discordSeedRuns,
+} from "./discordSeedTable"
+import {
     discordPublications,
     discordPublicPanels,
 } from "./discordPublicationTable"
@@ -2123,4 +2128,8 @@ export default defineSchema({
     })
         .index("entity", ["entityType", "entityId"])
         .index("expiresAt", ["expiresAt"]),
+    // Seed plans, runs (history) and managed seed messages (Discord redesign P3/P5).
+    discordSeedPlans,
+    discordSeedRuns,
+    discordSeedMessages,
 })

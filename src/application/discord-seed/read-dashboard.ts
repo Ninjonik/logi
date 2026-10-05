@@ -34,6 +34,19 @@ export const SEED_HISTORY_LIMIT = 200
 const iso = (value: number | null) =>
     value === null ? null : new Date(value).toISOString()
 
+/** One configured game server of the clan, a tab of the page (P3-03). */
+export type SeedServerTab = {
+    connectionId: string
+    gameId: "hell_let_loose" | "wardogs"
+    name: string | null
+}
+
+/** The page's data: the tabs and the selected server with its role size ("@Seed · 34 členů"). */
+export type SeedDashboardResponse = {
+    servers: SeedServerTab[]
+    selected: (SeedDashboardView & { roleMembers: number | null }) | null
+}
+
 export type SeedDashboardView = {
     server: SeedServerRef & {
         name: string | null
