@@ -132,6 +132,11 @@ export type MessageHeader = {
     /** Small label "DRUH · HRA"; laid out in upper case. */
     label?: string
     title?: string
+    /**
+     * A markdown line under the title, before the chips: what the card
+     * concerns, e.g. the errors channel's "VLK vs ROG · Přátelák · ne 11. 10."
+     */
+    subtitle?: string
     chips?: MessageChip[]
     /** Short markdown after the chips, e.g. "Foy · 36 / 100 hráčů". */
     status?: string

@@ -18,6 +18,9 @@ const upsertConfigReference = makeFunctionReference<"mutation">(
 const setMessageStyleReference = makeFunctionReference<"mutation">(
     "discordConfig:setMessageStyle"
 )
+const saveMessageSettingsReference = makeFunctionReference<"mutation">(
+    "discordMessageSettings:save"
+)
 
 export async function getDiscordConfigByGuild(guildId: string) {
     return (await fetchQuery(getConfigByGuildReference, {
@@ -37,14 +40,15 @@ export async function getMembershipApplicationByAssignment(
 
 /**
  * Saves only the settings present in `patch`; omitted settings keep their stored
- * values and `null` clears a single Discord ID. The message style has its own
- * mutation, saved after the other settings so the configuration exists.
+ * values and `null` clears a single Discord ID. The message style and the
+ * message settings of "Zprávy a panely" have their own mutations, saved
+ * after the other settings so the configuration exists.
  */
 export async function saveDiscordConfig(
     guildId: string,
     patch: DiscordSettingsPatch
 ) {
-    const { messageStyle, ...settings } = patch
+    const { messageStyle, messageSettings, ...settings } = patch
     const present = Object.fromEntries(
         Object.entries(settings).filter(([, value]) => value !== undefined)
     )
@@ -63,6 +67,12 @@ export async function saveDiscordConfig(
                     ? { accentColor: messageStyle.accentColor }
                     : {}),
             },
+        })
+    if (messageSettings && Object.keys(messageSettings).length)
+        await fetchMutation(saveMessageSettingsReference, {
+            secret: getInternalAuthSecret(),
+            guildId: guildId as never,
+            settings: messageSettings,
         })
     return configId
 }

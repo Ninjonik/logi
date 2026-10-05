@@ -83,7 +83,7 @@ function config(overrides: Partial<DiscordConfig> = {}): DiscordConfig {
     }
 }
 
-type Reported = { action: string }
+type Reported = { action: string | undefined }
 
 function fakePorts(input: {
     config?: DiscordConfig | null

@@ -4,6 +4,7 @@ import {
     MESSAGE_ICON_DENSITIES,
     normalizeAccentColor,
 } from "@/domain/discord-messages/message-style"
+import { ROSTER_MESSAGE_VARIANTS } from "@/domain/discord-messages/roster-message"
 import { supportedClanLanguages } from "@/lib/clan-language/core"
 import { supportedTimezones } from "@/lib/discord-timezones"
 
@@ -83,6 +84,27 @@ const messageStyleSchema = z
             .transform((value) => normalizeAccentColor(value)),
         iconDensity: z.enum(MESSAGE_ICON_DENSITIES),
     })
+    .strict()
+
+/**
+ * The "Zprávy a panely" page's message settings (board N1): the roster
+ * message default, the publish dialog's defaults, the attendance post in
+ * the match thread and the per-message switches. Only sent fields change.
+ */
+const messageSettingsSchema = z
+    .object({
+        rosterMessageVariant: z.enum(ROSTER_MESSAGE_VARIANTS),
+        rosterChangesPost: z.boolean(),
+        rosterChangesDm: z.boolean(),
+        attendanceNoticesInThread: z.boolean(),
+        debriefPost: z.boolean(),
+        scheduledEvent: z.boolean(),
+        matchRecapDm: z.boolean(),
+        trainingResultDm: z.boolean(),
+        applicationCloseDm: z.boolean(),
+        ticketCloseDm: z.boolean(),
+    })
+    .partial()
     .strict()
 
 const playerStatsServerSchema = z.object({
@@ -427,6 +449,7 @@ export const discordSettingsPatchSchema = z.object({
     membershipSettings: membershipSettingsSchema.optional(),
     statsSettings: statsSettingsSchema.optional(),
     messageStyle: messageStyleSchema.optional(),
+    messageSettings: messageSettingsSchema.optional(),
     gameOverrides: z
         .object({
             hell_let_loose: gameDiscordOverridesSchema.optional(),

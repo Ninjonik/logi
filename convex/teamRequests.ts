@@ -349,7 +349,7 @@ export const claimNotifications = mutation({
                 notificationLeaseUntil: now + NOTIFICATION_LEASE_MS,
                 notificationNextAttemptAt: now + NOTIFICATION_LEASE_MS,
             })
-            const [config, team] = await Promise.all([
+            const [config, team, guild] = await Promise.all([
                 ctx.db
                     .query("discordConfigs")
                     .withIndex("guildId", (q) => q.eq("guildId", row.guildId))
@@ -359,6 +359,7 @@ export const claimNotifications = mutation({
                     : row.teamId
                       ? ctx.db.get(row.teamId)
                       : null,
+                getGuildByDiscordId(ctx, row.guildId),
             ])
             claimed.push({
                 requestId: String(row._id),
@@ -371,6 +372,14 @@ export const claimNotifications = mutation({
                 requestedName: row.proposal.name,
                 teamName: team?.name ?? null,
                 reason: row.reason,
+                // The DM card (board L5 1.3): the team's code, the clan's
+                // name for "Klan Vlci · Nastavit zprávy" and its dashboard
+                // ID for the link to Týmy.
+                teamCode: team?.shortCode ?? null,
+                clanName: guild?.name ?? null,
+                serverId: guild ? String(guild._id) : null,
+                // The clan colour of the DM's bar.
+                accentColor: config?.messageStyle?.accentColor ?? null,
             })
         }
         return claimed

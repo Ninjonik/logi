@@ -1205,7 +1205,7 @@ export const deMessages = {
         platformWorkspace: "Workspace für den Plattformstatus",
         platformStatusChannel: "Status-Channel",
         platformStatusChannelHint:
-            "Der Bot hält hier ein Status-Embed aktuell und erstellt einen Thread für Ausfälle und Wiederherstellungen.",
+            "Der Bot hält hier eine Statusnachricht aktuell und einen Thread Statusänderungen für Ausfälle und Wiederherstellungen.",
         platformSave: "Plattform-Einstellungen speichern",
         platformSaved: "Plattform-Einstellungen gespeichert.",
         platformWorkspacePlaceholder: "Workspace wählen",
@@ -3507,9 +3507,9 @@ export const deMessages = {
                         "Squad- und Rollenaufteilung für Aufstellungen, Themen für das Match-Forum.",
                 },
                 messages: {
-                    title: "Discord-Nachrichten",
+                    title: "Nachrichten und Panels",
                     description:
-                        "Ankündigungen, Aufstellungen, Erinnerungen, Live-Punktestand und Ergebnisse.",
+                        "Wie Bot-Nachrichten aussehen, was der Bot sendet und eine Übersicht der Panels.",
                 },
                 channels: {
                     title: "Kanäle und Sprache",
@@ -3884,57 +3884,256 @@ export const deMessages = {
                 "Die Befehlseinstellungen konnten nicht gespeichert werden.",
         },
         messagesPage: {
+            title: "Nachrichten und Panels in Discord",
+            description:
+                "Alles, was der Bot sendet: wohin, ob überhaupt und wie es aussieht. Er schreibt in der Clansprache und mit der Clanfarbe.",
             lookTitle: "Aussehen aller Nachrichten",
-            language: "Sprache",
-            languages: { en: "Englisch", cs: "Tschechisch", de: "Deutsch" },
-            languageLink: "Kanäle und Sprache",
-            listTitle: "Nachrichten",
-            edit: "Bearbeiten",
-            close: "Schließen",
-            channelNotSet: "Kein Kanal festgelegt",
-            channelOff: "Aus · kein Kanal festgelegt",
-            channelUnknown: "festgelegter Kanal",
-            announcement: "Match-Ankündigung",
-            announcementDetail: "mit Anmeldeschaltflächen",
-            eventInfo: "Aufstellung und Einteilung",
-            eventInfoDetail: "nach Veröffentlichung der Aufstellung",
-            reminders: "Erinnerungen",
-            remindersDetail:
-                "DM · Anmeldung täglich bis Anmeldeschluss, Anwesenheit 24, 18, 12 und 6 h vor dem Treffen",
-            league: "Liga-Karten",
-            leagueDetail: "Wardogs-League-Matches",
-            errors: "Bot-Fehler",
-            errorsDetail: "nur für die Verwaltung",
+            lookIntro:
+                "Gilt für Ankündigungen, Panels, DMs und Befehlsantworten. Bot-Fehler für Admins haben einen grauen Balken.",
             clanColor: "Clanfarbe",
             clanColorHelp:
-                "Events mit Kategorie nutzen die Farbe der Kategorie.",
-            clanColorPicker: "Farbe auswählen",
-            clanColorInvalid: "Gib die Farbe als #E8A33D ein.",
+                "Der Balken jeder Nachricht. Ein Panel kann im Panel-Editor eine eigene Farbe haben.",
+            clanColorPicker: "Farbe wählen",
+            clanColorInvalid: "Geben Sie die Farbe als #E8A33D ein.",
             clanColorDefault:
-                "Ohne eigene Farbe nutzen Nachrichten das Logi-Orange.",
-            icons: "Symbole in Nachrichten",
-            iconsHelp: "Fraktionen behalten immer ihr Zeichen.",
+                "Die Standardfarbe von Logi. Eine Eventkategorie erscheint als Label und ändert den Balken nicht.",
+            clanColorCustom:
+                "Eine Eventkategorie erscheint als Label und ändert den Balken nicht.",
+            icons: "Icons in Nachrichten",
+            iconsHelp: "In allen Nachrichten, nicht nur in Ankündigungen.",
             iconsSparse: "Sparsam",
             iconsRich: "Emoji in jeder Zeile",
+            factions: "Fraktionszeichen",
+            factionsHelp:
+                "Gleich in Ankündigungen, Ergebnissen, Panels und /stats.",
+            factionNames: {
+                allies: "Alliierte",
+                axis: "Achse",
+                valkyra: "Valkyra",
+                manticore: "Manticore",
+                lonestar: "Lonestar",
+            },
+            factionsDefault: "Standardzeichen von Logi",
+            factionsChange: "Zeichen ändern",
+            language: "Sprache",
+            languages: { en: "Englisch", cs: "Tschechisch", de: "Deutsch" },
             languageFrom: "Aus",
-            languageScope: ", gilt für alle Nachrichten",
-            channel: "Kanal",
-            noChannel: "Kein Kanal",
-            gameException: "{game} hat einen eigenen Kanal {channel}.",
-            announcementHelp:
-                "Gilt für alle Spiele. Neue Matches behalten den Kanal, mit dem sie erstellt wurden.",
-            eventInfoHelp:
-                "Hier postet der Bot Aufstellung und Einteilung, sobald die Aufstellung veröffentlicht ist. Funktioniert nur zusammen mit dem Ankündigungskanal.",
-            errorsHelp:
-                "Hier meldet der Bot Probleme mit Rechten und Kanälen. Nur Verwalter sollten ihn sehen.",
-            liveScore: "Live-Punktestand",
-            liveScoreDetail: "{channel} · aktualisiert alle {refresh}",
-            liveScoreOff: "Aus · ein Panel von deinen Spielservern",
-            seconds: "{count} s",
-            minutes: "{count} min",
-            results: "Ergebnisse",
-            resultsDetail: "nach Bestätigung eines Match-Ergebnisses",
-            off: "Aus",
+            languageLink: "Kanäle und Sprache",
+            languageScope:
+                "Alle Nachrichten und Befehlsantworten, unabhängig von der App-Sprache des Mitglieds.",
+            livePreview: "Live-Vorschau",
+            livePreviewLabel: "Live-Vorschau des Aussehens",
+            livePreviewSparse:
+                "Eine Match-Ankündigung mit sparsamen Icons. Sie ändert sich mit Farbe und Icons links.",
+            livePreviewRich:
+                "Eine Match-Ankündigung mit Emoji in jeder Zeile. Sie ändert sich mit Farbe und Icons links.",
+            previewTime: "heute um 18:02",
+            listTitle: "Was der Bot sendet",
+            listIntro:
+                "Jeder Kanal wird an genau einer Stelle bearbeitet. Ein Kanal mit Schloss gehört zu einer anderen Seite, der Link führt Sie dorthin. Einen Kanal mit Auswahl bearbeiten Sie direkt hier.",
+            groups: {
+                matches: "Matches",
+                direct: "Private Nachrichten",
+                directNote: "DMs und Antworten, die nur eine Person sieht",
+                panels: "Panels",
+                membership: "Mitgliedschaft und Tickets",
+                system: "System",
+            },
+            preview: "Vorschau",
+            close: "Schließen",
+            edit: "Bearbeiten",
+            fromPage: "aus",
+            newChip: "Neu",
+            previewRegion: "Vorschau von {message}",
+            channelUnknown: "festgelegter Kanal",
+            notSet: "nicht festgelegt",
+            category: "Kategorie {name}",
+            threadsUnder: "Threads unter {channel}",
+            pages: {
+                channels: "Kanäle und Sprache",
+                matchTemplates: "Match-Vorlagen",
+                commands: "Befehle",
+                membership: "Mitgliedschaft",
+                tickets: "Tickets",
+                panels: "Panels in Discord",
+                league: "Wardogs League",
+            },
+            rows: {
+                announcement: {
+                    title: "Match-Ankündigung",
+                    detail: "Neues Match oder Training · Anmeldungen und Rollen-Ping laut Vorlage",
+                },
+                roster: {
+                    title: "Kader",
+                    detail: "Das Kaderfoto unter dem Kopf mit Einteilung anzeigen und Kader öffnen · Einteilung und Passwort sieht nur der Spieler",
+                    variantLabel: "Standardansicht",
+                    variants: {
+                        photo_text: "Foto und Text",
+                        photo: "Nur Foto",
+                    },
+                    variantNote:
+                        "Beim Veröffentlichen änderbar. Sonst: {other}.",
+                },
+                rosterChanges: {
+                    title: "Kaderänderungen",
+                    detail: "Beim nächsten Veröffentlichen · Standardwahl im Dialog Veröffentlichen",
+                    target: "in den Kaderkanal",
+                    switchLabel: "Kaderänderungen vorauswählen",
+                },
+                forum: {
+                    title: "Match-Forum",
+                    detail: "Ein Thread mit Informationen und Briefing-Themen · von der Match-Vorlage eingeschaltet",
+                },
+                debrief: {
+                    title: "Debrief im Forum",
+                    detail: "Nach dem Match in den Forumthread",
+                    target: "Thread im Match-Forum",
+                    switchLabel: "Debrief im Forum",
+                },
+                notices: {
+                    title: "Abwesenheiten und Verspätungen im Match-Thread",
+                    detail: "Nach /notice, Komme später und Kann nicht: wer, verspätet oder abwesend und die Ankunftszeit · den Grund sieht nur die Führung im Web",
+                    target: "Thread im Match-Forum",
+                    switchLabel:
+                        "Abwesenheiten und Verspätungen im Match-Thread",
+                },
+                scheduledEvent: {
+                    title: "Discord-Event",
+                    detail: "Ein geplantes Server-Event mit Treffpunkt und Link zum Match",
+                    switchLabel: "Discord-Event",
+                },
+                squadRoles: {
+                    title: "Squad-Rollen und Sprachkanäle",
+                    detail: "Rollen Teilnehmer und Reserve für jedes Match, Squad-Kanäle laut Kader · von der Vorlage eingeschaltet",
+                },
+                signupReminder: {
+                    title: "Anmeldeerinnerung",
+                    detail: "An alle ohne Antwort · täglich bis Anmeldeschluss · an wen: laut Vorlage",
+                    target: "DM an Mitglieder",
+                },
+                attendanceReminder: {
+                    title: "Anwesenheitserinnerung",
+                    detail: "An Spieler im Kader ohne Bestätigung · wie viele Stunden vorher, legt das Match fest",
+                    target: "DM an Spieler",
+                },
+                recap: {
+                    title: "Match-Zusammenfassung",
+                    detail: "Eigene Statistiken nach einem bestätigten Match · der Spieler kann sie abschalten",
+                    target: "DM an Spieler",
+                    switchLabel: "Match-Zusammenfassung",
+                    previewTitle:
+                        "Vorschau · DM an einen Spieler nach dem Match · Beispieldaten",
+                    whoTitle: "Wer sie bekommt",
+                    who: "Spieler im Kader, deren Logi-Konto mit den Match-Statistiken verknüpft ist.",
+                    whoOff: "Ein Spieler schaltet die Zusammenfassung mit dem Button in der Nachricht oder unter {link} ab.",
+                    whoLink: "Mein Konto → Bot-Nachrichten per DM",
+                },
+                trainingResult: {
+                    title: "Trainingsergebnis",
+                    detail: "An die Teilnehmer nach Abschluss des Trainings",
+                    target: "DM an Teilnehmer",
+                    switchLabel: "Trainingsergebnis",
+                },
+                rosterChangeDm: {
+                    title: "Änderung der Einteilung",
+                    detail: "An Spieler, deren Squad oder Rolle sich geändert hat · Standardwahl im Dialog Veröffentlichen",
+                    target: "DM an Spieler",
+                    switchLabel: "Änderungen der Einteilung vorauswählen",
+                },
+                teamRequest: {
+                    title: "Teamanfrage",
+                    detail: "Die Entscheidung der globalen Logi-Administratoren: genehmigt, zusammengeführt oder abgelehnt",
+                    target: "DM an den Antragsteller",
+                },
+                buttonReplies: {
+                    title: "Antworten auf Buttons",
+                    detail: "Anmelden, Anmeldung ändern, Einteilung anzeigen, Komme später, Kann nicht · nur wer geklickt hat, sieht sie",
+                    target: "private Antwort",
+                },
+                commandReplies: {
+                    title: "Befehlsantworten",
+                    detail: "/help, /stats, /player, /link, /notice, /server-status · /stats teilt in #statistiky, /player dort, wo der Befehl kam",
+                },
+                recruitmentPanel: {
+                    title: "Recruiting-Panel",
+                    detail: "Der Button Bewerbung abschicken",
+                },
+                application: {
+                    title: "Clan-Bewerbung",
+                    detail: "Der Assistent für Bewerber und ein privater Thread mit dem Recruiting",
+                },
+                applicationClose: {
+                    title: "Bewerbung abgeschlossen",
+                    detail: "Eine Ergebniskarte im Thread · eine DM an den Bewerber mit Ergebnis und Grund",
+                    target: "Thread und DM an den Bewerber",
+                    switchLabel:
+                        "DM an den Bewerber nach Abschluss der Bewerbung",
+                },
+                ticketPanel: {
+                    title: "Ticket-Panel",
+                    detail: "Die Buttons der Ticketkategorien",
+                },
+                ticket: {
+                    title: "Ticket",
+                    detail: "Ein Formular und ein privater Thread mit dem Support",
+                },
+                ticketClose: {
+                    title: "Ticket geschlossen",
+                    detail: "Eine Karte im Thread · eine DM an den Autor mit dem Grund",
+                    target: "Thread und DM an den Autor",
+                    switchLabel:
+                        "DM an den Autor nach dem Schließen des Tickets",
+                },
+                playerReport: {
+                    title: "Spielermeldung",
+                    detail: "Vom Button im Live-Score · ein privater Thread für Admins",
+                },
+                errors: {
+                    title: "Bot-Fehler",
+                    detail: "Was der Bot nicht tun konnte und wie man es behebt · nur für Admins · grauer Balken",
+                    selectLabel: "Kanal für Bot-Fehler",
+                    noChannel: "Kein Kanal",
+                },
+            },
+            panels: {
+                intro: "Alle Panels verwalten Sie auf der Seite {link}. Hier ist nur die Übersicht.",
+                add: "Panel hinzufügen",
+                liveDetail:
+                    "Live-Server · wird alle {seconds} s aktualisiert · Buttons Beitreten, Spieler anzeigen und Spieler melden",
+                privateDetail:
+                    "Live-Server in einem privaten Kanal · zeigt auch das Serverpasswort",
+                combinedTitle: "Unsere Server",
+                combinedDetail: "{servers} in einer Nachricht",
+                controlTitle: "Serversteuerung",
+                controlDetail:
+                    "Seed, Aktualisieren und Pausieren · nur Logi-Admins",
+                resultsTitle: "Ergebnisse {game}",
+                resultsDetail:
+                    "Nach der Bestätigung des Ergebnisses in Logi · nur seit dem Einschalten des Panels bestätigte",
+                leagueTitle: "WD League",
+                leagueDetail:
+                    "Zwei Nachrichten untereinander: Tabelle und nächste Matches der ganzen Liga · alle 60 s aktualisiert",
+                calendarTitle: "Kalender",
+                calendarDetail:
+                    "Kommende Events des Clans, Kategorien {categories}",
+                calendarAll: "alle",
+                chips: {
+                    error: "Fehler",
+                    unsent: "Nicht gesendet",
+                    paused: "Pausiert",
+                },
+                switchLabel: "Panel {name}",
+                controlSwitch: "Serversteuerung",
+                leagueSwitch: "Panels WD League",
+                calendarSwitch: "Panel Kalender",
+                calendarHint:
+                    "Der Kalenderkanal wird auf der Seite Kanäle und Sprache festgelegt.",
+                errorFallback: "Das letzte Senden ist fehlgeschlagen.",
+                loading: "Panels werden geladen…",
+                unavailable: "Die Panels konnten nicht geladen werden.",
+                none: "Noch kein Panel.",
+                editorTitle: "Panels",
+            },
         },
         panelsForm: {
             regionLabel: "Öffentliche Discord-Panels",
@@ -4002,9 +4201,9 @@ export const deMessages = {
                     "Aufstellungsformen und Briefing-Themen, die Matches übernehmen.",
             },
             messages: {
-                title: "Discord-Nachrichten",
+                title: "Nachrichten und Panels",
                 description:
-                    "Öffentliche Panels, Live-Scoreboards und das Aussehen der Bot-Nachrichten.",
+                    "Alles, was der Bot sendet: wohin, ob überhaupt und wie es aussieht. Er schreibt in der Clansprache und mit der Clanfarbe.",
             },
             channels: {
                 title: "Kanäle und Sprache",

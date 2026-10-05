@@ -1,5 +1,19 @@
-import { EmbedBuilder, type Client, type TextChannel } from "discord.js"
+import type {
+    Client,
+    MessageCreateOptions,
+    MessageEditOptions,
+} from "discord.js"
 
+import {
+    nextServiceStates,
+    serviceChangeView,
+    serviceStatusView,
+    SERVICE_STATUS_INTERVAL_SECONDS,
+    type ServiceState,
+} from "../../src/domain/discord-messages/service-status"
+import { getSystemMessages } from "../../src/lib/clan-language/system"
+import { clanLanguageForGuild } from "./runtime/clan-language"
+import { editPayload, messagePayload } from "./ui/message-kit"
 import { convex, references } from "./convex"
 import { logError, logInfo } from "./log"
 import { env } from "./environment"
@@ -10,8 +24,11 @@ type Settings = {
     statusChannelId?: string
     statusMessageId?: string
     statusUpdatesThreadId?: string
-    serviceStates?: Array<{ name: string; online: boolean }>
+    serviceStates?: ServiceState[]
 }
+
+/** The Logi services group of the status API; game servers are not in it (L5-B07). */
+const LOGI_SERVICES_GROUP = 2
 
 async function getServices() {
     try {
@@ -19,105 +36,178 @@ async function getServices() {
         if (!response.ok) return null
         const services = (await response.json()) as Service[]
         const logiServices = services.filter(
-            (service) => service.group_id === 2
+            (service) => service.group_id === LOGI_SERVICES_GROUP
         )
-        return logiServices.length ? logiServices : null
+        return logiServices.length
+            ? logiServices.map(({ name, online }) => ({ name, online }))
+            : null
     } catch {
         return null
     }
 }
 
-function statusEmbed(services: Service[] | null) {
-    const unknown = !services
-    const degraded = services?.some((service) => !service.online)
-    return new EmbedBuilder()
-        .setTitle("Logi service status")
-        .setColor(unknown ? 0x6b7280 : degraded ? 0xf59e0b : 0x22c55e)
-        .setDescription(
-            unknown
-                ? "Status monitoring is currently unavailable."
-                : degraded
-                  ? "One or more Logi services are degraded."
-                  : "All monitored Logi services are operational."
-        )
-        .addFields(
-            ...(services ?? []).map((service) => ({
-                name: service.name,
-                value: service.online ? "Operational" : "Degraded",
-                inline: true,
-            }))
-        )
-        .setTimestamp()
+type StatusMessage = { edit(options: MessageEditOptions): Promise<unknown> }
+type StatusThread = {
+    name: string
+    setName(name: string): Promise<unknown>
+    send(options: MessageCreateOptions): Promise<unknown>
 }
 
-export async function syncPlatformStatus(client: Client) {
-    const settings = (await convex.query(references.getPlatformSettings, {
-        secret: env.internalSecret,
-    })) as Settings | null
-    if (!settings?.statusChannelId) return
+/** What one status pass reads and writes; Discord and Convex in production. */
+export type PlatformStatusPorts = {
+    settings(): Promise<Settings | null>
+    /** The Logi services, or null when the monitor does not answer. */
+    services(): Promise<Array<{ name: string; online: boolean }> | null>
+    language(workspaceGuildId: string): Promise<string | undefined>
+    /** The stored status message, or null when it is gone. */
+    statusMessage(
+        channelId: string,
+        messageId: string | undefined
+    ): Promise<StatusMessage | null>
+    /** Posts a new status message with its "Změny stavu" thread. */
+    createStatusMessage(
+        channelId: string,
+        message: MessageCreateOptions,
+        threadName: string
+    ): Promise<{ messageId: string; threadId: string } | null>
+    thread(threadId: string): Promise<StatusThread | null>
+    save(state: {
+        statusMessageId?: string
+        statusUpdatesThreadId?: string
+        serviceStates: ServiceState[]
+    }): Promise<unknown>
+    now(): number
+}
 
-    const channel = await client.channels
-        .fetch(settings.statusChannelId)
-        .catch(() => null)
-    if (!channel?.isTextBased() || !("messages" in channel)) return
-    const textChannel = channel as TextChannel
-    const services = await getServices()
-    const states = (services ?? []).map(({ name, online }) => ({
-        name,
-        online,
-    }))
+/**
+ * One check (board L5 1.2): the status message in the clan language of the
+ * Logi workspace, edited in place, and one grey card per changed service in
+ * the thread "Změny stavu"; a recovery says how long the outage lasted. A
+ * silent monitor keeps the stored states, so the outage time survives it.
+ */
+export async function runPlatformStatusPass(ports: PlatformStatusPorts) {
+    const settings = await ports.settings()
+    if (!settings?.statusChannelId) return null
+    const language = await ports.language(settings.workspaceGuildId)
+    const copy = getSystemMessages(language)
+    const options = { language }
+    const services = await ports.services()
+    const now = ports.now()
+    const view = serviceStatusView({
+        copy: copy.serviceStatus,
+        locale: copy.locale,
+        services,
+        checkedAt: now,
+    })
     let statusMessageId = settings.statusMessageId
     let statusUpdatesThreadId = settings.statusUpdatesThreadId
-    const embed = statusEmbed(services)
+    const message = await ports.statusMessage(
+        settings.statusChannelId,
+        statusMessageId
+    )
+    if (message) await message.edit(editPayload(view, options))
+    else {
+        const created = await ports.createStatusMessage(
+            settings.statusChannelId,
+            messagePayload(view, options),
+            copy.serviceStatus.threadName
+        )
+        if (!created) return null
+        statusMessageId = created.messageId
+        statusUpdatesThreadId = created.threadId
+    }
 
-    const message = statusMessageId
-        ? await textChannel.messages.fetch(statusMessageId).catch(() => null)
+    const { states, changes } = services
+        ? nextServiceStates(
+              settings.serviceStates,
+              services,
+              new Date(now).toISOString()
+          )
+        : { states: settings.serviceStates ?? [], changes: [] }
+    const thread = statusUpdatesThreadId
+        ? await ports.thread(statusUpdatesThreadId)
         : null
-    if (message) {
-        await message.edit({ embeds: [embed] })
-    } else {
-        const created = await textChannel.send({ embeds: [embed] })
-        statusMessageId = created.id
-        const thread = await created.startThread({
-            name: "Status updates",
-            autoArchiveDuration: 10080,
-        })
-        statusUpdatesThreadId = thread.id
-    }
-
-    const previous = new Map(
-        (settings.serviceStates ?? []).map((item) => [item.name, item.online])
-    )
-    const changes = states.filter(
-        (item) =>
-            previous.has(item.name) && previous.get(item.name) !== item.online
-    )
-    if (changes.length && statusUpdatesThreadId) {
-        const thread = await client.channels
-            .fetch(statusUpdatesThreadId)
-            .catch(() => null)
-        if (thread?.isTextBased() && "send" in thread) {
-            await thread.send({
-                content: changes
-                    .map(
-                        (item) =>
-                            `${item.online ? "🟢" : "🔴"} **${item.name}** is now ${item.online ? "operational" : "degraded"}.`
-                    )
-                    .join("\n"),
-            })
-        }
-    }
-    await convex.mutation(references.updatePlatformStatusState, {
-        secret: env.internalSecret,
+    // Threads created before the redesign were named "Status updates".
+    if (thread && thread.name !== copy.serviceStatus.threadName)
+        await thread.setName(copy.serviceStatus.threadName).catch(() => null)
+    if (thread)
+        for (const change of changes)
+            await thread.send(
+                messagePayload(
+                    serviceChangeView({
+                        copy: copy.serviceStatus,
+                        locale: copy.locale,
+                        change,
+                    }),
+                    options
+                )
+            )
+    await ports.save({
         statusMessageId,
         statusUpdatesThreadId,
         serviceStates: states,
     })
-    logInfo("platform-status", "Synced platform status", {
-        serviceCount: states.length,
-    })
+    return { states, changes }
 }
 
+function discordPorts(client: Client): PlatformStatusPorts {
+    const textChannel = async (channelId: string) => {
+        const channel = await client.channels.fetch(channelId).catch(() => null)
+        return channel?.isTextBased() &&
+            "messages" in channel &&
+            "send" in channel
+            ? channel
+            : null
+    }
+    return {
+        settings: async () =>
+            (await convex.query(references.getPlatformSettings, {
+                secret: env.internalSecret,
+            })) as Settings | null,
+        services: getServices,
+        language: clanLanguageForGuild,
+        statusMessage: async (channelId, messageId) => {
+            if (!messageId) return null
+            const channel = await textChannel(channelId)
+            return channel
+                ? await channel.messages.fetch(messageId).catch(() => null)
+                : null
+        },
+        createStatusMessage: async (channelId, message, threadName) => {
+            const channel = await textChannel(channelId)
+            if (!channel) return null
+            const created = await channel.send(message)
+            const thread = await created.startThread({
+                name: threadName,
+                autoArchiveDuration: 10080,
+            })
+            return { messageId: created.id, threadId: thread.id }
+        },
+        thread: async (threadId) => {
+            const thread = await client.channels
+                .fetch(threadId)
+                .catch(() => null)
+            return thread?.isThread() ? thread : null
+        },
+        save: (state) =>
+            convex.mutation(references.updatePlatformStatusState, {
+                secret: env.internalSecret,
+                ...state,
+            }),
+        now: Date.now,
+    }
+}
+
+export async function syncPlatformStatus(client: Client) {
+    const result = await runPlatformStatusPass(discordPorts(client))
+    if (result)
+        logInfo("platform-status", "Synced platform status", {
+            serviceCount: result.states.length,
+            changes: result.changes.length,
+        })
+}
+
+/** Checks the Logi services every 30 s (L5-B06). */
 export function startPlatformStatusMonitor(client: Client) {
     const run = () =>
         syncPlatformStatus(client).catch((error) =>
@@ -126,5 +216,5 @@ export function startPlatformStatusMonitor(client: Client) {
             })
         )
     run()
-    return setInterval(run, 30_000)
+    return setInterval(run, SERVICE_STATUS_INTERVAL_SECONDS * 1000)
 }

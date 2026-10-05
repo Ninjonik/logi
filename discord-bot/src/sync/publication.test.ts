@@ -1,24 +1,59 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import {
+    PublicationPermissionError,
+    publicationDeliveryError,
+    publicationSource,
+} from "./publication"
 import { PublicationNotSent } from "../../../src/application/discord-publications/publish"
-import { publicationDeliveryError } from "./publication"
 
-test("a failed delivery is stored in the clan language, never as the English internal text", () => {
-    const failure = new Error("Publication channel permissions missing.")
+test("a failed delivery uses the errors channel's words, never the English internal text (L5-44)", () => {
+    const failure = new PublicationPermissionError(
+        ["SendMessages", "EmbedLinks"],
+        "servery"
+    )
     assert.equal(
-        publicationDeliveryError("cs", failure),
-        "Zprávu se nepodařilo doručit do Discordu. Zkontrolujte, že bot smí v kanálu zobrazit kanál, posílat zprávy a číst historii. Logi to zkusí znovu samo."
+        publicationDeliveryError("cs", failure, "panel:abc"),
+        "Panel se neaktualizoval. Proč: Bot nemá v kanálu #servery oprávnění Posílat zprávy a Vkládat odkazy. Co udělat: V Discordu otevři #servery → Upravit kanál → Oprávnění → Logi a povol Posílat zprávy a Vkládat odkazy."
+    )
+    assert.match(
+        publicationDeliveryError("cs", failure, "event:e1:announcement"),
+        /^Ohlášení zápasu se neodeslalo\. Proč:/
+    )
+    assert.match(
+        publicationDeliveryError(
+            "cs",
+            Object.assign(new PublicationNotSent("x"), {
+                deliveryCause: { code: 10003 },
+            }),
+            "calendar"
+        ),
+        /^Kalendář se neaktualizoval\. Proč: Kanál z nastavení Logi už na serveru není\. Co udělat: Vyber nový kanál v Logi → Kanály a jazyk\.$/
     )
     assert.match(
         publicationDeliveryError("de", new PublicationNotSent("x")),
-        /^Die Nachricht konnte nicht an Discord zugestellt werden/
+        /^Das Panel wurde nicht aktualisiert\. Warum: Discord hat die Aktion abgelehnt\./
     )
-    for (const language of ["cs", "de"])
+    for (const language of ["cs", "de"]) {
+        const text = publicationDeliveryError(language, failure)
         assert.doesNotMatch(
-            publicationDeliveryError(language, failure),
-            /Discord delivery failed|permissions missing/
+            text,
+            /Discord delivery failed|permissions missing|PublicationNotSent/
         )
+        assert.ok(text.length <= 240)
+    }
+})
+
+test("managed messages are named by their key", () => {
+    assert.equal(publicationSource("event:e1:announcement"), "announcement")
+    assert.equal(publicationSource("event:e1:roster"), "roster")
+    assert.equal(publicationSource("event:e1:roster-changes"), "roster")
+    assert.equal(publicationSource("ticket"), "ticketPanel")
+    assert.equal(publicationSource("membership"), "applicationPanel")
+    assert.equal(publicationSource("calendar"), "calendarPanel")
+    assert.equal(publicationSource("league:1"), "publicPanel")
+    assert.equal(publicationSource(undefined), "publicPanel")
 })
 
 test("an uncertain create says so in the clan language", () => {

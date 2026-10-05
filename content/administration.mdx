@@ -91,8 +91,12 @@ the rows that change highlighted and the competitions the team is used in.
 - **Reject with reason** requires a reason of up to 500 characters.
 
 Every decision sends the requester one Discord direct message in the requesting
-workspace's language with the outcome, the requested name, the resulting team
-or the rejection reason. The bot retries a failed message a few times with
+workspace's language and clan colour: **The team is in the catalogue**
+(**Approved**), **The team was already in the catalogue** (**Merged**, with the
+name the requester asked for) or **The team request was not accepted**
+(**Rejected**, with the reason and "Send a corrected request in Logi → Teams").
+It shows the team's code and name and a button to the team or the clan's
+**Teams** page in Logi. The bot retries a failed message a few times with
 increasing delays; when the requester's DMs stay closed the request shows
 **Could not be delivered**, and the decision itself stands. Requests a workspace
 withdraws are shown as cancelled and send no message.
@@ -100,8 +104,8 @@ withdraws are shown as cancelled and send no message.
 ## Platform settings
 
 **Platform settings** chooses the Logi workspace and the Discord channel where
-the bot keeps the platform-wide status message and its **Status updates**
-thread. Only workspaces with the Logi bot are offered, and the channel is
+the bot keeps the platform-wide status message and its **Status changes**
+thread (see [Platform status channel](/discord-bot-setup#platform-status-channel-superadmins)). Only workspaces with the Logi bot are offered, and the channel is
 picked by name from that workspace's Discord channels (announcement and text
 channels). If the saved workspace has lost the bot, the page names it and says
 that status updates have stopped until the bot is back or another workspace is

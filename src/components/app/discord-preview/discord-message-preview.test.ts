@@ -197,3 +197,39 @@ test("a code block table keeps its columns and shows the ANSI-marked row bold", 
     )
     assert.doesNotMatch(html, /\u001b|```|\[1;37m/)
 })
+
+test("the message text above the card follows the author line", () => {
+    const text = textOf(
+        render({
+            view: frame,
+            author: { time: "dnes v 18:02" },
+            content: "@Klan",
+        })
+    )
+    assert.ok(text.indexOf("dnes v 18:02") < text.indexOf("@Klan"))
+    assert.ok(text.indexOf("@Klan") < text.indexOf("Vlci #1"))
+})
+
+test("the header subtitle renders under the title with its mentions", () => {
+    const html = render({
+        view: {
+            accent: "system",
+            header: {
+                label: "Chyba bota · Zápas",
+                title: "Ohlášení zápasu se neodeslalo",
+                subtitle: "VLK vs ROG · Kanál <#100000000000000001>",
+                chips: [{ label: "Zkusí se znovu po opravě", tone: "warning" }],
+            },
+            blocks: [],
+        },
+        mentions: { channels: { "100000000000000001": "oznameni" } },
+    })
+    const text = textOf(html)
+    assert.ok(
+        text.indexOf("Ohlášení zápasu se neodeslalo") <
+            text.indexOf("VLK vs ROG")
+    )
+    assert.ok(text.indexOf("VLK vs ROG") < text.indexOf("Zkusí se znovu"))
+    assert.match(text, /#oznameni/)
+    assert.match(html, /border-left-color:#80848e/)
+})
