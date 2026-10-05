@@ -5,11 +5,13 @@ import {
     isCurrentUserSuperadmin,
 } from "@/lib/auth"
 import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspace-warning"
+import { SettingsAttentionProvider } from "@/components/app/settings-attention"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { SiteHeader } from "@/components/app/site-header"
 import { SiteFooter } from "@/components/app/site-footer"
 import { AppSidebar } from "@/components/app/app-sidebar"
+import { canAdminWorkspace } from "@/lib/workspace-admin"
 import { buildDiscordBotInviteUrl } from "@/lib/discord"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { getLogiStatus } from "@/lib/logi-status"
@@ -33,10 +35,12 @@ export async function DashboardShell({
         getLogiStatus(),
     ])
     const inviteUrlByGuildId = Object.fromEntries(
-        visibleServers.map((server) => [
-            server.id,
-            buildDiscordBotInviteUrl(server.discordId),
-        ])
+        visibleServers
+            .filter((server) => canAdminWorkspace(server, user.discordId))
+            .map((server) => [
+                server.id,
+                buildDiscordBotInviteUrl(server.discordId),
+            ])
     )
 
     return (
@@ -46,34 +50,37 @@ export async function DashboardShell({
             onboarding={user.onboarding}
             userId={user.discordId}
         >
-            <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:2.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:14.5rem] md:[--header-height:2.75rem] xl:[--header-height:3rem] xl:[--sidebar-width:15rem] 2xl:[--footer-height:4rem] 2xl:[--header-height:3.5rem] 2xl:[--sidebar-width-icon:3.25rem] 2xl:[--sidebar-width:18rem]">
-                <AppSidebar
-                    locale={locale}
-                    dictionary={dictionary}
-                    servers={visibleServers}
-                    user={user}
-                    activeServerId={undefined}
-                    canAdmin={false}
-                    isSuperadmin={isSuperadmin}
-                />
-                <SidebarInset className="min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">
-                    <SiteHeader
+            <SettingsAttentionProvider>
+                <SidebarProvider className="min-h-dvh [--footer-height:2.5rem] [--header-height:3.5rem] [--sidebar-width-icon:3rem] [--sidebar-width:14.5rem] md:[--header-height:2.75rem] xl:[--header-height:3rem] xl:[--sidebar-width:15rem] 2xl:[--footer-height:4rem] 2xl:[--header-height:3.5rem] 2xl:[--sidebar-width-icon:3.25rem] 2xl:[--sidebar-width:18rem]">
+                    <AppSidebar
                         locale={locale}
                         dictionary={dictionary}
                         servers={visibleServers}
                         user={user}
+                        activeServerId={undefined}
+                        canAdmin={false}
+                        isSuperadmin={isSuperadmin}
                     />
-                    <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
-                        <MissingBotWorkspaceWarning
+                    <SidebarInset className="min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,rgba(201,168,78,.03),transparent_20%)]">
+                        <SiteHeader
+                            locale={locale}
                             dictionary={dictionary}
-                            inviteUrlByGuildId={inviteUrlByGuildId}
                             servers={visibleServers}
+                            user={user}
                         />
-                        {children}
-                    </div>
-                    <SiteFooter dictionary={dictionary} status={status} />
-                </SidebarInset>
-            </SidebarProvider>
+                        <div className="relative flex flex-1 flex-col gap-3 py-3 sm:gap-4 sm:py-4 2xl:gap-6 2xl:py-6">
+                            <MissingBotWorkspaceWarning
+                                dictionary={dictionary}
+                                inviteUrlByGuildId={inviteUrlByGuildId}
+                                servers={visibleServers}
+                                userDiscordId={user.discordId}
+                            />
+                            {children}
+                        </div>
+                        <SiteFooter dictionary={dictionary} status={status} />
+                    </SidebarInset>
+                </SidebarProvider>
+            </SettingsAttentionProvider>
         </DashboardOnboarding>
     )
 }

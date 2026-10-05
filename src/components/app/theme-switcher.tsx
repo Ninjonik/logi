@@ -10,23 +10,29 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/hooks/use-theme"
 
-type ThemeOption = "light" | "dark" | "system"
+export type ThemeOption = "light" | "dark" | "system"
 
-const themeOptions: Array<{
+/** The three theme choices with their localized labels, in menu order. */
+export function themeOptionsFor(dictionary: Dictionary): Array<{
     value: ThemeOption
     label: string
     icon: typeof Sun
-}> = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
-]
+}> {
+    const t = dictionary.languageSwitcher
+    return [
+        { value: "light", label: t.themeLight, icon: Sun },
+        { value: "dark", label: t.themeDark, icon: Moon },
+        { value: "system", label: t.themeSystem, icon: Monitor },
+    ]
+}
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ dictionary }: { dictionary: Dictionary }) {
     const { theme, setTheme } = useTheme()
+    const themeOptions = themeOptionsFor(dictionary)
     const [mounted, setMounted] = React.useState(false)
 
     React.useEffect(() => {
@@ -44,7 +50,7 @@ export function ThemeSwitcher() {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="outline"
-                    aria-label={activeOption.label}
+                    aria-label={`${dictionary.languageSwitcher.theme}: ${activeOption.label}`}
                     className="h-8 rounded-lg px-2 text-xs font-medium"
                 >
                     <ActiveIcon className="size-3.5 sm:mr-1.5" />

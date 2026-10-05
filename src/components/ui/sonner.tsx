@@ -1,10 +1,11 @@
 "use client"
 
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/hooks/use-theme"
 
+// Follows the app's own theme provider, so toasts match a theme chosen in Logi.
 const Toaster = ({ ...props }: ToasterProps) => {
-    const { theme = "system" } = useTheme()
+    const { theme } = useTheme()
 
     return (
         <Sonner

@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, LayoutGrid } from "lucide-react"
 import * as React from "react"
 import Link from "next/link"
 
@@ -17,30 +17,16 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+    rankWorkspaces,
+    WORKSPACE_SWITCHER_PREVIEW,
+} from "@/lib/workspace-search"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { CLAN_LIST_QUERY } from "@/domain/workspaces/dashboard-landing"
 import { Button } from "@/components/ui/button"
 import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 import { cn } from "@/lib/utils"
-
-const MAX_VISIBLE_RESULTS = 5
-
-function getServerScore(server: Guild, query: string) {
-    if (!query) {
-        return 0
-    }
-
-    const normalizedQuery = query.trim().toLowerCase()
-    const name = server.name.toLowerCase()
-    const description = server.description?.toLowerCase() ?? ""
-
-    if (name === normalizedQuery) return 100
-    if (name.startsWith(normalizedQuery)) return 80
-    if (name.includes(normalizedQuery)) return 60
-    if (description.startsWith(normalizedQuery)) return 40
-    if (description.includes(normalizedQuery)) return 20
-    return -1
-}
 
 export function ServerSwitcher({
     locale,
@@ -58,10 +44,13 @@ export function ServerSwitcher({
         searchWorkspace: string
         noMatchingResults: string
         missingWorkspaceHelp: string
+        showAllResults: string
+        allClans: string
     }
 }) {
     const [open, setOpen] = React.useState(false)
     const [query, setQuery] = React.useState("")
+    const [showAll, setShowAll] = React.useState(false)
     const pathname = usePathname()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -71,29 +60,15 @@ export function ServerSwitcher({
         ? servers.find((server) => server.id === selectedServerId)
         : undefined
 
-    const rankedServers = React.useMemo(() => {
-        if (!query.trim()) {
-            return [...servers]
-                .sort((left, right) => left.name.localeCompare(right.name))
-                .slice(0, MAX_VISIBLE_RESULTS)
-        }
-
-        return [...servers]
-            .map((server) => ({
-                server,
-                score: getServerScore(server, query),
-            }))
-            .filter((entry) => entry.score >= 0)
-            .sort((left, right) => {
-                if (right.score !== left.score) {
-                    return right.score - left.score
-                }
-
-                return left.server.name.localeCompare(right.server.name)
-            })
-            .slice(0, MAX_VISIBLE_RESULTS)
-            .map((entry) => entry.server)
-    }, [query, servers])
+    const rankedServers = React.useMemo(
+        () => rankWorkspaces(servers, query),
+        [query, servers]
+    )
+    const visibleServers = showAll
+        ? rankedServers
+        : rankedServers.slice(0, WORKSPACE_SWITCHER_PREVIEW)
+    const hiddenCount = rankedServers.length - visibleServers.length
+    const clanListHref = `/${locale}/dashboard?${CLAN_LIST_QUERY.key}=${CLAN_LIST_QUERY.value}`
 
     return (
         <Popover
@@ -102,6 +77,7 @@ export function ServerSwitcher({
                 setOpen(nextOpen)
                 if (!nextOpen) {
                     setQuery("")
+                    setShowAll(false)
                 }
             }}
         >
@@ -135,7 +111,10 @@ export function ServerSwitcher({
                     <ChevronsUpDown className="text-muted-foreground size-3.5 2xl:size-4" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[22rem] p-0" align="start">
+            <PopoverContent
+                className="w-[min(22rem,calc(100vw-2rem))] p-0"
+                align="start"
+            >
                 <Command shouldFilter={false}>
                     <CommandInput
                         value={query}
@@ -144,7 +123,7 @@ export function ServerSwitcher({
                     />
                     <CommandList>
                         <CommandEmpty>{labels.noMatchingResults}</CommandEmpty>
-                        {rankedServers.map((server) => {
+                        {visibleServers.map((server) => {
                             const target =
                                 pathname?.includes("/servers/") &&
                                 selectedServerId &&
@@ -200,7 +179,29 @@ export function ServerSwitcher({
                                 </CommandItem>
                             )
                         })}
+                        {hiddenCount > 0 ? (
+                            <CommandItem
+                                value="__show-all"
+                                onSelect={() => setShowAll(true)}
+                                className="text-muted-foreground justify-center text-sm"
+                            >
+                                {labels.showAllResults.replace(
+                                    "{count}",
+                                    String(rankedServers.length)
+                                )}
+                            </CommandItem>
+                        ) : null}
                     </CommandList>
+                    <div className="border-t p-1">
+                        <Link
+                            href={clanListHref}
+                            onClick={() => setOpen(false)}
+                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-2 rounded-sm px-2 py-2 text-sm font-medium"
+                        >
+                            <LayoutGrid className="size-4" />
+                            {labels.allClans}
+                        </Link>
+                    </div>
                     <p className="text-muted-foreground border-t px-3 py-2.5 text-xs leading-5">
                         {labels.missingWorkspaceHelp}
                     </p>

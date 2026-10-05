@@ -896,6 +896,11 @@ export const csMessages = {
         noServerDescription:
             "Vaše klany se tu zobrazí, jakmile bude bot Logi na jejich Discord serveru. Požádejte správce klanu o jeho přidání, nebo ho nastavte na vlastním serveru.",
         noServerSetupGuide: "Jak nastavit bota Logi",
+        askAdminForBot:
+            "Požádejte správce klanu, ať na tento discordový server přidá bota Logi.",
+        botMissingMemberDescription:
+            "Většina funkcí klanu nebude dostupná, dokud správce klanu nepozve bota do Discordu.",
+        memberServers: "Klany, kde jste členem",
     },
     sidebar: {
         home: "Domů",
@@ -929,6 +934,13 @@ export const csMessages = {
         teams: "Týmy",
         teamCatalog: "Katalog týmů",
         teamRequests: "Žádosti o týmy",
+        dashboard: "Dashboard",
+        settings: "Nastavení",
+        settingsAttention:
+            "Položky nastavení, které potřebují pozornost: {count}",
+        globalAdmin: "Globální správa",
+        myAccount: "Můj účet",
+        showSubpages: "Zobrazit stránky pod {item}",
     },
     teams: {
         title: "Týmy",
@@ -1688,6 +1700,31 @@ export const csMessages = {
         history: "Poslední verze výsledku",
         importer: "Import",
     },
+    appStates: {
+        loading: "Načítám…",
+        loadingPage: "Načítám stránku",
+        errorTitle: "Stránka se nenačetla",
+        errorDescription:
+            "Při načítání se něco pokazilo. Vaše nastavení ani data se nezměnila.",
+        errorNextStep:
+            "Zkuste to znovu. Když se to opakuje, pošlete podpoře podrobnosti níže.",
+        retry: "Zkusit znovu",
+        supportDetails: "Podrobnosti pro podporu",
+        errorReference: "Kód chyby",
+        errorTime: "Čas",
+        errorPage: "Stránka",
+        copyDetails: "Zkopírovat podrobnosti",
+        detailsCopied: "Podrobnosti zkopírovány.",
+        notFoundTitle: "Stránka neexistuje",
+        notFoundDescription:
+            "Odkaz je možná starý nebo s překlepem, nebo stránka zmizela. Zkontrolujte adresu, nebo pokračujte jednou z těchto stránek.",
+        notFoundDashboardDescription:
+            "Tato stránka klanu neexistuje, nebo k ní už nemáte přístup.",
+        goHome: "Na úvodní stránku",
+        backToClans: "Zpět na vaše klany",
+        openMenu: "Otevřít menu",
+        mainNavigation: "Hlavní navigace",
+    },
     verifiedPlatformLinks: {
         title: "Ověřený účet Steam",
         description:
@@ -1757,6 +1794,53 @@ export const csMessages = {
         platformIdEpicLink: "Epic návod",
         platformIdEpicHint:
             "Otevřete nastavení Epic účtu nebo launcher a zkopírujte své Account ID.",
+        accountTitle: "Můj účet",
+        accountDescription: "Jazyk, herní účty, zprávy od bota a osobní data.",
+        signedInWith: "{name} · přihlášen přes Discord",
+        autoSaveNote:
+            "Změny se ukládají hned. Nic se nemusí potvrzovat tlačítkem.",
+        changeAvatar: "Změnit avatar",
+        avatarSaved: "Avatar uložen.",
+        lookTitle: "Jazyk a vzhled",
+        appLanguage: "Jazyk aplikace",
+        theme: "Motiv",
+        startClan: "Klan po přihlášení",
+        startClanAutomatic: "Automaticky (váš hlavní klan)",
+        startClanSaved: "Klan po přihlášení uložen.",
+        gameAccountsTitle: "Herní účty",
+        steamVerifiedOn:
+            "Ověřeno přes Steam {date} · statistiky se párují automaticky",
+        steamNotVerified:
+            "Neověřeno. Ověřte účet přes Steam a statistiky se budou párovat automaticky.",
+        steamUnavailable:
+            "Ověření přes Steam teď nefunguje. Zkuste to za chvíli.",
+        steamUnlink: "Odpojit",
+        steamUnlinked: "Účet Steam odpojen.",
+        steamVerify: "Ověřit přes Steam",
+        manualIdsTitle: "Epic, Xbox, PlayStation",
+        manualIdsUnverified: "Zadané ručně, neověřené",
+        manualIdsEmpty: "Zatím žádné ID",
+        addId: "Přidat ID",
+        editIds: "Upravit ID",
+        manualIdsDialogTitle: "ID herních účtů",
+        manualIdsDialogDescription:
+            "Více ID oddělte čárkou. Logi je nemůže ověřit, takže je klan uvidí jako neověřená.",
+        platformIdsSaved: "ID herních účtů uložena.",
+        botDmTitle: "Zprávy od bota do DM",
+        recapTitle: "Shrnutí po zápase",
+        recapDescription: "Vaše statistiky z potvrzeného zápasu.",
+        remindersTitle: "Připomínky přihlášek a docházky",
+        remindersDescription: "Posílá je váš klan podle svého nastavení.",
+        remindersByClan: "řídí klan",
+        downloadAllData: "Stáhnout všechna moje data",
+        downloadZip: "Stáhnout ZIP",
+        deleteAccountTitle: "Smazat účet",
+        deleteAccountDescription:
+            "Odstraní profil, přihlášky a propojené účty. Žádost zpracuje tým Logi a smazání už nepůjde vrátit. Pro potvrzení napište svoje jméno.",
+        deleteAccountConfirmLabel: "Potvrzení jménem",
+        deleteAccountButton: "Smazat účet",
+        deleteAccountRequested:
+            "Žádost o smazání účtu je odeslaná. Tým Logi ji zpracuje.",
     },
     serverSettings: {
         title: "Nastavení klanu",
@@ -2245,9 +2329,17 @@ export const csMessages = {
         searchWorkspace: "Hledat workspace...",
         missingWorkspaceHelp:
             "Chybí vám workspace? Ujistěte se, že jste na daném Discord serveru nebo na něm máte přístup správce.",
+        allClans: "Všechny klany",
+        showAllResults: "Zobrazit vše ({count})",
+        allGames: "Všechny hry",
     },
     languageSwitcher: {
         selectLanguage: "Vybrat jazyk",
+        changeLanguage: "Změnit jazyk",
+        theme: "Motiv",
+        themeLight: "Světlý",
+        themeDark: "Tmavý",
+        themeSystem: "Podle systému",
     },
     platformIdLink: {
         title: "Propojte své platform ID",

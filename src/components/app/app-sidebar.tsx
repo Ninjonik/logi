@@ -11,14 +11,12 @@ import {
     ListTodo,
     CalendarIcon,
     Map,
-    Bot,
     Radio,
-    Trophy,
-    UsersRound,
-    Inbox,
+    Globe,
+    Ticket,
 } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { useEffect } from "react"
 
 import {
     Sidebar,
@@ -26,20 +24,25 @@ import {
     SidebarFooter,
     SidebarHeader,
     SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
+import { useSettingsAttentionCount } from "@/components/app/settings-attention"
+import { globalAdminHref, isGlobalAdminPath } from "@/lib/global-admin-routes"
+import { NavMain, NavMenuItems, type NavItem } from "@/components/nav-main"
 import { ServerSwitcher } from "@/components/app/server-switcher"
 import { GameSwitcher } from "@/components/app/game-switcher"
-import { getPrimaryDisplayedScore } from "@/lib/user-scores"
+import { canAdminWorkspace } from "@/lib/workspace-admin"
 import type { Dictionary } from "@/i18n/dictionaries"
-import { AppLogo } from "@/components/app/app-logo"
 import { NavUser } from "@/components/nav-user"
-import { NavMain } from "@/components/nav-main"
 import type { AppUser } from "@/types/domain"
 import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 
+/**
+ * The clan sidebar (design AppSidebar): the clan switcher, then the clan's
+ * pages in three groups, then global administration for Logi's admins and the
+ * person's account at the bottom.
+ */
 export function AppSidebar({
     locale,
     dictionary,
@@ -60,6 +63,7 @@ export function AppSidebar({
 }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const { isMobile, setOpenMobile } = useSidebar()
     const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1]
     const selectedWorkspaceId = searchParams.get("workspace") ?? undefined
     const resolvedServerId =
@@ -67,262 +71,262 @@ export function AppSidebar({
     const resolvedServer = resolvedServerId
         ? servers.find((server) => server.id === resolvedServerId)
         : undefined
-    const adminAccessOverride =
-        resolvedServer?.adminAccessOverrides?.[user.discordId]
-    const resolvedCanAdmin =
-        adminAccessOverride ??
-        Boolean(
-            resolvedServerId &&
-            (resolvedServer?.canAdmin ||
-                resolvedServer?.adminIds.includes(user.discordId) ||
-                canAdmin)
-        )
+    const resolvedCanAdmin = Boolean(
+        resolvedServerId &&
+        (resolvedServer
+            ? canAdminWorkspace(resolvedServer, user.discordId) ||
+              (canAdmin &&
+                  resolvedServer.adminAccessOverrides?.[user.discordId] ===
+                      undefined)
+            : canAdmin)
+    )
     const workspaceEnabled = Boolean(
         resolvedServer &&
         (resolvedServer.botInside || pathServerId || isSuperadmin)
     )
+    const settingsAttention = useSettingsAttentionCount(resolvedServerId)
+
+    // On phones the menu is a sheet over the page; close it after navigating.
+    useEffect(() => {
+        if (isMobile) setOpenMobile(false)
+    }, [pathname, isMobile, setOpenMobile])
+
     const base = resolvedServerId
         ? `/${locale}/dashboard/servers/${resolvedServerId}`
         : `/${locale}/dashboard`
     const superadminWorkspaceQuery = resolvedServerId
         ? `?workspace=${encodeURIComponent(resolvedServerId)}`
         : ""
+    const t = dictionary.sidebar
 
-    const navGroups = [
-        ...(resolvedServerId && workspaceEnabled
+    const navGroups: Array<{ label: string; id?: string; items: NavItem[] }> =
+        resolvedServerId && workspaceEnabled
             ? [
                   {
-                      label: dictionary.sidebar.workspace,
+                      label: t.workspace,
                       items: [
                           {
-                              title: dictionary.sidebar.overview,
+                              title: t.dashboard,
                               url: base,
                               icon: LayoutDashboard,
                           },
                           {
-                              title: dictionary.sidebar.calendar,
+                              title: t.calendar,
                               url: `${base}/calendar`,
                               icon: CalendarDays,
                           },
                           {
-                              title: dictionary.sidebar.articles,
+                              title: t.articles,
                               url: `${base}/articles`,
                               icon: ClipboardList,
                           },
                       ],
                   },
                   {
-                      label: dictionary.sidebar.operations,
-                      items: [
-                          ...(resolvedCanAdmin
-                              ? [
-                                    {
-                                        title: dictionary.sidebar.matches,
-                                        url: `${base}/matches`,
-                                        icon: CalendarIcon,
-                                        items: [
-                                            {
-                                                title: dictionary.sidebar
-                                                    .matches,
-                                                url: `${base}/matches`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .topicPresets,
-                                                url: `${base}/topic-presets`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .stratmaps,
-                                                url: `${base}/stratmaps`,
-                                                icon: Map,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .rosters,
-                                                url: `${base}/rosters`,
-                                                items: [
-                                                    {
-                                                        title: dictionary
-                                                            .sidebar.rosters,
-                                                        url: `${base}/rosters`,
-                                                    },
-                                                    {
-                                                        title: dictionary
-                                                            .sidebar
-                                                            .squadPresets,
-                                                        url: `${base}/squad-presets`,
-                                                    },
-                                                ],
-                                            },
-                                        ],
-                                    },
-                                    {
-                                        title: dictionary.sidebar.trainings,
-                                        url: `${base}/trainings`,
-                                        icon: Shield,
-                                    },
-                                    {
-                                        title: dictionary.sidebar
-                                            .signupActivity,
-                                        url: `${base}/signup-activity`,
-                                        icon: ListTodo,
-                                    },
-                                ]
-                              : [
-                                    {
-                                        title: dictionary.sidebar.events,
-                                        url: `${base}/events`,
-                                        icon: ListTodo,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.matches,
-                                        url: `${base}/matches`,
-                                        icon: CalendarIcon,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.trainings,
-                                        url: `${base}/trainings`,
-                                        icon: Shield,
-                                    },
-                                    {
-                                        title: dictionary.sidebar
-                                            .signupActivity,
-                                        url: `${base}/signup-activity`,
-                                        icon: ListTodo,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.stratmaps,
-                                        url: `${base}/stratmaps`,
-                                        icon: Map,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.rosters,
-                                        url: `${base}/rosters`,
-                                        icon: ClipboardList,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.users,
-                                        url: `${base}/users`,
-                                        icon: UserCog,
-                                    },
-                                ]),
-                      ],
+                      label: t.operations,
+                      id: "onboarding-sidebar-operations",
+                      items: resolvedCanAdmin
+                          ? [
+                                {
+                                    title: t.matches,
+                                    url: `${base}/matches`,
+                                    icon: CalendarIcon,
+                                    items: [
+                                        {
+                                            title: t.topicPresets,
+                                            url: `${base}/topic-presets`,
+                                        },
+                                    ],
+                                },
+                                {
+                                    title: t.trainings,
+                                    url: `${base}/trainings`,
+                                    icon: Shield,
+                                },
+                                {
+                                    title: t.signupActivity,
+                                    url: `${base}/signup-activity`,
+                                    icon: ListTodo,
+                                },
+                                {
+                                    title: t.rosters,
+                                    url: `${base}/rosters`,
+                                    icon: ClipboardList,
+                                    items: [
+                                        {
+                                            title: t.squadPresets,
+                                            url: `${base}/squad-presets`,
+                                        },
+                                    ],
+                                },
+                                {
+                                    title: t.stratmaps,
+                                    url: `${base}/stratmaps`,
+                                    icon: Map,
+                                },
+                            ]
+                          : [
+                                {
+                                    title: t.events,
+                                    url: `${base}/events`,
+                                    icon: ListTodo,
+                                },
+                                {
+                                    title: t.matches,
+                                    url: `${base}/matches`,
+                                    icon: CalendarIcon,
+                                },
+                                {
+                                    title: t.trainings,
+                                    url: `${base}/trainings`,
+                                    icon: Shield,
+                                },
+                                {
+                                    title: t.signupActivity,
+                                    url: `${base}/signup-activity`,
+                                    icon: ListTodo,
+                                },
+                                {
+                                    title: t.rosters,
+                                    url: `${base}/rosters`,
+                                    icon: ClipboardList,
+                                },
+                                {
+                                    title: t.stratmaps,
+                                    url: `${base}/stratmaps`,
+                                    icon: Map,
+                                },
+                                {
+                                    title: t.users,
+                                    url: `${base}/users`,
+                                    icon: UserCog,
+                                },
+                            ],
                   },
                   ...(resolvedCanAdmin
                       ? [
                             {
-                                label: dictionary.sidebar.configuration,
+                                label: t.configuration,
+                                id: "onboarding-sidebar-configuration",
                                 items: [
                                     {
-                                        title: dictionary.sidebar.members,
-                                        url: `${base}/members`,
+                                        title: t.members,
+                                        url: `${base}/users`,
                                         icon: UserCog,
+                                        isActive: pathname?.startsWith(
+                                            `${base}/users`
+                                        ),
                                         items: [
                                             {
-                                                title: dictionary.sidebar.users,
-                                                url: `${base}/users`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .groups,
+                                                title: t.groups,
                                                 url: `${base}/groups`,
                                             },
                                         ],
                                     },
                                     {
-                                        title: dictionary.sidebar.teams,
+                                        title: t.teams,
                                         url: `${base}/teams`,
                                         icon: Swords,
                                     },
                                     {
-                                        title: dictionary.sidebar
-                                            .serverSettings,
+                                        title: t.tickets,
+                                        url: `${base}/tickets`,
+                                        icon: Ticket,
+                                    },
+                                    {
+                                        title: t.settings,
                                         url: `${base}/settings`,
                                         icon: Settings,
                                         isActive: pathname?.startsWith(
                                             `${base}/settings`
                                         ),
+                                        badge: {
+                                            count: settingsAttention,
+                                            label: t.settingsAttention.replace(
+                                                "{count}",
+                                                String(settingsAttention)
+                                            ),
+                                        },
                                     },
                                 ],
                             },
                         ]
                       : []),
               ]
-            : []),
+            : []
+
+    // Switch point: on global administration pages (`isGlobalAdminPath`) the
+    // shell can render the global administration sidebar instead of this one.
+    const onGlobalAdminPage = isGlobalAdminPath(pathname)
+    const footerItems: NavItem[] = [
+        {
+            title: t.logiComms,
+            url: `/${locale}/dashboard/logicomms${superadminWorkspaceQuery}`,
+            icon: Radio,
+        },
         ...(isSuperadmin
             ? [
                   {
-                      label: dictionary.sidebar.bot,
+                      title: t.globalAdmin,
+                      url: globalAdminHref(
+                          locale,
+                          "teams",
+                          superadminWorkspaceQuery
+                      ),
+                      icon: Globe,
+                      isActive: onGlobalAdminPage,
                       items: [
                           {
-                              title: dictionary.sidebar.competitions,
-                              url: `/${locale}/dashboard/competitions${superadminWorkspaceQuery}`,
-                              icon: Trophy,
+                              title: t.competitions,
+                              url: globalAdminHref(
+                                  locale,
+                                  "competitions",
+                                  superadminWorkspaceQuery
+                              ),
                           },
                           {
-                              title: dictionary.sidebar.teamCatalog,
-                              url: `/${locale}/dashboard/teams${superadminWorkspaceQuery}`,
-                              icon: UsersRound,
+                              title: t.teamCatalog,
+                              url: globalAdminHref(
+                                  locale,
+                                  "teams",
+                                  superadminWorkspaceQuery
+                              ),
                           },
                           {
-                              title: dictionary.sidebar.teamRequests,
-                              url: `/${locale}/dashboard/team-requests${superadminWorkspaceQuery}`,
-                              icon: Inbox,
+                              title: t.teamRequests,
+                              url: globalAdminHref(
+                                  locale,
+                                  "team-requests",
+                                  superadminWorkspaceQuery
+                              ),
                           },
                           {
-                              title: dictionary.sidebar.bot,
-                              url: `/${locale}/dashboard/bot${superadminWorkspaceQuery}`,
-                              icon: Bot,
+                              title: t.bot,
+                              url: globalAdminHref(
+                                  locale,
+                                  "bot",
+                                  superadminWorkspaceQuery
+                              ),
                           },
                           {
-                              title: dictionary.sidebar.platformSettings,
-                              url: `/${locale}/dashboard/platform-settings${superadminWorkspaceQuery}`,
-                              icon: Settings,
+                              title: t.platformSettings,
+                              url: globalAdminHref(
+                                  locale,
+                                  "platform-settings",
+                                  superadminWorkspaceQuery
+                              ),
                           },
                       ],
                   },
               ]
             : []),
-        {
-            label: dictionary.sidebar.logiComms,
-            items: [
-                {
-                    title: dictionary.sidebar.logiComms,
-                    url: `/${locale}/dashboard/logicomms${superadminWorkspaceQuery}`,
-                    icon: Radio,
-                },
-            ],
-        },
     ]
+    const expandLabel = (title: string) =>
+        t.showSubpages.replace("{item}", title)
 
     return (
         <Sidebar id="onboarding-sidebar" {...props}>
-            <SidebarHeader className="border-sidebar-border/70 gap-2 border-b px-2 py-2 2xl:gap-4 2xl:px-3 2xl:py-4">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            size="lg"
-                            asChild
-                            isActive={pathname === `/${locale}/dashboard`}
-                            className="h-10 gap-2 p-1.5 text-[13px] 2xl:h-12 2xl:p-2 2xl:text-sm"
-                        >
-                            <Link
-                                href={`/${locale}/dashboard${superadminWorkspaceQuery}`}
-                            >
-                                <AppLogo />
-                                <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
-                                    <span className="truncate font-semibold">
-                                        {dictionary.app.name}
-                                    </span>
-                                    <span className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
-                                        {dictionary.app.tagline}
-                                    </span>
-                                </div>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+            <SidebarHeader className="gap-2 p-2">
                 <ServerSwitcher
                     locale={locale}
                     servers={servers}
@@ -336,6 +340,8 @@ export function AppSidebar({
                         noMatchingResults: dictionary.shared.noMatchingResults,
                         missingWorkspaceHelp:
                             dictionary.workspace.missingWorkspaceHelp,
+                        showAllResults: dictionary.workspace.showAllResults,
+                        allClans: dictionary.workspace.allClans,
                     }}
                 />
                 {resolvedServerId ? (
@@ -345,31 +351,32 @@ export function AppSidebar({
                     />
                 ) : null}
             </SidebarHeader>
-            <SidebarContent>
-                {navGroups.map((group) => {
-                    const onboardingId =
-                        group.label === dictionary.sidebar.operations
-                            ? "onboarding-sidebar-operations"
-                            : group.label === dictionary.sidebar.configuration
-                              ? "onboarding-sidebar-configuration"
-                              : undefined
-                    return (
-                        <div key={group.label} id={onboardingId}>
-                            <NavMain label={group.label} items={group.items} />
-                        </div>
-                    )
-                })}
+            <SidebarContent
+                role="navigation"
+                aria-label={dictionary.appStates.mainNavigation}
+            >
+                {navGroups.map((group) => (
+                    <div key={group.label} id={group.id}>
+                        <NavMain
+                            label={group.label}
+                            items={group.items}
+                            expandLabel={expandLabel}
+                        />
+                    </div>
+                ))}
             </SidebarContent>
             <SidebarFooter
                 id="onboarding-account-menu"
-                className="border-sidebar-border/70 border-t p-1.5 2xl:p-2"
+                className="border-sidebar-border gap-1 border-t p-2"
             >
+                <SidebarMenu className="gap-0.5">
+                    <NavMenuItems
+                        items={footerItems}
+                        expandLabel={expandLabel}
+                    />
+                </SidebarMenu>
                 <NavUser
-                    user={{
-                        name: user.name,
-                        email: `${getPrimaryDisplayedScore(user)} ${dictionary.navUser.scoreSuffix}`,
-                        avatar: user.avatar,
-                    }}
+                    user={{ name: user.name, avatar: user.avatar }}
                     locale={locale}
                     dictionary={dictionary}
                 />
