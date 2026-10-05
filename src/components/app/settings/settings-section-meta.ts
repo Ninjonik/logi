@@ -8,7 +8,6 @@ import {
     Hash,
     IdCard,
     Import,
-    ListChecks,
     LogIn,
     MessageSquareText,
     Server,
@@ -46,12 +45,6 @@ export const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
     imports: Import,
     "helper-data": Database,
 }
-
-/** Match setup pages that live outside settings; the Presets settings page links to them. */
-export const SETTINGS_PRESET_LINKS = [
-    { key: "squadPresets", path: "squad-presets", icon: Users },
-    { key: "topicPresets", path: "topic-presets", icon: ListChecks },
-] as const
 
 export function settingsHref(
     locale: string,
