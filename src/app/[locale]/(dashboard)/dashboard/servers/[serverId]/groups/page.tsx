@@ -1,9 +1,12 @@
+import { notFound } from "next/navigation"
+import { Users } from "lucide-react"
 import type { Metadata } from "next"
 
+import { ManagersOnlyState } from "@/components/app/managers-only-state"
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { ResourceTable } from "@/components/app/resource-table"
 import { PageHeader } from "@/components/app/page-header"
-import { getGuildMetadata } from "@/lib/server-metadata"
+import { EmptyState } from "@/components/app/empty-state"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getPaginatedRows } from "@/lib/data-table"
@@ -30,9 +33,46 @@ export default async function GroupsPage({
     const game = resolvedSearchParams?.game
     const gameScope = typeof game === "string" && isGameId(game) ? game : "all"
     const context = await getServerContext(serverId, gameScope)
-    if (!context?.canAdmin) return null
+    if (!context) notFound()
+    if (!context.canAdmin)
+        return (
+            <>
+                <PageHeader
+                    title={dictionary.sidebar.groups}
+                    description={dictionary.groups.description}
+                />
+                <ManagersOnlyState
+                    dictionary={dictionary}
+                    overviewHref={`/${locale}/dashboard/servers/${serverId}`}
+                />
+            </>
+        )
 
     const { groups = [], assignments = [], canAdmin } = context
+    const createHref = `/${locale}/dashboard/servers/${serverId}/groups/create${gameScope === "all" ? "" : `?game=${gameScope}`}`
+    if (!groups.length)
+        return (
+            <>
+                <PageHeader
+                    title={dictionary.sidebar.groups}
+                    description={dictionary.groups.description}
+                />
+                <div className="px-4 lg:px-6">
+                    <EmptyState
+                        icon={Users}
+                        title={dictionary.groups.emptyTitle}
+                        description={dictionary.groups.emptyDescription}
+                        actions={
+                            <Button asChild className="rounded-xl">
+                                <a href={createHref}>
+                                    {dictionary.groups.createTitle}
+                                </a>
+                            </Button>
+                        }
+                    />
+                </div>
+            </>
+        )
     const paginated = getPaginatedRows({
         rows: groups,
         searchParams: resolvedSearchParams,
@@ -51,9 +91,7 @@ export default async function GroupsPage({
                     actions={
                         canAdmin ? (
                             <Button asChild className="rounded-xl">
-                                <a
-                                    href={`/${locale}/dashboard/servers/${serverId}/groups/create${gameScope === "all" ? "" : `?game=${gameScope}`}`}
-                                >
+                                <a href={createHref}>
                                     {dictionary.groups.createTitle}
                                 </a>
                             </Button>

@@ -1,6 +1,6 @@
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
+import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
-import { fetchQuery } from "convex/nextjs"
 
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getLoggedInUser, getSession } from "@/lib/auth"
@@ -16,6 +16,30 @@ const getPublicStratmapByIdReference = makeFunctionReference<"query">(
 const listStratmapsByGuildReference = makeFunctionReference<"query">(
     "stratmaps:listByGuild"
 )
+const removeStratmapReference =
+    makeFunctionReference<"mutation">("stratmaps:remove")
+
+export type RemoveStratmapResult =
+    | { ok: true; detachedEventIds: string[] }
+    | { ok: false; error: "not_found" | "forbidden" }
+
+/**
+ * Deletes a stratmap of the clan for the signed-in user; Convex checks that
+ * the user administers the clan and that the stratmap belongs to it.
+ */
+export async function removeServerStratmap(
+    serverId: string,
+    stratmapId: string
+): Promise<RemoveStratmapResult> {
+    const user = await getLoggedInUser()
+    if (!user) return { ok: false, error: "forbidden" }
+    return (await fetchMutation(removeStratmapReference, {
+        secret: getInternalAuthSecret(),
+        userId: user.discordId,
+        serverId: serverId as never,
+        stratmapId: stratmapId as never,
+    })) as RemoveStratmapResult
+}
 
 export async function getStratmapDetail(stratmapId: string) {
     const [user, session] = await Promise.all([getLoggedInUser(), getSession()])

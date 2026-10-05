@@ -1,17 +1,23 @@
 import { redirect } from "next/navigation"
 
+import { isGameId } from "@/domain/games/game"
+import { isLocale } from "@/i18n/config"
+
 /** Membership settings moved to clan settings. */
 export default async function ServerMembershipsPage({
     params,
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string | string[] }>
 }) {
     const { locale, serverId } = await params
     const { game } = await searchParams
-    const search = game ? `?game=${encodeURIComponent(game)}` : ""
+    const requestedGame = Array.isArray(game) ? game[0] : game
+    const safeLocale = isLocale(locale) ? locale : "en"
+    // Only a known game is carried over; anything else opens the clan-wide view.
+    const search = isGameId(requestedGame) ? `?game=${requestedGame}` : ""
     redirect(
-        `/${locale}/dashboard/servers/${serverId}/settings/membership${search}`
+        `/${safeLocale}/dashboard/servers/${encodeURIComponent(serverId)}/settings/membership${search}`
     )
 }

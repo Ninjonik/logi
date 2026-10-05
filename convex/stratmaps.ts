@@ -18,6 +18,10 @@ import {
     getUserByDiscordId,
 } from "./identity"
 import {
+    findEventsLinkingStratmap,
+    withoutStratmap,
+} from "../src/domain/stratmaps/stratmap-references"
+import {
     buildDefaultStratmapState,
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
@@ -308,5 +312,68 @@ export const updateState = mutation({
             state: args.state,
             updatedAt: new Date().toISOString(),
         })
+    },
+})
+
+/**
+ * Deletes a stratmap for the signed-in clan administrator the web server
+ * resolved, and removes it from every event of the clan that links it, so no
+ * event keeps a link to a missing map. Uploaded slide and icon images stay in
+ * storage.
+ */
+export const remove = mutation({
+    args: {
+        secret: v.string(),
+        userId: v.string(),
+        serverId: v.id("guilds"),
+        stratmapId: v.id("stratmaps"),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const guild = await getGuildById(ctx, String(args.serverId))
+        const stratmap = await ctx.db.get(args.stratmapId)
+        if (!guild || !stratmap) {
+            return { ok: false as const, error: "not_found" as const }
+        }
+
+        const guildDiscordId = getGuildDiscordId(guild)
+        if (stratmap.guildId !== guildDiscordId) {
+            return { ok: false as const, error: "not_found" as const }
+        }
+
+        const access = await resolveGuildAccess(ctx, {
+            userId: args.userId,
+            guildDiscordId,
+        })
+        if (!access?.canAdmin) {
+            return { ok: false as const, error: "forbidden" as const }
+        }
+
+        const events = await ctx.db
+            .query("events")
+            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+            .collect()
+        const linkingEvents = findEventsLinkingStratmap(
+            events.map((event) => ({
+                id: event._id,
+                name: event.name,
+                stratmapIds: event.stratmapIds,
+            })),
+            args.stratmapId
+        )
+        for (const event of linkingEvents) {
+            await ctx.db.patch(event.id, {
+                stratmapIds: withoutStratmap(
+                    event.stratmapIds,
+                    args.stratmapId
+                ),
+            })
+        }
+
+        await ctx.db.delete(args.stratmapId)
+        return {
+            ok: true as const,
+            detachedEventIds: linkingEvents.map((event) => String(event.id)),
+        }
     },
 })

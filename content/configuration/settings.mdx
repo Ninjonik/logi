@@ -296,8 +296,11 @@ which carry only the public `logoUrl`.
 Stratmaps and presets use `POST /api/v1/clan/stratmaps`,
 `POST /api/v1/clan/topic-presets`, and `POST /api/v1/clan/squad-presets`, with
 the corresponding `PATCH /{id}` paths for complete dashboard-equivalent
-updates. These resources are intentionally non-deletable: existing event,
-roster, and Discord-forum references do not have a safe cleanup lifecycle. A
+updates. These resources are intentionally non-deletable through the API:
+existing event, roster, and Discord-forum references do not have a safe cleanup
+lifecycle for a bearer key, which cannot confirm the loss. A manager can delete
+a stratmap in the dashboard after a confirmation that names the events losing
+it; Logi then removes it from those events. A
 stratmap's referenced event must belong to the authenticated workspace and use
 the same game. Topic preset attachment limits are the same as the dashboard.
 

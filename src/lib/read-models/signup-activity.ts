@@ -8,6 +8,9 @@ const listSignupActivityReference = makeFunctionReference<"query">(
     "signupActivity:list"
 )
 
+/** The most entries `signupActivity:list` returns, newest first. */
+export const SIGNUP_ACTIVITY_LIMIT = 100
+
 export type SignupActivity = {
     id: string
     eventId: string

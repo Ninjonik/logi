@@ -1205,6 +1205,13 @@ export const deMessages = {
             unsigned: "hat sich abgemeldet",
             declined: "hat abgesagt",
         },
+        emptyTitle: "Noch keine Anmeldeaktivität",
+        emptyDescription:
+            "Anmeldungen, Rollenwechsel und Abmeldungen für Matches und Trainings erscheinen hier, sobald sie passieren.",
+        limitNotice:
+            "Es werden die letzten {count} Änderungen angezeigt. Ältere Änderungen erscheinen hier nicht.",
+        filteredBy: "Nur {event}",
+        showAll: "Alle Aktivitäten anzeigen",
     },
     teamCatalogAdmin: {
         title: "Teamkatalog",
@@ -1679,6 +1686,35 @@ export const deMessages = {
         publish: "Artikel veröffentlichen",
         attachments: "Anhänge",
         saveFailed: "Artikel konnte nicht veröffentlicht werden.",
+        titleLabel: "Titel",
+        descriptionLabel: "Kurzbeschreibung",
+        tagsLabel: "Tags",
+        tagsHint: "Trenne Tags mit Kommas.",
+        bodyLabel: "Artikel",
+        attachmentsHint:
+            "Dateien werden sofort hochgeladen und unter dem Artikel verlinkt.",
+        uploading: "{count} Datei(en) werden hochgeladen…",
+        uploadFailed: "Die Datei konnte nicht hochgeladen werden: {reason}",
+        removeAttachment: "Anhang {name} entfernen",
+        waitForUpload: "Warte, bis der Upload fertig ist.",
+        publishing: "Wird veröffentlicht…",
+        titleRequired: "Gib einen Titel ein.",
+        descriptionRequired: "Gib eine Kurzbeschreibung ein.",
+        bodyRequired: "Schreib den Artikel.",
+        emptyTitle: "Noch keine Artikel",
+        emptyDescription:
+            "Artikel bringen allen Mitgliedern Clan-News und längere Updates.",
+        emptyMemberDescription:
+            "Clan-News und längere Updates erscheinen hier, sobald ein Manager sie veröffentlicht.",
+        publishedOn: "Veröffentlicht {date}",
+        deleteAction: "Artikel löschen",
+        deleteTitle: "„{title}“ löschen?",
+        deleteDescription:
+            "Der Artikel verschwindet für alle Mitglieder. Hochgeladene Dateien bleiben über bereits geteilte Links erreichbar. Das lässt sich nicht rückgängig machen.",
+        deleted: "Artikel gelöscht.",
+        deleteFailed:
+            "Der Artikel konnte nicht gelöscht werden. Versuch es noch einmal.",
+        backToList: "Alle Artikel",
     },
     common: {
         actions: "Aktionen",
@@ -2620,6 +2656,27 @@ export const deMessages = {
             "Diese Kategorie hat keine finale Rolle konfiguriert. ",
         missingCategoryRolesSummary:
             "Logi behält den Mitgliedsstatus hier, aber die passende Discord-Rolle wird für diese Stufe nicht hinzugefügt.",
+        platformIdsHint:
+            "Trenne mehrere IDs mit Kommas. Eine Steam-ID hat 17 Ziffern und beginnt mit 7656119; schreib Xbox- und PlayStation-IDs als xbox:… oder psn:….",
+        platformIdsInvalid:
+            "Korrigiere die markierten Plattform-IDs vor dem Speichern.",
+        platformIssues: {
+            steam_format:
+                "Keine Steam-ID: Sie muss 17 Ziffern haben und mit 7656119 beginnen.",
+            epic_format: "Keine Epic-Games-ID.",
+            too_long: "Zu lang für eine Plattform-ID.",
+            duplicate: "Doppelt angegeben; wird einmal gespeichert.",
+            linked_elsewhere: "Bereits mit {name} verknüpft.",
+        },
+        grantAdminTitle: "{name} zum Admin machen?",
+        grantAdminDescription:
+            "{name} kann dann im Logi-Dashboard die Einstellungen, Matches, Roster und Mitglieder dieses Clans ändern. Du kannst den Zugriff später wieder entfernen.",
+        removeAdminTitle: "{name} den Admin-Zugriff entziehen?",
+        removeAdminDescription:
+            "{name} bleibt im Clan, kann ihn aber nicht mehr im Dashboard verwalten, außer eine Discord-Rolle gewährt weiterhin Zugriff.",
+        removePlayerTitle: "{name} aus dem Clan entfernen?",
+        removePlayerDescription:
+            "Zuordnung, Gruppen und Mitgliedsstatus in diesem Clan werden gelöscht, und Logi entfernt die von ihm verwalteten Discord-Rollen. Der Match-Verlauf bleibt.",
     },
     navUser: {
         scoreSuffix: "Score",
@@ -2715,7 +2772,37 @@ export const deMessages = {
         moreEvents: "weitere Events",
         allDay: "Ganztägig",
         manualItemAdminHint:
-            "Manager können diesen Kalendereintrag in seinen Kalenderdetails bearbeiten oder entfernen.",
+            "Nur Manager sehen das. Ändere den Eintrag unter Clan-Einstellungen → Clan-Profil oder lösche ihn hier.",
+        nextUp: "Als Nächstes",
+        emptyTitle: "Noch nichts geplant",
+        emptyDescription:
+            "Matches, Trainings und Kalendereinträge erscheinen hier, sobald sie geplant sind.",
+        emptyMonth: "In diesem Monat ist nichts geplant.",
+        previousMonth: "Vorheriger Monat",
+        nextMonth: "Nächster Monat",
+        timezoneHint: "Zeiten in der Zeitzone des Clans ({timezone}).",
+        start: "Beginn",
+        end: "Ende",
+        category: "Kategorie",
+        meetingPlace: "Treffpunkt",
+        openVoiceChannel: "Sprachkanal in Discord",
+        toBeDecided: "Folgt noch",
+        deleteItem: "Eintrag löschen",
+        deleteItemTitle: "„{title}“ löschen?",
+        deleteItemDescription:
+            "Der Eintrag verschwindet für alle aus dem Kalender und dem Kalender-Abo. Das lässt sich nicht rückgängig machen.",
+        deleteRecurringNote:
+            "Alle Wiederholungen dieses Eintrags werden ebenfalls gelöscht.",
+        itemDeleted: "Kalendereintrag gelöscht.",
+        itemDeleteFailed:
+            "Der Kalendereintrag konnte nicht gelöscht werden. Versuch es noch einmal.",
+        itemCreated: "Kalendereintrag hinzugefügt.",
+        itemCreateFailed:
+            "Der Kalendereintrag konnte nicht gespeichert werden. Versuch es noch einmal.",
+        titleRequired: "Gib einen Titel ein.",
+        startRequired: "Wähle den Beginn.",
+        endRequired: "Wähle das Ende.",
+        endBeforeStart: "Das Ende muss nach dem Beginn liegen.",
     },
     settingsHub: {
         title: "Clan-Einstellungen",
@@ -3708,6 +3795,23 @@ export const deMessages = {
         usedByPlayers: "Primäre Spieler",
         starterDescription:
             "Start-Clan-Spezialisierungen abgestimmt auf das Standard-HLL-Squad-Setup.",
+        created: "Gruppe erstellt.",
+        saved: "Gruppe gespeichert.",
+        saveFailed:
+            "Die Gruppe konnte nicht gespeichert werden. Versuch es noch einmal.",
+        duplicateName: "Eine Gruppe mit diesem Namen gibt es schon.",
+        deleteAction: "Gruppe löschen",
+        deleteTitle: "Gruppe „{name}“ löschen?",
+        deleteDescription:
+            "Spieler verlieren diese Gruppe. Roster und vergangene Events behalten den kopierten Gruppennamen. Das lässt sich nicht rückgängig machen.",
+        deleteImpact:
+            "{primary} Spieler haben sie als Hauptgruppe und {secondary} als zusätzliche Gruppe.",
+        deleted: "Gruppe gelöscht.",
+        deleteFailed:
+            "Die Gruppe konnte nicht gelöscht werden. Versuch es noch einmal.",
+        emptyTitle: "Noch keine Gruppen",
+        emptyDescription:
+            "Gruppen sind Clan-Spezialisierungen wie Panzerfahrer oder Kommandeure. Squad-Presets und Spieler nutzen sie.",
     },
     tables: {
         event: "Event",
@@ -3906,6 +4010,12 @@ export const deMessages = {
             error: "Fehler",
         },
     },
+    workspacePages: {
+        managersOnlyTitle: "Nur Manager können diese Seite öffnen",
+        managersOnlyDescription:
+            "Frag einen Clan-Manager, wenn du Zugriff brauchst. Alles, was du nutzen kannst, findest du im Menü.",
+        backToOverview: "Zurück zur Übersicht",
+    },
     stratmaps: {
         title: "Stratmaps",
         createTitle: "Stratmap erstellen",
@@ -4022,6 +4132,26 @@ export const deMessages = {
         color: "Farbe",
         size: "Größe",
         noResults: "Keine Ergebnisse.",
+        variantLabel: "Variante",
+        modeLabel: "Modus",
+        importSkipped: "; {count} nicht unterstützte Elemente übersprungen",
+        emptyTitle: "Noch keine Stratmaps",
+        emptyDescription:
+            "Eine Stratmap ist eine geteilte taktische Karte mit Folien. Hänge sie an ein Match-Briefing, damit der Trupp den Plan sieht.",
+        emptyMemberDescription:
+            "Taktische Karten für kommende Matches erscheinen hier, sobald ein Manager sie erstellt.",
+        deleteAction: "Stratmap löschen",
+        deleteTitle: "„{title}“ löschen?",
+        deleteDescription:
+            "Die Stratmap und alle Folien verschwinden für alle. Der öffentliche Link funktioniert nicht mehr, auch wo er schon in Discord gepostet wurde. Das lässt sich nicht rückgängig machen.",
+        deleteLinkedEvents: "Sie wird auch aus diesen Events entfernt:",
+        deleted: "Stratmap gelöscht.",
+        deleteFailed:
+            "Die Stratmap konnte nicht gelöscht werden. Versuch es noch einmal.",
+        showLeftPanel: "Details und Folien anzeigen",
+        hideLeftPanel: "Details und Folien ausblenden",
+        showRightPanel: "Werkzeuge anzeigen",
+        hideRightPanel: "Werkzeuge ausblenden",
     },
     onboarding: {
         step: "Schritt {current} von {total}",

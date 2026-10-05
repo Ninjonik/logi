@@ -1,5 +1,6 @@
 "use client"
 
+import { CalendarDays } from "lucide-react"
 import Link from "next/link"
 
 import type {
@@ -9,13 +10,21 @@ import type {
     Group,
     Roster,
 } from "@/types/domain"
+import {
+    buildCalendarDisplayEntries,
+    type CalendarDisplayEntry,
+} from "@/lib/calendar-entries"
+import {
+    getCalendarEntryTiles,
+    InfoTile,
+} from "@/components/app/calendar-entry-tiles"
 import { CalendarItemCreateDialog } from "@/components/app/calendar-item-create-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MonthCalendarView } from "@/components/app/month-calendar-view"
-import { buildCalendarDisplayEntries } from "@/lib/calendar-entries"
-import { formatHllPresetLabel } from "@/lib/hll-map-presets"
+import { EmptyState } from "@/components/app/empty-state"
 import { EmojiValue } from "@/components/app/emoji-value"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { toIntlLocale } from "@/lib/intl-locale"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatDateTime } from "@/lib/format"
@@ -59,17 +68,31 @@ export function CalendarView({
     const highlightedEntries = displayEntries
         .filter((entry) => new Date(entry.endAt).getTime() >= now.getTime())
         .slice(0, 3)
+    const intlLocale = toIntlLocale(locale)
+    const formatInstant = (value: string) =>
+        formatDateTime(value, timezone, intlLocale)
 
     return (
         <div className="space-y-6">
-            {canAdmin ? (
-                <div className="flex justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {timezone ? (
+                    <p className="text-muted-foreground text-sm">
+                        {dictionary.calendarPage.timezoneHint.replace(
+                            "{timezone}",
+                            timezone
+                        )}
+                    </p>
+                ) : (
+                    <span />
+                )}
+                {canAdmin ? (
                     <CalendarItemCreateDialog
                         serverId={serverId}
                         dictionary={dictionary}
+                        timezone={timezone}
                     />
-                </div>
-            ) : null}
+                ) : null}
+            </div>
             <MonthCalendarView
                 locale={locale}
                 serverId={serverId}
@@ -81,129 +104,137 @@ export function CalendarView({
                 currentUserId={currentUserId}
                 canAdmin={canAdmin}
             />
-            <div className="grid gap-4 xl:grid-cols-3">
-                {highlightedEntries.map((entry) => {
-                    const tertiaryValue =
-                        entry.kind === "event"
-                            ? entry.event.kind === "training"
-                                ? entry.event.meetingChannelId || "Discord"
-                                : `${formatHllPresetLabel(entry.event.map) ?? entry.event.map ?? "TBD"} • ${entry.event.side ?? "TBD"}`
-                            : (entry.label ?? dictionary.shared.notSet)
-                    const roster =
-                        entry.kind === "event"
-                            ? rosters.find(
-                                  (item) => item.eventId === entry.event.id
-                              )
-                            : null
-                    const detailPath =
-                        entry.kind === "event"
-                            ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`
-                            : null
-
-                    return (
-                        <Card
-                            key={entry.id}
-                            className="border-border/60 rounded-2xl"
-                            style={{
-                                boxShadow: `inset 4px 0 0 ${entry.color}`,
-                            }}
-                        >
-                            <CardHeader>
-                                {entry.label ? (
-                                    <Badge
-                                        variant="outline"
-                                        className="mb-2 rounded-full"
-                                        style={{
-                                            borderColor: `${entry.color}66`,
-                                            color: entry.color,
-                                            backgroundColor: `${entry.color}14`,
-                                        }}
-                                    >
-                                        <EmojiValue value={entry.emoji} />
-                                        <span>{entry.label}</span>
-                                    </Badge>
-                                ) : null}
-                                <CardTitle className="text-xl">
-                                    {entry.title}
-                                </CardTitle>
-                                <p className="text-muted-foreground text-sm">
-                                    {entry.description}
-                                </p>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid gap-3">
-                                    <InfoTile
-                                        label={dictionary.calendarCards.meeting}
-                                        value={
-                                            entry.allDay
-                                                ? dictionary.calendarPage.allDay
-                                                : formatDateTime(
-                                                      entry.startAt,
-                                                      timezone
-                                                  )
-                                        }
-                                    />
-                                    <InfoTile
-                                        label={
-                                            dictionary.calendarCards.gameStart
-                                        }
-                                        value={
-                                            entry.allDay
-                                                ? dictionary.calendarPage.allDay
-                                                : formatDateTime(
-                                                      entry.endAt,
-                                                      timezone
-                                                  )
-                                        }
-                                    />
-                                    <InfoTile
-                                        label={dictionary.calendarCards.map}
-                                        value={tertiaryValue}
-                                    />
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                    {detailPath ? (
-                                        <Button asChild className="rounded-xl">
-                                            <Link href={detailPath}>
-                                                {dictionary.common.viewDetails}
-                                            </Link>
-                                        </Button>
-                                    ) : null}
-                                    {entry.kind === "event" &&
-                                    entry.event.kind === "match" &&
-                                    roster?.published ? (
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            className="rounded-xl"
-                                        >
-                                            <Link
-                                                href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}
-                                            >
-                                                {
-                                                    dictionary.calendarCards
-                                                        .showRoster
-                                                }
-                                            </Link>
-                                        </Button>
-                                    ) : null}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )
-                })}
-            </div>
+            <section className="space-y-3" aria-labelledby="calendar-next-up">
+                <h2
+                    id="calendar-next-up"
+                    className="text-muted-foreground text-xs font-semibold tracking-[0.04em] uppercase"
+                >
+                    {dictionary.calendarPage.nextUp}
+                </h2>
+                {highlightedEntries.length ? (
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        {highlightedEntries.map((entry) => (
+                            <HighlightedEntryCard
+                                key={entry.id}
+                                entry={entry}
+                                locale={locale}
+                                serverId={serverId}
+                                roster={
+                                    entry.kind === "event"
+                                        ? rosters.find(
+                                              (item) =>
+                                                  item.eventId ===
+                                                  entry.event.id
+                                          )
+                                        : undefined
+                                }
+                                dictionary={dictionary}
+                                formatInstant={formatInstant}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <EmptyState
+                        icon={CalendarDays}
+                        title={dictionary.calendarPage.emptyTitle}
+                        description={dictionary.calendarPage.emptyDescription}
+                    />
+                )}
+            </section>
         </div>
     )
 }
 
-function InfoTile({ label, value }: { label: string; value: string }) {
+function HighlightedEntryCard({
+    entry,
+    locale,
+    serverId,
+    roster,
+    dictionary,
+    formatInstant,
+}: {
+    entry: CalendarDisplayEntry
+    locale: Locale
+    serverId: string
+    roster?: Roster
+    dictionary: Dictionary
+    formatInstant: (value: string) => string
+}) {
+    const detailPath =
+        entry.kind === "event"
+            ? `/${locale}/dashboard/servers/${serverId}/${entry.event.kind === "training" ? "trainings" : "matches"}/${entry.event.id}`
+            : null
+
     return (
-        <div className="border-border/60 rounded-xl border p-3">
-            <div className="text-muted-foreground text-xs tracking-[0.2em] uppercase">
-                {label}
-            </div>
-            <div className="mt-2 font-semibold">{value}</div>
-        </div>
+        <Card
+            className="border-border/60 rounded-2xl"
+            style={{
+                boxShadow: `inset 4px 0 0 ${entry.color}`,
+            }}
+        >
+            <CardHeader>
+                {entry.label ? (
+                    <Badge
+                        variant="outline"
+                        className="mb-2 rounded-full"
+                        style={{
+                            borderColor: `${entry.color}66`,
+                            color: entry.color,
+                            backgroundColor: `${entry.color}14`,
+                        }}
+                    >
+                        <EmojiValue value={entry.emoji} />
+                        <span>{entry.label}</span>
+                    </Badge>
+                ) : null}
+                <CardTitle className="text-xl break-words">
+                    {entry.title}
+                </CardTitle>
+                {entry.description ? (
+                    <p className="text-muted-foreground text-sm break-words">
+                        {entry.description}
+                    </p>
+                ) : null}
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid gap-3">
+                    {getCalendarEntryTiles(
+                        entry,
+                        dictionary,
+                        formatInstant
+                    ).map((tile) => (
+                        <InfoTile
+                            key={tile.key}
+                            label={tile.label}
+                            value={tile.value}
+                        />
+                    ))}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                    {detailPath ? (
+                        <Button asChild className="rounded-xl">
+                            <Link href={detailPath}>
+                                {dictionary.common.viewDetails}
+                            </Link>
+                        </Button>
+                    ) : null}
+                    {entry.kind === "event" &&
+                    entry.event.kind === "match" &&
+                    roster?.published ? (
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <Link
+                                href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}
+                            >
+                                {dictionary.calendarCards.showRoster}
+                            </Link>
+                        </Button>
+                    ) : null}
+                </div>
+            </CardContent>
+        </Card>
     )
 }

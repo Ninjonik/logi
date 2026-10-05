@@ -1169,6 +1169,13 @@ export const csMessages = {
             unsigned: "se odhlásil(a)",
             declined: "odmítl(a)",
         },
+        emptyTitle: "Zatím žádné přihlášky",
+        emptyDescription:
+            "Přihlášky, změny rolí a odhlášky ze zápasů a tréninků se tu objeví, jakmile proběhnou.",
+        limitNotice:
+            "Zobrazuje se posledních {count} změn. Starší změny tu nejsou.",
+        filteredBy: "Jen {event}",
+        showAll: "Zobrazit vše",
     },
     teamCatalogAdmin: {
         title: "Katalog týmů",
@@ -1611,6 +1618,34 @@ export const csMessages = {
         publish: "Publikovat článek",
         attachments: "Přílohy",
         saveFailed: "Článek se nepodařilo publikovat.",
+        titleLabel: "Název",
+        descriptionLabel: "Krátký popis",
+        tagsLabel: "Štítky",
+        tagsHint: "Štítky oddělte čárkou.",
+        bodyLabel: "Článek",
+        attachmentsHint:
+            "Soubory se nahrají hned a připojí se pod článek jako odkazy.",
+        uploading: "Nahrávám soubory ({count})…",
+        uploadFailed: "Soubor se nepovedlo nahrát: {reason}",
+        removeAttachment: "Odebrat přílohu {name}",
+        waitForUpload: "Počkejte, až se nahrávání dokončí.",
+        publishing: "Publikuji…",
+        titleRequired: "Vyplňte název.",
+        descriptionRequired: "Vyplňte krátký popis.",
+        bodyRequired: "Napište text článku.",
+        emptyTitle: "Zatím žádný článek",
+        emptyDescription:
+            "Články přinášejí členům klanu novinky a delší zprávy.",
+        emptyMemberDescription:
+            "Novinky klanu a delší zprávy se tu objeví, jakmile je správce zveřejní.",
+        publishedOn: "Zveřejněno {date}",
+        deleteAction: "Smazat článek",
+        deleteTitle: "Smazat „{title}“?",
+        deleteDescription:
+            "Článek zmizí všem členům. Nahrané soubory zůstanou dostupné přes už sdílené odkazy. Nejde to vrátit.",
+        deleted: "Článek smazán.",
+        deleteFailed: "Článek se nepovedlo smazat. Zkuste to znovu.",
+        backToList: "Všechny články",
     },
     common: {
         actions: "Akce",
@@ -2535,6 +2570,26 @@ export const csMessages = {
             "Propojeno {linked} importovaných hráčů z {scanned} kandidátů.",
         linkMissingDiscordIdsMerged:
             "{count} importovaných hráčských záznamů bylo sloučeno s existujícími Discord účty.",
+        platformIdsHint:
+            "Více ID oddělte čárkou. Steam ID má 17 číslic a začíná 7656119; ID z Xboxu a PlayStationu pište jako xbox:… nebo psn:….",
+        platformIdsInvalid: "Před uložením opravte označená ID platforem.",
+        platformIssues: {
+            steam_format:
+                "Není to Steam ID: musí mít 17 číslic a začínat 7656119.",
+            epic_format: "Není to ID Epic Games.",
+            too_long: "Na ID platformy je to příliš dlouhé.",
+            duplicate: "Uvedeno dvakrát; uloží se jednou.",
+            linked_elsewhere: "Už je propojené s hráčem {name}.",
+        },
+        grantAdminTitle: "Udělat z hráče {name} správce?",
+        grantAdminDescription:
+            "{name} pak bude moct v dashboardu Logi měnit nastavení klanu, zápasy, soupisky a členy. Přístup můžete později odebrat.",
+        removeAdminTitle: "Odebrat hráči {name} správcovský přístup?",
+        removeAdminDescription:
+            "{name} zůstane v klanu, ale v dashboardu ho už nebude moct spravovat, pokud mu přístup nedává role na Discordu.",
+        removePlayerTitle: "Odebrat hráče {name} z klanu?",
+        removePlayerDescription:
+            "Smaže se jeho zařazení, skupiny i stav členství v tomto klanu a Logi mu odebere role na Discordu, které spravuje. Historie zápasů zůstane.",
     },
     navUser: {
         scoreSuffix: "skóre",
@@ -2630,7 +2685,36 @@ export const csMessages = {
         moreEvents: "další akce",
         allDay: "Celý den",
         manualItemAdminHint:
-            "Správci mohou tuto položku kalendáře odstranit nebo upravit v jejích detailech kalendáře.",
+            "Vidí jen správci. Položku upravíte v Nastavení klanu → Profil klanu, nebo ji tady smažete.",
+        nextUp: "Nejbližší",
+        emptyTitle: "Zatím nic naplánováno",
+        emptyDescription:
+            "Zápasy, tréninky a položky kalendáře se tu objeví, jakmile je naplánujete.",
+        emptyMonth: "Tento měsíc není nic naplánováno.",
+        previousMonth: "Předchozí měsíc",
+        nextMonth: "Další měsíc",
+        timezoneHint: "Časy jsou v časovém pásmu klanu ({timezone}).",
+        start: "Začátek",
+        end: "Konec",
+        category: "Kategorie",
+        meetingPlace: "Místo srazu",
+        openVoiceChannel: "Hlasový kanál v Discordu",
+        toBeDecided: "Upřesní se",
+        deleteItem: "Smazat položku",
+        deleteItemTitle: "Smazat „{title}“?",
+        deleteItemDescription:
+            "Položka zmizí z kalendáře i z kalendářového odběru pro všechny. Nejde to vrátit.",
+        deleteRecurringNote: "Smažou se i všechna opakování této položky.",
+        itemDeleted: "Položka kalendáře smazána.",
+        itemDeleteFailed:
+            "Položku kalendáře se nepovedlo smazat. Zkuste to znovu.",
+        itemCreated: "Položka kalendáře přidána.",
+        itemCreateFailed:
+            "Položku kalendáře se nepovedlo uložit. Zkuste to znovu.",
+        titleRequired: "Vyplňte název.",
+        startRequired: "Vyberte začátek.",
+        endRequired: "Vyberte konec.",
+        endBeforeStart: "Konec musí být po začátku.",
     },
     settingsHub: {
         title: "Nastavení klanu",
@@ -3195,7 +3279,7 @@ export const csMessages = {
         title: "Soupiska",
         listDescription:
             "Procházejte soupisky akcí, kontrolujte počty jednotek a hned vidíte, které sestavy jsou publikované.",
-        modeView: "Pouze zobrazeni",
+        modeView: "Pouze zobrazení",
         modeLayout: "Editor jednotek",
         modeAssignment: "Editor soupisky",
         updatePublished: "Aktualizovat publikovanou soupisku",
@@ -3601,6 +3685,21 @@ export const csMessages = {
         usedByPlayers: "Hlavní hráči",
         starterDescription:
             "Výchozí klanové specializace sladěné s defaultní HLL sestavou.",
+        created: "Skupina vytvořena.",
+        saved: "Skupina uložena.",
+        saveFailed: "Skupinu se nepovedlo uložit. Zkuste to znovu.",
+        duplicateName: "Skupina s tímto názvem už existuje.",
+        deleteAction: "Smazat skupinu",
+        deleteTitle: "Smazat skupinu „{name}“?",
+        deleteDescription:
+            "Hráči o tuto skupinu přijdou. Soupisky a proběhlé akce si ponechají zkopírovaný název. Nejde to vrátit.",
+        deleteImpact:
+            "Hlavní skupinou je pro {primary} hráčů, jako další skupinu ji má {secondary} hráčů.",
+        deleted: "Skupina smazána.",
+        deleteFailed: "Skupinu se nepovedlo smazat. Zkuste to znovu.",
+        emptyTitle: "Zatím žádná skupina",
+        emptyDescription:
+            "Skupiny jsou specializace klanu, třeba tankisté nebo velitelé. Používají je šablony jednotek i hráči.",
     },
     tables: {
         event: "Akce",
@@ -3790,6 +3889,12 @@ export const csMessages = {
             error: "Chyba",
         },
     },
+    workspacePages: {
+        managersOnlyTitle: "Tuto stránku otevřou jen správci",
+        managersOnlyDescription:
+            "Pokud potřebujete přístup, napište správci klanu. Vše, co můžete používat, najdete v menu.",
+        backToOverview: "Zpět na přehled",
+    },
     stratmaps: {
         title: "Stratmapy",
         createTitle: "Vytvořit Stratmapu",
@@ -3906,6 +4011,25 @@ export const csMessages = {
         color: "Barva",
         size: "Velikost",
         noResults: "Žádné výsledky.",
+        variantLabel: "Varianta",
+        modeLabel: "Režim",
+        importSkipped: "; přeskočeno nepodporovaných položek: {count}",
+        emptyTitle: "Zatím žádná stratmapa",
+        emptyDescription:
+            "Stratmapa je sdílená taktická mapa se snímky. Připojte ji k briefingu zápasu, aby jednotka viděla plán.",
+        emptyMemberDescription:
+            "Taktické mapy pro nadcházející zápasy se tu objeví, jakmile je správce vytvoří.",
+        deleteAction: "Smazat stratmapu",
+        deleteTitle: "Smazat „{title}“?",
+        deleteDescription:
+            "Stratmapa i všechny její snímky zmizí všem. Veřejný odkaz přestane fungovat, i tam, kde už byl poslaný na Discord. Nejde to vrátit.",
+        deleteLinkedEvents: "Odebere se také z těchto akcí:",
+        deleted: "Stratmapa smazána.",
+        deleteFailed: "Stratmapu se nepovedlo smazat. Zkuste to znovu.",
+        showLeftPanel: "Zobrazit detaily a snímky",
+        hideLeftPanel: "Skrýt detaily a snímky",
+        showRightPanel: "Zobrazit nástroje",
+        hideRightPanel: "Skrýt nástroje",
     },
     onboarding: {
         step: "Krok {current} z {total}",

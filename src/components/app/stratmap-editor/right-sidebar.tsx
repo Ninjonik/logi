@@ -95,14 +95,14 @@ export function StratmapRightSidebar(props: RightSidebarProps) {
                 <div className="border-border/70 bg-card/55 flex h-7 items-center gap-0.5 rounded-[4px] border p-0.5">
                     <EditorIconButton
                         icon={Eye}
-                        label="View mode"
+                        label={dictionary.roster.modeView}
                         active={mode === "view"}
                         className="h-6 flex-1"
                         onClick={() => onModeChange("view")}
                     />
                     <EditorIconButton
                         icon={PencilLine}
-                        label="Edit mode"
+                        label={dictionary.common.edit}
                         active={mode === "edit"}
                         className="h-6 flex-1"
                         onClick={() => onModeChange("edit")}
