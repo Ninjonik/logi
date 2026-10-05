@@ -16,9 +16,9 @@ const reminderStatus = v.union(
 
 /**
  * The event fields of the new-match flow's writes (drafts and publishing).
- * They match `events:upsert`, plus the creation-only settings a match
- * template gives: group caps, attendance reminder offsets, participant roles
- * and the roster's squad preset.
+ * They match `events:upsert`, including the settings a match template
+ * gives: group caps, attendance reminder offsets, participant roles and the
+ * roster's squad preset (which `events:upsert` can also clear with null).
  */
 export const eventWriteFields = {
     gameId: v.optional(

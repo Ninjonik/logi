@@ -6,8 +6,9 @@ import {
 } from "@/domain/events/score-policy"
 import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button"
 import { MatchDetailPage } from "@/components/app/match-detail/match-detail-page"
+import { EventOverview } from "@/components/app/match-detail/event-overview"
 import { ConcludeEventButton } from "@/components/app/conclude-event-button"
-import { EventFormPanel } from "@/components/app/event-form-panel"
+import { eventEditability } from "@/domain/events/event-edit"
 import { PageHeader } from "@/components/app/page-header"
 import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
@@ -55,15 +56,13 @@ export default async function EventDetailPage({
                 dictionary={dictionary}
             />
         )
-    const {
-        rosters,
-        canAdmin,
-        topicPresets,
-        stratmaps,
-        discordConfig,
-        groups,
-    } = context
+    const { rosters, canAdmin, stratmaps, discordConfig } = context
     const event = found
+    // Managers edit in the new-match flow until the training concludes.
+    const editHref =
+        canAdmin && eventEditability(event, new Date()) === "editable"
+            ? `/${locale}/dashboard/servers/${serverId}/events/${event.id}/edit`
+            : null
     const roster = rosters.find((item) => item.eventId === eventId)
     const attachedStratmaps = stratmaps.filter((stratmap) =>
         event.stratmapIds.includes(stratmap.id)
@@ -98,6 +97,17 @@ export default async function EventDetailPage({
                 badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
                 actions={
                     <div className="flex flex-wrap gap-2">
+                        {editHref ? (
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <a href={editHref}>
+                                    {dictionary.newMatch.edit.titleTraining}
+                                </a>
+                            </Button>
+                        ) : null}
                         {attachedStratmaps.map((stratmap) => (
                             <Button
                                 key={stratmap.id}
@@ -159,19 +169,15 @@ export default async function EventDetailPage({
                 }
             />
             <div className="px-4 lg:px-6">
-                <EventFormPanel
+                <EventOverview
                     event={event}
-                    serverId={serverId}
-                    locale={locale}
-                    topicPresets={topicPresets}
-                    stratmaps={stratmaps}
-                    groups={groups}
-                    eventCategories={context.server.eventCategories ?? []}
-                    timezone={discordConfig?.timezone ?? "UTC"}
-                    canEdit={canAdmin}
+                    context={context}
                     dictionary={dictionary}
-                    createMode={false}
-                    discordConfig={discordConfig}
+                    locale={locale}
+                    serverId={serverId}
+                    editHref={editHref}
+                    seriesEditHref={null}
+                    canResyncTopics={false}
                 />
             </div>
         </>

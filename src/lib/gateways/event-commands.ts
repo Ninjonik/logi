@@ -71,6 +71,12 @@ export async function saveServerEventCommand(input: {
     stratmapIds?: string[]
     /** Forwarded unchanged; Convex resolves and snapshots the selection. */
     matchTeams?: MatchTeamInput[]
+    /** Template settings: omitted keeps the saved value, [] clears. */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    attendanceReminderHours?: number[]
+    createParticipantRoles?: boolean
+    /** "" clears the squad preset; omitted keeps it. */
+    squadPresetId?: string
 }) {
     return await fetchMutation(upsertEventReference, {
         secret: getInternalAuthSecret(),
@@ -114,6 +120,22 @@ export async function saveServerEventCommand(input: {
         topicPresetId: input.topicPresetId as never,
         stratmapIds: input.stratmapIds,
         matchTeams: input.matchTeams,
+        // Sent only when set, so an edit that leaves them alone also works
+        // against a Convex deployment from before these arguments existed.
+        ...(input.signupGroupLimits !== undefined
+            ? { signupGroupLimits: input.signupGroupLimits }
+            : {}),
+        ...(input.attendanceReminderHours !== undefined
+            ? { attendanceReminderHours: input.attendanceReminderHours }
+            : {}),
+        ...(input.createParticipantRoles !== undefined
+            ? { createParticipantRoles: input.createParticipantRoles }
+            : {}),
+        ...(input.squadPresetId !== undefined
+            ? {
+                  squadPresetId: (input.squadPresetId.trim() || null) as never,
+              }
+            : {}),
     })
 }
 

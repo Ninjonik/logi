@@ -118,6 +118,31 @@ recurrence and other non-owned fields on updates. Changing event kind or
 editing/cancelling after meeting start is rejected. A prior conclusion is not
 reopened.
 
+### Template settings after creation
+
+Group caps (`signupGroupLimits`), attendance reminder offsets
+(`attendanceReminderHours`), the participant-roles switch
+(`createParticipantRoles`) and the roster's squad preset (`squadPresetId`) are
+no longer creation-only. The dashboard's edit flow
+(`PATCH /api/servers/{serverId}/events/{eventId}`, a strict schema that refuses
+unknown keys) and the bearer-key `POST`/`PATCH /api/v1/clan/events` accept
+them; the generated OpenAPI document describes them. On an update an omitted
+setting keeps the saved value. What a change does to existing state:
+
+| Setting                   | On update                                                                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signupGroupLimits`       | `[]` removes every cap; caps of groups not offered are dropped. Lowering a cap below the sign-ups removes nobody: players holding a place keep it, only new sign-ups go to the reserve. |
+| `attendanceReminderHours` | One or more of 24, 18, 12, 6 hours before the meeting; `[]` sends none. Pending reminders are rescheduled exactly like after a time change; a reminder already sent is not repeated.    |
+| `createParticipantRoles`  | `false` makes the bot delete the attendee and reserve roles it created at its next full sync of the clan; `true` makes it create them.                                                  |
+| `squadPresetId`           | A preset of the same clan; `""` removes it. It is only the default of a roster created later; an existing roster keeps its squads.                                                      |
+
+The actor-backed website event commands above deliberately do not take these
+fields: they own schedule, name, kind, map, side and descriptive fields, and
+keep signup and Discord settings as Logi's. A weekly series is edited one
+match at a time; the series-wide settings live on the match that carries the
+recurrence, and switching its repeat off stops the series. Announcement and
+roster channels stay creation-time choices on every write path.
+
 Cancellation uses a dedicated pre-meeting use case, separate from post-start
 conclusion. It retains Logi's existing cancellation representation:
 `status: concluded`, attendance scoring skipped, pending schedule jobs removed,

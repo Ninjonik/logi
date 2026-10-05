@@ -17,12 +17,12 @@ import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { sendDiscordBotDm, syncDiscordMemberRoleIds } from "@/lib/discord"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
+import { eventSchema, eventUpdateSchema } from "@/lib/validation/event"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { importEventMatchResults } from "@/lib/server-match-results"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { getClanDiscordMessages } from "@/lib/clan-language"
-import { eventSchema } from "@/lib/validation/event"
 import { getSiteUrl } from "@/lib/env"
 
 /** Current server admin with a live dashboard session. */
@@ -36,7 +36,8 @@ async function canAdminServer(serverId: string) {
 
 const patchHandler = createServerEventPatchHandler({
     origin: new URL(getSiteUrl()).origin,
-    eventSchema,
+    // Unknown keys are refused; the template settings may change too.
+    eventSchema: eventUpdateSchema,
     canAdminServer,
     saveServerEvent,
     concludeServerEvent,

@@ -1,6 +1,34 @@
+import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
+import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
 import { matchTeamInputsSchema } from "@/domain/teams/match-teams"
 import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
+
+const settingId = z.string().trim().min(1).max(64)
+
+/** Group caps of a match: a full group offers a reserve place instead. */
+export const signupGroupLimitsSchema = z
+    .array(
+        z.strictObject({
+            groupId: settingId,
+            max: z.number().int().min(1).max(MAX_SIGNUP_GROUP_LIMIT),
+        })
+    )
+    .max(50)
+
+/** Attendance DM offsets in hours before the meeting; [] sends none. */
+export const attendanceReminderHoursSchema = z
+    .array(
+        z
+            .number()
+            .int()
+            .refine((hours) =>
+                (ATTENDANCE_REMINDER_OFFSETS as readonly number[]).includes(
+                    hours
+                )
+            )
+    )
+    .max(ATTENDANCE_REMINDER_OFFSETS.length)
 
 export const eventSchema = z
     .object({
@@ -75,6 +103,12 @@ export const eventSchema = z
             })
             .optional(),
         matchTeams: matchTeamInputsSchema.optional(),
+        // Settings a match template gives. On an update an omitted field keeps
+        // the saved value; [] clears the caps or the reminders, "" the preset.
+        signupGroupLimits: signupGroupLimitsSchema.optional(),
+        attendanceReminderHours: attendanceReminderHoursSchema.optional(),
+        createParticipantRoles: z.boolean().optional(),
+        squadPresetId: z.string().trim().max(64).optional(),
     })
     .superRefine((value, ctx) => {
         const registrationEnd = new Date(value.registrationEnd)
@@ -212,3 +246,21 @@ export const eventSchema = z
 
 export type EventInput = z.input<typeof eventSchema>
 export type EventParsedInput = z.infer<typeof eventSchema>
+
+/**
+ * The dashboard's event update (PATCH): the event fields strictly, so an
+ * unknown or misspelt key is refused instead of silently dropped, with the
+ * same timeline rules as `eventSchema`.
+ */
+export const eventUpdateSchema = z
+    .strictObject(eventSchema.shape)
+    .superRefine((value, ctx) => {
+        const checked = eventSchema.safeParse(value)
+        if (checked.success) return
+        for (const issue of checked.error.issues)
+            ctx.addIssue({
+                code: "custom",
+                path: issue.path,
+                message: issue.message,
+            })
+    })

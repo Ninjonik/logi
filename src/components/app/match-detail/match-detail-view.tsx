@@ -74,7 +74,9 @@ export type MatchDetailViewModel = {
     createRosterHref?: string
     rosterPageHref?: string
     signupHistoryHref: string
-    /** The overview form and the live roster board come from the page. */
+    /** The edit flow, for managers while the match can still change. */
+    editHref?: string
+    /** The overview and the live roster board come from the page. */
     overview: ReactNode
     rosterBoard: ReactNode
 }
@@ -109,7 +111,9 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                         },
                     ]
                   : []),
-              { label: t.actions.edit, href: model.tabHref("overview") },
+              ...(model.editHref
+                  ? [{ label: t.actions.edit, href: model.editHref }]
+                  : []),
               ...(model.rosterPageHref
                   ? [
                         {

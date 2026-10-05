@@ -61,9 +61,10 @@ export type EventUpsertInput = {
     /** Resolved at the write boundary; never raw client input. Undefined preserves, [] clears. */
     matchTeams?: MatchTeamAssignment[]
     /**
-     * Settings only the new-match flow sets (from the match template). They
-     * are written when an event is created or a draft is published; edits
-     * through the older form never touch them.
+     * Settings a match template gives. They are written when an event is
+     * created or a draft is published. On an update an omitted (undefined)
+     * setting keeps the saved value; [] clears the caps or the reminder
+     * offsets and "" clears the squad preset.
      */
     signupGroupLimits?: Array<{ groupId: string; max: number }>
     attendanceReminderHours?: number[]
@@ -106,6 +107,33 @@ export function buildEventCreationSettings(input: EventUpsertInput) {
             kind === "match"
                 ? input.squadPresetId?.trim() || undefined
                 : undefined,
+    }
+}
+
+/**
+ * The template settings an update changes: only those the caller sends, tidied
+ * like on creation. Undefined keeps the saved value. A lowered cap never
+ * removes anyone: players already holding a place keep it and only new
+ * sign-ups go to the reserve (`isSignupGroupFull`). New reminder offsets are
+ * scheduled by the caller's schedule refresh, as after a time change. Turning
+ * participant roles off makes the bot delete the roles it created; a new
+ * squad preset is only the default of a roster that does not exist yet.
+ */
+export function buildEventUpdateSettings(input: EventUpsertInput) {
+    const tidied = buildEventCreationSettings(input)
+    return {
+        ...(input.signupGroupLimits !== undefined
+            ? { signupGroupLimits: tidied.signupGroupLimits }
+            : {}),
+        ...(input.attendanceReminderHours !== undefined
+            ? { attendanceReminderHours: tidied.attendanceReminderHours }
+            : {}),
+        ...(input.createParticipantRoles !== undefined
+            ? { createParticipantRoles: input.createParticipantRoles }
+            : {}),
+        ...(input.squadPresetId !== undefined
+            ? { squadPresetId: tidied.squadPresetId }
+            : {}),
     }
 }
 
@@ -266,6 +294,7 @@ export function buildUpdateEventPatch(
 
     return {
         ...mutableBase,
+        ...buildEventUpdateSettings(input),
         // An edit without a game selector must not move a scoped event back to HLL.
         gameId: input.gameId ?? existing.gameId,
         announcementChannelId: existing.announcementChannelId,

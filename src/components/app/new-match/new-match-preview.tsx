@@ -40,6 +40,11 @@ export type NewMatchPreviewModel = {
     categoryColor?: string
     /** The clan's message style (Settings › Discord messages). */
     messageStyle?: { accentColor?: string; iconDensity?: MessageIconDensity }
+    /** The notes (or the description) the bot shows below the times. */
+    notes?: string | null
+    thumbnailUrl?: string | null
+    /** Sign-ups of a published match; a new one shows zero. */
+    signups?: { total: number; byGroup: Record<string, number> }
 }
 
 const subscribeNever = () => () => undefined
@@ -107,12 +112,19 @@ export function NewMatchPreview({
     step,
     dictionary,
     copy,
+    hint,
+    note,
 }: {
     model: NewMatchPreviewModel
+    /** The step whose part is outlined; the review step outlines nothing. */
     step: NewMatchStep
     dictionary: Dictionary
     /** The preview copy in the clan's bot language. */
     copy: Dictionary["newMatch"]["preview"]
+    /** Replaces the hint beside the title. */
+    hint?: string
+    /** Replaces the note below the message; null leaves it out. */
+    note?: string | null
 }) {
     const isBrowser = useIsBrowser()
     const text = dictionary.newMatch.preview
@@ -192,7 +204,7 @@ export function NewMatchPreview({
                     {text.title}
                 </h2>
                 <span className="text-muted-foreground text-xs">
-                    {text.hint}
+                    {hint ?? text.hint}
                 </span>
             </div>
             <div className="rounded-2xl bg-[#313338] p-4 text-sm leading-5 text-[#dbdee1]">
@@ -240,8 +252,18 @@ export function NewMatchPreview({
                                 active={step === "match"}
                                 className="flex flex-col gap-2"
                             >
-                                <span className="text-base leading-snug font-semibold break-words text-[#f2f3f5]">
-                                    {title}
+                                <span className="flex items-start justify-between gap-3">
+                                    <span className="min-w-0 text-base leading-snug font-semibold break-words text-[#f2f3f5]">
+                                        {title}
+                                    </span>
+                                    {model.thumbnailUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={model.thumbnailUrl}
+                                            alt=""
+                                            className="size-12 shrink-0 rounded-md object-cover"
+                                        />
+                                    ) : null}
                                 </span>
                                 {isMatch && model.teams.length ? (
                                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
@@ -294,6 +316,16 @@ export function NewMatchPreview({
                                     </span>
                                 ) : null}
                             </Section>
+                            {model.notes ? (
+                                <Section
+                                    active={step === "match"}
+                                    className="border-t border-[#3f4147] pt-2.5"
+                                >
+                                    <span className="line-clamp-4 text-[13px] break-words whitespace-pre-line text-[#dbdee1]">
+                                        {model.notes}
+                                    </span>
+                                </Section>
+                            ) : null}
                             <Section
                                 active={step === "signups"}
                                 className="flex flex-col gap-2.5"
@@ -307,15 +339,21 @@ export function NewMatchPreview({
                                         >
                                             {copy.signedUpTotal.replace(
                                                 "{count}",
-                                                "0"
+                                                String(
+                                                    model.signups?.total ?? 0
+                                                )
                                             )}
                                         </strong>,
                                         ...(isMatch
-                                            ? model.groups.map((group) =>
-                                                  group.max
-                                                      ? `${group.name} 0/${group.max}`
-                                                      : `${group.name} 0`
-                                              )
+                                            ? model.groups.map((group) => {
+                                                  const count =
+                                                      model.signups?.byGroup[
+                                                          group.name
+                                                      ] ?? 0
+                                                  return group.max
+                                                      ? `${group.name} ${count}/${group.max}`
+                                                      : `${group.name} ${count}`
+                                              })
                                             : []),
                                     ].map((part, index) => (
                                         <span key={index}>
@@ -351,9 +389,11 @@ export function NewMatchPreview({
                     </div>
                 </div>
             </div>
-            <p className="text-muted-foreground text-xs leading-[18px]">
-                {text.note}
-            </p>
+            {note === null ? null : (
+                <p className="text-muted-foreground text-xs leading-[18px]">
+                    {note ?? text.note}
+                </p>
+            )}
         </aside>
     )
 }

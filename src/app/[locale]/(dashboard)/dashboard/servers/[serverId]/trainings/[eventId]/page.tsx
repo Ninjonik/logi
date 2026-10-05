@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 
 import { CompleteTrainingButton } from "@/components/app/complete-training-button"
-import { EventFormPanel } from "@/components/app/event-form-panel"
+import { EventOverview } from "@/components/app/match-detail/event-overview"
+import { eventEditability } from "@/domain/events/event-edit"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
 import { GameBadge } from "@/components/app/game-badge"
@@ -28,8 +30,7 @@ export default async function TrainingDetailPage({
         isGameId(game) ? game : "all"
     )
     if (!context) notFound()
-    const { events, canAdmin, topicPresets, stratmaps, discordConfig, groups } =
-        context
+    const { events, canAdmin } = context
     const event = events.find(
         (item) => item.id === eventId && item.kind === "training"
     )
@@ -50,6 +51,11 @@ export default async function TrainingDetailPage({
     }))
 
     const statusMeta = getEventStatusMeta(event.status, dictionary)
+    // Managers edit in the new-match flow until the training concludes.
+    const editHref =
+        canAdmin && eventEditability(event, new Date()) === "editable"
+            ? `/${locale}/dashboard/servers/${serverId}/trainings/${event.id}/edit`
+            : null
 
     return (
         <>
@@ -67,6 +73,17 @@ export default async function TrainingDetailPage({
                 badge={statusMeta?.label}
                 actions={
                     <div className="flex flex-wrap gap-2">
+                        {editHref ? (
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <Link href={editHref}>
+                                    {dictionary.newMatch.edit.titleTraining}
+                                </Link>
+                            </Button>
+                        ) : null}
                         <Button
                             asChild
                             variant="outline"
@@ -91,19 +108,15 @@ export default async function TrainingDetailPage({
                 }
             />
             <div className="px-4 lg:px-6">
-                <EventFormPanel
+                <EventOverview
                     event={event}
-                    serverId={serverId}
-                    locale={locale}
-                    topicPresets={topicPresets}
-                    stratmaps={stratmaps}
-                    groups={groups}
-                    eventCategories={context.server.eventCategories ?? []}
-                    timezone={discordConfig?.timezone ?? "UTC"}
-                    canEdit={canAdmin}
+                    context={context}
                     dictionary={dictionary}
-                    createMode={false}
-                    discordConfig={discordConfig}
+                    locale={locale}
+                    serverId={serverId}
+                    editHref={editHref}
+                    seriesEditHref={null}
+                    canResyncTopics={false}
                 />
             </div>
         </>

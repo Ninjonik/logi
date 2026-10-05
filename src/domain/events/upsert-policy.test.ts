@@ -83,3 +83,99 @@ test("update preserves saved assignments when omitted and clears them with an ex
     )
     assert.equal(legacy.matchTeams, undefined)
 })
+
+test("update keeps the template settings it is not sent", () => {
+    const existing = {
+        ...input,
+        status: "registration" as const,
+        signupGroupIds: ["g1", "g2"],
+        signupGroupLimits: [{ groupId: "g2", max: 6 }],
+        attendanceReminderHours: [24, 6],
+        createParticipantRoles: false,
+        squadPresetId: "squadPresets:a",
+    }
+    const patch = buildUpdateEventPatch(
+        existing,
+        { ...input, signupGroupIds: ["g1", "g2"] },
+        now
+    )
+    for (const key of [
+        "signupGroupLimits",
+        "attendanceReminderHours",
+        "createParticipantRoles",
+        "squadPresetId",
+    ])
+        assert.equal(key in patch, false, `${key} is preserved by omission`)
+})
+
+test("update changes caps, reminder offsets, participant roles and the squad preset", () => {
+    const existing = { ...input, status: "registration" as const }
+    const patch = buildUpdateEventPatch(
+        existing,
+        {
+            ...input,
+            signupGroupIds: ["g1", "g2"],
+            signupGroupLimits: [
+                { groupId: "g2", max: 4 },
+                // A cap of a group the match does not offer is dropped.
+                { groupId: "g9", max: 3 },
+                { groupId: "g1", max: 0 },
+            ],
+            attendanceReminderHours: [6, 24, 5],
+            createParticipantRoles: false,
+            squadPresetId: " squadPresets:b ",
+        },
+        now
+    )
+    assert.deepEqual(patch.signupGroupLimits, [{ groupId: "g2", max: 4 }])
+    assert.deepEqual(patch.attendanceReminderHours, [24, 6])
+    assert.equal(patch.createParticipantRoles, false)
+    assert.equal(patch.squadPresetId, "squadPresets:b")
+})
+
+test("update clears caps, reminders and the preset with empty values", () => {
+    const existing = {
+        ...input,
+        status: "registration" as const,
+        signupGroupLimits: [{ groupId: "g2", max: 6 }],
+        attendanceReminderHours: [24],
+        squadPresetId: "squadPresets:a",
+    }
+    const patch = buildUpdateEventPatch(
+        existing,
+        {
+            ...input,
+            signupGroupIds: ["g2"],
+            signupGroupLimits: [],
+            attendanceReminderHours: [],
+            squadPresetId: "",
+        },
+        now
+    )
+    // A present key holding undefined removes the stored field.
+    assert.equal("signupGroupLimits" in patch, true)
+    assert.equal(patch.signupGroupLimits, undefined)
+    assert.deepEqual(patch.attendanceReminderHours, [])
+    assert.equal("squadPresetId" in patch, true)
+    assert.equal(patch.squadPresetId, undefined)
+})
+
+test("a training update never stores caps or a squad preset", () => {
+    const training = { ...input, kind: "training" as const }
+    const patch = buildUpdateEventPatch(
+        { ...training, status: "registration" },
+        {
+            ...training,
+            signupGroupIds: ["g1"],
+            signupGroupLimits: [{ groupId: "g1", max: 3 }],
+            squadPresetId: "squadPresets:a",
+            attendanceReminderHours: [12],
+            createParticipantRoles: true,
+        },
+        now
+    )
+    assert.equal(patch.signupGroupLimits, undefined)
+    assert.equal(patch.squadPresetId, undefined)
+    assert.deepEqual(patch.attendanceReminderHours, [12])
+    assert.equal(patch.createParticipantRoles, true)
+})

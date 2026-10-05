@@ -249,7 +249,7 @@ export function RecurringMatchesView({
                                           className="mr-4 hidden rounded-lg sm:inline-flex"
                                       >
                                           <Link
-                                              href={`${base}/matches/${row.id}#recurrence`}
+                                              href={`${base}/matches/${row.id}/edit?step=time`}
                                           >
                                               {text.editSeries}
                                           </Link>
