@@ -3,6 +3,8 @@ import test from "node:test"
 
 import {
     DEFAULT_MESSAGE_ACCENT_COLOR,
+    DEFAULT_MESSAGE_ACCENT_HEX,
+    SYSTEM_MESSAGE_ACCENT_COLOR,
     discordTimestamp,
     fillTemplate,
     findSquadLeader,
@@ -18,6 +20,16 @@ test("parseDiscordColor accepts six-digit hex colours only", () => {
     assert.equal(parseDiscordColor("#abc"), undefined)
     assert.equal(parseDiscordColor("red"), undefined)
     assert.equal(parseDiscordColor(null), undefined)
+})
+
+test("the default clan accent is #E8A33D and system messages are neutral grey", () => {
+    assert.equal(DEFAULT_MESSAGE_ACCENT_COLOR, 0xe8a33d)
+    assert.equal(
+        parseDiscordColor(DEFAULT_MESSAGE_ACCENT_HEX),
+        DEFAULT_MESSAGE_ACCENT_COLOR
+    )
+    assert.equal(SYSTEM_MESSAGE_ACCENT_COLOR, 0x80848e)
+    assert.equal(resolveMessageAccentColor({}), 0xe8a33d)
 })
 
 test("message accent prefers the category, then the clan colour, then Logi amber", () => {

@@ -37,7 +37,7 @@ Allies, 🟥 Axis and `◈` for a Wardogs faction
 Event announcements, the published roster card, the private **My assignment**
 reply, attendance reminder DMs, score panels, reviewed results and League cards
 use the clan's Discord language, one accent colour (the event category colour,
-else Logi amber), Discord timestamps and icons only where they carry meaning.
+else Logi amber `#E8A33D`), Discord timestamps and icons only where they carry meaning.
 Shared rules live in `src/domain/discord-messages/format.ts`. Bot copy in the
 clan language lives in feature modules under `src/lib/clan-language/`:
 `events.ts` (announcements, rosters, reminders and their DMs), `panels.ts`

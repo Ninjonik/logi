@@ -5,8 +5,17 @@
  * counts in the clan's language.
  */
 
-/** Logi amber; used when neither the event category nor the clan sets a colour. */
-export const DEFAULT_MESSAGE_ACCENT_COLOR = 0xffb000
+/**
+ * Logi amber, the default clan accent (`#E8A33D`); used when neither the
+ * event category nor the clan sets a colour.
+ */
+export const DEFAULT_MESSAGE_ACCENT_COLOR = 0xe8a33d
+
+/** {@link DEFAULT_MESSAGE_ACCENT_COLOR} as `#RRGGBB`, for forms and previews. */
+export const DEFAULT_MESSAGE_ACCENT_HEX = "#E8A33D"
+
+/** The neutral grey bar of system messages for admins (error log, service status). */
+export const SYSTEM_MESSAGE_ACCENT_COLOR = 0x80848e
 
 const HEX_COLOR = /^#?([0-9a-f]{6})$/i
 

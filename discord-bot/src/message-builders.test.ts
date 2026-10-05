@@ -386,7 +386,7 @@ test("buildEventEmbed uses the clan colour and icon density of the message style
             eventCategories,
             createMatchEvent()
         ).toJSON().color,
-        0xffb000
+        0xe8a33d
     )
 })
 

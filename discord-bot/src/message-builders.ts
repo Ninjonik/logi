@@ -16,6 +16,8 @@ import {
 import { buildMembershipFlowHeader } from "./interactions/membership-flow"
 
 import {
+    DEFAULT_MESSAGE_ACCENT_COLOR,
+    DEFAULT_MESSAGE_ACCENT_HEX,
     discordTimestamp,
     fillTemplate,
     formatCount,
@@ -483,7 +485,10 @@ function resolveEventCategoryColor(
     categories: SyncPayload["guild"]["eventCategories"],
     event: EventRecord
 ) {
-    return findEventCategory(categories, event.matchType)?.color ?? "#FFB000"
+    return (
+        findEventCategory(categories, event.matchType)?.color ??
+        DEFAULT_MESSAGE_ACCENT_HEX
+    )
 }
 
 function resolveEventCategoryEmoji(
@@ -502,7 +507,7 @@ function toDiscordColor(color: string) {
         return Number.parseInt(normalized.slice(1), 16)
     }
 
-    return Number.parseInt("FFB000", 16)
+    return DEFAULT_MESSAGE_ACCENT_COLOR
 }
 
 /** Separates the header, notes and status blocks of a legacy embed. */
@@ -1549,7 +1554,7 @@ function getColorChipEmoji(color?: string) {
     const normalized = color?.trim() ?? ""
     const hex = /^#[\da-f]{6}$/i.test(normalized)
         ? normalized.slice(1)
-        : "FFB000"
+        : DEFAULT_MESSAGE_ACCENT_HEX.slice(1)
     const red = Number.parseInt(hex.slice(0, 2), 16)
     const green = Number.parseInt(hex.slice(2, 4), 16)
     const blue = Number.parseInt(hex.slice(4, 6), 16)

@@ -756,7 +756,7 @@ test("result cards show the category, teams, the clan's outcome, who confirmed a
             "**Výhra** · Carentan · den · potvrdil Hráč \\*01\\*",
         ].join("\n"),
     ])
-    assert.equal(container(rendered).accent_color, 0xffb000)
+    assert.equal(container(rendered).accent_color, 0xe8a33d)
     const button = tree(rendered).find((n) => n.type === 2)
     assert.equal(button?.label, "Detail zápasu")
     assert.equal(button?.url, "https://logi.example.test/cs/matches/event-1")
