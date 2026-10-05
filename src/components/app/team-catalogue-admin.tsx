@@ -1,90 +1,59 @@
 "use client"
 
 import {
-    appendUnique,
-    fillTemplate,
-    removeById,
-    teamAdminActions,
-    teamLifecycleBadge,
-    upsertAdminTeam,
-    workspaceName,
-    type WorkspaceOption,
-} from "@/lib/teams-admin/team-admin-list"
-import {
     fetchAdminTeam,
     fetchAdminTeamPage,
+    fetchAdminTeamUsage,
     sendAdminTeamCommand,
     TeamAdminReadError,
     TEAM_ADMIN_ERROR_CODES,
     type TeamAdminErrorCode,
 } from "@/lib/teams-admin/team-admin-client"
 import {
+    appendUnique,
+    catalogueRowFacts,
+    fillTemplate,
+    removeById,
+    type WorkspaceOption,
+} from "@/lib/teams-admin/team-admin-list"
+import {
+    TEAM_CATALOGUE_STATES,
+    teamCatalogueState,
+    type TeamCatalogueState,
+    type TeamUsage,
+} from "@/domain/teams/team-usage"
+import {
     TEAM_GAMES,
     TEAM_PAGE_DEFAULT,
-    teamGameSchema,
+    normalizeTeamName,
     type TeamGame,
     type TeamRecord,
 } from "@/domain/teams/team"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+    TeamCatalogueDetail,
+    type TeamUsageState,
+} from "@/components/app/team-catalogue-detail"
+import {
+    AdminPageHeader,
+    adminAccent,
+} from "@/components/app/admin-page-header"
 import { TeamCatalogueDialog } from "@/components/app/team-catalogue-dialog"
-import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { TeamCatalogLabels } from "@/components/app/team-fields-editor"
 import { TeamMergeDialog } from "@/components/app/team-merge-dialog"
+import { Loader2, Plus, Search, UsersRound } from "lucide-react"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { useEffect, useId, useRef, useState } from "react"
+import { EmptyState } from "@/components/app/empty-state"
 import { TeamLogo } from "@/components/app/team-logo"
-import { Loader2, Plus, Search } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { GAME_LABELS } from "@/domain/games/game"
-import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-
-/** The global team catalogue for superadmins, one tab per supported game. */
-export function TeamCatalogueAdmin({
-    labels,
-    workspaces,
-    initialGame,
-}: {
-    labels: TeamCatalogLabels
-    workspaces: readonly WorkspaceOption[]
-    initialGame: TeamGame
-}) {
-    const [game, setGame] = useState<TeamGame>(initialGame)
-    return (
-        <Tabs
-            value={game}
-            onValueChange={(value) => {
-                const parsed = teamGameSchema.safeParse(value)
-                if (parsed.success) setGame(parsed.data)
-            }}
-            className="gap-4"
-        >
-            <TabsList aria-label={labels.gamesLabel}>
-                {TEAM_GAMES.map((gameId) => (
-                    <TabsTrigger key={gameId} value={gameId} className="px-4">
-                        {GAME_LABELS[gameId]}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            {TEAM_GAMES.map((gameId) => (
-                <TabsContent key={gameId} value={gameId}>
-                    <GameCatalogue
-                        labels={labels}
-                        gameId={gameId}
-                        workspaces={workspaces}
-                    />
-                </TabsContent>
-            ))}
-        </Tabs>
-    )
-}
+import { pluralize } from "@/i18n/plural"
+import { cn } from "@/lib/utils"
 
 type Notice = { tone: "error" | "success"; text: string }
 type DialogState =
     | { kind: "closed" }
-    | { kind: "edit"; team: TeamRecord | null }
+    | { kind: "create" }
     | { kind: "merge"; team: TeamRecord }
 
 const errorCodeOf = (error: unknown): TeamAdminErrorCode =>
@@ -93,19 +62,47 @@ const errorCodeOf = (error: unknown): TeamAdminErrorCode =>
         ? (error.code as TeamAdminErrorCode)
         : "unavailable"
 
-function GameCatalogue({
+/** Keeps a list in the order its state lists it: active by name, others as loaded. */
+function placeTeam(
+    items: readonly TeamRecord[],
+    team: TeamRecord,
+    state: TeamCatalogueState
+): TeamRecord[] {
+    if (teamCatalogueState(team) !== state) return removeById(items, team.id)
+    if (items.some((item) => item.id === team.id))
+        return items.map((item) => (item.id === team.id ? team : item))
+    if (state !== "active") return [team, ...items]
+    const name = normalizeTeamName(team.name)
+    const index = items.findIndex((item) => normalizeTeamName(item.name) > name)
+    return index === -1
+        ? [...items, team]
+        : [...items.slice(0, index), team, ...items.slice(index)]
+}
+
+/**
+ * The global team catalogue (design I1): game tabs, lifecycle filter and
+ * search above a list of teams, the chosen team edited beside the list.
+ */
+export function TeamCatalogueAdmin({
     labels,
-    gameId,
+    eyebrow,
+    locale,
     workspaces,
+    initialGame,
+    workspaceQuery,
 }: {
     labels: TeamCatalogLabels
-    gameId: TeamGame
+    eyebrow: string
+    locale: string
     workspaces: readonly WorkspaceOption[]
+    initialGame: TeamGame
+    /** `?workspace=` of the clan the administrator came from, kept on links. */
+    workspaceQuery: string
 }) {
-    const id = useId()
+    const [game, setGame] = useState<TeamGame>(initialGame)
+    const [state, setState] = useState<TeamCatalogueState>("active")
     const [search, setSearch] = useState("")
     const term = useDebouncedValue(search.trim(), 300)
-    const [archived, setArchived] = useState(false)
     const [items, setItems] = useState<TeamRecord[]>([])
     const [nextCursor, setNextCursor] = useState<string | null>(null)
     const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -115,12 +112,20 @@ function GameCatalogue({
         useState<TeamAdminErrorCode>("unavailable")
     const [loadingMore, setLoadingMore] = useState(false)
     const [reload, setReload] = useState(0)
+    const [usage, setUsage] = useState<Map<string, TeamUsage | null>>(
+        () => new Map()
+    )
+    const [usageFailed, setUsageFailed] = useState<Set<string>>(() => new Set())
+    const [selectedId, setSelectedId] = useState<string | null>(null)
     const [notice, setNotice] = useState<Notice | null>(null)
     const [pendingId, setPendingId] = useState<string | null>(null)
     const [dialog, setDialog] = useState<DialogState>({ kind: "closed" })
-    // The last dialog target stays mounted while the dialog animates closed.
-    const [dialogTeam, setDialogTeam] = useState<TeamRecord | null>(null)
-    // Responses from a superseded query (search, filter or reload) are ignored.
+    const [mergeSource, setMergeSource] = useState<TeamRecord | null>(null)
+    const [mergedNames, setMergedNames] = useState<Map<string, string>>(
+        () => new Map()
+    )
+    const detailRef = useRef<HTMLDivElement>(null)
+    // Responses from a superseded query (game, state, search or reload) are ignored.
     const generation = useRef(0)
 
     useEffect(() => {
@@ -131,8 +136,9 @@ function GameCatalogue({
             try {
                 const page = await fetchAdminTeamPage(
                     {
-                        gameId,
-                        archived,
+                        gameId: game,
+                        archived: state !== "active",
+                        state,
                         search: term,
                         limit: TEAM_PAGE_DEFAULT,
                     },
@@ -151,7 +157,51 @@ function GameCatalogue({
         }
         void load()
         return () => controller.abort()
-    }, [gameId, archived, term, reload])
+    }, [game, state, term, reload])
+
+    // Usage of every loaded team, read in batches of one page.
+    const missingUsage = items
+        .map((team) => team.id)
+        .filter((teamId) => !usage.has(teamId) && !usageFailed.has(teamId))
+    const missingKey = missingUsage.join(",")
+    useEffect(() => {
+        if (!missingKey) return
+        const controller = new AbortController()
+        const teamIds = missingKey.split(",").slice(0, TEAM_PAGE_DEFAULT)
+        fetchAdminTeamUsage(teamIds, { signal: controller.signal })
+            .then((rows) =>
+                setUsage((known) => {
+                    const next = new Map(known)
+                    for (const teamId of teamIds) next.set(teamId, null)
+                    for (const row of rows) next.set(row.teamId, row)
+                    return next
+                })
+            )
+            .catch(() => {
+                if (controller.signal.aborted) return
+                setUsageFailed((failed) => new Set([...failed, ...teamIds]))
+            })
+        return () => controller.abort()
+    }, [missingKey])
+
+    const selected =
+        items.find((team) => team.id === selectedId) ?? items[0] ?? null
+
+    // A merged entry names the team it points to.
+    const mergedTarget = selected?.mergedIntoTeamId ?? null
+    useEffect(() => {
+        if (!mergedTarget || mergedNames.has(mergedTarget)) return
+        const controller = new AbortController()
+        fetchAdminTeam(mergedTarget, { signal: controller.signal })
+            .then((team) => {
+                if (team)
+                    setMergedNames((names) =>
+                        new Map(names).set(mergedTarget, team.name)
+                    )
+            })
+            .catch(() => undefined)
+        return () => controller.abort()
+    }, [mergedTarget, mergedNames])
 
     async function loadMore() {
         if (!nextCursor) return
@@ -159,8 +209,9 @@ function GameCatalogue({
         setLoadingMore(true)
         try {
             const page = await fetchAdminTeamPage({
-                gameId,
-                archived,
+                gameId: game,
+                archived: state !== "active",
+                state,
                 search: term,
                 cursor: nextCursor,
                 limit: TEAM_PAGE_DEFAULT,
@@ -181,10 +232,16 @@ function GameCatalogue({
 
     function applyRecord(teamId: string, team: TeamRecord | null) {
         setItems((loaded) =>
-            team && team.gameId === gameId
-                ? upsertAdminTeam(loaded, team, archived)
+            team && team.gameId === game
+                ? placeTeam(loaded, team, state)
                 : removeById(loaded, teamId)
         )
+        // Usage is re-read for a changed team.
+        setUsage((known) => {
+            const next = new Map(known)
+            next.delete(teamId)
+            return next
+        })
     }
 
     async function refreshRow(teamId: string) {
@@ -213,7 +270,6 @@ function GameCatalogue({
             else
                 setNotice({
                     tone: "error",
-                    // The row now shows the stored state; a retry uses its revision.
                     text:
                         result.code === "revision_conflict" ||
                         result.code === "archived" ||
@@ -226,58 +282,115 @@ function GameCatalogue({
         }
     }
 
-    function openDialog(next: Exclude<DialogState, { kind: "closed" }>) {
-        setDialogTeam(next.team)
+    function choose(teamId: string) {
+        setSelectedId(teamId)
         setNotice(null)
-        setDialog(next)
+        // On phones the detail sits below the list.
+        if (window.matchMedia("(max-width: 1023px)").matches)
+            requestAnimationFrame(() =>
+                detailRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                })
+            )
     }
 
     const searching = term.length > 0
-    const busy = pendingId !== null
+    const usageOf = (teamId: string): TeamUsageState =>
+        usage.has(teamId)
+            ? { status: "ready", usage: usage.get(teamId) ?? null }
+            : usageFailed.has(teamId)
+              ? { status: "error" }
+              : { status: "loading" }
+    const requestHref = (requestId: string) =>
+        `/${locale}/dashboard/team-requests?${new URLSearchParams({
+            request: requestId,
+            ...(workspaceQuery ? { workspace: workspaceQuery } : {}),
+        }).toString()}`
 
     return (
-        <section
-            aria-label={GAME_LABELS[gameId]}
-            className="border-border/60 bg-card space-y-4 rounded-2xl border p-4 sm:p-5"
-        >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-1 flex-wrap items-center gap-4">
-                    <div className="relative w-full max-w-sm">
-                        <Search
-                            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                            aria-hidden
-                        />
-                        <Input
+        <div className="flex flex-col gap-5">
+            <AdminPageHeader
+                className="px-0 lg:px-0"
+                eyebrow={eyebrow}
+                title={labels.title}
+                description={labels.description}
+                primaryAction={
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            setNotice(null)
+                            setDialog({ kind: "create" })
+                        }}
+                    >
+                        <Plus className="size-4" aria-hidden />
+                        {labels.add}
+                    </Button>
+                }
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div
+                    role="tablist"
+                    aria-label={labels.gamesLabel}
+                    className="bg-muted flex gap-0.5 rounded-[10px] p-[3px]"
+                >
+                    {TEAM_GAMES.map((gameId) => (
+                        <button
+                            key={gameId}
+                            type="button"
+                            role="tab"
+                            aria-selected={game === gameId}
+                            onClick={() => {
+                                setGame(gameId)
+                                setSelectedId(null)
+                                setNotice(null)
+                            }}
+                            className="text-muted-foreground aria-selected:bg-background aria-selected:text-foreground focus-visible:ring-ring h-8 rounded-lg px-3.5 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none aria-selected:font-semibold aria-selected:shadow-sm"
+                        >
+                            {GAME_LABELS[gameId]}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                    <div
+                        role="group"
+                        aria-label={labels.statesLabel}
+                        className="flex flex-wrap gap-1.5"
+                    >
+                        {TEAM_CATALOGUE_STATES.map((value) => (
+                            <button
+                                key={value}
+                                type="button"
+                                aria-pressed={state === value}
+                                onClick={() => {
+                                    setState(value)
+                                    setSelectedId(null)
+                                    setNotice(null)
+                                }}
+                                className="border-border bg-background text-muted-foreground aria-pressed:border-foreground aria-pressed:bg-muted aria-pressed:text-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                            >
+                                {labels.states[value]}
+                            </button>
+                        ))}
+                    </div>
+                    <label className="border-input text-muted-foreground focus-within:ring-ring flex h-8 w-full items-center gap-2 rounded-lg border px-2.5 focus-within:ring-2 sm:w-56">
+                        <Search className="size-3.5 shrink-0" aria-hidden />
+                        <input
                             type="search"
                             value={search}
                             maxLength={64}
                             placeholder={labels.search}
-                            aria-label={labels.search}
-                            className="rounded-xl pl-9"
-                            onChange={(event) => setSearch(event.target.value)}
+                            aria-label={labels.searchLabel}
+                            className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                            onChange={(event) => {
+                                setSearch(event.target.value)
+                                setSelectedId(null)
+                            }}
                         />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            id={`${id}-archived`}
-                            checked={archived}
-                            onCheckedChange={setArchived}
-                        />
-                        <Label htmlFor={`${id}-archived`}>
-                            {labels.showArchived}
-                        </Label>
-                    </div>
+                    </label>
                 </div>
-                <Button
-                    type="button"
-                    className="rounded-xl"
-                    onClick={() => openDialog({ kind: "edit", team: null })}
-                >
-                    <Plus className="size-4" aria-hidden />
-                    {labels.add}
-                </Button>
             </div>
-            <div aria-live="polite" className="min-h-0">
+            <div aria-live="polite" className="min-h-0 empty:hidden">
                 {notice ? (
                     <p
                         role={notice.tone === "error" ? "alert" : "status"}
@@ -314,77 +427,124 @@ function GameCatalogue({
                     </Button>
                 </div>
             ) : items.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                    {searching ? labels.emptySearch : labels.empty}
-                </p>
+                <EmptyState
+                    icon={UsersRound}
+                    title={searching ? labels.emptySearch : labels.empty}
+                />
             ) : (
-                <ul
-                    className="divide-border/60 divide-y"
-                    aria-busy={status === "loading"}
-                >
-                    {items.map((team) => (
-                        <CatalogueRow
-                            key={team.id}
-                            labels={labels}
-                            team={team}
-                            linkedName={
-                                team.linkedGuildId
-                                    ? (workspaceName(
-                                          workspaces,
-                                          team.linkedGuildId
-                                      ) ?? team.linkedGuildId)
-                                    : null
-                            }
-                            busy={busy}
-                            pending={pendingId === team.id}
-                            onEdit={() => openDialog({ kind: "edit", team })}
-                            onMerge={() => openDialog({ kind: "merge", team })}
-                            onLifecycle={(action) => lifecycle(team, action)}
-                        />
-                    ))}
-                </ul>
+                <div className="flex flex-wrap items-start gap-5">
+                    <ul
+                        aria-label={labels.listLabel}
+                        aria-busy={status === "loading"}
+                        className="bg-card min-w-0 flex-[1_1_22rem] divide-y overflow-hidden rounded-2xl border"
+                    >
+                        {items.map((team) => (
+                            <li key={team.id}>
+                                <CatalogueRow
+                                    labels={labels}
+                                    locale={locale}
+                                    team={team}
+                                    usage={usage.get(team.id)}
+                                    current={selected?.id === team.id}
+                                    onSelect={() => choose(team.id)}
+                                />
+                            </li>
+                        ))}
+                        {status === "ready" && nextCursor ? (
+                            <li className="flex justify-center px-4 py-2.5">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={loadingMore}
+                                    onClick={() => void loadMore()}
+                                >
+                                    {loadingMore ? (
+                                        <Loader2
+                                            className="size-4 animate-spin"
+                                            aria-hidden
+                                        />
+                                    ) : null}
+                                    {labels.loadMore}
+                                </Button>
+                            </li>
+                        ) : null}
+                    </ul>
+                    <div
+                        ref={detailRef}
+                        className="min-w-0 flex-[1_1_22rem] scroll-mt-4"
+                    >
+                        {selected ? (
+                            <TeamCatalogueDetail
+                                key={selected.id}
+                                labels={labels}
+                                locale={locale}
+                                team={selected}
+                                usage={usageOf(selected.id)}
+                                workspaces={workspaces}
+                                requestHref={requestHref}
+                                lifecycleBusy={pendingId === selected.id}
+                                mergedIntoName={
+                                    selected.mergedIntoTeamId
+                                        ? (mergedNames.get(
+                                              selected.mergedIntoTeamId
+                                          ) ?? null)
+                                        : null
+                                }
+                                onSaved={(team) => {
+                                    applyRecord(team.id, team)
+                                    setNotice({
+                                        tone: "success",
+                                        text: labels.saved,
+                                    })
+                                }}
+                                onStale={applyRecord}
+                                onMerge={() => {
+                                    setMergeSource(selected)
+                                    setNotice(null)
+                                    setDialog({ kind: "merge", team: selected })
+                                }}
+                                onLifecycle={(action) =>
+                                    lifecycle(selected, action)
+                                }
+                            />
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                {labels.selectTeam}
+                            </p>
+                        )}
+                    </div>
+                </div>
             )}
-            {status === "ready" && nextCursor ? (
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-xl"
-                    disabled={loadingMore}
-                    onClick={() => void loadMore()}
-                >
-                    {loadingMore ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : null}
-                    {labels.loadMore}
-                </Button>
-            ) : null}
             <TeamCatalogueDialog
                 labels={labels}
-                gameId={gameId}
-                team={dialog.kind === "edit" ? dialog.team : null}
+                gameId={game}
+                team={null}
                 workspaces={workspaces}
-                open={dialog.kind === "edit"}
+                open={dialog.kind === "create"}
                 onOpenChange={(open) => {
                     if (!open) setDialog({ kind: "closed" })
                 }}
                 onSaved={(team) => {
                     applyRecord(team.id, team)
+                    if (teamCatalogueState(team) === state)
+                        setSelectedId(team.id)
                     setNotice({ tone: "success", text: labels.saved })
                 }}
                 onStale={applyRecord}
             />
-            {dialogTeam ? (
+            {mergeSource ? (
                 <TeamMergeDialog
-                    key={dialogTeam.id}
+                    key={mergeSource.id}
                     labels={labels}
-                    source={dialog.kind === "merge" ? dialog.team : dialogTeam}
+                    source={dialog.kind === "merge" ? dialog.team : mergeSource}
                     open={dialog.kind === "merge"}
                     onOpenChange={(open) => {
                         if (!open) setDialog({ kind: "closed" })
                     }}
                     onMerged={(source, target, names) => {
                         if (source) applyRecord(source.id, source)
-                        else void refreshRow(dialogTeam.id)
+                        else void refreshRow(mergeSource.id)
                         if (target) applyRecord(target.id, target)
                         setNotice({
                             tone: "success",
@@ -394,159 +554,73 @@ function GameCatalogue({
                     onStale={applyRecord}
                 />
             ) : null}
-        </section>
+        </div>
     )
 }
 
+/** One catalogue row: logo, name, facts and the request marker. */
 function CatalogueRow({
     labels,
+    locale,
     team,
-    linkedName,
-    busy,
-    pending,
-    onEdit,
-    onMerge,
-    onLifecycle,
+    usage,
+    current,
+    onSelect,
 }: {
     labels: TeamCatalogLabels
+    locale: string
     team: TeamRecord
-    linkedName: string | null
-    busy: boolean
-    pending: boolean
-    onEdit(): void
-    onMerge(): void
-    onLifecycle(action: "archive" | "restore"): Promise<void>
+    usage: TeamUsage | null | undefined
+    current: boolean
+    onSelect(): void
 }) {
-    const badge = teamLifecycleBadge(team)
-    const actions = teamAdminActions(team)
-    const label = (template: string) =>
-        fillTemplate(template, { name: team.name })
+    const facts = catalogueRowFacts(team, usage).map((fact) =>
+        fact.kind === "code"
+            ? fact.value
+            : fact.kind === "linked"
+              ? labels.rowLinked
+              : fact.kind === "competitions"
+                ? pluralize(locale, fact.count, labels.rowCompetitions)
+                : labels.rowPendingChange
+    )
+    const requested = (usage?.pendingRequests ?? 0) > 0
     return (
-        <li className="flex flex-wrap items-center gap-3 py-3">
+        <button
+            type="button"
+            aria-current={current ? "true" : undefined}
+            onClick={onSelect}
+            className={cn(
+                "hover:bg-muted/50 focus-visible:ring-ring flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
+                current && adminAccent.surface
+            )}
+        >
             <TeamLogo
                 name={team.name}
                 shortCode={team.shortCode}
                 logoUrl={team.logoUrl}
-                className="size-10"
+                className="size-9 text-[11px]"
             />
-            <div className="min-w-0 flex-1 space-y-0.5">
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-medium">{team.name}</span>
-                    {team.shortCode ? (
-                        <span className="text-muted-foreground text-xs">
-                            <span className="sr-only">
-                                {labels.shortCode}:{" "}
-                            </span>
-                            {team.shortCode}
-                        </span>
-                    ) : null}
-                    {badge === "merged" ? (
-                        <Badge variant="outline">{labels.mergedBadge}</Badge>
-                    ) : badge === "archived" ? (
-                        <Badge variant="secondary">
-                            {labels.archivedBadge}
-                        </Badge>
-                    ) : null}
-                    {linkedName ? (
-                        <Badge variant="outline">
-                            {fillTemplate(labels.linkedBadge, {
-                                workspace: linkedName,
-                            })}
-                        </Badge>
-                    ) : null}
-                </div>
-                {team.description ? (
-                    <p className="text-muted-foreground line-clamp-2 text-xs">
-                        {team.description}
-                    </p>
+            <span className="flex min-w-0 flex-1 flex-col leading-5">
+                <span className="truncate text-sm font-semibold">
+                    {team.name}
+                </span>
+                {facts.length > 0 ? (
+                    <span className="text-muted-foreground truncate text-xs">
+                        {facts.join(" · ")}
+                    </span>
                 ) : null}
-                {team.links.length > 0 ? (
-                    <ul className="flex flex-wrap gap-x-3 text-xs">
-                        {team.links.map((link) => (
-                            <li key={link} className="max-w-64 truncate">
-                                <a
-                                    href={link}
-                                    target="_blank"
-                                    rel="noopener noreferrer nofollow"
-                                    className="text-primary hover:underline"
-                                >
-                                    {link.replace(/^https:\/\//, "")}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-                {actions.edit ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={busy}
-                        aria-label={label(labels.editTeam)}
-                        onClick={onEdit}
-                    >
-                        {labels.edit}
-                    </Button>
-                ) : null}
-                {actions.restore ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={busy}
-                        aria-label={label(labels.restoreTeam)}
-                        onClick={() => void onLifecycle("restore")}
-                    >
-                        {labels.restore}
-                    </Button>
-                ) : null}
-                {actions.archive ? (
-                    <ConfirmActionDialog
-                        trigger={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                disabled={busy}
-                                aria-label={label(labels.archiveTeam)}
-                            >
-                                {labels.archive}
-                            </Button>
-                        }
-                        title={label(labels.archiveConfirmTitle)}
-                        description={labels.archiveConfirmDescription}
-                        confirmLabel={labels.archive}
-                        cancelLabel={labels.cancel}
-                        onConfirm={() => onLifecycle("archive")}
-                    >
-                        <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-                            <li>{label(labels.archiveConsequenceSelection)}</li>
-                            <li>{labels.archiveConsequenceSnapshots}</li>
-                            <li>{labels.archiveConsequenceRestore}</li>
-                        </ul>
-                    </ConfirmActionDialog>
-                ) : null}
-                {actions.merge ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={busy}
-                        aria-label={label(labels.mergeTeam)}
-                        onClick={onMerge}
-                    >
-                        {labels.merge}
-                    </Button>
-                ) : null}
-                {pending ? (
-                    <Loader2
-                        className="text-muted-foreground size-4 animate-spin"
-                        aria-hidden
-                    />
-                ) : null}
-            </div>
-        </li>
+            </span>
+            {requested ? (
+                <span
+                    className={cn(
+                        "inline-flex h-[22px] shrink-0 items-center rounded-md px-2 text-[11px] font-semibold",
+                        adminAccent.badge
+                    )}
+                    title={labels.requestBadgeLabel}
+                >
+                    {labels.requestBadge}
+                </span>
+            ) : null}
+        </button>
     )
 }

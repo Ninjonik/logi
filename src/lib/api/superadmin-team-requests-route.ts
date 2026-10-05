@@ -10,15 +10,17 @@ import {
     superadminCommandResponse,
     SUPERADMIN_JSON_LIMIT,
 } from "./superadmin-route"
+import { TEAM_USAGE_IDS_MAX } from "@/domain/teams/team-usage"
 import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 
 export const TEAM_REQUEST_QUEUE_DEFAULT = 20
 const requestIdSchema = z.string().min(1).max(64)
 
-/** A moderation read: one request by ID, or a page of the queue for one status. */
+/** A moderation read: one request by ID, the context of listed requests, or a page of the queue for one status. */
 export type TeamRequestQueueQuery =
     | { kind: "get"; requestId: string }
+    | { kind: "context"; requestIds: string[] }
     | {
           kind: "queue"
           status: TeamRequestStatus
@@ -50,6 +52,17 @@ export function parseTeamRequestQueueQuery(
         const parsed = requestIdSchema.safeParse(requestId)
         return parsed.success ? { kind: "get", requestId: parsed.data } : null
     }
+    const context = params.get("context")
+    if (context !== null) {
+        const parsed = z
+            .array(requestIdSchema)
+            .min(1)
+            .max(TEAM_USAGE_IDS_MAX)
+            .safeParse(context.split(","))
+        return parsed.success
+            ? { kind: "context", requestIds: [...new Set(parsed.data)] }
+            : null
+    }
     const parsed = queueQuerySchema.safeParse({
         status: params.get("status") ?? undefined,
         cursor: params.get("cursor") ?? undefined,
@@ -77,6 +90,8 @@ export type SuperadminTeamRequestsPorts<Access> = {
     /** The attested global administrator, or null to deny the request. */
     access(): Promise<Access | null>
     get(access: Access, requestId: string): Promise<unknown>
+    /** Requester names and similar active teams of the listed requests. */
+    context(access: Access, requestIds: string[]): Promise<unknown>
     queue(access: Access, query: TeamRequestQueuePageQuery): Promise<unknown>
     decide(access: Access, body: TeamRequestDecideBody): Promise<unknown>
 }
@@ -89,7 +104,7 @@ export function superadminTeamRequestsHandlers<Access>(
     ports: SuperadminTeamRequestsPorts<Access>
 ) {
     return {
-        /** `?requestId=` reads one request as `{ request }`; otherwise `?status=` pages the queue. */
+        /** `?requestId=` reads one request as `{ request }`, `?context=` the moderation context; otherwise `?status=` pages the queue. */
         async GET(request: Request): Promise<Response> {
             try {
                 const access = await ports.access()
@@ -104,6 +119,10 @@ export function superadminTeamRequestsHandlers<Access>(
                         ? noStore({ request: found })
                         : noStore({ error: "not_found" }, 404)
                 }
+                if (query.kind === "context")
+                    return noStore(
+                        await ports.context(access, query.requestIds)
+                    )
                 return noStore(await ports.queue(access, query))
             } catch {
                 return noStore({ error: "unavailable" }, 503)

@@ -1260,11 +1260,59 @@ export const deMessages = {
         showAll: "Alle Aktivitäten anzeigen",
     },
     teamCatalogAdmin: {
+        searchLabel: "Teams suchen",
+        statesLabel: "Status",
+        states: {
+            active: "Aktiv",
+            archived: "Archiviert",
+            merged: "Zusammengeführt",
+        },
+        listLabel: "Teams",
+        detailLabel: "Teamdetails",
+        rowLinked: "Clan in Logi",
+        rowCompetitions: {
+            one: "{count} Wettbewerb",
+            few: "{count} Wettbewerbe",
+            many: "{count} Wettbewerbe",
+            other: "{count} Wettbewerbe",
+        },
+        rowPendingChange: "Änderung ausstehend",
+        requestBadge: "Anfrage",
+        requestBadgeLabel: "Eine Änderungsanfrage wartet",
+        updatedOn: "{game} · geändert am {date}",
+        changeLogo: "Logo ändern",
+        requestBanner: "Ein Clan schlägt eine Änderung dieses Teams vor",
+        openRequest: "Anfrage öffnen",
+        usageTitle: "Wo das Team verwendet wird",
+        usageFixtures: {
+            one: "{count} Spiel",
+            few: "{count} Spiele",
+            many: "{count} Spiele",
+            other: "{count} Spiele",
+        },
+        usageWithdrawn: "zurückgezogen",
+        usageNone: "Noch in keinem Wettbewerb.",
+        usageMore: "und {count} weitere Wettbewerbe",
+        usageSnapshots:
+            "Clan-Spiele behalten Namen und Logo vom Zeitpunkt des Speicherns.",
+        usageUnavailable:
+            "Die Verwendung des Teams konnte nicht geladen werden.",
+        moreDetails: "Beschreibung und Links",
+        saveShort: "Speichern",
+        endTitle: "Duplikat oder Ende des Teams",
+        mergeIntoOther: "In ein anderes Team zusammenführen",
+        endHelp: "Beides fragt zuerst nach und zeigt, was sich ändert.",
+        selectTeam: "Wähle ein Team in der Liste, um seine Daten zu sehen.",
+        archivedHelp:
+            "Ein archiviertes Team wird Clans und Wettbewerben nicht angeboten. Durch Wiederherstellen ist es wieder auswählbar.",
+        mergedHelp:
+            "Dieses Team wurde in {name} zusammengeführt. Das lässt sich nicht rückgängig machen.",
+        mergedTargetUnknown: "ein anderes Team",
         title: "Teamkatalog",
         description:
             "Eine Teamliste für ganz Logi. Clans wählen daraus ihre Gegner, Wettbewerbe melden daraus Teams an.",
         gamesLabel: "Spiel",
-        search: "Teams suchen…",
+        search: "Name oder Kürzel",
         showArchived: "Archivierte und zusammengeführte Teams anzeigen",
         add: "Team hinzufügen",
         loadMore: "Mehr laden",
@@ -1295,8 +1343,8 @@ export const deMessages = {
         linkLabel: "Link {number}",
         linksHelp:
             "Bis zu drei https-Links, etwa die Website des Teams oder eine Discord-Einladung.",
-        linkedWorkspace: "Verknüpfter Workspace",
-        linkedWorkspaceNone: "Kein verknüpfter Workspace",
+        linkedWorkspace: "Clan in Logi",
+        linkedWorkspaceNone: "Keiner · das Team nutzt Logi nicht",
         linkedWorkspaceUnknown: "Workspace {id}",
         linkedWorkspaceHelp:
             "Hält fest, dass dieses Team der Clan dieses Logi-Workspaces ist. Die Verknüpfung gewährt keine Berechtigungen.",
@@ -1402,6 +1450,23 @@ export const deMessages = {
         },
     },
     teamRequestAdmin: {
+        kindBadges: {
+            create: "Neu",
+            update: "Änderung",
+        },
+        similarExists: "Ein ähnliches Team gibt es schon: {name}",
+        usageIn: "Das Team wird in {competitions} verwendet.",
+        usageNone: "Das Team ist noch in keinem Wettbewerb.",
+        snapshotsKept: "Gespeicherte Spiele behalten das alte Logo.",
+        approveDirectTitle: "Anfrage für {name} genehmigen?",
+        approveDirectCreate:
+            "{name} wird in den Katalog von {game} aufgenommen.",
+        approveDirectUpdate:
+            "Die vorgeschlagenen Daten werden auf {name} übernommen.",
+        approveDirectDm:
+            "Die anfragende Person bekommt die Entscheidung per Discord-DM.",
+        discordUser: "Discord {id}",
+        mergeShort: "Mit bestehendem zusammenführen",
         title: "Teamanfragen",
         description:
             "Clans fragen ein neues Team oder eine Änderung an einem bestehenden an. Die anfragende Person erhält deine Entscheidung per Discord-DM.",
@@ -1437,8 +1502,7 @@ export const deMessages = {
         proposed: "Vorgeschlagen",
         unchanged: "unverändert",
         emptyValue: "leer",
-        comparisonHint:
-            "Hervorgehobene Zeilen ändern sich. Gespeicherte Spiele behalten das Team so, wie es beim Speichern war.",
+        comparisonHint: "Grün markiert ist, was sich ändert.",
         rejectWithReason: "Mit Begründung ablehnen",
         reviewAndApprove: "Prüfen und genehmigen",
         selectRequest: "Wähle eine Anfrage, um ihre Details zu sehen.",
@@ -1659,6 +1723,27 @@ export const deMessages = {
         },
     },
     competitionAdmin: {
+        breadcrumb: "Brotkrumennavigation",
+        round: "Runde",
+        roundHelp: "Optional, 1–99. Spiele werden nach Runde gruppiert.",
+        roundHeading: "{round}. Runde",
+        noRound: "Ohne Runde",
+        noFixturesInView:
+            "In dieser Division und Phase gibt es noch keine Spiele.",
+        linkWithMatch: "Mit Spiel verknüpfen",
+        clanMatch: "Spiel von {clan}",
+        clanMatchUnknown: "Verknüpftes Clan-Spiel",
+        awaitingConfirmation: "Wartet auf Bestätigung durch den Clan",
+        played: "Gespielt",
+        editFixtureNamed: "Spiel {teams} bearbeiten",
+        linkPanelTitle: "{teams} verknüpfen",
+        linkPanelDescription:
+            "Das Ergebnis wird dann automatisch übernommen, sobald der Clan es bestätigt. Angeboten werden die Clan-Spiele beider Teams um den Termin.",
+        searchMatches: "Spiel nach Namen suchen",
+        candidateClan: "Clan {clan}",
+        noCandidateResults: "Kein Spiel passt zur Suche.",
+        manualEventId: "Spiel-ID manuell eingeben",
+        deleteFixture: "Spiel löschen",
         listDescription:
             "Erstelle und betreue Wettbewerbe für Hell Let Loose und Wardogs mit Teams aus dem globalen Katalog.",
         newCompetition: "Neuer Wettbewerb",
@@ -1792,8 +1877,8 @@ export const deMessages = {
         loadingCandidates: "Matches werden geladen…",
         noCandidates:
             "In den verknüpften Workspaces der Teams wurden keine Matches gefunden.",
-        teamsMatch: "Beide Teams zugeordnet",
-        teamsUnassigned: "Teams nicht zugeordnet",
+        teamsMatch: "beide Teams zugeordnet",
+        teamsUnassigned: "Seiten nicht zugeordnet",
         hasResult: "Ergebnis importiert",
         eventId: "Event-ID",
         eventIdHelp:

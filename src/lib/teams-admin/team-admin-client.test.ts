@@ -2,7 +2,9 @@ import {
     adminTeamListUrl,
     fetchAdminTeam,
     fetchAdminTeamPage,
+    fetchAdminTeamUsage,
     fetchTeamRequest,
+    fetchTeamRequestContext,
     fetchTeamRequestQueue,
     sendAdminTeamCommand,
     sendTeamRequestDecision,
@@ -91,6 +93,65 @@ test("list and queue URLs omit defaults and blank searches", () => {
     assert.equal(
         teamRequestQueueUrl({ status: "pending", cursor: "c", limit: 20 }),
         "/api/superadmin/team-requests?status=pending&cursor=c&limit=20"
+    )
+})
+
+test("a lifecycle state replaces the archived flag in list URLs", () => {
+    assert.equal(
+        adminTeamListUrl({
+            gameId: "wardogs",
+            archived: true,
+            state: "merged",
+        }),
+        "/api/superadmin/teams?game=wardogs&state=merged"
+    )
+})
+
+test("usage and request context reads are batched, parsed and skipped when empty", async () => {
+    const usage = {
+        teamId: "t1",
+        competitions: [],
+        competitionCount: 0,
+        pendingRequests: 1,
+        pendingRequestId: "r1",
+    }
+    const context = {
+        requestId: "r1",
+        requester: { name: "Hráč 05", avatarUrl: null },
+        similarTeams: [{ id: "t2", name: "DEF", shortCode: null }],
+    }
+    const { fetcher, calls } = fakeFetch(({ url }) =>
+        url.includes("usage=")
+            ? json({ items: [usage] })
+            : json({ items: [context] })
+    )
+    assert.deepEqual(await fetchAdminTeamUsage(["t1", "t 2"], { fetcher }), [
+        usage,
+    ])
+    assert.deepEqual(await fetchTeamRequestContext(["r1"], { fetcher }), [
+        context,
+    ])
+    assert.deepEqual(
+        calls.map((call) => call.url),
+        [
+            "/api/superadmin/teams?usage=t1,t%202",
+            "/api/superadmin/team-requests?context=r1",
+        ]
+    )
+    assert.deepEqual(await fetchAdminTeamUsage([], { fetcher }), [])
+    assert.deepEqual(await fetchTeamRequestContext([], { fetcher }), [])
+    assert.equal(calls.length, 2)
+    const broken = fakeFetch(() => json({ items: [{ teamId: 1 }] }))
+    await assert.rejects(
+        fetchAdminTeamUsage(["t1"], { fetcher: broken.fetcher }),
+        (error) =>
+            error instanceof TeamAdminReadError && error.code === "unavailable"
+    )
+    const denied = fakeFetch(() => json({ error: "forbidden" }, 403))
+    await assert.rejects(
+        fetchTeamRequestContext(["r1"], { fetcher: denied.fetcher }),
+        (error) =>
+            error instanceof TeamAdminReadError && error.code === "forbidden"
     )
 })
 

@@ -19,12 +19,18 @@ import {
     type TeamRequestPorts,
 } from "../src/application/teams/team-requests.use-case"
 import {
+    similarTeams,
+    TEAM_USAGE_IDS_MAX,
+    type TeamRequestContext,
+} from "../src/domain/teams/team-usage"
+import {
     mutation,
     query,
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { normalizeTeamName } from "../src/domain/teams/team"
 import { authorizePlatformAdmin } from "./platformAdmin"
 import type { Doc } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
@@ -189,6 +195,82 @@ export const get = query({
         const id = ctx.db.normalizeId("teamRequests", args.requestId)
         const row = id ? await ctx.db.get(id) : null
         return row ? await recordOf(ctx, row, true) : null
+    },
+})
+
+/** Active catalogue teams of the request's game that look like the requested one. */
+async function similarActiveTeams(ctx: Db, row: Doc<"teamRequests">) {
+    const exact = await ctx.db
+        .query("teamDirectory")
+        .withIndex("gameId_archivedAt_normalizedName", (q) =>
+            q
+                .eq("gameId", row.gameId)
+                .eq("archivedAt", null)
+                .eq("normalizedName", normalizeTeamName(row.proposal.name))
+        )
+        .first()
+    const found = await ctx.db
+        .query("teamDirectory")
+        .withSearchIndex("search", (q) =>
+            q
+                .search("searchText", row.proposal.name.slice(0, 64))
+                .eq("gameId", row.gameId)
+                .eq("archivedAt", null)
+        )
+        .take(10)
+    const candidates = exact
+        ? [exact, ...found.filter((team) => team._id !== exact._id)]
+        : found
+    return similarTeams(
+        {
+            name: row.proposal.name,
+            shortCode: row.proposal.shortCode,
+            teamId: row.teamId ? String(row.teamId) : null,
+        },
+        candidates.map((team) => ({
+            id: String(team._id),
+            name: team.name,
+            shortCode: team.shortCode,
+        }))
+    )
+}
+
+/**
+ * Moderation context for listed requests (design I2): the requester's
+ * Logi name and avatar, and active teams that look like the requested one.
+ * Global administrators only; unknown IDs are skipped.
+ */
+export const queueContext = query({
+    args: { ...platformAccess, requestIds: v.array(v.string()) },
+    handler: async (ctx, args): Promise<{ items: TeamRequestContext[] }> => {
+        await authorizePlatformAdmin(ctx, args)
+        if (args.requestIds.length > TEAM_USAGE_IDS_MAX)
+            throw new Error("Too many requests.")
+        const items: TeamRequestContext[] = []
+        for (const raw of new Set(args.requestIds)) {
+            const id = ctx.db.normalizeId("teamRequests", raw)
+            const row = id ? await ctx.db.get(id) : null
+            if (!row) continue
+            const user = await ctx.db
+                .query("users")
+                .withIndex("discordId", (q) =>
+                    q.eq("discordId", row.requestedBy)
+                )
+                .first()
+            const name =
+                user?.nicknames?.[row.guildId]?.trim() || user?.name.trim()
+            items.push({
+                requestId: String(row._id),
+                requester: name
+                    ? { name, avatarUrl: user?.avatar || null }
+                    : null,
+                similarTeams:
+                    row.kind === "create"
+                        ? await similarActiveTeams(ctx, row)
+                        : [],
+            })
+        }
+        return { items }
     },
 })
 
