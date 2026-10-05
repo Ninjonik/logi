@@ -322,12 +322,10 @@ function RosterPublishBody({
         .map((player) => names[player.id!] ?? player.customName ?? "")
         .filter(Boolean)
     const previewMentions = {
-        channels: context.meetingChannelId
-            ? {
-                  [context.meetingChannelId]:
-                      context.meetingChannelName ?? "Sraz",
-              }
-            : {},
+        channels:
+            context.meetingChannelId && context.meetingChannelName
+                ? { [context.meetingChannelId]: context.meetingChannelName }
+                : {},
     }
     const timeOf = (value: number) =>
         new Intl.DateTimeFormat(locale, {
@@ -401,13 +399,13 @@ function RosterPublishBody({
                                 </h3>
                                 <Badge
                                     variant="outline"
-                                    className="border-emerald-300 text-emerald-700"
+                                    className="border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
                                 >
                                     +{changeCounts.added}
                                 </Badge>
                                 <Badge
                                     variant="outline"
-                                    className="border-red-300 text-red-700"
+                                    className="border-red-300 text-red-700 dark:border-red-900 dark:text-red-400"
                                 >
                                     −{changeCounts.removed}
                                 </Badge>

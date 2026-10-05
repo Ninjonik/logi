@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
+import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -315,9 +316,21 @@ test("settings responses carry the feature slices and refuse unknown slices", as
     )._handler(
         { db },
         { secret: "dev-internal-auth-secret", keyHash: "key" }
-    )) as { slices: unknown; discordConfig: Record<string, unknown> }
-    // No redesign slice is registered yet; the key is always present.
-    assert.deepEqual(read.slices, {})
+    )) as {
+        slices: Record<string, unknown>
+        discordConfig: Record<string, unknown>
+    }
+    // Every registered slice is present, read from the stored configuration.
+    assert.deepEqual(
+        Object.keys(read.slices).sort(),
+        CLAN_SETTINGS_SLICES.map((slice) => slice.key).sort()
+    )
+    assert.deepEqual(read.slices.matchMessages, {
+        rosterMessageVariant: "photo_text",
+        rosterChangesPost: true,
+        rosterChangesDm: true,
+        attendanceNoticesInThread: false,
+    })
     assert.equal("playerStatsServers" in read.discordConfig, false)
 
     const refused = await handler(publicApi.mutateClanSettings)(
@@ -347,10 +360,16 @@ test("settings responses carry the feature slices and refuse unknown slices", as
             bodyHash: "slice-body-2",
             methodPath: "PATCH /clan/settings",
             timezone: "Europe/Prague",
+            slices: { matchMessages: { rosterMessageVariant: "photo" } },
         }
     )
     assert.equal(updated?.status, 200)
-    assert.deepEqual(JSON.parse(updated!.body).data.slices, {})
+    const slices = JSON.parse(updated!.body).data.slices
+    assert.equal(slices.matchMessages.rosterMessageVariant, "photo")
+    assert.equal(slices.matchMessages.rosterChangesDm, true)
+    const stored = db.tables.discordConfigs.get("config-a")!
+    assert.equal(stored.rosterMessageVariant, "photo")
+    assert.equal(stored.rosterChangesDmDefault, undefined)
 })
 
 test("event signup queues a roster update through the shared queue", async () => {

@@ -986,10 +986,7 @@ export function myAssignmentView(input: {
 
 // --- The change digest (L1-120..126) -------------------------------------
 
-function placeText(
-    place: { squad: string; role?: string } | undefined,
-    copy: RosterMessageCopy
-) {
+function placeText(place: { squad: string; role?: string } | undefined) {
     if (!place) return ""
     return joinParts([
         escapeMarkdownText(oneLine(place.squad)),
@@ -1017,7 +1014,7 @@ export function rosterChangeSections(
                 .map((change) =>
                     fillTemplate(c.addedLine, {
                         name: name(change.userId),
-                        place: placeText(change.after, copy),
+                        place: placeText(change.after),
                     })
                 ),
         },
@@ -1028,7 +1025,7 @@ export function rosterChangeSections(
                 .map((change) =>
                     fillTemplate(c.removedLine, {
                         name: name(change.userId),
-                        place: placeText(change.before, copy),
+                        place: placeText(change.before),
                     })
                 ),
         },
@@ -1040,7 +1037,7 @@ export function rosterChangeSections(
                     fillTemplate(c.movedLine, {
                         name: name(change.userId),
                         from: escapeMarkdownText(oneLine(change.before!.squad)),
-                        to: placeText(change.after, copy),
+                        to: placeText(change.after),
                     })
                 ),
         },

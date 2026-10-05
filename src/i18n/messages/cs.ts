@@ -5767,6 +5767,9 @@ export const csMessages = {
         kindUnanswered: "Připomínka přihlášky",
         kindUnconfirmed: "Připomínka docházky",
         unknownSender: "správce",
+        and: "a",
+        sentAt: "{date} v {time}",
+        unknownPlayer: "neznámý hráč",
     },
     discordPreview: {
         regionLabel: "Náhled zprávy v Discordu",

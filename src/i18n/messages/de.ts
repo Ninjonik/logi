@@ -5920,6 +5920,9 @@ export const deMessages = {
         kindUnanswered: "Anmeldeerinnerung",
         kindUnconfirmed: "Anwesenheitserinnerung",
         unknownSender: "einem Admin",
+        and: "und",
+        sentAt: "{date} um {time}",
+        unknownPlayer: "ein unbekannter Spieler",
     },
     discordPreview: {
         regionLabel: "Vorschau der Discord-Nachricht",

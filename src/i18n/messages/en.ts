@@ -5778,6 +5778,9 @@ export const enMessages = {
         kindUnanswered: "Sign-up reminder",
         kindUnconfirmed: "Attendance reminder",
         unknownSender: "an admin",
+        and: "and",
+        sentAt: "{date} at {time}",
+        unknownPlayer: "an unknown player",
     },
     discordPreview: {
         regionLabel: "Discord message preview",

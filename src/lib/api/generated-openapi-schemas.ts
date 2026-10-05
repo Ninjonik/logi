@@ -965,6 +965,22 @@ export const generatedOpenApiSchemas = {
             "published": {
                 "type": "boolean"
             },
+            "discordMessageVariant": {
+                "anyOf": [
+                    {
+                        "const": "photo_text"
+                    },
+                    {
+                        "const": "photo"
+                    }
+                ]
+            },
+            "discordMentionPlayers": {
+                "type": "boolean"
+            },
+            "publishedAt": {
+                "type": "string"
+            },
             "meetingAttendance": {
                 "type": "object",
                 "properties": {
@@ -1052,6 +1068,9 @@ export const generatedOpenApiSchemas = {
             ],
             "streamerId": "string",
             "published": true,
+            "discordMessageVariant": "photo_text",
+            "discordMentionPlayers": true,
+            "publishedAt": "string",
             "meetingAttendance": {
                 "loadedAt": "string",
                 "channelId": "string",

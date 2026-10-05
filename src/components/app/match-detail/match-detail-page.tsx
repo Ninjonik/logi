@@ -15,6 +15,7 @@ import {
     DEFAULT_ROSTER_SCORE_SETTINGS,
     summarizeRosterScoreChanges,
 } from "@/domain/events/score-policy"
+import { ReminderDeliveryNotice } from "@/components/app/match-detail/reminder-delivery-notice"
 import {
     deriveMatchPhases,
     type MatchResultState,
@@ -23,6 +24,7 @@ import { getRosterPublishContext } from "@/lib/read-models/roster-publish-contex
 import { MatchDetailView } from "@/components/app/match-detail/match-detail-view"
 import { describeManualReminderAudience } from "@/domain/events/manual-reminders"
 import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
+import { getReminderDeliveryNotice } from "@/lib/read-models/reminder-delivery"
 import { eventEditability, eventSeriesRole } from "@/domain/events/event-edit"
 import { EventOverview } from "@/components/app/match-detail/event-overview"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
@@ -304,6 +306,14 @@ export async function MatchDetailPage({
                   channelNames,
               })
             : undefined
+    // Who the last manual reminder missed (board L2-60..62), for admins.
+    const reminderDelivery =
+        canAdmin && activeTab === "overview"
+            ? await getReminderDeliveryNotice({
+                  guildId: guildDiscordId,
+                  eventId: event.id,
+              })
+            : null
     const resultsChannelName =
         resultsChannelId === undefined
             ? undefined
@@ -361,21 +371,33 @@ export async function MatchDetailPage({
             editHref={editHref}
             overview={
                 activeTab === "overview" ? (
-                    <EventOverview
-                        event={event}
-                        context={context}
-                        dictionary={dictionary}
-                        locale={locale}
-                        serverId={serverId}
-                        editHref={editHref ?? null}
-                        seriesEditHref={seriesEditHref}
-                        canResyncTopics={
-                            canAdmin &&
-                            !played &&
-                            event.createForumChannel &&
-                            Boolean(event.topicPresetId)
-                        }
-                    />
+                    <>
+                        {reminderDelivery ? (
+                            <ReminderDeliveryNotice
+                                notice={reminderDelivery}
+                                copy={dictionary.reminderDelivery}
+                                errorLabel={dictionary.common.error}
+                                clanName={context.server.name}
+                                locale={locale}
+                                timeZone={timeZone}
+                            />
+                        ) : null}
+                        <EventOverview
+                            event={event}
+                            context={context}
+                            dictionary={dictionary}
+                            locale={locale}
+                            serverId={serverId}
+                            editHref={editHref ?? null}
+                            seriesEditHref={seriesEditHref}
+                            canResyncTopics={
+                                canAdmin &&
+                                !played &&
+                                event.createForumChannel &&
+                                Boolean(event.topicPresetId)
+                            }
+                        />
+                    </>
                 ) : null
             }
             rosterBoard={

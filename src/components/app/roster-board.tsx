@@ -589,6 +589,12 @@ export function RosterBoard({
         ]
     )
 
+    // Clan members: who may get a change DM from the publish dialog.
+    const memberIds = useMemo(
+        () => new Set(userAssignments.map((assignment) => assignment.userId)),
+        [userAssignments]
+    )
+
     const changeCount = isDirty ? countRosterChanges(roster, board) : 0
     const draggedUserId =
         dragState?.type === "slot"
@@ -1472,10 +1478,6 @@ export function RosterBoard({
         })
     }
 
-    const memberIds = useMemo(
-        () => new Set(userAssignments.map((assignment) => assignment.userId)),
-        [userAssignments]
-    )
     // Without the page's settings the dialog still works with the defaults.
     const resolvedPublishContext: RosterPublishContext = publishContext ?? {
         language: locale,
