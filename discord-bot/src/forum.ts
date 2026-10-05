@@ -1,5 +1,6 @@
 import {
     AttachmentBuilder,
+    ChannelFlags,
     ChannelType,
     FileBuilder,
     ForumChannel,
@@ -796,11 +797,38 @@ export async function finalizeForumAfterConclusion(
         })
     }
 
-    for (const post of [...existingPosts, debriefPost]) {
-        if ("setPinned" in post && typeof post.setPinned === "function") {
-            await post.setPinned(post.id === debriefPost.id).catch(() => null)
+    await pinForumPost(existingPosts, debriefPost, event.id)
+}
+
+type PinnablePost = {
+    id: string
+    flags?: { has(flag: ChannelFlags): boolean } | null
+    pin(): Promise<unknown>
+    unpin(): Promise<unknown>
+}
+
+/**
+ * A forum holds one pinned post: unpin any other, then pin `target` (L1-129).
+ * Discord answers an unchanged pin with an error, so the flags decide.
+ */
+export async function pinForumPost(
+    posts: readonly PinnablePost[],
+    target: PinnablePost,
+    eventId: string
+) {
+    for (const post of posts) {
+        if (post.id !== target.id && post.flags?.has(ChannelFlags.Pinned)) {
+            await post.unpin().catch(() => null)
         }
     }
+    if (target.flags?.has(ChannelFlags.Pinned)) return
+    await target.pin().catch((error) =>
+        logWarn("forum", "Failed to pin the debrief post", {
+            eventId,
+            threadId: target.id,
+            error,
+        })
+    )
 }
 
 /**
