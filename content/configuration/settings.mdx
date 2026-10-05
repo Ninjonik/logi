@@ -405,25 +405,43 @@ role permissions required for the relevant action.
 
 ### Discord messages, Roles and access, and /stats
 
-**Discord messages** lists what the bot sends and where: the match
-announcement, the separate match information message, reminders (direct
-messages: sign-up reminders daily until registration closes for the
-memberships chosen on each match, attendance reminders 24, 18, 12 and 6 hours
-before the meeting), live score and result panels, Wardogs League cards and bot
-errors. Each row names its channel and opens the page where it is changed; the
-public panel editor opens inline under **Live score and results**. The language
-of every bot message is shown here and changed under **Channels and language**.
+**Discord messages** sets one look for every bot message and lists what the bot
+sends and where. **Clan colour** is the accent of every message; events with a
+category keep the category colour, and without a clan colour messages use Logi
+orange. **Icons in messages** is either **Sparse** (only team signs) or **Emoji
+on every line** (side, start, map and details, status and forum get an icon).
+The language of every bot message is shown here and changed under **Channels
+and language**.
 
-**Roles and access** has the clan role and the manager role. People with the
-manager role can change settings, matches and rosters. **Reload from Discord**
-rebuilds manager access from the current members of the saved manager role; it
-is available once a manager role is saved and the page has no unsaved changes.
+The message list shows the match announcement, the roster and assignments
+message (posted to the event information channel once the roster is
+published), reminders (direct messages: sign-up reminders daily until
+registration closes for the memberships chosen on each match, attendance
+reminders 24, 18, 12 and 6 hours before the meeting), the live score and result
+panels, Wardogs League cards and bot errors. **Edit** opens the channel picker
+of the announcement, roster and error messages under the row; these are the
+clan-wide channels, and a game with its own channel is named with a link to
+**Channels and language**. The live score and results rows open the public
+panel editor; reminders open the match templates, league cards the league page.
+
+**Roles and access** has the clan role and the manager role, each with how many
+members of the Discord server have it. People with the manager role can change
+settings, matches and rosters. **Who has access now** lists the people who can
+manage Logi and why: the Discord Administrator permission, the manager role, or
+being added in Logi. It shows when Logi last saw the server's members.
+**Reload from Discord** rebuilds manager access from the current members of the
+saved manager role; it is available once a manager role is saved and the page
+has no unsaved changes.
 
 **/stats command** has the command switch, the games it answers for with their
 data source (public HLL Records profiles by Steam account; Wardogs games stored
 from your game servers), the default sharing channel, and the old stats server
-connections with their per-game exceptions. New connections belong under
-**Game servers**.
+connections with their per-game exceptions behind **Show connections**. New
+connections belong under **Game servers**; old connections are not converted
+automatically because they only search players and have no server number. A
+preview shows the reply in Discord with the bot's own layout and example
+numbers; when the command or Wardogs statistics are off it shows the reply
+people get instead.
 
 On these pages a bar at the bottom counts unsaved changes; **Discard** returns
 to the saved values and **Save** stores them.

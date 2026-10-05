@@ -3012,6 +3012,14 @@ export const enMessages = {
             legacyHelp:
                 "Entered with a token and address in the bot settings. New connections belong in Game servers, where the key is stored encrypted and can be tested.",
             openGameServers: "Open Game servers",
+            previewTitle: "Reply preview in Discord",
+            previewExample: "Example data",
+            previewEphemeral: "Only you can see this · Dismiss",
+            previewPlayer: "Example player",
+            previewNote:
+                "The numbers are an example. The real reply shows the player's statistics from your game servers.",
+            showConnections: "Show connections",
+            hideConnections: "Hide connections",
         },
         messagesPage: {
             lookTitle: "Look of all messages",

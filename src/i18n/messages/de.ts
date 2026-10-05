@@ -3104,6 +3104,14 @@ export const deMessages = {
             legacyHelp:
                 "Mit Token und Adresse in den Bot-Einstellungen eingetragen. Neue Verbindungen gehören zu den Spielservern, wo der Schlüssel verschlüsselt gespeichert und getestet werden kann.",
             openGameServers: "Spielserver öffnen",
+            previewTitle: "Vorschau der Antwort in Discord",
+            previewExample: "Beispieldaten",
+            previewEphemeral: "Nur du kannst das sehen · Verwerfen",
+            previewPlayer: "Beispielspieler",
+            previewNote:
+                "Die Zahlen sind ein Beispiel. Die echte Antwort zeigt die Statistiken des Spielers von deinen Spielservern.",
+            showConnections: "Verbindungen anzeigen",
+            hideConnections: "Verbindungen ausblenden",
         },
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",

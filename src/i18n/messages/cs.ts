@@ -3011,6 +3011,14 @@ export const csMessages = {
             legacyHelp:
                 "Zadaná tokenem a adresou v nastavení bota. Nová připojení patří do Herních serverů, kde se klíč ukládá šifrovaně a dá se otestovat.",
             openGameServers: "Otevřít Herní servery",
+            previewTitle: "Náhled odpovědi v Discordu",
+            previewExample: "Ukázková data",
+            previewEphemeral: "Vidíš jen ty · Zahodit",
+            previewPlayer: "Ukázkový hráč",
+            previewNote:
+                "Čísla jsou jen ukázka. Skutečná odpověď ukáže statistiky hráče z vašich herních serverů.",
+            showConnections: "Zobrazit připojení",
+            hideConnections: "Skrýt připojení",
         },
         messagesPage: {
             lookTitle: "Vzhled všech zpráv",
