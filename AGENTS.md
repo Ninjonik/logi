@@ -53,6 +53,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
 - [PR #158 review and repaired-runtime proof](./docs/integrations/website/v0.14/evidence/2026-10-03-pr-review/README.md) — upstream integration fixes, security dispositions, exact runtime verification and activation limits
+- [Discord redesign design](./docs/superpowers/specs/2026-10-05-discord-redesign-design.md) — owner decisions for bot messages, commands, panels, seed, WD League panels, graphics, application form and settings, with per-board acceptance checklists used for implementation and audit
 - [Global team catalogue handoff](./docs/integrations/website/v0.15/README.md) — explicit `teams` grant, global catalogue collection/detail reads, fan-out change feed and merge semantics, immutable match snapshots, actor-backed `matchTeams` commands and the API-parity exception for catalogue writes, logo uploads and team requests
 
 ### User-facing and legal Markdown
