@@ -17,13 +17,12 @@ import { isLocale } from "@/i18n/config"
 
 type Params = Promise<{ locale: string; serverId: string }>
 
-export async function generateMetadata({
-    params,
-}: {
-    params: Params
+export async function generateMetadata(props: {
+    params?: Params
 }): Promise<Metadata> {
-    const { locale } = await params
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    // The build also evaluates this while collecting page data, without params.
+    const locale = (await props?.params)?.locale
+    const dictionary = getDictionary(locale && isLocale(locale) ? locale : "en")
     return {
         title: dictionary.settingsHub.guidedSetup.metaTitle,
         robots: { index: false, follow: false },
