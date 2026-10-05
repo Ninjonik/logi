@@ -16,6 +16,10 @@ const panelFactionEmoji = v.object({
     manticore: v.optional(v.string()),
     lonestar: v.optional(v.string()),
 })
+/** Panel style A/B/C; absent or null follows the clan default (additive). */
+const panelStyle = v.optional(
+    v.union(v.literal("a"), v.literal("b"), v.literal("c"), v.null())
+)
 /** Client appearance input; the domain schema fills defaults and rejects malformed values. */
 export const panelPresentationInput = v.object({
     layout: v.optional(
@@ -29,6 +33,7 @@ export const panelPresentationInput = v.object({
     accentColor: v.optional(v.union(v.string(), v.null())),
     bannerAssetId: v.optional(v.union(v.string(), v.null())),
     factionEmoji: v.optional(panelFactionEmoji),
+    style: panelStyle,
 })
 /** Stored appearance is complete; `bannerUrl` comes from the verified asset, never the client. */
 export const panelPresentation = v.object({
@@ -42,6 +47,7 @@ export const panelPresentation = v.object({
     bannerAssetId: v.union(v.string(), v.null()),
     bannerUrl: v.union(v.string(), v.null()),
     factionEmoji: panelFactionEmoji,
+    style: panelStyle,
 })
 const panelFeatureSettings = {
     kind: v.union(

@@ -40,7 +40,8 @@ const access = {
     actor: dashboardActor,
 }
 type Db = Pick<QueryCtx, "db">
-export type AssetOwner = "team" | "event" | "panel" | "teamRequest"
+export type AssetOwner =
+    "team" | "event" | "panel" | "teamRequest" | "panelGraphics"
 
 /**
  * An asset scope is a workspace (its Discord guild ID, authorized for that
