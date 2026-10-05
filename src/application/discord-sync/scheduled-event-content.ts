@@ -21,9 +21,8 @@ export function buildScheduledEventDescription(
         event.server
             ? `${messages.scheduledEvent.server}: ${event.server}`
             : null,
-        event.kind === "match" && event.serverPassword
-            ? `${messages.scheduledEvent.password}: ${event.serverPassword}`
-            : null,
+        // Every guild member can read a scheduled event, so the server
+        // password is left to the player's private "My assignment" reply.
     ].filter((line): line is string => Boolean(line))
 
     return (

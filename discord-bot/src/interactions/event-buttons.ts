@@ -20,6 +20,7 @@ import {
 } from "../constants"
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
 import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { buildRosterAssignmentReply } from "./roster-assignment"
 import type { EventInteractionContext } from "../types"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
@@ -242,21 +243,28 @@ export async function handleRosterAssignmentInteraction(
         secret: env.internalSecret,
         eventId: eventId as never,
     })) as EventInteractionContext | null
-    const messages = getClanDiscordMessages(context?.config.defaultLanguage)
-    const roster = context?.roster
-    const squad = roster?.squads.find((item) =>
-        item.players.some((player) => player.id === interaction.user.id)
-    )
-    const player = squad?.players.find(
-        (item) => item.id === interaction.user.id
-    )
-    const content =
-        player && squad
-            ? `**${squad.name}**${player.roleName ? ` — **${player.roleName}**` : ""}${player.note ? `\n${player.note}` : ""}`
-            : roster?.reservePlayerIds.includes(interaction.user.id)
-              ? messages.embed.assignmentReserve
-              : messages.embed.assignmentUnassigned
-    await interaction.reply({ content, ephemeral: true })
+    // The reply can carry the server password, so it must come from the
+    // event's own guild and stay private to the player who asked.
+    if (
+        !context ||
+        (interaction.guildId && interaction.guildId !== context.event.guildId)
+    ) {
+        await interaction.reply({
+            content: getClanDiscordMessages(context?.config.defaultLanguage)
+                .interaction.unableToLoadEventContext,
+            ephemeral: true,
+        })
+        return
+    }
+    await interaction.reply({
+        ...buildRosterAssignmentReply({
+            config: context.config,
+            event: context.event,
+            roster: context.roster,
+            userId: interaction.user.id,
+        }),
+        ephemeral: true,
+    })
 }
 
 const signupInteractionLocks = new Map<string, Promise<void>>()
@@ -287,11 +295,11 @@ export async function handleEventButtonInteraction(
         )) as EventInteractionContext | null
 
         if (!context) {
-            await interaction.reply({
+            // The reply is already deferred; a second reply would throw.
+            await interaction.editReply({
                 content:
                     getClanDiscordMessages("en").interaction
                         .unableToLoadEventContext,
-                ephemeral: true,
             })
             return
         }

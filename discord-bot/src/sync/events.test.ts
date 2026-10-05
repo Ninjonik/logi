@@ -225,7 +225,10 @@ test("legacy event information messages append one logo embed per assigned team"
 
     assert.ok(previous.embeds)
     assert.deepEqual(toPlainJson(main), toPlainJson(previous.embeds[0]))
-    assert.match(main?.description ?? "", /🗺️ Map/)
+    assert.match(
+        main?.description ?? "",
+        /Foy • Day • Warfare · meeting <t:\d+:t>/
+    )
     assert.equal(main?.image?.url?.includes("/roster"), true)
     assert.match(
         main?.description ?? "",

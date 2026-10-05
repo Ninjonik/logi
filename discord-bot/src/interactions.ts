@@ -553,6 +553,32 @@ export function buildMembershipApplicationCloseEmbed(input: {
     return embed
 }
 
+/**
+ * Clan language for an event button. Reminder DMs have no guild, so the event
+ * supplies it instead of falling back to English.
+ */
+async function resolveEventButtonLanguage(
+    guildId: string | null,
+    eventId: string
+) {
+    if (guildId) {
+        const config = (await convex
+            .query(references.getConfigByDiscordGuildId, {
+                secret: env.internalSecret,
+                guildId,
+            })
+            .catch(() => null)) as { defaultLanguage?: string } | null
+        return config?.defaultLanguage
+    }
+    const context = (await convex
+        .query(references.getEventInteractionContext, {
+            secret: env.internalSecret,
+            eventId: eventId as never,
+        })
+        .catch(() => null)) as EventInteractionContext | null
+    return context?.config.defaultLanguage
+}
+
 export function createInteractionHandler(options: InteractionHandlerOptions) {
     return {
         async handleButtonInteraction(interaction: ButtonInteraction) {
@@ -570,13 +596,12 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
                     "attendance-late:",
                     ""
                 )
-                const config = (await convex
-                    .query(references.getConfigByDiscordGuildId, {
-                        secret: env.internalSecret,
-                        guildId: interaction.guildId!,
-                    })
-                    .catch(() => null)) as { defaultLanguage?: string } | null
-                const messages = getClanDiscordMessages(config?.defaultLanguage)
+                const messages = getClanDiscordMessages(
+                    await resolveEventButtonLanguage(
+                        interaction.guildId,
+                        eventId
+                    )
+                )
                 await openNoticeModal(
                     interaction,
                     eventId,
@@ -1260,24 +1285,37 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
     async function handleNoticeModalSubmit(
         interaction: ModalSubmitInteraction
     ) {
-        if (!interaction.guildId) {
-            await interaction.reply({
-                content: getClanDiscordMessages("en").membership.serverOnly,
-                flags: MessageFlags.Ephemeral,
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+        const eventId = interaction.customId.replace("notice-modal:", "")
+        // The "Running late" button also sits on reminder DMs, which have no
+        // guild: the event then supplies its guild and clan language.
+        const eventContext = interaction.guildId
+            ? null
+            : ((await convex
+                  .query(references.getEventInteractionContext, {
+                      secret: env.internalSecret,
+                      eventId: eventId as never,
+                  })
+                  .catch(() => null)) as EventInteractionContext | null)
+        const guildId = interaction.guildId ?? eventContext?.event.guildId
+        if (!guildId) {
+            await interaction.editReply({
+                content:
+                    getClanDiscordMessages("en").interaction
+                        .unableToLoadEventContext,
             })
             return
         }
-
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-        const eventId = interaction.customId.replace("notice-modal:", "")
-        const guildConfig = (await convex
-            .query(references.getConfigByDiscordGuildId, {
-                secret: env.internalSecret,
-                guildId: interaction.guildId,
-            })
-            .catch(() => null)) as {
-            defaultLanguage?: "en" | "cs" | "de"
-        } | null
+        const guildConfig = eventContext
+            ? eventContext.config
+            : ((await convex
+                  .query(references.getConfigByDiscordGuildId, {
+                      secret: env.internalSecret,
+                      guildId,
+                  })
+                  .catch(() => null)) as {
+                  defaultLanguage?: "en" | "cs" | "de"
+              } | null)
         const messages = getClanDiscordMessages(guildConfig?.defaultLanguage)
 
         await convex.mutation(references.upsertNotice, {
@@ -1289,7 +1327,7 @@ export function createInteractionHandler(options: InteractionHandlerOptions) {
 
         await revalidateAppData({
             type: "event-changed",
-            serverId: interaction.guildId,
+            serverId: guildId,
             eventId,
         })
         options.enqueueEventSync(eventId)

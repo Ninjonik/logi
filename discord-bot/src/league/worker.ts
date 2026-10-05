@@ -7,8 +7,9 @@ import {
     type Snowflake,
 } from "discord.js"
 import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
+import { humanLeagueInput, leagueCardCopy, renderLeagueCard } from "./render"
 import { panelArtwork, factionAssets } from "../public-panels/assets"
-import { humanLeagueInput, renderLeagueCard } from "./render"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
 import { env } from "../environment"
@@ -57,6 +58,9 @@ export function startLeagueWorker(client: Client) {
             }
             for (const guild of client.guilds.cache.values()) {
                 const tracking = await data(guild.id)
+                const language = tracking?.records.length
+                    ? await clanLanguageForGuild(guild.id)
+                    : undefined
                 for (const row of tracking?.records ?? []) {
                     try {
                         const art = row.fixture
@@ -66,9 +70,16 @@ export function startLeagueWorker(client: Client) {
                               )
                             : null
                         const message = row.fixture
-                            ? renderLeagueCard(row.fixture, art?.url, icons)
+                            ? renderLeagueCard(
+                                  row.fixture,
+                                  art?.url,
+                                  icons,
+                                  language
+                              )
                             : {
-                                  content: "League fixture unavailable",
+                                  content:
+                                      leagueCardCopy(language)
+                                          .fixtureUnavailable,
                                   allowedMentions: { parse: [] as never[] },
                               }
                         await publishManagedMessage(client, {

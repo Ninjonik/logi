@@ -111,7 +111,7 @@ export function getRosterImageVersion(
         event.cap,
         event.notes,
         event.server,
-        event.serverPassword,
+        // The public roster image never shows the server password.
         event.description,
     ])
 }
