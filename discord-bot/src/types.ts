@@ -454,4 +454,6 @@ export type EventInteractionContext = {
         status?: "pending" | "recruit" | "active"
     }>
     roster: Roster | null
+    /** Colour of the event's category; absent from older backends. */
+    categoryColor?: string | null
 }
