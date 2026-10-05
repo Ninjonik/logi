@@ -3112,6 +3112,10 @@ export const deMessages = {
     },
     clanOverview: {
         listAnd: "und",
+        unavailableTitle: "Dieser Clan kann nicht geöffnet werden",
+        unavailableDescription:
+            "Vielleicht hast du keinen Zugriff, oder er konnte nicht geladen werden. Versuche es erneut oder kehre zu deinen Clans zurück.",
+        backToClans: "Deine Clans",
         dateLine: "{date} · {games}",
         allMatches: "Alle Matches",
         newMatch: "Neues Match",

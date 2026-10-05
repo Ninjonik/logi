@@ -3021,6 +3021,10 @@ export const csMessages = {
     },
     clanOverview: {
         listAnd: "a",
+        unavailableTitle: "Klan se nepodařilo otevřít",
+        unavailableDescription:
+            "Možná k němu nemáte přístup, nebo se ho nepodařilo načíst. Zkuste to znovu, nebo se vraťte na své klany.",
+        backToClans: "Vaše klany",
         dateLine: "{date} · {games}",
         allMatches: "Všechny zápasy",
         newMatch: "Nový zápas",

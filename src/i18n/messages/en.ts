@@ -3022,6 +3022,10 @@ export const enMessages = {
     },
     clanOverview: {
         listAnd: "and",
+        unavailableTitle: "This clan cannot be opened",
+        unavailableDescription:
+            "You may not have access to it, or it could not be loaded. Try again or go back to your clans.",
+        backToClans: "Your clans",
         dateLine: "{date} · {games}",
         allMatches: "All matches",
         newMatch: "New match",
