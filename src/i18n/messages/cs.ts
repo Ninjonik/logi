@@ -61,6 +61,179 @@ export const csMessages = {
         retentionHelp:
             "Přehled zahrnuje pouze úspěšně převzaté dokončené hry. Chybějící historie poskytovatele ani probíhající hry nejsou zahrnuty. Čas sběru nepotvrzuje převzetí všech her poskytovatele.",
     },
+    panelGraphicsPage: {
+        breadcrumbParent: "Panely v Discordu",
+        unnamedServer: "Server bez názvu",
+        games: { hell_let_loose: "HLL", wardogs: "Wardogs" },
+        gameNames: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+        style: {
+            title: "Styl panelu",
+            description:
+                "Jak vypadají panely serverů v Discordu. Platí pro všechny panely, které nemají vlastní styl.",
+            defaultLabel: "Výchozí styl",
+            logiDefault: "Výchozí",
+            options: {
+                a: {
+                    title: "Styl A · Obrázek",
+                    description:
+                        "Bot vykreslí obrázek skóre a nahraje ho znovu nejvýš jednou za 60 s.",
+                },
+                b: {
+                    title: "Styl B · Banner a miniatura",
+                    description:
+                        "Banner serveru nahoře, miniatura mapy vpravo, znaky a ukazatel hráčů.",
+                },
+                c: {
+                    title: "Styl C · Kompaktní",
+                    description:
+                        "Jen text se znaky a ukazatelem. Nejkratší zpráva.",
+                },
+            },
+            perPanel: "Jiný styl pro jeden panel nastavíte v",
+            perPanelLink: "editoru panelu",
+        },
+        banners: {
+            title: "Bannery serverů",
+            description:
+                "Obrázek nahoře v panelu ve stylu B a pozadí obrázku skóre ve stylu A. Jeden na server.",
+            empty: "Zatím tu není žádný herní server. Přidejte ho v nastavení Herní servery.",
+            emptyLink: "Herní servery",
+            customChip: "Vlastní banner",
+            mapChip: "Obrázek mapy",
+            noneChip: "Bez banneru",
+            mapOverlay: "obrázek mapy",
+            liveServer: "Živý server",
+            banner: "Banner",
+            upload: "Nahrát banner",
+            uploading: "Nahrávám…",
+            remove: "Odebrat",
+            help: "PNG, JPG nebo WebP · poměr 3 : 1, třeba 1200 × 400 · nejvýš 2 MB.",
+            uploadedFile: "Nahráno {name} · {width} × {height} · {size}.",
+            uploadedBanner: "Nahráno · {width} × {height} · {size}.",
+            withoutBanner:
+                "Bez banneru: ukáže se obrázek aktuální mapy, teď {map}.",
+            withoutBannerUnknownMap:
+                "Bez banneru: ukáže se obrázek aktuální mapy.",
+            withoutBannerOff: "Bez banneru je panel bez obrázku nahoře.",
+            crop: "Výřez",
+            crops: { top: "Nahoře", center: "Střed", bottom: "Dole" },
+            useMapImage: "Použít obrázek mapy, když banner chybí",
+            barColor: "Barva lišty",
+            barColorInput: "Barva lišty v šestnáctkovém zápisu",
+            clanColor: "Barva klanu",
+            clanColorNote: "barva klanu",
+            barColorInvalid: "Zadejte barvu ve tvaru #RRGGBB.",
+        },
+        maps: {
+            title: "Obrázky map",
+            description:
+                "Miniatura v panelu a pozadí obrázku skóre, když server nemá vlastní banner. Logi má vestavěné obrázky; klan je může nahradit.",
+            customCount: {
+                one: "{count} vlastní",
+                few: "{count} vlastní",
+                many: "{count} vlastního",
+                other: "{count} vlastních",
+            },
+            search: "Hledat mapu",
+            searchPlaceholder: "Název mapy",
+            game: "Hra",
+            all: "Vše",
+            builtinChip: "Výchozí Logi",
+            customChip: "Vlastní",
+            noneChip: "Bez obrázku",
+            replace: "Nahradit vlastním",
+            restore: "Obnovit výchozí",
+            upload: "Nahrát obrázek",
+            uploading: "Nahrávám…",
+            imageAlt: "Mapa {name}",
+            footer: "Zobrazeno {shown} z {total} map · vlastní obrázek: PNG, JPG nebo WebP, čtverec aspoň 160 × 160, nejvýš 2 MB.",
+            noResults: "Hledání neodpovídá žádná mapa.",
+        },
+        factions: {
+            title: "Ikony frakcí",
+            description:
+                "Pevné, nedají se měnit. Bot je sám nahraje do Discordu jako emoji aplikace a používá je ve všech panelech, výsledcích a v lize.",
+            uploaded: "Nahráno do Discordu ✓ · {count} emoji",
+            pending: "Nahráno do Discordu {ready} z {total} emoji",
+            hllTitle: "Hell Let Loose · národy",
+            hllChip: "vlastní ikony Logi",
+            nations: {
+                us: { name: "USA", side: "Spojenci" },
+                gb: { name: "Velká Británie", side: "Spojenci" },
+                sov: { name: "Sovětský svaz", side: "Spojenci" },
+                cw: { name: "Commonwealth", side: "Spojenci" },
+                ger: { name: "Německo", side: "Osa" },
+                dak: { name: "Afrikakorps", side: "Osa" },
+                allies: {
+                    name: "Spojenci",
+                    side: "když server národ neuvede",
+                },
+                axis: { name: "Osa", side: "když server národ neuvede" },
+            },
+            wardogsTitle: "Wardogs · frakce",
+            wardogsChip: "ikony Wardogs, licence MIT",
+            wardogsHint: "na tmavém pozadí, jak je uvidíte v Discordu",
+            wardogs: {
+                valkyra: { name: "Valkyra", role: "frakce" },
+                manticore: { name: "Manticore", role: "frakce" },
+                lonestar: { name: "Lonestar", role: "frakce" },
+                wardogs: { name: "Wardogs", role: "znak hry" },
+            },
+            note: "Znaky národů HLL jsou naše jednoduché ikony, ne grafika ze hry.",
+        },
+        status: {
+            title: "Stavové ikony a ukazatel hráčů",
+            description:
+                "Také pevné; bot je nahraje spolu s ikonami frakcí. Vedle ikony je vždy slovo.",
+            states: {
+                live: { name: "Živě", hint: "server hraje" },
+                seeding: { name: "Seedujeme", hint: "pod 40 hráči, běží seed" },
+                empty: { name: "Prázdný", hint: "nikdo nehraje" },
+                offline: { name: "Nedostupný", hint: "server neodpovídá" },
+            },
+            gauge: {
+                players: {
+                    name: "Hráči",
+                    hint: "jeden dílek = desetina kapacity",
+                },
+                queue: { name: "Fronta", hint: "za mezerou" },
+                free: { name: "Volné místo", hint: "" },
+            },
+            sample: "Ukázka v panelu",
+            sampleQueue: "{count} / {capacity} hráčů, fronta {queue}",
+            sampleSeed: "{count} / {capacity} hráčů, seed do {target}",
+        },
+        saveNote:
+            "bannery a styl se projeví při dalším obnovení panelů, nejpozději do 60 s",
+        saved: "Grafika panelů je uložená.",
+        reload: "Načíst znovu",
+        errors: {
+            conflict:
+                "Grafiku mezitím změnil někdo jiný. Načtěte stránku znovu a změny zopakujte.",
+            asset_unavailable:
+                "Obrázek už není k dispozici. Nahrajte ho prosím znovu.",
+            unknown_server:
+                "Herní server už neexistuje. Načtěte stránku znovu.",
+            invalid_request: "Některá hodnota není platná.",
+            forbidden: "Nemáte oprávnění měnit grafiku panelů.",
+            unavailable: "Uložení se nepovedlo. Zkuste to znovu.",
+        },
+        uploadErrors: {
+            unsupported_type: "Přijímají se jen obrázky PNG, JPG a WebP.",
+            type_mismatch: "Obsah souboru neodpovídá jeho typu obrázku.",
+            bad_dimensions:
+                "Obrázek je příliš malý nebo velký. Obrázek mapy musí mít aspoň 160 × 160 pixelů, žádný obrázek víc než 4096 × 4096.",
+            animated: "Animované obrázky nejsou podporované.",
+            undecodable: "Obrázek se nepodařilo načíst.",
+            invalid_kind: "Tento obrázek sem nahrát nejde.",
+            invalid_asset: "Nahraný obrázek se nepodařilo uložit.",
+            too_large: "Obrázek je větší než 2 MB.",
+            upload_limited:
+                "Příliš mnoho nahrávání. Zkuste to znovu za {seconds} s.",
+            forbidden: "Nemáte oprávnění nahrávat obrázky.",
+            unavailable: "Nahrávání je dočasně nedostupné.",
+        },
+    },
     leagueMatch: {
         title: "Zápas Wardogs League",
         description:
@@ -3288,15 +3461,20 @@ export const csMessages = {
                     description:
                         "Kam bot posílá oznámení, akce a chyby. Časové pásmo a jazyk.",
                 },
+                "panel-graphics": {
+                    title: "Grafika panelů",
+                    description:
+                        "Styl panelů serverů, bannery serverů a obrázky map.",
+                },
                 roles: {
                     title: "Role a přístup",
                     description:
                         "Klanová role a role, která smí spravovat Logi.",
                 },
-                stats: {
-                    title: "Příkaz /stats",
+                commands: {
+                    title: "Příkazy",
                     description:
-                        "Statistiky hráčů v Discordu: pro které hry a kam se sdílí.",
+                        "Které příkazy bot nabízí, kdo je smí použít a kde.",
                 },
                 membership: {
                     title: "Členství",
@@ -3494,32 +3672,148 @@ export const csMessages = {
             unknownMember: "Člen bez účtu v Logi",
             moreManagers: "a další: {count}",
         },
-        statsPage: {
-            enable: "Povolit /stats",
-            on: "Zapnuto",
-            off: "Vypnuto",
-            gamesTitle: "Hry a zdroj dat",
-            hllSource:
-                "Z veřejných profilů HLL Records podle Steam účtu hráče.",
-            wardogsSource: "Z her uložených z vašich",
-            gameServersLink: "herních serverů",
-            shareTitle: "Sdílení",
-            defaultChannel: "Výchozí kanál",
-            defaultChannelHelp:
-                "Tlačítko Sdílet nabídne tento kanál jako první.",
-            noChannel: "Bez výchozího kanálu",
-            legacyTitle: "Stará připojení ke stats serverům · {count}",
-            legacyHelp:
-                "Zadaná tokenem a adresou v nastavení bota. Nová připojení patří do Herních serverů, kde se klíč ukládá šifrovaně a dá se otestovat.",
-            openGameServers: "Otevřít Herní servery",
-            previewTitle: "Náhled odpovědi v Discordu",
-            previewExample: "Ukázková data",
-            previewEphemeral: "Vidíš jen ty · Zahodit",
-            previewPlayer: "Ukázkový hráč",
-            previewNote:
-                "Čísla jsou jen ukázka. Skutečná odpověď ukáže statistiky hráče z vašich herních serverů.",
-            showConnections: "Zobrazit připojení",
-            hideConnections: "Skrýt připojení",
+        commandsPage: {
+            title: "Příkazy v Discordu",
+            description:
+                "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
+            registration: {
+                title: "Registrace příkazů",
+                phoneTitle: "Příkazy jsou zaregistrované",
+                registered:
+                    "Zaregistrováno {when} · {count} na serveru {server}. Po uložení změn je bot zaregistruje znovu sám; Discord je ukáže do minuty.",
+                registeredShort: "{when} · {count}",
+                count: {
+                    one: "{count} příkaz",
+                    few: "{count} příkazy",
+                    other: "{count} příkazů",
+                },
+                today: "dnes v {time}",
+                yesterday: "včera v {time}",
+                neverTitle: "Příkazy zatím nejsou zaregistrované",
+                never: "Bot je zaregistruje, jakmile poběží a uvidí tento server. Po uložení změn je zaregistruje znovu sám.",
+                pending: "Bot příkazy zaregistruje znovu do minuty.",
+                failedTitle: "Registrace příkazů se nepovedla",
+                failed: "{reason} Zkontrolujte, že bot je na serveru a má oprávnění pro příkazy, a zkuste to znovu.",
+                failures: {
+                    forbidden: "Discord botovi registraci nepovolil.",
+                    rate_limited: "Discord dočasně omezil požadavky.",
+                    unavailable: "Discord neodpověděl.",
+                },
+                reregister: "Znovu zaregistrovat",
+                requested: "Bot příkazy zaregistruje znovu do minuty.",
+                requestFailed: "Požadavek se nepodařilo odeslat.",
+            },
+            legacy: {
+                title: "Stará připojení ke stats serverům · {count}",
+                help: "Používá je jen hledání hráče v /link a v přihlášce do klanu, /stats ne. Po převodu do Herních serverů se klíč uloží šifrovaně a dá se otestovat.",
+                convert: "Převést do Herních serverů",
+                show: "Zobrazit připojení",
+                hide: "Skrýt připojení",
+                converted:
+                    "Převedeno: {converted}. Otestujte je v Herních serverech; stará připojení pak můžete odebrat.",
+                nothingToConvert:
+                    "Všechna připojení už v Herních serverech jsou, nebo se převést nedají.",
+                skipped:
+                    "Nepřevedeno: {count} (nejsou přes https, nemají klíč nebo patří jiné hře).",
+                encryptionUnavailable:
+                    "Šifrování klíčů teď není dostupné, převod se nespustil.",
+                failed: "Převod se nepodařil.",
+            },
+            commands: {
+                title: "Příkazy",
+                intro: "Logi ověří oprávnění při každém použití, čerstvě z Discordu. Nabídka po napsání „/“ je pro všechny stejná; kdo příkaz použít nesmí, dostane krátké vysvětlení a /help mu ho nenabídne.",
+                members: "Pro členy",
+                staff: "Pro správce",
+                new: "Nový",
+                on: "Zapnuto",
+                off: "Vypnuto",
+                who: "Kdo smí použít",
+                reply: "Odpověď",
+                where: "Kde jde použít",
+                audiences: {
+                    everyone: {
+                        label: "Všichni na serveru",
+                        description: "Každý člen Discord serveru",
+                    },
+                    clanMembers: {
+                        label: "Členové klanu",
+                        description: "S klanovou rolí z Role a přístup",
+                    },
+                    logiAdmins: {
+                        label: "Správci Logi",
+                        description: "Administrator nebo Role správců",
+                    },
+                },
+                rolesHint: "K tomu můžete přidat konkrétní role.",
+                audienceWithRoles: "{group} a k tomu role {roles}.",
+                addRole: "Role",
+                addRoleAria: "Přidat roli k {command}",
+                removeRole: "Odebrat roli {role}",
+                searchRoles: "Hledat roli",
+                noRoles: "Žádná další role",
+                replies: {
+                    private: "Jen autor příkazu",
+                    privateShare: "Jen autor, s tlačítkem Sdílet",
+                },
+                fixedWho: {
+                    help: "Všichni na serveru · každý uvidí jen své příkazy",
+                    link: "Všichni na serveru · potřebují ho i uchazeči o vstup",
+                    notice: "Přihlášení na akci, která ještě nezačala",
+                },
+                allChannels: "Všechny kanály",
+                someChannels: "Jen vybrané kanály",
+                addChannel: "Kanál",
+                addChannelAria: "Přidat kanál k {command}",
+                removeChannel: "Odebrat kanál {channel}",
+                searchChannels: "Hledat kanál",
+                noChannels: "Žádný další kanál",
+                channelsHint: "Jinde bot odpoví, kde příkaz jde použít.",
+                playerShareHint:
+                    "Sdílet pošle profil do kanálu, kde padl příkaz.",
+                whoLabel: "Kdo smí použít {command}",
+                replyLabel: "Odpověď {command}",
+                whereLabel: "Kde jde použít {command}",
+                closeTicket: {
+                    toggle: "zapíná se s Tickety",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Tickety",
+                    reply: "Potvrzení autorovi příkazu, shrnutí ve vlákně, DM autorovi ticketu",
+                    where: "Jen ve vláknech ticketů",
+                },
+                closeApplication: {
+                    toggle: "zapíná se s Členstvím",
+                    who: "Podpora kategorie nebo správci Logi",
+                    whoLink: "Členství",
+                    reply: "Potvrzení autorovi příkazu, rozhodnutí ve vlákně, DM uchazeči",
+                    where: "Jen ve vláknech přihlášek",
+                },
+            },
+            stats: {
+                gamesTitle: "Hry a zdroj dat",
+                gameSwitch: "Statistiky {game}",
+                hllSource:
+                    "Z veřejných profilů HLL Records podle Steam účtu hráče.",
+                wardogsSource: "Z her uložených z vašich",
+                gameServersLink: "herních serverů",
+                shareChannel: "Kanál pro Sdílet",
+                shareChannelHelp:
+                    "Sdílet pošle kartu rovnou sem. Bez kanálu se bot hráče zeptá, kam.",
+                noShareChannel: "Bez kanálu",
+                previewTitle: "Náhled odpovědi · ukázková data",
+                previewPlayer: "Hráč 17",
+            },
+            descriptions: {
+                title: "Popisy příkazů v Discordu",
+                intro: "Discord ukáže popis v jazyce klanu všem členům, bez ohledu na jazyk jejich aplikace. Jazyk klanu je {language}; při změně v {channels} bot příkazy zaregistruje znovu. Dovětek „(pro správce)“ bot přidá jen příkazům, které smí jen Správci Logi.",
+                channelsLink: "Kanály a jazyk",
+                languages: { cs: "čeština", en: "angličtina", de: "němčina" },
+                command: "Příkaz",
+                clanLanguage: "jazyk klanu",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote: "Po uložení bot příkazy znovu zaregistruje.",
+            saved: "Nastavení příkazů je uložené. Bot je zaregistruje znovu.",
+            saveError: "Nastavení příkazů se nepodařilo uložit.",
         },
         messagesPage: {
             lookTitle: "Vzhled všech zpráv",
@@ -3645,14 +3939,19 @@ export const csMessages = {
                 title: "Kanály a jazyk",
                 description: "Kam bot posílá zprávy a v jakém jazyce píše.",
             },
+            "panel-graphics": {
+                title: "Grafika panelů",
+                description:
+                    "Jak vypadají panely serverů v Discordu: styl, bannery serverů a obrázky map. Ikony frakcí a stavové ikony jsou pevné.",
+            },
             roles: {
                 title: "Role a přístup",
                 description: "Role klanu a role, která otevírá správu v Logi.",
             },
-            stats: {
-                title: "Příkaz /stats",
+            commands: {
+                title: "Příkazy",
                 description:
-                    "Pro které hry /stats odpovídá, kam se výsledky sdílejí a ze kterých serverů čte statistiky.",
+                    "Které příkazy bot nabízí, kdo je smí použít a kde. Odpovídá v jazyce klanu.",
             },
             membership: {
                 title: "Členství",
@@ -4185,8 +4484,6 @@ export const csMessages = {
         changeSquadTemplateAction: "Změnit šablonu a resetovat přiřazení",
         squadTemplateChanged:
             "Šablona jednotek byla změněna. Pro použití změny soupisku uložte.",
-        publishConfirmTitle: "Publikovat soupisku?",
-        publishConfirmDescription: "Členové okamžitě uvidí publikovanou verzi.",
         setupRoster: "Nastavení soupisky",
         selectEvent: "Vybrat událost",
         selectEventPlaceholder: "Vyberte událost",
@@ -4244,21 +4541,6 @@ export const csMessages = {
         saved: "Soupiska uložena",
         published: "Soupiska publikována",
         attendanceUpdated: "Docházka byla upravena",
-        updatePublishedPromptTitle: "Poslat i update soupisky?",
-        updatePublishedPromptDescription:
-            "Tato soupiska už je publikovaná. Vyberte, jestli se má do stejného announce kanálu poslat nový fotbalový update. Dotčení hráči dostanou DM v obou případech.",
-        updatePublishedPromptAnnounce: "Uložit a poslat update",
-        updatePublishedPromptSkip: "Uložit bez příspěvku",
-        updatePublishedPromptCancel: "Pokračovat v úpravách",
-        updatePublishedPromptHint:
-            "⚽ Umíme vypsat, kdo se dostal dovnitř, kdo vypadl, přesuny mezi squady i změny rolí.",
-        notifyRosterChanges: "Poslat dotčeným hráčům DM",
-        postRosterChanges:
-            "Poslat update soupisky do informačního kanálu události",
-        updatePosted: "Soupiska uložena a update byl odeslán.",
-        updateSavedWithoutPost: "Soupiska uložena. DM hráčům byly odeslány.",
-        updateDmDeliveryFailed:
-            "Soupiska byla uložena, ale jednomu nebo více hráčům se nepodařilo doručit DM.",
     },
     newMatch: {
         title: "Nový zápas",
@@ -5700,6 +5982,94 @@ export const csMessages = {
             "Tabule soupisky se zálohami, sloty rolí, stavem publikování a potvrzeními o účasti.",
         rosterPageDescription:
             "Inspirováno tabulemi kompetitivních týmů: seskupené jednotky, viditelné zálohy, stav zařazení a systém pro potvrzování účasti připravený na budoucí integraci.",
+    },
+    rosterPublish: {
+        publishTitle: "Publikovat soupisku",
+        republishTitle: "Publikovat znovu",
+        publishedAt: "zveřejněno {time}",
+        close: "Zavřít",
+        contentLabel: "Co se pošle do Discordu",
+        variantPhotoText: "Fotka a soupiska textem",
+        variantPhotoTextDescription:
+            "Obrázek soupisky a pod ním čety textem. Jde vyhledávat a číst i na telefonu.",
+        variantPhoto: "Jen fotka",
+        variantPhotoDescription:
+            "Jen obrázek soupisky, jako ho posílal starý bot.",
+        defaultChip: "výchozí",
+        defaultNote: "Výchozí podobu nastavíte v",
+        defaultNoteLink: "Zprávy a panely → Soupiska",
+        channelLabel: "Kanál",
+        channelFrom: "z",
+        channelFromLink: "Kanály a jazyk",
+        channelMissing: "kanál není nastavený",
+        mentionLabel: "Označit zařazené hráče",
+        mentionFirstHint: {
+            one: "Ve zprávě bude zmínka {count} hráče ze soupisky.",
+            few: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+            many: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+            other: "Ve zprávě budou zmínky všech {count} hráčů ze soupisky.",
+        },
+        mentionRepeatHint: "Při opakování zbytečně ruší; DM stačí.",
+        laterNote:
+            "DM o změnách a přehled změn se nabídnou až při dalším zveřejnění.",
+        dmLabel: "Oznámit hráčům změny do DM",
+        dmHint: {
+            one: "Jen {count} hráči, kterého se změna týká.",
+            few: "Jen {count} hráčům, kterých se změna týká.",
+            many: "Jen {count} hráčům, kterých se změna týká.",
+            other: "Jen {count} hráčům, kterých se změna týká.",
+        },
+        postLabel: "Poslat přehled změn do kanálu",
+        postHint: "Krátká zpráva pod soupiskou.",
+        rostered: "v soupisce",
+        reserves: {
+            one: "záloha",
+            few: "zálohy",
+            many: "záloh",
+            other: "záloh",
+        },
+        notAttending: "neúčastní",
+        changesTitle: "Změny od poslední verze",
+        changesMoved: "{count} přesunuto",
+        changesAgainst: "Proti verzi zveřejněné {time}.",
+        noChanges: "Hráči se od poslední verze nezměnili.",
+        toReserves: "do záloh",
+        previewTitle: "Náhled v {channel}",
+        previewCaption: "Zjednodušený náhled zprávy.",
+        republishCaption:
+            "Zpráva v {channel} se upraví, nová nevznikne. Přehled změn přijde pod ni.",
+        photoPlaceholder: "fotka soupisky (PNG)",
+        cancel: "Zrušit",
+        publish: "Publikovat soupisku",
+        republish: "Publikovat znovu",
+        published: "Soupiska publikována",
+        republished: "Soupiska znovu zveřejněna",
+        dmFailed: {
+            one: "DM nedošla {count} hráči: {names}. Má vypnuté soukromé zprávy od členů serveru.",
+            few: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+            many: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+            other: "DM nedošla {count} hráčům: {names}. Mají vypnuté soukromé zprávy od členů serveru.",
+        },
+        requestFailed:
+            "Soupiska je uložená, ale změny se do Discordu neodeslaly. Zkuste to znovu.",
+    },
+    reminderDelivery: {
+        title: "Připomínka došla {sent} z {total} hráčů",
+        body: "{names} mají v Discordu vypnuté soukromé zprávy od členů serveru. Napiš jim jinak, nebo je požádej, ať si zprávy od serveru {clan} zapnou.",
+        bodyOne:
+            "{names} má v Discordu vypnuté soukromé zprávy od členů serveru. Napiš mu jinak, nebo ho požádej, ať si zprávy od serveru {clan} zapne.",
+        failedAll:
+            "Připomínku se nepodařilo odeslat. Zkuste to za chvíli znovu.",
+        copyNames: "Zkopírovat jména",
+        copied: "Jména zkopírována",
+        howTo: "Jak zapnout zprávy od serveru",
+        meta: "{kind} · odeslána {time} · poslal {name}",
+        kindUnanswered: "Připomínka přihlášky",
+        kindUnconfirmed: "Připomínka docházky",
+        unknownSender: "správce",
+        and: "a",
+        sentAt: "{date} v {time}",
+        unknownPlayer: "neznámý hráč",
     },
     discordPreview: {
         regionLabel: "Náhled zprávy v Discordu",

@@ -147,7 +147,7 @@ The scheduled Discord event is written in the clan language: its name is the
 announcement title with the category ("VLK vs ROG · Friendly") and its
 description reads like "Friendly against ROG, we play Allies. / Meeting 19:30,
 start 20:00 · Foy · day / Sign-up and roster: #announcements / Rostered players
-get the server password under Show my place." It never contains the raw map
+get the server password under My assignment." It never contains the raw map
 name, the raw side or the password. It runs from the meeting to the match end;
 a match ended before its meeting cancels it, even when the bot only syncs it
 later.
@@ -200,7 +200,7 @@ their own time zone.
       a roster channel the card also shows the roster picture.
     - **Starting** from the meeting ("meeting is on in 🔊 Meeting") with
       **Confirmed 15 of 18** · running late 1 · not coming 1 and **Confirm
-      attendance**, **Running late** and **Show my place**.
+      attendance**, **Running late** and **My assignment**.
     - **In progress** ("since 20:00") from the start: the counts stay and the
       buttons go.
     - **Played** with the start and map, the confirmed result ("**Win 4 : 1** ·
@@ -236,19 +236,24 @@ their own time zone.
 - **Add to calendar** opens a Google Calendar event from the meeting to the
   end, titled like the card, at "Discord · clan · channel Meeting", with the
   meeting and start times, the map and a link back to the announcement channel.
-- **Published roster** (event-info channel): `Roster · Name`, the meeting time
-  and meeting channel, one line per squad with its player count (a one-player
-  squad such as Command shows the name), reserves, the roster image and the
-  **My assignment** and **Full roster on the web** buttons.
+- **Published roster** (event-info channel): the roster image, by default with
+  every squad written out under it, and the **My assignment**, **Show roster**
+  and **Open roster** buttons. See
+  [publish to Discord](/wiki/operations/rosters#publish-to-discord).
 - **My assignment** (visible only to the player who presses it): squad and role,
   the squad leader when the roster marks one (Officer, Squad Leader, SL, Tank
-  Commander, Spotter or Commander roles), the meeting time and channel, and the
-  server with its password. While the event is starting it also offers **I'll be
-  there** and **Running late**.
+  Commander, Spotter or Commander roles), the leader's note, the meeting time
+  and channel, and the server with its password. From the day before the
+  meeting it offers **Confirm attendance**; until the game starts **Running
+  late**.
 - **Attendance reminder DM:** "You're playing Name tomorrow" (or today, in the
-  server's time zone), start, meeting time and the player's squad and role, with
-  **I'll be there**, **Running late** and **Can't make it**. Both late and
+  clan's time zone), start, meeting time and the player's squad and role, with
+  **Confirm attendance**, **Running late** and **Can't make it**. Both late and
   can't-make-it work from the DM.
+
+Direct messages from the bot use the clan language and address the player
+informally. Each ends with the clan name and a **Message settings** link to the
+player's own Logi settings.
 
 Faction emblems are the bot's installed application emoji (Wardogs factions,
 see the public panels guide) or, without them, a fixed monochrome marker: ★ for
@@ -295,10 +300,14 @@ changes nothing.
 For matches, managers can choose which membership categories receive a direct
 message reminder to sign up. The default is active regular members only;
 recruits and reserve members can be added, while mercenaries are never included.
-The bot sends the match card with its sign-up buttons 24 hours after creation,
-then every 24 hours while registration remains open. Its controls let the
-recipient sign up, change their signup, decline or see the sign-ups directly
-from the DM; the replies arrive in the same conversation. Clear every recipient category to turn the reminders off
+The bot sends a sign-up reminder card (the match, its sides, the start, when
+sign-ups close and why the DM came) 24 hours after the announcement (or after
+creation when the match has no announcement start), then every 24 hours while
+registration remains open. Its **Sign up**, **Can't make it** and **Open
+announcement** buttons work directly from the DM: **Sign up** opens the group
+picker there and the replies arrive in the same conversation. The same card is
+sent when leadership presses **Remind** in Logi or **Remind non-responders**
+under **Show sign-ups**. Clear every recipient category to turn the reminders off
 for that match. A member stops
 receiving these reminders as soon as they choose either attending or not
 attending. Memberships without a game assignment are treated as Hell Let Loose

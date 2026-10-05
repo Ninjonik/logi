@@ -1,8 +1,12 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import {
+    buildRosterImageUrl,
+    generateCalendarUrl,
+    getRosterImageVersion,
+} from "./utils"
 import { boardEvent } from "./events/board-example.fixture"
-import { generateCalendarUrl } from "./utils"
 
 test("the calendar panel's link runs from the meeting to the end without the old fillers (L1-143)", () => {
     const event = boardEvent({
@@ -30,5 +34,32 @@ test("the calendar panel's link runs from the meeting to the end without the old
     assert.doesNotMatch(
         decodeURIComponent(bare.toString()),
         /Briefing k operaci/
+    )
+})
+
+test("the published roster image keeps its URL for sign-up changes and changes with the roster", () => {
+    const event = boardEvent({
+        status: "closed",
+        updatedAt: "2026-07-29T10:00:00.000Z",
+    })
+    const rosterUpdatedAt = "2026-07-29T10:00:00.000Z"
+    const imageUrl = buildRosterImageUrl(
+        event.id,
+        getRosterImageVersion(event, rosterUpdatedAt)
+    )
+    const signupOnly = { ...event, updatedAt: "2026-07-29T10:01:00.000Z" }
+    assert.equal(
+        buildRosterImageUrl(
+            event.id,
+            getRosterImageVersion(signupOnly, rosterUpdatedAt)
+        ),
+        imageUrl
+    )
+    assert.notEqual(
+        buildRosterImageUrl(
+            event.id,
+            getRosterImageVersion(event, "2026-07-29T10:02:00.000Z")
+        ),
+        imageUrl
     )
 })

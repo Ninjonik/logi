@@ -1,7 +1,6 @@
 import {
     AttachmentBuilder,
     ChannelType,
-    MessageFlags,
     type Client,
     type Guild,
     type TextChannel,
@@ -14,31 +13,27 @@ import {
     syncScheduledDiscordEvent,
 } from "../scheduled-events"
 import {
-    matchRoleNamesFor,
     scheduledEventContentFor,
     squadCategoryNameFor,
     squadVoiceChannelNameFor,
 } from "../events/match-discord"
-import {
-    buildRosterImageUrl,
-    getRosterImageVersion,
-    warmRosterImage,
-    withTimeout,
-} from "../utils"
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
 import {
-    buildRosterInfoEmbed,
-    buildRosterInfoV2Message,
-} from "../message-builders"
+    buildRosterImageUrl,
+    getRosterImageVersion,
+    withTimeout,
+} from "../utils"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
-import { publishManagedMessage, isUnknownMessage } from "./publication"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
 import { syncAnnouncement } from "../events/announcement-sync"
 import { syncSquadVoiceChannels } from "../events/squad-voice"
+import { buildRosterMessage } from "../events/roster-message"
 import { reportClanDiscordError } from "../error-reporting"
+import { memberNames } from "../events/match-context"
+import { publishManagedMessage } from "./publication"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
 import { getCalendarSyncVersion } from "./work"
@@ -50,16 +45,6 @@ import { env } from "../environment"
 // a scheduled Discord event and forum provisioning. Discord rate limits make
 // the previous 20-second aggregate deadline too short for that valid work.
 const EVENT_SYNC_TIMEOUT_MS = 60_000
-
-function shouldShowPublishedRosterImage(
-    event: EventRecord,
-    rosterUpdatedAt?: string
-) {
-    return Boolean(
-        rosterUpdatedAt &&
-        (event.status === "closed" || event.status === "starting")
-    )
-}
 
 async function buildPublishedRosterImageAttachment(
     event: EventRecord,
@@ -103,81 +88,13 @@ async function buildPublishedRosterImageAttachment(
     }
 }
 
-export async function resolveAnnouncementDisplayNames(
-    payload: SyncPayload,
-    event: EventRecord,
-    guild: Guild
-) {
-    const userIds = new Set<string>()
-
-    for (const signUp of event.signUps) {
-        userIds.add(signUp.userId)
-    }
-
-    for (const participant of event.participants) {
-        userIds.add(participant.userId)
-    }
-
-    if (userIds.size === 0) {
-        return payload.userDisplayNames
-    }
-
-    const resolvedDisplayNames = { ...payload.userDisplayNames }
-    const members = await guild.members
-        .fetch({ user: [...userIds] })
-        .catch(() => null)
-
-    if (members) {
-        for (const [userId, member] of members) {
-            const displayName = member.displayName?.trim()
-            if (displayName) {
-                resolvedDisplayNames[userId] = displayName
-            }
-        }
-    }
-
-    return resolvedDisplayNames
-}
-
 /**
- * Content of the event information message: the published roster card.
- * Legacy embed messages stay legacy so their identity survives edits; new
- * messages use Components V2. The match announcement is drawn by
- * `events/announcement-sync.ts`.
+ * The published roster message in the roster channel (board L1 1.11): the
+ * roster photo uploaded with the message, as the old bot did, and the text
+ * roster under it unless the publish chose the photo only. One managed
+ * message, edited in place on every re-publish.
  */
-export function buildEventMessageContent(input: {
-    payload: SyncPayload
-    event: EventRecord
-    roster: Roster
-    userDisplayNames: Record<string, string>
-    legacyEmbeds: boolean
-}) {
-    const { payload, event, roster } = input
-    if (input.legacyEmbeds) {
-        return {
-            embeds: [
-                buildRosterInfoEmbed(
-                    payload.config,
-                    event,
-                    roster,
-                    input.userDisplayNames
-                ),
-            ],
-            components: [],
-        }
-    }
-    return {
-        ...buildRosterInfoV2Message(
-            payload,
-            event,
-            roster,
-            input.userDisplayNames
-        ),
-        flags: MessageFlags.IsComponentsV2 as const,
-    }
-}
-
-async function syncEventMessage(
+async function syncRosterMessage(
     channel: TextChannel,
     messageId: string | undefined,
     payload: SyncPayload,
@@ -202,49 +119,44 @@ async function syncEventMessage(
         )
         return undefined
     }
-    const existing = messageId
-        ? await channel.messages
-              .fetch({ message: messageId, force: true, cache: false })
-              .catch((error) => {
-                  if (isUnknownMessage(error)) return null
-                  throw error
-              })
-        : null
-    if (shouldShowPublishedRosterImage(event, roster.updatedAt)) {
-        // Warming the image cache is an optimization. The image URL is still
-        // rendered in the message and can complete independently, so a
-        // slow warm-up must not turn an otherwise successful event sync into
-        // a Discord error-channel report.
-        try {
-            const warmed = await warmRosterImage(
-                event.id,
-                getRosterImageVersion(event, roster.updatedAt)
-            )
-            if (!warmed) {
-                logWarn("event-sync", "Roster image warm-up was unsuccessful", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    status: event.status,
-                })
-            }
-        } catch (error) {
-            logWarn("event-sync", "Roster image warm-up timed out or failed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                status: event.status,
-                error,
-            })
-        }
+    let attachment:
+        | Awaited<ReturnType<typeof buildPublishedRosterImageAttachment>>
+        | undefined
+    try {
+        attachment = await buildPublishedRosterImageAttachment(event, roster)
+    } catch (error) {
+        // The public image URL still renders; the upload is only more reliable.
+        logWarn("event-sync", "Roster image attachment failed", {
+            eventId: event.id,
+            guildId: payload.config.guildId,
+            error,
+        })
     }
-    const names = await resolveAnnouncementDisplayNames(payload, event, guild)
-    const message = buildEventMessageContent({
+    const rosterUserIds = [
+        ...roster.squads.flatMap((squad) =>
+            squad.players.flatMap((player) => (player.id ? [player.id] : []))
+        ),
+        ...roster.reservePlayerIds,
+        ...(roster.notAttendingPlayerIds ?? []),
+    ]
+    const message = buildRosterMessage({
         payload,
         event,
         roster,
-        userDisplayNames: names,
-        legacyEmbeds: Boolean(
-            existing && !existing.flags.has(MessageFlags.IsComponentsV2)
+        names: await memberNames(
+            guild,
+            rosterUserIds,
+            payload.userDisplayNames
         ),
+        image: {
+            url:
+                attachment?.mediaUrl ??
+                buildRosterImageUrl(
+                    event.id,
+                    getRosterImageVersion(event, roster.updatedAt)
+                ),
+            description: event.name,
+        },
     })
     return (
         (await publishManagedMessage(guild.client, {
@@ -252,10 +164,14 @@ async function syncEventMessage(
             ...identity,
             revision: Math.max(
                 Date.parse(payload.config.updatedAt),
-                Date.parse(event.updatedAt)
+                Date.parse(event.updatedAt),
+                Date.parse(roster.updatedAt) || 0
             ),
             channelId: channel.id,
-            message: { ...message, allowedMentions: { parse: [] } },
+            message: {
+                ...message,
+                files: attachment ? [attachment.attachment] : [],
+            },
         })) ?? messageId
     )
 }
@@ -431,7 +347,7 @@ async function syncEvent(
               guild,
               event,
               roster ?? null,
-              matchRoleNamesFor(payload, event)
+              payload.config.defaultLanguage
           )
         : {
               attendeeRoleId: event.attendeeRoleId,
@@ -481,6 +397,7 @@ async function syncEvent(
                 topicPreset,
                 attendeeRoleId: eventRoles.attendeeRoleId,
                 reserveRoleId: eventRoles.reserveRoleId,
+                categories: payload.guild.eventCategories,
             })
 
             forumChannelId = forumSyncResult.forumChannelId
@@ -610,7 +527,7 @@ async function syncEvent(
     ) {
         const infoText = infoChannel as TextChannel
         if (roster?.published) {
-            eventInfoMessageId = await syncEventMessage(
+            eventInfoMessageId = await syncRosterMessage(
                 infoText,
                 eventInfoMessageId,
                 payload,

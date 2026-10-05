@@ -61,6 +61,191 @@ export const deMessages = {
         retentionHelp:
             "Nur erfolgreich importierte abgeschlossene Spiele. Fehlende Anbieterhistorie und laufende Spiele sind ausgeschlossen. Die Erfassungszeit bestätigt keinen vollständigen Anbieterimport.",
     },
+    panelGraphicsPage: {
+        breadcrumbParent: "Panels in Discord",
+        unnamedServer: "Server ohne Namen",
+        games: { hell_let_loose: "HLL", wardogs: "Wardogs" },
+        gameNames: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+        style: {
+            title: "Panel-Stil",
+            description:
+                "Wie Server-Panels in Discord aussehen. Gilt für alle Panels ohne eigenen Stil.",
+            defaultLabel: "Standardstil",
+            logiDefault: "Standard",
+            options: {
+                a: {
+                    title: "Stil A · Bild",
+                    description:
+                        "Der Bot zeichnet ein Punktestand-Bild und lädt es höchstens alle 60 s neu hoch.",
+                },
+                b: {
+                    title: "Stil B · Banner und Miniatur",
+                    description:
+                        "Server-Banner oben, Kartenminiatur rechts, Zeichen und Spieleranzeige.",
+                },
+                c: {
+                    title: "Stil C · Kompakt",
+                    description:
+                        "Nur Text mit Zeichen und Spieleranzeige. Die kürzeste Nachricht.",
+                },
+            },
+            perPanel: "Einen anderen Stil für ein Panel legen Sie im",
+            perPanelLink: "Panel-Editor fest",
+        },
+        banners: {
+            title: "Server-Banner",
+            description:
+                "Das Bild oben im Panel im Stil B und der Hintergrund des Punktestand-Bilds im Stil A. Eines pro Server.",
+            empty: "Es gibt noch keinen Spielserver. Fügen Sie ihn in den Einstellungen Spielserver hinzu.",
+            emptyLink: "Spielserver",
+            customChip: "Eigenes Banner",
+            mapChip: "Kartenbild",
+            noneChip: "Kein Banner",
+            mapOverlay: "Kartenbild",
+            liveServer: "Live-Server",
+            banner: "Banner",
+            upload: "Banner hochladen",
+            uploading: "Wird hochgeladen…",
+            remove: "Entfernen",
+            help: "PNG, JPG oder WebP · Verhältnis 3 : 1, zum Beispiel 1200 × 400 · höchstens 2 MB.",
+            uploadedFile: "Hochgeladen {name} · {width} × {height} · {size}.",
+            uploadedBanner: "Hochgeladen · {width} × {height} · {size}.",
+            withoutBanner:
+                "Ohne Banner erscheint das Bild der aktuellen Karte, jetzt {map}.",
+            withoutBannerUnknownMap:
+                "Ohne Banner erscheint das Bild der aktuellen Karte.",
+            withoutBannerOff: "Ohne Banner hat das Panel oben kein Bild.",
+            crop: "Ausschnitt",
+            crops: { top: "Oben", center: "Mitte", bottom: "Unten" },
+            useMapImage: "Kartenbild verwenden, wenn das Banner fehlt",
+            barColor: "Leistenfarbe",
+            barColorInput: "Leistenfarbe als Hexadezimalwert",
+            clanColor: "Clanfarbe",
+            clanColorNote: "Clanfarbe",
+            barColorInvalid: "Geben Sie die Farbe als #RRGGBB ein.",
+        },
+        maps: {
+            title: "Kartenbilder",
+            description:
+                "Die Miniatur im Panel und der Hintergrund des Punktestand-Bilds, wenn der Server kein eigenes Banner hat. Logi hat eingebaute Bilder; der Clan kann sie ersetzen.",
+            customCount: {
+                one: "{count} eigenes",
+                few: "{count} eigene",
+                many: "{count} eigene",
+                other: "{count} eigene",
+            },
+            search: "Karte suchen",
+            searchPlaceholder: "Kartenname",
+            game: "Spiel",
+            all: "Alle",
+            builtinChip: "Logi-Standard",
+            customChip: "Eigenes",
+            noneChip: "Kein Bild",
+            replace: "Durch eigenes ersetzen",
+            restore: "Standard wiederherstellen",
+            upload: "Bild hochladen",
+            uploading: "Wird hochgeladen…",
+            imageAlt: "Karte {name}",
+            footer: "{shown} von {total} Karten angezeigt · eigenes Bild: PNG, JPG oder WebP, quadratisch mindestens 160 × 160, höchstens 2 MB.",
+            noResults: "Keine Karte passt zur Suche.",
+        },
+        factions: {
+            title: "Fraktionssymbole",
+            description:
+                "Fest, sie lassen sich nicht ändern. Der Bot lädt sie selbst als App-Emoji in Discord hoch und verwendet sie in allen Panels, Ergebnissen und in der Liga.",
+            uploaded: "In Discord hochgeladen ✓ · {count} Emoji",
+            pending: "In Discord hochgeladen {ready} von {total} Emoji",
+            hllTitle: "Hell Let Loose · Nationen",
+            hllChip: "eigene Logi-Symbole",
+            nations: {
+                us: { name: "USA", side: "Alliierte" },
+                gb: { name: "Großbritannien", side: "Alliierte" },
+                sov: { name: "Sowjetunion", side: "Alliierte" },
+                cw: { name: "Commonwealth", side: "Alliierte" },
+                ger: { name: "Deutschland", side: "Achse" },
+                dak: { name: "Afrikakorps", side: "Achse" },
+                allies: {
+                    name: "Alliierte",
+                    side: "wenn der Server keine Nation nennt",
+                },
+                axis: {
+                    name: "Achse",
+                    side: "wenn der Server keine Nation nennt",
+                },
+            },
+            wardogsTitle: "Wardogs · Fraktionen",
+            wardogsChip: "Wardogs-Symbole, MIT-Lizenz",
+            wardogsHint:
+                "auf dunklem Hintergrund, wie Sie sie in Discord sehen",
+            wardogs: {
+                valkyra: { name: "Valkyra", role: "Fraktion" },
+                manticore: { name: "Manticore", role: "Fraktion" },
+                lonestar: { name: "Lonestar", role: "Fraktion" },
+                wardogs: { name: "Wardogs", role: "Spielzeichen" },
+            },
+            note: "Die HLL-Nationszeichen sind unsere eigenen einfachen Symbole, keine Spielgrafik.",
+        },
+        status: {
+            title: "Statussymbole und Spieleranzeige",
+            description:
+                "Ebenfalls fest; der Bot lädt sie zusammen mit den Fraktionssymbolen hoch. Neben dem Symbol steht immer ein Wort.",
+            states: {
+                live: { name: "Live", hint: "der Server läuft" },
+                seeding: {
+                    name: "Seeding",
+                    hint: "unter 40 Spielern, Seed läuft",
+                },
+                empty: { name: "Leer", hint: "niemand spielt" },
+                offline: {
+                    name: "Nicht erreichbar",
+                    hint: "der Server antwortet nicht",
+                },
+            },
+            gauge: {
+                players: {
+                    name: "Spieler",
+                    hint: "ein Segment = ein Zehntel der Kapazität",
+                },
+                queue: { name: "Warteschlange", hint: "nach einer Lücke" },
+                free: { name: "Freier Platz", hint: "" },
+            },
+            sample: "Beispiel im Panel",
+            sampleQueue: "{count} / {capacity} Spieler, Warteschlange {queue}",
+            sampleSeed: "{count} / {capacity} Spieler, Seed bis {target}",
+        },
+        saveNote:
+            "Banner und Stil gelten ab der nächsten Aktualisierung der Panels, spätestens nach 60 s",
+        saved: "Panel-Grafik gespeichert.",
+        reload: "Neu laden",
+        errors: {
+            conflict:
+                "Jemand anderes hat die Grafik inzwischen geändert. Laden Sie die Seite neu und wiederholen Sie Ihre Änderungen.",
+            asset_unavailable:
+                "Das Bild ist nicht mehr verfügbar. Bitte laden Sie es erneut hoch.",
+            unknown_server:
+                "Der Spielserver existiert nicht mehr. Laden Sie die Seite neu.",
+            invalid_request: "Ein Wert ist ungültig.",
+            forbidden: "Sie dürfen die Panel-Grafik nicht ändern.",
+            unavailable: "Speichern fehlgeschlagen. Versuchen Sie es erneut.",
+        },
+        uploadErrors: {
+            unsupported_type:
+                "Nur PNG-, JPG- und WebP-Bilder werden akzeptiert.",
+            type_mismatch: "Der Dateiinhalt passt nicht zu seinem Bildtyp.",
+            bad_dimensions:
+                "Das Bild ist zu klein oder zu groß. Ein Kartenbild braucht mindestens 160 × 160 Pixel, kein Bild mehr als 4096 × 4096.",
+            animated: "Animierte Bilder werden nicht unterstützt.",
+            undecodable: "Das Bild konnte nicht gelesen werden.",
+            invalid_kind: "Dieses Bild kann hier nicht hochgeladen werden.",
+            invalid_asset:
+                "Das hochgeladene Bild konnte nicht gespeichert werden.",
+            too_large: "Das Bild ist größer als 2 MB.",
+            upload_limited:
+                "Zu viele Uploads. Versuchen Sie es in {seconds} s erneut.",
+            forbidden: "Sie dürfen keine Bilder hochladen.",
+            unavailable: "Hochladen ist vorübergehend nicht verfügbar.",
+        },
+    },
     leagueMatch: {
         title: "Wardogs League Spiel",
         description:
@@ -3388,15 +3573,20 @@ export const deMessages = {
                     description:
                         "Wohin der Bot Ankündigungen, Events und Fehler schickt. Zeitzone und Sprache.",
                 },
+                "panel-graphics": {
+                    title: "Panel-Grafik",
+                    description:
+                        "Stil der Server-Panels, Server-Banner und Kartenbilder.",
+                },
                 roles: {
                     title: "Rollen und Zugriff",
                     description:
                         "Die Clan-Rolle und die Rolle, die Logi verwalten darf.",
                 },
-                stats: {
-                    title: "Befehl /stats",
+                commands: {
+                    title: "Befehle",
                     description:
-                        "Spielerstatistiken in Discord: für welche Spiele und wo sie geteilt werden.",
+                        "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo.",
                 },
                 membership: {
                     title: "Mitgliedschaft",
@@ -3598,32 +3788,152 @@ export const deMessages = {
             unknownMember: "Mitglied ohne Logi-Konto",
             moreManagers: "und {count} weitere",
         },
-        statsPage: {
-            enable: "/stats erlauben",
-            on: "An",
-            off: "Aus",
-            gamesTitle: "Spiele und Datenquelle",
-            hllSource:
-                "Aus öffentlichen HLL-Records-Profilen, über das Steam-Konto des Spielers.",
-            wardogsSource: "Aus gespeicherten Spielen deiner",
-            gameServersLink: "Spielserver",
-            shareTitle: "Teilen",
-            defaultChannel: "Standardkanal",
-            defaultChannelHelp:
-                "Die Schaltfläche Teilen bietet diesen Kanal zuerst an.",
-            noChannel: "Kein Standardkanal",
-            legacyTitle: "Alte Stats-Server-Verbindungen · {count}",
-            legacyHelp:
-                "Mit Token und Adresse in den Bot-Einstellungen eingetragen. Neue Verbindungen gehören zu den Spielservern, wo der Schlüssel verschlüsselt gespeichert und getestet werden kann.",
-            openGameServers: "Spielserver öffnen",
-            previewTitle: "Vorschau der Antwort in Discord",
-            previewExample: "Beispieldaten",
-            previewEphemeral: "Nur du kannst das sehen · Verwerfen",
-            previewPlayer: "Beispielspieler",
-            previewNote:
-                "Die Zahlen sind ein Beispiel. Die echte Antwort zeigt die Statistiken des Spielers von deinen Spielservern.",
-            showConnections: "Verbindungen anzeigen",
-            hideConnections: "Verbindungen ausblenden",
+        commandsPage: {
+            title: "Befehle in Discord",
+            description:
+                "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo. Er antwortet in der Clan-Sprache.",
+            registration: {
+                title: "Registrierung der Befehle",
+                phoneTitle: "Befehle sind registriert",
+                registered:
+                    "Registriert {when} · {count} auf dem Server {server}. Nach dem Speichern registriert der Bot sie selbst erneut; Discord zeigt sie innerhalb einer Minute.",
+                registeredShort: "{when} · {count}",
+                count: { one: "{count} Befehl", other: "{count} Befehle" },
+                today: "heute um {time}",
+                yesterday: "gestern um {time}",
+                neverTitle: "Befehle sind noch nicht registriert",
+                never: "Der Bot registriert sie, sobald er läuft und diesen Server sieht. Nach dem Speichern registriert er sie selbst erneut.",
+                pending:
+                    "Der Bot registriert die Befehle innerhalb einer Minute erneut.",
+                failedTitle: "Registrierung der Befehle fehlgeschlagen",
+                failed: "{reason} Prüfen Sie, dass der Bot auf dem Server ist und Befehle verwalten darf, und versuchen Sie es erneut.",
+                failures: {
+                    forbidden:
+                        "Discord hat dem Bot die Registrierung nicht erlaubt.",
+                    rate_limited:
+                        "Discord hat Anfragen vorübergehend begrenzt.",
+                    unavailable: "Discord hat nicht geantwortet.",
+                },
+                reregister: "Erneut registrieren",
+                requested:
+                    "Der Bot registriert die Befehle innerhalb einer Minute erneut.",
+                requestFailed: "Die Anfrage konnte nicht gesendet werden.",
+            },
+            legacy: {
+                title: "Alte Stats-Server-Verbindungen · {count}",
+                help: "Nur die Spielersuche in /link und in der Clan-Bewerbung nutzt sie, /stats nicht. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
+                convert: "Zu Spielservern übertragen",
+                show: "Verbindungen anzeigen",
+                hide: "Verbindungen ausblenden",
+                converted:
+                    "Übertragen: {converted}. Testen Sie sie unter Spielserver; danach können Sie die alten Verbindungen entfernen.",
+                nothingToConvert:
+                    "Alle Verbindungen sind schon bei den Spielservern oder lassen sich nicht übertragen.",
+                skipped:
+                    "Nicht übertragen: {count} (kein https, kein Schlüssel oder ein anderes Spiel).",
+                encryptionUnavailable:
+                    "Die Schlüsselverschlüsselung ist gerade nicht verfügbar; nichts wurde übertragen.",
+                failed: "Das Übertragen ist fehlgeschlagen.",
+            },
+            commands: {
+                title: "Befehle",
+                intro: "Logi prüft die Berechtigung bei jeder Nutzung, frisch aus Discord. Das Menü nach „/“ ist für alle gleich; wer einen Befehl nicht nutzen darf, bekommt eine kurze Erklärung und /help bietet ihn nicht an.",
+                members: "Für Mitglieder",
+                staff: "Für Verwalter",
+                new: "Neu",
+                on: "An",
+                off: "Aus",
+                who: "Wer darf ihn nutzen",
+                reply: "Antwort",
+                where: "Wo er funktioniert",
+                audiences: {
+                    everyone: {
+                        label: "Alle auf dem Server",
+                        description: "Jedes Mitglied des Discord-Servers",
+                    },
+                    clanMembers: {
+                        label: "Clan-Mitglieder",
+                        description:
+                            "Mit der Clan-Rolle aus Rollen und Zugriff",
+                    },
+                    logiAdmins: {
+                        label: "Logi-Verwalter",
+                        description: "Administrator oder die Verwalterrolle",
+                    },
+                },
+                rolesHint: "Zusätzlich können Sie bestimmte Rollen hinzufügen.",
+                audienceWithRoles: "{group} und zusätzlich die Rolle {roles}.",
+                addRole: "Rolle",
+                addRoleAria: "Rolle zu {command} hinzufügen",
+                removeRole: "Rolle {role} entfernen",
+                searchRoles: "Rolle suchen",
+                noRoles: "Keine weitere Rolle",
+                replies: {
+                    private: "Nur der Autor",
+                    privateShare: "Nur der Autor, mit Teilen-Button",
+                },
+                fixedWho: {
+                    help: "Alle auf dem Server · jeder sieht nur seine Befehle",
+                    link: "Alle auf dem Server · auch Bewerber brauchen ihn",
+                    notice: "Angemeldet für ein Event, das noch nicht begonnen hat",
+                },
+                allChannels: "Alle Kanäle",
+                someChannels: "Nur ausgewählte Kanäle",
+                addChannel: "Kanal",
+                addChannelAria: "Kanal zu {command} hinzufügen",
+                removeChannel: "Kanal {channel} entfernen",
+                searchChannels: "Kanal suchen",
+                noChannels: "Kein weiterer Kanal",
+                channelsHint:
+                    "Anderswo sagt der Bot, wo der Befehl funktioniert.",
+                playerShareHint:
+                    "Teilen sendet das Profil in den Kanal, in dem der Befehl genutzt wurde.",
+                whoLabel: "Wer {command} nutzen darf",
+                replyLabel: "Antwort von {command}",
+                whereLabel: "Wo {command} funktioniert",
+                closeTicket: {
+                    toggle: "folgt Tickets",
+                    who: "Kategorie-Support oder Logi-Verwalter",
+                    whoLink: "Tickets",
+                    reply: "Bestätigung an den Autor des Befehls, Zusammenfassung im Thread, DM an den Ticket-Autor",
+                    where: "Nur in Ticket-Threads",
+                },
+                closeApplication: {
+                    toggle: "folgt Mitgliedschaft",
+                    who: "Kategorie-Support oder Logi-Verwalter",
+                    whoLink: "Mitgliedschaft",
+                    reply: "Bestätigung an den Autor des Befehls, Entscheidung im Thread, DM an den Bewerber",
+                    where: "Nur in Bewerbungs-Threads",
+                },
+            },
+            stats: {
+                gamesTitle: "Spiele und Datenquelle",
+                gameSwitch: "{game}-Statistiken",
+                hllSource:
+                    "Aus öffentlichen HLL-Records-Profilen, über das Steam-Konto des Spielers.",
+                wardogsSource: "Aus gespeicherten Spielen Ihrer",
+                gameServersLink: "Spielserver",
+                shareChannel: "Kanal für Teilen",
+                shareChannelHelp:
+                    "Teilen sendet die Karte direkt hierher. Ohne Kanal fragt der Bot den Spieler, wohin.",
+                noShareChannel: "Kein Kanal",
+                previewTitle: "Antwortvorschau · Beispieldaten",
+                previewPlayer: "Spieler 17",
+            },
+            descriptions: {
+                title: "Befehlsbeschreibungen in Discord",
+                intro: "Discord zeigt die Beschreibung allen Mitgliedern in der Clan-Sprache, unabhängig von der Sprache ihrer App. Die Clan-Sprache ist {language}; nach einer Änderung unter {channels} registriert der Bot die Befehle erneut. Den Zusatz „(für Verwalter)“ fügt der Bot nur Befehlen hinzu, die nur Logi-Verwalter nutzen dürfen.",
+                channelsLink: "Kanäle und Sprache",
+                languages: { cs: "Tschechisch", en: "Englisch", de: "Deutsch" },
+                command: "Befehl",
+                clanLanguage: "Clan-Sprache",
+                columns: { cs: "Čeština", en: "English", de: "Deutsch" },
+            },
+            saveNote:
+                "Nach dem Speichern registriert der Bot die Befehle erneut.",
+            saved: "Befehlseinstellungen gespeichert. Der Bot registriert die Befehle erneut.",
+            saveError:
+                "Die Befehlseinstellungen konnten nicht gespeichert werden.",
         },
         messagesPage: {
             lookTitle: "Aussehen aller Nachrichten",
@@ -3753,15 +4063,20 @@ export const deMessages = {
                 description:
                     "Wohin der Bot Nachrichten schickt und in welcher Sprache er schreibt.",
             },
+            "panel-graphics": {
+                title: "Panel-Grafik",
+                description:
+                    "Wie Server-Panels in Discord aussehen: Stil, Server-Banner und Kartenbilder. Fraktions- und Statussymbole sind fest.",
+            },
             roles: {
                 title: "Rollen und Zugriff",
                 description:
                     "Die Clan-Rolle und die Rolle, die das Logi-Dashboard öffnet.",
             },
-            stats: {
-                title: "/stats-Befehl",
+            commands: {
+                title: "Befehle",
                 description:
-                    "Für welche Spiele /stats antwortet, wo Ergebnisse geteilt werden und welche Statistik-Server gelesen werden.",
+                    "Welche Befehle der Bot anbietet, wer sie nutzen darf und wo. Er antwortet in der Clan-Sprache.",
             },
             membership: {
                 title: "Mitgliedschaft",
@@ -4309,9 +4624,6 @@ export const deMessages = {
             "Vorlage ändern und Zuweisungen zurücksetzen",
         squadTemplateChanged:
             "Squad-Vorlage geändert. Speichere das Roster, um sie anzuwenden.",
-        publishConfirmTitle: "Roster veröffentlichen?",
-        publishConfirmDescription:
-            "Mitglieder sehen die veröffentlichte Version sofort.",
         setupRoster: "Roster einrichten",
         selectEvent: "Event wählen",
         selectEventPlaceholder: "Wähle ein Event",
@@ -4369,21 +4681,6 @@ export const deMessages = {
         saved: "Roster gespeichert",
         published: "Roster veröffentlicht",
         attendanceUpdated: "Anwesenheit aktualisiert",
-        updatePublishedPromptTitle: "Auch ein Roster-Update posten?",
-        updatePublishedPromptDescription:
-            "Dieses Roster ist bereits live. Wähle, ob ein frisches Update im Football-Stil in denselben Ankündigungs-Channel gesendet wird, während betroffene Spieler so oder so per DM informiert werden.",
-        updatePublishedPromptAnnounce: "Speichern und Update posten",
-        updatePublishedPromptSkip: "Speichern ohne Post",
-        updatePublishedPromptCancel: "Weiter bearbeiten",
-        updatePublishedPromptHint:
-            "⚽ Wir können hervorheben, wer reinkam, wer rausflog, Squad-Wechsel und Rollenänderungen.",
-        notifyRosterChanges: "Betroffene Spieler per DM benachrichtigen",
-        postRosterChanges: "Dieses Roster-Update im Event-Info-Channel posten",
-        updatePosted: "Roster gespeichert und Update gepostet.",
-        updateSavedWithoutPost:
-            "Roster gespeichert. Spieler-DMs wurden gesendet.",
-        updateDmDeliveryFailed:
-            "Roster gespeichert, aber eine oder mehrere Spieler-DMs konnten nicht zugestellt werden.",
     },
     newMatch: {
         title: "Neues Match",
@@ -5853,6 +6150,94 @@ export const deMessages = {
             "Roster-Board mit Reserven, Rollen-Slots, Veröffentlichungsstatus und Bestätigungen.",
         rosterPageDescription:
             "Inspiriert von kompetitiven Roster-Boards: gruppierte Squads, sichtbare Reserven, Zuweisungsstatus und zukunftsfähiger Bestätigungs-Flow.",
+    },
+    rosterPublish: {
+        publishTitle: "Aufstellung veröffentlichen",
+        republishTitle: "Erneut veröffentlichen",
+        publishedAt: "veröffentlicht {time}",
+        close: "Schließen",
+        contentLabel: "Was an Discord geht",
+        variantPhotoText: "Foto und Aufstellung als Text",
+        variantPhotoTextDescription:
+            "Das Aufstellungsbild und darunter die Squads als Text. Durchsuchbar und auch am Handy lesbar.",
+        variantPhoto: "Nur Foto",
+        variantPhotoDescription:
+            "Nur das Aufstellungsbild, wie es der alte Bot geschickt hat.",
+        defaultChip: "Standard",
+        defaultNote: "Die Standardansicht legen Sie fest unter",
+        defaultNoteLink: "Nachrichten und Panels → Aufstellung",
+        channelLabel: "Kanal",
+        channelFrom: "aus",
+        channelFromLink: "Kanäle und Sprache",
+        channelMissing: "kein Kanal festgelegt",
+        mentionLabel: "Eingeteilte Spieler erwähnen",
+        mentionFirstHint: {
+            one: "Die Nachricht erwähnt den {count} Spieler der Aufstellung.",
+            few: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+            many: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+            other: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
+        },
+        mentionRepeatHint: "Beim Wiederholen stört es nur; die DMs genügen.",
+        laterNote:
+            "DMs zu Änderungen und die Änderungsübersicht gibt es ab der nächsten Veröffentlichung.",
+        dmLabel: "Spieler per DM über Änderungen informieren",
+        dmHint: {
+            one: "Nur {count} Spieler, den die Änderung betrifft.",
+            few: "Nur {count} Spieler, die die Änderung betrifft.",
+            many: "Nur {count} Spieler, die die Änderung betrifft.",
+            other: "Nur {count} Spieler, die die Änderung betrifft.",
+        },
+        postLabel: "Änderungsübersicht in den Kanal posten",
+        postHint: "Eine kurze Nachricht unter der Aufstellung.",
+        rostered: "in der Aufstellung",
+        reserves: {
+            one: "Reserve",
+            few: "Reserve",
+            many: "Reserve",
+            other: "Reserve",
+        },
+        notAttending: "nicht dabei",
+        changesTitle: "Änderungen seit der letzten Version",
+        changesMoved: "{count} verschoben",
+        changesAgainst: "Gegenüber der Version, veröffentlicht {time}.",
+        noChanges: "Seit der letzten Version hat sich kein Spieler geändert.",
+        toReserves: "in die Reserve",
+        previewTitle: "Vorschau in {channel}",
+        previewCaption: "Vereinfachte Vorschau der Nachricht.",
+        republishCaption:
+            "Die Nachricht in {channel} wird bearbeitet, es entsteht keine neue. Die Änderungsübersicht folgt darunter.",
+        photoPlaceholder: "Aufstellungsfoto (PNG)",
+        cancel: "Abbrechen",
+        publish: "Aufstellung veröffentlichen",
+        republish: "Erneut veröffentlichen",
+        published: "Aufstellung veröffentlicht",
+        republished: "Aufstellung erneut veröffentlicht",
+        dmFailed: {
+            one: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            few: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            many: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+            other: "Die DM hat {count} Spieler nicht erreicht: {names}. Direktnachrichten von Servermitgliedern sind ausgeschaltet.",
+        },
+        requestFailed:
+            "Die Aufstellung ist gespeichert, aber die Änderungen wurden nicht an Discord gesendet. Bitte versuchen Sie es erneut.",
+    },
+    reminderDelivery: {
+        title: "Die Erinnerung hat {sent} von {total} Spielern erreicht",
+        body: "{names} haben in Discord Direktnachrichten von Servermitgliedern ausgeschaltet. Erreiche sie auf anderem Weg oder bitte sie, Nachrichten vom Server {clan} zu erlauben.",
+        bodyOne:
+            "{names} hat in Discord Direktnachrichten von Servermitgliedern ausgeschaltet. Erreiche ihn auf anderem Weg oder bitte ihn, Nachrichten vom Server {clan} zu erlauben.",
+        failedAll:
+            "Die Erinnerung konnte nicht gesendet werden. Bitte versuchen Sie es gleich erneut.",
+        copyNames: "Namen kopieren",
+        copied: "Namen kopiert",
+        howTo: "Nachrichten von einem Server erlauben",
+        meta: "{kind} · gesendet {time} · von {name}",
+        kindUnanswered: "Anmeldeerinnerung",
+        kindUnconfirmed: "Anwesenheitserinnerung",
+        unknownSender: "einem Admin",
+        and: "und",
+        sentAt: "{date} um {time}",
+        unknownPlayer: "ein unbekannter Spieler",
     },
     discordPreview: {
         regionLabel: "Vorschau der Discord-Nachricht",

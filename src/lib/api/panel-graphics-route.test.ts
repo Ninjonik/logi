@@ -12,9 +12,12 @@ const view = {
     revision: 3,
     settings: { defaultStyle: "a", servers: [], maps: [] },
     clanAccent: "#e8a33d",
+    clanName: "Vlci",
+    clanTag: "VLC",
     servers: [
         {
             id: "c1",
+            currentMap: { key: "foy", name: "Foy" },
             gameId: "hell_let_loose",
             name: "Vlci #1 · Public",
             banner: null,

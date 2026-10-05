@@ -148,25 +148,6 @@ export function buildPublicMatchUrl(eventId: string, language?: string) {
     ).toString()
 }
 
-export async function warmRosterImage(
-    eventId: string,
-    rosterUpdatedAt?: string
-) {
-    const publicUrl = new URL(buildRosterImageUrl(eventId, rosterUpdatedAt))
-    const internalOrigin = new URL(env.internalAppSiteUrl)
-    const warmUrl = new URL(
-        `${publicUrl.pathname}${publicUrl.search}`,
-        internalOrigin
-    )
-    const response = await withTimeout(
-        fetch(warmUrl),
-        45_000,
-        `Roster image warm-up for ${eventId}`
-    )
-
-    return response.ok && response.headers.get("content-type") === "image/png"
-}
-
 export function pickButtonStyle(color: string) {
     const hex = color.replace(/^#/, "").trim()
     const r = parseInt(hex.substring(0, 2), 16)

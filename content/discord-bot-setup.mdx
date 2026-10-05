@@ -107,7 +107,7 @@ They are examples of the configured bot capabilities, not separate services.
 | Group sign-up eligibility and membership roles  | Group-linked roles for sign-up/import; clan role and membership category roles for role changes   | Test the two behaviors separately; only membership-category roles are added or removed by the bot.                |
 | Ticket panel                                    | Enable ticket settings, submit channel, ticket parent channel, and at least one category          | Confirm the panel appears and a test request creates a ticket in the intended private location.                   |
 | Membership application panel                    | Enable membership settings, submit channel, application parent channel, and at least one category | Confirm the panel appears and a test application reaches the intended private location.                           |
-| Player-stat servers                             | Player-stat token and URL entries                                                                 | Verify against a non-production test if possible. Treat tokens as secrets.                                        |
+| Old player-stat servers                         | **Settings → Discord → Commands → Old stats server connections**; move them to Game servers       | Test the moved connection in **Settings → Game servers**. Treat tokens as secrets.                                |
 | Game-server status command                      | HLL/WDG game data sources in **Settings → Game servers**                                          | Run `/server-status` with a game; check the private response, source and observation age.                         |
 
 <Callout type="info">
@@ -127,21 +127,24 @@ They are examples of the configured bot capabilities, not separate services.
 
 ## Slash commands
 
-Logi registers these seven commands for cached guilds when the bot becomes ready.
-After installing it in a new guild, restart the bot when command registration is
-needed; this revision does not register commands separately on guild join.
-All seven commands are guild-only. Names stay in English; descriptions/options
-support Czech and German localization.
+Logi registers these eight commands in every server when the bot starts, when
+it is added to a server and after the clan language or the command settings
+change; **Settings → Discord → Commands** shows the last registration and can
+request another. All commands are server-only. Names stay the same; descriptions
+and options are shown in the clan language. Every command is visible to
+everyone; who may use it is checked freshly from Discord at each use, as set on
+the Commands page (see [Discord commands](/configuration/commands)).
 
 | Command                                                | Purpose and access                                                                                                  |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `/help`                                                | Private list of the commands you can use here, the channels to use and a link to the guide                          |
 | `/stats game:wardogs` or `game:hll`                    | Private player statistics, optional linked member, period and explicit sharing                                      |
-| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Discord Manage Server / Administrator                                         |
+| `/server-status game:wardogs` or `game:hell_let_loose` | Private stored game-server status for Logi managers (Administrator or the managers' role, plus extra roles)         |
 | `/close_ticket [reason]`                               | Close the current tracked ticket thread; Administrator, configured dashboard-admin role or category support role    |
 | `/close_application outcome:<choice> [reason]`         | Close the current tracked application and request the corresponding membership state; same roles as `/close_ticket` |
 | `/notice event:<selection>`                            | Open your notice/reason modal for a matching eligible event                                                         |
 | `/link`                                                | Privately manage your claimed platform identifiers; this is not verified Steam ownership                            |
-| `/player player:<selection>`                           | Show the selected clan player's profile/statistics in the channel                                                   |
+| `/player player:<selection>`                           | Privately show a clan player's profile from imported matches, with **Share** to the channel                         |
 
 Brackets mark optional input. Closing reasons are limited to 500 characters.
 Application outcomes are `denied`, `pending`, `recruit`, `member` and `mercenary`.
@@ -180,10 +183,11 @@ cover games retained by this community's Warcon collection.
 
 Replies initially appear only to you. **Share** publishes the current view to the
 channel supplied in `channel`, else to the default sharing channel a manager set in
-Discord settings, or opens a channel picker. Managers can also switch `/stats` off
-entirely or for one game; the bot then answers privately that statistics are
-unavailable in this server. You and the bot need
-View Channel, Send Messages and Embed Links there, plus Attach Files for artwork.
+**Settings → Discord → Commands**, or opens a channel picker. Managers can also
+switch `/stats` off entirely or for one game, limit who may use it and where;
+the bot then answers privately why it cannot be used. You and the bot need
+View Channel, Send Messages (in threads: Send Messages in Threads) and Embed
+Links there.
 Private controls expire after 15 minutes or a restart; run `/stats` again. Shared
 cards are snapshots and are not automatically refreshed like server panels.
 
@@ -199,8 +203,11 @@ only covers tracked community servers; it is not an all-server HLL record.
 
 ## Game-server status (server managers)
 
-Use `/server-status` and choose **Hell Let Loose** or **Wardogs**. You need Discord
-**Manage Server** permission on that server; the response is visible only to you.
+Use `/server-status` and choose **Hell Let Loose** or **Wardogs**. Only Logi
+managers may use it: Discord Administrator or the managers' role, plus the extra
+roles set on the Commands page, checked freshly at every use. Others get a
+private note and, when the clan has one, the live score channel. The response is
+visible only to you.
 The command shows up to five stored connections for that game, including state,
 player count, map, source and observation age. The footer reports the full count;
 open Logi settings for the complete list. Replies use the clan's bot language
@@ -208,12 +215,13 @@ open Logi settings for the complete list. Replies use the clan's bot language
 
 This reads the existing game-data collection. It does not contact or control the
 game server. Zero players is a known value; `?` or unknown means data is missing.
-Stale or disabled collection shows an unknown state, even when older counts and
-map names remain visible. A timeout does not mean the server is offline. If no
+Stale data is marked **Stale** and disabled collection **Collection off**, even
+when older counts and map names remain visible. A timeout does not mean the server is offline. If no
 source is configured, the command explains that instead of inventing a status.
 
 The operator must deploy the compatible bot/backend and configure the collection
-first. A Logi-only dashboard role does not grant Discord Manage Server permission.
+first. A person added as a manager only in Logi needs the managers' role or an
+extra role on the Commands page to use the command in Discord.
 
 ## Platform status channel (superadmins)
 

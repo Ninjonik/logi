@@ -55,3 +55,27 @@ test("uses regular members as the default for legacy matches", () => {
     assert.deepEqual(resolveSignupReminderStatuses(undefined), ["member"])
     assert.deepEqual(resolveSignupReminderStatuses([]), [])
 })
+
+test("a delayed announcement counts the first sign-up reminder from the announcement", () => {
+    assert.equal(
+        getSignupReminderDueAt(
+            "2026-01-01T10:00:00.000Z",
+            "2026-01-06T10:00:00.000Z",
+            new Date("2026-01-01T11:00:00.000Z"),
+            false,
+            "2026-01-03T18:00:00.000Z"
+        ),
+        "2026-01-04T18:00:00.000Z"
+    )
+    // An announcement before creation (or none) keeps the creation time.
+    assert.equal(
+        getSignupReminderDueAt(
+            "2026-01-01T10:00:00.000Z",
+            "2026-01-03T10:00:00.000Z",
+            new Date("2026-01-01T11:00:00.000Z"),
+            false,
+            "2025-12-30T10:00:00.000Z"
+        ),
+        "2026-01-02T10:00:00.000Z"
+    )
+})

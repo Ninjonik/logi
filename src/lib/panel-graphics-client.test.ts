@@ -10,6 +10,8 @@ const data = {
     revision: 2,
     settings: { defaultStyle: "a", servers: [], maps: [] },
     clanAccent: "#e8a33d",
+    clanName: "Vlci",
+    clanTag: "VLC",
     servers: [],
     maps: [],
     emoji: panelEmojiStatus(null),

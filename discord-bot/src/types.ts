@@ -134,6 +134,11 @@ export type DiscordConfig = {
     membershipApplicationCounter?: number
     /** Clan colour and icon density of every bot message. */
     messageStyle?: MessageStyle
+    /** Match message settings (board N1); missing reads the defaults. */
+    rosterMessageVariant?: "photo_text" | "photo"
+    rosterChangesPostDefault?: boolean
+    rosterChangesDmDefault?: boolean
+    attendanceNoticesInThread?: boolean
     updatedAt: string
 }
 
@@ -213,6 +218,9 @@ export type Group = {
     guildId: string
     name: string
     color: string
+    /** Order and parent group; the roster text groups squads by them. */
+    order?: number
+    parentId?: string
     discordRoleId?: string
     discordEmoji?: string
     updatedAt: string
@@ -371,6 +379,14 @@ export type Roster = {
         ack: boolean
         confirmed?: boolean
     }>
+    /** Players marked as not coming; older payloads may omit it. */
+    notAttendingPlayerIds?: string[]
+    /** The publish dialog's choice of roster message (board D5). */
+    discordMessageVariant?: "photo_text" | "photo"
+    /** Whether the first roster post mentions the rostered players. */
+    discordMentionPlayers?: boolean
+    /** When the roster was last published from the dashboard. */
+    publishedAt?: string
     updatedAt: string
     squads: Array<{
         name: string

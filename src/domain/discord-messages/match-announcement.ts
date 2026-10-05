@@ -37,6 +37,7 @@ import {
     formatCount,
 } from "./format"
 import { formatGroupCount, type SignupGroupCount } from "./signup-counts"
+import { attendanceButtonIds, rosterButtonIds } from "./roster-message"
 import type { MatchAnnouncementCopy } from "./match-announcement-copy"
 import { factionEmblem } from "./faction-emblem"
 import { chipText } from "./message-layout"
@@ -455,12 +456,13 @@ export function announcementCustomId(
             return `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${guildId}`
         case "attendees":
             return `attendees:${eventId}`
+        // The roster's own routes (Moje zařazení, confirm, running late).
         case "assignment":
-            return `roster-assignment:${eventId}`
+            return rosterButtonIds.assignment(eventId)
         case "confirm":
-            return `attendance:${eventId}:ack`
+            return attendanceButtonIds.confirm(eventId)
         case "late":
-            return `attendance-late:${eventId}`
+            return attendanceButtonIds.late(eventId)
     }
 }
 

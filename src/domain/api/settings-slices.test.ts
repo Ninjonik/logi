@@ -56,9 +56,17 @@ const source = {
     discordConfig: { examplePanelEnabled: true, examplePanelChannelId: "42" },
 }
 
-test("the shipped registry is valid and has no redesign slice yet", () => {
+test("the shipped registry is valid and holds the redesign slices", () => {
     assert.doesNotThrow(() => assertClanSettingsSlices(CLAN_SETTINGS_SLICES))
-    assert.deepEqual(CLAN_SETTINGS_SLICES, [])
+    assert.ok(
+        CLAN_SETTINGS_SLICES.some((slice) => slice.key === "panelGraphics")
+    )
+    assert.ok(
+        CLAN_SETTINGS_SLICES.some((slice) => slice.key === "commands")
+    )
+    assert.ok(
+        CLAN_SETTINGS_SLICES.some((slice) => slice.key === "matchMessages")
+    )
 })
 
 test("adding one slice module makes PATCH accept it next to the plain fields", () => {

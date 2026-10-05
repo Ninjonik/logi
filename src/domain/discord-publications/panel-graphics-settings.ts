@@ -222,6 +222,93 @@ export function panelGraphicsChangeCount(
     return changes
 }
 
+/**
+ * The smallest patch that turns `saved` into `draft` (the "Uložit" button),
+ * or null when nothing changed. `revision` guards against a concurrent save.
+ */
+export function panelGraphicsPatchFrom(
+    saved: PanelGraphicsSettings,
+    draft: PanelGraphicsSettings,
+    revision?: number
+): PanelGraphicsPatch | null {
+    const patch: {
+        defaultStyle?: PanelStyle
+        servers: Array<
+            Partial<Omit<PanelGraphicsServer, "connectionId">> & {
+                connectionId: string
+            }
+        >
+        maps: Array<{
+            game: PanelMapGame
+            mapKey: string
+            assetId: string | null
+        }>
+    } = { servers: [], maps: [] }
+    if (saved.defaultStyle !== draft.defaultStyle)
+        patch.defaultStyle = draft.defaultStyle
+    const ids = new Set([
+        ...saved.servers.map((s) => s.connectionId),
+        ...draft.servers.map((s) => s.connectionId),
+    ])
+    for (const id of ids) {
+        const before = serverGraphics(saved, id),
+            after = serverGraphics(draft, id)
+        const change: (typeof patch.servers)[number] = { connectionId: id }
+        if (before.bannerAssetId !== after.bannerAssetId)
+            change.bannerAssetId = after.bannerAssetId
+        if (before.crop !== after.crop) change.crop = after.crop
+        if (before.useMapImage !== after.useMapImage)
+            change.useMapImage = after.useMapImage
+        if (before.barColor !== after.barColor) change.barColor = after.barColor
+        if (Object.keys(change).length > 1) patch.servers.push(change)
+    }
+    const before = new Map(saved.maps.map((m) => [mapIdentity(m), m]))
+    const after = new Map(draft.maps.map((m) => [mapIdentity(m), m]))
+    for (const key of new Set([...before.keys(), ...after.keys()])) {
+        const was = before.get(key),
+            now = after.get(key)
+        if (was?.assetId === now?.assetId) continue
+        const map = (now ?? was)!
+        patch.maps.push({
+            game: map.game,
+            mapKey: map.mapKey,
+            assetId: now?.assetId ?? null,
+        })
+    }
+    if (
+        patch.defaultStyle === undefined &&
+        !patch.servers.length &&
+        !patch.maps.length
+    )
+        return null
+    return panelGraphicsPatchSchema.parse({
+        ...(patch.defaultStyle ? { defaultStyle: patch.defaultStyle } : {}),
+        ...(patch.servers.length ? { servers: patch.servers } : {}),
+        ...(patch.maps.length ? { maps: patch.maps } : {}),
+        ...(revision !== undefined ? { expectedRevision: revision } : {}),
+    })
+}
+
+/** Initials for the round clan badge on banners: "Vlci" → "VLC", "Váš klan" → "VK". */
+export function clanBadgeTag(name: string): string {
+    const words = name
+        .normalize("NFKD")
+        .replace(/\p{M}/gu, "")
+        .toUpperCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter(Boolean)
+    const tag =
+        words.length > 1
+            ? words
+                  .slice(0, 3)
+                  .map((word) => Array.from(word)[0])
+                  .join("")
+            : Array.from(words[0] ?? "")
+                  .slice(0, 3)
+                  .join("")
+    return tag || "LOGI"
+}
+
 /** Stored form: every asset reference carries the URL persistence verified. */
 export type StoredPanelGraphics = {
     defaultStyle: PanelStyle

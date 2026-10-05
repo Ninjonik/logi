@@ -1,18 +1,32 @@
 import type { Guild } from "discord.js"
 
+import { matchTitle } from "../../src/domain/discord-messages/match-text"
+import { fillTemplate } from "../../src/domain/discord-messages/format"
+import { getRosterMessages } from "../../src/lib/clan-language/rosters"
 import { reportClanDiscordError } from "./error-reporting"
 import type { EventRecord, Roster } from "./types"
 import { convex, references } from "./convex"
 import { env } from "./environment"
 
-/** Role names in the clan language: "VLK vs ROG · Hráči", "… · Zálohy" (L1-145). */
-export type EventRoleNames = { players: string; reserves: string }
+/**
+ * The match roles "VLK vs ROG · Hráči" and "VLK vs ROG · Zálohy", named
+ * after the match title with the suffix in the clan language (L1-145).
+ */
+export function eventRoleName(
+    event: Pick<EventRecord, "name" | "matchTeams">,
+    kind: "players" | "reserves",
+    language?: string
+) {
+    return fillTemplate(getRosterMessages(language).roles[kind], {
+        match: matchTitle(event),
+    }).slice(0, 100)
+}
 
 export async function syncEventRoles(
     guild: Guild,
     event: EventRecord,
     roster: Roster | null,
-    names: EventRoleNames
+    language?: string
 ) {
     let attendeeRoleId = event.attendeeRoleId
     let reserveRoleId = event.reserveRoleId
@@ -45,29 +59,20 @@ export async function syncEventRoles(
         if (!existingAttendee)
             attendeeRoleId = (
                 await guild.roles.create({
-                    name: names.players,
+                    name: eventRoleName(event, "players", language),
                     reason: `Event attendees for ${event.name}`,
                 })
             ).id
-        else if (existingAttendee.name !== names.players)
-            // Roles made before the clan-language names, or after a rename.
-            await existingAttendee
-                .setName(names.players, "Match role name")
-                .catch(() => null)
         const existingReserve = reserveRoleId
             ? await guild.roles.fetch(reserveRoleId).catch(() => null)
             : null
         if (!existingReserve)
             reserveRoleId = (
                 await guild.roles.create({
-                    name: names.reserves,
+                    name: eventRoleName(event, "reserves", language),
                     reason: `Event reserves for ${event.name}`,
                 })
             ).id
-        else if (existingReserve.name !== names.reserves)
-            await existingReserve
-                .setName(names.reserves, "Match role name")
-                .catch(() => null)
         if (
             attendeeRoleId !== event.attendeeRoleId ||
             reserveRoleId !== event.reserveRoleId
@@ -98,6 +103,16 @@ export async function syncEventRoles(
         const reserveRole = await guild.roles
             .fetch(reserveRoleId!)
             .catch(() => null)
+        // Roles created before the redesign, or before the match was
+        // renamed, get the current clan-language names.
+        for (const [role, kind] of [
+            [attendeeRole, "players"],
+            [reserveRole, "reserves"],
+        ] as const) {
+            const name = eventRoleName(event, kind, language)
+            if (role && role.name !== name)
+                await role.setName(name).catch(() => null)
+        }
         const relevantMemberIds = new Set([
             ...attendeeIds,
             ...reserveIds,

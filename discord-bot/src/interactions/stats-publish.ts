@@ -1,32 +1,38 @@
-import { ChannelType, PermissionFlagsBits, type Client } from "discord.js"
-import type { StatsPorts } from "./stats"
+import type { MessageCreateOptions } from "discord.js"
 
-/** A fresh permission check is required for both the human and the bot. */
+import type { StatsRequest } from "../../../src/application/game-data/read-player-stats"
+import { postSharedCard, shareGuildOf } from "../commands/share"
+
+/** The parts of a discord.js `Client` publishing reads. */
+export type StatsPublishClient = {
+    guilds: {
+        cache: {
+            get(guildId: string): Parameters<typeof shareGuildOf>[0] | undefined
+        }
+    }
+}
+
+/**
+ * Posts a shared `/stats` card (M2-23) after a fresh check that the person
+ * and the bot may both write and embed links in the channel (M2-B03).
+ * Throws `share_denied` when either may not, `share_failed` when Discord did
+ * not take the message.
+ */
 export async function publishStats(
-    client: Client,
-    ...[request, channelId, payload]: Parameters<StatsPorts["share"]>
+    client: StatsPublishClient,
+    request: StatsRequest,
+    channelId: string,
+    payload: MessageCreateOptions
 ) {
-    const guild = client.guilds.cache.get(request.guildId)
-    if (!guild) throw new Error("share_denied")
-    const [channel, member, bot] = await Promise.all([
-        guild.channels.fetch(channelId, { force: true }),
-        guild.members.fetch({ user: request.requesterId, force: true }),
-        guild.members.fetchMe({ force: true }),
-    ])
-    const permissions = [
-        PermissionFlagsBits.ViewChannel,
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.EmbedLinks,
-        ...(payload.files?.length ? [PermissionFlagsBits.AttachFiles] : []),
-    ]
-    if (
-        !channel ||
-        channel.guildId !== request.guildId ||
-        (channel.type !== ChannelType.GuildText &&
-            channel.type !== ChannelType.GuildAnnouncement) ||
-        !channel.permissionsFor(member)?.has(permissions) ||
-        !channel.permissionsFor(bot)?.has(permissions)
-    )
-        throw new Error("share_denied")
-    await channel.send({ ...payload, allowedMentions: { parse: [] } })
+    const result = await postSharedCard({
+        guild: shareGuildOf(client.guilds.cache.get(request.guildId)),
+        channelId,
+        requesterId: request.requesterId,
+        payload,
+    })
+    if (!result.ok)
+        throw new Error(
+            result.reason === "denied" ? "share_denied" : "share_failed"
+        )
+    return { messageId: result.messageId, url: result.url }
 }

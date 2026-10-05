@@ -239,8 +239,6 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
                 "Heslo k serveru dostanou hráči na soupisce pod Zobrazit zařazení.",
         },
         discord: {
-            players: "Hráči",
-            reserves: "Zálohy",
             squads: "Čety",
             squadKinds: {
                 command: "Velení",
@@ -310,7 +308,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             decline: "Can't make it",
             attendees: "Show sign-ups",
             calendar: "Add to calendar",
-            assignment: "Show my place",
+            assignment: "My assignment",
             openRoster: "Open roster",
             confirm: "Confirm attendance",
             late: "Running late",
@@ -391,7 +389,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             savedTitle: "Sign-up saved: {group}",
             savedTitleNoGroup: "Sign-up saved",
             savedBody:
-                "Command publishes the roster before the meeting. You'll see where you play under Show my place.",
+                "Command publishes the roster before the meeting. You'll see where you play under My assignment.",
             savedBodyTraining:
                 "The meeting is {time}. If you can't make it after all, click Can't make it.",
             fullTitle: "{group} is full ({count}/{max})",
@@ -455,11 +453,9 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             trainingSignup: "Sign-up: {channel}",
             server: "Server {server}",
             password:
-                "Rostered players get the server password under Show my place.",
+                "Rostered players get the server password under My assignment.",
         },
         discord: {
-            players: "Players",
-            reserves: "Reserves",
             squads: "Squads",
             squadKinds: {
                 command: "Command",
@@ -535,7 +531,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             decline: "Ich komme nicht",
             attendees: "Anmeldungen zeigen",
             calendar: "Zum Kalender hinzufügen",
-            assignment: "Meinen Platz zeigen",
+            assignment: "Meine Einteilung",
             openRoster: "Roster öffnen",
             confirm: "Teilnahme bestätigen",
             late: "Ich komme später",
@@ -625,7 +621,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             savedTitle: "Anmeldung gespeichert: {group}",
             savedTitleNoGroup: "Anmeldung gespeichert",
             savedBody:
-                "Die Führung veröffentlicht das Roster vor dem Treffen. Wo du spielst, siehst du unter Meinen Platz zeigen.",
+                "Die Führung veröffentlicht das Roster vor dem Treffen. Wo du spielst, siehst du unter Meine Einteilung.",
             savedBodyTraining:
                 "Das Treffen ist {time}. Wenn du doch nicht kannst, klick auf Ich komme nicht.",
             fullTitle: "{group} ist voll ({count}/{max})",
@@ -691,11 +687,9 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             trainingSignup: "Anmeldung: {channel}",
             server: "Server {server}",
             password:
-                "Das Serverpasswort bekommen Spieler im Roster unter Meinen Platz zeigen.",
+                "Das Serverpasswort bekommen Spieler im Roster unter Meine Einteilung.",
         },
         discord: {
-            players: "Spieler",
-            reserves: "Reserve",
             squads: "Trupps",
             squadKinds: {
                 command: "Führung",

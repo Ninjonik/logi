@@ -92,25 +92,22 @@ test("anything not registered falls through to the existing dispatch unchanged",
             routed = true
         }),
     })
-    let deferred: unknown
-    let answer: { content?: string } | undefined
+    let answer: { content?: string; flags?: unknown } | undefined
     await handler.handleChatInputCommand(
         fake<ChatInputCommandInteraction>({
-            commandName: "server-status",
+            commandName: "link",
             guildId: null,
-            memberPermissions: null,
-            options: { getString: () => "wardogs" },
-            deferReply: async (value: { flags: unknown }) => {
-                deferred = value.flags
-            },
-            editReply: async (value: { content?: string }) => {
+            reply: async (value: { content?: string; flags?: unknown }) => {
                 answer = value
             },
         })
     )
     assert.equal(routed, false)
-    assert.equal(deferred, MessageFlags.Ephemeral)
-    assert.match(answer?.content ?? "", /Manage Server/)
+    assert.ok(answer, "the existing /link dispatch answered")
+    assert.equal(
+        Number(answer.flags) & MessageFlags.Ephemeral,
+        MessageFlags.Ephemeral
+    )
 })
 
 test("selects, channel selects, modals and autocomplete route by their own keys", async () => {

@@ -257,4 +257,19 @@ export const references = {
     markTeamRequestNotified: makeFunctionReference<"mutation">(
         "teamRequests:markNotified"
     ),
+    // Roster, match forum and match DMs (W6b).
+    getMatchForumContext: makeFunctionReference<"query">(
+        "discordMatchForum:forumContext"
+    ),
+    listPendingRosterChanges: makeFunctionReference<"query">(
+        "rosterChanges:listPending"
+    ),
+    claimRosterChanges: makeFunctionReference<"mutation">(
+        "rosterChanges:claim"
+    ),
+    completeRosterChanges: makeFunctionReference<"mutation">(
+        "rosterChanges:complete"
+    ),
+    failRosterChanges: makeFunctionReference<"mutation">("rosterChanges:fail"),
+    getMatchRecapCard: makeFunctionReference<"query">("matchRecaps:recapCard"),
 }

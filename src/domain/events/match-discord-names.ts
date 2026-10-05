@@ -1,9 +1,8 @@
 /**
- * Names of the Discord roles and voice channels a match creates when its
- * template enables them (board L1 1.14, L1-144..146): roles "VLK vs ROG ·
- * Hráči" and "VLK vs ROG · Zálohy" with the suffix in the clan language, and
- * one voice channel per squad, "F1 · Pěchota", in the category "Čety · VLK vs
- * ROG".
+ * Names of the voice channels a match creates when its template enables them
+ * (board L1 1.14, L1-144, L1-146): one voice channel per squad, "F1 ·
+ * Pěchota", in the category "Čety · VLK vs ROG". The match roles are named
+ * by `eventRoleName` in the bot's event-roles module.
  */
 
 import type { MatchAnnouncementCopy } from "../discord-messages/match-announcement-copy"
@@ -12,15 +11,6 @@ import type { MatchAnnouncementCopy } from "../discord-messages/match-announceme
 const NAME_LIMIT = 100
 
 const oneLine = (value: string) => value.replace(/[\s\p{Cc}]+/gu, " ").trim()
-
-/** "VLK vs ROG · Hráči" and "VLK vs ROG · Zálohy". */
-export function matchRoleNames(title: string, copy: MatchAnnouncementCopy) {
-    const base = oneLine(title)
-    return {
-        players: `${base} · ${copy.discord.players}`.slice(0, NAME_LIMIT),
-        reserves: `${base} · ${copy.discord.reserves}`.slice(0, NAME_LIMIT),
-    }
-}
 
 /** "Čety · VLK vs ROG": the match's category for its squad voice channels. */
 export function squadCategoryName(title: string, copy: MatchAnnouncementCopy) {

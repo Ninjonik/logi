@@ -1,4 +1,8 @@
 import { matchAnnouncementInteractions } from "../events/interactions"
+import { attendanceReplyInteractions } from "./attendance-replies"
+import { matchRecapInteractions } from "./match-recap-preference"
+import { rosterInteractions } from "./roster-assignment"
+import { commandFeatures } from "../commands/features"
 import type { InteractionFeature } from "./registry"
 
 /**
@@ -8,5 +12,11 @@ import type { InteractionFeature } from "./registry"
  * take precedence; anything else falls through to the existing dispatch.
  */
 export const interactionFeatures: readonly InteractionFeature[] = [
+    // /help, /stats, /player, /notice, /server-status (commands workstream).
+    ...commandFeatures,
+    // Announcement buttons, the group picker and "Zobrazit přihlášené".
     matchAnnouncementInteractions,
+    rosterInteractions,
+    attendanceReplyInteractions,
+    matchRecapInteractions,
 ]

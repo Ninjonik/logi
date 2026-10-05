@@ -19,8 +19,10 @@ export const SETTINGS_SECTIONS = [
     { id: "presets", group: "matches" },
     { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
+    // "Grafika panelů" (board P8); it sits under "Panely v Discordu".
+    { id: "panel-graphics", group: "discord" },
+    { id: "commands", group: "discord" },
     { id: "roles", group: "discord" },
-    { id: "stats", group: "discord" },
     { id: "membership", group: "discord" },
     { id: "tickets", group: "discord" },
     { id: "game-servers", group: "gameData" },
@@ -44,7 +46,11 @@ export function isSettingsSectionId(value: string): value is SettingsSectionId {
 
 /** Pages that were merged into another page; old links redirect to it. */
 const MERGED_SETTINGS_SECTIONS: ReadonlyMap<string, SettingsSectionId> =
-    new Map([["login", "website"]])
+    new Map([
+        ["login", "website"],
+        // "Příkaz /stats" became the "Příkazy" page (Discord redesign N3).
+        ["stats", "commands"],
+    ])
 
 /** The page that now holds a merged page's settings, if `value` names one. */
 export function mergedSettingsSection(
@@ -111,8 +117,6 @@ export function settingsSectionStatus(
             )
         case "roles":
             return required(snapshot.clanRoleId ? [] : ["clanRole"])
-        case "stats":
-            return toggle(snapshot.statsEnabled)
         case "membership":
             return toggle(snapshot.membershipEnabled)
         case "tickets":

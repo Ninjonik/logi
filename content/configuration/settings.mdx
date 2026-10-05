@@ -40,8 +40,9 @@ another.
 | Matches                  | Squad and topic presets  | Links to the squad presets and topic presets, with how many each has                                                                       |
 | Matches                  | Discord messages         | Public panels, live scoreboards and message appearance                                                                                     |
 | Discord                  | Channels and language    | Time zone, bot language, announcement, event info, error, calendar, forum and voice rooms                                                  |
+| Discord                  | Panel graphics           | Default panel style, server banners, map images and the fixed signs; see [Panel graphics](/configuration/panel-graphics)                   |
 | Discord                  | Roles and access         | Clan role, dashboard admin role and the dashboard-access resync                                                                            |
-| Discord                  | /stats command           | `/stats` availability per game, default sharing room and player-stat servers                                                               |
+| Discord                  | Commands                 | Who may use each slash command, where and how it replies; `/stats` games, sharing channel and old stats servers                            |
 | Discord                  | Membership               | Membership applications, categories, roles and roster scores                                                                               |
 | Discord                  | Tickets                  | The ticket panel, categories, support roles and questions                                                                                  |
 | Game data                | Game servers             | Game servers, provider keys and data collection                                                                                            |
@@ -66,14 +67,15 @@ the change applies only to that selected game; a row of active game icons means
 the change is clan-wide. Confirm that scope before saving settings, ticket
 panels, membership workflows, or maintenance tools.
 
-**Channels and language** and **/stats command** always show the clan-wide
+**Channels and language** and **Commands** always show the clan-wide
 settings, whichever game is selected. On **Channels and language** the fields
 are grouped into **Language and time**, **Text channels** and **Voice
 channels**; a lock marks a value that is always clan-wide, and a missing
 announcements channel is called out at the top. When one game needs a different
 announcement, event info, forum, squad voice or meeting room, or its own stats
 servers, add an exception for that game under the setting with **Different
-channel for a game** (or **Different for a game** on /stats). A game without an exception uses the clan-wide value; removing the
+channel for a game** (or **Different for a game** in the old stats server
+connections on **Commands**). A game without an exception uses the clan-wide value; removing the
 exception, or leaving it empty, returns the game to it when you save.
 Exceptions are offered when the clan plays more than one game. An exception
 stored earlier stays visible, so it can be removed, even after the clan is down
@@ -166,7 +168,7 @@ The **Games** section controls which games are active for this workspace:
 may enable any combination, including none while it is being configured.
 
 Game-specific Discord channels and stats servers are exceptions on the
-**Channels and language** and **/stats command** pages (see above). Other
+**Channels and language** and **Commands** pages (see above). Other
 game-specific settings, such as public panel wording and membership-application
 categories, are edited after choosing that game in the dashboard. Shared Discord
 identity, workspace-level settings, and platform links are not duplicated per
@@ -446,21 +448,21 @@ Saving a channel or role selection does not prove that the bot can use it. The
 bot must still be in this Discord server, be running, and have the channel and
 role permissions required for the relevant action.
 
-| Setting                     | Enables                                                                            | If blank, invalid, or inaccessible                                                                                                                                                                    |
-| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Timezone                    | Dashboard formatting for this workspace and event-entry conversion                 | Times fall back to the relevant display default; it does not change existing stored timestamps.                                                                                                       |
-| Default language            | Bot panel, event, and interaction wording                                          | Existing content is not translated; the bot uses its configured fallback where needed.                                                                                                                |
-| Announcements channel       | Event announcement messages                                                        | No announcement is created there.                                                                                                                                                                     |
-| Event information channel   | Separate match information message                                                 | The separate message is not created. It is meaningful only alongside announcements.                                                                                                                   |
-| Errors channel              | Delivery of bot error reports                                                      | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                                                                         |
-| Calendar channel            | One managed calendar-panel message                                                 | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted.                                                                    |
-| Forum category              | Match forum-post provisioning                                                      | A match cannot get a Logi forum post from the workspace default.                                                                                                                                      |
-| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                       | No scheduled event is maintained. A text/category channel is not a substitute.                                                                                                                        |
-| Clan role                   | Clan pings and membership-role transitions                                         | No clan ping/managed clan role is available.                                                                                                                                                          |
-| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role        | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path.                                           |
-| Player statistics command   | Whether `/stats` answers in this server, per game, and its default sharing channel | With the command or a game switched off the bot replies privately that statistics are unavailable here. Without a default channel, Share asks for one. Discord's own command permissions still apply. |
+| Setting                     | Enables                                                                     | If blank, invalid, or inaccessible                                                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timezone                    | Dashboard formatting for this workspace and event-entry conversion          | Times fall back to the relevant display default; it does not change existing stored timestamps.                                                             |
+| Default language            | Bot panel, event, and interaction wording                                   | Existing content is not translated; the bot uses its configured fallback where needed.                                                                      |
+| Announcements channel       | Event announcement messages                                                 | No announcement is created there.                                                                                                                           |
+| Event information channel   | Separate match information message                                          | The separate message is not created. It is meaningful only alongside announcements.                                                                         |
+| Errors channel              | Delivery of bot error reports                                               | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                               |
+| Calendar channel            | One managed calendar-panel message                                          | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted.                          |
+| Forum category              | Match forum-post provisioning                                               | A match cannot get a Logi forum post from the workspace default.                                                                                            |
+| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                | No scheduled event is maintained. A text/category channel is not a substitute.                                                                              |
+| Clan role                   | Clan pings and membership-role transitions                                  | No clan ping/managed clan role is available.                                                                                                                |
+| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path. |
+| Commands                    | Which slash commands work, for whom, where, and how they reply              | See [Discord commands](/configuration/commands). The bot checks each use freshly from Discord; Discord's own command permissions are not used.              |
 
-### Discord messages, Roles and access, and /stats
+### Discord messages, Roles and access, and Commands
 
 **Discord messages** sets one look for every bot message and lists what the bot
 sends and where. **Clan colour** is the accent of every message; events with a
@@ -490,15 +492,15 @@ being added in Logi. It shows when Logi last saw the server's members.
 saved manager role; it is available once a manager role is saved and the page
 has no unsaved changes.
 
-**/stats command** has the command switch, the games it answers for with their
+**Commands** shows when the bot last registered the slash commands, with
+**Register again**, then every command with its switch, who may use it, how it
+replies and where it works. `/stats` adds the games it answers for with their
 data source (public HLL Records profiles by Steam account; Wardogs games stored
-from your game servers), the default sharing channel, and the old stats server
-connections with their per-game exceptions behind **Show connections**. New
-connections belong under **Game servers**; old connections are not converted
-automatically because they only search players and have no server number. A
-preview shows the reply in Discord with the bot's own layout and example
-numbers; when the command or Wardogs statistics are off it shows the reply
-people get instead.
+from your game servers), the channel for **Share** and a preview of the reply
+with example numbers. The old stats server connections and their per-game
+exceptions are behind **Show connections**; **Move to Game servers** copies
+them to **Game servers** with the key encrypted, untested and stopped. See
+[Discord commands](/configuration/commands).
 
 On these pages a bar at the bottom counts unsaved changes; **Discard** returns
 to the saved values and **Save** stores them.

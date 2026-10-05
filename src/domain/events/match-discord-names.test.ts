@@ -4,28 +4,12 @@ import test from "node:test"
 import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
 
 import {
-    matchRoleNames,
     squadCategoryName,
     squadKindOf,
     squadVoiceChannelName,
 } from "./match-discord-names"
 
 const cs = getAnnouncementMessages("cs")
-
-test("match roles carry the clan-language suffix (L1-145)", () => {
-    assert.deepEqual(matchRoleNames("VLK vs ROG", cs), {
-        players: "VLK vs ROG · Hráči",
-        reserves: "VLK vs ROG · Zálohy",
-    })
-    assert.deepEqual(
-        matchRoleNames("VLK vs ROG", getAnnouncementMessages("en")),
-        {
-            players: "VLK vs ROG · Players",
-            reserves: "VLK vs ROG · Reserves",
-        }
-    )
-    assert.equal(matchRoleNames("x".repeat(200), cs).players.length, 100)
-})
 
 test("squad voice channels sit in the match's own category (L1-144)", () => {
     assert.equal(squadCategoryName("VLK vs ROG", cs), "Čety · VLK vs ROG")
