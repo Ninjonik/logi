@@ -5700,6 +5700,20 @@ export const csMessages = {
         rosterPageDescription:
             "Inspirováno tabulemi kompetitivních týmů: seskupené jednotky, viditelné zálohy, stav zařazení a systém pro potvrzování účasti připravený na budoucí integraci.",
     },
+    discordPreview: {
+        regionLabel: "Náhled zprávy v Discordu",
+        appTag: "APP",
+        edited: "(upraveno)",
+        usedCommand: "{user} použil(a) {command}",
+        onlyYouCanSee: "Tuto zprávu vidíte jen vy",
+        dismissMessage: "Zavřít zprávu",
+        buttons: "Tlačítka zprávy",
+        externalLink: "odkaz ven",
+        unavailable: "nedostupné",
+        unknownUser: "uživatel",
+        unknownRole: "role",
+        unknownChannel: "kanál",
+    },
 } as const
 
 export type AppMessages = typeof csMessages

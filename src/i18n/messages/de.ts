@@ -5854,6 +5854,20 @@ export const deMessages = {
         rosterPageDescription:
             "Inspiriert von kompetitiven Roster-Boards: gruppierte Squads, sichtbare Reserven, Zuweisungsstatus und zukunftsfähiger Bestätigungs-Flow.",
     },
+    discordPreview: {
+        regionLabel: "Vorschau der Discord-Nachricht",
+        appTag: "APP",
+        edited: "(bearbeitet)",
+        usedCommand: "{user} hat {command} verwendet",
+        onlyYouCanSee: "Nur du kannst dies sehen",
+        dismissMessage: "Nachricht verwerfen",
+        buttons: "Schaltflächen der Nachricht",
+        externalLink: "externer Link",
+        unavailable: "nicht verfügbar",
+        unknownUser: "Benutzer",
+        unknownRole: "Rolle",
+        unknownChannel: "Kanal",
+    },
 } as const
 
 export type AppMessages = typeof deMessages
