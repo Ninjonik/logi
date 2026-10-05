@@ -47,6 +47,7 @@ export function buildMembershipPanelPayload(config: DiscordConfig) {
             title: settings.panelTitle,
             text: settings.panelDescription,
             imageUrl: settings.panelImageUrl,
+            accentColor: settings.panelAccentColor,
             categories: settings.categories,
             windows: panelWindowCount(config),
             webFormUrl: settings.webFormEnabled

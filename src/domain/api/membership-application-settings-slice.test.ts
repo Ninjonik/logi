@@ -217,3 +217,22 @@ test("unknown categories, Wardogs specialization and bad switches are refused", 
     assert.equal(apply({ decision: "member" }).ok, false)
     assert.equal(apply({ draftTtlHours: 48 }).ok, false)
 })
+
+test("the panel colour is read and written as #RRGGBB; null is the clan colour (L4-10)", () => {
+    assert.equal(slice.read(source(stored)).panelAccentColor, null)
+    const saved = apply({ panelAccentColor: "#3b82f6" })
+    assert.equal(saved.ok, true)
+    if (!saved.ok) return
+    const settings = saved.patch.membershipSettings as Record<string, unknown>
+    assert.equal(settings.panelAccentColor, "#3B82F6")
+    assert.equal(slice.read(source(settings)).panelAccentColor, "#3B82F6")
+    const cleared = apply({ panelAccentColor: null }, settings)
+    assert.equal(cleared.ok, true)
+    if (!cleared.ok) return
+    assert.equal(
+        (cleared.patch.membershipSettings as Record<string, unknown>)
+            .panelAccentColor,
+        undefined
+    )
+    assert.equal(apply({ panelAccentColor: "blue" }).ok, false)
+})

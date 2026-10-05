@@ -307,6 +307,8 @@ const membershipSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    // The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10).
+    panelAccentColor: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),

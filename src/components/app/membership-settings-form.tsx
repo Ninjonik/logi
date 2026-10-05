@@ -64,6 +64,7 @@ import { membershipChangeCount } from "@/components/app/membership-form-builder/
 import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SegmentedControl } from "@/components/app/settings/segmented-control"
+import { normalizeAccentColor } from "@/domain/discord-messages/message-style"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import { applicationWindowCount } from "@/domain/membership/application-plan"
@@ -117,6 +118,7 @@ function buildDefaultSettings(
         return {
             ...config.membershipSettings,
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
+            panelAccentColor: config.membershipSettings.panelAccentColor ?? "",
             applicationWelcomeMessage:
                 config.membershipSettings.applicationWelcomeMessage ?? "",
             inviteSupportMembersIndividually:
@@ -175,6 +177,7 @@ function buildDefaultSettings(
         panelTitle: dictionary.membershipSettings.defaultPanelTitle,
         panelDescription: dictionary.membershipSettings.defaultPanelDescription,
         panelImageUrl: "",
+        panelAccentColor: "",
         applicationWelcomeMessage: "",
         autoAssignRecruitOnApply: false,
         inviteSupportMembersIndividually: true,
@@ -468,6 +471,14 @@ export function MembershipSettingsForm({
     }
 
     async function handleSave() {
+        if (
+            settings.panelAccentColor?.trim() &&
+            !normalizeAccentColor(settings.panelAccentColor)
+        ) {
+            setTab("application")
+            toast.error(a.panel.colorInvalid)
+            return
+        }
         if (issues.length) {
             setShowIssues(true)
             setTab("application")
@@ -517,6 +528,9 @@ export function MembershipSettingsForm({
                       panelTitle: settings.panelTitle,
                       panelDescription: settings.panelDescription,
                       panelImageUrl,
+                      panelAccentColor: normalizeAccentColor(
+                          settings.panelAccentColor
+                      ),
                       applicationWelcomeMessage:
                           settings.applicationWelcomeMessage?.trim() ||
                           undefined,
@@ -556,6 +570,9 @@ export function MembershipSettingsForm({
                       ...settings,
                       enabled: false,
                       panelImageUrl,
+                      panelAccentColor: normalizeAccentColor(
+                          settings.panelAccentColor
+                      ),
                       roleSyncEnabled,
                       applicationForm,
                       categories: settings.categories.map((category) => ({
@@ -624,6 +641,7 @@ export function MembershipSettingsForm({
               title: settings.panelTitle,
               text: settings.panelDescription,
               imageUrl: imageUrl || null,
+              accentColor: normalizeAccentColor(settings.panelAccentColor),
               categories,
               windows: applicationWindowCount(form, categories),
               webFormUrl: settings.webFormEnabled ? webFormUrl : null,
@@ -748,6 +766,7 @@ export function MembershipSettingsForm({
                             title={settings.panelTitle}
                             text={settings.panelDescription}
                             imageUrl={imageUrl}
+                            accentColor={settings.panelAccentColor ?? ""}
                             panelView={panelView}
                             preview={builderPreview}
                             t={a.panel}

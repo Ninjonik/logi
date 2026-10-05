@@ -18,6 +18,7 @@ import {
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import type { ApplicationChannelReport } from "@/domain/membership/application-channels"
 import type { SelectableDiscordChannel } from "@/components/app/discord-channel-select"
+import { normalizeAccentColor } from "@/domain/discord-messages/message-style"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import type { MessageView } from "@/domain/discord-messages/message-view"
@@ -147,6 +148,7 @@ export function PanelSection({
     title,
     text,
     imageUrl,
+    accentColor,
     panelView,
     preview,
     t,
@@ -160,6 +162,8 @@ export function PanelSection({
     title: string
     text: string
     imageUrl: string
+    /** What the admin typed; empty is the clan colour (L4-10). */
+    accentColor: string
     panelView: MessageView | null
     preview: FormBuilderPreview
     t: PanelCopy
@@ -168,6 +172,7 @@ export function PanelSection({
         applicationParentChannelId?: string
         panelTitle?: string
         panelDescription?: string
+        panelAccentColor?: string
     }): void
     onImage(image: PanelImageChoice): void
 }) {
@@ -181,6 +186,8 @@ export function PanelSection({
     const channelName = channels.find(
         (channel) => channel.id === panelChannelId
     )?.name
+    const colorInvalid =
+        Boolean(accentColor.trim()) && !normalizeAccentColor(accentColor)
 
     async function upload(file: File) {
         setUploading(true)
@@ -357,6 +364,49 @@ export function PanelSection({
                     ) : null}
                     <p className="text-muted-foreground text-xs">
                         {t.imageHelp}
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${id}-color`}>{t.color}</Label>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="color"
+                            aria-label={t.color}
+                            value={
+                                normalizeAccentColor(accentColor) ?? "#E8A33D"
+                            }
+                            onChange={(event) =>
+                                onChange({
+                                    panelAccentColor:
+                                        event.target.value.toUpperCase(),
+                                })
+                            }
+                            className="border-input size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent p-1"
+                        />
+                        <Input
+                            id={`${id}-color`}
+                            value={accentColor}
+                            onChange={(event) =>
+                                onChange({
+                                    panelAccentColor: event.target.value,
+                                })
+                            }
+                            maxLength={7}
+                            placeholder="#E8A33D"
+                            aria-invalid={colorInvalid || undefined}
+                            aria-describedby={`${id}-color-hint`}
+                            className="max-w-40 rounded-xl font-mono"
+                        />
+                    </div>
+                    <p
+                        id={`${id}-color-hint`}
+                        className={
+                            colorInvalid
+                                ? "text-destructive text-xs"
+                                : "text-muted-foreground text-xs"
+                        }
+                    >
+                        {colorInvalid ? t.colorInvalid : t.colorHint}
                     </p>
                 </div>
             </div>

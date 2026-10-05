@@ -192,6 +192,8 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10). */
+    panelAccentColor?: string
     /** Optional first message posted in each application thread. */
     applicationWelcomeMessage?: string
     /** Ask infantry/tank preference for supported games during application. */

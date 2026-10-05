@@ -6228,6 +6228,9 @@ export const csMessages = {
             removeImage: "Odebrat obrázek",
             imageHelp:
                 "Volitelný, nad nadpisem panelu. PNG, JPEG nebo WebP do 2 MiB.",
+            color: "Barva panelu",
+            colorHint: "Prázdné = barva klanu. Hex, např. #E8A33D.",
+            colorInvalid: "Barva musí být hex, např. #E8A33D.",
             imageAlt: "Obrázek panelu přihlášek",
             attachFailed: "Obrázek se nepodařilo použít. Zkuste to znovu.",
             uploadErrors: {

@@ -149,3 +149,14 @@ test("a panel without categories is not posted", () => {
         null
     )
 })
+
+test("a panel colour replaces the clan colour on the bar (L4-10)", () => {
+    const { container } = render({
+        ...config,
+        membershipSettings: {
+            ...config.membershipSettings!,
+            panelAccentColor: "#3B82F6",
+        },
+    })
+    assert.equal(container.accent_color, 0x3b82f6)
+})

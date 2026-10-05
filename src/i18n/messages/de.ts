@@ -6410,6 +6410,9 @@ export const deMessages = {
             removeImage: "Bild entfernen",
             imageHelp:
                 "Optional, über dem Panel-Titel. PNG, JPEG oder WebP bis 2 MiB.",
+            color: "Panel-Farbe",
+            colorHint: "Leer = Clan-Farbe. Hex, z. B. #E8A33D.",
+            colorInvalid: "Die Farbe muss hex sein, z. B. #E8A33D.",
             imageAlt: "Bild des Bewerbungs-Panels",
             attachFailed:
                 "Das Bild konnte nicht verwendet werden. Versuche es noch einmal.",

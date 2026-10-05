@@ -58,6 +58,8 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10). */
+    panelAccentColor?: string
     applicationWelcomeMessage?: string
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean

@@ -269,7 +269,7 @@ Registered slices:
 `src/domain/api/membership-application-settings-slice.ts`, stored in
 `discordConfigs.membershipSettings`. GET returns `enabled`, the panel channel
 (`panelChannelId`), the thread channel (`threadChannelId`), `panelTitle`,
-`panelText`, `panelImageUrl`, `welcomeMessage`, the after-submit switches
+`panelText`, `panelImageUrl`, `panelAccentColor` (`null` = clan colour), `welcomeMessage`, the after-submit switches
 `mentionSupportRoles`, `autoRecruitOnApply`,
 `inviteSupportMembersIndividually` and `sendConfirmationDm`, the fixed
 `draftTtlHours` (24), the web form switch `webFormEnabled` (Variant B, off by

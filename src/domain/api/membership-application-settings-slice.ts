@@ -33,6 +33,8 @@ export const membershipApplicationApiSchema = z.object({
     panelTitle: z.string(),
     panelText: z.string(),
     panelImageUrl: z.string().nullable(),
+    /** `#RRGGBB`; null is the clan colour. */
+    panelAccentColor: z.string().nullable(),
     welcomeMessage: z.string().nullable(),
     mentionSupportRoles: z.boolean(),
     autoRecruitOnApply: z.boolean(),
@@ -64,6 +66,11 @@ export const membershipApplicationPatchSchema = z
         threadChannelId: discordId.nullable(),
         panelTitle: z.string().trim().min(1).max(256),
         panelText: z.string().trim().max(4096),
+        /** `#RRGGBB`; null returns to the clan colour. */
+        panelAccentColor: z
+            .string()
+            .regex(/^#[0-9a-fA-F]{6}$/)
+            .nullable(),
         welcomeMessage: z.string().trim().max(1200).nullable(),
         mentionSupportRoles: z.boolean(),
         autoRecruitOnApply: z.boolean(),
@@ -89,6 +96,7 @@ type StoredSettings = Record<string, unknown> & {
     panelTitle?: string
     panelDescription?: string
     panelImageUrl?: string
+    panelAccentColor?: string
     applicationWelcomeMessage?: string
     autoAssignRecruitOnApply?: boolean
     inviteSupportMembersIndividually?: boolean
@@ -129,6 +137,7 @@ export const membershipApplicationSettingsSlice = defineClanSettingsSlice({
             panelTitle: settings?.panelTitle ?? "",
             panelText: settings?.panelDescription ?? "",
             panelImageUrl: settings?.panelImageUrl ?? null,
+            panelAccentColor: settings?.panelAccentColor ?? null,
             welcomeMessage: settings?.applicationWelcomeMessage ?? null,
             mentionSupportRoles: settings?.mentionSupportRoles ?? true,
             autoRecruitOnApply: settings?.autoAssignRecruitOnApply ?? false,
@@ -220,6 +229,10 @@ function nextSettings(
     set("applicationParentChannelId", patch.threadChannelId)
     set("panelTitle", patch.panelTitle)
     set("panelDescription", patch.panelText)
+    set(
+        "panelAccentColor",
+        patch.panelAccentColor?.toUpperCase() ?? patch.panelAccentColor
+    )
     set(
         "applicationWelcomeMessage",
         patch.welcomeMessage === undefined

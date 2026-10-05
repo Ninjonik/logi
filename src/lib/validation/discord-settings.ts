@@ -296,6 +296,15 @@ const membershipSettingsSchema = z
                 "Discord embed descriptions can be up to 4096 characters."
             ),
         panelImageUrl: imageUrlField,
+        panelAccentColor: z
+            .string()
+            .trim()
+            .regex(
+                /^(#[0-9a-f]{6})?$/i,
+                "The panel colour must be a hex colour such as #E8A33D."
+            )
+            .optional()
+            .transform((value) => normalizeAccentColor(value)),
         applicationWelcomeMessage: z
             .string()
             .trim()

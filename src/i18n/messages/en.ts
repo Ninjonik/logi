@@ -6247,6 +6247,9 @@ export const enMessages = {
             removeImage: "Remove image",
             imageHelp:
                 "Optional, above the panel title. PNG, JPEG or WebP up to 2 MiB.",
+            color: "Panel colour",
+            colorHint: "Empty = the clan colour. Hex, e.g. #E8A33D.",
+            colorInvalid: "The colour must be hex, e.g. #E8A33D.",
             imageAlt: "Application panel image",
             attachFailed: "The image could not be used. Try again.",
             uploadErrors: {
