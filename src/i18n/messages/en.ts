@@ -4492,7 +4492,7 @@ export const enMessages = {
         preview: {
             title: "Discord preview",
             hint: "Everyone sees times in their own time zone",
-            note: "The highlighted part follows the step you are filling in. The message never shows the server password.",
+            note: "This is exactly the message the bot posts once the match is published. It never shows the server password.",
             today: "today",
             meetingAt: "meeting {time}",
             registrationCloses: "sign-ups close {time}",

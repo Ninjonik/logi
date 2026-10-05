@@ -4479,7 +4479,7 @@ export const csMessages = {
         preview: {
             title: "Náhled v Discordu",
             hint: "Časy uvidí každý ve svém pásmu",
-            note: "Zvýrazněná část se mění podle kroku, který právě vyplňujete. Ve zprávě nikdy není heslo serveru.",
+            note: "Přesně tuto zprávu bot pošle po zveřejnění. Ve zprávě nikdy není heslo serveru.",
             today: "dnes",
             meetingAt: "sraz {time}",
             registrationCloses: "přihlášky končí {time}",

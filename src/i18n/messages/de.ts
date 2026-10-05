@@ -4605,7 +4605,7 @@ export const deMessages = {
         preview: {
             title: "Vorschau in Discord",
             hint: "Jeder sieht die Zeiten in seiner Zeitzone",
-            note: "Der hervorgehobene Teil folgt dem Schritt, den du gerade ausfüllst. Die Nachricht zeigt nie das Serverpasswort.",
+            note: "Genau diese Nachricht postet der Bot nach dem Veröffentlichen. Sie zeigt nie das Serverpasswort.",
             today: "heute",
             meetingAt: "Treffen {time}",
             registrationCloses: "Anmeldung endet {time}",

@@ -524,17 +524,23 @@ function stateDetail(input: AnnouncementViewInput) {
     const card = copy.card
     switch (state) {
         case "open": {
-            const until = fillTemplate(card.until, {
-                time: weekdayTime(event, event.registrationEnd),
-            })
+            const deadline = weekdayTime(event, event.registrationEnd)
+            const until = deadline
+                ? fillTemplate(card.until, { time: deadline })
+                : undefined
             const full = fullSignupGroups(input.counts.groups).map((group) =>
                 escapeMarkdownText(group.name)
             )
-            return full.length && event.kind === "match"
-                ? `${until} · ${fillTemplate(card.fullGroups, {
-                      groups: joinNames(full, copy),
-                  })}`
-                : until
+            return [
+                until,
+                full.length && event.kind === "match"
+                    ? fillTemplate(card.fullGroups, {
+                          groups: joinNames(full, copy),
+                      })
+                    : undefined,
+            ]
+                .filter(Boolean)
+                .join(" · ")
         }
         case "closed":
             return event.kind === "training"
