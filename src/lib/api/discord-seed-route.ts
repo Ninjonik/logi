@@ -4,11 +4,9 @@ import type {
     SeedActionResult,
     SeedPlanSaveView,
 } from "@/application/discord-seed/action-result"
-import {
-    parseSeedPlanSettings,
-    type SeedPlanSettings,
-} from "@/domain/discord-seed/plan"
+import { parseSeedPlanSettings } from "@/domain/discord-seed/plan.schema"
 import type { SeedChannelReport } from "@/domain/discord-seed/channels"
+import { type SeedPlanSettings } from "@/domain/discord-seed/plan"
 import { readBoundedJson } from "@/lib/api/request-json"
 
 const json = (value: unknown, status = 200, headers: HeadersInit = {}) =>

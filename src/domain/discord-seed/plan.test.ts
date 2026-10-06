@@ -4,10 +4,10 @@ import test from "node:test"
 import {
     defaultSeedPlanSettings,
     initialSeedPlanState,
-    parseSeedPlanSettings,
     seedPlanCapacityIssues,
     type SeedPlanSettings,
 } from "./plan"
+import { parseSeedPlanSettings } from "./plan.schema"
 
 const SEED = "111111111111111111"
 const CONTROL = "222222222222222222"
