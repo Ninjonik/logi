@@ -48,6 +48,37 @@ one of them is already linked to another player, the message appears under the
 field. Platform IDs are normalised when saved; use the exact account IDs that
 the game platform supplies rather than a display name.
 
+### Linking in Discord with /link
+
+`/link` in a clan's Discord server does the same privately, in one message that
+updates as you go, in the clan's language:
+
+1. When Logi has stored games from the clan's servers, it first asks **Have
+   you played on the clan's servers?** **Yes, find me** opens **Find me in
+   game**: type at least three characters of your in-game name or your exact
+   ID and pick yourself from the players of those games, shown with the
+   platform, when you last played (with the weekday only within the last
+   week) and on which server. The clan application searches the same games. Nobody found offers **Search again** and
+   **Enter ID manually**.
+2. Otherwise, or with **No, I'll enter my ID**, pick the platform: Steam
+   (Steam64 ID, 17 digits), Epic Games (Epic Account ID), Xbox (your gamertag
+   or Xbox user ID) or PlayStation (your online ID). A short guide says what
+   the ID looks like and links the platform's own instructions; the window
+   asks for exactly that ID.
+3. The ID is checked before it is saved. A Steam64 ID has 17 digits and starts
+   with 7656119 (a `steamcommunity.com/profiles/…` link also works); anything
+   else is refused with **Enter again**, and the card's text links the
+   platform's guide. An ID another player already has is refused too.
+
+With accounts linked, `/link` lists them with **Add another account** and
+**Unlink account**. Unlinking says what changes: statistics from that account
+stop being matched, and an account your open clan application uses is marked
+so you do not remove it by mistake.
+
+An ID you link this way is your own statement, not proof that the account is
+yours. To prove a Steam account, use **Verify Steam on the web**, which opens
+this page.
+
 ## Bot direct messages
 
 **Match recap** is on by default and sends you your stats from a confirmed
@@ -63,7 +94,10 @@ own settings, so they are not switched here.
 
 ## Keep accounts connected correctly
 
-Use the Discord account that represents you in the community. If a platform ID needs linking, Logi may provide a secure linking flow. Do not share a linking token or a sign-in link with another person.
+Use the Discord account that represents you in the community. Link platform
+IDs on this page or with `/link` in Discord; Logi no longer sends one-time
+linking links by direct message. Do not share a sign-in link with another
+person.
 
 Steam verification must finish while the same Logi session is still valid.
 Signing out of that session, signing out everywhere, or expiry stops a pending
@@ -75,11 +109,9 @@ also need to restart; existing verified links are retained.
 
 ### Platform-ID links
 
-When the bot starts a platform-ID link, the resulting token is single-use and
-expires after 15 minutes. Starting another link for the same Discord account
-invalidates that account's earlier unused link tokens. Completing it adds the
-trimmed platform ID to the account without duplicating an existing identical
-ID; it may create the basic Logi user record if one does not yet exist.
+Linking an ID with `/link` adds it to your account without duplicating an
+existing identical ID; it may create the basic Logi user record if one does
+not yet exist. Unlinking removes only that ID.
 
 Platform IDs are a membership-application prerequisite in the Discord flow.
 They are not automatically a membership approval, group assignment, Discord

@@ -5,6 +5,7 @@ import {
     IMAGE_OUTPUT,
     IMAGE_UNATTACHED_TTL_MS,
     IMAGE_UPLOAD_LIMIT,
+    imageAssetFileName,
     imagePublicIdSchema,
     projectImageAsset,
     type ImageAssetEntity,
@@ -40,7 +41,8 @@ const access = {
     actor: dashboardActor,
 }
 type Db = Pick<QueryCtx, "db">
-export type AssetOwner = "team" | "event" | "panel" | "teamRequest"
+export type AssetOwner =
+    "team" | "event" | "panel" | "teamRequest" | "panelGraphics"
 
 /**
  * An asset scope is a workspace (its Discord guild ID, authorized for that
@@ -221,6 +223,7 @@ const normalizedAsset = v.object({
     width: v.number(),
     height: v.number(),
     publicUrl: v.string(),
+    fileName: v.optional(v.string()),
 })
 const recordReference = makeFunctionReference<
     "mutation",
@@ -238,6 +241,7 @@ const recordReference = makeFunctionReference<
             bytes: number
             sha256: string
             publicUrl: string
+            fileName?: string
         }
     },
     StoreImageAssetResult
@@ -302,6 +306,7 @@ export const record = internalMutation({
             bytes: v.number(),
             sha256: v.string(),
             publicUrl: v.string(),
+            fileName: v.optional(v.string()),
         }),
     },
     handler: async (ctx, args): Promise<StoreImageAssetResult> => {
@@ -330,9 +335,12 @@ export const record = internalMutation({
                 .unique()
         )
             return { error: "invalid_asset" as const }
+        const { fileName: rawName, ...stored } = asset
+        const fileName = imageAssetFileName(rawName)
         const id = await ctx.db.insert("imageAssets", {
             guildId: args.guildId,
-            ...asset,
+            ...stored,
+            ...(fileName ? { fileName } : {}),
             state: "ready",
             createdAt: new Date().toISOString(),
             createdBy: admin.subject,

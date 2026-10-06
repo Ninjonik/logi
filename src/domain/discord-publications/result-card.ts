@@ -14,6 +14,17 @@ export type ResultCardFacts = {
         outcome: "victory" | "defeat" | "draw"
         score: { sideA: number; sideB: number }
     } | null
+    /** When the match started; absent from older backends. */
+    playedAt?: string | null
+    /** The scores this correction replaced (L3-30 "dřív 4 : 1"). */
+    previous?: Array<{ label: string; score: number | null }> | null
+    /** The WD League fixture of a tracked Wardogs match (P6-38). */
+    league?: {
+        fixtureNumber: number | null
+        type: string | null
+        map: string | null
+        zone: string | null
+    } | null
 }
 
 const SLOT_ORDER: Record<string, number> = { a: 0, b: 1, c: 2 }

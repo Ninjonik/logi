@@ -102,3 +102,55 @@ for (const expiresDuring of ["observation", "authorization"] as const) {
         assert.equal(outcome, "retry_scheduled")
     })
 }
+
+test("a role the bot cannot manage reaches finish with the role, for the errors channel (L5-14)", async () => {
+    const finished: unknown[] = []
+    const outcome = await processManagedRoleOperation(
+        { guildId: "guild", operationId: "op", fence: 3 },
+        {
+            now: () => 1,
+            prepare: async () => ({
+                verdict: "ready",
+                guildId: "guild",
+                discordUserId: "222222222222222222",
+                actorId: "staff",
+                allowedRoleIds: ["300000000000000003"],
+                desiredRoleIds: ["300000000000000003"],
+            }),
+            discord: () => ({
+                observe: async () => ({
+                    roleIds: [],
+                    manageableRoleIds: [],
+                    targetEligible: true,
+                    evidence: {
+                        actorPresent: true,
+                        actorAdministrator: true,
+                        actorRoleIds: [],
+                        targetRoleIds: [],
+                        observedAt: 1,
+                    },
+                }),
+                change: async () => assert.fail("No write without the role"),
+            }),
+            finish: async (
+                _claim,
+                status,
+                reason,
+                _retry,
+                _evidence,
+                detail
+            ) => {
+                finished.push({ status, reason, detail })
+                return true
+            },
+        }
+    )
+    assert.equal(outcome, "denied")
+    assert.deepEqual(finished, [
+        {
+            status: "denied",
+            reason: "role_unmanageable_or_deleted",
+            detail: { roleId: "300000000000000003" },
+        },
+    ])
+})

@@ -517,7 +517,6 @@ test("new native roster and verified identity mutation entrypoints use the track
         "rosters",
         "discordRosters",
         "platformIdentityLinks",
-        "platformIdLinks",
         "groups",
         "userAssignments",
         "players",

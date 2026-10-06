@@ -1,0 +1,391 @@
+# Panels API: the contract of "Panely v Discordu"
+
+Workstream W1 (Panels core) built the panels end to end: the stored panel, the
+dashboard routes, the Convex functions, the bot worker and the public join page.
+This page is the contract the dashboard UI (W3), the seed control message (W4)
+and the WD League renderer (W5) build on. The message kit it uses is described
+in [KIT.md](KIT.md); the owner decisions are in
+[the redesign spec](../2026-10-05-discord-redesign-design.md).
+
+## 1. Model
+
+One row of `discordPublicPanels` is one panel. A panel may own several Discord
+messages (results, competition divisions, League), all keyed
+`panel:<panelId>` or `panel:<panelId>:…` in `discordPublications`; the calendar
+keeps the old key `calendar` so its message is edited, not reposted.
+
+| Kind          | What it is                                                         | Source fields                           |
+| ------------- | ------------------------------------------------------------------ | --------------------------------------- |
+| `server`      | One live game server (P4). Old `scoreboard` rows read as `server`. | `connectionId`                          |
+| `servers`     | "Naše servery", several servers in one message (P4-37..39)         | `connectionIds` (1–10, ordered)         |
+| `results`     | Confirmed results of one game, one card per match (P6)             | `gameId`; one per game per workspace    |
+| `league`      | WD League, two messages (P6), rendered by W5                       | `league` options; one per workspace     |
+| `calendar`    | "Nejbližší akce" (L3-12..18)                                       | `calendarCategories`; one per workspace |
+| `competition` | One table per division of a Logi competition (L3-19..24)           | `competitionId`                         |
+
+Fields added by W1 (all optional, additive): `paused`, `pausedAt`, `pausedBy`,
+`draft`, `removing`, `savedAt`, `savedBy`, `requestedAt`, `requestKind`,
+`connectionIds`, `title`, `description`, `content`, `league`,
+`calendarCategories`, `competitionId`. New tables: `discordPanelStatus` (the
+bot's last pass per panel), `discordPanelServers` (join link, address, join
+code and the encrypted password per server) and `discordBotHeartbeats`.
+
+- **Paused** is the real flag (`isPanelPaused(row) = row.paused ?? !row.enabled`);
+  rows saved before it read their old `enabled` switch. Saving never resumes.
+- **Draft** ("Neodesláno"): a new panel is not posted until "Odeslat do kanálu"
+  or a save with `send: true`. "Odstranit zprávu" returns a panel to draft.
+- **Request**: every accepted action stamps `requestedAt`. The bot answers it on
+  its next pass (within 15 s) and reports `handledRequestAt`; a request is
+  pending until then. Repeating an action is harmless.
+- **Refresh** is fixed at 60 s for every panel (`PANEL_REFRESH_SECONDS`).
+
+Pure rules: `src/domain/discord-publications/settings.ts` (kinds, save schema,
+content switches) and `panel-delivery.ts` (error codes, state chip, actions,
+worker decision, heartbeat).
+
+## 2. Dashboard routes
+
+All under `/api/servers/{serverId}/discord-panels`, where `serverId` is the
+dashboard's server ID. Every route needs a live dashboard session of a clan
+admin; writes also need the dashboard origin, which is checked before the body
+is read. Bodies are bounded JSON validated with Zod
+(`src/lib/api/discord-panels-route.ts`); Convex re-checks the session and the
+admin right on every call. Responses are `Cache-Control: no-store`. Backend
+failures are a plain `503 {"error":"unavailable"}`.
+
+| Method and path                 | Body                                                                                           | Answer                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`                         | —                                                                                              | `PanelOverviewResponse` (§3)                                                                                                          |
+| `POST /`                        | `{ panelId: string \| null, settings, send?: boolean, expectedRevision?: number \| null }`     | `200 { status: "saved", id, revision, sent }`; `400 { error: "invalid_settings", issues }`; `400/404/409 { error: PanelSaveError }`   |
+| `POST /{panelId}/actions`       | `{ action: "publish" \| "refresh" \| "pause" \| "resume" \| "retry" \| "delete" \| "remove" }` | `202 { status: "accepted", action, requestedAt }`; `404`; `409 { error: "not_sent" \| "removing" }`                                   |
+| `POST /test-fetch`              | `{ connectionId, panelId?: string \| null }`                                                   | `PanelTestResponse` (§4); `404`                                                                                                       |
+| `POST /channel-check`           | `{ channelId }`                                                                                | `PanelChannelCheck { channelId, supported, permissions, everyoneCanView, timedOut }`                                                  |
+| `PUT /servers/{connectionId}`   | `{ address?, joinCode?, password? }` (absent keeps, `null` or `""` clears)                     | `200 { status: "saved", slug, joinUrl }`; `400 { error: "invalid_request", field }`; `404`; `503 { error: "encryption_unavailable" }` |
+| `GET /league-preview?count=n`   | — (`n` 1–10, default 6; W3)                                                                    | The WD League messages' current data for the editor preview: `LeagueOverview` `{ standings, fixtures }` (`loadLeaguePanels`)          |
+| `POST /preview-image`           | `panelImageRequestSchema` with a built-in or no background (W3)                                | `image/png` of the style A score image or style B banner; `503 { error: "render_failed" }`                                            |
+| `POST /controls/{connectionId}` | `{ action: "refresh" }` (W3)                                                                   | `202 { status: "accepted" }` (the seed control message is redrawn, P1-18); `404`                                                      |
+
+`settings` is `panelSaveSchema` (kind, `channelId`, the kind's source fields,
+`title` ≤ 80, `description` ≤ 300, `showPlayers`, `showLeaders`,
+`reportCategoryId` (live server only), `artwork`, `content`, `presentation`,
+`league`, `calendarCategories`, `competitionId`). `content` holds the switches
+of P2: `nextMap`, `queue`, `address` (HLL IP:port), `joinCode` (Wardogs join
+code; W3, absent on old rows reads as `address`), `joinButton`, `password`
+(default **off**), `seedProgress`, `footerTiming`. The editor always saves
+`presentation.factionEmoji` as `{}`: per-panel faction emoji are gone (P8-B06),
+the signs are fixed.
+
+`POST /channel-check` also answers `viewerRoleIds`, the roles a channel
+overwrite lets view it ("vidí ho jen role @Klan a správci", P2-37). The preview
+image route accepts only Logi's built-in map art as a background, so the
+dashboard cannot be used to fetch an uploaded asset by ID; the editor draws a
+banner it cannot render server-side as an image link.
+
+`PanelSaveError`: `not_found`, `conflict` (409, `expectedRevision` is older),
+`kind_locked` (409, a sent panel keeps its kind), `removing` (409),
+`source_not_found`, `report_destination_missing`, `report_provider`,
+`duplicate_channel`, `results_exists`, `league_exists`, `calendar_exists`,
+`competition_not_found`, `panel_limit` (20 per workspace), `asset_unavailable`.
+
+Action meanings: `publish` "Odeslat do kanálu" (first post, or a resend; also
+resumes), `refresh` "Obnovit teď", `pause`/`resume` "Pozastavit"/"Spustit",
+`retry` "Zkusit znovu" (clears the retry wait and forgets a create Discord did
+not confirm, so it is sent again), `delete` "Odstranit zprávu" (the message
+goes, the panel stays as draft), `remove` (messages go, then the row).
+
+The server password is plaintext only between the browser and the Next server:
+`saveDiscordPanelServer` seals it with the AES-256-GCM keyring
+(`LOGI_CREDENTIAL_KEYRING`, AAD `["logi.panel-server-password",1,guildId,connectionId]`)
+before it reaches Convex. Without a keyring the route answers
+`encryption_unavailable` and stores nothing. No response ever contains it;
+the overview only says `hasPassword`.
+
+**`/api/v1`**: live Discord actions (send, refresh, pause, delete, retry, test
+fetch, channel check, password, the editor's league preview and preview image,
+and "Obnovit teď" of a control message) are a deliberate exclusion, recorded in
+`docs/integrations/website/configuration-coverage.md`. The panel settings are
+the `discordPanels` slice of `GET/PATCH /api/v1/clan/settings` (P1-B10, W3):
+`src/domain/api/discord-panels-settings-slice.ts`, store `discordPanels` in
+`convex/clanSettingsStores.ts`, use-case
+`src/application/discord-publications/panel-settings-api.ts`. PATCH runs
+`savePanel` for every entry against a dry run first, so one refused entry
+writes nothing; new panels are saved not sent.
+
+## 3. Overview (`GET /`)
+
+`buildPanelOverview` (`src/application/discord-publications/panel-overview.ts`):
+
+```ts
+type PanelOverviewResponse = {
+    bot:
+        | { state: "unknown" }
+        | {
+              state: "online" | "offline" | "outdated"
+              version
+              protocol
+              seenAt
+              requiredProtocol
+              requiredVersion // MINIMUM_BOT_VERSION, named in the outdated warning (P1-06)
+          }
+    botInServer: boolean | null // the bot visited this server in the last 3 min
+    counts: Record<
+        "published" | "error" | "waiting" | "unsent" | "paused",
+        number
+    >
+    panels: PanelOverviewItem[]
+    sources: PanelSourceHealth[] // "Zdroje dat": collecting, lastDataAt, freshness, errorCategory
+    servers: PanelServerInfo[] // slug, joinUrl, address, joinCode, hasPassword
+    // W3: "Ovládání serveru" rows, one per server whose seed plan has a control channel
+    controls: Array<{
+        connectionId
+        channelId
+        state // published | error | waiting
+        lastUpdateAt
+        failed
+        message: { channelId; messageId } | null
+    }>
+    people: Record<string, string> // Discord ID -> display name for savedBy / pausedBy
+    // Installed panel signs as `<:name:id>` by key, for the editor preview (P2-B09);
+    // empty until the bot reports the emoji with their IDs
+    emoji: Partial<Record<PanelEmojiKey, string>>
+}
+type PanelOverviewItem = {
+    id
+    kind
+    gameId
+    channelId
+    connectionId
+    connectionIds
+    title
+    state: "published" | "error" | "waiting" | "unsent" | "paused"
+    paused
+    pausedAt
+    pausedBy
+    revision
+    settings // exactly what the editor loads into panelSaveSchema
+    timeline: {
+        savedAt
+        savedBy
+        requestedAt
+        claimedAt
+        sentAt
+        lastUpdateAt
+        lastAttemptAt
+        nextUpdateAt
+        dataAt
+    }
+    error: {
+        code: PanelErrorCode
+        at
+        permissions?: PanelPermission[]
+        category?
+    } | null
+    uncertain: boolean // a create Discord did not confirm; "Zkusit znovu" sends again
+    warnings: Array<
+        | "password_hidden_public_channel"
+        | "live_data_unavailable"
+        | "attach_files_missing"
+    >
+    message: { channelId; messageId } | null // "Otevřít zprávu"
+    messages: number
+    // WD League only: each message ("standings", "fixtures") with its own state,
+    // last update and link from its managed publication (P1-20, P1-21);
+    // actions still target the panel. Empty for other kinds.
+    parts: Array<{
+        part: "standings" | "fixtures"
+        state
+        lastUpdateAt
+        uncertain
+        message: { channelId; messageId } | null
+    }>
+    style: "a" | "b" | "c"
+    // W3
+    lastError: { code; at; permissions?; category? } | null // kept after a later success
+    recoveredAt: number | null // first success after lastError ("Další pokus … prošel")
+    sent: boolean // a message reached Discord once: the kind is locked
+    channelPrivate: boolean | null // @everyone cannot view, as the bot last saw it
+}
+```
+
+State chip (P1-B01): removing → `waiting`; draft → `unsent` (or `waiting`
+while its message is being withdrawn); paused → `paused`; an unconfirmed create
+or an error newer than the last success → `error`; a pending request or no
+success yet → `waiting`; otherwise `published`. Poll the overview every few
+seconds while the page is open (P1-B09). "Zprávy a panely" (N1) reads the same
+overview for its "Panely" group.
+
+A WD League message (`panelMessageState`): a paused or unsent panel holds both
+messages; its own failed delivery → `error`; not posted yet → `waiting` (or
+`error` while the panel fails); a message confirmed after the pending request
+and after the panel's error → `published`.
+
+Bot heartbeat: written every 30 s with the bot version (`LOGI_BOT_VERSION`,
+else the version in the repository's `package.json` the bot ships in) and
+`PANEL_PROTOCOL`. Silence for 3 min is `offline`; a protocol below
+`REQUIRED_PANEL_PROTOCOL` is `outdated` (P1-05, P1-06). The warning names the
+bot's version and `MINIMUM_BOT_VERSION` (1.1.0), the first release with the
+required protocol; raise both together with the package version.
+
+Application emoji: `discordPanelGraphics:reportEmoji` also takes `installed`
+(`key`, public emoji `id`, `name`) so previews can draw the signs from Discord's
+emoji CDN; older bots omit it.
+
+Error codes and the plain sentence with its fix step for each are in the
+dashboard messages under `discordPanelStatus.errors.<code>.{title, fix}`
+(cs/en/de), with permission names under `discordPanelStatus.permissions` and
+warnings under `discordPanelStatus.warnings`. `{channel}` and `{permissions}`
+are placeholders. Codes: `bot_not_in_server`, `channel_missing`,
+`channel_type`, `missing_permissions`, `delivery_uncertain`,
+`discord_unavailable`, `source_missing`, `source_not_collecting`,
+`provider_unreachable`, `provider_rate_limited`, `render_failed`,
+`unsupported_kind`, `competition_missing`, `unknown`.
+
+## 4. Test fetch and preview (`POST /test-fetch`)
+
+"Načíst data ze serveru" runs the same live read as the bot with the admin's
+session: CRCON for HLL (`hllLiveData:read` with `actor`), Warcon for Wardogs
+(`warconData:read` with `actor`). Other providers show the collected snapshot.
+
+```ts
+type PanelTestResponse = {
+    provider
+    collecting: boolean
+    status:
+        | "ok"
+        | "stale"
+        | "unavailable"
+        | "busy"
+        | "denied"
+        | "failed"
+        | "snapshot"
+    readAt
+    dataAt
+    errorCategory
+    retryAfterMs
+    warnings
+    summary: {
+        serverName
+        map
+        players
+        capacity
+        queue
+        timeLeftMinutes
+        score
+        nextMap
+        playersInStats
+    }
+    preview: MessageView | null // the live panel as the bot would post it now, without a password
+    facts: LiveServerFacts | null // W3: what the preview is drawn from, roster Steam IDs removed
+    timeZone: string // W3: the clan's time zone for the preview's footer
+}
+```
+
+Render `preview` with the dashboard's Discord preview component; it is the
+same `liveServerPanelView` the bot posts. The editor redraws it from `facts`
+with its unsaved draft (title, switches, style, accent) on every change, so the
+preview follows the form without another read. No key, provider address or password
+is ever part of the answer.
+
+## 5. Bot side
+
+The worker (`discord-bot/src/public-panels/worker.ts`) ticks every 15 s, isolates
+each workspace, decides per panel with `panelWork`, runs one pass with
+`runPanel` (`panel-runner.ts`, all Discord/Convex/image calls are ports) and
+reports every pass to `discordPanelBot:report`. It never skips a post because a
+live read failed; it then shows the collected data with the warning
+`live_data_unavailable`.
+
+Convex functions for the bot (internal secret):
+
+| Function                                      | Purpose                                                                                    |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `discordPublicPanels:forGuild`                | Every panel with its servers (snapshot, seed plan, join details, `hasPassword`) and status |
+| `discordPanelBot:heartbeat`                   | Version, protocol, servers visited                                                         |
+| `discordPanelBot:report`                      | One pass: `panelAttemptSchema`; `passwordNotified` / `passwordReset`                       |
+| `discordPanelBot:purge`                       | Deletes a removed panel once its messages are gone                                         |
+| `discordPanelBot:act`                         | An action from Discord: `{ guildId, actorId, action, panelId? \| connectionId? }`          |
+| `discordPanelBot:calendarPanel`               | The calendar panel row and its handled request                                             |
+| `discordPanelBot:clanPlayers`                 | Which live Steam IDs belong to members (verified links)                                    |
+| `discordPanelBot:runningMatch`                | The Logi match running on a server now                                                     |
+| `discordPanelBot:competition`                 | Division tables with ECL cap points and the clan's next match                              |
+| `discordPanelBot:guildContext`                | Clan language, time zone, name, message style, event categories                            |
+| `discordPanelBot:joinPage`                    | The public join page read (§6)                                                             |
+| `discordPanelSecrets:serverPassword` (action) | The decrypted password, asked only after the bot confirmed a private channel               |
+
+**Pass report (W3).** `panelAttemptSchema` carries an optional
+`channelPrivate`; `discordPanelStatus` keeps `lastError`, `recoveredAt` and
+`channelPrivate` (all optional, additive) so the list can say "Poslední chyba
+… Další pokus … prošel" and whether a password can be shown. "Naše servery"
+rows carry the address (HLL), the join code (Wardogs) and the seed bar, and
+the panel's switches decide the score, next map and queue lines. The rows read
+the same live data as each server's own panel (`hllLiveData:read`,
+`warconData:read`); both reads authorize a panel through
+`panelReadsConnection`, which accepts a server panel's own connection and every
+connection of a "Naše servery" panel. While a seed is shown, a panel's player
+count and seed bar come from the seed run's latest reading
+(`discordSeedBot:panelStates`, `players`), the same number as the call.
+
+**Password (P4-B06).** Shown only on a server's own panel, only with the switch
+on, only while `@everyone` cannot view the channel, checked on every refresh.
+When the channel turns public the password is left out, the errors channel gets
+one notice and the overview warns `password_hidden_public_channel`; turning the
+channel private again re-arms the notice. Never on "Naše servery" or the join
+page. Decryption fails closed: no key or a foreign binding gives no password.
+
+**Buttons.** "Připojit se" is a grey link to `/join/<slug>`. "Zobrazit hráče"
+(`logi:players:<panelId>:<revision>:<page>:<action>`) answers privately, 8 per
+page, current round only, split by side. "Nahlásit hráče"
+(`report:open:<panelId>:<revision>`) opens the private report flow; it is not on
+clan-only panels. All are registered through the interaction feature
+`panelInteractions`.
+
+### Hand-offs
+
+- **W3 (dashboard UI)**: done. "Panely v Discordu"
+  (`settings/discord-panels`) lists every panel with the bot, sources and
+  control messages; the editor is `settings/discord-panels/new` and
+  `settings/discord-panels/<panelId>`
+  (`src/components/app/discord-panels/`). "Ověřit" is `POST /channel-check`;
+  the password field writes `PUT /servers/{connectionId}`.
+- **W4 (seed control message)**: "Obnovit panel" / "Pozastavit panel" /
+  "Pokračovat" call `discordPanelBot:act` with `connectionId` after the bot's own
+  fresh admin-role check. The live panel reads running seeds from
+  `discordSeedBot:panelStates` and draws "Seedujeme" with the progress bar.
+- **W5 (WD League)**: `PanelRunPorts.league(panel, pass)` is implemented in
+  `discord-bot/src/league/panels.ts` and wired in the worker. It returns
+  `{ messages, dataAt, warnings }` and owns `panel:<id>:standings` and
+  `panel:<id>:fixtures`; a workspace that turned Wardogs League off gets
+  `league_disabled` after both messages are deleted.
+  The editor's League preview draws the same `leagueStandingsMessage` and
+  `leagueFixturesMessage` from `GET /league-preview` with the draft's
+  switches (`leaguePreviews` in
+  `src/components/app/discord-panels/editor-preview.ts`).
+
+## 6. Join page
+
+`/<locale>/join/<slug>` (and `/join/<slug>`, which redirects to a locale) is
+public and needs no login. The narrow read `discordPanelBot:joinPage` returns
+only `{ gameId, name, address (HLL), joinCode (Wardogs), players, capacity, queue }`
+and never a password. Players, capacity and queue come from the panel's latest
+live read (`hllLiveCache`, same generation, at most 3 minutes old,
+`joinPagePlayers` in `src/domain/discord-publications/server-join.ts`), else
+from the collected snapshot without a queue. The page is a bare centred card
+(P4-44): it opens `steam://connect/<ip:port>` at once (Discord link buttons
+allow only http/https), keeps the address with "Kopírovat" and the Steam
+instructions when the browser blocks the link, shows the join code for Wardogs
+and links "Zpět do Discordu". It is not indexed.
+
+## 7. Owner activation
+
+1. Deploy Convex first (additive schema, new functions), then the web app, then
+   the bot. A bot older than `REQUIRED_PANEL_PROTOCOL` shows as outdated.
+2. Set the same `LOGI_CREDENTIAL_KEYRING` in Convex and the Next server
+   (see `docs/integrations/website/game-server-credentials.md`); without it
+   passwords cannot be saved.
+3. Optionally set `LOGI_BOT_VERSION` for the bot so the heartbeat shows the
+   release; it falls back to the version in `package.json`. "Panely v
+   Discordu" asks for `MINIMUM_BOT_VERSION` or newer when the bot speaks an
+   older panel protocol.
+4. Give the bot View Channel, Send Messages, Embed Links, Attach Files and Read
+   Message History in panel channels, and Create Private Threads, Send Messages
+   in Threads and Manage Threads in the report parent channel.

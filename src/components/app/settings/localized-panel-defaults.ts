@@ -1,10 +1,13 @@
-import type { ClanLanguage } from "@/lib/clan-language"
+import type { ClanLanguage } from "@/lib/clan-language/core"
 import { getDictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
 
 /**
- * Ticket and membership panels still showing the previous language's default
- * title or description follow the new clan language; custom text is kept.
+ * Ticket panels still showing the previous language's default title or
+ * description follow the new clan language; custom text is kept. The
+ * application panel needs no rewrite: a default title or text in any
+ * language is shown in the clan language when the panel is drawn
+ * (`src/domain/membership/application-panel-copy.ts`).
  */
 export function remapLocalizedDefaults(
     config: DiscordConfig | null,
@@ -45,22 +48,6 @@ export function remapLocalizedDefaults(
                           : config.ticketSettings.panelDescription,
               }
             : config.ticketSettings,
-        membershipSettings: config.membershipSettings
-            ? {
-                  ...config.membershipSettings,
-                  panelTitle:
-                      config.membershipSettings.panelTitle ===
-                      previousDictionary.membershipSettings.defaultPanelTitle
-                          ? nextDictionary.membershipSettings.defaultPanelTitle
-                          : config.membershipSettings.panelTitle,
-                  panelDescription:
-                      config.membershipSettings.panelDescription ===
-                      previousDictionary.membershipSettings
-                          .defaultPanelDescription
-                          ? nextDictionary.membershipSettings
-                                .defaultPanelDescription
-                          : config.membershipSettings.panelDescription,
-              }
-            : config.membershipSettings,
+        membershipSettings: config.membershipSettings,
     }
 }

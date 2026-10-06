@@ -17,10 +17,16 @@ export const SETTINGS_SECTIONS = [
     { id: "event-categories", group: "clan" },
     { id: "match-templates", group: "matches" },
     { id: "presets", group: "matches" },
-    { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
+    // "Zprávy a panely" (board N1) follows "Kanály a jazyk" in the Discord group.
+    { id: "messages", group: "discord" },
+    // "Panely v Discordu" (boards P1, P2): the panel list and editor.
+    { id: "discord-panels", group: "discord" },
+    // "Grafika panelů" (P8) and "Seed serverů" (P3) are pages under it.
+    { id: "panel-graphics", group: "discord", parent: "discord-panels" },
+    { id: "discord-seed", group: "discord", parent: "discord-panels" },
+    { id: "commands", group: "discord" },
     { id: "roles", group: "discord" },
-    { id: "stats", group: "discord" },
     { id: "membership", group: "discord" },
     { id: "tickets", group: "discord" },
     { id: "game-servers", group: "gameData" },
@@ -34,9 +40,24 @@ export const SETTINGS_SECTIONS = [
     id: string
     group: SettingsGroupId
     games?: readonly GameId[]
+    /** A page under another one: not in the menu, which marks the parent instead. */
+    parent?: string
 }>
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]["id"]
+
+/** The page a sub-page belongs under ("Grafika panelů" → "Panely v Discordu"). */
+export function settingsSectionParent(
+    id: SettingsSectionId
+): SettingsSectionId | undefined {
+    const section = SETTINGS_SECTIONS.find((item) => item.id === id)
+    return section && "parent" in section ? section.parent : undefined
+}
+
+/** The menu entry that is active on a page: its parent for a sub-page. */
+export function settingsMenuSection(id: SettingsSectionId): SettingsSectionId {
+    return settingsSectionParent(id) ?? id
+}
 
 export function isSettingsSectionId(value: string): value is SettingsSectionId {
     return SETTINGS_SECTIONS.some((section) => section.id === value)
@@ -44,7 +65,11 @@ export function isSettingsSectionId(value: string): value is SettingsSectionId {
 
 /** Pages that were merged into another page; old links redirect to it. */
 const MERGED_SETTINGS_SECTIONS: ReadonlyMap<string, SettingsSectionId> =
-    new Map([["login", "website"]])
+    new Map([
+        ["login", "website"],
+        // "Příkaz /stats" became the "Příkazy" page (Discord redesign N3).
+        ["stats", "commands"],
+    ])
 
 /** The page that now holds a merged page's settings, if `value` names one. */
 export function mergedSettingsSection(
@@ -111,8 +136,6 @@ export function settingsSectionStatus(
             )
         case "roles":
             return required(snapshot.clanRoleId ? [] : ["clanRole"])
-        case "stats":
-            return toggle(snapshot.statsEnabled)
         case "membership":
             return toggle(snapshot.membershipEnabled)
         case "tickets":

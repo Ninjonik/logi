@@ -79,6 +79,47 @@ test("Wardogs player report keeps identity across renames and uses only that pla
     assert.equal(wardogsPlayerStats([first], "76561198000000002"), null)
 })
 
+test("factions are listed by games played, most first, then by name (M2-18)", () => {
+    const games = [
+        ...Array.from({ length: 4 }, () => "Lonestar"),
+        ...Array.from({ length: 7 }, () => "Manticore"),
+        ...Array.from({ length: 12 }, () => "Valkyra"),
+        "Bravo",
+        "Alpha",
+    ].map((faction, index) => {
+        const game = historyRecord(`game-${index}`)
+        // The fixture's game, an hour later each time.
+        const shift = (value: string) =>
+            new Date(Date.parse(value) + index * 3_600_000).toISOString()
+        game.session.startedAt = shift(game.session.startedAt!)
+        game.session.endedAt = shift(game.session.endedAt!)
+        game.session.players = [
+            {
+                platform: "steam",
+                platformId: steam,
+                name: "Hráč 17",
+                faction,
+                result: "win",
+                metrics: { kills: 1 },
+            },
+        ]
+        return game
+    })
+    assert.deepEqual(
+        wardogsPlayerStats(games, steam)?.factions.map((f) => [
+            f.name,
+            f.matches,
+        ]),
+        [
+            ["Valkyra", 12],
+            ["Manticore", 7],
+            ["Lonestar", 4],
+            ["Alpha", 1],
+            ["Bravo", 1],
+        ]
+    )
+})
+
 test("unknown deaths never become zero or a fabricated K/D", () => {
     const game = historyRecord("partial")
     game.session.players = [

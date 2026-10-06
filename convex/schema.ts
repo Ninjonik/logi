@@ -8,6 +8,19 @@ import {
     gameDataSession,
 } from "./gameDataValidators"
 import {
+    applicationAccountsValidator,
+    applicationAnswerKindValidator,
+    applicationDraftFields,
+    applicationFormValidator,
+} from "./membershipApplicationValidators"
+import {
+    discordBotHeartbeats,
+    discordPanelServers,
+    discordPanelStatus,
+    discordPublications,
+    discordPublicPanels,
+} from "./discordPublicationTable"
+import {
     imageAssetKind,
     imageContentType,
     matchTeamAssignment,
@@ -22,9 +35,23 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
-    discordPublications,
-    discordPublicPanels,
-} from "./discordPublicationTable"
+    leagueFixtures,
+    leagueResults,
+    leagueCollectionState,
+} from "./leagueDiscoveryFixtureTable"
+import {
+    discordSeedMessages,
+    discordSeedPlans,
+    discordSeedRuns,
+} from "./discordSeedTable"
+import {
+    commandSettingsValidator,
+    discordCommandRegistrations,
+} from "./discordCommandTable"
+import {
+    discordApplicationEmoji,
+    discordPanelGraphics,
+} from "./discordPanelGraphicsTable"
 import { storedMatchTemplateValidator } from "./matchTemplateValidators"
 import { resultPublicPayload, resultRevision } from "./resultValidators"
 import { defineSchema, defineTable } from "convex/server"
@@ -159,6 +186,9 @@ const eventParticipant = v.object({
     userId: v.string(),
     status: v.union(v.literal("attending"), v.literal("not_attending")),
     group: v.optional(v.union(v.string(), v.null())),
+    // The capped group a player chose while it was full; they hold a reserve
+    // place without a group. Missing on older sign-ups.
+    requestedGroup: v.optional(v.union(v.string(), v.null())),
     completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
 })
@@ -194,6 +224,8 @@ const ticketCategory = v.object({
     description: v.optional(v.string()),
     supportRoleIds: v.array(v.string()),
     modalQuestions: v.array(ticketModalQuestion),
+    /** The thread card's title, e.g. "{author} nahlašuje hráče" (L4-42). */
+    threadTitle: v.optional(v.string()),
 })
 
 const membershipCategory = v.object({
@@ -219,6 +251,8 @@ const membershipCategory = v.object({
         v.literal("mercenary")
     ),
     autoAssignRecruitOnApply: v.optional(v.boolean()),
+    // Ask "Specializace" in this category (N4-B05); missing is yes for HLL.
+    askSpecialization: v.optional(v.boolean()),
 })
 
 const eventCategory = v.object({
@@ -261,6 +295,8 @@ const ticketSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-45). */
+    panelAccentColor: v.optional(v.string()),
     categories: v.array(ticketCategory),
 })
 
@@ -271,6 +307,8 @@ const membershipSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    // The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10).
+    panelAccentColor: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
@@ -278,6 +316,14 @@ const membershipSettings = v.object({
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
+    // The application form in Discord windows (N4); missing uses the default.
+    applicationForm: v.optional(applicationFormValidator),
+    // Variant B: the same form on the Logi web; off unless switched on (N4-42).
+    webFormEnabled: v.optional(v.boolean()),
+    // Mention the category's support roles in the thread intro (N4-34).
+    mentionSupportRoles: v.optional(v.boolean()),
+    // DM the applicant a confirmation with the thread link (N4-36).
+    sendConfirmationDm: v.optional(v.boolean()),
 })
 
 const statsSettings = v.object({
@@ -494,6 +540,9 @@ const eventNotice = v.object({
     // Set when a clan admin excused the player after the match; the player's
     // own late notice has no admin.
     excusedBy: v.optional(v.string()),
+    // "Přijdu později" (late) or "Nemůžu" (cannot_come); older notices have
+    // none and read as late.
+    kind: v.optional(v.union(v.literal("late"), v.literal("cannot_come"))),
 })
 
 const rosterSquad = v.object({
@@ -503,6 +552,13 @@ const rosterSquad = v.object({
     color: v.string(),
     icon: v.optional(v.string()),
     players: v.array(rosterPlayer),
+})
+
+/** A player's squad place in a published roster version (D5-B04). */
+const rosterPlaceSlot = v.object({
+    userId: v.string(),
+    squad: v.string(),
+    role: v.optional(v.string()),
 })
 
 const userAssignments = defineTable({
@@ -548,6 +604,9 @@ const guildGames = defineTable({
 export default defineSchema({
     discordPublications,
     discordPublicPanels,
+    discordPanelStatus,
+    discordPanelServers,
+    discordBotHeartbeats,
     peopleIntegrationState: defineTable({
         key: v.literal("global"),
         generation: v.string(),
@@ -741,6 +800,26 @@ export default defineSchema({
         // Clan colour and icon density of every bot message (Discord messages
         // settings). Missing means Logi amber and the sparse look.
         messageStyle: v.optional(messageStyle),
+        // Per-command settings of the "Příkazy" page (Discord redesign N3).
+        commandSettings: v.optional(commandSettingsValidator),
+        // Match message settings (board N1, see
+        // src/domain/discord-messages/notification-settings.ts). Missing means
+        // the board's default: photo with the text roster, change post and
+        // change DMs pre-selected, no attendance posts in the match thread.
+        rosterMessageVariant: v.optional(
+            v.union(v.literal("photo_text"), v.literal("photo"))
+        ),
+        rosterChangesPostDefault: v.optional(v.boolean()),
+        rosterChangesDmDefault: v.optional(v.boolean()),
+        attendanceNoticesInThread: v.optional(v.boolean()),
+        // Per-message switches of "Zprávy a panely" (board N1, see
+        // notification-settings.ts). Missing means on (N1-B06).
+        debriefPostEnabled: v.optional(v.boolean()),
+        scheduledEventEnabled: v.optional(v.boolean()),
+        matchRecapDmEnabled: v.optional(v.boolean()),
+        trainingResultDmEnabled: v.optional(v.boolean()),
+        applicationCloseDmEnabled: v.optional(v.boolean()),
+        ticketCloseDmEnabled: v.optional(v.boolean()),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -750,7 +829,14 @@ export default defineSchema({
         statusMessageId: v.optional(v.string()),
         statusUpdatesThreadId: v.optional(v.string()),
         serviceStates: v.optional(
-            v.array(v.object({ name: v.string(), online: v.boolean() }))
+            v.array(
+                v.object({
+                    name: v.string(),
+                    online: v.boolean(),
+                    // When the service last changed state (board L5-37).
+                    since: v.optional(v.string()),
+                })
+            )
         ),
         updatedAt: v.string(),
     }).index("workspaceGuildId", ["workspaceGuildId"]),
@@ -979,7 +1065,10 @@ export default defineSchema({
             v.literal("create-squad-voice-channels"),
             v.literal("conclude-event"),
             v.literal("attendance-reminder"),
-            v.literal("signup-reminder")
+            v.literal("signup-reminder"),
+            // Redraws the match announcement when its card changes by the
+            // clock alone: at the meeting ("Začíná") and the start ("Hraje se").
+            v.literal("refresh-announcement")
         ),
         dueAt: v.string(),
         status: v.union(v.literal("pending"), v.literal("processing")),
@@ -1010,6 +1099,66 @@ export default defineSchema({
         claimedAt: v.optional(v.string()),
         completedAt: v.optional(v.string()),
         sentCount: v.optional(v.number()),
+        // Recipients whose DM Discord refused (closed DMs, blocked bot);
+        // the match page names them (board L2-60).
+        failedUserIds: v.optional(v.array(v.string())),
+        error: v.optional(v.string()),
+    })
+        .index("eventId_requestedAt", ["eventId", "requestedAt"])
+        .index("status", ["status"]),
+    // Who the scheduled sign-up and attendance reminders did not reach (board
+    // L2-64): one row per match, kind and run (the attendance offset or the
+    // sign-up day), updated when a later pass retries. The match page shows
+    // the newest next to the manual reminders' outcome.
+    automaticReminderOutcomes: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        kind: v.union(v.literal("signup"), v.literal("attendance")),
+        runKey: v.string(),
+        sentAt: v.string(),
+        recipientIds: v.array(v.string()),
+        failedUserIds: v.array(v.string()),
+    })
+        .index("eventId_sentAt", ["eventId", "sentAt"])
+        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"]),
+    // A re-published roster's change digest and change DMs, requested by the
+    // dashboard and sent by the bot (board L1-120..126, L2-35..40). `before`
+    // is the published version the dashboard replaced; the bot compares it
+    // with the saved roster. The earliest request with a digest is the
+    // digest's baseline, so one digest per match lists every change since.
+    rosterChangeRequests: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        rosterId: v.id("rosters"),
+        requestedBy: v.string(),
+        requestedAt: v.string(),
+        before: v.array(
+            v.object({
+                userId: v.string(),
+                squad: v.string(),
+                role: v.optional(v.string()),
+            })
+        ),
+        notifyPlayers: v.boolean(),
+        postDigest: v.boolean(),
+        mentionPlayers: v.boolean(),
+        // The roster's publish this request belongs to: one change request
+        // per publish (D5-B04).
+        rosterPublishedAt: v.optional(v.string()),
+        // Mentions of a first publish when the announcement doubles as the
+        // roster card (D5-08); Discord never pings on the edited card.
+        firstPublish: v.optional(v.boolean()),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("sent"),
+            v.literal("failed")
+        ),
+        claimedAt: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+        dmSentUserIds: v.optional(v.array(v.string())),
+        dmFailedUserIds: v.optional(v.array(v.string())),
+        digestPosted: v.optional(v.boolean()),
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
@@ -1063,6 +1212,20 @@ export default defineSchema({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The Discord roster message chosen at publish time (board D5):
+        // photo with the text roster or photo only, and whether the first
+        // post mentions the rostered players. Missing reads the clan default.
+        discordMessageVariant: v.optional(
+            v.union(v.literal("photo_text"), v.literal("photo"))
+        ),
+        discordMentionPlayers: v.optional(v.boolean()),
+        // When the roster was last published from the dashboard.
+        publishedAt: v.optional(v.string()),
+        // The squad places of the last publish and of the version it
+        // replaced (D5-B04): the server's baseline for the change digest
+        // and the change DMs; the browser never sends one.
+        publishedPlaces: v.optional(v.array(rosterPlaceSlot)),
+        previousPublishedPlaces: v.optional(v.array(rosterPlaceSlot)),
         // The last time attendance was read from the meeting voice channel.
         meetingAttendance: v.optional(
             v.object({
@@ -1104,6 +1267,22 @@ export default defineSchema({
     })
         .index("eventId", ["eventId"])
         .index("eventId_userId", ["eventId", "userId"]),
+    // The match announcement card the bot keeps in the announcement channel
+    // (board L1): whether its first post pinged the roles, so a re-created
+    // card never pings again, and the card layout it was last drawn with, so
+    // the one-time redraw of older cards runs once.
+    discordAnnouncements: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        pingedAt: v.optional(v.string()),
+        layoutVersion: v.optional(v.string()),
+        // The one-time redraw of a match whose announcement the old bot had
+        // already removed: set once its roster card and forum post were
+        // redrawn (L1-147). Never read as a card layout, so it never makes
+        // the bot post a new announcement.
+        migrationVersion: v.optional(v.string()),
+        updatedAt: v.string(),
+    }).index("eventId", ["eventId"]),
     discordEventSyncs: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),
@@ -1125,6 +1304,9 @@ export default defineSchema({
         forumChannelId: v.optional(v.string()),
         forumThreadId: v.optional(v.string()),
         infoMessageId: v.optional(v.string()),
+        // The match forum's Debrief post, found again by ID even after
+        // Discord archived it, so it is edited and never posted twice.
+        debriefMessageId: v.optional(v.string()),
         topicMessageIds: v.array(v.string()),
         topicMessageState: v.optional(
             v.array(
@@ -1223,6 +1405,9 @@ export default defineSchema({
         leaseUntil: v.number(),
         threadId: v.optional(v.string()),
         ticketId: v.optional(v.id("ticketThreads")),
+        // Ticket number reserved on submit, so the private thread is named
+        // "Hlášení #17 · Hans_88" (L3-68); absent on older reports.
+        reportNumber: v.optional(v.number()),
     })
         .index("draftId", ["draftId"])
         .index("ticketId", ["ticketId"])
@@ -1283,10 +1468,23 @@ export default defineSchema({
                 questionId: v.string(),
                 label: v.string(),
                 value: v.string(),
+                kind: v.optional(applicationAnswerKindValidator),
             })
         ),
         status: v.union(v.literal("open"), v.literal("closed")),
         openedAt: v.string(),
+        // The application in Discord windows (L6) and on the web (Variant B).
+        source: v.optional(v.union(v.literal("discord"), v.literal("web"))),
+        applicantName: v.optional(v.string()),
+        games: v.optional(v.array(gameId)),
+        inGameName: v.optional(v.string()),
+        accounts: v.optional(applicationAccountsValidator),
+        // "Ještě nerozhodnuto" records only who and when (L6-B08).
+        undecidedByUserId: v.optional(v.string()),
+        undecidedByName: v.optional(v.string()),
+        undecidedAt: v.optional(v.string()),
+        // One decision at a time across the buttons and /close_application.
+        decisionLeaseUntil: v.optional(v.number()),
         closedAt: v.optional(v.string()),
         closedByUserId: v.optional(v.string()),
         closeReason: v.optional(v.string()),
@@ -1333,6 +1531,10 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("guildId_creatorId", ["guildId", "creatorId"])
+        .index("expiresAt", ["expiresAt"]),
+    membershipApplicationFormDrafts: defineTable(applicationDraftFields)
+        .index("guildId_creatorId", ["guildId", "creatorId"])
+        .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),
     platformIdLinkTokens: defineTable({
         token: v.string(),
@@ -1556,6 +1758,9 @@ export default defineSchema({
     leagueTrackedMatches,
     leagueIndexCache,
     leagueMessageRefs,
+    leagueFixtures,
+    leagueResults,
+    leagueCollectionState,
     leagueMatchCache: defineTable({
         matchId: v.string(),
         snapshotJson: v.optional(v.string()),
@@ -1759,6 +1964,8 @@ export default defineSchema({
         bytes: v.number(),
         sha256: v.string(),
         publicUrl: v.string(),
+        /** The uploaded file's own name, for display only (P8-08). */
+        fileName: v.optional(v.string()),
         state: v.union(v.literal("ready"), v.literal("deleting")),
         createdAt: v.string(),
         createdBy: v.string(),
@@ -1773,13 +1980,17 @@ export default defineSchema({
             v.literal("team"),
             v.literal("event"),
             v.literal("panel"),
-            v.literal("teamRequest")
+            v.literal("teamRequest"),
+            // Clan-wide panel graphics: server banners and map images.
+            v.literal("panelGraphics")
         ),
         ownerId: v.string(),
         createdAt: v.string(),
     })
         .index("assetId", ["assetId"])
         .index("owner_ownerId", ["owner", "ownerId"]),
+    discordPanelGraphics,
+    discordApplicationEmoji,
     gameHistorySettings: defineTable({
         guildId: v.string(),
         // null keeps retained games indefinitely.
@@ -2123,4 +2334,10 @@ export default defineSchema({
     })
         .index("entity", ["entityType", "entityId"])
         .index("expiresAt", ["expiresAt"]),
+    // Seed plans, runs (history) and managed seed messages (Discord redesign P3/P5).
+    discordSeedPlans,
+    discordSeedRuns,
+    discordSeedMessages,
+    // Slash-command registrations per Discord server (Discord redesign N3).
+    discordCommandRegistrations,
 })

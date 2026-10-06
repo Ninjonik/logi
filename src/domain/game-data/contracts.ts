@@ -138,6 +138,12 @@ export const gameDataSettingsSchema = z.strictObject({
             configured: z.boolean(),
             snapshot: serverSnapshotSchema,
             health: integrationHealthSchema,
+            /**
+             * The last observed state for stored-status readers, at most a
+             * day old (`projectLastState`); the snapshot's own `state` stays
+             * "unknown" once it is not fresh. Optional for older backends.
+             */
+            lastState: z.enum(["online", "offline"]).nullable().optional(),
         })
     ),
 })

@@ -1,8 +1,16 @@
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import type { MessageCreateOptions } from "discord.js"
+import { z } from "zod"
+
+import {
+    isTeamRequestDecision,
+    teamRequestDecisionView,
+} from "../../../src/domain/discord-messages/team-request-dm"
+import { getSystemMessages } from "../../../src/lib/clan-language/system"
+import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
+import { clanTeamsPath } from "../../../src/domain/teams/team-links"
 import { GAME_LABELS } from "../../../src/domain/games/game"
 import { TEAM_GAMES } from "../../../src/domain/teams/team"
-import { EmbedBuilder, escapeMarkdown } from "discord.js"
-import { z } from "zod"
+import { messagePayload } from "../ui/message-kit"
 
 /** One claimed decision DM, as `teamRequests:claimNotifications` returns it. */
 export const teamRequestNotificationSchema = z.object({
@@ -16,97 +24,107 @@ export const teamRequestNotificationSchema = z.object({
     requestedName: z.string(),
     teamName: z.string().nullable(),
     reason: z.string().nullable(),
+    // Added for the V2 card; older claims without them still parse.
+    teamCode: z.string().nullable().optional(),
+    clanName: z.string().nullable().optional(),
+    serverId: z.string().nullable().optional(),
+    accentColor: z.string().nullable().optional(),
 })
 export type TeamRequestNotification = z.infer<
     typeof teamRequestNotificationSchema
 >
-export type TeamRequestDecisionMessage = {
-    embeds: EmbedBuilder[]
-    allowedMentions: { parse: [] }
-}
+export type TeamRequestDecisionMessage = MessageCreateOptions
 
-const COLORS = {
-    approved: 0x57f287,
-    merged: 0x5865f2,
-    rejected: 0xed4245,
-} as const
 const DISCORD_USER_ID = /^\d{17,20}$/
+const SERVER_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 /**
- * User-supplied text (team names, rejection reasons) shown in a DM: Markdown
- * is escaped and mentions are broken with a zero-width space, then the value
- * is bounded to Discord's embed field size.
+ * Logi pages the DM links to, in the clan language. The catalogue has no
+ * page per team, so "Otevřít tým v Logi" opens the clan's Týmy for the
+ * game searched for the team (L5-39..40); "Otevřít Týmy v Logi" the list.
  */
-export function safeDiscordText(value: string, max = 1024): string {
-    const text = escapeMarkdown(value.trim())
-        .replace(/@/g, "@\u200b")
-        .replace(/</g, "<\u200b")
-    return text.length > max ? `${text.slice(0, max - 1)}…` : text
+export function teamRequestLinks(
+    notification: Pick<
+        TeamRequestNotification,
+        "language" | "serverId" | "gameId"
+    > &
+        Partial<Pick<TeamRequestNotification, "teamName" | "requestedName">>,
+    siteUrl: string
+) {
+    const language = resolveClanLanguage(notification.language)
+    const page = (path: string) => new URL(path, siteUrl).toString()
+    const serverId =
+        notification.serverId && SERVER_ID.test(notification.serverId)
+            ? notification.serverId
+            : undefined
+    const teams = serverId
+        ? page(
+              clanTeamsPath({
+                  language,
+                  serverId,
+                  gameId: notification.gameId,
+              })
+          )
+        : undefined
+    const team = serverId
+        ? page(
+              clanTeamsPath({
+                  language,
+                  serverId,
+                  gameId: notification.gameId,
+                  team: notification.teamName ?? notification.requestedName,
+              })
+          )
+        : undefined
+    return {
+        team,
+        teams,
+        settings: page(`/${language}/dashboard/settings/user#zpravy-od-bota`),
+    }
 }
 
 /**
- * The decision DM in the requesting workspace's language: the outcome, the
- * requested name, the resulting team and, for a rejection, the reason. Only
- * decided requests produce a message.
+ * The decision DM in the requesting clan's language (board L5 1.3, L2-57..58):
+ * the shared V2 card with the clan colour, the result as a chip, the team by
+ * its code, the decider's reason as a quote and a link to the clan's Týmy in
+ * Logi. Only decided requests produce a message. Nobody is pinged.
  */
 export function buildTeamRequestDecisionMessage(
-    notification: TeamRequestNotification
+    notification: TeamRequestNotification,
+    siteUrl: string
 ): TeamRequestDecisionMessage | null {
     const status = notification.status
-    if (status !== "approved" && status !== "merged" && status !== "rejected")
-        return null
-    const copy = getClanDiscordMessages(notification.language).teamRequests
-    const title = {
-        approved: copy.approvedTitle,
-        merged: copy.mergedTitle,
-        rejected: copy.rejectedTitle,
-    }[status]
-    const description =
-        status === "approved"
-            ? notification.kind === "create"
-                ? copy.approvedCreate
-                : copy.approvedUpdate
-            : status === "merged"
-              ? copy.merged
-              : copy.rejected
-    const embed = new EmbedBuilder()
-        .setColor(COLORS[status])
-        .setTitle(title)
-        .setDescription(description)
-        .addFields(
-            {
-                name: copy.request,
-                value:
-                    notification.kind === "create"
-                        ? copy.kindCreate
-                        : copy.kindUpdate,
-                inline: true,
-            },
-            {
-                name: copy.game,
-                value: GAME_LABELS[notification.gameId],
-                inline: true,
-            },
-            {
-                name: copy.requestedName,
-                value: safeDiscordText(notification.requestedName) || "—",
-            }
-        )
-        .setFooter({ text: copy.footer })
-    if (status !== "rejected" && notification.teamName)
-        embed.addFields({
-            name: copy.team,
-            value: safeDiscordText(notification.teamName) || "—",
-        })
-    if (status === "rejected" && notification.reason)
-        embed.addFields({
-            name: copy.reason,
-            value: safeDiscordText(notification.reason) || "—",
-        })
-    return { embeds: [embed], allowedMentions: { parse: [] } }
+    if (!isTeamRequestDecision(status)) return null
+    const copy = getSystemMessages(notification.language)
+    const links = teamRequestLinks(notification, siteUrl)
+    const view = teamRequestDecisionView({
+        copy: copy.teamRequests,
+        gameLabel: GAME_LABELS[notification.gameId],
+        status,
+        kind: notification.kind,
+        requestedName: notification.requestedName,
+        team: notification.teamName
+            ? { name: notification.teamName, code: notification.teamCode }
+            : null,
+        reason: notification.reason,
+        teamUrl: links.team,
+        teamsUrl: links.teams,
+        frame: {
+            clanName: notification.clanName ?? "",
+            settingsUrl: links.settings,
+        },
+    })
+    return messagePayload(view, {
+        language: notification.language,
+        style: notification.accentColor
+            ? { accentColor: notification.accentColor }
+            : null,
+    })
 }
 
 export type TeamRequestNotificationPorts = {
+    /** The Logi site the DM links back to. */
+    siteUrl: string
     /** Leases due decision DMs; the lease expires if a pass never confirms them. */
     claim(): Promise<unknown>
     /** The Discord user, or null when it cannot be fetched. */
@@ -171,9 +189,12 @@ export async function deliverTeamRequestNotifications(
                 requestId,
             })
         else {
-            const message = buildTeamRequestDecisionMessage(parsed.data)
             const userId = parsed.data.discordUserId
             try {
+                const message = buildTeamRequestDecisionMessage(
+                    parsed.data,
+                    ports.siteUrl
+                )
                 const user =
                     message && DISCORD_USER_ID.test(userId)
                         ? await ports.fetchUser(userId)

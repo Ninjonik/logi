@@ -16,6 +16,36 @@ test("League match preview documents stale snapshots, explicit grants and nullab
         assert.ok(operation.responses[code])
 })
 
+test("the WD League overview documents the table, nearest fixtures, recent results and its grant", async () => {
+    const document = await (await GET()).json()
+    const operation = document.paths["/clan/league-fixtures/overview"].get
+    assert.equal(operation["x-logi-read-access"].resource, "league-fixtures")
+    assert.match(operation.description, /waiting_for_results/)
+    assert.match(operation.description, /1st 3 · 2nd 2 · 3rd 1/)
+    const limit = operation.parameters.find(
+        (p: { name: string }) => p.name === "limit"
+    )
+    assert.deepEqual(
+        [limit.schema.minimum, limit.schema.maximum, limit.schema.default],
+        [1, 10, 6]
+    )
+    const schema = document.components.schemas.LeagueOverview
+    assert.deepEqual(Object.keys(schema.properties), ["standings", "fixtures"])
+    assert.ok(schema.properties.fixtures.properties.recentResults)
+    assert.match(operation.description, /recentResults\.state/)
+    assert.deepEqual(
+        schema.properties.fixtures.properties.recentResults.anyOf[0].properties
+            .state.enum,
+        ["waiting_for_results", "ready"]
+    )
+    assert.ok(
+        document.components.schemas.LeagueFixture.properties.snapshot.properties
+            .results
+    )
+    for (const code of ["200", "400", "401", "403", "429", "503"])
+        assert.ok(operation.responses[code])
+})
+
 test("Warcon reads document every view, an explicit grant and typed player data", async () => {
     const document = await (await GET()).json()
     const endpoint = document.paths["/clan/warcon-data/{connectionId}"]

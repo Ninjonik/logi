@@ -1,82 +1,7 @@
-import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    type ButtonInteraction,
-    type ChatInputCommandInteraction,
-    type Guild,
-    type ThreadChannel,
-} from "discord.js"
+import { type Guild, type ThreadChannel } from "discord.js"
 
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
-import type { ClanLanguage } from "../../../src/lib/clan-language"
-import { buildDiscordMessageUrl } from "../../../src/lib/discord"
-
-import { reportClanDiscordError } from "../error-reporting"
-import type { EventInteractionContext } from "../types"
-import { convex, references } from "../convex"
-import { revalidateAppData } from "../cache"
-import { env } from "../environment"
+import { reportToErrorsChannel } from "../ui/replies"
 import { logWarn } from "../log"
-
-export function formatTemplate(
-    template: string,
-    replacements: Record<string, string>
-) {
-    return Object.entries(replacements).reduce(
-        (message, [key, value]) => message.split(`{${key}}`).join(value),
-        template
-    )
-}
-
-export function getOutcomeLabel(
-    language: ClanLanguage,
-    outcome: "denied" | "pending" | "recruit" | "member" | "mercenary"
-) {
-    const messages = getClanDiscordMessages(language)
-    switch (outcome) {
-        case "denied":
-            return messages.commands.outcomeDenied
-        case "pending":
-            return messages.commands.outcomePending
-        case "recruit":
-            return messages.commands.outcomeRecruit
-        case "member":
-            return messages.commands.outcomeMember
-        case "mercenary":
-            return messages.commands.outcomeMercenary
-    }
-}
-
-export async function loadTicketCategoryContext(
-    guildId: string,
-    categoryId: string
-) {
-    return (await convex.query(references.getTicketCategoryContext, {
-        secret: env.internalSecret,
-        guildId,
-        categoryId,
-    })) as {
-        config: EventInteractionContext["config"]
-        category: import("../types").TicketCategory
-    } | null
-}
-
-export async function loadMembershipCategoryContext(
-    guildId: string,
-    categoryId: string,
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
-) {
-    return (await convex.query(references.getMembershipCategoryContext, {
-        secret: env.internalSecret,
-        guildId,
-        categoryId,
-        gameId,
-    })) as {
-        config: EventInteractionContext["config"]
-        category: import("../types").MembershipCategory
-    } | null
-}
 
 export function resolveSupportMemberIds(
     guild: Guild,
@@ -98,115 +23,6 @@ export function resolveSupportMemberIds(
     return [...memberIds]
 }
 
-export async function sendPlatformIdDm(
-    interaction: ButtonInteraction,
-    link: string,
-    language: ClanLanguage
-) {
-    return sendPlatformIdDmWithCopy(interaction, link, language, "membership")
-}
-
-export async function startPlatformIdLinkFlow(
-    interaction: ButtonInteraction | ChatInputCommandInteraction,
-    input: {
-        guildId: string
-        language: ClanLanguage
-        completionMode: "membership" | "link"
-        categoryId?: string
-        applyMessageUrl?: string
-    }
-) {
-    const tokenResponse = (await convex.mutation(
-        references.createPlatformIdLinkToken,
-        {
-            secret: env.internalSecret,
-            guildId: input.guildId,
-            categoryId: input.categoryId,
-            userId: interaction.user.id,
-            userName: interaction.user.globalName ?? interaction.user.username,
-            userAvatar: interaction.user.displayAvatarURL(),
-            language: input.language,
-            completionMode: input.completionMode,
-            applyMessageUrl: input.applyMessageUrl,
-            interactionToken: interaction.token,
-            interactionApplicationId: interaction.applicationId,
-        }
-    )) as { token: string }
-    const link = `${env.appSiteUrl}/${input.language}/platform-id-link/${tokenResponse.token}`
-    const dmMessageUrl = await sendPlatformIdDmWithCopy(
-        interaction,
-        link,
-        input.language,
-        input.completionMode
-    )
-    const messages = getClanDiscordMessages(input.language)
-
-    if (input.completionMode === "membership") {
-        return dmMessageUrl
-            ? formatTemplate(messages.membership.dmSent, { link: dmMessageUrl })
-            : formatTemplate(messages.membership.dmFailed, { link })
-    }
-
-    return dmMessageUrl
-        ? formatTemplate(messages.commands.linkDmSent, { link: dmMessageUrl })
-        : formatTemplate(messages.commands.linkDmFailed, { link })
-}
-
-async function sendPlatformIdDmWithCopy(
-    interaction: ButtonInteraction | ChatInputCommandInteraction,
-    link: string,
-    language: ClanLanguage,
-    completionMode: "membership" | "link"
-) {
-    try {
-        const messages = getClanDiscordMessages(language)
-        const dm = await interaction.user.createDM()
-        const content =
-            completionMode === "membership"
-                ? [
-                      messages.membership.platformIdDmIntro,
-                      messages.membership.platformIdDmInstruction,
-                  ]
-                : [
-                      messages.platformLink.dmIntro,
-                      messages.platformLink.dmInstruction,
-                  ]
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-                .setStyle(ButtonStyle.Link)
-                .setURL(link)
-                .setLabel(
-                    completionMode === "membership"
-                        ? messages.membership.platformIdButton
-                        : messages.platformLink.button
-                )
-        )
-        const message = await dm.send({
-            content: content.join("\n\n"),
-            components: [row],
-        })
-        return buildDiscordMessageUrl("@me", message.channelId, message.id)
-    } catch (error) {
-        logWarn("interaction", "Failed to DM platform ID link", {
-            guildId: interaction.guildId,
-            userId: interaction.user.id,
-            error,
-        })
-        if (interaction.guildId) {
-            void reportClanDiscordError({
-                client: interaction.client,
-                guildId: interaction.guildId,
-                error,
-                action: "Send a platform link DM",
-                location: "Membership and account linking",
-                scope: "interaction",
-                target: `<@${interaction.user.id}>`,
-            })
-        }
-        return null
-    }
-}
-
 export async function cleanupThread(thread: ThreadChannel, reason: string) {
     await thread.delete(reason).catch(async (error) => {
         logWarn("interaction", "Failed to delete thread during cleanup", {
@@ -214,7 +30,7 @@ export async function cleanupThread(thread: ThreadChannel, reason: string) {
             reason,
             error,
         })
-        void reportClanDiscordError({
+        void reportToErrorsChannel({
             client: thread.client,
             guildId: thread.guildId,
             error,
@@ -230,44 +46,5 @@ export async function cleanupThread(thread: ThreadChannel, reason: string) {
         await thread.setLocked(true, reason).catch(() => null)
         await thread.setArchived(true, reason).catch(() => null)
         return null
-    })
-}
-
-export async function rollbackMembershipApplicationSetup(input: {
-    guild: Guild
-    userId: string
-    config: EventInteractionContext["config"]
-    assignmentId: string
-    assignmentType: "member" | "mercenary"
-    assignmentStatus: "pending" | "recruit" | "active"
-    membershipCategoryId: string
-}) {
-    const { guild, userId, assignmentId } = input
-    await convex
-        .mutation(references.removeAssignment, {
-            secret: env.internalSecret,
-            assignmentId: assignmentId as never,
-            roleActor: { userId, kind: "rollback" },
-            roleGuildId: guild.id,
-        })
-        .catch((error) => {
-            logWarn(
-                "interaction",
-                "Failed to roll back membership assignment",
-                {
-                    guildId: guild.id,
-                    userId,
-                    assignmentId,
-                    error,
-                }
-            )
-            return null
-        })
-
-    await revalidateAppData({
-        type: "assignment-changed",
-        serverId: guild.id,
-        userId,
-        assignmentId,
     })
 }

@@ -1,72 +1,133 @@
-import type { Client, EmbedBuilder } from "discord.js"
+import type { Client, ContainerBuilder } from "discord.js"
 import { ConvexReactClient } from "convex/react"
 import { getFunctionName } from "convex/server"
 import { closeConvexClient } from "../convex"
 import test, { afterEach } from "node:test"
 import assert from "node:assert/strict"
 
-import { buildMatchRecapCopy, processMatchRecaps } from "./match-recaps"
+import { buildMatchRecapView, processMatchRecaps } from "./match-recaps"
+import type { EventInteractionContext } from "../types"
 
 afterEach(closeConvexClient)
 
-test("builds match recap copy in the configured clan language", () => {
-    const recap = {
-        userId: "user-1",
-        eventName: "Operation Test",
-        mapName: "Foy",
-        kills: 28,
-        deaths: 16,
-        kd: 1.75,
-        previousTen: { matches: 4, kills: 21.5, deaths: 18.2, kd: 1.18 },
-    }
+const context = {
+    config: {
+        id: "config-1",
+        guildId: "guild-1",
+        timezone: "Europe/Prague",
+        defaultLanguage: "cs",
+        calendarCategories: [],
+        updatedAt: "2026-10-01T10:00:00.000Z",
+    },
+    event: {
+        id: "events:one",
+        guildId: "guild-1",
+        gameId: "hell_let_loose",
+        kind: "match",
+        name: "Liga",
+        side: "Allies",
+        server: "Vlci #1",
+        map: "foy_warfare_day",
+        matchTeams: [
+            {
+                slot: "a",
+                side: "Allies",
+                snapshot: { name: "Vlci", shortCode: "VLK" },
+            },
+            {
+                slot: "b",
+                side: "Axis",
+                snapshot: { name: "Rogue", shortCode: "ROG" },
+            },
+        ],
+        gameStart: "2026-10-11T18:00:00.000Z",
+    },
+    groups: [],
+    roster: {
+        squads: [
+            {
+                name: "F1",
+                players: [
+                    { id: "222222222222222222", roleName: "Medic", ack: true },
+                ],
+            },
+        ],
+        reservePlayerIds: [],
+    },
+} as unknown as EventInteractionContext
 
-    const czech = buildMatchRecapCopy("cs", recap)
-
-    assert.equal(czech.title, "Shrnutí zápasu - Operation Test")
-    assert.match(czech.description, /28.*zabití/)
-    assert.match(czech.comparisonTitle, /předchozími zápasy/)
-    assert.equal(czech.viewStats, "Zobrazit veřejné statistiky zápasu")
-})
-
-test("uses localized fallback comparison copy when no history exists", () => {
-    const german = buildMatchRecapCopy("de", {
-        userId: "user-1",
-        eventName: "Operation Test",
-        kills: 28,
-        deaths: 16,
-        kd: 1.75,
-    })
-
-    assert.equal(german.comparisonTitle, "Vergleich mit früheren Spielen")
-    assert.match(german.comparison, /keine früheren gespeicherten Spiele/)
-    assert.equal(german.unsubscribe, "Zusammenfassungen abbestellen")
-})
+const forum = {
+    stratmaps: [],
+    result: { outcome: "win" as const, score: "4 : 1" },
+    provider: "CRCON",
+    publicMatch: true,
+    serverId: "guilds:1",
+    clanName: "Vlci",
+    category: { label: "Přátelák", color: "#22c55e" },
+}
 
 const delivery = {
     recapId: "matchRecaps:one",
     userId: "imported/player",
     discordUserId: "222222222222222222",
     eventName: "Synthetic match",
-    kills: 4,
-    deaths: 2,
-    kd: 2,
+    kills: 36,
+    deaths: 15,
+    kd: 2.4,
+    previousTen: { matches: 10, kills: 29.4, deaths: 16.7, kd: 1.76 },
 }
-test("actual recap runner uses Discord subject, rechecks eligibility and keeps the data ID in links", async (t) => {
-    const calls: unknown[] = [],
-        targets: string[] = []
-    t.mock.method(
+
+const text = (view: { components: ContainerBuilder[] }) =>
+    JSON.stringify(view.components.map((item) => item.toJSON()))
+
+function mockQueries(
+    t: { mock: { method: (...args: never[]) => unknown } },
+    prepared: unknown = delivery,
+    calls: unknown[] = []
+) {
+    ;(t.mock.method as (...args: unknown[]) => unknown)(
         ConvexReactClient.prototype,
         "query",
         async (
             reference: Parameters<typeof getFunctionName>[0],
             args: unknown
         ) => {
-            calls.push([getFunctionName(reference), args])
-            return getFunctionName(reference).endsWith("listPendingForEvent")
-                ? [delivery]
-                : delivery
+            const name = getFunctionName(reference)
+            calls.push([name, args])
+            if (name.endsWith("listPendingForEvent")) return [delivery]
+            if (name.endsWith("getEventInteractionContext")) return context
+            if (name.endsWith("forumContext")) return forum
+            return prepared
         }
     )
+}
+
+test("the recap card shows the game, result, numbers with a decimal comma and the source", () => {
+    const content = JSON.stringify(
+        buildMatchRecapView({
+            inputs: { context, forum },
+            recap: delivery,
+            discordUserId: delivery.discordUserId,
+            enabled: true,
+        })
+    )
+    assert.match(content, /"label":"Shrnutí zápasu · Hell Let Loose"/)
+    assert.match(content, /F1 · Medic/)
+    assert.match(content, /Výhra 4 : 1/)
+    assert.match(content, /VLK za Spojence/)
+    assert.match(content, /K\/D \*\*2,40\*\*/)
+    assert.match(content, /29,4 zabití · 16,7 úmrtí · K\/D 1,76/)
+    assert.match(
+        content,
+        /Data ze serveru Vlci #1 \(CRCON\), jen tento zápas\./
+    )
+    assert.match(content, /match-recap:unsubscribe:events:one/)
+})
+
+test("actual recap runner uses Discord subject, rechecks eligibility and keeps the data ID in links", async (t) => {
+    const calls: unknown[] = [],
+        targets: string[] = []
+    mockQueries(t as never, delivery, calls)
     t.mock.method(
         ConvexReactClient.prototype,
         "mutation",
@@ -74,36 +135,45 @@ test("actual recap runner uses Discord subject, rechecks eligibility and keeps t
             calls.push(["mark", args])
         }
     )
-    let embed: ReturnType<EmbedBuilder["toJSON"]> | undefined
+    let sent: { components: ContainerBuilder[] } | undefined
     const client = {
         users: {
             fetch: async (id: string) => {
                 targets.push(id)
                 return {
-                    send: async (payload: { embeds: EmbedBuilder[] }) => {
-                        embed = payload.embeds[0].toJSON()
+                    send: async (payload: {
+                        components: ContainerBuilder[]
+                    }) => {
+                        sent = payload
                     },
                 }
             },
         },
     } as unknown as Client
-    await processMatchRecaps(client, "events:one", "cs")
+    await processMatchRecaps(client, "events:one")
     assert.deepEqual(targets, [delivery.discordUserId])
-    assert.equal(calls.length, 3)
-    assert.deepEqual(calls[1], [
-        "matchRecaps:prepareDelivery",
-        {
-            secret: "dev-internal-auth-secret",
-            recapId: delivery.recapId,
-            eventId: "events:one",
-            discordUserId: delivery.discordUserId,
-        },
-    ])
-    assert.match(
-        embed?.url ?? "",
-        /\/players\/imported%2Fplayer\/matches\/events%3Aone$/
+    assert.ok(
+        calls.some(
+            (call) =>
+                JSON.stringify(call) ===
+                JSON.stringify([
+                    "matchRecaps:prepareDelivery",
+                    {
+                        secret: "dev-internal-auth-secret",
+                        recapId: delivery.recapId,
+                        eventId: "events:one",
+                        discordUserId: delivery.discordUserId,
+                    },
+                ])
+        )
     )
-    assert.deepEqual(calls[2], [
+    assert.ok(sent)
+    assert.match(
+        text(sent),
+        /\/players\/imported%2Fplayer\/matches\/events%3Aone/
+    )
+    assert.match(text(sent), /Klan Vlci/)
+    assert.deepEqual(calls.at(-1), [
         "mark",
         {
             secret: "dev-internal-auth-secret",
@@ -114,49 +184,26 @@ test("actual recap runner uses Discord subject, rechecks eligibility and keeps t
 })
 
 test("unsubscribe or relink during Discord lookup stops a previously listed recap", async (t) => {
-    let lookedUp = false,
-        prepared = false,
-        sent = false
-    t.mock.method(
-        ConvexReactClient.prototype,
-        "query",
-        async (reference: Parameters<typeof getFunctionName>[0]) => {
-            if (getFunctionName(reference).endsWith("listPendingForEvent"))
-                return [delivery]
-            assert.equal(lookedUp, true)
-            prepared = true
-            return null
-        }
-    )
+    let sent = false
+    mockQueries(t as never, null)
     t.mock.method(ConvexReactClient.prototype, "mutation", async () =>
         assert.fail("No sent marker")
     )
     const client = {
         users: {
-            fetch: async () => {
-                lookedUp = true
-                return {
-                    send: async () => {
-                        sent = true
-                    },
-                }
-            },
+            fetch: async () => ({
+                send: async () => {
+                    sent = true
+                },
+            }),
         },
     } as unknown as Client
-    await processMatchRecaps(client, "events:one", "cs")
-    assert.equal(prepared, true)
+    await processMatchRecaps(client, "events:one")
     assert.equal(sent, false)
 })
 
 test("failed Discord sends never create a sent marker", async (t) => {
-    t.mock.method(
-        ConvexReactClient.prototype,
-        "query",
-        async (reference: Parameters<typeof getFunctionName>[0]) =>
-            getFunctionName(reference).endsWith("listPendingForEvent")
-                ? [delivery]
-                : delivery
-    )
+    mockQueries(t as never)
     t.mock.method(ConvexReactClient.prototype, "mutation", async () =>
         assert.fail("No sent marker after failure")
     )
@@ -171,16 +218,25 @@ test("failed Discord sends never create a sent marker", async (t) => {
             }),
         },
     } as unknown as Client
-    await processMatchRecaps(client, "events:one", "en")
+    await processMatchRecaps(client, "events:one")
     assert.equal(attempts, 1)
 })
 
 test("legacy delivery records cannot trigger a Discord lookup", async (t) => {
-    t.mock.method(ConvexReactClient.prototype, "query", async () => [
-        { userId: "222222222222222222" },
-    ])
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "query",
+        async (reference: Parameters<typeof getFunctionName>[0]) =>
+            getFunctionName(reference).endsWith("listPendingForEvent")
+                ? [{ userId: "222222222222222222" }]
+                : getFunctionName(reference).endsWith(
+                        "getEventInteractionContext"
+                    )
+                  ? context
+                  : forum
+    )
     const client = {
         users: { fetch: async () => assert.fail("Unbound recipient") },
     } as unknown as Client
-    await processMatchRecaps(client, "events:one", "en")
+    await processMatchRecaps(client, "events:one")
 })

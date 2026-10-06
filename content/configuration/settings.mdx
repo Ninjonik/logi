@@ -38,10 +38,12 @@ another.
 | Clan                     | Event categories         | Labels and colours of matches and trainings, such as Friendly or League                                                                    |
 | Matches                  | Match templates          | What a new match or training starts with: times, sign-ups and Discord options                                                              |
 | Matches                  | Squad and topic presets  | Links to the squad presets and topic presets, with how many each has                                                                       |
-| Matches                  | Discord messages         | Public panels, live scoreboards and message appearance                                                                                     |
-| Discord                  | Channels and language    | Time zone, bot language, announcement, event info, error, calendar, forum and voice rooms                                                  |
+| Discord                  | Channels and language    | Time zone, bot language, announcement, event info, forum and voice rooms                                                                   |
+| Discord                  | Messages and panels      | The look of every bot message, what the bot sends and where, the switches of optional messages, the panels and the bot errors channel      |
+| Discord                  | Discord panels           | Panels the bot keeps up to date and the panel editor; see [Public Discord panels](/configuration/public-panels)                            |
+| Discord                  | Panel graphics           | Default panel style, server banners, map images and the fixed signs; see [Panel graphics](/configuration/panel-graphics)                   |
 | Discord                  | Roles and access         | Clan role, dashboard admin role and the dashboard-access resync                                                                            |
-| Discord                  | /stats command           | `/stats` availability per game, default sharing room and player-stat servers                                                               |
+| Discord                  | Commands                 | Who may use each slash command, where and how it replies; `/stats` games, sharing channel and old stats servers                            |
 | Discord                  | Membership               | Membership applications, categories, roles and roster scores                                                                               |
 | Discord                  | Tickets                  | The ticket panel, categories, support roles and questions                                                                                  |
 | Game data                | Game servers             | Game servers, provider keys and data collection                                                                                            |
@@ -66,14 +68,15 @@ the change applies only to that selected game; a row of active game icons means
 the change is clan-wide. Confirm that scope before saving settings, ticket
 panels, membership workflows, or maintenance tools.
 
-**Channels and language** and **/stats command** always show the clan-wide
+**Channels and language** and **Commands** always show the clan-wide
 settings, whichever game is selected. On **Channels and language** the fields
 are grouped into **Language and time**, **Text channels** and **Voice
 channels**; a lock marks a value that is always clan-wide, and a missing
 announcements channel is called out at the top. When one game needs a different
 announcement, event info, forum, squad voice or meeting room, or its own stats
 servers, add an exception for that game under the setting with **Different
-channel for a game** (or **Different for a game** on /stats). A game without an exception uses the clan-wide value; removing the
+channel for a game** (or **Different for a game** in the old stats server
+connections on **Commands**). A game without an exception uses the clan-wide value; removing the
 exception, or leaving it empty, returns the game to it when you save.
 Exceptions are offered when the clan plays more than one game. An exception
 stored earlier stays visible, so it can be removed, even after the clan is down
@@ -137,7 +140,7 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 ### Preview a Wardogs League match
 
-For scheduled discovery, manual tracking and persistent Discord cards, see [Wardogs League tracking](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
+For scheduled discovery, manual tracking and the WD League panels in Discord, see [Wardogs League](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
 
 Open **Settings → Wardogs League**; the **Wardogs League match** preview is below the tracking form.
 Paste a public `https://wardogsleague.net/matches/{id}` link and choose **Load match**.
@@ -166,7 +169,7 @@ The **Games** section controls which games are active for this workspace:
 may enable any combination, including none while it is being configured.
 
 Game-specific Discord channels and stats servers are exceptions on the
-**Channels and language** and **/stats command** pages (see above). Other
+**Channels and language** and **Commands** pages (see above). Other
 game-specific settings, such as public panel wording and membership-application
 categories, are edited after choosing that game in the dashboard. Shared Discord
 identity, workspace-level settings, and platform links are not duplicated per
@@ -372,7 +375,10 @@ that updates at least one open roster.
 `PATCH /api/v1/clan/settings` changes only explicitly supplied safe workspace
 and Discord fields. It cannot write runtime credentials, player-stat tokens,
 ticket or membership workflows, or game overrides; omitted settings remain
-unchanged.
+unchanged. Feature settings come in named groups: `GET` returns them under
+`data.slices`, and `PATCH` changes one group with `{ "<group>": { … } }`, again
+only the supplied fields. The OpenAPI reference lists every group and its
+fields.
 
 <Callout type="warning">
     Do not rotate, delete, or reveal an API key unless you understand every
@@ -429,7 +435,7 @@ your endpoint to accept them before enabling the subscription:
 | `event.created`    | Successful `POST /api/v1/clan/events`                                                                | Created [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
 | `event.updated`    | Successful `PATCH /api/v1/clan/events/{id}` or `POST /api/v1/clan/events/{id}/actions/conclude`      | Updated [event API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Events).                                                                                                                                                                                          |
 | `roster.updated`   | Successful roster update/delete, event signup write, or assignment write that affects an open roster | [Roster API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Rosters) or `{ id, deleted: true }`; signup result from [Events](/api/v1/docs#tag/Clan-API-%E2%80%94-Events); or [assignment API object](/api/v1/docs#tag/Clan-API-%E2%80%94-Assignments), respectively. |
-| `settings.updated` | Successful `PATCH /api/v1/clan/settings`                                                             | `{ guild, discordConfig }`, with sensitive Discord data removed; see [Settings](/api/v1/docs#tag/Clan-API-%E2%80%94-Settings).                                                                                                                                   |
+| `settings.updated` | Successful `PATCH /api/v1/clan/settings`                                                             | `{ guild, discordConfig, slices }`, with sensitive Discord data removed; see [Settings](/api/v1/docs#tag/Clan-API-%E2%80%94-Settings).                                                                                                                           |
 | `webhook.test`     | A manager presses **Send test**                                                                      | `{ "test": true }`; sent only to that selected webhook, regardless of its subscribed types.                                                                                                                                                                      |
 
 The article, event, roster, and assignment API object schemas are the same as
@@ -443,40 +449,101 @@ Saving a channel or role selection does not prove that the bot can use it. The
 bot must still be in this Discord server, be running, and have the channel and
 role permissions required for the relevant action.
 
-| Setting                     | Enables                                                                            | If blank, invalid, or inaccessible                                                                                                                                                                    |
-| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Timezone                    | Dashboard formatting for this workspace and event-entry conversion                 | Times fall back to the relevant display default; it does not change existing stored timestamps.                                                                                                       |
-| Default language            | Bot panel, event, and interaction wording                                          | Existing content is not translated; the bot uses its configured fallback where needed.                                                                                                                |
-| Announcements channel       | Event announcement messages                                                        | No announcement is created there.                                                                                                                                                                     |
-| Event information channel   | Separate match information message                                                 | The separate message is not created. It is meaningful only alongside announcements.                                                                                                                   |
-| Errors channel              | Delivery of bot error reports                                                      | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                                                                         |
-| Calendar channel            | One managed calendar-panel message                                                 | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted.                                                                    |
-| Forum category              | Match forum-post provisioning                                                      | A match cannot get a Logi forum post from the workspace default.                                                                                                                                      |
-| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                       | No scheduled event is maintained. A text/category channel is not a substitute.                                                                                                                        |
-| Clan role                   | Clan pings and membership-role transitions                                         | No clan ping/managed clan role is available.                                                                                                                                                          |
-| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role        | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path.                                           |
-| Player statistics command   | Whether `/stats` answers in this server, per game, and its default sharing channel | With the command or a game switched off the bot replies privately that statistics are unavailable here. Without a default channel, Share asks for one. Discord's own command permissions still apply. |
+| Setting                     | Enables                                                                     | If blank, invalid, or inaccessible                                                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timezone                    | Dashboard formatting for this workspace and event-entry conversion          | Times fall back to the relevant display default; it does not change existing stored timestamps.                                                             |
+| Default language            | Bot panel, event, and interaction wording                                   | Existing content is not translated; the bot uses its configured fallback where needed.                                                                      |
+| Announcements channel       | Event announcement messages                                                 | No announcement is created there.                                                                                                                           |
+| Event information channel   | Separate match information message                                          | The separate message is not created. It is meaningful only alongside announcements.                                                                         |
+| Errors channel              | Bot error reports for managers, set on **Messages and panels**              | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                               |
+| Calendar channel            | One managed calendar-panel message, set on **Discord panels**               | No Discord calendar panel is maintained. Removing the calendar panel removes its message.                                                                   |
+| Forum category              | Match forum-post provisioning                                               | A match cannot get a Logi forum post from the workspace default.                                                                                            |
+| Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                | No scheduled event is maintained. A text/category channel is not a substitute.                                                                              |
+| Clan role                   | Clan pings and membership-role transitions                                  | No clan ping/managed clan role is available.                                                                                                                |
+| Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path. |
+| Commands                    | Which slash commands work, for whom, where, and how they reply              | See [Discord commands](/configuration/commands). The bot checks each use freshly from Discord; Discord's own command permissions are not used.              |
 
-### Discord messages, Roles and access, and /stats
+### Messages and panels, Roles and access, and Commands
 
-**Discord messages** sets one look for every bot message and lists what the bot
-sends and where. **Clan colour** is the accent of every message; events with a
-category keep the category colour, and without a clan colour messages use Logi
-orange. **Icons in messages** is either **Sparse** (only team signs) or **Emoji
-on every line** (side, start, map and details, status and forum get an icon).
-The language of every bot message is shown here and changed under **Channels
-and language**.
+**Messages and panels** (in the Discord group, after **Channels and language**)
+shows everything the bot sends: where it goes, whether it is sent at all and how
+it looks. The bot writes in the clan language with the clan colour. The page is
+clan-wide, whichever game is selected.
 
-The message list shows the match announcement, the roster and assignments
-message (posted to the event information channel once the roster is
-published), reminders (direct messages: sign-up reminders daily until
-registration closes for the memberships chosen on each match, attendance
-reminders 24, 18, 12 and 6 hours before the meeting), the live score and result
-panels, Wardogs League cards and bot errors. **Edit** opens the channel picker
-of the announcement, roster and error messages under the row; these are the
-clan-wide channels, and a game with its own channel is named with a link to
-**Channels and language**. The live score and results rows open the public
-panel editor; reminders open the match templates, league cards the league page.
+**Look of all messages** applies to announcements, panels, direct messages and
+command replies:
+
+- **Clan colour** is the bar of every message. Without a clan colour messages
+  use Logi orange (`#E8A33D`). An event category shows as a label and does not
+  change the bar; a panel can have its own colour in the panel editor.
+- **Icons in messages** is either **Sparse** or **Emoji on every line**, in
+  every message, not only in announcements.
+- **Faction signs** shows the signs used in announcements, results, panels and
+  `/stats`; **Change signs** opens [Panel graphics](/configuration/panel-graphics).
+- **Language** shows the clan language with a link to **Channels and
+  language**, where it is changed.
+- **Live preview** draws a match announcement and changes with the colour and
+  icons as you edit them.
+
+**What the bot sends** lists every message in five groups: **Matches**,
+**Private messages** (DMs and replies only one person sees), **Panels**,
+**Membership and tickets** and **System**. Each row says where the message goes.
+A channel with a lock belongs to another page and links there (for example the
+announcements channel on **Channels and language**, the recruitment channel on
+**Membership**); a game with its own channel is shown next to the clan-wide one.
+**Preview** opens an example of the message with sample data, in the clan
+language. Every preview is drawn by the same code the bot uses to post the
+message, so it shows exactly what Discord shows; the recruitment and ticket
+previews use the clan's own panel title, text, colour and categories once they
+are set on **Membership** and **Tickets**.
+
+The switches on this page:
+
+| Message                                            | Default | What turning it off does                                                                                  |
+| -------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| Roster changes                                     | On      | **Roster changes** is no longer pre-selected in the Publish dialog; it can still be chosen there.         |
+| Debrief in the forum                               | On      | No Debrief post is created in the match forum thread after the match.                                     |
+| Absences and late notices in the match thread      | Off     | When on, `/notice`, **Running late** and **Can't make it** post who, late or absent and the arrival time. |
+| Discord event                                      | On      | The bot does not keep a Discord scheduled event with the meeting time.                                    |
+| Match recap                                        | On      | No player gets the recap DM. When on, each player can still turn it off.                                  |
+| Training result                                    | On      | Participants do not get the training result DM.                                                           |
+| Assignment change                                  | On      | **Assignment changes** is no longer pre-selected in the Publish dialog.                                   |
+| DM to the applicant when the application is closed | On      | The result card stays in the application thread, but the applicant gets no DM.                            |
+| DM to the author when the ticket is closed         | On      | The closing card stays in the ticket thread, but the author gets no DM.                                   |
+
+The absence and late posts never contain the reason; only the leaders see it,
+on the web. The **Roster** row also sets the **Default look** of the roster
+message, **Photo and text** or **Photo only**; it can still be changed when
+publishing. Messages without a switch (the announcement, the forum, reminders,
+team request decisions, button and command replies, the application and ticket
+threads) are always sent when their feature is on; the row says where that is
+decided, for example the match template.
+
+**Panels** lists every panel of **Discord panels**: the live server panels,
+**Our servers**, the **Server control** messages of server seeding, the results
+panels of each game, the Wardogs League panels (one row for both messages), the
+calendar and the competition tables, each with its channel. The list reads the
+same state as **Discord panels** and refreshes itself: a chip shows **Error**,
+**Waiting for the bot**, **Not sent** or **Paused**; a published panel has no
+chip. An error row says the cause in one short sentence (for example the
+missing permission and the channel); a private-channel server panel that shows
+the server password says so; the calendar names its event categories, and a
+paused panel says who paused it. A panel's switch pauses or resumes it (**Save**
+sends the change, also when nothing else changed); a panel not sent yet is sent
+from **Discord panels**. **Edit** opens the panel in **Discord panels** (see
+[Public Discord panels](/configuration/public-panels)) and **Add panel** starts a
+new one there; the server control row opens **Server seeding**. The calendar's
+channel is set on **Discord panels** too.
+
+**Bot errors** holds the **Channel for bot errors**. The bot posts there what it
+could not do and how to fix it, for managers only, with a grey bar: what
+failed, for which match, ticket or application, why (for example a missing
+permission with its name) and what to do, with buttons to the match or the
+settings page that fixes it. Reports contain no error codes or technical
+details. Without a channel the errors stay in the bot's logs.
+
+A bar at the bottom counts unsaved changes; **Save** stores the look, the
+switches, the errors channel and the panel switches together.
 
 **Roles and access** has the clan role and the manager role, each with how many
 members of the Discord server have it. People with the manager role can change
@@ -487,15 +554,15 @@ being added in Logi. It shows when Logi last saw the server's members.
 saved manager role; it is available once a manager role is saved and the page
 has no unsaved changes.
 
-**/stats command** has the command switch, the games it answers for with their
+**Commands** shows when the bot last registered the slash commands, with
+**Register again**, then every command with its switch, who may use it, how it
+replies and where it works. `/stats` adds the games it answers for with their
 data source (public HLL Records profiles by Steam account; Wardogs games stored
-from your game servers), the default sharing channel, and the old stats server
-connections with their per-game exceptions behind **Show connections**. New
-connections belong under **Game servers**; old connections are not converted
-automatically because they only search players and have no server number. A
-preview shows the reply in Discord with the bot's own layout and example
-numbers; when the command or Wardogs statistics are off it shows the reply
-people get instead.
+from your game servers), the channel for **Share** and a preview of the reply
+with example numbers. The old stats server connections and their per-game
+exceptions are behind **Show connections**; **Move to Game servers** copies
+them to **Game servers** with the key encrypted, untested and stopped. See
+[Discord commands](/configuration/commands).
 
 On these pages a bar at the bottom counts unsaved changes; **Discard** returns
 to the saved values and **Save** stores them.
@@ -597,8 +664,11 @@ remain unconfirmed; they do not create a verified player link or approved match
 result. No game-server controls are provided by this screen or these API routes.
 
 Discord server managers can also use `/server-status` with a game to see a private
-summary of stored observations and their freshness. The command does not trigger
-collection; the full connection list stays in settings.
+summary of stored observations and their freshness. A server whose data is no
+longer fresh keeps its last known state for a day, marked stale with the
+observation time ("Online · stale · 25 minutes ago"); after a day it reads
+"No data". The command does not trigger collection; the full connection list
+stays in settings.
 
 ### Warcon live scoreboard and website reads
 

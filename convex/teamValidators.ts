@@ -32,7 +32,8 @@ export const matchTeamInput = v.object({
 })
 export const imageAssetKind = v.union(
     v.literal("team-logo"),
-    v.literal("panel-banner")
+    v.literal("panel-banner"),
+    v.literal("panel-map")
 )
 export const imageContentType = v.union(
     v.literal("image/png"),

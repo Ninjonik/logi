@@ -5,8 +5,17 @@
  * counts in the clan's language.
  */
 
-/** Logi amber; used when neither the event category nor the clan sets a colour. */
-export const DEFAULT_MESSAGE_ACCENT_COLOR = 0xffb000
+/**
+ * Logi amber, the default clan accent (`#E8A33D`); used when neither the
+ * event category nor the clan sets a colour.
+ */
+export const DEFAULT_MESSAGE_ACCENT_COLOR = 0xe8a33d
+
+/** {@link DEFAULT_MESSAGE_ACCENT_COLOR} as `#RRGGBB`, for forms and previews. */
+export const DEFAULT_MESSAGE_ACCENT_HEX = "#E8A33D"
+
+/** The neutral grey bar of system messages for admins (error log, service status). */
+export const SYSTEM_MESSAGE_ACCENT_COLOR = 0x80848e
 
 const HEX_COLOR = /^#?([0-9a-f]{6})$/i
 
@@ -52,6 +61,37 @@ export function discordTimestamp(
     return Number.isFinite(ms)
         ? `<t:${Math.floor(ms / 1000)}:${style}>`
         : undefined
+}
+
+/**
+ * A short date and time with the weekday, the boards' "ne 11. 10. · 20:00":
+ * the weekday is written in the clan language and time zone, the date and
+ * time are Discord timestamps every reader sees in their own zone. `locale`
+ * is the clan language's Intl locale (`cs-CZ`, …). Undefined for an invalid
+ * date.
+ */
+export function discordWeekdayTimestamp(
+    value: string | number | null | undefined,
+    locale: string,
+    timeZone: string
+): string | undefined {
+    const date = discordTimestamp(value, "d")
+    const time = discordTimestamp(value, "t")
+    if (!date || !time) return undefined
+    const ms = typeof value === "number" ? value : Date.parse(value!)
+    let weekday: string
+    try {
+        weekday = new Intl.DateTimeFormat(locale, {
+            weekday: "short",
+            timeZone,
+        }).format(ms)
+    } catch {
+        weekday = new Intl.DateTimeFormat(locale, {
+            weekday: "short",
+            timeZone: "UTC",
+        }).format(ms)
+    }
+    return `${weekday.replace(/\.$/, "")} ${date} · ${time}`
 }
 
 /** Plural forms keyed by `Intl.PluralRules` categories; `{count}` is replaced. */

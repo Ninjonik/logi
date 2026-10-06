@@ -1,36 +1,37 @@
+import test, { type TestContext } from "node:test"
+import assert from "node:assert/strict"
+
 import {
-    EmbedBuilder,
-    MessageFlags,
-    PermissionFlagsBits,
-    PermissionsBitField,
-    type ChatInputCommandInteraction,
-    type Guild,
-} from "discord.js"
+    callerOf,
+    configsOf,
+    fakeInteraction,
+    testGuildConfig,
+    TEST_GUILD,
+} from "../commands/fake-interaction"
+import {
+    handleServerStatusCommand,
+    serverStatusInteractions,
+    type ServerStatusPorts,
+} from "./server-status"
 import {
     invoke,
     testContext,
 } from "../../../src/infrastructure/convex/testing/database"
-import test, { afterEach, type TestContext } from "node:test"
+import {
+    createInteractionRegistry,
+    type InteractionFeatureContext,
+} from "./registry"
+import type { CommandCaller } from "../../../src/domain/discord-commands/permissions"
 import { listConnections } from "../../../convex/gameData"
-import { createInteractionHandler } from "../interactions"
-import { ConvexReactClient } from "convex/react"
-import { getFunctionName } from "convex/server"
-import { closeConvexClient } from "../convex"
-import assert from "node:assert/strict"
 
-afterEach(closeConvexClient)
 const now = Date.parse("2026-09-29T12:00:00Z")
-const guildId = "111111111111111111"
-const handlers = () =>
-    createInteractionHandler({
-        enqueueEventSync: () => {},
-        triggerPollSoon: () => {},
-    })
-type Reply = {
-    content?: string
-    embeds?: EmbedBuilder[]
-    allowedMentions?: { parse?: string[] }
+const SECRET = "dev-internal-auth-secret"
+const ADMIN: CommandCaller = {
+    isAdministrator: false,
+    roleIds: ["100000000000000001"],
 }
+const MEMBER: CommandCaller = { isAdministrator: false, roleIds: [] }
+
 function fixture(t: TestContext) {
     t.mock.method(Date, "now", () => now)
     const oldSources = process.env.LOGI_GAME_DATA_SOURCES
@@ -40,7 +41,7 @@ function fixture(t: TestContext) {
         else process.env.LOGI_GAME_DATA_SOURCES = oldSources
     })
     const ctx = testContext()
-    const seed = (id: string, gameId = "wardogs", tenant = guildId) => {
+    const seed = (id: string, gameId = "wardogs", tenant = TEST_GUILD) => {
         ctx.db.seed("gameDataConnections", {
             _id: `gameDataConnections:${id}`,
             sourceRef: `private-${id}`,
@@ -66,142 +67,207 @@ function fixture(t: TestContext) {
         return ctx.db.tables.gameDataConnections.at(-1)!
     }
     const requests: unknown[] = []
-    let deferred = false
-    t.mock.method(
-        ConvexReactClient.prototype,
-        "query",
-        async (
-            reference: Parameters<typeof getFunctionName>[0],
-            args: Record<string, unknown>
-        ) => {
-            assert.equal(
-                deferred,
-                true,
-                "Acknowledge before waiting for the backend"
-            )
-            requests.push(args)
-            assert.equal(getFunctionName(reference), "gameData:listConnections")
-            return invoke(listConnections, ctx, args)
-        }
-    )
+    const ports = (
+        overrides: Partial<ServerStatusPorts> = {}
+    ): ServerStatusPorts => ({
+        configs: configsOf(testGuildConfig()),
+        readCaller: callerOf(ADMIN),
+        connections: async (guildId) => {
+            requests.push({ secret: SECRET, guildId })
+            return invoke(listConnections, ctx, { secret: SECRET, guildId })
+        },
+        gameServersUrl: async (_guildId, language) =>
+            `https://logi.example/${language}/dashboard/servers/guilds:a/settings/game-servers`,
+        ...overrides,
+    })
     async function run(
-        options: {
-            locale?: string
-            game?: string
-            guild?: string | null
-            manager?: boolean
-        } = {}
+        options: { game?: string; guildId?: string | null } = {},
+        overrides: Partial<ServerStatusPorts> = {}
     ) {
-        let response: Reply | undefined
-        let flags: unknown
-        await handlers().handleChatInputCommand({
-            commandName: "server-status",
-            guildId: options.guild === undefined ? guildId : options.guild,
-            locale: options.locale ?? "en-US",
-            memberPermissions: new PermissionsBitField(
-                options.manager === false
-                    ? []
-                    : [PermissionFlagsBits.ManageGuild]
-            ),
+        const f = fakeInteraction<
+            Parameters<typeof handleServerStatusCommand>[0]
+        >({
+            guildId:
+                options.guildId === undefined ? TEST_GUILD : options.guildId,
+            locale: "de",
             options: { getString: () => options.game ?? "wardogs" },
-            deferReply: async (value: { flags: unknown }) => {
-                flags = value.flags
-                deferred = true
-            },
-            reply: async (value: Reply & { flags?: unknown }) => {
-                flags = value.flags
-                response = value
-            },
-            editReply: async (value: Reply) => {
-                response = value
-            },
-        } as unknown as ChatInputCommandInteraction)
-        assert.ok(response, "The command must answer")
-        assert.equal(flags, MessageFlags.Ephemeral)
-        return {
-            response,
-            json: JSON.stringify(response),
-            embed: response.embeds?.[0]?.toJSON(),
+        })
+        await handleServerStatusCommand(f.interaction, ports(overrides))
+        const state = f.interaction as unknown as {
+            deferred: boolean
+            ephemeral: boolean
         }
+        assert.equal(state.deferred, true, "acknowledged before any read")
+        assert.equal(state.ephemeral, true, "always private")
+        assert.ok(f.sent.length, "the command must answer")
+        return { ...f, json: f.text() }
     }
     return { ctx, seed, run, requests }
 }
 
-test("actual server-status command reads only the invoking guild and selected game, preserving zero", async (t) => {
+test("reads only the invoking server and the chosen game, preserving zero (M3-21)", async (t) => {
     const f = fixture(t)
     f.seed("WDG test")
     f.seed("HLL hidden", "hell_let_loose")
     f.seed("Other guild hidden", "wardogs", "222222222222222222")
-    const { response, embed, json } = await f.run()
-    assert.deepEqual(f.requests, [
-        { secret: "dev-internal-auth-secret", guildId },
-    ])
-    assert.equal(embed?.fields?.length, 1)
+    const { json } = await f.run()
+    assert.deepEqual(f.requests, [{ secret: SECRET, guildId: TEST_GUILD }])
+    assert.match(json, /STAV HERNÍCH SERVERŮ · WARDOGS/)
+    assert.match(json, /1 server klanu/)
     assert.match(json, /WDG test/)
-    assert.match(json, /0 \/ 100/)
+    assert.match(json, /0 \/ 100 hráčů/)
+    assert.match(json, /Herní servery v Logi/)
     assert.doesNotMatch(
         json,
-        /HLL hidden|Other guild hidden|private-|gameDataConnections|111111111111111111/
+        /HLL hidden|Other guild hidden|private-|gameDataConnections/
     )
-    assert.deepEqual(response.allowedMentions, { parse: [] })
+    assert.match(json, /"allowedMentions":\{"parse":\[\]\}/)
 })
 
-for (const options of [{ manager: false }, { guild: null }]) {
-    test(`server-status refuses ${options.manager === false ? "non-managers" : "DMs"} before reading stored data`, async (t) => {
-        const f = fixture(t)
-        const { response } = await f.run(options)
-        assert.ok(response.content)
-        assert.deepEqual(f.requests, [])
-    })
-}
-
-test("server-status rejects unrecognized game input before reading data", async (t) => {
+test("a member without the manager group is refused freshly, before any stored read (M3-25, M3-B04)", async (t) => {
     const f = fixture(t)
-    const { response } = await f.run({ game: "all" })
-    assert.ok(response.content)
+    f.seed("WDG test")
+    const { json } = await f.run(
+        {},
+        {
+            readCaller: callerOf(MEMBER),
+            configs: configsOf({
+                ...testGuildConfig(),
+                liveScoreChannelIds: { wardogs: "300000000000000009" },
+            }),
+        }
+    )
     assert.deepEqual(f.requests, [])
+    assert.match(json, /Stav serverů vidí jen správci Logi/)
+    assert.match(json, /oprávnění Administrator nebo Roli správců/)
+    assert.match(json, /Živé skóre najdeš v <#300000000000000009>\./)
 })
 
-test("server-status marks old values unknown with their original observation time", async (t) => {
+test("an extra role from the Příkazy page admits the member; the cache is never trusted", async (t) => {
+    const f = fixture(t)
+    f.seed("WDG test")
+    let reads = 0
+    const { json } = await f.run(
+        {},
+        {
+            readCaller: async () => {
+                reads++
+                return {
+                    isAdministrator: false,
+                    roleIds: ["100000000000000009"],
+                }
+            },
+            configs: configsOf(
+                testGuildConfig({
+                    commandSettings: {
+                        serverStatus: { roleIds: ["100000000000000009"] },
+                    },
+                })
+            ),
+        }
+    )
+    assert.equal(reads, 1)
+    assert.match(json, /WDG test/)
+})
+
+test("Discord not answering the role read refuses rather than guessing", async (t) => {
+    const f = fixture(t)
+    const { json } = await f.run({}, { readCaller: callerOf(null) })
+    assert.deepEqual(f.requests, [])
+    assert.match(json, /Teď nejde ověřit tvoje role/)
+})
+
+test("rejects an unknown game before reading data", async (t) => {
+    const f = fixture(t)
+    const { json } = await f.run({ game: "all" })
+    assert.deepEqual(f.requests, [])
+    assert.match(json, /Stav serverů se teď nedá načíst/)
+})
+
+test("old values keep their last state, marked stale with their original observation time (M3-23)", async (t) => {
     const f = fixture(t)
     const row = f.seed("Stale test")
     row.observation.observedAt = "2026-09-29T11:55:00Z"
     row.observation.players = 42
     const { json } = await f.run()
-    assert.match(json, /Unknown/)
-    assert.match(json, /Stale/)
+    assert.match(json, /Online · zastaralé/)
+    assert.doesNotMatch(json, /Bez dat/)
     assert.match(json, /42 \/ 100/)
     assert.match(json, /<t:1790682900:R>/)
-    assert.doesNotMatch(json, /Online/)
 })
 
-test("server-status distinguishes disabled collection, no observation and known offline", async (t) => {
+test("data 25 minutes old still names the last state; a day later it is 'Bez dat' (M3-23)", async (t) => {
+    const f = fixture(t)
+    const recent = f.seed("Vlci #2 Trénink")
+    recent.observation.observedAt = "2026-09-29T11:35:00Z"
+    recent.observation.state = "offline"
+    recent.observation.map = "Kaluga"
+    const old = f.seed("Vlci #5")
+    old.observation.observedAt = "2026-09-28T11:59:00Z"
+    old.observation.map = "Stará mapa"
+    const unknown = f.seed("Vlci #6")
+    unknown.observation.observedAt = "2026-09-29T11:57:00Z"
+    unknown.observation.state = "unknown"
+    const { json } = await f.run()
+    assert.match(json, /Vlci #2 Trénink\*\* · 🟡 \*\*Offline · zastaralé/)
+    assert.match(json, /Kaluga/)
+    assert.match(json, /Vlci #5\*\* · ⚪ \*\*Bez dat/)
+    assert.doesNotMatch(json, /Stará mapa/)
+    assert.match(json, /Vlci #6\*\* · 🟡 \*\*Zastaralé/)
+})
+
+test("the stored projection keeps 'unknown' for other readers and adds the last state (M3-23)", async (t) => {
+    const f = fixture(t)
+    const row = f.seed("Stale test")
+    row.observation.observedAt = "2026-09-29T11:35:00Z"
+    const listed = (await invoke(listConnections, f.ctx, {
+        secret: SECRET,
+        guildId: TEST_GUILD,
+    })) as {
+        connections: Array<{
+            snapshot: { state: string; freshness: string }
+            lastState?: string | null
+        }>
+    }
+    assert.equal(listed.connections[0]!.snapshot.state, "unknown")
+    assert.equal(listed.connections[0]!.snapshot.freshness, "unavailable")
+    assert.equal(listed.connections[0]!.lastState, "online")
+})
+
+test("disabled collection, no observation and known offline stay distinct", async (t) => {
     const f = fixture(t)
     f.seed("Disabled").enabled = false
     f.seed("Never observed").observation = null
     f.seed("Known offline").observation.state = "offline"
-    const { embed } = await f.run()
-    assert.equal(embed?.fields?.length, 3)
-    assert.match(embed!.fields![0].value, /Collection disabled/)
-    assert.match(embed!.fields![1].value, /Unknown/)
-    assert.doesNotMatch(embed!.fields![1].value, /0 \/ 0/)
-    assert.match(embed!.fields![2].value, /Offline/)
+    const { json } = await f.run()
+    assert.match(json, /Sběr vypnutý/)
+    assert.match(json, /Bez dat/)
+    assert.match(json, /Offline/)
+    assert.doesNotMatch(json, /0 \/ 0/)
 })
 
-for (const [locale, expected] of [
-    ["cs", /Žádný/],
-    ["en-US", /No/],
-    ["de", /Keine/],
+for (const [language, expected] of [
+    ["cs", /Pro Wardogs klan nemá připojený žádný server/],
+    ["en", /No Wardogs server/i],
+    ["de", /Wardogs/],
 ] as const) {
-    test(`server-status explains missing configuration in ${locale}`, async (t) => {
+    test(`no connection is explained in the clan language ${language}, never the member's (M3-B04)`, async (t) => {
         const f = fixture(t)
-        const { json } = await f.run({ locale })
+        const { json } = await f.run(
+            {},
+            {
+                configs: configsOf(
+                    testGuildConfig({ defaultLanguage: language })
+                ),
+            }
+        )
         assert.match(json, expected)
+        assert.match(json, new RegExp(`/${language}/dashboard/servers/`))
         assert.doesNotMatch(json, /0 \/ 0|Offline/)
     })
 }
 
-test("server-status retains public-directory attribution and bounds hostile display text", async (t) => {
+test("public-directory attribution stays; at most five servers; hostile text is bounded", async (t) => {
     const f = fixture(t)
     for (let i = 0; i < 7; i++) {
         const row = f.seed(`server-${i}`)
@@ -209,101 +275,57 @@ test("server-status retains public-directory attribution and bounds hostile disp
         row.observation.displayName = "@everyone\n" + "*".repeat(175)
         row.observation.map = "[fake](https://example.test) " + "x".repeat(150)
     }
-    const { embed, json } = await f.run()
-    assert.equal(embed?.fields?.length, 5)
-    assert.match(json, /Wardog Servers/)
-    assert.match(json, /https:\/\/wardogservers.com/)
-    assert.match(embed?.footer?.text ?? "", /5.*7/)
-    assert.doesNotMatch(json, /@everyone/)
-    assert.ok(
-        embed!.fields!.every(
-            (field) => field.name.length <= 256 && field.value.length <= 1024
-        )
+    const { json } = await f.run()
+    assert.match(json, /\[Wardog Servers\]\(https:\/\/wardogservers\.com\)/)
+    assert.match(
+        json,
+        /Zobrazeno 5 ze 7 serverů\. Nejvýš 5, celý seznam je v Logi\./
     )
-    const total =
-        (embed?.title?.length ?? 0) +
-        (embed?.description?.length ?? 0) +
-        (embed?.footer?.text.length ?? 0) +
-        embed!.fields!.reduce(
-            (n, field) => n + field.name.length + field.value.length,
-            0
-        )
-    assert.ok(total < 6000)
+    assert.doesNotMatch(json, /\[fake\]\(https/)
+    assert.ok(json.length < 8_000)
 })
 
 for (const failure of ["network", "malformed"] as const) {
-    test(`server-status reports ${failure} as unavailable without leaking raw errors`, async (t) => {
+    test(`${failure} is reported as unavailable without leaking raw errors`, async (t) => {
         const f = fixture(t)
-        t.mock.method(ConvexReactClient.prototype, "query", async () => {
-            if (failure === "network")
-                throw new Error("secret-provider-token@example.test")
-            return { connections: [{ snapshot: { players: 0 } }] }
-        })
-        const { response, json } = await f.run()
-        assert.match(response.content ?? "", /unavailable/i)
+        const { json } = await f.run(
+            {},
+            {
+                connections: async () => {
+                    if (failure === "network")
+                        throw new Error("secret-provider-token@example.test")
+                    return { connections: [{ snapshot: { players: 0 } }] }
+                },
+            }
+        )
+        assert.match(json, /Stav serverů se teď nedá načíst/)
         assert.doesNotMatch(json, /secret-provider|example\.test|0 \/ 0/)
     })
 }
 
-test("server-status stops waiting after ten seconds and ignores a later backend response", async (t) => {
-    const f = fixture(t)
-    t.mock.timers.enable({ apis: ["setTimeout"] })
-    let release: ((value: unknown) => void) | undefined
-    t.mock.method(
-        ConvexReactClient.prototype,
-        "query",
-        () =>
-            new Promise((resolve) => {
-                release = resolve
-            })
-    )
-    const result = f.run()
-    await Promise.resolve()
-    assert.ok(release)
-    t.mock.timers.tick(10_001)
-    await Promise.resolve()
-    release({ sources: [], connections: [] })
-    const { response } = await result
-    assert.match(response.content ?? "", /unavailable/i)
-    assert.equal(response.embeds, undefined)
-})
-
-test("server-status replaces invisible provider labels with readable fallbacks", async (t) => {
+test("invisible provider labels get a readable fallback", async (t) => {
     const f = fixture(t)
     const row = f.seed("Invisible label")
-    row.observation.displayName = "\n\u202e "
-    row.observation.map = "\u2067\n"
-    const { embed } = await f.run()
-    assert.equal(embed?.fields?.[0].name, "Game server")
-    assert.match(embed!.fields![0].value, /Map: Unknown/)
+    row.observation.displayName = "\n‮ "
+    row.observation.map = "⁧\n"
+    const { json } = await f.run()
+    assert.match(json, /Herní server/)
 })
 
-test("guild command registration includes manager-only server-status with explicit game choices", async () => {
-    let commands: Record<string, unknown>[] = []
-    await handlers().registerGuildCommands({
-        preferredLocale: "cs",
-        commands: {
-            set: async (value: typeof commands) => {
-                commands = value
-            },
-        },
-    } as unknown as Guild)
-    const command = commands.find((item) => item.name === "server-status")
-    assert.ok(command)
-    assert.equal(
-        command.default_member_permissions,
-        PermissionFlagsBits.ManageGuild.toString()
+test("/server-status is routed through the interaction registry", () => {
+    const context: InteractionFeatureContext = {
+        enqueueEventSync: () => {},
+        triggerPollSoon: () => {},
+    }
+    const registry = createInteractionRegistry(
+        [
+            serverStatusInteractions(() => ({
+                configs: configsOf(null),
+                connections: async () => ({}),
+                gameServersUrl: async () => undefined,
+            })),
+        ],
+        context
     )
-    assert.equal(command.dm_permission, false)
-    const [game] = command.options as {
-        name: string
-        required: boolean
-        choices: { value: string }[]
-    }[]
-    assert.equal(game.name, "game")
-    assert.equal(game.required, true)
-    assert.deepEqual(
-        game.choices.map((choice) => choice.value),
-        ["hell_let_loose", "wardogs"]
-    )
+    assert.deepEqual(registry.routes(), ["command:server-status"])
 })

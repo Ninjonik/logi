@@ -3,6 +3,8 @@ import path from "node:path"
 
 import dotenv from "dotenv"
 
+import { readPackageVersion, resolveBotVersion } from "./runtime/bot-version"
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const repoRoot = path.resolve(__dirname, "..", "..")
@@ -24,10 +26,23 @@ if (!convexUrl || !internalSecret || !botToken) {
 }
 
 const appSiteUrl = process.env.SITE_URL ?? "http://localhost:3000"
+/**
+ * The version the bot reports in its heartbeat ("verze 1.1.0", P1-04,
+ * P1-06): an operator-set release label, else the version in the
+ * `package.json` the bot ships in. Never a secret.
+ */
+const versionLabel = resolveBotVersion({
+    override: process.env.LOGI_BOT_VERSION,
+    packageVersion:
+        readPackageVersion(path.join(repoRoot, "package.json")) ??
+        process.env.npm_package_version ??
+        null,
+})
 
 export const env = {
     leagueMessageContent: process.env.LOGI_LEAGUE_MESSAGE_CONTENT === "true",
     appSiteUrl,
+    botVersion: versionLabel,
     // The public URL is embedded in Discord. A colocated bot can use a private
     // origin to pre-render images without relying on public hairpin routing.
     internalAppSiteUrl: process.env.INTERNAL_SITE_URL ?? appSiteUrl,

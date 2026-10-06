@@ -4,6 +4,26 @@ import {
 } from "../../domain/wardogs-league/discovery"
 export type TrackingState =
     "pending" | "tracked" | "unmatched" | "ignored" | "paused" | "archived"
+/**
+ * League-wide collection (all fixtures, the table and recent results) runs
+ * while at least one workspace keeps Wardogs League enabled or has an active
+ * WD League panel. Disabling everywhere stops collection (L3-55); stored
+ * fixtures and results stay readable.
+ */
+/**
+ * Whether a workspace's WD League panels may show (L3-55): turning Wardogs
+ * League off in its settings deletes the panel messages; a workspace that
+ * never saved the settings keeps the panel it created.
+ */
+export function leaguePanelsOn(settings: { enabled: boolean } | null) {
+    return settings?.enabled ?? true
+}
+export function leagueCollectionWanted(
+    workspaces: ReadonlyArray<{ enabled: boolean }>,
+    activeLeaguePanels = 0
+) {
+    return workspaces.some((value) => value.enabled) || activeLeaguePanels > 0
+}
 export function trackingDecision(
     row: {
         firstSeenAt: number

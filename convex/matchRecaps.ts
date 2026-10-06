@@ -188,6 +188,48 @@ export const prepareDelivery = query({
     },
 })
 
+/**
+ * A sent recap's numbers again, so "Vypnout shrnutí" / "Zapnout shrnutí"
+ * can redraw the same DM (board L2-50). Only the recap's own Discord
+ * recipient is answered; internal secret only.
+ */
+export const recapCard = query({
+    args: {
+        secret: v.string(),
+        eventId: v.string(),
+        discordUserId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertSecret(args.secret)
+        const eventId = ctx.db.normalizeId("events", args.eventId)
+        const event = eventId ? await ctx.db.get(eventId) : null
+        if (!event) return null
+        const recap = (
+            await ctx.db
+                .query("matchRecaps")
+                .withIndex("eventId", (q) => q.eq("eventId", event._id))
+                .collect()
+        ).find((row) => row.discordUserId === args.discordUserId)
+        if (!recap) return null
+        const stats = await ctx.db
+            .query("playerStats")
+            .withIndex("userId", (q) => q.eq("userId", recap.userId))
+            .collect()
+        const current = stats
+            .map((stat) => stat.matches[String(event._id)])
+            .find(Boolean)
+        if (!current) return null
+        return {
+            userId: recap.userId,
+            mapName: current.mapName,
+            kills: current.kills,
+            deaths: current.deaths,
+            kd: current.killDeathRatio,
+            previousTen: recap.previousTen,
+        }
+    },
+})
+
 export const markSent = mutation({
     args: {
         secret: v.string(),

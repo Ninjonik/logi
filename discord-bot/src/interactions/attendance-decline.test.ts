@@ -6,10 +6,16 @@ import {
     declineRefusal,
     declineReply,
 } from "./attendance-decline"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
-import type { EventRecord, Roster } from "../types"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import type { DiscordConfig, EventRecord, Roster } from "../types"
 
-const messages = getClanDiscordMessages("cs")
+const copy = getDirectMessages("cs")
+const frame = {
+    clanName: "Vlci",
+    settingsUrl: "https://logi.example/cs/dashboard/settings/user",
+    timeZone: "Europe/Prague",
+}
+const dm = { dm: true, frame }
 const roster: Roster = {
     id: "roster-1",
     eventId: "event-1",
@@ -28,87 +34,126 @@ const roster: Roster = {
 }
 const event = {
     id: "event-1",
+    name: "Liga",
     status: "starting",
     gameStart: "2026-10-11T18:00:00.000Z",
-} as EventRecord
+    matchTeams: [
+        {
+            teamId: "a",
+            slot: "a",
+            side: "Allies",
+            snapshot: { name: "Vlci", shortCode: "VLK" },
+        },
+        {
+            teamId: "b",
+            slot: "b",
+            side: "Axis",
+            snapshot: { name: "Rogue", shortCode: "ROG" },
+        },
+    ],
+} as unknown as EventRecord
+const config = { defaultLanguage: "cs" } as DiscordConfig
 const before = Date.parse("2026-10-11T17:00:00.000Z")
 
 test("only rostered players can open the decline form before the game starts", () => {
     assert.equal(
-        declineRefusal({ event, roster }, "medic", messages, before),
+        declineRefusal({ event, roster }, "medic", copy, dm, before),
         null
     )
     assert.equal(
-        declineRefusal({ event, roster }, "reserve", messages, before),
+        declineRefusal({ event, roster }, "reserve", copy, dm, before),
         null
     )
     assert.equal(
-        declineRefusal({ event, roster }, "stranger", messages, before),
-        messages.interaction.notOnRoster
+        declineRefusal({ event, roster }, "stranger", copy, dm, before)?.header
+            ?.title,
+        "Na soupisce nejsi"
     )
     assert.equal(
         declineRefusal(
             { event, roster: { ...roster, published: false } },
             "medic",
-            messages,
+            copy,
+            dm,
             before
-        ),
-        messages.interaction.rosterNotPublished
+        )?.header?.title,
+        "Soupiska ještě není zveřejněná"
     )
-    assert.equal(
-        declineRefusal({ event, roster: null }, "medic", messages, before),
-        messages.interaction.rosterNotPublished
+    const late = declineRefusal(
+        { event, roster },
+        "medic",
+        copy,
+        dm,
+        Date.parse(event.gameStart)
     )
-    assert.equal(
-        declineRefusal(
-            { event, roster },
-            "medic",
-            messages,
-            Date.parse(event.gameStart)
-        ),
-        messages.attendanceDecline.tooLate
-    )
+    assert.equal(late?.header?.title, "Zápas už začal")
+    assert.equal(late?.footer?.kind, "dm")
 })
 
-test("the reply tells the player what happened in the clan language", () => {
-    assert.equal(
-        declineReply({ ok: true, changed: true, rejected: null }, messages),
-        "Díky, velení ví, že nedorazíš, a tvoje místo obsadí."
+test("the reply card tells the player what happened in the clan language", () => {
+    const saved = declineReply(
+        { ok: true, changed: true, rejected: null },
+        copy,
+        {
+            ...dm,
+            squad: "F1",
+        }
     )
+    assert.equal(saved.header?.title, "Velení ví, že nedorazíš")
+    assert.deepEqual(saved.blocks, [
+        {
+            kind: "text",
+            markdown:
+                "Tvoje místo v F1 obsadí někdo ze záloh. Díky, že dáváš vědět včas.",
+        },
+        // The board's divider above the DM footer (L2-34).
+        { kind: "separator", divider: true, spacing: "small" },
+    ])
+    assert.equal(saved.ephemeral, undefined)
     assert.equal(
-        declineReply({ ok: true, changed: false, rejected: null }, messages),
-        "Velení už ví, že nedorazíš."
+        declineReply({ ok: true, changed: false, rejected: null }, copy, dm)
+            .header?.title,
+        "Velení už ví, že nedorazíš"
     )
     assert.equal(
         declineReply(
             { ok: false, changed: false, rejected: "too_late" },
-            messages
-        ),
-        messages.attendanceDecline.tooLate
+            copy,
+            dm
+        ).header?.title,
+        "Zápas už začal"
     )
-    assert.equal(
-        declineReply(
-            { ok: false, changed: false, rejected: "not_on_roster" },
-            messages
-        ),
-        messages.interaction.notOnRoster
+    // In the server the reply is private and has no DM footer.
+    const inGuild = declineReply(
+        { ok: false, changed: false, rejected: "not_on_roster" },
+        copy,
+        { dm: false }
     )
+    assert.equal(inGuild.ephemeral, true)
+    assert.equal(inGuild.footer, undefined)
 })
 
-test("the decline form asks for an optional reason within Discord limits", () => {
-    const modal = buildAttendanceDeclineModal("event-1", messages).toJSON()
+test("the decline form names the match and asks for an optional reason", () => {
+    const modal = buildAttendanceDeclineModal({ config, event }).toJSON()
     assert.equal(modal.custom_id, "attendance-decline-modal:event-1")
-    assert.equal(modal.title, "Nemůžu přijít")
+    assert.equal(modal.title, "Nemůžu přijít · VLK vs ROG")
     const row = modal.components[0]
     const input = row && "components" in row ? row.components[0] : undefined
     assert.ok(input && "custom_id" in input)
     assert.equal(input.custom_id, "reason")
     assert.equal(input.required, false)
     assert.equal(input.max_length, 500)
-    assert.ok(("label" in input ? (input.label ?? "") : "").length <= 45)
+    assert.equal(
+        "placeholder" in input ? input.placeholder : undefined,
+        "Např. nemoc, práce"
+    )
+    assert.equal(
+        "label" in input ? input.label : undefined,
+        "Důvod, uvidí ho jen velení"
+    )
     for (const language of ["en", "de"] as const) {
-        const copy = getClanDiscordMessages(language).attendanceDecline
-        assert.ok(copy.modalTitle.length <= 45)
-        assert.ok(copy.reasonLabel.length <= 45)
+        const replies = getDirectMessages(language).replies
+        assert.ok(replies.declineLabel.length <= 45)
+        assert.ok(replies.lateLabel.length <= 45)
     }
 })

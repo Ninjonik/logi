@@ -382,3 +382,35 @@ test("team directory reads require an explicit per-game teams grant at the gatew
     )
     assert.equal(isAuthError(legacy), false)
 })
+
+test("the WD League overview requires the explicit league-fixtures Wardogs grant", async () => {
+    for (const [readAccess, expected] of [
+        [undefined, 403],
+        [{ resources: ["league-matches"], gameIds: ["wardogs"] }, 403],
+        [{ resources: ["league-fixtures"], gameIds: ["hell_let_loose"] }, 403],
+        [{ resources: ["league-fixtures"], gameIds: ["wardogs"] }, 200],
+    ] as const) {
+        const result = await authenticateClanRequestWith(
+            new Request(
+                "https://logi.test/api/v1/clan/league-fixtures/overview?game=wardogs",
+                { headers: { authorization: "Bearer fixture" } }
+            ),
+            createDependencies({
+                authenticateKey: async () => ({
+                    guildId: "guild",
+                    ...(readAccess
+                        ? {
+                              readAccess: {
+                                  resources: [...readAccess.resources],
+                                  gameIds: [...readAccess.gameIds],
+                              },
+                          }
+                        : {}),
+                }),
+            })
+        )
+        assert.equal(isAuthError(result) ? result.status : 200, expected)
+        if (!isAuthError(result))
+            assert.equal(result.headers["Cache-Control"], "no-store")
+    }
+})

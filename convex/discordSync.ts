@@ -16,6 +16,21 @@ import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
+/**
+ * An event as the bot reads it, with the round of the competition fixture it
+ * plays, so the calendar can say "ECL, 3. kolo" (L3-14).
+ */
+function withCompetitionRound(
+    event: Parameters<typeof normalizeEventDoc>[0],
+    rounds: ReadonlyMap<string, number>
+) {
+    const normalized = normalizeEventDoc(event)
+    const round = rounds.get(normalized.id)
+    return round === undefined
+        ? normalized
+        : { ...normalized, competitionRound: round }
+}
+
 export const listSyncPayloads = query({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
@@ -32,6 +47,7 @@ export const listSyncPayloads = query({
             rosters,
             users,
             assignments,
+            fixtures,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
             ctx.db.query("discordConfigs").collect(),
@@ -43,7 +59,16 @@ export const listSyncPayloads = query({
             ctx.db.query("rosters").collect(),
             ctx.db.query("users").collect(),
             ctx.db.query("userAssignments").collect(),
+            ctx.db.query("competitionFixtures").collect(),
         ])
+        // L3-14: the calendar names a competition match's round.
+        const rounds = new Map(
+            fixtures.flatMap((fixture) =>
+                fixture.eventId && typeof fixture.round === "number"
+                    ? [[String(fixture.eventId), fixture.round] as const]
+                    : []
+            )
+        )
 
         return configs.map((config) => {
             const normalizedUsers = users.map((user) =>
@@ -58,7 +83,7 @@ export const listSyncPayloads = query({
             // Drafts are not announced: the bot never sees them.
             const guildEvents = withoutDrafts(events)
                 .filter((event) => event.guildId === config.guildId)
-                .map(normalizeEventDoc)
+                .map((event) => withCompetitionRound(event, rounds))
             const guildCalendarItems = calendarItems
                 .filter((item) => item.guildId === config.guildId)
                 .map(normalizeCalendarItemDoc)
@@ -226,7 +251,7 @@ export const getEventSyncContext = query({
             return null
         }
 
-        const [roster, syncState] = await Promise.all([
+        const [roster, syncState, fixture] = await Promise.all([
             ctx.db
                 .query("rosters")
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
@@ -235,10 +260,21 @@ export const getEventSyncContext = query({
                 .query("discordEventSyncs")
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
                 .unique(),
+            ctx.db
+                .query("competitionFixtures")
+                .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+                .first(),
         ])
 
         return {
-            event: normalizeEventDoc(event),
+            event: withCompetitionRound(
+                event,
+                new Map(
+                    typeof fixture?.round === "number"
+                        ? [[String(event._id), fixture.round]]
+                        : []
+                )
+            ),
             roster: roster
                 ? { ...normalizeDoc(roster), eventId: String(roster.eventId) }
                 : null,
@@ -418,6 +454,7 @@ export const updateEventSyncState = mutation({
         forumChannelId: v.optional(v.string()),
         forumThreadId: v.optional(v.string()),
         infoMessageId: v.optional(v.string()),
+        debriefMessageId: v.optional(v.string()),
         topicMessageIds: v.array(v.string()),
         lastEventUpdatedAt: v.optional(v.string()),
         lastRosterUpdatedAt: v.optional(v.string()),
@@ -441,6 +478,11 @@ export const updateEventSyncState = mutation({
             forumChannelId: args.forumChannelId,
             forumThreadId: args.forumThreadId,
             infoMessageId: args.infoMessageId,
+            // Only a bot that knows the Debrief writes it; an older bot
+            // leaves the stored ID alone.
+            ...(args.debriefMessageId
+                ? { debriefMessageId: args.debriefMessageId }
+                : {}),
             topicMessageIds: args.topicMessageIds,
             lastEventUpdatedAt: args.lastEventUpdatedAt,
             lastRosterUpdatedAt: args.lastRosterUpdatedAt,

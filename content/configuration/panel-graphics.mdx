@@ -1,0 +1,96 @@
+---
+title: Panel graphics
+description: How server panels look in Discord - the default style, server banners, map images and the fixed signs.
+---
+
+import { Callout } from "nextra/components"
+
+# Panel graphics
+
+**Settings → Discord → Panely v Discordu → Grafika panelů** decides how the
+server panels look in Discord. Only clan administrators can open it. Every
+change waits for **Uložit** in the bar at the bottom (the bar counts the unsaved
+changes; **Zahodit** drops them). Saved changes reach the panels at their next
+refresh, within 60 seconds.
+
+## Panel style
+
+Three styles show the same server data:
+
+| Style                           | What the panel shows                                                                                                                                                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Styl A · Obrázek** (default)  | A score image the bot draws at the top: the map in the background, server name, state, players with the queue, the score or sectors, the top three players and the time it was drawn. The text with the same facts stays under it. |
+| **Styl B · Banner a miniatura** | The server banner on top, a map thumbnail on the right, faction signs and the player bar.                                                                                                                                          |
+| **Styl C · Kompaktní**          | Text only: one line with the state, name, game and map, then the score and the player bar, with **Připojit** and **Zobrazit hráče**. No pictures. The shortest message.                                                            |
+
+**Výchozí styl** applies to every panel without a style of its own, the
+**Naše servery** message included. One panel can get another style in its
+panel editor.
+
+The score image follows the panel's switches: with **Skóre** off it shows the
+player count large and the word **Online**, with **Nejlepší hráči** off it has
+no top three. On an empty server it shows **Na serveru teď nikdo nehraje.**,
+and during a seed the progress toward the live threshold ("12 / 40").
+
+The bot redraws the style A image only when something in it changed, and at
+most once every 60 seconds. Every new image gets a new file name, so Discord
+never shows an old copy.
+
+## Server banners
+
+**Bannery serverů** has one card per game server. The banner is the image on
+top of a style B panel and the background of the style A score image. The card
+shows a preview with the clan badge and the server name in the bar colour, and
+the file name of the saved banner.
+
+The clan badge is the short code of the clan's team in the team catalogue (for
+example **VLK**). Without a team it is the initials of the clan name. The
+dashboard previews and the bot use the same rule.
+
+- **Nahrát banner**: PNG, JPG or WebP up to 2 MB. A 3 : 1 image such as
+  1200 × 400 fits best. **Odebrat** removes it.
+- **Výřez**: which part of a taller image stays visible (**Nahoře**, **Střed**,
+  **Dole**).
+- **Použít obrázek mapy, když banner chybí**: without a banner the panel shows
+  the image of the map the server is playing now under the clan badge.
+  Switched off, a style B panel has no image on top.
+- **Barva lišty**: the colour of the panel's bar in style B. **Barva klanu**
+  goes back to the clan colour. A panel's own colour from its editor still
+  wins.
+
+## Map images
+
+**Obrázky map** lists every Hell Let Loose and Wardogs map Logi knows, with
+search and a game filter. Each map has a built-in Logi image (**Výchozí Logi**).
+**Nahradit vlastním** uploads the clan's own image (PNG, JPG or WebP, a square
+of at least 160 × 160 pixels, up to 2 MB); **Obnovit výchozí** brings Logi's
+image back. Map images are the panel thumbnail and the score image background
+when the server has no banner of its own. The bot attaches a resized copy of
+the clan's image to the message with a versioned file name, so Discord shows
+the new image after a change and the original upload address is never posted.
+
+## Fixed signs
+
+**Ikony frakcí** and **Stavové ikony a ukazatel hráčů** cannot be changed:
+
+- Hell Let Loose nations are Logi's own simple icons (USA, Velká Británie,
+  Sovětský svaz, Commonwealth, Německo, Afrikakorps), plus the general
+  Spojenci and Osa signs when the server does not name a nation. They are not
+  game artwork.
+- Wardogs factions use the Wardogs icons (Valkyra, Manticore, Lonestar and the
+  Wardogs sign) under the MIT licence.
+- Status icons (**Živě**, **Seedujeme**, **Prázdný**, **Nedostupný**) always
+  stand next to their word.
+- The player bar has ten pieces for the server capacity; the queue stands after
+  a gap, for example "78 / 100 · fronta 3".
+
+The bot uploads these 12 signs and 7 icons to Discord itself, once, as
+application emoji. They work in every channel and take none of the server's
+emoji slots. The chips **Nahráno do Discordu ✓** show when they are installed.
+
+<Callout type="info">
+    The website API (`GET/PATCH /api/v1/clan/settings`, slice `panelGraphics`)
+    reads and changes the default style, the banner settings and the map images
+    by reference to images already uploaded here. Uploading images is only
+    possible on this page.
+</Callout>

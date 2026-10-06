@@ -11,6 +11,7 @@ import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
+import { panelReadsConnection } from "../src/domain/discord-publications/settings"
 import { warconEnvelopeSchema } from "../src/domain/game-data/warcon-contracts"
 import type { WarconPrepared } from "../src/application/game-data/read-warcon"
 import { internalMutation, type MutationCtx } from "./_generated/server"
@@ -55,9 +56,8 @@ async function authorize(ctx: MutationCtx, args: Access) {
         const panel = await ctx.db.get(args.panelId)
         if (
             !panel?.enabled ||
-            panel.kind === "results" ||
             panel.guildId !== args.guildId ||
-            panel.connectionId !== args.connectionId
+            !panelReadsConnection(panel, args.connectionId)
         )
             return null
     } else if (args.keyHash !== undefined) {

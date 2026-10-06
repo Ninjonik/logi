@@ -4,7 +4,6 @@ import test from "node:test"
 import type { Roster } from "@/types/domain"
 
 import {
-    previousRosterForSummary,
     rosterUpdateNotificationsHandler,
     type RosterUpdateNotificationPorts,
 } from "./roster-update-notifications-route"
@@ -31,24 +30,32 @@ const saved: Roster = {
     ],
 }
 
-const memberIds = new Set(["member-1", "member-2"])
+const grant = {
+    roster: saved,
+    guildId: "123456789012345678",
+    actorId: "223456789012345678",
+}
 
 function setup(
-    access: Awaited<ReturnType<RosterUpdateNotificationPorts["access"]>> = {
-        roster: saved,
-        memberIds,
-    }
+    access: Awaited<ReturnType<RosterUpdateNotificationPorts["access"]>> = grant
 ) {
     const calls: Parameters<RosterUpdateNotificationPorts["notify"]>[0][] = []
-    const handler = rosterUpdateNotificationsHandler({
+    const statusCalls: Array<[string, string]> = []
+    const routes = rosterUpdateNotificationsHandler({
         origin,
         access: async () => access,
         notify: async (input) => {
             calls.push(input)
-            return { ok: true, hasChanges: true }
+            return { ok: true, hasChanges: true, requestId: "req1" }
+        },
+        status: async (guildId, requestId) => {
+            statusCalls.push([guildId, requestId])
+            return requestId === "req1"
+                ? { status: "sent", dmSent: 2, dmFailedUserIds: ["member-2"] }
+                : null
         },
     })
-    return { handler, calls }
+    return { handler: routes.POST, get: routes.GET, calls, statusCalls }
 }
 
 function request(body: unknown, requestOrigin = origin) {
@@ -99,7 +106,7 @@ test("a foreign origin or a missing clan admin is refused before anything is sen
     assert.equal(outsider.calls.length, 0)
 })
 
-test("an unknown roster, an invalid body or another match's roster is refused", async () => {
+test("an unknown roster or an invalid body is refused", async () => {
     const missing = setup("not_found")
     assert.equal(
         (await missing.handler(request({ previousRoster: previous }), params))
@@ -114,23 +121,52 @@ test("an unknown roster, an invalid body or another match's roster is refused", 
         400
     )
     assert.equal(
-        (
-            await handler(
-                request({
-                    previousRoster: { ...previous, eventId: "event-2" },
-                }),
-                params
-            )
-        ).status,
+        (await handler(request({ notifyPlayers: "yes" }), params)).status,
         400
     )
     assert.equal(calls.length, 0)
 })
 
+test("the baseline is the server's: a roster the browser sends is ignored (D5-B04)", async () => {
+    const { handler, calls } = setup()
+    // A current dashboard sends only the choices.
+    assert.equal(
+        (await handler(request({ notifyPlayers: true }), params)).status,
+        200
+    )
+    // An older dashboard's previous roster, even of another match or naming
+    // a stranger, never reaches the request.
+    assert.equal(
+        (
+            await handler(
+                request({
+                    previousRoster: {
+                        eventId: "event-2",
+                        squads: [
+                            {
+                                name: "Able",
+                                players: [{ id: "stranger", roleName: "x" }],
+                            },
+                        ],
+                    },
+                }),
+                params
+            )
+        ).status,
+        200
+    )
+    assert.equal(calls.length, 2)
+    for (const call of calls) {
+        assert.equal(call.roster, saved)
+        assert.ok(!("previousRoster" in call))
+        assert.doesNotMatch(JSON.stringify(call), /stranger|event-2/)
+    }
+})
+
 test("only a published roster sends notifications", async () => {
     const { handler, calls } = setup({
+        ...grant,
         roster: { ...saved, published: false },
-        memberIds,
     })
     assert.equal(
         (await handler(request({ previousRoster: previous }), params)).status,
@@ -162,30 +198,50 @@ test("the saved roster is used, never the one the request sends", async () => {
     assert.equal(calls[0].roster, saved)
     assert.equal(calls[0].postAnnouncement, true)
     assert.equal(calls[0].notifyPlayers, true)
+    assert.equal(calls[0].mentionPlayers, false)
+    // The bot sends; the request carries the clan and the admin from the session.
+    assert.equal(calls[0].guildId, grant.guildId)
+    assert.equal(calls[0].actorId, grant.actorId)
+    assert.deepEqual(await response.json(), {
+        ok: true,
+        hasChanges: true,
+        requestId: "req1",
+    })
 })
 
-test("players who are not clan members are dropped from the previous roster", () => {
-    const shaped = previousRosterForSummary(
-        saved,
-        {
-            eventId: "event-1",
-            squads: [
-                {
-                    name: "Able",
-                    players: [
-                        { id: "member-2", roleName: "Medic" },
-                        { id: "stranger", roleName: "Officer" },
-                        { id: null },
-                    ],
-                },
-            ],
-        },
-        memberIds
+test("a re-publish can ask the bot to mention the rostered players again", async () => {
+    const { handler, calls } = setup()
+    await handler(
+        request({ previousRoster: previous, mentionPlayers: true }),
+        params
     )
-    assert.deepEqual(
-        shaped.squads[0].players.map((player) => player.id),
-        ["member-2", undefined, undefined]
+    assert.equal(calls[0].mentionPlayers, true)
+})
+
+test("the publish dialog reads how the change DMs went, for its own clan only", async () => {
+    const { get, statusCalls } = setup()
+    const url =
+        "https://logi.test/api/servers/s1/rosters/roster-1/update-notifications"
+    const ok = await get(new Request(`${url}?requestId=req1`), params)
+    assert.equal(ok.status, 200)
+    assert.deepEqual(await ok.json(), {
+        status: "sent",
+        dmSent: 2,
+        dmFailedUserIds: ["member-2"],
+    })
+    assert.deepEqual(statusCalls, [[grant.guildId, "req1"]])
+    assert.equal(
+        (await get(new Request(`${url}?requestId=other`), params)).status,
+        404
     )
-    assert.equal(shaped.id, saved.id)
-    assert.equal(shaped.eventId, saved.eventId)
+    assert.equal(
+        (await get(new Request(`${url}?requestId=bad id`), params)).status,
+        400
+    )
+    const outsider = setup(null)
+    assert.equal(
+        (await outsider.get(new Request(`${url}?requestId=req1`), params))
+            .status,
+        403
+    )
 })

@@ -1,16 +1,18 @@
 import {
     buildTeamRequestDecisionMessage,
     deliverTeamRequestNotifications,
-    safeDiscordText,
     startTeamRequestNotificationLoop,
+    teamRequestLinks,
     type TeamRequestDecisionMessage,
     type TeamRequestNotification,
     type TeamRequestNotificationPorts,
 } from "./team-request-notifications"
+import { MessageFlags } from "discord.js"
 import assert from "node:assert/strict"
 import test from "node:test"
 
 const USER = "100000000000000001"
+const SITE = "https://logi.example"
 const notification = (
     overrides: Partial<TeamRequestNotification> = {}
 ): TeamRequestNotification => ({
@@ -24,116 +26,240 @@ const notification = (
     requestedName: "Alpha Squad",
     teamName: "Alpha Squad",
     reason: null,
+    teamCode: "ALP",
+    clanName: "Vlci",
+    serverId: "k17abc",
+    accentColor: null,
     ...overrides,
 })
-const embedOf = (message: TeamRequestDecisionMessage | null) => {
+
+type Json = Record<string, unknown> & { components?: Json[] }
+/** The container JSON, its accent, all text and all buttons of a DM. */
+const cardOf = (message: TeamRequestDecisionMessage | null) => {
     assert.ok(message)
     assert.deepEqual(message.allowedMentions, { parse: [] })
-    const embed = message.embeds[0]?.toJSON()
-    assert.ok(embed)
+    assert.equal(message.flags, MessageFlags.IsComponentsV2)
+    assert.equal(message.embeds, undefined)
+    const container = JSON.parse(
+        JSON.stringify(
+            (message.components as Array<{ toJSON(): unknown }>)[0]!.toJSON()
+        )
+    ) as Json & { accent_color: number }
+    const flat: Json[] = []
+    const walk = (node: Json) => {
+        flat.push(node)
+        for (const child of node.components ?? []) walk(child)
+    }
+    walk(container)
     return {
-        ...embed,
-        field: (name: string) =>
-            embed.fields?.find((field) => field.name === name)?.value,
+        accent: container.accent_color,
+        text: flat
+            .map((node) =>
+                typeof node.content === "string" ? node.content : ""
+            )
+            .join("\n"),
+        buttons: flat
+            .filter((node) => node.type === 2)
+            .map((node) => ({ label: node.label, url: node.url })),
     }
 }
 
-test("approved create DMs name the requested and resulting team", () => {
-    const embed = embedOf(buildTeamRequestDecisionMessage(notification()))
-    assert.equal(embed.title, "Team request approved")
-    assert.match(embed.description ?? "", /now in the Logi team catalogue/)
-    assert.equal(embed.field("Request"), "New team")
-    assert.equal(embed.field("Game"), "Wardogs")
-    assert.equal(embed.field("Requested name"), "Alpha Squad")
-    assert.equal(embed.field("Team in the catalogue"), "Alpha Squad")
-    assert.equal(embed.field("Reason"), undefined)
-    assert.equal(embed.footer?.text, "Logi team catalogue")
-})
-
-test("approved change requests and merges use their own copy", () => {
-    const update = embedOf(
-        buildTeamRequestDecisionMessage(
-            notification({ kind: "update", gameId: "hell_let_loose" })
-        )
-    )
-    assert.match(update.description ?? "", /requested changes were applied/)
-    assert.equal(update.field("Request"), "Change request")
-    assert.equal(update.field("Game"), "Hell Let Loose")
-    const merged = embedOf(
+test("approved DMs are the clan card with the code, chip and team link (L5-39, L2-57)", () => {
+    const card = cardOf(
         buildTeamRequestDecisionMessage(
             notification({
-                status: "merged",
-                requestedName: "Alpha",
-                teamName: "Alpha Squad",
-            })
+                language: "cs",
+                gameId: "hell_let_loose",
+                teamName: "Vlci",
+                teamCode: "VLK",
+            }),
+            SITE
         )
     )
-    assert.equal(merged.title, "Team request merged")
-    assert.equal(merged.field("Requested name"), "Alpha")
-    assert.equal(merged.field("Team in the catalogue"), "Alpha Squad")
+    assert.equal(card.accent, 0xe8a33d)
+    assert.match(card.text, /-# \*\*KATALOG TÝMŮ LOGI · HELL LET LOOSE\*\*/)
+    assert.match(card.text, /### Tým je v katalogu/)
+    assert.match(card.text, /🟢 \*\*Schváleno\*\*/)
+    assert.match(card.text, /`VLK` \*\*Vlci\*\* · nový tým/)
+    assert.match(card.text, /Tým teď můžeš vybrat u zápasů\./)
+    assert.match(
+        card.text,
+        /-# Klan Vlci · \[Nastavit zprávy\]\(https:\/\/logi\.example\/cs\/dashboard\/settings\/user#zpravy-od-bota\)/
+    )
+    // No page per team: the clan's Týmy searched for the team (L5-39).
+    assert.deepEqual(card.buttons, [
+        {
+            label: "Otevřít tým v Logi",
+            url: "https://logi.example/cs/dashboard/servers/k17abc/teams?game=hell_let_loose&search=Vlci",
+        },
+    ])
 })
 
-test("rejections carry the reason and no resulting team", () => {
-    const embed = embedOf(
-        buildTeamRequestDecisionMessage(
-            notification({
-                status: "rejected",
+test("team links open the team searched in the list, the rejected one the list (L5-39..41)", () => {
+    assert.deepEqual(
+        teamRequestLinks(
+            {
+                language: "en",
+                serverId: "k17abc",
+                gameId: "wardogs",
+                teamName: "Rogue Company",
+                requestedName: "Rogue Co.",
+            },
+            SITE
+        ),
+        {
+            team: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs&search=Rogue+Company",
+            teams: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs",
+            settings:
+                "https://logi.example/en/dashboard/settings/user#zpravy-od-bota",
+        }
+    )
+    // Without the catalogue team, the requested name is searched.
+    assert.equal(
+        teamRequestLinks(
+            {
+                language: "cs",
+                serverId: "k17abc",
+                gameId: "hell_let_loose",
                 teamName: null,
-                reason: "Duplicate of an existing team.",
-            })
+                requestedName: "Vlci & spol",
+            },
+            SITE
+        ).team,
+        "https://logi.example/cs/dashboard/servers/k17abc/teams?game=hell_let_loose&search=Vlci+%26+spol"
+    )
+    const rejected = cardOf(
+        buildTeamRequestDecisionMessage(
+            notification({ status: "rejected", reason: "Duplicita." }),
+            SITE
         )
     )
-    assert.equal(embed.title, "Team request rejected")
-    assert.equal(embed.field("Reason"), "Duplicate of an existing team.")
-    assert.equal(embed.field("Team in the catalogue"), undefined)
-    assert.equal(embed.color, 0xed4245)
+    assert.deepEqual(rejected.buttons, [
+        {
+            label: "Open Teams in Logi",
+            url: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs",
+        },
+    ])
 })
 
-test("DMs use the requesting workspace's language with an English fallback", () => {
-    const czech = embedOf(
+test("merged and rejected DMs follow the board, with the clan colour", () => {
+    const merged = cardOf(
         buildTeamRequestDecisionMessage(
-            notification({ language: "cs", status: "rejected", reason: "Ne" })
+            notification({
+                language: "cs",
+                status: "merged",
+                requestedName: "Rogue Co.",
+                teamName: "Rogue Company",
+                teamCode: "ROG",
+                accentColor: "#123456",
+            }),
+            SITE
         )
     )
-    assert.equal(czech.title, "Žádost o tým zamítnuta")
-    assert.equal(czech.field("Důvod"), "Ne")
-    const german = embedOf(
-        buildTeamRequestDecisionMessage(notification({ language: "de" }))
+    assert.equal(merged.accent, 0x123456)
+    assert.match(merged.text, /### Tým už v katalogu byl/)
+    assert.match(
+        merged.text,
+        /`ROG` \*\*Rogue Company\*\* · žádal\(a\) jsi „Rogue Co\.“/
     )
-    assert.equal(german.title, "Teamanfrage genehmigt")
-    const unknown = embedOf(
-        buildTeamRequestDecisionMessage(notification({ language: "xx" }))
+    const rejected = cardOf(
+        buildTeamRequestDecisionMessage(
+            notification({
+                language: "cs",
+                status: "rejected",
+                kind: "update",
+                requestedName: "Black Dogs",
+                teamName: "Black Dogs",
+                reason: "Logo porušuje pravidla katalogu. Pošli prosím jiné.",
+            }),
+            SITE
+        )
     )
-    assert.equal(unknown.title, "Team request approved")
+    assert.match(rejected.text, /-# \*\*KATALOG TÝMŮ LOGI · WARDOGS\*\*/)
+    assert.match(rejected.text, /### Žádost o tým nebyla přijata/)
+    assert.match(rejected.text, /🔴 \*\*Zamítnuto\*\*/)
+    assert.match(rejected.text, /Žádost o změnu · tým Black Dogs/)
+    assert.match(
+        rejected.text,
+        /> Logo porušuje pravidla katalogu\. Pošli prosím jiné\./
+    )
+    assert.match(rejected.text, /Opravenou žádost pošleš v Logi → Týmy\./)
+    assert.deepEqual(
+        rejected.buttons.map((button) => button.label),
+        ["Otevřít Týmy v Logi"]
+    )
+})
+
+test("DMs use the requesting clan's language with an English fallback", () => {
+    assert.match(
+        cardOf(
+            buildTeamRequestDecisionMessage(
+                notification({ language: "de" }),
+                SITE
+            )
+        ).text,
+        /### Das Team ist im Katalog/
+    )
+    assert.match(
+        cardOf(
+            buildTeamRequestDecisionMessage(
+                notification({ language: "xx" }),
+                SITE
+            )
+        ).text,
+        /### The team is in the catalogue/
+    )
 })
 
 test("user-supplied text is escaped and cannot mention anyone", () => {
-    const embed = embedOf(
+    const card = cardOf(
         buildTeamRequestDecisionMessage(
             notification({
                 status: "rejected",
                 requestedName: "**Bold** @everyone",
+                teamName: null,
                 reason: "See <@123456789012345678> and <#1> _now_",
-            })
+            }),
+            SITE
         )
     )
-    const name = embed.field("Requested name") ?? ""
-    assert.equal(name.includes("**"), false)
-    assert.equal(name.includes("@everyone"), false)
-    assert.match(name, /\\\*\\\*Bold\\\*\\\*/)
-    const reason = embed.field("Reason") ?? ""
-    assert.equal(reason.includes("<@"), false)
-    assert.equal(reason.includes("<#"), false)
-    assert.equal(safeDiscordText("x".repeat(2000)).length, 1024)
+    assert.equal(card.text.includes("<@123456789012345678>"), false)
+    assert.equal(card.text.includes("<#1>"), false)
+    assert.match(card.text, /\\\*\\\*Bold\\\*\\\*/)
+})
+
+test("without a clan dashboard ID the DM has no team link", () => {
+    assert.deepEqual(
+        teamRequestLinks(
+            { language: "cs", serverId: null, gameId: "wardogs" },
+            SITE
+        ),
+        {
+            team: undefined,
+            teams: undefined,
+            settings:
+                "https://logi.example/cs/dashboard/settings/user#zpravy-od-bota",
+        }
+    )
+    const card = cardOf(
+        buildTeamRequestDecisionMessage(notification({ serverId: null }), SITE)
+    )
+    assert.deepEqual(card.buttons, [])
 })
 
 test("undecided statuses produce no message", () => {
     assert.equal(
-        buildTeamRequestDecisionMessage(notification({ status: "pending" })),
+        buildTeamRequestDecisionMessage(
+            notification({ status: "pending" }),
+            SITE
+        ),
         null
     )
     assert.equal(
-        buildTeamRequestDecisionMessage(notification({ status: "cancelled" })),
+        buildTeamRequestDecisionMessage(
+            notification({ status: "cancelled" }),
+            SITE
+        ),
         null
     )
 })
@@ -151,6 +277,7 @@ function fakePorts(input: {
     }> = []
     const fetched: string[] = []
     const ports: TeamRequestNotificationPorts = {
+        siteUrl: SITE,
         claim: async () => {
             if (input.claimed instanceof Error) throw input.claimed
             return input.claimed

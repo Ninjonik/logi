@@ -416,6 +416,16 @@ export const generatedOpenApiSchemas = {
                                 }
                             ]
                         },
+                        "requestedGroup": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
                         "completed": {
                             "anyOf": [
                                 {
@@ -490,6 +500,16 @@ export const generatedOpenApiSchemas = {
                         },
                         "excusedBy": {
                             "type": "string"
+                        },
+                        "kind": {
+                            "anyOf": [
+                                {
+                                    "const": "late"
+                                },
+                                {
+                                    "const": "cannot_come"
+                                }
+                            ]
                         }
                     },
                     "required": [
@@ -721,6 +741,7 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "status": "attending",
                     "group": "string",
+                    "requestedGroup": "string",
                     "completed": "passed",
                     "updatedAt": "string"
                 }
@@ -738,7 +759,8 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "reason": "string",
                     "createdAt": "string",
-                    "excusedBy": "string"
+                    "excusedBy": "string",
+                    "kind": "late"
                 }
             ],
             "matchTeams": [
@@ -965,6 +987,64 @@ export const generatedOpenApiSchemas = {
             "published": {
                 "type": "boolean"
             },
+            "discordMessageVariant": {
+                "anyOf": [
+                    {
+                        "const": "photo_text"
+                    },
+                    {
+                        "const": "photo"
+                    }
+                ]
+            },
+            "discordMentionPlayers": {
+                "type": "boolean"
+            },
+            "publishedAt": {
+                "type": "string"
+            },
+            "publishedPlaces": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {
+                            "type": "string"
+                        },
+                        "squad": {
+                            "type": "string"
+                        },
+                        "role": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "userId",
+                        "squad"
+                    ]
+                }
+            },
+            "previousPublishedPlaces": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {
+                            "type": "string"
+                        },
+                        "squad": {
+                            "type": "string"
+                        },
+                        "role": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "userId",
+                        "squad"
+                    ]
+                }
+            },
             "meetingAttendance": {
                 "type": "object",
                 "properties": {
@@ -1052,6 +1132,23 @@ export const generatedOpenApiSchemas = {
             ],
             "streamerId": "string",
             "published": true,
+            "discordMessageVariant": "photo_text",
+            "discordMentionPlayers": true,
+            "publishedAt": "string",
+            "publishedPlaces": [
+                {
+                    "userId": "string",
+                    "squad": "string",
+                    "role": "string"
+                }
+            ],
+            "previousPublishedPlaces": [
+                {
+                    "userId": "string",
+                    "squad": "string",
+                    "role": "string"
+                }
+            ],
             "meetingAttendance": {
                 "loadedAt": "string",
                 "channelId": "string",

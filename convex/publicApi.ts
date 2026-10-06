@@ -1,4 +1,8 @@
 import {
+    applyClanSettingsSlicePatches,
+    readClanSettingsSlices,
+} from "../src/domain/api/settings-slices"
+import {
     omitResultStorage,
     projectResultSummary,
 } from "../src/domain/api/result-summaries"
@@ -6,7 +10,12 @@ import {
     projectEventSummary,
     projectMatchSummary,
 } from "../src/domain/api/event-summaries"
+import {
+    prepareExternalClanSettings,
+    readExternalClanSettings,
+} from "./clanSettingsStores"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
 import type { MutationCtx } from "./_generated/server"
@@ -58,6 +67,7 @@ import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { currentEventStatus } from "../src/domain/events/status"
+import { requestRegistrationAfterSave } from "./discordCommands"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
@@ -1726,6 +1736,35 @@ export const getClanMeta = query({
     },
 })
 
+/** The Discord configuration as the API shows it: no player-stat tokens. */
+function safeDiscordConfigOf(discordConfig: Doc<"discordConfigs"> | null) {
+    if (!discordConfig) return null
+    const {
+        playerStatsServers: _playerStatsServers,
+        gameOverrides,
+        ...config
+    } = discordConfig
+    return {
+        ...config,
+        id: String(discordConfig._id),
+        ...(gameOverrides
+            ? {
+                  gameOverrides: Object.fromEntries(
+                      Object.entries(gameOverrides).map(
+                          ([gameId, override]) => {
+                              const {
+                                  playerStatsServers: _tokens,
+                                  ...safeOverride
+                              } = override
+                              return [gameId, safeOverride]
+                          }
+                      )
+                  ),
+              }
+            : {}),
+    }
+}
+
 export const getClanSettings = query({
     args: { secret: v.string(), keyHash: v.string() },
     handler: async (ctx, args) => {
@@ -1744,37 +1783,23 @@ export const getClanSettings = query({
                 .unique(),
         ])
         if (!guild) return null
-        const safeDiscordConfig = discordConfig
-            ? (() => {
-                  const {
-                      playerStatsServers: _playerStatsServers,
-                      gameOverrides,
-                      ...config
-                  } = discordConfig
-                  return {
-                      ...config,
-                      id: String(discordConfig._id),
-                      ...(gameOverrides
-                          ? {
-                                gameOverrides: Object.fromEntries(
-                                    Object.entries(gameOverrides).map(
-                                        ([gameId, override]) => {
-                                            const {
-                                                playerStatsServers: _tokens,
-                                                ...safeOverride
-                                            } = override
-                                            return [gameId, safeOverride]
-                                        }
-                                    )
-                                ),
-                            }
-                          : {}),
-                  }
-              })()
-            : null
+        const safeDiscordConfig = safeDiscordConfigOf(discordConfig)
         return {
             guild: { ...guild, id: String(guild._id) },
             discordConfig: safeDiscordConfig,
+            // Feature settings slices (src/domain/api/clan-settings-slices.ts).
+            slices: readClanSettingsSlices(
+                {
+                    discordConfig: safeDiscordConfig,
+                    // Slices kept in their own table (convex/clanSettingsStores.ts).
+                    external: await readExternalClanSettings(
+                        ctx,
+                        key.guildId,
+                        CLAN_SETTINGS_SLICES
+                    ),
+                },
+                CLAN_SETTINGS_SLICES
+            ),
         }
     },
 })
@@ -1803,6 +1828,8 @@ export const mutateClanSettings = mutation({
         squadVoiceCategoryId: v.optional(v.union(v.string(), v.null())),
         clanRoleId: v.optional(v.union(v.string(), v.null())),
         dashboardAdminRoleId: v.optional(v.union(v.string(), v.null())),
+        /** Feature settings slices by key; validated again below with Zod. */
+        slices: v.optional(v.record(v.string(), v.any())),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -1823,7 +1850,45 @@ export const mutateClanSettings = mutation({
                 .query("discordConfigs")
                 .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
                 .unique()
+            const slicePatch = applyClanSettingsSlicePatches(
+                args.slices,
+                { discordConfig: safeDiscordConfigOf(config) },
+                CLAN_SETTINGS_SLICES
+            )
+            if (!slicePatch.ok) {
+                status = 400
+                response = {
+                    error: {
+                        code: "validation_error",
+                        message: slicePatch.error,
+                    },
+                }
+            }
+            // Slices in their own table are checked against the database
+            // here and written below only when the whole request is accepted.
+            const external =
+                slicePatch.ok && args.slices
+                    ? await prepareExternalClanSettings(
+                          ctx,
+                          key.guildId,
+                          args.slices,
+                          CLAN_SETTINGS_SLICES
+                      )
+                    : null
+            if (external && !external.ok && !response) {
+                status = external.error.status
+                response = {
+                    error: {
+                        code: external.error.code,
+                        message: external.error.message,
+                    },
+                }
+            }
             const hasDiscordPatch = [
+                // External slices write no Discord configuration fields.
+                slicePatch.ok && Object.keys(slicePatch.patch).length
+                    ? true
+                    : undefined,
                 args.timezone,
                 args.defaultLanguage,
                 args.announcementsChannelId,
@@ -1836,7 +1901,7 @@ export const mutateClanSettings = mutation({
                 args.clanRoleId,
                 args.dashboardAdminRoleId,
             ].some((value) => value !== undefined)
-            if (hasDiscordPatch && !config) {
+            if (hasDiscordPatch && !config && !response) {
                 status = 400
                 response = {
                     error: {
@@ -1907,54 +1972,41 @@ export const mutateClanSettings = mutation({
                 Object.assign(discordPatch, {
                     defaultLanguage: args.defaultLanguage,
                 })
+            if (slicePatch.ok) Object.assign(discordPatch, slicePatch.patch)
             if (!response && Object.keys(discordPatch).length && config)
                 await ctx.db.patch(config._id, {
                     ...discordPatch,
                     updatedAt: now,
                 })
+            // A saved `commands` slice registers the commands again, as a
+            // save on the "Příkazy" page does (M1-B01, N3-B02).
+            if (!response && config && args.slices?.commands !== undefined)
+                await requestRegistrationAfterSave(ctx, key.guildId)
+            if (!response && external?.ok)
+                await external.commit(`api:${String(key._id)}`)
             if (!response!) {
                 const updatedGuild = await ctx.db.get(guild._id)
                 const updatedConfig = config
                     ? await ctx.db.get(config._id)
                     : null
-                const safeDiscordConfig = updatedConfig
-                    ? (() => {
-                          const {
-                              playerStatsServers: _playerStatsServers,
-                              gameOverrides,
-                              ...safeConfig
-                          } = updatedConfig
-                          return {
-                              ...safeConfig,
-                              id: String(updatedConfig._id),
-                              ...(gameOverrides
-                                  ? {
-                                        gameOverrides: Object.fromEntries(
-                                            Object.entries(gameOverrides).map(
-                                                ([gameId, override]) => {
-                                                    const {
-                                                        playerStatsServers:
-                                                            _tokens,
-                                                        ...safeOverride
-                                                    } = override
-                                                    return [
-                                                        gameId,
-                                                        safeOverride,
-                                                    ]
-                                                }
-                                            )
-                                        ),
-                                    }
-                                  : {}),
-                          }
-                      })()
-                    : null
+                const safeDiscordConfig = safeDiscordConfigOf(updatedConfig)
                 response = {
                     data: {
                         guild: updatedGuild
                             ? { ...updatedGuild, id: String(updatedGuild._id) }
                             : null,
                         discordConfig: safeDiscordConfig,
+                        slices: readClanSettingsSlices(
+                            {
+                                discordConfig: safeDiscordConfig,
+                                external: await readExternalClanSettings(
+                                    ctx,
+                                    key.guildId,
+                                    CLAN_SETTINGS_SLICES
+                                ),
+                            },
+                            CLAN_SETTINGS_SLICES
+                        ),
                     },
                 }
                 await enqueueClanWebhook(ctx, {

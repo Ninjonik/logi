@@ -1,11 +1,13 @@
 import { ButtonStyle } from "discord.js"
 
 import {
-    getClanDiscordMessages,
     getIntlLocaleForClanLanguage,
     isClanLanguage,
-} from "../../src/lib/clan-language"
+} from "../../src/lib/clan-language/core"
 import { eventInfoMessageRenderVersion } from "../../src/domain/discord-sync/render-version"
+import { getPanelMessages } from "../../src/lib/clan-language/panels"
+import { getEventMessages } from "../../src/lib/clan-language/events"
+import { plainText } from "../../src/domain/events/calendar-link"
 
 import type { ClanLanguage, DiscordConfig, EventRecord } from "./types"
 import { env } from "./environment"
@@ -36,27 +38,34 @@ export async function withTimeout<T>(
     }
 }
 
+/**
+ * A Google Calendar link for an event outside its announcement (the calendar
+ * panel): from the meeting to the end, the description when there is one and
+ * "Discord" as the place. Never a channel ID, the game server or the old
+ * "Briefing k operaci z Logi" filler (board L1-143). The announcement's own
+ * button uses `buildCalendarLink` with the clan, the channel and the times.
+ */
 export function generateCalendarUrl(
     event: EventRecord,
     language: ClanLanguage
 ): string {
     const base = "https://calendar.google.com/calendar/render?action=TEMPLATE"
     const title = encodeURIComponent(event.name)
-    const messages = getClanDiscordMessages(language)
+    const messages = getPanelMessages(language)
     const formatTime = (isoStr: string) =>
         new Date(isoStr).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
 
-    const dates = `${formatTime(event.gameStart)}/${formatTime(event.gameEnd)}`
-    const details = encodeURIComponent(
-        event.description || messages.calendar.fallbackDetails
-    )
-    const location = encodeURIComponent(
-        event.server ??
-            event.meetingChannelId ??
-            messages.calendar.fallbackLocation
-    )
+    const start = Number.isFinite(Date.parse(event.meetingStart))
+        ? event.meetingStart
+        : event.gameStart
+    const dates = `${formatTime(start)}/${formatTime(event.gameEnd)}`
+    const description = plainText(event.description ?? "")
+    const details = description
+        ? `&details=${encodeURIComponent(description)}`
+        : ""
+    const location = encodeURIComponent(messages.calendar.fallbackLocation)
 
-    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`
+    return `${base}&text=${title}&dates=${dates}${details}&location=${location}`
 }
 
 export function buildDiscordMessageLink(
@@ -74,7 +83,7 @@ export function formatEventStatus(
     status: EventRecord["status"],
     language: ClanLanguage
 ) {
-    const messages = getClanDiscordMessages(language)
+    const messages = getEventMessages(language)
     switch (status) {
         case "registration":
             return messages.statuses.registration
@@ -137,25 +146,6 @@ export function buildPublicMatchUrl(eventId: string, language?: string) {
         `/${locale}/matches/${encodeURIComponent(eventId)}`,
         env.appSiteUrl
     ).toString()
-}
-
-export async function warmRosterImage(
-    eventId: string,
-    rosterUpdatedAt?: string
-) {
-    const publicUrl = new URL(buildRosterImageUrl(eventId, rosterUpdatedAt))
-    const internalOrigin = new URL(env.internalAppSiteUrl)
-    const warmUrl = new URL(
-        `${publicUrl.pathname}${publicUrl.search}`,
-        internalOrigin
-    )
-    const response = await withTimeout(
-        fetch(warmUrl),
-        45_000,
-        `Roster image warm-up for ${eventId}`
-    )
-
-    return response.ok && response.headers.get("content-type") === "image/png"
 }
 
 export function pickButtonStyle(color: string) {

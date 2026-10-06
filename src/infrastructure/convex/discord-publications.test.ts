@@ -487,6 +487,9 @@ test("result pages add the card facts: category, sides, confirming admin and pub
         reviewer: "Hráč 01",
         publicMatch: true,
         imported: { outcome: "victory", score: { sideA: 2, sideB: 3 } },
+        playedAt: null,
+        previous: null,
+        league: null,
     })
     assert.deepEqual(card("Bare"), {
         category: null,
@@ -495,5 +498,8 @@ test("result pages add the card facts: category, sides, confirming admin and pub
         reviewer: null,
         publicMatch: false,
         imported: null,
+        playedAt: null,
+        previous: null,
+        league: null,
     })
 })

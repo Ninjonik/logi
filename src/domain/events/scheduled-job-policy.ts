@@ -38,11 +38,17 @@ export function resolveSignupReminderStatuses(
     return statuses === undefined ? (["member"] as const) : statuses
 }
 
+/**
+ * The next sign-up reminder (board L2-15, L2-B04): once a day from the day
+ * after the announcement until sign-ups close. A match announced later than
+ * it was created (`registrationStart`) counts from the announcement.
+ */
 export function getSignupReminderDueAt(
     createdAt: string,
     registrationEnd: string,
     now: Date,
-    scheduleOverdueImmediately = false
+    scheduleOverdueImmediately = false,
+    announcedAt?: string
 ): string | null {
     const createdAtMs = new Date(createdAt).getTime()
     const registrationEndMs = new Date(registrationEnd).getTime()
@@ -53,7 +59,13 @@ export function getSignupReminderDueAt(
     ) {
         return null
     }
-    const firstDueAtMs = createdAtMs + 24 * 60 * 60 * 1000
+    const announcedAtMs = announcedAt ? new Date(announcedAt).getTime() : NaN
+    const firstDueAtMs =
+        Math.max(
+            createdAtMs,
+            Number.isFinite(announcedAtMs) ? announcedAtMs : createdAtMs
+        ) +
+        24 * 60 * 60 * 1000
     if (firstDueAtMs >= registrationEndMs) return null
 
     const dueAtMs =

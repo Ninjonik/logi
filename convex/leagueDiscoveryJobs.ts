@@ -3,6 +3,7 @@ import {
     INDEX_URLS,
     indexDueForWorkspace,
 } from "../src/domain/wardogs-league/discovery"
+import type { LeagueIndex } from "../src/infrastructure/wardogs-league/parse-index"
 import { fetchLeagueIndex } from "../src/infrastructure/wardogs-league/fetch-match"
 import type { Served } from "../src/application/wardogs-league/read-match"
 import { LeagueError } from "../src/domain/wardogs-league/contracts"
@@ -19,7 +20,7 @@ export const collectDue = internalAction({
             await ctx.runMutation(mutation("claimScan"), {})
         if (claim) {
             try {
-                const pages = []
+                const pages: LeagueIndex[] = []
                 for (const url of INDEX_URLS) {
                     const delay: number = await ctx.runMutation(
                         mutation("reserveIndexFetch"),
@@ -29,10 +30,13 @@ export const collectDue = internalAction({
                     pages.push(await fetchLeagueIndex(url))
                 }
                 const all = [...new Set(pages.flatMap((p) => p.matchUrls))]
+                const tab = (name: "fixtures" | "results") =>
+                    pages.find((page) => page.tab === name)?.matchUrls ?? []
                 await ctx.runMutation(mutation("finishScan"), {
                     ...claim,
                     matchUrls: all.slice(0, 500),
-                    fixtureUrls: pages[0].matchUrls,
+                    fixtureUrls: tab("fixtures"),
+                    resultUrls: tab("results"),
                     incomplete:
                         all.length > 500 || pages.some((p) => p.incomplete),
                 })

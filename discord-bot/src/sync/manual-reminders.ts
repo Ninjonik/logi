@@ -1,9 +1,10 @@
-import { MessageFlags, type Client } from "discord.js"
+import type { Client } from "discord.js"
 
-import { resolveMessageAccentColor } from "../../../src/domain/discord-messages/format"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
-import { buildAttendanceReminderMessage } from "./attendance-reminders"
-import { buildAttendanceReminderComponents } from "../message-builders"
+import {
+    buildAttendanceReminderDm,
+    leaderNames,
+    rosterPlaces,
+} from "./attendance-reminders"
 import { buildSignupReminderMessage } from "./signup-reminders"
 import type { SyncPayload } from "../types"
 import { logInfo } from "../log"
@@ -18,90 +19,74 @@ export type ClaimedManualReminder = {
 
 type Send = (userId: string, message: unknown) => Promise<boolean>
 
+/** How a manual reminder went: DMs Discord accepted and players it refused. */
+export type ManualReminderDelivery = { sent: number; failedUserIds: string[] }
+
 /**
- * The DM each recipient of a manual reminder gets: members who have not
- * answered get the sign-up reminder, roster players and reserves who have not
- * confirmed get the attendance reminder with their place and the confirm and
- * running-late buttons. Returns how many DMs Discord accepted.
+ * The DM each recipient of a manual reminder gets (board L2-23..27): members
+ * who have not answered get the sign-up reminder, roster players and
+ * reserves who have not confirmed get the attendance reminder with their
+ * place. Both say "Připomínku poslalo velení z Logi." and use the clan
+ * colour. Players whose DMs Discord refuses are returned for the match page
+ * (board L2-60); they are never reported to the errors channel.
  */
 export async function deliverManualReminder(input: {
     payload: SyncPayload
     request: ClaimedManualReminder
     send: Send
-}): Promise<number> {
+    names?: Readonly<Record<string, string>>
+    now?: number
+}): Promise<ManualReminderDelivery> {
     const { payload, request } = input
     const event = payload.events.find((item) => item.id === request.eventId)
-    if (!event || !request.recipientIds.length) return 0
+    const delivery: ManualReminderDelivery = { sent: 0, failedUserIds: [] }
+    if (!event || !request.recipientIds.length) return delivery
+
+    const record = async (userId: string, message: unknown) => {
+        if (await input.send(userId, message)) delivery.sent += 1
+        else delivery.failedUserIds.push(userId)
+    }
 
     if (request.audience === "unanswered") {
-        const message = buildSignupReminderMessage(payload, event)
-        let sent = 0
-        for (const userId of request.recipientIds) {
-            if (
-                await input.send(userId, {
-                    ...message,
-                    flags: MessageFlags.IsComponentsV2,
-                })
-            )
-                sent += 1
-        }
-        return sent
+        const message = buildSignupReminderMessage(payload, event, {
+            sentByLeaders: true,
+        })
+        for (const userId of request.recipientIds) await record(userId, message)
+        return delivery
     }
 
-    const messages = getClanDiscordMessages(payload.config.defaultLanguage)
     const roster = payload.rosters.find((item) => item.eventId === event.id)
-    const places = new Map<
-        string,
-        { squadName: string; roleName?: string; note?: string }
-    >()
-    for (const squad of roster?.squads ?? []) {
-        for (const player of squad.players) {
-            if (player.id)
-                places.set(player.id, {
-                    squadName: squad.name,
-                    roleName: player.roleName,
-                    note: player.note,
-                })
-        }
-    }
-    for (const userId of roster?.reservePlayerIds ?? []) {
-        if (!places.has(userId))
-            places.set(userId, { squadName: messages.assignment.reserveTitle })
-    }
-    const matchType = event.matchType?.trim().toLowerCase()
-    const accentColor = resolveMessageAccentColor({
-        categoryColor: matchType
-            ? payload.guild.eventCategories?.find(
-                  (category) => category.id.trim().toLowerCase() === matchType
-              )?.color
-            : undefined,
-    })
-    const meetingStartMs = new Date(event.meetingStart).getTime()
-    let sent = 0
-    for (const userId of request.recipientIds) {
-        const embed = buildAttendanceReminderMessage({
-            eventName: event.name,
-            meetingStartMs,
-            gameStartMs: Date.parse(event.gameStart),
-            assignment: places.get(userId),
-            messages,
-            accentColor,
-            now: Date.now(),
-            timeZone: payload.config.timezone,
-        })
-        if (
-            await input.send(userId, {
-                embeds: [embed],
-                allowedMentions: { parse: [] },
-                components: buildAttendanceReminderComponents(
-                    event.id,
-                    payload.config.defaultLanguage
-                ),
+    const places = roster
+        ? rosterPlaces(roster, input.names ?? payload.userDisplayNames, {
+              includeAcknowledged: true,
+          })
+        : new Map()
+    for (const userId of request.recipientIds)
+        await record(
+            userId,
+            buildAttendanceReminderDm({
+                payload,
+                event,
+                place: places.get(userId),
+                now: input.now ?? Date.now(),
+                sentByLeaders: true,
             })
         )
-            sent += 1
-    }
-    return sent
+    return delivery
+}
+
+/** Leader names for the attendance reminder, read from the clan's guild. */
+export async function manualReminderNames(
+    client: Client,
+    payload: SyncPayload,
+    eventId: string
+) {
+    const roster = payload.rosters.find((item) => item.eventId === eventId)
+    if (!roster) return payload.userDisplayNames
+    const guild = await client.guilds
+        .fetch(payload.config.guildId)
+        .catch(() => null)
+    return await leaderNames(guild, roster, payload.userDisplayNames)
 }
 
 /** Sends one DM through Discord; a closed DM or unknown user counts as not sent. */

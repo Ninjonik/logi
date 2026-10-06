@@ -3,6 +3,7 @@ import {
     handleAppendAttendanceReminderLog,
     handleConcludeEvent,
     handleFindNoticeTarget,
+    handleFindStartedNoticeEvent,
     handleReconcileStatuses,
     handleSetEventResult,
     handleToggleSignup,
@@ -36,10 +37,10 @@ import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
+import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
-import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { eventWriteFields } from "./eventValidators"
 import { matchTeamInput } from "./teamValidators"
@@ -257,50 +258,92 @@ export const getById = query({
     },
 })
 
+/** The server's events with their roster reserves, for `/notice`. */
+async function noticeCandidates(ctx: QueryCtx, discordGuildId: string) {
+    const guild = await getGuildByDiscordId(ctx, discordGuildId)
+    if (guild && getGuildDiscordId(guild) !== discordGuildId) return null
+    const keys = new Set([
+        discordGuildId,
+        ...(guild ? [String(guild._id), ...(guild.id ? [guild.id] : [])] : []),
+    ])
+    const events = (
+        await Promise.all(
+            [...keys].map((guildId) =>
+                ctx.db
+                    .query("events")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                    .collect()
+            )
+        )
+    ).flat()
+    const withReserves = await Promise.all(
+        events.map(async (event) => {
+            const roster = await ctx.db
+                .query("rosters")
+                .withIndex("eventId", (q) => q.eq("eventId", event._id))
+                .unique()
+            return {
+                ...event,
+                reservePlayerIds: roster?.reservePlayerIds ?? [],
+            }
+        })
+    )
+    return { guild, events, withReserves }
+}
+
+const noticeQueryArgs = {
+    secret: v.string(),
+    guildId: v.string(),
+    userId: v.string(),
+    query: v.string(),
+}
+
 export const findNoticeTarget = query({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        userId: v.string(),
-        query: v.string(),
-    },
+    args: noticeQueryArgs,
     handler: async (ctx, args) => {
         if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
-        const guild = await getGuildByDiscordId(ctx, args.guildId)
-        if (guild && getGuildDiscordId(guild) !== args.guildId) return []
-        const keys = new Set([
-            args.guildId,
-            ...(guild
-                ? [String(guild._id), ...(guild.id ? [guild.id] : [])]
-                : []),
-        ])
-        const events = (
-            await Promise.all(
-                [...keys].map((guildId) =>
-                    ctx.db
-                        .query("events")
-                        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                        .collect()
-                )
-            )
-        ).flat()
+        const candidates = await noticeCandidates(ctx, args.guildId)
+        if (!candidates) return []
+        const { guild, events, withReserves: eventsWithReserves } = candidates
 
-        const eventsWithReserves = await Promise.all(
-            events.map(async (event) => {
-                const roster = await ctx.db
-                    .query("rosters")
-                    .withIndex("eventId", (q) => q.eq("eventId", event._id))
-                    .unique()
-                return {
-                    ...event,
-                    reservePlayerIds: roster?.reservePlayerIds ?? [],
-                }
-            })
-        )
-
-        return handleFindNoticeTarget({
+        const targets = handleFindNoticeTarget({
             events: eventsWithReserves,
+            userId: args.userId,
+            query: args.query.trim(),
+            now: new Date(),
+        })
+        // The match category ("Přátelák", "Liga") labels /notice's choices.
+        const byId = new Map(events.map((event) => [String(event._id), event]))
+        return targets.map((target) => {
+            const event = byId.get(target.id)
+            const categoryId =
+                event?.kind === "training"
+                    ? undefined
+                    : event?.matchType?.trim() || undefined
+            const label = categoryId
+                ? (guild?.eventCategories?.find(
+                      (category) => category.id === categoryId
+                  )?.label ?? categoryId)
+                : undefined
+            return label ? { ...target, categoryLabel: label } : target
+        })
+    },
+})
+
+/**
+ * `/notice` typed a signed-up event that already started (M3-19): its ID and
+ * name, so the bot answers "VLK vs ROG už začal" instead of "not signed up".
+ */
+export const findStartedNoticeEvent = query({
+    args: noticeQueryArgs,
+    handler: async (ctx, args) => {
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
+        const candidates = await noticeCandidates(ctx, args.guildId)
+        if (!candidates) return null
+        return handleFindStartedNoticeEvent({
+            events: candidates.withReserves,
             userId: args.userId,
             query: args.query.trim(),
             now: new Date(),

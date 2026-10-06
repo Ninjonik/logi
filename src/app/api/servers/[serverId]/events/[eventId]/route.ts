@@ -10,19 +10,31 @@ import {
     saveServerEvent,
 } from "@/lib/server-events"
 import {
+    fetchDiscordGuildRoles,
+    sendDiscordBotDm,
+    syncDiscordMemberRoleIds,
+} from "@/lib/discord"
+import {
+    getIntlLocaleForClanLanguage,
+    resolveClanLanguage,
+} from "@/lib/clan-language/core"
+import {
     getUserSafeErrorMessage,
     logRouteError,
 } from "@/lib/server-route-errors"
+import { trainingResultView } from "@/domain/discord-messages/direct-message-views"
+import { isMessageEnabled } from "@/domain/discord-messages/notification-settings"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
-import { sendDiscordBotDm, syncDiscordMemberRoleIds } from "@/lib/discord"
+import { getDirectMessages } from "@/lib/clan-language/direct-messages"
 import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
 import { eventSchema, eventUpdateSchema } from "@/lib/validation/event"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { messageApiBody } from "@/domain/discord-messages/message-api"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { importEventMatchResults } from "@/lib/server-match-results"
-import { getUsersByIds } from "@/lib/server-user-management"
-import { getClanDiscordMessages } from "@/lib/clan-language"
+import { matchTitle } from "@/domain/discord-messages/match-text"
+import { getSystemMessages } from "@/lib/clan-language/system"
 import { getSiteUrl } from "@/lib/env"
 
 /** Current server admin with a live dashboard session. */
@@ -77,25 +89,40 @@ const postHandler = createServerEventPostHandler({
             return
         }
 
-        const users = await getUsersByIds(
-            participants.map((participant) => participant.userId),
-            guild.discordId
-        )
-
-        const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
-        const rewardRoleIds = event.rewardRoleIds ?? []
-        const userByDiscordId = new Map(
-            users.map((user) => [user.discordId, user])
-        )
+        const language = discordConfig?.defaultLanguage
+        const rewardRoleIds: string[] = event.rewardRoleIds ?? []
+        // Role names, not mentions: a DM cannot render a guild role.
+        const roleNames = rewardRoleIds.length
+            ? await fetchDiscordGuildRoles(guild.discordId)
+                  .then((roles) =>
+                      rewardRoleIds.flatMap((roleId) => {
+                          const role = roles.find((item) => item.id === roleId)
+                          return role ? [role.name] : []
+                      })
+                  )
+                  .catch(() => [])
+            : []
         const rewardedUserIds: string[] = []
         const dmSentUserIds: string[] = []
+        const sendResultDm = isMessageEnabled(discordConfig, "trainingResultDm")
+        const layout = {
+            copy: getSystemMessages(language).kit,
+            locale: getIntlLocaleForClanLanguage(language),
+            style: discordConfig?.messageStyle,
+        }
+        const frame = {
+            clanName: guild.name,
+            settingsUrl: new URL(
+                `/${resolveClanLanguage(language)}/dashboard/settings/user#zpravy-od-bota`,
+                getSiteUrl()
+            ).toString(),
+            timeZone: discordConfig?.timezone || "UTC",
+        }
 
         await Promise.all(
             participants.map(async (participant) => {
-                if (
-                    participant.completed === "passed" &&
-                    rewardRoleIds.length > 0
-                ) {
+                const passed = participant.completed === "passed"
+                if (passed && rewardRoleIds.length > 0) {
                     await syncDiscordMemberRoleIds({
                         discordGuildId: guild.discordId,
                         userId: participant.userId,
@@ -104,26 +131,23 @@ const postHandler = createServerEventPostHandler({
                     rewardedUserIds.push(participant.userId)
                 }
 
-                const user = userByDiscordId.get(participant.userId)
-                const displayName = user?.name ?? participant.userId
-                const statusLabel =
-                    participant.completed === "passed"
-                        ? messages.training.resultPassed
-                        : messages.training.resultFailed
-                const roleLine =
-                    participant.completed === "passed" &&
-                    rewardRoleIds.length > 0
-                        ? ` ${messages.training.rewardGranted}`
-                        : ""
-
+                // "Výsledek tréninku" is a clan switch (board N1-23).
+                if (!sendResultDm) return
                 try {
+                    // The result card in the clan language (board L2-52, L2-53).
                     await sendDiscordBotDm(
                         participant.userId,
-                        messages.training.dmResult
-                            .replace("{name}", displayName)
-                            .replace("{event}", event.name ?? "training")
-                            .replace("{result}", statusLabel)
-                            .replace("{reward}", roleLine)
+                        messageApiBody(
+                            trainingResultView({
+                                title: matchTitle(event),
+                                gameStart: event.gameStart,
+                                passed,
+                                rewardRoles: passed ? roleNames : [],
+                                copy: getDirectMessages(language),
+                                frame,
+                            }),
+                            layout
+                        )
                     )
                     dmSentUserIds.push(participant.userId)
                 } catch {

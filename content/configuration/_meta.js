@@ -2,8 +2,12 @@ export default {
     members: "Members and groups",
     "presets-and-templates": "Presets and templates",
     settings: "Clan settings",
-    "league-tracking": "Wardogs League tracking",
+    commands: "Discord commands",
+    "league-tracking": "Wardogs League",
     "game-history": "Server game history",
     "single-sign-on": "Single sign-on",
     tickets: "Tickets",
+    "membership-applications": "Clan applications",
+    "panel-graphics": "Panel graphics",
+    "server-seeding": "Server seeding",
 }

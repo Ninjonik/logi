@@ -33,9 +33,12 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
+import {
+    supportedClanLanguages,
+    type ClanLanguage,
+} from "@/lib/clan-language/core"
 import { remapLocalizedDefaults } from "@/components/app/settings/localized-panel-defaults"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
-import { supportedClanLanguages, type ClanLanguage } from "@/lib/clan-language"
 import type { DiscordConfig, GameDiscordOverrides } from "@/types/domain"
 import { SettingsField } from "@/components/app/settings/settings-panel"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
@@ -49,11 +52,15 @@ type Exceptions = Record<
     GameExceptionChannelField,
     Partial<Record<GameId, string>>
 >
+/**
+ * The errors channel moved to "Zprávy a panely" (board N1-47), where it is
+ * edited next to the error messages themselves; the calendar and its channel
+ * moved to "Panely v Discordu" (N1-47, N1-48). This page never sends either,
+ * so saving it keeps them.
+ */
 type Values = {
     timezone: string
     defaultLanguage: ClanLanguage
-    errorsChannelId?: string
-    calendarChannelId?: string
 } & Record<GameExceptionChannelField, string | undefined>
 
 const KINDS: Record<GameExceptionChannelField, ChannelKind> = {
@@ -161,8 +168,6 @@ export function DiscordChannelSettingsForm({
         () => ({
             timezone: config?.timezone ?? "UTC",
             defaultLanguage: config?.defaultLanguage ?? "en",
-            errorsChannelId: config?.errorsChannelId,
-            calendarChannelId: config?.calendarChannelId,
             announcementsChannelId: config?.announcementsChannelId,
             eventInfoChannelId: config?.eventInfoChannelId,
             forumCategoryId: config?.forumCategoryId,
@@ -206,8 +211,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function picker(
-        field:
-            GameExceptionChannelField | "errorsChannelId" | "calendarChannelId",
+        field: GameExceptionChannelField,
         kind: ChannelKind,
         value: string | undefined,
         onChange: (value?: string) => void,
@@ -355,25 +359,6 @@ export function DiscordChannelSettingsForm({
         )
     }
 
-    function clanWideRow(
-        field: "errorsChannelId" | "calendarChannelId",
-        label: string,
-        help: string
-    ) {
-        return (
-            <Row>
-                <SettingsField label={label} help={help}>
-                    {picker(field, "text", values[field], (value) =>
-                        setValue(field, value)
-                    )}
-                    {multiGame ? (
-                        <ClanWideNote label={hub.scopeLegend.clanWideShort} />
-                    ) : null}
-                </SettingsField>
-            </Row>
-        )
-    }
-
     function discard() {
         setValues(initialValues)
         setExceptions(initialExceptions)
@@ -394,8 +379,6 @@ export function DiscordChannelSettingsForm({
             defaultLanguage: values.defaultLanguage,
             announcementsChannelId: clearableId(values.announcementsChannelId),
             eventInfoChannelId: clearableId(values.eventInfoChannelId),
-            errorsChannelId: clearableId(values.errorsChannelId),
-            calendarChannelId: clearableId(values.calendarChannelId),
             forumCategoryId: clearableId(values.forumCategoryId),
             meetingChannelId: clearableId(values.meetingChannelId),
             squadVoiceCategoryId: clearableId(values.squadVoiceCategoryId),
@@ -536,12 +519,6 @@ export function DiscordChannelSettingsForm({
                     text.eventInfo,
                     text.eventInfoHelp
                 )}
-                {clanWideRow(
-                    "calendarChannelId",
-                    text.calendar,
-                    text.calendarHelp
-                )}
-                {clanWideRow("errorsChannelId", text.errors, text.errorsHelp)}
                 {routingRow("forumCategoryId", text.forum, text.forumHelp)}
             </Card>
 

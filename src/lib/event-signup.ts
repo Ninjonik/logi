@@ -196,7 +196,11 @@ export function resolveEventSignupSelection(input: {
     >
 }) {
     if (!canAcceptSignups(input.event, new Date())) {
-        return { ok: false as const, error: input.labels.registrationClosed }
+        return {
+            ok: false as const,
+            error: input.labels.registrationClosed,
+            reason: "closed" as const,
+        }
     }
 
     try {
@@ -208,6 +212,7 @@ export function resolveEventSignupSelection(input: {
         return {
             ok: false as const,
             error: input.labels.membershipStatusNotAllowed,
+            reason: "membership" as const,
         }
     }
 
@@ -215,6 +220,7 @@ export function resolveEventSignupSelection(input: {
         return {
             ok: false as const,
             error: input.labels.unableToResolveMembership,
+            reason: "unresolved" as const,
         }
     }
 
@@ -239,14 +245,22 @@ export function resolveEventSignupSelection(input: {
         !isTrainingAttend &&
         !isGeneralSignup
     ) {
-        return { ok: false as const, error: input.labels.invalidSignupButton }
+        return {
+            ok: false as const,
+            error: input.labels.invalidSignupButton,
+            reason: "invalid" as const,
+        }
     }
 
     if (
         input.event.requiredRoleIds.length > 0 &&
         !input.event.requiredRoleIds.some((roleId) => memberRoleIds.has(roleId))
     ) {
-        return { ok: false as const, error: input.labels.missingRequiredRole }
+        return {
+            ok: false as const,
+            error: input.labels.missingRequiredRole,
+            reason: "required_role" as const,
+        }
     }
 
     if (
@@ -254,11 +268,20 @@ export function resolveEventSignupSelection(input: {
         !memberRoleIds.has(selectedGroup.discordRoleId) &&
         !assignedGroupIds.has(selectedGroup.id)
     ) {
-        return { ok: false as const, error: input.labels.missingRequiredRole }
+        return {
+            ok: false as const,
+            error: input.labels.missingRequiredRole,
+            reason: "group_role" as const,
+            group: selectedGroup,
+        }
     }
 
     if (isGeneralSignup && !input.event.useGeneralSignup) {
-        return { ok: false as const, error: input.labels.invalidSignupButton }
+        return {
+            ok: false as const,
+            error: input.labels.invalidSignupButton,
+            reason: "invalid" as const,
+        }
     }
 
     return {

@@ -8,10 +8,8 @@ import {
     resolveRosterAvatarUrl,
     resolveSiteAssetUrl,
 } from "@/lib/roster-image"
-import {
-    getClanDiscordMessages,
-    getIntlLocaleForClanLanguage,
-} from "@/lib/clan-language"
+import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { rosterImageCache } from "@/lib/roster-image-cache"
@@ -377,7 +375,7 @@ export async function GET(
 
     const clanLanguage = data.config?.defaultLanguage ?? "en"
     const configTimezone = data.config?.timezone
-    const messages = getClanDiscordMessages(clanLanguage)
+    const messages = getEventMessages(clanLanguage)
     const intlLocale = getIntlLocaleForClanLanguage(clanLanguage)
 
     const usersById = new Map(data.users.map((user) => [user.discordId, user]))

@@ -1,7 +1,6 @@
 import {
     AttachmentBuilder,
     ChannelType,
-    MessageFlags,
     type Client,
     type Guild,
     type TextChannel,
@@ -14,25 +13,30 @@ import {
     syncScheduledDiscordEvent,
 } from "../scheduled-events"
 import {
-    buildAnnouncementMessage,
-    buildAnnouncementV2Message,
-    buildMatchTeamLogoEmbeds,
-} from "../message-builders"
-import {
-    buildRosterImageUrl,
-    getRosterImageVersion,
-    warmRosterImage,
-    withTimeout,
-} from "../utils"
-import type { PanelFactionEmoji } from "../../../src/domain/discord-publications/panel-presentation"
+    scheduledEventContentFor,
+    squadCategoryNameFor,
+    squadVoiceChannelNameFor,
+} from "../events/match-discord"
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { eventMessageIdentity } from "../../../src/domain/discord-publications/legacy-bindings"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
+import {
+    buildRosterImageUrl,
+    getRosterImageVersion,
+    withTimeout,
+} from "../utils"
+import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
+import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
+import { finishAnnouncementMigration } from "../events/announcement-migration"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
-import { publishManagedMessage, isUnknownMessage } from "./publication"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
+import { syncAnnouncement } from "../events/announcement-sync"
+import { syncSquadVoiceChannels } from "../events/squad-voice"
+import { buildRosterMessage } from "../events/roster-message"
 import { reportClanDiscordError } from "../error-reporting"
+import { memberNames } from "../events/match-context"
+import { publishManagedMessage } from "./publication"
 import { logError, logInfo, logWarn } from "../log"
 import { syncEventRoles } from "../event-roles"
 import { getCalendarSyncVersion } from "./work"
@@ -45,14 +49,24 @@ import { env } from "../environment"
 // the previous 20-second aggregate deadline too short for that valid work.
 const EVENT_SYNC_TIMEOUT_MS = 60_000
 
-function shouldShowPublishedRosterImage(
-    event: EventRecord,
-    rosterUpdatedAt?: string
-) {
-    return Boolean(
-        rosterUpdatedAt &&
-        (event.status === "closed" || event.status === "starting")
-    )
+/**
+ * A failed part of the event sync that has its own title in the errors
+ * channel: the roster card in its channel reads "Soupiska se nezveřejnila"
+ * (L5-17), not the announcement's title. The cause stays readable.
+ */
+export class EventSyncStepError extends Error {
+    constructor(
+        readonly source: Extract<BotErrorSource, "roster">,
+        readonly cause: unknown
+    ) {
+        super("Event sync step failed.")
+        this.name = "EventSyncStepError"
+    }
+}
+
+/** The errors channel's source of a failed event sync. */
+export function eventSyncErrorSource(error: unknown): BotErrorSource {
+    return error instanceof EventSyncStepError ? error.source : "announcement"
 }
 
 async function buildPublishedRosterImageAttachment(
@@ -97,215 +111,75 @@ async function buildPublishedRosterImageAttachment(
     }
 }
 
-export function getAnnouncementPingRoleIds(
-    payload: SyncPayload,
-    event: EventRecord
-) {
-    const roleIds =
-        event.pingMode === "roles"
-            ? (event.pingRoleIds ?? [])
-            : event.pingMode === "clan" ||
-                (event.pingMode === undefined && event.pingClan)
-              ? payload.config.clanRoleId
-                  ? [payload.config.clanRoleId]
-                  : []
-              : []
-
-    return [...new Set(roleIds.map((roleId) => roleId.trim()).filter(Boolean))]
-}
-
-export async function resolveAnnouncementDisplayNames(
-    payload: SyncPayload,
-    event: EventRecord,
-    guild: Guild
-) {
-    const userIds = new Set<string>()
-
-    for (const signUp of event.signUps) {
-        userIds.add(signUp.userId)
-    }
-
-    for (const participant of event.participants) {
-        userIds.add(participant.userId)
-    }
-
-    if (userIds.size === 0) {
-        return payload.userDisplayNames
-    }
-
-    const resolvedDisplayNames = { ...payload.userDisplayNames }
-    const members = await guild.members
-        .fetch({ user: [...userIds] })
-        .catch(() => null)
-
-    if (members) {
-        for (const [userId, member] of members) {
-            const displayName = member.displayName?.trim()
-            if (displayName) {
-                resolvedDisplayNames[userId] = displayName
-            }
-        }
-    }
-
-    return resolvedDisplayNames
-}
-
 /**
- * Content of a split-channel event message. Legacy embed messages stay legacy
- * so their identity survives edits; new messages use Components V2. Before the
- * roster is published, the event information card (`includeSignup === false`)
- * also carries one logo card per assigned match team; once it is published
- * the card is the roster card (title, meeting, squads, image, buttons).
+ * The published roster message in the roster channel (board L1 1.11): the
+ * roster photo uploaded with the message, as the old bot did, and the text
+ * roster under it unless the publish chose the photo only. One managed
+ * message, edited in place on every re-publish.
  */
-export function buildEventMessageContent(input: {
-    payload: SyncPayload
-    event: EventRecord
-    userDisplayNames: Record<string, string>
-    legacyEmbeds: boolean
-    includeSignup: boolean
-    forumChannelId?: string
-    pingRoleIds: string[]
-    factionEmoji?: PanelFactionEmoji
-}) {
-    const { payload, event, includeSignup, forumChannelId, factionEmoji } =
-        input
-    if (input.legacyEmbeds) {
-        const { embed, components } = buildAnnouncementMessage(
-            payload,
-            event,
-            input.userDisplayNames,
-            {
-                showPublishedRosterImage: !includeSignup,
-                forumChannelId,
-                factionEmoji,
-            }
-        )
-        const rosterCard =
-            event.kind === "match" &&
-            payload.rosters.some(
-                (roster) => roster.eventId === event.id && roster.published
-            )
-        return {
-            embeds:
-                includeSignup || rosterCard
-                    ? [embed]
-                    : [
-                          embed,
-                          ...buildMatchTeamLogoEmbeds(event, embed.data.color),
-                      ],
-            components: includeSignup ? components : [],
-        }
-    }
-    return {
-        ...buildAnnouncementV2Message(payload, event, input.userDisplayNames, {
-            showPublishedRosterImage: !includeSignup,
-            forumChannelId,
-            pingRoleIds: input.pingRoleIds,
-            matchTeamCards: !includeSignup,
-            factionEmoji,
-        }),
-        flags: MessageFlags.IsComponentsV2 as const,
-    }
-}
-
-async function syncEventMessage(
+async function syncRosterMessage(
     channel: TextChannel,
     messageId: string | undefined,
     payload: SyncPayload,
     event: EventRecord,
-    roster: Roster | undefined,
-    guild: Guild,
-    includeSignup = true,
-    forumChannelId?: string,
-    storedAnnouncementChannelId?: string
+    roster: Roster,
+    guild: Guild
 ) {
     const identity = eventMessageIdentity({
         eventId: event.id,
-        kind: includeSignup ? "announcement" : "info",
+        kind: "info",
         destination: channel.id,
         messageId,
-        storedAnnouncementChannelId,
     })
     if (event.status === "concluded") {
         await retireEventMessage(
             guild.client,
             payload,
             event,
-            includeSignup ? "announcement" : "info",
+            "info",
             identity.legacyChannelId,
             messageId
         )
         return undefined
     }
-    const existing = messageId
-        ? await channel.messages
-              .fetch({ message: messageId, force: true, cache: false })
-              .catch((error) => {
-                  if (isUnknownMessage(error)) return null
-                  throw error
-              })
-        : null
-    if (
-        !includeSignup &&
-        shouldShowPublishedRosterImage(event, roster?.updatedAt)
-    ) {
-        // Warming the image cache is an optimization. The image URL is still
-        // rendered in the announcement and can complete independently, so a
-        // slow warm-up must not turn an otherwise successful event sync into
-        // a Discord error-channel report.
-        try {
-            const warmed = await warmRosterImage(
-                event.id,
-                getRosterImageVersion(event, roster?.updatedAt)
-            )
-            if (!warmed) {
-                logWarn("event-sync", "Roster image warm-up was unsuccessful", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    status: event.status,
-                })
-            }
-        } catch (error) {
-            logWarn("event-sync", "Roster image warm-up timed out or failed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                status: event.status,
-                error,
-            })
-        }
+    let attachment:
+        | Awaited<ReturnType<typeof buildPublishedRosterImageAttachment>>
+        | undefined
+    try {
+        attachment = await buildPublishedRosterImageAttachment(event, roster)
+    } catch (error) {
+        // The public image URL still renders; the upload is only more reliable.
+        logWarn("event-sync", "Roster image attachment failed", {
+            eventId: event.id,
+            guildId: payload.config.guildId,
+            error,
+        })
     }
-    const displayEvent =
-        !includeSignup && !roster?.published
-            ? { ...event, participants: [], signUps: [] }
-            : event
-    const displayPayload =
-        displayEvent === event
-            ? payload
-            : {
-                  ...payload,
-                  events: payload.events.map((item) =>
-                      item.id === event.id ? displayEvent : item
-                  ),
-              }
-    const names = await resolveAnnouncementDisplayNames(
-        displayPayload,
-        displayEvent,
-        guild
-    )
-    const pingRoleIds = includeSignup
-        ? getAnnouncementPingRoleIds(payload, event)
-        : []
-    const message = buildEventMessageContent({
-        payload: displayPayload,
-        event: displayEvent,
-        userDisplayNames: names,
-        legacyEmbeds: Boolean(
-            existing && !existing.flags.has(MessageFlags.IsComponentsV2)
+    const rosterUserIds = [
+        ...roster.squads.flatMap((squad) =>
+            squad.players.flatMap((player) => (player.id ? [player.id] : []))
         ),
-        includeSignup,
-        forumChannelId,
-        pingRoleIds,
-        factionEmoji: await applicationFactionEmoji(guild.client),
+        ...roster.reservePlayerIds,
+        ...(roster.notAttendingPlayerIds ?? []),
+    ]
+    const message = buildRosterMessage({
+        payload,
+        event,
+        roster,
+        names: await memberNames(
+            guild,
+            rosterUserIds,
+            payload.userDisplayNames
+        ),
+        image: {
+            url:
+                attachment?.mediaUrl ??
+                buildRosterImageUrl(
+                    event.id,
+                    getRosterImageVersion(event, roster.updatedAt)
+                ),
+            description: event.name,
+        },
     })
     return (
         (await publishManagedMessage(guild.client, {
@@ -313,12 +187,13 @@ async function syncEventMessage(
             ...identity,
             revision: Math.max(
                 Date.parse(payload.config.updatedAt),
-                Date.parse(event.updatedAt)
+                Date.parse(event.updatedAt),
+                Date.parse(roster.updatedAt) || 0
             ),
             channelId: channel.id,
             message: {
                 ...message,
-                allowedMentions: { roles: pingRoleIds, parse: [] },
+                files: attachment ? [attachment.attachment] : [],
             },
         })) ?? messageId
     )
@@ -344,58 +219,6 @@ async function retireEventMessage(
         legacyMessageId,
         message: {},
     })
-}
-
-async function syncSquadVoiceChannels(
-    guild: Guild,
-    event: EventRecord,
-    roster: Roster | undefined,
-    defaultCategoryId: string | undefined,
-    existingIds: string[]
-) {
-    if (event.status === "concluded") {
-        await Promise.all(
-            existingIds.map(async (id) => {
-                const channel = await guild.channels.fetch(id).catch(() => null)
-                await channel
-                    ?.delete(`Event concluded: ${event.name}`)
-                    .catch(() => null)
-            })
-        )
-        return []
-    }
-
-    const categoryId = event.squadVoiceCategoryId ?? defaultCategoryId
-    const meetingStart = new Date(event.meetingStart).getTime()
-    if (
-        !event.createSquadVoiceChannels ||
-        !categoryId ||
-        !Number.isFinite(meetingStart) ||
-        Date.now() < meetingStart ||
-        !roster
-    ) {
-        return existingIds
-    }
-
-    const createdIds = [...existingIds]
-    for (const squad of roster.squads.filter(
-        (squad) => squad.players.length > 0
-    )) {
-        const alreadyExists = await Promise.all(
-            createdIds.map((id) => guild.channels.fetch(id).catch(() => null))
-        ).then((channels) =>
-            channels.some((channel) => channel?.name === squad.name)
-        )
-        if (alreadyExists) continue
-        const channel = await guild.channels.create({
-            name: squad.name,
-            type: ChannelType.GuildVoice,
-            parent: categoryId,
-            reason: `Squad voice channel for ${event.name}`,
-        })
-        createdIds.push(channel.id)
-    }
-    return createdIds
 }
 
 export async function syncPayloadEvents(
@@ -506,14 +329,8 @@ export async function syncPayloadEvents(
                 client,
                 guildId: payload.config.guildId,
                 error,
-                action: `Sync event "${event.name}"`,
-                location: "Event sync",
-                scope: "event-sync",
-                target: event.name,
-                details: {
-                    eventId: event.id,
-                    status: event.status,
-                },
+                source: eventSyncErrorSource(error),
+                eventId: event.id,
             })
         }
     }
@@ -543,7 +360,12 @@ async function syncEvent(
 
     const roster = payload.rosters.find((item) => item.eventId === event.id)
     const eventRoles = options.syncRoles
-        ? await syncEventRoles(guild, event, roster ?? null)
+        ? await syncEventRoles(
+              guild,
+              event,
+              roster ?? null,
+              payload.config.defaultLanguage
+          )
         : {
               attendeeRoleId: event.attendeeRoleId,
               reserveRoleId: event.reserveRoleId,
@@ -555,15 +377,21 @@ async function syncEvent(
     let forumChannelId = state?.forumChannelId
     const forumThreadId = state?.forumThreadId
     let infoMessageId = state?.infoMessageId
+    let debriefMessageId = state?.debriefMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
     let squadVoiceChannelIds = state?.squadVoiceChannelIds ?? []
-    squadVoiceChannelIds = await syncSquadVoiceChannels(
+    squadVoiceChannelIds = await syncSquadVoiceChannels({
         guild,
         event,
         roster,
-        payload.config.squadVoiceCategoryId,
-        squadVoiceChannelIds
-    )
+        defaultCategoryId: payload.config.squadVoiceCategoryId,
+        existingIds: squadVoiceChannelIds,
+        names: {
+            category: squadCategoryNameFor(payload, event),
+            squad: (squad) =>
+                squadVoiceChannelNameFor(squad, payload.config.defaultLanguage),
+        },
+    })
 
     const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
 
@@ -584,13 +412,18 @@ async function syncEvent(
                 forumChannelId,
                 guild,
                 existingTopicMessageIds: topicMessageIds,
+                // Stored posts are found again even when archived (L1-137).
+                infoMessageId,
+                debriefMessageId,
                 topicPreset,
                 attendeeRoleId: eventRoles.attendeeRoleId,
                 reserveRoleId: eventRoles.reserveRoleId,
+                categories: payload.guild.eventCategories,
             })
 
             forumChannelId = forumSyncResult.forumChannelId
             infoMessageId = forumSyncResult.infoMessageId
+            debriefMessageId = forumSyncResult.debriefMessageId
             if (
                 !topicMessageIds.length &&
                 forumSyncResult.topicMessageIds.length
@@ -616,6 +449,7 @@ async function syncEvent(
                     forumChannelId,
                     forumThreadId,
                     infoMessageId,
+                    debriefMessageId,
                     topicMessageIds,
                     lastEventUpdatedAt: event.updatedAt,
                     lastRosterUpdatedAt: roster?.updatedAt,
@@ -707,27 +541,25 @@ async function syncEvent(
         announcementMessageId = undefined
         eventInfoMessageId = undefined
     }
+    // The roster card has its own channel in split mode (W6b's message).
     if (
         splitChannels &&
         registrationAnnouncementDue &&
-        registrationChannel?.isTextBased() &&
         infoChannel?.isTextBased() &&
-        registrationChannel.type !== ChannelType.GuildVoice &&
         infoChannel.type !== ChannelType.GuildVoice
     ) {
-        const registrationText = registrationChannel as TextChannel
         const infoText = infoChannel as TextChannel
         if (roster?.published) {
-            eventInfoMessageId = await syncEventMessage(
+            eventInfoMessageId = await syncRosterMessage(
                 infoText,
                 eventInfoMessageId,
                 payload,
                 event,
                 roster,
-                guild,
-                false,
-                forumChannelId
-            )
+                guild
+            ).catch((error: unknown) => {
+                throw new EventSyncStepError("roster", error)
+            })
         } else {
             await retireEventMessage(
                 client,
@@ -747,31 +579,7 @@ async function syncEvent(
                 event.kind === "match" && roster?.published
             ),
         })
-        if (event.status === "registration") {
-            announcementMessageId = await syncEventMessage(
-                registrationText,
-                announcementMessageId,
-                payload,
-                event,
-                roster,
-                guild,
-                true,
-                forumChannelId,
-                state?.announcementChannelId
-            )
-        } else {
-            await retireEventMessage(
-                client,
-                payload,
-                event,
-                "announcement",
-                state?.announcementChannelId ?? registrationText.id,
-                announcementMessageId
-            )
-            announcementMessageId = undefined
-        }
     }
-    const displayChannelId = splitChannels ? undefined : announcementChannelId
     if (!splitChannels && registrationAnnouncementDue) {
         await retireEventMessage(
             client,
@@ -783,24 +591,20 @@ async function syncEvent(
         )
         eventInfoMessageId = undefined
     }
-    if (!splitChannels && event.status === "concluded") {
-        await retireEventMessage(
-            client,
-            payload,
-            event,
-            "announcement",
-            state?.announcementChannelId ?? announcementChannelId,
-            announcementMessageId
-        )
-        announcementMessageId = undefined
-    }
-    // Discord's media gallery can be unreliable when it has to fetch a
-    // generated image from our public URL. Upload the PNG with the message so
-    // Discord renders an attachment it already owns instead.
+    // Without a roster channel the announcement doubles as the roster card
+    // (L1-43, L1-B16). Discord's media gallery can be unreliable when it has
+    // to fetch a generated image from our public URL, so the PNG is uploaded
+    // with the message and Discord renders an attachment it already owns.
     let rosterImageAttachment:
         | Awaited<ReturnType<typeof buildPublishedRosterImageAttachment>>
         | undefined
-    if (!splitChannels && roster?.published && roster.updatedAt) {
+    if (
+        !splitChannels &&
+        event.kind === "match" &&
+        event.status !== "concluded" &&
+        roster?.published &&
+        roster.updatedAt
+    ) {
         try {
             rosterImageAttachment = await buildPublishedRosterImageAttachment(
                 event,
@@ -815,60 +619,26 @@ async function syncEvent(
             })
         }
     }
-    if (
-        displayChannelId &&
-        registrationAnnouncementDue &&
-        !(event.status === "concluded" && !announcementMessageId)
-    ) {
-        const channel = await guild.channels
-            .fetch(displayChannelId)
-            .catch(() => null)
+    // One announcement card from the announcement to the result (L1-01).
+    if (announcementChannelId && registrationAnnouncementDue) {
         if (
-            channel?.isTextBased() &&
-            (channel.type === ChannelType.GuildText ||
-                channel.type === ChannelType.GuildAnnouncement)
+            registrationChannel?.isTextBased() &&
+            (registrationChannel.type === ChannelType.GuildText ||
+                registrationChannel.type === ChannelType.GuildAnnouncement)
         ) {
-            const textChannel = channel as TextChannel
-            const userDisplayNames = await resolveAnnouncementDisplayNames(
+            announcementMessageId = await syncAnnouncement({
+                client,
+                guild,
                 payload,
                 event,
-                guild
-            )
-            const pingRoleIds = getAnnouncementPingRoleIds(payload, event)
-            const result = await publishManagedMessage(client, {
-                guildId: guild.id,
-                key: `event:${event.id}:announcement`,
-                revision: Math.max(
-                    Date.parse(payload.config.updatedAt),
-                    Date.parse(event.updatedAt)
-                ),
-                channelId: event.status === "concluded" ? null : textChannel.id,
-                legacyChannelId: state?.announcementChannelId ?? textChannel.id,
-                legacyMessageId: announcementMessageId,
-                message: {
-                    ...buildAnnouncementV2Message(
-                        payload,
-                        event,
-                        userDisplayNames,
-                        {
-                            forumChannelId,
-                            pingRoleIds,
-                            rosterImageUrl: rosterImageAttachment?.mediaUrl,
-                            // Without a separate event-info room this single
-                            // message is the event information card.
-                            matchTeamCards: true,
-                            factionEmoji: await applicationFactionEmoji(client),
-                        }
-                    ),
-                    files: rosterImageAttachment
-                        ? [rosterImageAttachment.attachment]
-                        : [],
-                    allowedMentions: { roles: pingRoleIds, parse: [] },
-                    flags: MessageFlags.IsComponentsV2,
-                },
+                roster,
+                state,
+                channel: registrationChannel as TextChannel,
+                forumChannelId,
+                rosterChannelId: splitChannels ? eventInfoChannelId : null,
+                rosterImage: rosterImageAttachment,
+                factionEmoji: await applicationFactionEmoji(client),
             })
-            if (result) announcementMessageId = result
-            if (event.status === "concluded") announcementMessageId = undefined
         } else {
             logWarn(
                 "announcement",
@@ -885,13 +655,17 @@ async function syncEvent(
             eventId: event.id,
             guildId: payload.config.guildId,
             reason: announcementChannelId
-                ? "concluded-without-existing-message"
+                ? "announcement-not-due"
                 : "announcements-channel-not-configured",
         })
     }
 
     const scheduledLifecycle = deriveScheduledEventLifecycle(event)
-    if (payload.config.meetingChannelId) {
+    // "Událost na Discordu" is a clan switch (N1-16); off cancels it below.
+    if (
+        payload.config.meetingChannelId &&
+        isMessageEnabled(payload.config, "scheduledEvent")
+    ) {
         try {
             const meetingChannel = await guild.channels
                 .fetch(payload.config.meetingChannelId)
@@ -899,7 +673,11 @@ async function syncEvent(
             const scheduledSyncResult = await syncScheduledDiscordEvent({
                 guild,
                 event,
-                language: payload.config.defaultLanguage,
+                content: scheduledEventContentFor(
+                    payload,
+                    event,
+                    announcementChannelId
+                ),
                 meetingChannel,
                 scheduledEventId,
                 desiredLifecycle: scheduledLifecycle,
@@ -957,7 +735,9 @@ async function syncEvent(
         secret: env.internalSecret,
         eventId: event.id as never,
         guildId: payload.config.guildId,
-        announcementChannelId: displayChannelId,
+        announcementChannelId: announcementMessageId
+            ? announcementChannelId
+            : undefined,
         announcementMessageId,
         eventInfoMessageId,
         eventInfoMessageRenderVersion,
@@ -966,6 +746,7 @@ async function syncEvent(
         forumChannelId,
         forumThreadId,
         infoMessageId,
+        debriefMessageId,
         topicMessageIds,
         lastEventUpdatedAt: event.updatedAt,
         lastRosterUpdatedAt: roster?.updatedAt,
@@ -983,5 +764,12 @@ async function syncEvent(
         forumChannelId,
         infoMessageId,
         topicMessageCount: topicMessageIds.length,
+    })
+    // The one-time redraw (L1-147): a match without a card is done now that
+    // its roster card and forum post were redrawn above.
+    await finishAnnouncementMigration({
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        hasCard: Boolean(announcementMessageId),
     })
 }

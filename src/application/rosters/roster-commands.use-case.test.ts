@@ -323,3 +323,66 @@ test("DeclineRosterAttendanceUseCase writes the notice, roster and history once,
     )
     assert.equal(writes.length, 3)
 })
+
+test("UpsertRosterUseCase stores the published places and the version a publish replaced (D5-B04)", async () => {
+    const squad = (players: Array<{ id: string; roleName?: string }>) => [
+        {
+            name: "F1",
+            group: "Pěchota",
+            order: 0,
+            color: "#000",
+            players: players.map((player) => ({ ...player, ack: false })),
+        },
+    ]
+    const event = {
+        guildId: "guild-1",
+        registrationEnd: "2026-07-21T10:00:00.000Z",
+        participants: [],
+        updatedAt: "2026-07-20T10:00:00.000Z",
+        createdAt: "2026-07-20T10:00:00.000Z",
+    }
+    const repo = new InMemoryRosterCommandRepository(new Map(), event, [])
+    const useCase = new UpsertRosterUseCase(repo)
+    const base = {
+        eventId: "event-1",
+        reservePlayerIds: [],
+        reserveAttendances: [],
+        notAttendingPlayerIds: [],
+    }
+    const id = await useCase.execute({
+        ...base,
+        squads: squad([{ id: "user-1", roleName: "Medic" }]),
+        published: true,
+    })
+    const first = repo.rosters.get(id)
+    assert.deepEqual(first.publishedPlaces, [
+        { userId: "user-1", squad: "F1", role: "Medic" },
+    ])
+    assert.equal(first.previousPublishedPlaces, undefined)
+
+    await useCase.execute({
+        ...base,
+        rosterId: id,
+        squads: squad([{ id: "user-1" }, { id: "user-2" }]),
+        published: true,
+    })
+    const second = repo.rosters.get(id)
+    assert.deepEqual(second.previousPublishedPlaces, [
+        { userId: "user-1", squad: "F1", role: "Medic" },
+    ])
+    assert.deepEqual(second.publishedPlaces, [
+        { userId: "user-1", squad: "F1" },
+        { userId: "user-2", squad: "F1" },
+    ])
+
+    // A draft save writes no snapshot fields (a patch keeps the stored ones).
+    await useCase.execute({
+        ...base,
+        rosterId: id,
+        squads: squad([]),
+        published: false,
+    })
+    const draft = repo.rosters.get(id)
+    assert.ok(!("publishedPlaces" in draft))
+    assert.ok(!("previousPublishedPlaces" in draft))
+})

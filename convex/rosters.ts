@@ -6,10 +6,11 @@ import {
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
 import { ConvexEventWorkflowRepository } from "../src/infrastructure/convex/event-workflow-repositories"
 import { AttendanceDeclineRejected } from "../src/domain/rosters/attendance-decline"
+import { resolveGameScope, withGameOverrides } from "../src/domain/games/game"
+import { rosterCardHome } from "../src/domain/rosters/roster-update-channel"
 import { deriveEventStatus } from "../src/domain/events/status"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { authorizeRosterManager } from "./rosterWriterAccess"
-import { resolveGameScope } from "../src/domain/games/game"
 import { systemClock } from "../src/domain/shared/clock"
 import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
@@ -66,6 +67,14 @@ export const upsert = mutation({
         notAttendingPlayerIds: v.array(v.string()),
         streamerId: v.optional(v.string()),
         published: v.boolean(),
+        // The dashboard's per-publish choice for the Discord roster message
+        // (board D5). Not part of /api/v1: a live publish action.
+        discordPublish: v.optional(
+            v.object({
+                variant: v.union(v.literal("photo_text"), v.literal("photo")),
+                mentionPlayers: v.boolean(),
+            })
+        ),
     },
     handler: async (ctx, args) => {
         const { event, guildId } = await authorizeRosterManager(ctx, args)
@@ -96,10 +105,11 @@ export const upsert = mutation({
                 )
             }
         }
+        const wasPublished = Boolean(existing?.published)
         const useCase = new UpsertRosterUseCase(
             new ConvexRosterCommandRepository(ctx)
         )
-        return await useCase.execute({
+        const rosterId = await useCase.execute({
             rosterId: args.rosterId ? String(args.rosterId) : undefined,
             eventId: String(args.eventId),
             squadPresetId: args.squadPresetId
@@ -112,6 +122,66 @@ export const upsert = mutation({
             streamerId: args.streamerId,
             published: args.published,
         })
+        // Saving a published roster publishes it again; the bot reads the
+        // chosen look and the publish time for the roster message. The use
+        // case stored what this publish shows and what it replaced (D5-B04).
+        const savedId = ctx.db.normalizeId("rosters", String(rosterId))
+        if (args.published && savedId) {
+            const publishedAt = new Date().toISOString()
+            await ctx.db.patch(savedId, {
+                publishedAt,
+                ...(args.discordPublish
+                    ? {
+                          discordMessageVariant: args.discordPublish.variant,
+                          discordMentionPlayers:
+                              args.discordPublish.mentionPlayers,
+                      }
+                    : {}),
+            })
+            // "Označit zařazené hráče" on a first publish without a roster
+            // channel (D5-08): the announcement doubles as the roster card
+            // and Discord never pings on its edit, so the bot mentions the
+            // players in a reply to it, once.
+            if (!wasPublished && args.discordPublish?.mentionPlayers) {
+                const config = await ctx.db
+                    .query("discordConfigs")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                    .unique()
+                const channels = config
+                    ? withGameOverrides(
+                          config,
+                          config.gameOverrides,
+                          event.gameId
+                      )
+                    : null
+                if (
+                    rosterCardHome({
+                        kind: event.kind ?? "match",
+                        eventAnnouncementChannelId: event.announcementChannelId,
+                        eventInfoChannelId: event.eventInfoChannelId,
+                        configuredAnnouncementChannelId:
+                            channels?.announcementsChannelId,
+                        configuredEventInfoChannelId:
+                            channels?.eventInfoChannelId,
+                    }) === "announcement"
+                )
+                    await ctx.db.insert("rosterChangeRequests", {
+                        guildId,
+                        eventId: event._id,
+                        rosterId: savedId,
+                        requestedBy: args.actor.subject,
+                        requestedAt: publishedAt,
+                        before: [],
+                        notifyPlayers: false,
+                        postDigest: false,
+                        mentionPlayers: true,
+                        rosterPublishedAt: publishedAt,
+                        firstPublish: true,
+                        status: "pending",
+                    })
+            }
+        }
+        return rosterId
     },
 })
 

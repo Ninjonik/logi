@@ -1,28 +1,53 @@
 import {
-    ActionRowBuilder,
-    escapeMarkdown,
-    StringSelectMenuBuilder,
     type ButtonInteraction,
+    type Guild,
     type GuildMember,
     type StringSelectMenuInteraction,
 } from "discord.js"
 
 import {
-    buildEventSignupActions,
-    formatSignupResultMessage,
-    getSignupActionEmoji,
-    resolveEventSignupSelection,
-} from "../../../src/lib/event-signup"
+    declineSavedView,
+    matchUnavailableView,
+    notSignedUpView,
+    signupClosedView,
+    signupEventRoleView,
+    signupFullGroupView,
+    signupGroupGoneView,
+    signupGroupRoleView,
+    signupMembershipUnknownView,
+    signupNoGroupsView,
+    signupPickerView,
+    signupSavedView,
+    signupStatusView,
+    type SignupPickerOption,
+    type SignupReplyContext,
+} from "../../../src/domain/discord-messages/match-signup-replies"
 import {
     SIGNUP_GENERAL,
     SIGNUP_NOT_ATTENDING,
     SIGNUP_PRIMARY_GROUP,
     TRAINING_ATTEND,
 } from "../constants"
+import {
+    parseEventButtonId,
+    rosterButtonIds,
+} from "../../../src/domain/discord-messages/roster-message"
+import {
+    buildEventSignupActions,
+    resolveEventSignupSelection,
+} from "../../../src/lib/event-signup"
+import { readSignupGroupLimits } from "../../../src/domain/discord-messages/signup-counts"
+import { DEFAULT_ALLOWED_SIGNUP_STATUSES } from "../../../src/domain/events/signup-policy"
+import { getAnnouncementMessages } from "../../../src/lib/clan-language/announcements"
+import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+import { announcementCountsOf, matchCardEventOf } from "../events/announcement"
+import { getEventMessages } from "../../../src/lib/clan-language/events"
+import { canAcceptSignups } from "../../../src/domain/events/status"
 import { buildRosterAssignmentReply } from "./roster-assignment"
 import type { EventInteractionContext } from "../types"
+import { interactionLanguage } from "../ui/replies"
+import { replyToClicker } from "../events/replies"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -57,86 +82,188 @@ async function loadSignupContext(
     })) as EventInteractionContext | null
 }
 
-async function resolveInteractionMember(
+async function eventGuild(
     interaction: SignupInteraction,
     guildId: string
-) {
-    if (interaction.guildId === guildId) {
-        return interaction.member as GuildMember | null
-    }
+): Promise<Guild | null> {
+    if (interaction.guild?.id === guildId) return interaction.guild
+    return interaction.client.guilds.fetch(guildId).catch(() => null)
+}
 
-    const guild = await interaction.client.guilds
-        .fetch(guildId)
-        .catch(() => null)
+async function resolveInteractionMember(
+    interaction: SignupInteraction,
+    guild: Guild | null
+) {
+    if (guild && interaction.guildId === guild.id && interaction.member)
+        return interaction.member as GuildMember
     return guild
         ? await guild.members.fetch(interaction.user.id).catch(() => null)
         : null
 }
 
-function buildSignupSelectionRow(
-    context: EventInteractionContext,
-    member: GuildMember | null,
-    userId: string,
-    messages: ReturnType<typeof getClanDiscordMessages>
+/**
+ * The clan whose language a reply uses: the server the click came from, or,
+ * for a button in a DM (sign-up reminders), the server named in the
+ * button's custom ID (L1-B19).
+ */
+export function replyGuildId(
+    interactionGuildId: string | null | undefined,
+    customIdGuildId: string | null | undefined
 ) {
+    if (interactionGuildId) return interactionGuildId
+    const fromCustomId = customIdGuildId?.trim()
+    return fromCustomId && /^\d{17,20}$/.test(fromCustomId)
+        ? fromCustomId
+        : undefined
+}
+
+/** "The match is gone" in the clan language, also in a DM (L1-B19). */
+async function replyUnavailable(
+    interaction: SignupInteraction,
+    customIdGuildId?: string
+) {
+    const language = await interactionLanguage(
+        replyGuildId(interaction.guildId, customIdGuildId)
+    )
+    await replyToClicker(
+        interaction,
+        matchUnavailableView(getAnnouncementMessages(language)),
+        { language }
+    )
+}
+
+function replyContext(context: EventInteractionContext): SignupReplyContext {
+    return {
+        event: matchCardEventOf({
+            config: context.config,
+            event: context.event,
+        }),
+        copy: getAnnouncementMessages(context.config.defaultLanguage),
+    }
+}
+
+function kitOptions(context: EventInteractionContext) {
+    return {
+        language: context.config.defaultLanguage,
+        style: context.config.messageStyle,
+    }
+}
+
+function membershipOf(context: EventInteractionContext, userId: string) {
     const assignment = context.assignments?.find(
         (item) => item.userId === userId
     )
-    const resolvedMembershipStatus =
+    const status =
         assignment?.type && assignment.status
             ? getResolvedMemberStatus(assignment.type, assignment.status)
             : null
-    const membershipStatus =
-        resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
-            ? resolvedMembershipStatus
-            : null
-    const available = buildEventSignupActions(
+    return {
+        assignment,
+        membershipStatus: status && status !== "pending" ? status : null,
+        assignedGroupIds: assignment
+            ? [
+                  assignment.primaryGroupId,
+                  ...(assignment.secondaryGroupIds ?? []),
+              ].filter((groupId): groupId is string => Boolean(groupId))
+            : [],
+    }
+}
+
+function selectionLabels(context: EventInteractionContext) {
+    const messages = getEventMessages(context.config.defaultLanguage)
+    return {
+        registrationClosed: messages.interaction.registrationClosed,
+        invalidSignupButton: messages.interaction.invalidSignupButton,
+        unableToResolveMembership:
+            messages.interaction.unableToResolveMembership,
+        missingRequiredRole: messages.interaction.missingRequiredRole,
+        membershipStatusNotAllowed:
+            messages.interaction.membershipStatusNotAllowed,
+        signupUpdated: messages.interaction.signupUpdated,
+        markedNotAttending: messages.interaction.markedNotAttending,
+    }
+}
+
+/**
+ * The reply for a refused sign-up: the short reason, then the next step
+ * (L1-93..96, L1-B06, L1-B19). Never an error code or English fallback.
+ */
+function refusalView(
+    refusal: Extract<
+        ReturnType<typeof resolveEventSignupSelection>,
+        { ok: false }
+    >,
+    context: EventInteractionContext,
+    guild: Guild | null
+): MessageView {
+    const reply = replyContext(context)
+    const roleName = (roleId: string | undefined) =>
+        (roleId && guild?.roles.cache.get(roleId)?.name) || undefined
+    switch (refusal.reason) {
+        case "closed":
+            return signupClosedView(reply)
+        case "membership":
+            return signupStatusView({
+                ...reply,
+                allowed: context.event.allowedSignupStatuses?.length
+                    ? context.event.allowedSignupStatuses
+                    : DEFAULT_ALLOWED_SIGNUP_STATUSES,
+            })
+        case "unresolved":
+            return signupMembershipUnknownView(reply.copy)
+        case "invalid":
+            return signupGroupGoneView(reply)
+        case "required_role":
+            return signupEventRoleView({
+                ...reply,
+                roles: context.event.requiredRoleIds
+                    .map((roleId) => roleName(roleId))
+                    .filter((name): name is string => Boolean(name)),
+            })
+        case "group_role": {
+            const settings = context.config.ticketSettings
+            return signupGroupRoleView({
+                ...reply,
+                group: refusal.group.name,
+                role:
+                    roleName(refusal.group.discordRoleId) ?? refusal.group.name,
+                askChannelId: settings?.enabled
+                    ? settings.submitChannelId
+                    : null,
+            })
+        }
+    }
+}
+
+/** The options of the group picker with their counts (L1-89). */
+function pickerOptions(context: EventInteractionContext): SignupPickerOption[] {
+    const messages = getEventMessages(context.config.defaultLanguage)
+    const counts = announcementCountsOf(context.event, context.groups)
+    return buildEventSignupActions(
         context.event,
         context.groups,
         messages.buttons
-    ).filter(
-        (action) =>
-            resolveEventSignupSelection({
-                event: context.event,
-                groups: context.groups,
-                memberRoleIds: member ? [...member.roles.cache.keys()] : null,
-                assignedGroupIds: assignment
-                    ? [
-                          assignment.primaryGroupId,
-                          ...(assignment.secondaryGroupIds ?? []),
-                      ].filter((id): id is string => Boolean(id))
-                    : [],
-                membershipStatus,
-                actionId: action.id,
-                labels: messages.interaction,
-            }).ok
-    )
-
-    return available.length
-        ? new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-              new StringSelectMenuBuilder()
-                  .setCustomId(
-                      `signup:${context.event.id}:select:${context.event.guildId}`
-                  )
-                  .setPlaceholder(messages.embed.chooseSignup)
-                  .addOptions(
-                      available.slice(0, 25).map((action) => ({
-                          label: action.label.slice(0, 100),
-                          value: action.id,
-                          ...(getSignupActionEmoji(action.id, available)
-                              ? {
-                                    emoji: getSignupActionEmoji(
-                                        action.id,
-                                        available
-                                    ),
-                                }
-                              : {}),
-                      }))
-                  )
-          )
-        : null
+    ).flatMap((action): SignupPickerOption[] => {
+        if (action.kind === "general")
+            return [{ value: action.id, name: action.label, general: true }]
+        if (action.kind !== "group") return []
+        const count = counts.groups.find((group) => group.id === action.id)
+        return [
+            {
+                value: action.id,
+                name: action.label,
+                count: count?.count ?? 0,
+                ...(count?.max === undefined ? {} : { max: count.max }),
+                ...(action.emoji ? { emoji: action.emoji } : {}),
+            },
+        ]
+    })
 }
 
+/**
+ * "Přihlásit se" (match): the private group picker "Kde chceš hrát?" (L1-19,
+ * L1-88, L1-89). Who may not sign up at all reads why right away.
+ */
 export async function handleEventSignupPickerInteraction(
     interaction: ButtonInteraction
 ) {
@@ -147,39 +274,58 @@ export async function handleEventSignupPickerInteraction(
         customIdGuildId
     )
     if (!context) {
-        await interaction.reply({
-            content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
-            ephemeral: Boolean(interaction.guildId),
-        })
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
-    const member = await resolveInteractionMember(
-        interaction,
-        context.event.guildId
-    )
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
-    const selectionRow = buildSignupSelectionRow(
-        context,
-        member,
-        interaction.user.id,
-        messages
-    )
-    if (!selectionRow) {
-        await interaction.reply({
-            content: messages.interaction.missingRequiredRole,
-            ephemeral: Boolean(interaction.guildId),
-        })
-        return
-    }
-    await interaction.reply({
-        content: messages.embed.chooseSignup,
-        components: [selectionRow],
-        ephemeral: Boolean(interaction.guildId),
+    const guild = await eventGuild(interaction, context.event.guildId)
+    const member = await resolveInteractionMember(interaction, guild)
+    const membership = membershipOf(context, interaction.user.id)
+    // "Nepřijdu" passes every group rule, so it checks only who may sign up.
+    const precheck = resolveEventSignupSelection({
+        event: context.event,
+        groups: context.groups,
+        memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+        assignedGroupIds: membership.assignedGroupIds,
+        membershipStatus: membership.membershipStatus,
+        actionId: SIGNUP_NOT_ATTENDING,
+        labels: selectionLabels(context),
     })
+    const options = kitOptions(context)
+    if (!precheck.ok) {
+        await replyToClicker(
+            interaction,
+            refusalView(precheck, context, guild),
+            { ...options, replaceCard: true }
+        )
+        return
+    }
+    const choices = pickerOptions(context)
+    await replyToClicker(
+        interaction,
+        choices.length
+            ? signupPickerView({ ...replyContext(context), options: choices })
+            : signupNoGroupsView(replyContext(context).copy),
+        { ...options, replaceCard: true }
+    )
 }
 
+/** The group a sign-up names (by ID, or by name on older events). */
+function groupNameOf(
+    context: EventInteractionContext,
+    group: string | null | undefined
+) {
+    if (!group || group === SIGNUP_GENERAL || group === TRAINING_ATTEND)
+        return null
+    return (
+        context.groups.find((item) => item.id === group || item.name === group)
+            ?.name ?? group
+    )
+}
+
+/**
+ * "Upravit přihlášku": the saved sign-up with "Změnit skupinu" and "Nepřijdu",
+ * or, without one, "Přihlásit se" (L1-20, L1-92).
+ */
 export async function handleCheckSignupInteraction(
     interaction: ButtonInteraction
 ) {
@@ -190,56 +336,49 @@ export async function handleCheckSignupInteraction(
         customIdGuildId
     )
     if (!context) {
-        await interaction.reply({
-            content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
-            ephemeral: Boolean(interaction.guildId),
-        })
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
-
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const reply = replyContext(context)
     const participant = context.event.participants.find(
         (item) => item.userId === interaction.user.id
     )
-    const legacySignup = context.event.signUps.find(
+    const legacy = context.event.signUps.find(
         (item) => item.userId === interaction.user.id
     )
+    const declined = participant
+        ? participant.status === "not_attending"
+        : legacy?.group === SIGNUP_NOT_ATTENDING
     const signup = participant
         ? participant.status === "attending"
             ? participant
             : null
-        : legacySignup?.group === SIGNUP_NOT_ATTENDING
-          ? null
-          : legacySignup
-
-    if (!signup) {
-        await interaction.reply({
-            content: messages.interaction.signupStatusNotSignedUp,
-            ephemeral: Boolean(interaction.guildId),
-        })
-        return
-    }
-
-    const group = signup.group
-    const groupLabel =
-        group === SIGNUP_GENERAL || group === TRAINING_ATTEND || !group
-            ? messages.embed.attending
-            : (context.groups.find((item) => item.id === group)?.name ?? group)
-    await interaction.reply({
-        content: messages.interaction.signupStatusSignedUp.replace(
-            "{group}",
-            groupLabel
-        ),
-        ephemeral: Boolean(interaction.guildId),
+        : legacy && legacy.group !== SIGNUP_NOT_ATTENDING
+          ? legacy
+          : null
+    const open = canAcceptSignups(context.event, new Date())
+    const view = signup
+        ? signupSavedView({
+              ...reply,
+              group: groupNameOf(context, signup.group),
+              editable: open,
+          })
+        : open
+          ? notSignedUpView({ ...reply, declined })
+          : signupClosedView(reply)
+    await replyToClicker(interaction, view, {
+        ...kitOptions(context),
+        replaceCard: true,
     })
 }
 
 export async function handleRosterAssignmentInteraction(
     interaction: ButtonInteraction
 ) {
-    const eventId = interaction.customId.replace("roster-assignment:", "")
+    const { eventId } = parseEventButtonId(
+        interaction.customId,
+        rosterButtonIds.assignment("")
+    )
     const context = (await convex.query(references.getEventInteractionContext, {
         secret: env.internalSecret,
         eventId: eventId as never,
@@ -251,7 +390,7 @@ export async function handleRosterAssignmentInteraction(
         (interaction.guildId && interaction.guildId !== context.event.guildId)
     ) {
         await interaction.reply({
-            content: getClanDiscordMessages(context?.config.defaultLanguage)
+            content: getEventMessages(context?.config.defaultLanguage)
                 .interaction.unableToLoadEventContext,
             ephemeral: true,
         })
@@ -263,7 +402,6 @@ export async function handleRosterAssignmentInteraction(
             event: context.event,
             roster: context.roster,
             userId: interaction.user.id,
-            categoryColor: context.categoryColor,
         }),
         ephemeral: true,
     })
@@ -271,6 +409,22 @@ export async function handleRosterAssignmentInteraction(
 
 const signupInteractionLocks = new Map<string, Promise<void>>()
 
+/** The cap of a group named by the sign-up (6 of "Tanky jsou plné (6/6)"). */
+function capOf(context: EventInteractionContext, groupName: string) {
+    const group = context.groups.find((item) => item.name === groupName)
+    return group
+        ? readSignupGroupLimits(
+              (context.event as { signupGroupLimits?: unknown })
+                  .signupGroupLimits
+          ).get(group.id)
+        : undefined
+}
+
+/**
+ * A sign-up choice: a group from the picker, "Nepřijdu", a training's
+ * "Přihlásit se" or a per-group button of an older announcement. The answer
+ * is the saved sign-up, the full-group reserve or why it cannot be saved.
+ */
 export async function handleEventButtonInteraction(
     interaction: SignupInteraction,
     options: InteractionHandlerOptions
@@ -297,12 +451,14 @@ export async function handleEventButtonInteraction(
         )) as EventInteractionContext | null
 
         if (!context) {
-            // The reply is already deferred; a second reply would throw.
-            await interaction.editReply({
-                content:
-                    getClanDiscordMessages("en").interaction
-                        .unableToLoadEventContext,
-            })
+            const language = await interactionLanguage(
+                replyGuildId(interaction.guildId, customIdGuildId)
+            )
+            await replyToClicker(
+                interaction,
+                matchUnavailableView(getAnnouncementMessages(language)),
+                { language }
+            )
             return
         }
 
@@ -310,18 +466,19 @@ export async function handleEventButtonInteraction(
         return
     }
 
+    // The single "Přihlásit se" of an older announcement opens the picker.
+    if (interaction.isButton() && requestedGroupId === SIGNUP_PRIMARY_GROUP) {
+        await handleEventSignupPickerInteraction(interaction)
+        return
+    }
+
     const context = await loadSignupContext(
         interaction,
-        eventId,
+        eventId ?? "",
         customIdGuildId
     )
     if (!context) {
-        await interaction.reply({
-            content:
-                getClanDiscordMessages("en").interaction
-                    .unableToLoadEventContext,
-            ephemeral: Boolean(interaction.guildId),
-        })
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
 
@@ -338,94 +495,26 @@ export async function handleEventButtonInteraction(
     }
 
     try {
-        const member = await resolveInteractionMember(
-            interaction,
-            context.event.guildId
-        )
-        const messages = getClanDiscordMessages(context.config.defaultLanguage)
-        const assignment = context.assignments?.find(
-            (item) => item.userId === interaction.user.id
-        )
-        const candidateGroupIds =
-            requestedGroupId === SIGNUP_PRIMARY_GROUP
-                ? [
-                      ...new Set(
-                          [
-                              assignment?.primaryGroupId,
-                              ...(assignment?.secondaryGroupIds ?? []),
-                          ].filter((groupId): groupId is string =>
-                              Boolean(groupId)
-                          )
-                      ),
-                  ]
-                : [requestedGroupId]
-        const resolvedMembershipStatus =
-            assignment?.type && assignment.status
-                ? getResolvedMemberStatus(assignment.type, assignment.status)
-                : null
-        const membershipStatus =
-            resolvedMembershipStatus && resolvedMembershipStatus !== "pending"
-                ? resolvedMembershipStatus
-                : null
-        const assignedGroupIds = assignment
-            ? [
-                  assignment.primaryGroupId,
-                  ...(assignment.secondaryGroupIds ?? []),
-              ].filter((groupId): groupId is string => Boolean(groupId))
-            : []
-        const labels = {
-            registrationClosed: messages.interaction.registrationClosed,
-            invalidSignupButton: messages.interaction.invalidSignupButton,
-            unableToResolveMembership:
-                messages.interaction.unableToResolveMembership,
-            missingRequiredRole: messages.interaction.missingRequiredRole,
-            membershipStatusNotAllowed:
-                messages.interaction.membershipStatusNotAllowed,
-            signupUpdated: messages.interaction.signupUpdated,
-            markedNotAttending: messages.interaction.markedNotAttending,
-        }
-        let resolvedGroupId = candidateGroupIds[0] ?? ""
-        let resolved: ReturnType<typeof resolveEventSignupSelection> | null =
-            null
-        let lastError = labels.invalidSignupButton
+        const guild = await eventGuild(interaction, context.event.guildId)
+        const member = await resolveInteractionMember(interaction, guild)
+        const membership = membershipOf(context, interaction.user.id)
+        const kit = { ...kitOptions(context), replaceCard: true }
+        const resolved = resolveEventSignupSelection({
+            event: context.event,
+            groups: context.groups,
+            memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+            assignedGroupIds: membership.assignedGroupIds,
+            membershipStatus: membership.membershipStatus,
+            actionId: requestedGroupId,
+            labels: selectionLabels(context),
+        })
 
-        for (const candidateGroupId of candidateGroupIds.length > 0
-            ? candidateGroupIds
-            : [""]) {
-            const candidate = resolveEventSignupSelection({
-                event: context.event,
-                groups: context.groups,
-                memberRoleIds: member ? [...member.roles.cache.keys()] : null,
-                assignedGroupIds,
-                membershipStatus,
-                actionId: candidateGroupId,
-                labels,
-            })
-            if (candidate.ok) {
-                resolved = candidate
-                resolvedGroupId = candidateGroupId
-                break
-            }
-            lastError = candidate.error
-        }
-
-        if (!resolved) {
-            const selectionRow =
-                requestedGroupId === SIGNUP_PRIMARY_GROUP
-                    ? buildSignupSelectionRow(
-                          context,
-                          member,
-                          interaction.user.id,
-                          messages
-                      )
-                    : null
-            await interaction.reply({
-                content: selectionRow
-                    ? messages.interaction.noCompatibleSignupGroup
-                    : lastError,
-                components: selectionRow ? [selectionRow] : [],
-                ephemeral: Boolean(interaction.guildId),
-            })
+        if (!resolved.ok) {
+            await replyToClicker(
+                interaction,
+                refusalView(resolved, context, guild),
+                kit
+            )
             return
         }
 
@@ -454,45 +543,27 @@ export async function handleEventButtonInteraction(
             guildId: context.event.guildId,
         })
 
-        const actions = buildEventSignupActions(
-            context.event,
-            context.groups,
-            messages.buttons
-        )
-        const emoji = getSignupActionEmoji(resolvedGroupId, actions)
-        const selectionRow =
-            requestedGroupId === SIGNUP_PRIMARY_GROUP
-                ? buildSignupSelectionRow(
-                      context,
-                      member,
-                      interaction.user.id,
-                      messages
-                  )
-                : null
-
-        await interaction.reply({
-            content: [
-                formatSignupResultMessage({
-                    removed: result.removed,
-                    appliedSignupLabel: result.appliedSignupLabel,
-                    labels: { ...messages.interaction, ...messages.buttons },
-                    emoji,
-                }),
-                ...(result.fullGroup
-                    ? [
-                          messages.interaction.groupFullReserve.replace(
-                              "{group}",
-                              escapeMarkdown(result.fullGroup)
-                          ),
-                      ]
-                    : []),
-                ...(selectionRow
-                    ? [messages.interaction.changeSignupSelection]
-                    : []),
-            ].join("\n"),
-            ...(selectionRow ? { components: [selectionRow] } : {}),
-            ephemeral: Boolean(interaction.guildId),
-        })
+        const reply = replyContext(context)
+        const max = result.fullGroup
+            ? capOf(context, result.fullGroup)
+            : undefined
+        const view =
+            result.appliedSignupLabel === SIGNUP_NOT_ATTENDING
+                ? declineSavedView(reply)
+                : result.fullGroup && max !== undefined
+                  ? signupFullGroupView({
+                        ...reply,
+                        group: result.fullGroup,
+                        count: max,
+                        max,
+                    })
+                  : signupSavedView({
+                        ...reply,
+                        group: result.fullGroup
+                            ? null
+                            : groupNameOf(context, result.appliedSignupLabel),
+                    })
+        await replyToClicker(interaction, view, kit)
     } finally {
         releaseLock?.()
         if (signupInteractionLocks.get(lockKey) === current) {
@@ -506,7 +577,7 @@ async function handleAttendanceInteraction(
     context: EventInteractionContext,
     options: InteractionHandlerOptions
 ) {
-    const messages = getClanDiscordMessages(context.config.defaultLanguage)
+    const messages = getEventMessages(context.config.defaultLanguage)
 
     if (context.event.status !== "starting") {
         await interaction.editReply({

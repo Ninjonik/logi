@@ -7,6 +7,35 @@ import { toast } from "sonner"
 import Link from "next/link"
 
 import {
+    defaultApplicationForm,
+    resolveApplicationForm,
+    specializationQuestion,
+    validateApplicationForm,
+    type ApplicationCategory,
+    type ApplicationForm,
+} from "@/domain/membership/application-form"
+import {
+    AfterSubmitSection,
+    CategoriesSummary,
+    SectionCard,
+    WebVariantSection,
+} from "@/components/app/membership-form-builder/application-sections"
+import {
+    addQuestion,
+    addQuestionWindow,
+    formWindows,
+    normalizeApplicationForm,
+} from "@/domain/membership/application-form-editing"
+import {
+    ApplicationFormBuilder,
+    type FormBuilderPreview,
+} from "@/components/app/membership-form-builder/form-builder"
+import {
+    applicationCardView,
+    applicationPanelView,
+    categoryName,
+} from "@/domain/membership/application-views"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -14,27 +43,45 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
+    previewApplicant,
+    previewCardAnswers,
+} from "@/components/app/membership-form-builder/preview-samples"
+import {
+    PanelSection,
+    type PanelImageChoice,
+} from "@/components/app/membership-form-builder/panel-section"
+import {
     FixedRoleChip,
     RoleChips,
     type RoleOption,
 } from "@/components/app/settings/role-chips"
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "@/lib/clan-language/application"
 import type {
     DiscordConfig,
     MembershipCategory,
     MembershipSettings,
 } from "@/types/domain"
-import { ModalQuestionsEditor } from "@/components/app/settings/modal-questions-editor"
+import { membershipChangeCount } from "@/components/app/membership-form-builder/settings-changes"
+import { categoryInitials } from "@/components/app/membership-form-builder/category-initials"
+import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
+import { effectivePanelCopy } from "@/domain/membership/application-panel-copy"
+import { mercenaryCategoryFor } from "@/domain/membership/application-decision"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SegmentedControl } from "@/components/app/settings/segmented-control"
+import { normalizeAccentColor } from "@/domain/discord-messages/message-style"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
-import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
+import { applicationWindowCount } from "@/domain/membership/application-plan"
+import { skipsPendingOnApply } from "@/domain/membership/membership-options"
+import type { ApplicationCopy } from "@/domain/membership/application-copy"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
-import { DiscordChannelSelect } from "./discord-channel-select"
+import { fillTemplate } from "@/domain/discord-messages/format"
 import { ConfigNotice } from "@/components/app/config-notice"
-import { AvatarPicker } from "@/components/app/avatar-picker"
 import { EmptyState } from "@/components/app/empty-state"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
@@ -42,12 +89,15 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { pluralize } from "@/i18n/plural"
 import { cn } from "@/lib/utils"
 
 const MAX_FIELD_LENGTH = 1024
 const ASSIGNMENT_TYPES = ["member", "reserve_member", "mercenary"] as const
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number]
 type ScoreKey = keyof NonNullable<MembershipSettings["rosterScoreSettings"]>
+const TABS = ["application", "categories", "scores", "roleChanges"] as const
+type Tab = (typeof TABS)[number]
 
 function makeId(prefix: string) {
     return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
@@ -68,19 +118,66 @@ function buildDefaultCategory(): MembershipCategory {
     }
 }
 
+/**
+ * The panel title and text in the clan language: the board's default for a
+ * new clan, and for a clan that never changed the default (also the
+ * pre-redesign one); custom text is kept (L6-12, N4-07, N4-08).
+ */
+function panelCopyFor(
+    clanCopy: ApplicationCopy,
+    clanName: string,
+    settings: Pick<
+        MembershipSettings,
+        "panelTitle" | "panelDescription" | "applicationForm" | "categories"
+    > | null
+) {
+    const categories = (settings?.categories ?? []) as ApplicationCategory[]
+    return effectivePanelCopy(
+        {
+            title: settings?.panelTitle,
+            text: settings?.panelDescription,
+            clanName,
+            windows: applicationWindowCount(
+                resolveApplicationForm(
+                    settings?.applicationForm,
+                    categories,
+                    clanCopy.defaultForm
+                ),
+                categories
+            ),
+        },
+        clanCopy.panel,
+        applicationPanelDefaults
+    )
+}
+
 function buildDefaultSettings(
-    dictionary: Dictionary,
+    clanCopy: ApplicationCopy,
+    clanName: string,
     config?: DiscordConfig | null
 ): MembershipSettings {
     if (config?.membershipSettings) {
+        const panel = panelCopyFor(
+            clanCopy,
+            clanName,
+            config.membershipSettings
+        )
         return {
             ...config.membershipSettings,
+            panelTitle: panel.title,
+            panelDescription: panel.text,
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
+            panelAccentColor: config.membershipSettings.panelAccentColor ?? "",
             applicationWelcomeMessage:
                 config.membershipSettings.applicationWelcomeMessage ?? "",
             inviteSupportMembersIndividually:
                 config.membershipSettings.inviteSupportMembersIndividually ??
                 true,
+            mentionSupportRoles:
+                config.membershipSettings.mentionSupportRoles ?? true,
+            sendConfirmationDm:
+                config.membershipSettings.sendConfirmationDm ?? true,
+            webFormEnabled: config.membershipSettings.webFormEnabled ?? false,
             rosterScoreSettings: {
                 noCategory:
                     config.membershipSettings.rosterScoreSettings?.noCategory ??
@@ -122,16 +219,21 @@ function buildDefaultSettings(
         }
     }
 
+    const panel = panelCopyFor(clanCopy, clanName, null)
     return {
         enabled: false,
         submitChannelId: "",
         applicationParentChannelId: "",
-        panelTitle: dictionary.membershipSettings.defaultPanelTitle,
-        panelDescription: dictionary.membershipSettings.defaultPanelDescription,
+        panelTitle: panel.title,
+        panelDescription: panel.text,
         panelImageUrl: "",
+        panelAccentColor: "",
         applicationWelcomeMessage: "",
         autoAssignRecruitOnApply: false,
         inviteSupportMembersIndividually: true,
+        mentionSupportRoles: true,
+        sendConfirmationDm: true,
+        webFormEnabled: false,
         rosterScoreSettings: {
             noCategory: 0,
             declined: 0,
@@ -160,15 +262,6 @@ function buildFieldPreview(categories: MembershipCategory[]) {
         length: lines.join("\n").length,
         tooLong: lines.join("\n").length > MAX_FIELD_LENGTH,
     }
-}
-
-function categoryInitials(category: MembershipCategory) {
-    const words = (category.label ?? "").trim().split(/\s+/).filter(Boolean)
-    const initials = words
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join("")
-    return initials.toUpperCase() || "?"
 }
 
 function needsRecruitRole(category: MembershipCategory) {
@@ -212,49 +305,97 @@ const SCORE_FIELDS: Array<{
     },
 ]
 
+/**
+ * "Přihláška do klanu" (board N4): the application switch, then the tabs
+ * Přihláška (panel and channels, the form builder, categories, what happens
+ * after sending, the web variant), Kategorie, Body za docházku and Změny
+ * rolí, and the save bar. Saving republishes the panel by itself (N4-B07).
+ */
 export function MembershipSettingsForm({
     serverId,
+    guildId,
     config,
     dictionary,
     rolesHref,
+    clanName,
+    siteUrl,
+    now,
+    locale,
 }: {
     serverId: string
+    /** The clan's Discord server, for the web form's address. */
+    guildId: string
     config: DiscordConfig | null
     dictionary: Dictionary
     /** The Roles and access page, where the clan role is chosen. */
     rolesHref: string
+    clanName: string
+    /** The Logi site, for the web form's address (Variant B). */
+    siteUrl: string
+    /** "Now" from the server, so the previews render the same on both sides. */
+    now: number
+    /** The dashboard language, for counted phrases. */
+    locale: string
 }) {
     const t = dictionary.membershipSettings
+    const a = dictionary.membershipApplication
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [saving, setSaving] = useState(false)
     const metadata = useDiscordMetadata(serverId)
+    const language = config?.defaultLanguage ?? "en"
+    const timeZone = config?.timezone ?? "UTC"
+    const clanCopy = getApplicationMessages(language)
     const initial = useMemo(
-        () => buildDefaultSettings(dictionary, config),
-        [dictionary, config]
+        () => buildDefaultSettings(clanCopy, clanName, config),
+        [clanCopy, clanName, config]
+    )
+    const initialForm = useMemo(
+        () =>
+            resolveApplicationForm(
+                initial.applicationForm,
+                initial.categories,
+                clanCopy.defaultForm
+            ),
+        [initial, clanCopy]
     )
     const [settings, setSettings] = useState<MembershipSettings>(initial)
+    const [form, setForm] = useState<ApplicationForm>(initialForm)
+    const [image, setImage] = useState<PanelImageChoice | undefined>(undefined)
     const [selectedId, setSelectedId] = useState<string | null>(
         initial.categories[0]?.id ?? null
     )
-    const [tab, setTab] = useState("categories")
-    const dirty = JSON.stringify(settings) !== JSON.stringify(initial)
+    const [tab, setTab] = useState<Tab>("application")
+    const [showIssues, setShowIssues] = useState(false)
+    const changeCount =
+        membershipChangeCount(
+            { settings: initial, form: initialForm },
+            { settings, form }
+        ) + (image === undefined ? 0 : 1)
+    const dirty = changeCount > 0
 
     const roles = metadata?.roles ?? []
+    const channels = metadata?.channels ?? []
     const emojiOptions = metadata?.emojis ?? []
     const preview = useMemo(
         () => buildFieldPreview(settings.categories),
         [settings.categories]
     )
+    const categories = settings.categories as ApplicationCategory[]
+    const issues = validateApplicationForm(form, categories)
     const selected =
         settings.categories.find((category) => category.id === selectedId) ??
         settings.categories[0]
     const clanRole = config?.clanRoleId
         ? roles.find((role) => role.id === config.clanRoleId)
         : undefined
-    const submitChannel = metadata?.channels.find(
-        (channel) => channel.id === settings.submitChannelId
-    )
+    const roleName = (roleId: string) =>
+        roles.find((role) => role.id === roleId)?.name ?? roleId
+    const channelName = (channelId?: string) =>
+        channelId
+            ? (channels.find((channel) => channel.id === channelId)?.name ??
+              null)
+            : null
     const assignmentLabels: Record<AssignmentType, string> = {
         member: dictionary.userManagement.memberLabel,
         reserve_member: dictionary.userManagement.reserveMemberLabel,
@@ -262,12 +403,12 @@ export function MembershipSettingsForm({
     }
 
     const missingMembershipParts: string[] = []
-    if (!settings.submitChannelId) missingMembershipParts.push(t.submitChannel)
+    if (!settings.submitChannelId) missingMembershipParts.push(a.panel.channel)
     if (!settings.applicationParentChannelId)
-        missingMembershipParts.push(t.parentChannel)
+        missingMembershipParts.push(a.panel.threads)
     if (!settings.categories.length)
-        missingMembershipParts.push(t.categoriesTitle)
-    const categoryName = (category: MembershipCategory) =>
+        missingMembershipParts.push(a.categories.title)
+    const categoryLabel = (category: MembershipCategory) =>
         category.label?.trim() || category.id
     const categoriesMissingRecruitRole = settings.categories
         .filter(
@@ -275,10 +416,10 @@ export function MembershipSettingsForm({
                 needsRecruitRole(category) &&
                 category.recruitRoleIds.length === 0
         )
-        .map(categoryName)
+        .map(categoryLabel)
     const categoriesMissingFinalRole = settings.categories
         .filter((category) => category.finalRoleIds.length === 0)
-        .map(categoryName)
+        .map(categoryLabel)
 
     function patchSettings(patch: Partial<MembershipSettings>) {
         setSettings((current) => ({ ...current, ...patch }))
@@ -312,6 +453,7 @@ export function MembershipSettingsForm({
         const category = buildDefaultCategory()
         patchSettings({ categories: [...settings.categories, category] })
         setSelectedId(category.id)
+        setTab("categories")
     }
 
     function removeCategory(categoryId: string) {
@@ -322,13 +464,68 @@ export function MembershipSettingsForm({
         setSelectedId(remaining[0]?.id ?? null)
     }
 
+    /** "Vrátit otázku Specializace": back where it fits. */
+    function restoreSpecialization() {
+        const question = specializationQuestion(
+            defaultApplicationForm(categories, clanCopy.defaultForm)
+        )
+        if (!question) return
+        const target = formWindows(form, categories).find(
+            (window) => window.kind === "questions" && !window.full
+        )
+        if (target) {
+            setForm(addQuestion(form, target.key, question))
+            return
+        }
+        const added = addQuestionWindow(form)
+        if (added.windowId)
+            setForm(addQuestion(added.form, added.windowId, question))
+    }
+
     function discard() {
         setSettings(initial)
+        setForm(initialForm)
+        setImage(undefined)
+        setShowIssues(false)
         if (!initial.categories.some((category) => category.id === selectedId))
             setSelectedId(initial.categories[0]?.id ?? null)
     }
 
+    async function attachImage(): Promise<string | null | undefined> {
+        if (image === undefined) return undefined
+        const response = await fetch(
+            `/api/servers/${encodeURIComponent(serverId)}/membership-application`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    action: "attach-image",
+                    assetId: image?.assetId ?? null,
+                }),
+            }
+        )
+        const body = (await response.json().catch(() => null)) as {
+            url?: string | null
+        } | null
+        if (!response.ok || !body || !("url" in body)) throw new Error()
+        return body.url ?? null
+    }
+
     async function handleSave() {
+        if (
+            settings.panelAccentColor?.trim() &&
+            !normalizeAccentColor(settings.panelAccentColor)
+        ) {
+            setTab("application")
+            toast.error(a.panel.colorInvalid)
+            return
+        }
+        if (issues.length) {
+            setShowIssues(true)
+            setTab("application")
+            toast.error(a.save.formInvalid)
+            return
+        }
         // New switches are sent only when they differ from the value they
         // fall back to, so settings that do not use them stay as they were.
         const roleSyncEnabled =
@@ -345,55 +542,85 @@ export function MembershipSettingsForm({
                     ? category.autoAssignRecruitOnApply
                     : undefined,
         })
-        const membershipSettings = settings.enabled
-            ? {
-                  enabled: true,
-                  submitChannelId: settings.submitChannelId || undefined,
-                  applicationParentChannelId:
-                      settings.applicationParentChannelId || undefined,
-                  panelTitle: settings.panelTitle,
-                  panelDescription: settings.panelDescription,
-                  panelImageUrl: settings.panelImageUrl || undefined,
-                  applicationWelcomeMessage:
-                      settings.applicationWelcomeMessage?.trim() || undefined,
-                  autoAssignRecruitOnApply: settings.autoAssignRecruitOnApply,
-                  roleSyncEnabled,
-                  inviteSupportMembersIndividually:
-                      settings.inviteSupportMembersIndividually ?? true,
-                  rosterScoreSettings: settings.rosterScoreSettings,
-                  categories: settings.categories.map((category) => ({
-                      ...category,
-                      ...categoryOptions(category),
-                      emoji: category.emoji?.trim() || undefined,
-                      label: category.label?.trim() || undefined,
-                      description: category.description?.trim() || undefined,
-                      recruitRoleIds: category.recruitRoleIds
-                          .map((roleId) => roleId.trim())
-                          .filter(Boolean),
-                      finalRoleIds: category.finalRoleIds
-                          .map((roleId) => roleId.trim())
-                          .filter(Boolean),
-                      modalQuestions: category.modalQuestions.map(
-                          (question) => ({
-                              ...question,
-                              placeholder:
-                                  question.placeholder?.trim() || undefined,
-                          })
-                      ),
-                  })),
-              }
-            : {
-                  ...settings,
-                  enabled: false,
-                  roleSyncEnabled,
-                  categories: settings.categories.map((category) => ({
-                      ...category,
-                      ...categoryOptions(category),
-                  })),
-              }
+        // The default form follows the clan language until the clan edits it.
+        const formChanged = JSON.stringify(form) !== JSON.stringify(initialForm)
+        const applicationForm =
+            formChanged || initial.applicationForm
+                ? normalizeApplicationForm(form, categories)
+                : undefined
 
         setSaving(true)
         try {
+            let panelImageUrl = settings.panelImageUrl || undefined
+            try {
+                const attached = await attachImage()
+                if (attached !== undefined)
+                    panelImageUrl = attached ?? undefined
+            } catch {
+                toast.error(a.panel.attachFailed)
+                return
+            }
+            const membershipSettings = settings.enabled
+                ? {
+                      enabled: true,
+                      submitChannelId: settings.submitChannelId || undefined,
+                      applicationParentChannelId:
+                          settings.applicationParentChannelId || undefined,
+                      panelTitle: settings.panelTitle,
+                      panelDescription: settings.panelDescription,
+                      panelImageUrl,
+                      panelAccentColor: normalizeAccentColor(
+                          settings.panelAccentColor
+                      ),
+                      applicationWelcomeMessage:
+                          settings.applicationWelcomeMessage?.trim() ||
+                          undefined,
+                      autoAssignRecruitOnApply:
+                          settings.autoAssignRecruitOnApply,
+                      roleSyncEnabled,
+                      inviteSupportMembersIndividually:
+                          settings.inviteSupportMembersIndividually ?? true,
+                      mentionSupportRoles: settings.mentionSupportRoles ?? true,
+                      sendConfirmationDm: settings.sendConfirmationDm ?? true,
+                      webFormEnabled: settings.webFormEnabled === true,
+                      applicationForm,
+                      rosterScoreSettings: settings.rosterScoreSettings,
+                      categories: settings.categories.map((category) => ({
+                          ...category,
+                          ...categoryOptions(category),
+                          emoji: category.emoji?.trim() || undefined,
+                          label: category.label?.trim() || undefined,
+                          description:
+                              category.description?.trim() || undefined,
+                          recruitRoleIds: category.recruitRoleIds
+                              .map((roleId) => roleId.trim())
+                              .filter(Boolean),
+                          finalRoleIds: category.finalRoleIds
+                              .map((roleId) => roleId.trim())
+                              .filter(Boolean),
+                          modalQuestions: category.modalQuestions.map(
+                              (question) => ({
+                                  ...question,
+                                  placeholder:
+                                      question.placeholder?.trim() || undefined,
+                              })
+                          ),
+                      })),
+                  }
+                : {
+                      ...settings,
+                      enabled: false,
+                      panelImageUrl,
+                      panelAccentColor: normalizeAccentColor(
+                          settings.panelAccentColor
+                      ),
+                      roleSyncEnabled,
+                      applicationForm,
+                      categories: settings.categories.map((category) => ({
+                          ...category,
+                          ...categoryOptions(category),
+                      })),
+                  }
             const response = await fetch(
                 `/api/servers/${serverId}/discord-settings`,
                 {
@@ -404,13 +631,15 @@ export function MembershipSettingsForm({
             )
             const body = await response.json().catch(() => ({}))
             if (!response.ok) {
-                toast.error(body.error ?? t.saveError)
+                toast.error(body.error ?? a.save.error)
                 return
             }
-            toast.success(t.saved)
+            setImage(undefined)
+            setShowIssues(false)
+            toast.success(a.save.saved)
             startTransition(() => router.refresh())
         } catch {
-            toast.error(t.saveError)
+            toast.error(a.save.error)
         } finally {
             setSaving(false)
         }
@@ -425,8 +654,99 @@ export function MembershipSettingsForm({
     const roleSync = settings.roleSyncEnabled ?? settings.enabled
     const roleOptions: RoleOption[] | null = metadata ? roles : null
 
+    // The previews: the clan language, the clan's colour and a sample applicant.
+    const mentions = {
+        roles: Object.fromEntries(roles.map((role) => [role.id, role.name])),
+        channels: Object.fromEntries(
+            channels.map((channel) => [channel.id, channel.name])
+        ),
+        users: { "0": a.form.sample.name },
+    }
+    const builderPreview: FormBuilderPreview = {
+        clanCopy,
+        language,
+        style: config?.messageStyle ?? null,
+        labels: dictionary.discordPreview,
+        clanName,
+        timeZone,
+        now,
+        mentions,
+    }
+    const imageUrl =
+        image === undefined
+            ? (settings.panelImageUrl ?? "")
+            : (image?.url ?? "")
+    const webFormUrl = `${siteUrl.replace(/\/+$/, "")}/${language}/apply/${guildId}`
+    // A default text follows the number of windows as the form changes.
+    const panelCopy = panelCopyFor(clanCopy, clanName, {
+        ...settings,
+        applicationForm: form,
+    })
+    const panelView = settings.categories.length
+        ? applicationPanelView(clanCopy, {
+              title: panelCopy.title,
+              text: panelCopy.text,
+              windowsNote: !panelCopy.defaultText,
+              imageUrl: imageUrl || null,
+              accentColor: normalizeAccentColor(settings.panelAccentColor),
+              categories,
+              windows: applicationWindowCount(form, categories),
+              webFormUrl: settings.webFormEnabled ? webFormUrl : null,
+              managedUrl: siteUrl,
+          })
+        : null
+    const applicant = previewApplicant(form, categories, a.form.sample)
+    const decisionCategory = applicant.category
+        ? (settings.categories.find(
+              (category) => category.id === applicant.category?.id
+          ) ?? null)
+        : null
+    // "Přijmout jako žoldáka" grants the clan's mercenary category (L6-B08).
+    const mercenaryCategory = decisionCategory
+        ? mercenaryCategoryFor(settings.categories, {
+              categoryId: decisionCategory.id,
+              gameId: decisionCategory.gameId ?? "hell_let_loose",
+              games: applicant.plan.games,
+          })
+        : null
+    const decisionCard =
+        decisionCategory && applicant.category
+            ? applicationCardView(clanCopy, {
+                  number: 42,
+                  games: applicant.plan.games,
+                  applicantId: "0",
+                  applicantName: a.form.sample.name,
+                  categoryLabel: categoryName(applicant.category),
+                  submittedAt: new Date(now).toISOString(),
+                  timeZone,
+                  inGameName: a.form.sample.name,
+                  ...previewCardAnswers(clanCopy, applicant),
+                  supportRoleIds: decisionCategory.supportRoleIds,
+                  mercenaryAvailable: mercenaryCategory !== null,
+              })
+            : null
+    const panelChannel = channelName(settings.submitChannelId)
+
     return (
         <div className="space-y-6">
+            <SettingsSectionHeader
+                title={a.title}
+                description={a.description}
+                actions={
+                    <div className="flex items-center gap-3">
+                        <Label htmlFor="membership-enabled" className="text-sm">
+                            {a.enabled}
+                        </Label>
+                        <Switch
+                            id="membership-enabled"
+                            checked={settings.enabled}
+                            onCheckedChange={(checked) =>
+                                patchSettings({ enabled: checked })
+                            }
+                        />
+                    </div>
+                }
+            />
             {settings.enabled && missingMembershipParts.length ? (
                 <ConfigNotice title={t.incompleteTitle}>
                     {t.incompleteDescription.replace(
@@ -457,59 +777,157 @@ export function MembershipSettingsForm({
                 </ConfigNotice>
             ) : null}
 
-            <div className="grid gap-3 md:grid-cols-2">
-                <SwitchCard
-                    id="membership-enabled"
-                    title={t.applicationsTitle}
-                    description={
-                        submitChannel
-                            ? t.applicationsChannel.replace(
-                                  "{channel}",
-                                  submitChannel.name
-                              )
-                            : t.applicationsNoChannel
-                    }
-                    checked={settings.enabled}
-                    onChange={(checked) => patchSettings({ enabled: checked })}
-                />
-                <SwitchCard
-                    id="membership-role-sync"
-                    title={t.roleSyncToggleTitle}
-                    description={t.roleSyncSwitchDescription}
-                    checked={roleSync}
-                    onChange={(checked) =>
-                        patchSettings({ roleSyncEnabled: checked })
-                    }
-                />
-            </div>
-
-            <Tabs value={tab} onValueChange={setTab}>
+            <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
                 <TabsList
-                    aria-label={t.tabsLabel}
-                    className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b bg-transparent p-0"
+                    aria-label={a.tabsLabel}
+                    className="bg-muted/60 flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl p-1"
                 >
-                    {(
-                        [
-                            "categories",
-                            "panel",
-                            "scores",
-                            "roleChanges",
-                        ] as const
-                    ).map((value) => (
+                    {TABS.map((value) => (
                         <TabsTrigger
                             key={value}
                             value={value}
-                            className="text-muted-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground dark:data-[state=active]:border-foreground -mb-px h-10 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 font-normal data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                            className="text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground h-9 flex-none rounded-lg px-3 font-normal data-[state=active]:font-semibold data-[state=active]:shadow-sm"
                         >
-                            {t.tabs[value]}
+                            {a.tabs[value]}
                             {value === "categories" ? (
-                                <span className="bg-muted text-muted-foreground rounded-md px-1.5 text-xs font-normal">
+                                <span
+                                    aria-label={pluralize(
+                                        locale,
+                                        settings.categories.length,
+                                        a.categoryCount
+                                    )}
+                                    className="text-muted-foreground px-0.5 text-xs font-normal"
+                                >
                                     {settings.categories.length}
                                 </span>
                             ) : null}
                         </TabsTrigger>
                     ))}
                 </TabsList>
+
+                <TabsContent value="application" className="space-y-6 pt-4">
+                    <SectionCard title={a.panel.title}>
+                        <PanelSection
+                            serverId={serverId}
+                            channels={channels}
+                            panelChannelId={settings.submitChannelId}
+                            threadChannelId={
+                                settings.applicationParentChannelId
+                            }
+                            title={panelCopy.title}
+                            text={panelCopy.text}
+                            imageUrl={imageUrl}
+                            accentColor={settings.panelAccentColor ?? ""}
+                            panelView={panelView}
+                            preview={builderPreview}
+                            t={a.panel}
+                            onChange={patchSettings}
+                            onImage={setImage}
+                        />
+                    </SectionCard>
+
+                    <SectionCard
+                        title={a.form.title}
+                        description={a.form.intro}
+                    >
+                        {showIssues && issues.length ? (
+                            <ConfigNotice title={a.form.issuesTitle}>
+                                {[
+                                    ...new Set(
+                                        issues.map(
+                                            (issue) => a.form.issues[issue.code]
+                                        )
+                                    ),
+                                ].join(" ")}
+                            </ConfigNotice>
+                        ) : null}
+                        <ApplicationFormBuilder
+                            form={form}
+                            categories={categories}
+                            issues={issues}
+                            t={a.form}
+                            preview={builderPreview}
+                            onChange={setForm}
+                        />
+                    </SectionCard>
+
+                    <CategoriesSummary
+                        categories={settings.categories}
+                        roleName={roleName}
+                        clanRoleName={clanRole?.name ?? null}
+                        rolesHref={rolesHref}
+                        specializationInForm={Boolean(
+                            specializationQuestion(form)
+                        )}
+                        t={a.categories}
+                        gameShort={a.form.gameShort}
+                        onSpecialization={(categoryId, ask) =>
+                            patchCategory(categoryId, {
+                                askSpecialization: ask,
+                            })
+                        }
+                        onEdit={(categoryId) => {
+                            setSelectedId(categoryId)
+                            setTab("categories")
+                        }}
+                        onAdd={addCategory}
+                        onRestoreSpecialization={restoreSpecialization}
+                    />
+
+                    <AfterSubmitSection
+                        threadChannelName={channelName(
+                            settings.applicationParentChannelId
+                        )}
+                        mentionSupportRoles={
+                            settings.mentionSupportRoles ?? true
+                        }
+                        autoRecruit={settings.autoAssignRecruitOnApply}
+                        sendConfirmationDm={settings.sendConfirmationDm ?? true}
+                        inviteIndividually={
+                            settings.inviteSupportMembersIndividually ?? true
+                        }
+                        inviteCopy={{
+                            title: t.inviteSupportMembersIndividuallyTitle,
+                            description:
+                                t.inviteSupportMembersIndividuallyDescription,
+                        }}
+                        welcome={settings.applicationWelcomeMessage ?? ""}
+                        decisionCard={decisionCard}
+                        decisionCategory={decisionCategory}
+                        mercenaryCategory={mercenaryCategory}
+                        recruitOnApply={
+                            decisionCategory
+                                ? skipsPendingOnApply(
+                                      settings,
+                                      decisionCategory
+                                  )
+                                : false
+                        }
+                        policy={
+                            decisionCategory
+                                ? {
+                                      clanRoleId: config?.clanRoleId ?? null,
+                                      roleSync,
+                                      category: decisionCategory,
+                                      mercenaryCategory,
+                                  }
+                                : null
+                        }
+                        roleName={roleName}
+                        preview={builderPreview}
+                        t={a.after}
+                        onChange={patchSettings}
+                    />
+
+                    <WebVariantSection
+                        enabled={settings.webFormEnabled === true}
+                        url={webFormUrl}
+                        t={a.web}
+                        onChange={(webFormEnabled) =>
+                            patchSettings({ webFormEnabled })
+                        }
+                    />
+                </TabsContent>
 
                 <TabsContent value="categories" className="pt-4">
                     {settings.categories.length === 0 ? (
@@ -577,7 +995,7 @@ export function MembershipSettingsForm({
                                                         )
                                                             ? category.emoji
                                                             : categoryInitials(
-                                                                  category
+                                                                  category.label
                                                               )}
                                                     </span>
                                                     <span className="min-w-0 flex-1">
@@ -680,116 +1098,6 @@ export function MembershipSettingsForm({
                     )}
                 </TabsContent>
 
-                <TabsContent value="panel" className="space-y-6 pt-4">
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label>{t.submitChannel}</Label>
-                            <DiscordChannelSelect
-                                value={settings.submitChannelId}
-                                onChange={(value) =>
-                                    patchSettings({
-                                        submitChannelId: value ?? "",
-                                    })
-                                }
-                                channels={metadata?.channels ?? []}
-                                placeholder={t.submitChannel}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>{t.parentChannel}</Label>
-                            <DiscordChannelSelect
-                                value={settings.applicationParentChannelId}
-                                purpose="private-thread"
-                                onChange={(value) =>
-                                    patchSettings({
-                                        applicationParentChannelId: value ?? "",
-                                    })
-                                }
-                                channels={metadata?.channels ?? []}
-                                placeholder={t.parentChannel}
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="membership-panel-title">
-                            {t.panelTitle}
-                        </Label>
-                        <Input
-                            id="membership-panel-title"
-                            value={settings.panelTitle}
-                            onChange={(event) =>
-                                patchSettings({
-                                    panelTitle: event.target.value,
-                                })
-                            }
-                            maxLength={256}
-                            className="rounded-xl"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t.panelDescription}</Label>
-                        <DiscordMarkdownTextarea
-                            value={settings.panelDescription}
-                            onChange={(value) =>
-                                patchSettings({ panelDescription: value })
-                            }
-                            maxLength={4096}
-                            className="min-h-32 rounded-xl"
-                            rows={8}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <div>
-                            <Label>{t.welcomeMessage}</Label>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                                {t.welcomeMessageDescription}
-                            </p>
-                        </div>
-                        <DiscordMarkdownTextarea
-                            value={settings.applicationWelcomeMessage}
-                            onChange={(value) =>
-                                patchSettings({
-                                    applicationWelcomeMessage: value,
-                                })
-                            }
-                            maxLength={1200}
-                            className="min-h-28 rounded-xl"
-                            rows={6}
-                            placeholder={t.welcomeMessagePlaceholder}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t.image}</Label>
-                        <AvatarPicker
-                            value={settings.panelImageUrl ?? ""}
-                            onChange={(value) =>
-                                patchSettings({ panelImageUrl: value ?? "" })
-                            }
-                            fallback="CA"
-                            label={t.applicationThumbnail}
-                            buttonLabel={dictionary.common.upload}
-                        />
-                    </div>
-                    <div className="border-border/60 rounded-2xl border">
-                        <SwitchRow
-                            id="membership-invite-individually"
-                            title={t.inviteSupportMembersIndividuallyTitle}
-                            description={
-                                t.inviteSupportMembersIndividuallyDescription
-                            }
-                            checked={
-                                settings.inviteSupportMembersIndividually ??
-                                true
-                            }
-                            onChange={(checked) =>
-                                patchSettings({
-                                    inviteSupportMembersIndividually: checked,
-                                })
-                            }
-                        />
-                    </div>
-                </TabsContent>
-
                 <TabsContent value="scores" className="space-y-4 pt-4">
                     <p className="text-muted-foreground text-sm">
                         {t.rosterScoreDescription}
@@ -825,7 +1133,16 @@ export function MembershipSettingsForm({
                     </div>
                 </TabsContent>
 
-                <TabsContent value="roleChanges" className="pt-4">
+                <TabsContent value="roleChanges" className="space-y-4 pt-4">
+                    <SwitchCard
+                        id="membership-role-sync"
+                        title={t.roleSyncToggleTitle}
+                        description={t.roleSyncSwitchDescription}
+                        checked={roleSync}
+                        onChange={(checked) =>
+                            patchSettings({ roleSyncEnabled: checked })
+                        }
+                    />
                     <MemberRoleOperations
                         serverId={serverId}
                         dictionary={dictionary}
@@ -834,12 +1151,16 @@ export function MembershipSettingsForm({
             </Tabs>
 
             <SettingsSaveBar
-                note={t.saveNote}
+                note={
+                    panelChannel
+                        ? fillTemplate(a.save.note, { channel: panelChannel })
+                        : a.save.noteNoChannel
+                }
                 dirty={dirty}
                 saving={saving || isPending}
-                discardLabel={t.discard}
-                saveLabel={t.saveShort}
-                unsavedLabel={t.unsaved}
+                discardLabel={a.save.discard}
+                saveLabel={a.save.save}
+                unsavedLabel={pluralize(locale, changeCount, a.save.changes)}
                 onDiscard={discard}
                 onSave={() => void handleSave()}
             />
@@ -1145,14 +1466,6 @@ function CategoryEditor({
                     </div>
                 </div>
                 <p className="text-muted-foreground text-xs">{clanRoleNote}</p>
-            </div>
-
-            <div className="py-5">
-                <ModalQuestionsEditor
-                    questions={category.modalQuestions}
-                    onChange={(modalQuestions) => onChange({ modalQuestions })}
-                    dictionary={dictionary}
-                />
             </div>
         </section>
     )

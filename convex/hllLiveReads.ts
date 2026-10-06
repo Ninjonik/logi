@@ -2,9 +2,12 @@ import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
+import { panelReadsConnection } from "../src/domain/discord-publications/settings"
 import type { HllPrepared } from "../src/application/game-data/read-hll-live"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { hllLiveSchema } from "../src/domain/game-data/hll-live"
+import type { DashboardActor } from "./dashboardActor"
 import { makeFunctionReference } from "convex/server"
 import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
@@ -17,6 +20,8 @@ export const hllLiveAccess = {
     keyHash: v.optional(v.string()),
     panelId: v.optional(v.id("discordPublicPanels")),
     panelRevision: v.optional(v.number()),
+    /** A clan admin's test read from the panel editor (P2-B10). */
+    actor: v.optional(dashboardActor),
 }
 type Access = {
     secret: string
@@ -25,6 +30,7 @@ type Access = {
     keyHash?: string
     panelId?: Id<"discordPublicPanels">
     panelRevision?: number
+    actor?: DashboardActor
 }
 async function authorize(ctx: MutationCtx, args: Access) {
     if (
@@ -33,16 +39,24 @@ async function authorize(ctx: MutationCtx, args: Access) {
     )
         throw new Error("Unauthorized.")
     if (args.panelId !== undefined) {
-        if (args.keyHash !== undefined) return null
+        if (args.keyHash !== undefined || args.actor !== undefined) return null
         const panel = await ctx.db.get(args.panelId)
         if (
             !panel?.enabled ||
-            panel.kind === "results" ||
             panel.guildId !== args.guildId ||
-            panel.connectionId !== args.connectionId ||
+            !panelReadsConnection(panel, args.connectionId) ||
             panel.revision !== args.panelRevision
         )
             return null
+    } else if (args.actor !== undefined) {
+        // The dashboard's test read: a current clan admin, nothing else.
+        if (args.keyHash !== undefined || args.panelRevision !== undefined)
+            return null
+        try {
+            await authorizeDashboardAdmin(ctx, { ...args, actor: args.actor })
+        } catch {
+            return null
+        }
     } else {
         if (!args.keyHash || args.panelRevision !== undefined) return null
         const key = await ctx.db

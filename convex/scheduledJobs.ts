@@ -6,6 +6,7 @@ import {
     resolveSignupReminderStatuses,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
+import { announcementRefreshTimes } from "../src/domain/events/announcement-state"
 import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
@@ -40,6 +41,7 @@ export const claimDue = mutation({
                 | "conclude-event"
                 | "attendance-reminder"
                 | "signup-reminder"
+                | "refresh-announcement"
         }> = []
 
         for (const job of candidates) {
@@ -211,6 +213,9 @@ export const backfillMissing = mutation({
                             EVENT_CONCLUSION_RESERVE_MS
                     ).toISOString(),
                 ],
+                ...announcementRefreshTimes(event, nowDate).map(
+                    (dueAt) => ["refresh-announcement", dueAt] as const
+                ),
                 ...resolveAttendanceReminderHours(
                     event.attendanceReminderHours
                 ).flatMap((hours) => {
@@ -228,7 +233,8 @@ export const backfillMissing = mutation({
                         event.createdAt,
                         event.registrationEnd,
                         nowDate,
-                        true
+                        true,
+                        event.registrationStart
                     )
                     return event.kind === "match" &&
                         resolveSignupReminderStatuses(
@@ -240,7 +246,12 @@ export const backfillMissing = mutation({
                 })(),
             ] as const
             for (const [kind, dueAt] of deadlines) {
-                const existing = existingJobs.find((job) => job.kind === kind)
+                // Two announcement redraws share a kind; each has its own time.
+                const existing = existingJobs.find(
+                    (job) =>
+                        job.kind === kind &&
+                        (kind !== "refresh-announcement" || job.dueAt === dueAt)
+                )
                 if (existing) {
                     // Older deployments scheduled conclusion at game end. Move
                     // that durable job into the new reserve window on startup.
@@ -270,7 +281,8 @@ export const backfillMissing = mutation({
                         | "create-squad-voice-channels"
                         | "conclude-event"
                         | "attendance-reminder"
-                        | "signup-reminder",
+                        | "signup-reminder"
+                        | "refresh-announcement",
                     dueAt,
                     status: "pending",
                     attempts: 0,

@@ -1,93 +1,114 @@
-import { EmbedBuilder, escapeMarkdown, type Client } from "discord.js"
+import type { Client, Guild } from "discord.js"
 
 import {
-    DEFAULT_MESSAGE_ACCENT_COLOR,
-    discordTimestamp,
-    fillTemplate,
-    resolveMessageAccentColor,
-} from "../../../src/domain/discord-messages/format"
+    attendanceReminderRunKey,
+    recordAutomaticReminderOutcome,
+    type RecordAutomaticReminderOutcome,
+} from "./reminder-outcomes"
+import {
+    attendanceReminderView,
+    type DmPlace,
+} from "../../../src/domain/discord-messages/direct-message-views"
+import {
+    matchTitle,
+    playerName,
+} from "../../../src/domain/discord-messages/match-text"
 import { resolveAttendanceReminderHours } from "../../../src/domain/events/scheduled-job-policy"
-import { calendarDayOffset } from "../../../src/domain/discord-messages/calendar-day"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
-import { buildAttendanceReminderComponents } from "../message-builders"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { findSquadLeader } from "../../../src/domain/discord-messages/format"
+import type { EventRecord, Roster, SyncPayload } from "../types"
+import { dmFrame, memberNames } from "../events/match-context"
+import { reportClanDiscordError } from "../error-reporting"
+import { messagePayload } from "../ui/message-kit"
 import { convex, references } from "../convex"
-import type { SyncPayload } from "../types"
 import { logInfo, logWarn } from "../log"
 import { env } from "../environment"
 
-type RosterAssignment = {
-    squadName: string
-    roleName?: string
-    note?: string
+/**
+ * Where each rostered player plays, for the attendance reminder: the squad,
+ * the role and the squad's leader, or the reserves. Only players who have
+ * not confirmed are listed unless `includeAcknowledged`.
+ */
+export function rosterPlaces(
+    roster: Roster,
+    names: Readonly<Record<string, string>>,
+    options: { includeAcknowledged?: boolean } = {}
+) {
+    const places = new Map<string, DmPlace>()
+    for (const squad of roster.squads) {
+        const leader = findSquadLeader(squad.players)
+        for (const player of squad.players) {
+            if (!player.id || (player.ack && !options.includeAcknowledged))
+                continue
+            places.set(player.id, {
+                kind: "squad",
+                squad: squad.name,
+                role: player.roleName?.trim() || undefined,
+                leader:
+                    leader && leader !== player
+                        ? playerName(leader, names)
+                        : undefined,
+            })
+        }
+    }
+    const acknowledged = new Map(
+        (roster.reserveAttendances ?? []).map((item) => [item.userId, item.ack])
+    )
+    for (const userId of roster.reservePlayerIds) {
+        if (places.has(userId)) continue
+        if (acknowledged.get(userId) && !options.includeAcknowledged) continue
+        places.set(userId, { kind: "reserve" })
+    }
+    return places
+}
+
+/** Squad leaders' names for the reminder line "velitel čety Rex_CZ". */
+export async function leaderNames(
+    guild: Guild | null | undefined,
+    roster: Roster,
+    known: Readonly<Record<string, string>>
+) {
+    return await memberNames(
+        guild,
+        roster.squads.flatMap((squad) => {
+            const leader = findSquadLeader(squad.players)
+            return leader?.id ? [leader.id] : []
+        }),
+        known
+    )
 }
 
 /**
- * Attendance reminder DM in the clan language and accent colour: "You play X
- * tomorrow" (today, or without a day when it is further away), the start,
- * meeting time, the player's squad and role, and their roster note. It never
- * carries the server password.
+ * The attendance reminder DM (board L2-16..27): "Zítra hraješ VLK vs ROG"
+ * with the weekday schedule, the player's place and leader, and
+ * "Potvrdím", "Přijdu později", "Nemůžu". It never carries the server
+ * password. A manual reminder from the match page says so.
  */
-export function buildAttendanceReminderMessage(input: {
-    eventName: string
-    meetingStartMs: number
-    gameStartMs?: number
-    assignment?: RosterAssignment
-    messages: ReturnType<typeof getClanDiscordMessages>
-    accentColor?: number
-    /** When the DM is sent and the clan's time zone, for "today"/"tomorrow". */
-    now?: number
-    timeZone?: string
+export function buildAttendanceReminderDm(input: {
+    payload: Pick<SyncPayload, "config" | "guild">
+    event: EventRecord
+    place?: DmPlace
+    now: number
+    sentByLeaders?: boolean
 }) {
-    const { messages } = input
-    const start = discordTimestamp(input.gameStartMs, "t")
-    const meeting = discordTimestamp(input.meetingStartMs, "t")
-    const assignment = input.assignment
-        ? [input.assignment.squadName, input.assignment.roleName]
-              .map((part) => part?.trim())
-              .filter(Boolean)
-              .join(" · ")
-        : ""
-    const summary = [
-        start ? `${messages.reminders.start} ${start}` : undefined,
-        meeting
-            ? fillTemplate(messages.embed.meetingAt, { time: meeting })
-            : undefined,
-        assignment ? escapeMarkdown(assignment) : undefined,
-    ].filter(Boolean)
-    const summaryLine = summary.join(" · ")
-    const note = input.assignment?.note?.trim()
-    const lines = [
-        summaryLine
-            ? summaryLine[0]!.toLocaleUpperCase(messages.locale) +
-              summaryLine.slice(1)
-            : undefined,
-        note ? `${messages.reminders.notes}: ${escapeMarkdown(note)}` : null,
-    ].filter((line): line is string => Boolean(line))
-
-    const day =
-        input.now === undefined
-            ? undefined
-            : calendarDayOffset(
-                  input.gameStartMs ?? input.meetingStartMs,
-                  input.now,
-                  input.timeZone ?? "UTC"
-              )
-    const titleTemplate =
-        day === 0
-            ? messages.reminders.upcomingTitleToday
-            : day === 1
-              ? messages.reminders.upcomingTitleTomorrow
-              : messages.reminders.upcomingTitle
-    const embed = new EmbedBuilder()
-        .setColor(input.accentColor ?? DEFAULT_MESSAGE_ACCENT_COLOR)
-        .setTitle(
-            fillTemplate(titleTemplate, {
-                event: input.eventName,
-            }).slice(0, 256)
-        )
-        .setFooter({ text: messages.reminders.upcomingHint })
-    if (lines.length) embed.setDescription(lines.join("\n").slice(0, 4096))
-    return embed
+    const { config, guild } = input.payload
+    return messagePayload(
+        attendanceReminderView({
+            event: {
+                id: input.event.id,
+                title: matchTitle(input.event),
+                meetingStart: input.event.meetingStart,
+                gameStart: input.event.gameStart,
+                guildId: input.event.guildId,
+            },
+            place: input.place,
+            now: input.now,
+            sentByLeaders: input.sentByLeaders,
+            copy: getDirectMessages(config.defaultLanguage),
+            frame: dmFrame(config, guild.name),
+        }),
+        { language: config.defaultLanguage, style: config.messageStyle }
+    )
 }
 
 /** Players who already told the organisers they cannot come or are late. */
@@ -97,11 +118,17 @@ export function playersWithAbsenceNotice(event: {
     return new Set((event.absenceNotices ?? []).map((notice) => notice.userId))
 }
 
+/**
+ * Sends the due attendance reminders. Who Discord refused (closed DMs) is
+ * recorded per reminder offset so the match page names them (L2-64); they
+ * are tried again at the next due pass.
+ */
 export async function processAttendanceReminders(
     client: Client,
     queuedEventIds: Set<string>,
     payload: SyncPayload,
-    dueEventIds: ReadonlySet<string>
+    dueEventIds: ReadonlySet<string>,
+    record: RecordAutomaticReminderOutcome = recordAutomaticReminderOutcome
 ) {
     const guild = await client.guilds
         .fetch(payload.config.guildId)
@@ -120,171 +147,180 @@ export async function processAttendanceReminders(
     for (const event of payload.events) {
         if (!dueEventIds.has(event.id)) continue
         if (event.status !== "starting") continue
-
-        const roster = payload.rosters.find(
-            (item) => item.eventId === event.id && item.published
-        )
-        if (!roster) {
-            logInfo(
-                "attendance-reminders",
-                "Skipping reminders because no published roster exists",
-                {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                }
+        let players: number | undefined
+        try {
+            const roster = payload.rosters.find(
+                (item) => item.eventId === event.id && item.published
             )
-            continue
-        }
-
-        const meetingStartMs = new Date(event.meetingStart).getTime()
-        if (!Number.isFinite(meetingStartMs)) {
-            logWarn(
-                "attendance-reminders",
-                "Skipping reminders because meeting start is invalid",
-                {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    meetingStart: event.meetingStart,
-                }
-            )
-            continue
-        }
-
-        const messages = getClanDiscordMessages(payload.config.defaultLanguage)
-        const matchType = event.matchType?.trim().toLowerCase()
-        const accentColor = resolveMessageAccentColor({
-            messageStyle: payload.config.messageStyle,
-            categoryColor: matchType
-                ? payload.guild.eventCategories?.find(
-                      (category) =>
-                          category.id.trim().toLowerCase() === matchType
-                  )?.color
-                : undefined,
-        })
-        const assignmentsByUserId = new Map<string, RosterAssignment>()
-        for (const squad of roster.squads) {
-            for (const player of squad.players) {
-                if (player.id && !player.ack) {
-                    assignmentsByUserId.set(player.id, {
-                        squadName: squad.name,
-                        roleName: player.roleName,
-                        note: player.note,
-                    })
-                }
-            }
-        }
-        const reserveAttendanceByUserId = new Map(
-            (roster.reserveAttendances ?? []).map((attendance) => [
-                attendance.userId,
-                attendance,
-            ])
-        )
-        for (const userId of roster.reservePlayerIds) {
-            if (reserveAttendanceByUserId.get(userId)?.ack) continue
-            assignmentsByUserId.set(userId, {
-                squadName: messages.assignment.reserveTitle,
-            })
-        }
-        // A player who already declined or sent a notice has answered.
-        const noticed = playersWithAbsenceNotice(event)
-        const unacknowledgedUserIds = new Set(
-            [...assignmentsByUserId.keys()].filter(
-                (userId) => !noticed.has(userId)
-            )
-        )
-        if (!unacknowledgedUserIds.size) {
-            logInfo(
-                "attendance-reminders",
-                "Skipping reminders because everyone already acknowledged attendance",
-                {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                }
-            )
-            continue
-        }
-
-        const now = Date.now()
-        const remindersToLog: Array<{
-            userId: string
-            offsetHours: number
-            sentAt: string
-        }> = []
-        for (const userId of unacknowledgedUserIds) {
-            // Only the offsets the match chose (all four on older events).
-            const dueOffsets = resolveAttendanceReminderHours(
-                event.attendanceReminderHours
-            )
-                .filter(
-                    (offsetHours) =>
-                        now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+            if (!roster) {
+                logInfo(
+                    "attendance-reminders",
+                    "Skipping reminders because no published roster exists",
+                    {
+                        eventId: event.id,
+                        guildId: payload.config.guildId,
+                    }
                 )
-                .filter(
-                    (offsetHours) =>
-                        !event.attendanceReminderLog.some(
-                            (entry) =>
-                                entry.userId === userId &&
-                                entry.offsetHours === offsetHours
-                        )
-                )
-                .sort((left, right) => left - right)
-
-            const offsetHours = dueOffsets[0]
-            if (offsetHours === undefined) continue
-
-            const user = await client.users.fetch(userId).catch(() => null)
-            if (!user) continue
-
-            const sentAt = new Date().toISOString()
-            const message = buildAttendanceReminderMessage({
-                eventName: event.name,
-                meetingStartMs,
-                gameStartMs: Date.parse(event.gameStart),
-                assignment: assignmentsByUserId.get(userId),
-                messages,
-                accentColor,
-                now: Date.now(),
-                timeZone: payload.config.timezone,
-            })
-
-            try {
-                await user.send({
-                    embeds: [message],
-                    allowedMentions: { parse: [] },
-                    components: buildAttendanceReminderComponents(
-                        event.id,
-                        payload.config.defaultLanguage
-                    ),
-                })
-                logInfo("attendance-reminders", "Sent attendance reminder", {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    userId,
-                    offsetHours,
-                })
-            } catch {
                 continue
             }
 
-            remindersToLog.push({ userId, offsetHours, sentAt })
-        }
+            const meetingStartMs = new Date(event.meetingStart).getTime()
+            if (!Number.isFinite(meetingStartMs)) {
+                logWarn(
+                    "attendance-reminders",
+                    "Skipping reminders because meeting start is invalid",
+                    {
+                        eventId: event.id,
+                        guildId: payload.config.guildId,
+                        meetingStart: event.meetingStart,
+                    }
+                )
+                continue
+            }
 
-        if (remindersToLog.length) {
-            await convex.mutation(references.appendAttendanceReminderLog, {
-                secret: env.internalSecret,
-                eventId: event.id as never,
-                reminders: remindersToLog,
-            })
-            queuedEventIds.add(event.id)
-            logInfo(
-                "attendance-reminders",
-                "Logged attendance reminders and re-queued event",
-                {
-                    eventId: event.id,
-                    guildId: payload.config.guildId,
-                    reminderCount: remindersToLog.length,
-                }
+            const assignmentsByUserId = rosterPlaces(
+                roster,
+                await leaderNames(guild, roster, payload.userDisplayNames)
             )
+            // A player who already declined or sent a notice has answered.
+            const noticed = playersWithAbsenceNotice(event)
+            const unacknowledgedUserIds = new Set(
+                [...assignmentsByUserId.keys()].filter(
+                    (userId) => !noticed.has(userId)
+                )
+            )
+            players = unacknowledgedUserIds.size
+            if (!unacknowledgedUserIds.size) {
+                logInfo(
+                    "attendance-reminders",
+                    "Skipping reminders because everyone already acknowledged attendance",
+                    {
+                        eventId: event.id,
+                        guildId: payload.config.guildId,
+                    }
+                )
+                continue
+            }
+
+            const now = Date.now()
+            const remindersToLog: Array<{
+                userId: string
+                offsetHours: number
+                sentAt: string
+            }> = []
+            const failedByOffset = new Map<number, string[]>()
+            for (const userId of unacknowledgedUserIds) {
+                // Only the offsets the match chose (all four on older events).
+                const dueOffsets = resolveAttendanceReminderHours(
+                    event.attendanceReminderHours
+                )
+                    .filter(
+                        (offsetHours) =>
+                            now >= meetingStartMs - offsetHours * 60 * 60 * 1000
+                    )
+                    .filter(
+                        (offsetHours) =>
+                            !event.attendanceReminderLog.some(
+                                (entry) =>
+                                    entry.userId === userId &&
+                                    entry.offsetHours === offsetHours
+                            )
+                    )
+                    .sort((left, right) => left - right)
+
+                const offsetHours = dueOffsets[0]
+                if (offsetHours === undefined) continue
+
+                const user = await client.users.fetch(userId).catch(() => null)
+                if (!user) {
+                    failedByOffset.set(offsetHours, [
+                        ...(failedByOffset.get(offsetHours) ?? []),
+                        userId,
+                    ])
+                    continue
+                }
+
+                const sentAt = new Date().toISOString()
+                try {
+                    await user.send(
+                        buildAttendanceReminderDm({
+                            payload,
+                            event,
+                            place: assignmentsByUserId.get(userId),
+                            now: Date.now(),
+                        })
+                    )
+                    logInfo(
+                        "attendance-reminders",
+                        "Sent attendance reminder",
+                        {
+                            eventId: event.id,
+                            guildId: payload.config.guildId,
+                            userId,
+                            offsetHours,
+                        }
+                    )
+                } catch {
+                    // Closed DMs: never the errors channel (L2-63), the
+                    // match page instead (L2-64).
+                    failedByOffset.set(offsetHours, [
+                        ...(failedByOffset.get(offsetHours) ?? []),
+                        userId,
+                    ])
+                    continue
+                }
+
+                remindersToLog.push({ userId, offsetHours, sentAt })
+            }
+
+            for (const offsetHours of new Set([
+                ...remindersToLog.map((entry) => entry.offsetHours),
+                ...failedByOffset.keys(),
+            ]))
+                await record({
+                    guildId: payload.config.guildId,
+                    eventId: event.id,
+                    kind: "attendance",
+                    runKey: attendanceReminderRunKey(offsetHours),
+                    sentUserIds: remindersToLog
+                        .filter((entry) => entry.offsetHours === offsetHours)
+                        .map((entry) => entry.userId),
+                    failedUserIds: failedByOffset.get(offsetHours) ?? [],
+                })
+
+            if (remindersToLog.length) {
+                await convex.mutation(references.appendAttendanceReminderLog, {
+                    secret: env.internalSecret,
+                    eventId: event.id as never,
+                    reminders: remindersToLog,
+                })
+                queuedEventIds.add(event.id)
+                logInfo(
+                    "attendance-reminders",
+                    "Logged attendance reminders and re-queued event",
+                    {
+                        eventId: event.id,
+                        guildId: payload.config.guildId,
+                        reminderCount: remindersToLog.length,
+                    }
+                )
+            }
+        } catch (error) {
+            // One match's failure must not stop the others; closed DMs are
+            // never reported here (L2-63), only what an admin can fix (L5-23).
+            logWarn("attendance-reminders", "Attendance reminders failed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                error,
+            })
+            await reportClanDiscordError({
+                client,
+                guildId: payload.config.guildId,
+                error,
+                source: "attendanceReminders",
+                eventId: event.id,
+                players,
+            })
         }
     }
 }

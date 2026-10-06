@@ -75,26 +75,8 @@ export const references = {
     closeMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:closeMembershipApplicationThread"
     ),
-    consumePlatformIdLinkToken: makeFunctionReference<"mutation">(
-        "platformIdLinks:consumePlatformIdLinkToken"
-    ),
     createMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:createMembershipApplicationThread"
-    ),
-    createMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:createMembershipApplicationDraft"
-    ),
-    updateMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:updateMembershipApplicationDraft"
-    ),
-    getMembershipApplicationDraft: makeFunctionReference<"query">(
-        "discordMembership:getMembershipApplicationDraft"
-    ),
-    discardMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:discardMembershipApplicationDraft"
-    ),
-    createPlatformIdLinkToken: makeFunctionReference<"mutation">(
-        "platformIdLinks:createPlatformIdLinkToken"
     ),
     createTicketThread: makeFunctionReference<"mutation">(
         "discordMembership:createTicketThread"
@@ -136,6 +118,9 @@ export const references = {
         "players:setMatchRecapNotifications"
     ),
     findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
+    findStartedNoticeEvent: makeFunctionReference<"query">(
+        "events:findStartedNoticeEvent"
+    ),
     failMeetingAttendanceRequest: makeFunctionReference<"mutation">(
         "meetingAttendance:failMeetingAttendanceRequest"
     ),
@@ -146,23 +131,17 @@ export const references = {
     getConfigByDiscordGuildId: makeFunctionReference<"query">(
         "discordConfig:getConfigByDiscordGuildId"
     ),
-    getMembershipApplicationPrereq: makeFunctionReference<"query">(
-        "discordMembership:getMembershipApplicationPrereq"
-    ),
     getMembershipApplicationThreadContext: makeFunctionReference<"query">(
         "discordMembership:getMembershipApplicationThreadContext"
-    ),
-    getMembershipCategoryContext: makeFunctionReference<"query">(
-        "discordMembership:getMembershipCategoryContext"
-    ),
-    getTicketCategoryContext: makeFunctionReference<"query">(
-        "discordMembership:getTicketCategoryContext"
     ),
     getTicketThreadContext: makeFunctionReference<"query">(
         "discordMembership:getTicketThreadContext"
     ),
     getDiscordPlatformLinkState: makeFunctionReference<"query">(
         "players:getDiscordPlatformLinkState"
+    ),
+    getLinkContext: makeFunctionReference<"query">(
+        "discordGameAccounts:getLinkContext"
     ),
     searchClanPlayers: makeFunctionReference<"query">(
         "players:searchClanPlayers"
@@ -257,4 +236,19 @@ export const references = {
     markTeamRequestNotified: makeFunctionReference<"mutation">(
         "teamRequests:markNotified"
     ),
+    // Roster, match forum and match DMs (W6b).
+    getMatchForumContext: makeFunctionReference<"query">(
+        "discordMatchForum:forumContext"
+    ),
+    listPendingRosterChanges: makeFunctionReference<"query">(
+        "rosterChanges:listPending"
+    ),
+    claimRosterChanges: makeFunctionReference<"mutation">(
+        "rosterChanges:claim"
+    ),
+    completeRosterChanges: makeFunctionReference<"mutation">(
+        "rosterChanges:complete"
+    ),
+    failRosterChanges: makeFunctionReference<"mutation">("rosterChanges:fail"),
+    getMatchRecapCard: makeFunctionReference<"query">("matchRecaps:recapCard"),
 }

@@ -2,6 +2,7 @@ import {
     IMAGE_MAX_INPUT_BYTES,
     imageAssetKindSchema,
     imageAssetPath,
+    imageAssetFileName,
     sniffImageType,
     validateImageSource,
     type ImageAssetDto,
@@ -23,6 +24,8 @@ export type NormalizedImageUpload = {
     width: number
     height: number
     publicUrl: string
+    /** The uploaded file's own name for display (P8-08); absent when unknown. */
+    fileName?: string
 }
 export type StoreImageAssetResult =
     { ok: true; asset: ImageAssetDto } | { error: string }
@@ -126,6 +129,7 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
             const invalid = validateImageSource({
                 ...source,
                 decoded: await inspectImage(bytes),
+                kind: kind.data,
             })
             if (invalid) return json({ error: invalid }, 400)
             let normalized: Awaited<ReturnType<typeof normalizeImage>>
@@ -136,6 +140,9 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
             }
             if (normalized.bytes.byteLength > IMAGE_MAX_INPUT_BYTES)
                 return json({ error: "too_large" }, 400)
+            const fileName = imageAssetFileName(
+                new URL(request.url).searchParams.get("name")
+            )
             try {
                 const publicId = ports.randomId()
                 const stored = await ports.store(
@@ -147,6 +154,7 @@ export function imageAssetHandlers<Access>(ports: ImageAssetPorts<Access>) {
                         width: normalized.width,
                         height: normalized.height,
                         publicUrl: `${ports.siteUrl().replace(/\/+$/, "")}${imageAssetPath(publicId, normalized.contentType)}`,
+                        ...(fileName ? { fileName } : {}),
                     },
                     normalized.bytes
                 )

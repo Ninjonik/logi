@@ -1,40 +1,119 @@
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
     ChannelType,
+    MessageFlags,
     PermissionFlagsBits,
     type Client,
     type MessageCreateOptions,
 } from "discord.js"
 import {
+    botErrorSummary,
+    type BotErrorSource,
+    type BotPermission,
+} from "../../../src/domain/discord-messages/bot-errors"
+import {
+    findPublicationMessage,
+    PUBLICATION_RENDER_VERSION,
+    publicationCreatePayload,
+} from "./publication-marker"
+import {
     publish,
     PublicationNotSent,
 } from "../../../src/application/discord-publications/publish"
+import {
+    PublicationChannelError,
+    PublicationPermissionError,
+} from "./publication-errors"
 import { publicationFiles, componentAttachments } from "./publication-files"
+import { getSystemMessages } from "../../../src/lib/clan-language/system"
+import { clanLanguageForGuild } from "../runtime/clan-language"
 import { fetchOwnedPublicationMessage } from "./owned-message"
 import { makeFunctionReference } from "convex/server"
+import { errorFacts } from "../error-reporting"
 import { createHash } from "node:crypto"
 import { env } from "../environment"
 import { convex } from "../convex"
 export { isUnknownMessage } from "./owned-message"
+export {
+    PublicationChannelError,
+    PublicationPermissionError,
+} from "./publication-errors"
 
 const discordCode = (error: unknown) =>
     typeof error === "object" && error !== null && "code" in error
         ? error.code
         : undefined
+
+/**
+ * The content hash of a message: file contents are versioned by their names,
+ * so the bytes themselves are not hashed (a re-used image is not an edit).
+ */
+export function publicationHash(message: MessageCreateOptions) {
+    const files = (message.files ?? []).map((file) =>
+        file && typeof file === "object" && "name" in file
+            ? String(file.name)
+            : "file"
+    )
+    return createHash("sha256")
+        .update(PUBLICATION_RENDER_VERSION)
+        .update(JSON.stringify({ ...message, files }))
+        .digest("hex")
+}
 /** Unknown Channel (10003): the previous channel was deleted. Permission errors
  * keep the binding so a restored channel never receives a duplicate. */
 const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
 
-function hasMarker(value: unknown, marker: string): boolean {
-    if (!value || typeof value !== "object") return false
-    if ("custom_id" in value && value.custom_id === marker) return true
-    return Object.values(value).some((child) =>
-        Array.isArray(child)
-            ? child.some((v) => hasMarker(v, marker))
-            : hasMarker(child, marker)
+/** What a managed message is, by its key, for the stored error's title. */
+export function publicationSource(key: string | undefined): BotErrorSource {
+    // `event:<id>:info` is the roster card in its own channel (L1 1.11).
+    if (key?.startsWith("event:"))
+        return /:(info|roster(-changes)?)$/.test(key)
+            ? "roster"
+            : "announcement"
+    if (key === "ticket") return "ticketPanel"
+    if (key === "membership") return "applicationPanel"
+    if (key === "calendar") return "calendarPanel"
+    return "publicPanel"
+}
+
+/**
+ * The last delivery error stored for the dashboard, in the clan language
+ * (board L5-44): an uncertain create (never re-sent) or the errors
+ * channel's title, "Proč" and "Co udělat" for the failure. No internal
+ * error text reaches the clan.
+ */
+export function publicationDeliveryError(
+    language: string | null | undefined,
+    error: unknown,
+    key?: string
+) {
+    const copy = getSystemMessages(language)
+    if (
+        error instanceof Error &&
+        error.message.startsWith("Delivery uncertain")
     )
+        return copy.publication.deliveryUncertain
+    // The same facts as the errors channel: a wrapped Discord answer, the
+    // missing permissions of the channel pre-check or a deleted channel.
+    const { facts } = errorFacts(error)
+    return botErrorSummary(
+        copy.errorsChannel,
+        copy.locale,
+        publicationSource(key),
+        facts
+    )
+}
+
+/** The permissions a managed message needs in its channel. */
+function publicationPermissions(
+    message: MessageCreateOptions
+): BotPermission[] {
+    return [
+        "ViewChannel",
+        "ReadMessageHistory",
+        "SendMessages",
+        ...(message.embeds?.length ? (["EmbedLinks"] as const) : []),
+        ...(message.files?.length ? (["AttachFiles"] as const) : []),
+    ]
 }
 const ref = (name: string) =>
     makeFunctionReference<"mutation">(`discordPublications:${name}`)
@@ -52,33 +131,29 @@ export async function publishManagedMessage(
 ) {
     const guild = await client.guilds.fetch(input.guildId)
     const channel = async (id: string) => {
-        const found = await guild.channels.fetch(id, { force: true })
+        const found = await guild.channels
+            .fetch(id, { force: true })
+            .catch((error: unknown) => {
+                if (isUnknownChannel(error))
+                    throw new PublicationChannelError("channel_missing")
+                throw error
+            })
+        if (!found) throw new PublicationChannelError("channel_missing")
         if (
-            !found ||
             ![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(
                 found.type
             ) ||
             !found.isTextBased()
         )
-            throw new Error("Unsupported publication channel.")
+            throw new PublicationChannelError("channel_type")
         const me = await guild.members.fetchMe({ force: true })
         // Only demand what this message needs; text-only panels must not fail on Attach Files.
-        if (
-            !found
-                .permissionsFor(me)
-                ?.has([
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.ReadMessageHistory,
-                    PermissionFlagsBits.SendMessages,
-                    ...(input.message.embeds?.length
-                        ? [PermissionFlagsBits.EmbedLinks]
-                        : []),
-                    ...(input.message.files?.length
-                        ? [PermissionFlagsBits.AttachFiles]
-                        : []),
-                ])
+        const granted = found.permissionsFor(me)
+        const missing = publicationPermissions(input.message).filter(
+            (permission) => !granted?.has(PermissionFlagsBits[permission])
         )
-            throw new Error("Publication channel permissions missing.")
+        if (missing.length)
+            throw new PublicationPermissionError(missing, found.name, found.id)
         return found
     }
     const owned = async (id: string, messageId: string) => {
@@ -99,9 +174,8 @@ export async function publishManagedMessage(
         }
     }
     // Serialize builders before hashing; counts/timestamps come from observation data.
-    const hash = createHash("sha256")
-        .update(JSON.stringify(input.message))
-        .digest("hex")
+    // The render version re-edits every message once when the payload shape changes.
+    const hash = publicationHash(input.message)
     const result = await publish(
         {
             claim: () =>
@@ -122,18 +196,18 @@ export async function publishManagedMessage(
                     secret: env.internalSecret,
                     ...state,
                 }),
-            finish: (state, error) =>
+            finish: async (state, error) =>
                 convex.mutation(ref("finish"), {
                     secret: env.internalSecret,
                     id: state.id,
                     fence: state.fence,
                     ...(error
                         ? {
-                              error:
-                                  error instanceof Error &&
-                                  error.message.startsWith("Delivery uncertain")
-                                      ? error.message
-                                      : "Discord delivery failed; check channel permissions or retry after the service recovers.",
+                              error: publicationDeliveryError(
+                                  await clanLanguageForGuild(input.guildId),
+                                  error,
+                                  input.key
+                              ),
                           }
                         : {}),
                 }),
@@ -141,54 +215,33 @@ export async function publishManagedMessage(
         {
             exists: async (id, messageId) =>
                 Boolean(await previousGone(id, messageId)),
-            recover: async (id, marker) => {
-                const matches = [
-                    ...(
+            // Only an uncertain create is recovered this way; every other
+            // step uses the stored message ID.
+            recover: async (id, marker) =>
+                findPublicationMessage(
+                    (
                         await (await channel(id)).messages.fetch({ limit: 100 })
                     ).values(),
-                ].filter(
-                    (message) =>
-                        message.author.id === client.user?.id &&
-                        hasMarker(
-                            message.components.map((c) => c.toJSON()),
-                            marker
-                        )
-                )
-                if (matches.length > 1)
-                    throw new Error(
-                        "Multiple owned publication markers require operator reconciliation."
-                    )
-                return matches[0]?.id ?? null
-            },
+                    marker,
+                    client.user?.id
+                ),
             create: async (id, marker) => {
-                const destination = await channel(id).catch(() => {
-                    throw new PublicationNotSent(
-                        "Channel unavailable before send."
-                    )
-                })
-                const markerRow =
-                    new ActionRowBuilder<ButtonBuilder>().addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(marker)
-                            .setLabel("Automatic updates")
-                            .setStyle(ButtonStyle.Secondary)
-                            .setDisabled(true)
-                    )
+                const destination = await channel(id).catch(
+                    (error: unknown) => {
+                        // `cause` for the panel and seed classifiers,
+                        // `deliveryCause` for the stored error (L5-44).
+                        throw Object.assign(
+                            new PublicationNotSent(
+                                "Channel unavailable before send."
+                            ),
+                            { cause: error, deliveryCause: error }
+                        )
+                    }
+                )
+                // No visible marker: the first component carries an
+                // invisible id for recovering an uncertain create.
                 const sent = await destination
-                    .send({
-                        ...input.message,
-                        components: [
-                            ...(input.message.components ?? []),
-                            markerRow,
-                        ],
-                        allowedMentions: input.message.allowedMentions ?? {
-                            parse: [],
-                        },
-                        nonce: BigInt(
-                            `0x${createHash("sha256").update(marker).digest("hex").slice(0, 16)}`
-                        ).toString(),
-                        enforceNonce: true,
-                    })
+                    .send(publicationCreatePayload(input.message, marker))
                     .catch((error) => {
                         if (
                             typeof error?.status === "number" &&
@@ -196,8 +249,11 @@ export async function publishManagedMessage(
                                 error.status
                             )
                         )
-                            throw new PublicationNotSent(
-                                "Discord rejected the create request."
+                            throw Object.assign(
+                                new PublicationNotSent(
+                                    "Discord rejected the create request."
+                                ),
+                                { cause: error }
                             )
                         throw error
                     })
@@ -210,6 +266,14 @@ export async function publishManagedMessage(
                         "Message removed during publication; retry."
                     )
                 const { flags, ...body } = input.message
+                // Discord cannot turn a Components V2 message back into a
+                // classic one: remove it, and the next pass sends it anew.
+                if (!flags && message.flags.has(MessageFlags.IsComponentsV2)) {
+                    await message.delete()
+                    throw new Error(
+                        "Message removed during publication; retry."
+                    )
+                }
                 await message.edit({
                     ...body,
                     ...publicationFiles(body.files, [

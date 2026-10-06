@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
+import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -296,6 +297,88 @@ test("settings API queues the documented settings payload", async () => {
     assert.equal(payload.guildId, "guild-a")
     assert.ok(payload.id)
     assert.ok(payload.createdAt)
+})
+
+const PANEL_GRAPHICS_DEFAULT = {
+    defaultStyle: "a",
+    revision: 0,
+    servers: [],
+    maps: [],
+}
+
+test("settings responses carry the feature slices and refuse unknown slices", async () => {
+    const sliceKeys = CLAN_SETTINGS_SLICES.map((slice) => slice.key).sort()
+    const db = new FakeDb()
+    db.tables.discordConfigs.set("config-a", {
+        _id: "config-a",
+        guildId: "guild-a",
+        playerStatsServers: [{ token: "secret" }],
+    })
+    const read = (await (
+        publicApi.getClanSettings as unknown as {
+            _handler: (
+                ctx: { db: FakeDb },
+                args: Record<string, unknown>
+            ) => Promise<Record<string, unknown> | null>
+        }
+    )._handler(
+        { db },
+        { secret: "dev-internal-auth-secret", keyHash: "key" }
+    )) as {
+        slices: Record<string, unknown>
+        discordConfig: Record<string, unknown>
+    }
+    // Every registered slice answers, also for a clan that saved nothing.
+    assert.deepEqual(Object.keys(read.slices).sort(), sliceKeys)
+    // Panel graphics defaults to style A.
+    assert.deepEqual(read.slices.panelGraphics, PANEL_GRAPHICS_DEFAULT)
+    assert.deepEqual(read.slices.matchMessages, {
+        rosterMessageVariant: "photo_text",
+        rosterChangesPost: true,
+        rosterChangesDm: true,
+        attendanceNoticesInThread: false,
+    })
+    assert.equal("playerStatsServers" in read.discordConfig, false)
+
+    const refused = await handler(publicApi.mutateClanSettings)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "slice-key",
+            bodyHash: "slice-body",
+            methodPath: "PATCH /clan/settings",
+            slices: { notASlice: { enabled: true } },
+        }
+    )
+    assert.equal(refused?.status, 400)
+    assert.equal(
+        JSON.parse(refused!.body).error.message,
+        "Settings patch contains an unsupported field."
+    )
+    assert.equal(db.tables.discordConfigs.get("config-a")!.notASlice, undefined)
+
+    const updated = await handler(publicApi.mutateClanSettings)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "slice-key-2",
+            bodyHash: "slice-body-2",
+            methodPath: "PATCH /clan/settings",
+            timezone: "Europe/Prague",
+            slices: { matchMessages: { rosterMessageVariant: "photo" } },
+        }
+    )
+    assert.equal(updated?.status, 200)
+    const slices = JSON.parse(updated!.body).data.slices
+    assert.deepEqual(Object.keys(slices).sort(), sliceKeys)
+    assert.deepEqual(slices.panelGraphics, PANEL_GRAPHICS_DEFAULT)
+    assert.equal(slices.matchMessages.rosterMessageVariant, "photo")
+    assert.equal(slices.matchMessages.rosterChangesDm, true)
+    const stored = db.tables.discordConfigs.get("config-a")!
+    assert.equal(stored.rosterMessageVariant, "photo")
+    assert.equal(stored.rosterChangesDmDefault, undefined)
 })
 
 test("event signup queues a roster update through the shared queue", async () => {
@@ -600,6 +683,61 @@ test("roster API verifies its parent event and queues one roster webhook", async
     assert.equal(result?.status, 200)
     assert.equal(db.tables.rosters.size, 0)
     assert.equal(db.tables.webhookDeliveries.size, 1)
+})
+
+test("a roster published through the API keeps the published version like the dashboard (D5-B04)", async () => {
+    const db = new FakeDb()
+    db.tables.events.set("event-a", {
+        _id: "event-a",
+        guildId: "guild-a",
+        registrationEnd: "2020-01-01T00:00:00.000Z",
+        participants: [],
+    })
+    const squad = (name: string) => [
+        {
+            name,
+            group: "Pěchota",
+            order: 0,
+            color: "#000000",
+            players: [{ id: "910000000000000011", ack: false }],
+        },
+    ]
+    db.tables.rosters.set("roster-a", {
+        _id: "roster-a",
+        eventId: "event-a",
+        squads: squad("F1"),
+        reservePlayerIds: [],
+        notAttendingPlayerIds: [],
+        published: true,
+    })
+    const result = await handler(publicApi.mutateClanRoster)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "roster-publish-key",
+            bodyHash: "",
+            methodPath: "PUT /clan/rosters/{rosterId}",
+            operation: "update",
+            rosterId: "roster-a",
+            payload: {
+                eventId: "event-a",
+                squads: squad("F2"),
+                reservePlayerIds: [],
+                notAttendingPlayerIds: [],
+                published: true,
+            },
+        }
+    )
+
+    assert.equal(result?.status, 200)
+    const saved = db.tables.rosters.get("roster-a")
+    assert.deepEqual(saved?.previousPublishedPlaces, [
+        { userId: "910000000000000011", squad: "F1" },
+    ])
+    assert.deepEqual(saved?.publishedPlaces, [
+        { userId: "910000000000000011", squad: "F2" },
+    ])
 })
 
 test("roster API rejects a roster whose parent event belongs to another guild", async () => {

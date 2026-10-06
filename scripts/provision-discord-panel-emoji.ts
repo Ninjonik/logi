@@ -1,5 +1,5 @@
 import { provisionEmoji } from "../src/application/discord-publications/provision-emoji"
-import { factionAssets } from "../discord-bot/src/public-panels/assets"
+import { applicationEmojiAssets } from "../discord-bot/src/public-panels/assets"
 import { REST, Routes } from "discord.js"
 
 async function main() {
@@ -20,7 +20,8 @@ async function main() {
     }
     if (app.id !== applicationId)
         throw new Error("Selected token belongs to a different application.")
-    const result = await provisionEmoji(await factionAssets(), {
+    // The bot provisions the same fixed set on start; this is an operator fallback.
+    const result = await provisionEmoji(await applicationEmojiAssets(), {
         list: async () =>
             (
                 (await rest.get(Routes.applicationEmojis(applicationId))) as {

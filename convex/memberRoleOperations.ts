@@ -214,7 +214,10 @@ export async function enqueueManagedRoles(
         assignmentFingerprint: roleAssignmentFingerprint(assignment),
         policyFingerprint: JSON.stringify(policy),
         allowedRoleIds: policy.roleIds,
-        desiredRoleIds: desiredMembershipRoles(policy, assignment),
+        // A submitted application waits without the clan role (N4-40).
+        desiredRoleIds: desiredMembershipRoles(policy, assignment, {
+            applicant: actor.kind === "application",
+        }),
         departureRevision: observation?.departureRevision ?? "0",
         status: discordUserId ? "pending" : "denied",
         attempts: 0,

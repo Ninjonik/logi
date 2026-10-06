@@ -5,7 +5,9 @@ import {
     SETTINGS_SECTIONS,
     isSettingsSectionId,
     mergedSettingsSection,
+    settingsMenuSection,
     settingsSectionForRequirement,
+    settingsSectionParent,
     settingsSectionStatus,
     settingsSetupProgress,
     visibleSettingsSections,
@@ -38,6 +40,8 @@ test("section ids are unique and recognised", () => {
 test("sign-in settings live on the website page and old links redirect there", () => {
     assert.ok(!isSettingsSectionId("login"))
     assert.equal(mergedSettingsSection("login"), "website")
+    // The /stats page became the commands page (N3).
+    assert.equal(mergedSettingsSection("stats"), "commands")
     assert.equal(mergedSettingsSection("website"), undefined)
     assert.equal(mergedSettingsSection("constructor"), undefined)
 })
@@ -68,7 +72,7 @@ test("a new clan sees every required setting as missing", () => {
 })
 
 test("optional features read as on or off and tools have no state", () => {
-    assert.equal(settingsSectionStatus("stats", configured).state, "ready")
+    assert.equal(settingsSectionStatus("commands", configured).state, "none")
     assert.equal(settingsSectionStatus("tickets", configured).state, "off")
     assert.equal(settingsSectionStatus("imports", configured).state, "none")
 })
@@ -87,13 +91,17 @@ test("each requirement points at the page that fixes it", () => {
     assert.equal(settingsSectionForRequirement("enabledGames"), "games")
 })
 
-test("the Matches group holds templates, presets and Discord messages in menu order", () => {
+test("the Matches group holds templates and presets; messages follow channels under Discord (N1-01)", () => {
     assert.deepEqual(
         SETTINGS_SECTIONS.filter((section) => section.group === "matches").map(
             (section) => section.id
         ),
-        ["match-templates", "presets", "messages"]
+        ["match-templates", "presets"]
     )
+    const discord = SETTINGS_SECTIONS.filter(
+        (section) => section.group === "discord"
+    ).map((section) => section.id)
+    assert.equal(discord.indexOf("messages"), discord.indexOf("channels") + 1)
     assert.ok(isSettingsSectionId("event-categories"))
     assert.equal(
         SETTINGS_SECTIONS.find((section) => section.id === "event-categories")
@@ -104,4 +112,18 @@ test("the Matches group holds templates, presets and Discord messages in menu or
         settingsSectionStatus("match-templates", configured).state,
         "none"
     )
+})
+
+test("Panely v Discordu sits in the Discord group with Grafika panelů and Seed under it (P1-01, P3-01, P8-01)", () => {
+    const ids = SETTINGS_SECTIONS.filter(
+        (section) => section.group === "discord"
+    ).map((section) => section.id)
+    assert.ok(ids.indexOf("discord-panels") < ids.indexOf("commands"))
+    assert.equal(settingsSectionParent("panel-graphics"), "discord-panels")
+    assert.equal(settingsSectionParent("discord-seed"), "discord-panels")
+    assert.equal(settingsSectionParent("discord-panels"), undefined)
+    assert.equal(settingsMenuSection("panel-graphics"), "discord-panels")
+    assert.equal(settingsMenuSection("commands"), "commands")
+    assert.ok(isSettingsSectionId("discord-panels"))
+    assert.ok(isSettingsSectionId("discord-seed"))
 })

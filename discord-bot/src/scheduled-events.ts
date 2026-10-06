@@ -9,14 +9,11 @@ import {
     GuildScheduledEventStatus,
 } from "discord.js"
 
-import {
-    buildScheduledEventDescription,
-    resolveScheduledEventEndTime,
-} from "../../src/application/discord-sync/scheduled-event-content"
+import { resolveScheduledEventEndTime } from "../../src/domain/events/scheduled-event-content"
 import { deriveScheduledEventLifecycle } from "../../src/domain/discord-sync/rules"
 
 import { reportClanDiscordError } from "./error-reporting"
-import type { ClanLanguage, EventRecord } from "./types"
+import type { EventRecord } from "./types"
 import { logWarn } from "./log"
 
 export type ScheduledLifecycle =
@@ -72,7 +69,8 @@ function getDiscordErrorDetails(error: unknown) {
 export async function syncScheduledDiscordEvent(input: {
     guild: Guild
     event: EventRecord
-    language: ClanLanguage
+    /** Name and description in the clan language (`buildScheduledEventContent`). */
+    content: { name: string; description: string }
     meetingChannel: GuildBasedChannel | null
     scheduledEventId?: string
     desiredLifecycle: ScheduledLifecycle
@@ -80,7 +78,7 @@ export async function syncScheduledDiscordEvent(input: {
     const {
         guild,
         event,
-        language,
+        content,
         meetingChannel,
         scheduledEventId,
         desiredLifecycle,
@@ -150,8 +148,8 @@ export async function syncScheduledDiscordEvent(input: {
 
         scheduledEvent = await guild.scheduledEvents
             .create({
-                name: event.name.slice(0, 100),
-                description: buildScheduledEventDescription(event, language),
+                name: content.name,
+                description: content.description,
                 scheduledStartTime,
                 scheduledEndTime,
                 privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
@@ -199,8 +197,8 @@ export async function syncScheduledDiscordEvent(input: {
     } else if (scheduledEvent.status === GuildScheduledEventStatus.Scheduled) {
         scheduledEvent = await scheduledEvent
             .edit({
-                name: event.name.slice(0, 100),
-                description: buildScheduledEventDescription(event, language),
+                name: content.name,
+                description: content.description,
                 scheduledStartTime,
                 scheduledEndTime,
                 channel: eventChannel.id,
