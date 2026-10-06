@@ -96,9 +96,6 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "pts",
             newMap: "New map",
             combinedTitle: "Where we play",
-            passwordHiddenNotice: (channel, panel) =>
-                `Everyone (@everyone) can now see ${channel}, so the bot removed the server password from the panel ${panel}. To show the password again, make the channel private.`,
-            passwordHiddenAction: "Hide the server password",
             buttons: {
                 join: "Join",
                 players: "Show players",
@@ -281,9 +278,6 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "b.",
             newMap: "Nová mapa",
             combinedTitle: "Kde se hraje",
-            passwordHiddenNotice: (channel, panel) =>
-                `Kanál ${channel} teď vidí všichni (@everyone), proto bot z panelu ${panel} odstranil heslo serveru. Aby se heslo zase ukazovalo, nastav kanál jako soukromý.`,
-            passwordHiddenAction: "Skrytí hesla serveru",
             buttons: {
                 join: "Připojit se",
                 players: "Zobrazit hráče",
@@ -463,9 +457,6 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "Pkt.",
             newMap: "Neue Karte",
             combinedTitle: "Wo gespielt wird",
-            passwordHiddenNotice: (channel, panel) =>
-                `Alle (@everyone) können ${channel} jetzt sehen, deshalb hat der Bot das Serverpasswort aus dem Panel ${panel} entfernt. Damit es wieder erscheint, mach den Kanal privat.`,
-            passwordHiddenAction: "Serverpasswort ausblenden",
             buttons: {
                 join: "Beitreten",
                 players: "Spieler anzeigen",

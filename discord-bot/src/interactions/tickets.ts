@@ -47,6 +47,7 @@ import {
 } from "../ui/replies"
 import { getIntlLocaleForClanLanguage } from "../../../src/lib/clan-language/core"
 import { getTicketMessages } from "../../../src/lib/clan-language/tickets"
+import { PublicationChannelError } from "../sync/publication-errors"
 import { cleanupThread, resolveSupportMemberIds } from "./shared"
 import type { DiscordConfig, TicketCategory } from "../types"
 import type { InteractionFeature } from "./registry"
@@ -78,8 +79,6 @@ export type TicketPorts = {
     reporter?: ErrorsChannelReporter
     now?: () => number
 }
-
-const LOCATION = "Ticket system"
 
 function categoryOf(config: DiscordConfig | null, categoryId: string) {
     return config?.ticketSettings?.categories.find(
@@ -236,15 +235,17 @@ export async function createTicket(
     if (!interaction.deferred && !interaction.replied)
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-    const fail = (report: Omit<ErrorsChannelReport, "location" | "scope">) =>
+    // The errors channel names the category and who tried (L5-12); the
+    // person was told to try again later.
+    const fail = (report: Pick<ErrorsChannelReport, "error" | "channelId">) =>
         replyError(interaction, ticketFailedCard(copy), {
             ...options,
             reporter: ports.reporter,
             report: {
                 ...report,
-                location: LOCATION,
-                scope: "interaction",
-                target: label,
+                source: "ticketOpen",
+                userId: interaction.user.id,
+                categoryLabel: label,
             },
         })
 
@@ -260,11 +261,10 @@ export async function createTicket(
         parent.type !== ChannelType.GuildText
     ) {
         await fail({
-            error: new Error(
-                "The ticket channel is missing or is not a text channel."
+            error: new PublicationChannelError(
+                parent ? "channel_type" : "channel_missing"
             ),
-            action: "Open a ticket",
-            details: { channelId: parentId },
+            channelId: parentId,
         })
         return
     }
@@ -285,11 +285,18 @@ export async function createTicket(
             categoryId: category.id,
             error,
         })
-        await fail({ error, action: "Create a ticket thread" })
+        await fail({ error, channelId: parent.id })
         return
     }
 
-    await addTicketMembers(guild, thread, interaction.user.id, category, ports)
+    await addTicketMembers(
+        guild,
+        thread,
+        interaction.user.id,
+        category,
+        label,
+        ports
+    )
 
     let created: CreatedTicket
     try {
@@ -308,12 +315,22 @@ export async function createTicket(
             error,
         })
         await cleanupThread(thread, "Ticket record creation failed")
-        await fail({ error, action: "Store a new ticket" })
+        await fail({ error, channelId: parent.id })
         return
     }
 
     const number = created.ticket.ticketNumber
     const categoryLabel = created.ticket.categoryLabel || label
+    // A later step: the ticket is open and its author was told so, so the
+    // entry names the ticket and its author and says it is not retried.
+    const background = {
+        client: interaction.client,
+        guildId,
+        channelId: parent.id,
+        userId: interaction.user.id,
+        categoryLabel,
+        number,
+    }
     const mentions = ticketIntroMentions({
         authorId: interaction.user.id,
         supportRoleIds: category.supportRoleIds,
@@ -355,16 +372,7 @@ export async function createTicket(
                 error,
             })
             await reportToErrorsChannel(
-                {
-                    client: interaction.client,
-                    guildId,
-                    error,
-                    action: "Send the first ticket message",
-                    location: LOCATION,
-                    scope: "interaction",
-                    target: thread.name,
-                    details: { threadId: thread.id },
-                },
+                { ...background, error, source: "ticketIntro" },
                 ports.reporter
             )
             return null
@@ -387,16 +395,7 @@ export async function createTicket(
                 error,
             })
             await reportToErrorsChannel(
-                {
-                    client: interaction.client,
-                    guildId,
-                    error,
-                    action: "Rename a ticket thread",
-                    location: LOCATION,
-                    scope: "interaction",
-                    target: thread.name,
-                    details: { threadId: thread.id },
-                },
+                { ...background, error, source: "ticketRename" },
                 ports.reporter
             )
         })
@@ -422,6 +421,7 @@ async function addTicketMembers(
     thread: ThreadChannel,
     authorId: string,
     category: TicketCategory,
+    categoryLabel: string,
     ports: TicketPorts
 ) {
     await guild.members.fetch().catch(() => null)
@@ -444,11 +444,10 @@ async function addTicketMembers(
                     client: thread.client,
                     guildId: guild.id,
                     error,
-                    action: "Add a participant to a ticket thread",
-                    location: LOCATION,
-                    scope: "interaction",
-                    target: thread.name,
-                    details: { threadId: thread.id, memberId },
+                    source: "ticketSupport",
+                    channelId: thread.parentId ?? undefined,
+                    userId: authorId,
+                    categoryLabel,
                 },
                 ports.reporter
             )

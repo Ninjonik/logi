@@ -98,3 +98,28 @@ test("Discord 429 supplies bounded Retry-After and never treats missing guild as
     })
     await assert.rejects(unavailable.observe(), /provider_unavailable/)
 })
+test("a refused role change keeps Discord's code for the errors channel (L5-14)", async () => {
+    const adapter = createManagedRoleDiscord({
+        token: "synthetic",
+        guildId,
+        userId: targetId,
+        actorId,
+        botUserId: botId,
+        operationId: "synthetic",
+        fetch: async () =>
+            Response.json(
+                { code: 50013, message: "Missing Permissions" },
+                { status: 403 }
+            ),
+    })
+    await assert.rejects(
+        adapter.change("add", roleId),
+        (error: unknown) =>
+            error instanceof Error &&
+            error.message === "discord_forbidden" &&
+            "discordCode" in error &&
+            error.discordCode === 50013 &&
+            "denied" in error &&
+            error.denied === true
+    )
+})

@@ -1,6 +1,7 @@
 import {
     ManagedRoleFailure,
     reconcileManagedRoles,
+    type ManagedRoleFailureDetail,
     type ManagedRoleOutcome,
 } from "../../../src/application/membership/reconcile-managed-roles"
 import {
@@ -8,7 +9,10 @@ import {
     type RoleEvidence,
     type RoleSnapshot,
 } from "../../../src/infrastructure/discord/managed-roles"
-import { createRoleFailureReporter } from "./role-failure-reports"
+import {
+    createRoleFailureReporter,
+    roleFailureError,
+} from "./role-failure-reports"
 import { reportClanDiscordError } from "../error-reporting"
 import { makeFunctionReference } from "convex/server"
 import type { Client } from "discord.js"
@@ -42,7 +46,8 @@ type Ports = {
         status: ManagedRoleOutcome,
         reason: string,
         retryAfterMs?: number,
-        evidence?: RoleEvidence
+        evidence?: RoleEvidence,
+        detail?: ManagedRoleFailureDetail
     ): Promise<boolean>
 }
 export async function processManagedRoleOperation(claim: Claim, ports: Ports) {
@@ -88,8 +93,8 @@ export async function processManagedRoleOperation(claim: Claim, ports: Ports) {
             if (!discord) throw new Error("Missing role work.")
             await discord.change(action, id)
         },
-        finish: (status, reason, retryAfterMs) =>
-            ports.finish(claim, status, reason, retryAfterMs, evidence),
+        finish: (status, reason, retryAfterMs, detail) =>
+            ports.finish(claim, status, reason, retryAfterMs, evidence, detail),
     })
 }
 const claimReference = makeFunctionReference<"mutation">(
@@ -107,13 +112,16 @@ let roleFailures: ReturnType<typeof createRoleFailureReporter> | null = null
 /** One grouped errors-channel report per clan for role changes an admin must fix (L5-14). */
 function roleFailureReporter(client: Client) {
     roleFailures ??= createRoleFailureReporter({
+        // The role and Discord's answer pick "role above Logi", "role
+        // deleted" or the missing permission (L5-14, L5-21).
         report: (report) =>
             reportClanDiscordError({
                 client,
                 guildId: report.guildId,
                 source: "memberRoles",
                 memberIds: report.memberIds,
-                error: new Error(report.reasons.join(", ")),
+                roleId: report.roleId,
+                error: roleFailureError(report),
             }),
         schedule: (run, delayMs) => {
             setTimeout(run, delayMs).unref()
@@ -158,13 +166,16 @@ export async function syncManagedMemberRoles(client: Client, guildId: string) {
                     outcome,
                     reason,
                     retryAfterMs,
-                    evidence
+                    evidence,
+                    detail
                 ) => {
                     if (outcome === "denied" && memberId)
                         roleFailureReporter(client).add({
                             guildId,
                             memberId,
                             reason,
+                            roleId: detail?.roleId,
+                            discordCode: detail?.discordCode,
                         })
                     return (await convex.mutation(finishReference, {
                         secret: env.internalSecret,

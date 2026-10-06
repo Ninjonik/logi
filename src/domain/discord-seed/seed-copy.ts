@@ -107,11 +107,6 @@ export type SeedMessagesCopy = {
             resume: string
         }
     }
-    /** Notices for the clan's errors channel (admins). */
-    errors: {
-        controlChannelPublic: (channel: string) => string
-        controlAction: string
-    }
     replies: {
         startedTitle: (server: string) => string
         /** "Výzva je v #seed a role Seed dostala ping. Panel v #servery ukazuje průběh." */

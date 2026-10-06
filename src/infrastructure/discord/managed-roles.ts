@@ -120,7 +120,12 @@ export function createManagedRoleDiscord(input: {
         )
             return null
         if (response.status === 403 || response.status === 401)
-            throw new ManagedRoleFailure("discord_forbidden", undefined, true)
+            throw new ManagedRoleFailure(
+                "discord_forbidden",
+                undefined,
+                true,
+                error.success ? error.data.code : undefined
+            )
         if (!response.ok) throw new ManagedRoleFailure("provider_unavailable")
         return body
     }

@@ -26,6 +26,7 @@ import {
     withTimeout,
 } from "../utils"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
+import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
@@ -46,6 +47,26 @@ import { env } from "../environment"
 // a scheduled Discord event and forum provisioning. Discord rate limits make
 // the previous 20-second aggregate deadline too short for that valid work.
 const EVENT_SYNC_TIMEOUT_MS = 60_000
+
+/**
+ * A failed part of the event sync that has its own title in the errors
+ * channel: the roster card in its channel reads "Soupiska se nezveřejnila"
+ * (L5-17), not the announcement's title. The cause stays readable.
+ */
+export class EventSyncStepError extends Error {
+    constructor(
+        readonly source: Extract<BotErrorSource, "roster">,
+        readonly cause: unknown
+    ) {
+        super("Event sync step failed.")
+        this.name = "EventSyncStepError"
+    }
+}
+
+/** The errors channel's source of a failed event sync. */
+export function eventSyncErrorSource(error: unknown): BotErrorSource {
+    return error instanceof EventSyncStepError ? error.source : "announcement"
+}
 
 async function buildPublishedRosterImageAttachment(
     event: EventRecord,
@@ -307,14 +328,8 @@ export async function syncPayloadEvents(
                 client,
                 guildId: payload.config.guildId,
                 error,
-                action: `Sync event "${event.name}"`,
-                location: "Event sync",
-                scope: "event-sync",
-                target: event.name,
-                details: {
-                    eventId: event.id,
-                    status: event.status,
-                },
+                source: eventSyncErrorSource(error),
+                eventId: event.id,
             })
         }
     }
@@ -535,7 +550,9 @@ async function syncEvent(
                 event,
                 roster,
                 guild
-            )
+            ).catch((error: unknown) => {
+                throw new EventSyncStepError("roster", error)
+            })
         } else {
             await retireEventMessage(
                 client,

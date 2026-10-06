@@ -7,8 +7,6 @@ import {
 } from "discord.js"
 import {
     botErrorSummary,
-    classifyDiscordFailure,
-    type BotErrorFacts,
     type BotErrorSource,
     type BotPermission,
 } from "../../../src/domain/discord-messages/bot-errors"
@@ -21,41 +19,29 @@ import {
     publish,
     PublicationNotSent,
 } from "../../../src/application/discord-publications/publish"
+import {
+    PublicationChannelError,
+    PublicationPermissionError,
+} from "./publication-errors"
 import { publicationFiles, componentAttachments } from "./publication-files"
 import { getSystemMessages } from "../../../src/lib/clan-language/system"
 import { clanLanguageForGuild } from "../runtime/clan-language"
 import { fetchOwnedPublicationMessage } from "./owned-message"
-import { discordFailureOf } from "../error-reporting"
 import { makeFunctionReference } from "convex/server"
+import { errorFacts } from "../error-reporting"
 import { createHash } from "node:crypto"
 import { env } from "../environment"
 import { convex } from "../convex"
 export { isUnknownMessage } from "./owned-message"
+export {
+    PublicationChannelError,
+    PublicationPermissionError,
+} from "./publication-errors"
 
 const discordCode = (error: unknown) =>
     typeof error === "object" && error !== null && "code" in error
         ? error.code
         : undefined
-
-/**
- * Why a publication channel cannot take the message, so the dashboard can
- * name the cause and the fix (P1-16): the channel is gone, is not a text
- * channel, or the bot lacks named permissions there.
- */
-export class PublicationChannelError extends Error {
-    constructor(
-        readonly reason:
-            "channel_missing" | "channel_type" | "missing_permissions",
-        readonly permissions: string[] = []
-    ) {
-        super(
-            reason === "missing_permissions"
-                ? "Publication channel permissions missing."
-                : "Unsupported publication channel."
-        )
-        this.name = "PublicationChannelError"
-    }
-}
 
 /**
  * The content hash of a message: file contents are versioned by their names,
@@ -76,25 +62,13 @@ export function publicationHash(message: MessageCreateOptions) {
  * keep the binding so a restored channel never receives a duplicate. */
 const isUnknownChannel = (error: unknown) => discordCode(error) === 10003
 
-/**
- * The publication channel lacks permissions the message needs. It is a
- * `PublicationChannelError` ("missing_permissions") for the panel and seed
- * classifiers, and names the channel for the errors channel (L5).
- */
-export class PublicationPermissionError extends PublicationChannelError {
-    constructor(
-        readonly missing: BotPermission[],
-        readonly channelName: string
-    ) {
-        super("missing_permissions", missing)
-        this.name = "PublicationPermissionError"
-    }
-}
-
 /** What a managed message is, by its key, for the stored error's title. */
 export function publicationSource(key: string | undefined): BotErrorSource {
+    // `event:<id>:info` is the roster card in its own channel (L1 1.11).
     if (key?.startsWith("event:"))
-        return /:roster(-changes)?$/.test(key) ? "roster" : "announcement"
+        return /:(info|roster(-changes)?)$/.test(key)
+            ? "roster"
+            : "announcement"
     if (key === "ticket") return "ticketPanel"
     if (key === "membership") return "applicationPanel"
     if (key === "calendar") return "calendarPanel"
@@ -118,19 +92,9 @@ export function publicationDeliveryError(
         error.message.startsWith("Delivery uncertain")
     )
         return copy.publication.deliveryUncertain
-    const wrapped =
-        error instanceof PublicationNotSent && "deliveryCause" in error
-            ? (error as { deliveryCause: unknown }).deliveryCause
-            : undefined
-    const cause = wrapped ?? error
-    const facts: BotErrorFacts =
-        cause instanceof PublicationPermissionError
-            ? {
-                  failure: "missingPermission",
-                  missingPermissions: cause.missing,
-                  channel: `#${cause.channelName}`,
-              }
-            : { failure: classifyDiscordFailure(discordFailureOf(cause)) }
+    // The same facts as the errors channel: a wrapped Discord answer, the
+    // missing permissions of the channel pre-check or a deleted channel.
+    const { facts } = errorFacts(error)
     return botErrorSummary(
         copy.errorsChannel,
         copy.locale,
@@ -189,7 +153,7 @@ export async function publishManagedMessage(
             (permission) => !granted?.has(PermissionFlagsBits[permission])
         )
         if (missing.length)
-            throw new PublicationPermissionError(missing, found.name)
+            throw new PublicationPermissionError(missing, found.name, found.id)
         return found
     }
     const owned = async (id: string, messageId: string) => {

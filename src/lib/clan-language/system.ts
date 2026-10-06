@@ -407,6 +407,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickets",
                 applications: "Applications",
                 playerReports: "Player reports",
+                seed: "Seeding",
             },
             titles: {
                 announcement: "The match announcement was not sent",
@@ -435,6 +436,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationIntro: "The application intro was not sent",
                 applicationRename: "The application could not be renamed",
                 playerReport: "The player report did not open",
+                panelPassword: "The server password was removed from the panel",
+                seedControl: "The server controls were not posted",
                 general: "The bot could not finish an action",
             },
             memberRolesTitle: {
@@ -447,6 +450,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 afterFix: "Retries after the fix",
                 byItself: "Retries by itself",
                 playerTold: "The player was told to try later",
+                notRetried: "Won't be retried",
             },
             reasons: {
                 missingPermission:
@@ -467,6 +471,12 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "The category {category} already has 50 channels; Discord allows no more in one category.",
                 fullServer:
                     "The server already has 500 channels; Discord allows no more.",
+                wrongChannelType:
+                    "The channel {channel} is not a text channel.",
+                panelPasswordPublic:
+                    "Everyone (@everyone) can now see the channel {channel}. The password only shows in a channel @everyone cannot see.",
+                seedControlPublic:
+                    "Everyone (@everyone) can see the channel {channel}, and the server controls are for admins only.",
                 timeout: "Discord did not answer in time.",
                 other: "Discord refused the action.",
             },
@@ -492,11 +502,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Delete the channels of old events, or pick another category for forums in Logi → Channels and language.",
                 fullCategory: "Delete old channels, or pick another category.",
                 fullServer: "Delete old channels on the server.",
+                wrongChannelType:
+                    "Pick a text channel in Logi → Channels and language.",
+                panelPasswordPublic:
+                    "In Discord, open {channel} → Edit Channel → Permissions → @everyone and deny View Channel.",
+                seedControlPublic:
+                    "Make {channel} private, or pick another control channel in Logi → Server seeding.",
                 timeoutSync:
                     "Nothing. The bot tries again at the next sync. If this keeps coming for more than an hour, contact Logi support.",
                 timeoutInteraction:
                     "Nothing, the player can try again. If it keeps happening for more than an hour, contact Logi support.",
                 other: "Try again. If it keeps happening, contact Logi support and send the time of the error.",
+                timeoutBackground:
+                    "If it keeps happening for more than an hour, contact Logi support.",
+                otherBackground:
+                    "If it keeps happening, contact Logi support and send the time of the error.",
             },
             followUps: {
                 announcement:
@@ -513,6 +533,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 application:
                     "Then tell the applicant to send the application again.",
                 playerReport: "Then tell the player to report again.",
+                ticketSupport:
+                    "Then add support to the ticket by hand; the bot won't try again.",
+                ticketIntro:
+                    "The ticket is open without its intro; answer the player right in the thread.",
+                ticketRename:
+                    "The ticket keeps working under its old name; you can rename it by hand.",
+                applicationRecruiters:
+                    "Then add the recruiters to the application by hand; the bot won't try again.",
+                applicationIntro:
+                    "The application is open without its intro; answer the applicant right in the thread.",
+                applicationRename:
+                    "The application keeps working under its old name; you can rename it by hand.",
+                panelPassword:
+                    "The password comes back to the panel by itself at the next refresh, within a minute.",
+                seedControl: "The controls are then posted by themselves.",
             },
             context: {
                 channel: "Channel {channel}",
@@ -520,9 +555,11 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 role: "Role {role}",
                 meetingChannel: "meeting channel {channel}",
                 tried: "tried by {user}",
+                author: "author {user}",
                 applicant: "applicant {user}",
                 ticketNumber: "ticket #{number}",
                 applicationNumber: "application #{number}",
+                panel: "Panel {panel}",
                 moreMembers: "and {count} more",
                 players: { one: "{count} player", other: "{count} players" },
             },
@@ -538,6 +575,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickets in Logi",
                 roles: "Roles and access in Logi",
                 membership: "Membership in Logi",
+                panels: "Panels in Logi",
+                seed: "Server seeding in Logi",
             },
             permissions: {
                 ViewChannel: "View Channel",
@@ -646,6 +685,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickety",
                 applications: "Přihlášky",
                 playerReports: "Nahlášení hráče",
+                seed: "Seed",
             },
             titles: {
                 announcement: "Ohlášení zápasu se neodeslalo",
@@ -676,6 +716,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationIntro: "Úvod přihlášky se neodeslal",
                 applicationRename: "Přihlášku se nepodařilo přejmenovat",
                 playerReport: "Nahlášení hráče se neotevřelo",
+                panelPassword: "Heslo serveru bylo z panelu odstraněno",
+                seedControl: "Ovládání serverů se neodeslalo",
                 general: "Bot nemohl dokončit akci",
             },
             memberRolesTitle: {
@@ -690,6 +732,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 afterFix: "Zkusí se znovu po opravě",
                 byItself: "Zkusí se znovu sám",
                 playerTold: "Hráč dostal zprávu, ať to zkusí později",
+                notRetried: "Bot to znovu nezkusí",
             },
             reasons: {
                 missingPermission:
@@ -707,6 +750,11 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 fullCategory:
                     "Kategorie {category} už má 50 kanálů, víc Discord do jedné kategorie nedovolí.",
                 fullServer: "Na serveru je 500 kanálů, víc Discord nedovolí.",
+                wrongChannelType: "Kanál {channel} není textový kanál.",
+                panelPasswordPublic:
+                    "Kanál {channel} teď vidí všichni (@everyone). Heslo se ukazuje jen v kanálu, který @everyone nevidí.",
+                seedControlPublic:
+                    "Kanál {channel} vidí všichni (@everyone), a ovládání serverů patří jen správcům.",
                 timeout: "Discord neodpověděl včas.",
                 other: "Discord akci odmítl.",
             },
@@ -731,11 +779,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Smaž kanály starých akcí, nebo vyber jinou kategorii pro fóra v Logi → Kanály a jazyk.",
                 fullCategory: "Smaž staré kanály, nebo vyber jinou kategorii.",
                 fullServer: "Smaž staré kanály na serveru.",
+                wrongChannelType:
+                    "Vyber textový kanál v Logi → Kanály a jazyk.",
+                panelPasswordPublic:
+                    "V Discordu otevři {channel} → Upravit kanál → Oprávnění → @everyone a zakaž Zobrazit kanál.",
+                seedControlPublic:
+                    "Nastav {channel} jako soukromý, nebo v Logi → Seed serverů vyber jiný kanál pro ovládání.",
                 timeoutSync:
                     "Nic. Bot to zkusí znovu při další synchronizaci. Když se zpráva opakuje déle než hodinu, napiš podpoře Logi.",
                 timeoutInteraction:
                     "Nic, hráč to může zkusit znovu. Když se to opakuje přes hodinu, napiš podpoře Logi.",
                 other: "Zkus to znovu. Když se to opakuje, napiš podpoře Logi a pošli čas chyby.",
+                timeoutBackground:
+                    "Když se to opakuje přes hodinu, napiš podpoře Logi.",
+                otherBackground:
+                    "Když se to opakuje, napiš podpoře Logi a pošli čas chyby.",
             },
             followUps: {
                 announcement:
@@ -751,6 +809,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 ticket: "Pak hráči napiš, ať ticket otevře znovu.",
                 application: "Pak uchazeči napiš, ať přihlášku podá znovu.",
                 playerReport: "Pak hráči napiš, ať hráče nahlásí znovu.",
+                ticketSupport:
+                    "Podporu pak do ticketu přidej ručně, bot to znovu nezkusí.",
+                ticketIntro:
+                    "Ticket je otevřený bez úvodní zprávy, hráči odpověz přímo ve vlákně.",
+                ticketRename:
+                    "Ticket funguje dál pod původním názvem, přejmenovat ho můžeš ručně.",
+                applicationRecruiters:
+                    "Nábor pak do přihlášky přidej ručně, bot to znovu nezkusí.",
+                applicationIntro:
+                    "Přihláška je otevřená bez úvodní zprávy, uchazeči odpověz přímo ve vlákně.",
+                applicationRename:
+                    "Přihláška funguje dál pod původním názvem, přejmenovat ji můžeš ručně.",
+                panelPassword:
+                    "Heslo se do panelu vrátí samo při dalším obnovení, do minuty.",
+                seedControl: "Ovládání se pak pošle samo.",
             },
             context: {
                 channel: "Kanál {channel}",
@@ -758,9 +831,11 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 role: "Role {role}",
                 meetingChannel: "kanál srazu {channel}",
                 tried: "zkoušel {user}",
+                author: "autor {user}",
                 applicant: "uchazeč {user}",
                 ticketNumber: "ticket #{number}",
                 applicationNumber: "přihláška #{number}",
+                panel: "Panel {panel}",
                 moreMembers: "a další {count}",
                 players: {
                     one: "{count} hráč",
@@ -781,6 +856,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickety v Logi",
                 roles: "Role a přístup v Logi",
                 membership: "Členství v Logi",
+                panels: "Panely v Logi",
+                seed: "Seed serverů v Logi",
             },
             permissions: {
                 ViewChannel: "Zobrazit kanál",
@@ -906,6 +983,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickets",
                 applications: "Bewerbungen",
                 playerReports: "Spielermeldungen",
+                seed: "Seeding",
             },
             titles: {
                 announcement: "Die Match-Ankündigung wurde nicht gesendet",
@@ -943,6 +1021,9 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationRename:
                     "Die Bewerbung konnte nicht umbenannt werden",
                 playerReport: "Die Spielermeldung hat sich nicht geöffnet",
+                panelPassword:
+                    "Das Serverpasswort wurde aus dem Panel entfernt",
+                seedControl: "Die Serversteuerung wurde nicht gesendet",
                 general: "Der Bot konnte eine Aktion nicht abschließen",
             },
             memberRolesTitle: {
@@ -955,6 +1036,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 afterFix: "Neuer Versuch nach der Korrektur",
                 byItself: "Versucht es selbst erneut",
                 playerTold: "Der Spieler soll es später erneut versuchen",
+                notRetried: "Wird nicht wiederholt",
             },
             reasons: {
                 missingPermission:
@@ -975,6 +1057,11 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Die Kategorie {category} hat schon 50 Kanäle, mehr erlaubt Discord in einer Kategorie nicht.",
                 fullServer:
                     "Der Server hat schon 500 Kanäle, mehr erlaubt Discord nicht.",
+                wrongChannelType: "Der Kanal {channel} ist kein Textkanal.",
+                panelPasswordPublic:
+                    "Alle (@everyone) können den Kanal {channel} jetzt sehen. Das Passwort erscheint nur in einem Kanal, den @everyone nicht sieht.",
+                seedControlPublic:
+                    "Alle (@everyone) können den Kanal {channel} sehen, und die Serversteuerung ist nur für Admins.",
                 timeout: "Discord hat nicht rechtzeitig geantwortet.",
                 other: "Discord hat die Aktion abgelehnt.",
             },
@@ -1002,11 +1089,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 fullCategory:
                     "Lösch alte Kanäle oder wähl eine andere Kategorie.",
                 fullServer: "Lösch alte Kanäle auf dem Server.",
+                wrongChannelType:
+                    "Wähl in Logi → Kanäle und Sprache einen Textkanal.",
+                panelPasswordPublic:
+                    "Öffne in Discord {channel} → Kanal bearbeiten → Berechtigungen → @everyone und verbiete Kanal ansehen.",
+                seedControlPublic:
+                    "Mach {channel} privat oder wähl in Logi → Server-Seeding einen anderen Steuerkanal.",
                 timeoutSync:
                     "Nichts. Der Bot versucht es bei der nächsten Synchronisierung erneut. Wenn die Meldung länger als eine Stunde wiederkommt, schreib dem Logi-Support.",
                 timeoutInteraction:
                     "Nichts, der Spieler kann es erneut versuchen. Wenn es länger als eine Stunde passiert, schreib dem Logi-Support.",
                 other: "Versuch es erneut. Wenn es wieder passiert, schreib dem Logi-Support und schick die Uhrzeit des Fehlers.",
+                timeoutBackground:
+                    "Wenn es länger als eine Stunde passiert, schreib dem Logi-Support.",
+                otherBackground:
+                    "Wenn es wieder passiert, schreib dem Logi-Support und schick die Uhrzeit des Fehlers.",
             },
             followUps: {
                 announcement:
@@ -1026,6 +1123,21 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Sag dem Bewerber dann, dass er die Bewerbung erneut abschicken soll.",
                 playerReport:
                     "Sag dem Spieler dann, dass er die Meldung erneut abschicken soll.",
+                ticketSupport:
+                    "Füg den Support dann von Hand zum Ticket hinzu, der Bot versucht es nicht erneut.",
+                ticketIntro:
+                    "Das Ticket ist ohne Einleitung offen, antworte dem Spieler direkt im Thread.",
+                ticketRename:
+                    "Das Ticket funktioniert unter dem alten Namen weiter, umbenennen kannst du es von Hand.",
+                applicationRecruiters:
+                    "Füg das Recruiting dann von Hand zur Bewerbung hinzu, der Bot versucht es nicht erneut.",
+                applicationIntro:
+                    "Die Bewerbung ist ohne Einleitung offen, antworte dem Bewerber direkt im Thread.",
+                applicationRename:
+                    "Die Bewerbung funktioniert unter dem alten Namen weiter, umbenennen kannst du sie von Hand.",
+                panelPassword:
+                    "Das Passwort erscheint bei der nächsten Aktualisierung von selbst wieder im Panel, innerhalb einer Minute.",
+                seedControl: "Die Steuerung wird dann von selbst gesendet.",
             },
             context: {
                 channel: "Kanal {channel}",
@@ -1033,9 +1145,11 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 role: "Rolle {role}",
                 meetingChannel: "Treffpunkt {channel}",
                 tried: "versucht von {user}",
+                author: "Autor {user}",
                 applicant: "Bewerber {user}",
                 ticketNumber: "Ticket #{number}",
                 applicationNumber: "Bewerbung #{number}",
+                panel: "Panel {panel}",
                 moreMembers: "und {count} weitere",
                 players: { one: "{count} Spieler", other: "{count} Spieler" },
             },
@@ -1051,6 +1165,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 tickets: "Tickets in Logi",
                 roles: "Rollen und Zugriff in Logi",
                 membership: "Mitgliedschaft in Logi",
+                panels: "Panels in Logi",
+                seed: "Server-Seeding in Logi",
             },
             permissions: {
                 ViewChannel: "Kanal ansehen",

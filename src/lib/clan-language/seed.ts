@@ -164,11 +164,6 @@ const cs: SeedMessages = {
             resume: "Pokračovat",
         },
     },
-    errors: {
-        controlChannelPublic: (channel) =>
-            `Kanál ${channel} vidí všichni, proto do něj Logi nepošle ovládání serverů. Nastav ho jako soukromý, nebo v Logi v Seedu serverů vyber jiný kanál pro ovládání.`,
-        controlAction: "Poslat ovládání serveru",
-    },
     replies: {
         startedTitle: (server) => `Seed na ${server} běží`,
         startedBody: (seedChannel, pinged, panelChannel) =>
@@ -347,11 +342,6 @@ const en: SeedMessages = {
             resume: "Resume",
         },
     },
-    errors: {
-        controlChannelPublic: (channel) =>
-            `Everyone can see ${channel}, so Logi does not post the server controls there. Make it private, or choose another control channel in Logi under Server seeding.`,
-        controlAction: "Post the server controls",
-    },
     replies: {
         startedTitle: (server) => `The seed on ${server} is running`,
         startedBody: (seedChannel, pinged, panelChannel) =>
@@ -527,11 +517,6 @@ const de: SeedMessages = {
             pause: "Panel pausieren",
             resume: "Fortsetzen",
         },
-    },
-    errors: {
-        controlChannelPublic: (channel) =>
-            `${channel} sehen alle, deshalb sendet Logi die Serversteuerung nicht dorthin. Mach den Kanal privat oder wähle in Logi unter Server-Seeding einen anderen Steuerkanal.`,
-        controlAction: "Serversteuerung senden",
     },
     replies: {
         startedTitle: (server) => `Der Seed auf ${server} läuft`,

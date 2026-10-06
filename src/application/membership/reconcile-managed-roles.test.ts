@@ -1,4 +1,5 @@
 import {
+    ManagedRoleFailure,
     reconcileManagedRoles,
     type ManagedRolePorts,
 } from "./reconcile-managed-roles"
@@ -30,8 +31,13 @@ function fixture() {
                     ? [...roles, role]
                     : roles.filter((id) => id !== role)
         },
-        finish: async (status, reason, retryAfterMs) => {
-            results.push({ status, reason, retryAfterMs })
+        finish: async (status, reason, retryAfterMs, detail) => {
+            results.push({
+                status,
+                reason,
+                retryAfterMs,
+                ...(detail ? { detail } : {}),
+            })
             return true
         },
     }
@@ -111,4 +117,42 @@ test("departure and unverified success never become applied", async () => {
     const g = fixture()
     g.ports.change = async () => {}
     assert.equal(await reconcileManagedRoles(g.ports), "retry_scheduled")
+})
+test("a denied change names the role and Discord's code for the errors channel (L5-14)", async () => {
+    // The member's role the bot cannot manage is named first.
+    const f = fixture()
+    f.ports.observe = async () => ({
+        roleIds: ["recruit"],
+        actorAuthorized: true,
+        targetEligible: true,
+        manageableRoleIds: ["recruit"],
+    })
+    assert.equal(await reconcileManagedRoles(f.ports), "denied")
+    assert.deepEqual(f.results, [
+        {
+            status: "denied",
+            reason: "role_unmanageable_or_deleted",
+            retryAfterMs: undefined,
+            detail: { roleId: "member" },
+        },
+    ])
+    // A refused write names the role it was changing.
+    const g = fixture()
+    g.ports.change = async () => {
+        throw new ManagedRoleFailure(
+            "discord_forbidden",
+            undefined,
+            true,
+            50013
+        )
+    }
+    assert.equal(await reconcileManagedRoles(g.ports), "denied")
+    assert.deepEqual(g.results, [
+        {
+            status: "denied",
+            reason: "discord_forbidden",
+            retryAfterMs: undefined,
+            detail: { roleId: "recruit", discordCode: 50013 },
+        },
+    ])
 })
