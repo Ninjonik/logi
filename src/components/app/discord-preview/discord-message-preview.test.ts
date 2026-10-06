@@ -173,3 +173,63 @@ test("without a fixed now, relative times show the absolute time so renders stay
     const html = render({ view: frame, now: undefined })
     assert.match(textOf(html), /Aktualizováno 11\. října 2026 v 20:00/)
 })
+
+test("a code block table keeps its columns and shows the ANSI-marked row bold", () => {
+    const html = render({
+        view: panelFrame({
+            label: "Wardogs League · sezóna 2026",
+            title: "WD League · tabulka",
+            content: [
+                {
+                    kind: "text",
+                    markdown:
+                        "```ansi\n #  Tým    B\n\u001b[1;37m›3  VLK   13\u001b[0m\n```",
+                },
+            ],
+            updatedAt: now,
+        }),
+    })
+    assert.match(html, /<pre[^>]*>/)
+    assert.match(html, /> #  Tým    B</)
+    assert.match(
+        html,
+        /<span class="font-bold text-white">›3  VLK   13<\/span>/
+    )
+    assert.doesNotMatch(html, /\u001b|```|\[1;37m/)
+})
+
+test("the message text above the card follows the author line", () => {
+    const text = textOf(
+        render({
+            view: frame,
+            author: { time: "dnes v 18:02" },
+            content: "@Klan",
+        })
+    )
+    assert.ok(text.indexOf("dnes v 18:02") < text.indexOf("@Klan"))
+    assert.ok(text.indexOf("@Klan") < text.indexOf("Vlci #1"))
+})
+
+test("the header subtitle renders under the title with its mentions", () => {
+    const html = render({
+        view: {
+            accent: "system",
+            header: {
+                label: "Chyba bota · Zápas",
+                title: "Ohlášení zápasu se neodeslalo",
+                subtitle: "VLK vs ROG · Kanál <#100000000000000001>",
+                chips: [{ label: "Zkusí se znovu po opravě", tone: "warning" }],
+            },
+            blocks: [],
+        },
+        mentions: { channels: { "100000000000000001": "oznameni" } },
+    })
+    const text = textOf(html)
+    assert.ok(
+        text.indexOf("Ohlášení zápasu se neodeslalo") <
+            text.indexOf("VLK vs ROG")
+    )
+    assert.ok(text.indexOf("VLK vs ROG") < text.indexOf("Zkusí se znovu"))
+    assert.match(text, /#oznameni/)
+    assert.match(html, /border-left-color:#80848e/)
+})

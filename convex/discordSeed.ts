@@ -10,16 +10,19 @@ import {
 import {
     readSeedDashboard,
     type SeedDashboardResponse,
-    type SeedServerTab,
 } from "../src/application/discord-seed/read-dashboard"
+import {
+    seedPorts,
+    seedReadPorts,
+    seedServerPanel,
+    seedServers,
+} from "./discordSeedStore"
 import { startSeedManually } from "../src/application/discord-seed/start-seed"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { saveSeedPlan } from "../src/application/discord-seed/save-plan"
 import { stopSeed } from "../src/application/discord-seed/stop-seed"
 import { mutation, query, type QueryCtx } from "./_generated/server"
-import { seedPorts, seedReadPorts } from "./discordSeedStore"
 import { seedPlanSettings } from "./discordSeedTable"
-import { workspaceSources } from "./gameDataCatalog"
 
 /**
  * The P3 page ("Seed serverů") through the authenticated web gateway: every
@@ -33,36 +36,6 @@ const dashboardArgs = {
     actor: dashboardActor,
 }
 const REQUEST_KEY = /^[A-Za-z0-9-]{8,64}$/
-
-/** The clan's configured game servers, the tabs of the page (P3-03). */
-async function seedServers(
-    ctx: Pick<QueryCtx, "db">,
-    guildId: string
-): Promise<SeedServerTab[]> {
-    const [rows, sources] = await Promise.all([
-        ctx.db
-            .query("gameDataConnections")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect(),
-        workspaceSources(ctx, guildId),
-    ])
-    const aliases = new Map(
-        sources.map((entry) => [
-            entry.source.ref,
-            entry.row?.displayName ?? null,
-        ])
-    )
-    return rows
-        .filter((row) => aliases.has(row.sourceRef))
-        .map((row) => ({
-            connectionId: String(row._id),
-            gameId: row.gameId,
-            name:
-                aliases.get(row.sourceRef) ??
-                row.observation?.displayName ??
-                null,
-        }))
-}
 
 /** Members holding the role, from the synchronised member access ("@Seed · 34 členů"). */
 async function roleMemberCount(
@@ -88,15 +61,14 @@ export const dashboard = query({
             !servers.some((server) => server.connectionId === connectionId)
         )
             return { servers, selected: null }
-        const view = await readSeedDashboard(seedReadPorts(ctx), {
-            guildId: args.guildId,
-            connectionId,
-        })
+        const server = { guildId: args.guildId, connectionId }
+        const view = await readSeedDashboard(seedReadPorts(ctx), server)
         if (!view) return { servers, selected: null }
         return {
             servers,
             selected: {
                 ...view,
+                panel: await seedServerPanel(ctx, server),
                 roleMembers: view.settings.seedRoleId
                     ? await roleMemberCount(
                           ctx,

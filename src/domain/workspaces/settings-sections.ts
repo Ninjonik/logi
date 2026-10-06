@@ -17,8 +17,9 @@ export const SETTINGS_SECTIONS = [
     { id: "event-categories", group: "clan" },
     { id: "match-templates", group: "matches" },
     { id: "presets", group: "matches" },
-    { id: "messages", group: "matches" },
     { id: "channels", group: "discord" },
+    // "Zprávy a panely" (board N1) follows "Kanály a jazyk" in the Discord group.
+    { id: "messages", group: "discord" },
     // "Panely v Discordu" (boards P1, P2): the panel list and editor.
     { id: "discord-panels", group: "discord" },
     // "Grafika panelů" (P8) and "Seed serverů" (P3) are pages under it.

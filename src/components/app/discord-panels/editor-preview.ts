@@ -9,6 +9,7 @@ import type {
 } from "@/domain/discord-publications/panel-image-model"
 import {
     panelMapDefinition,
+    panelMapKey,
     type PanelStyle,
 } from "@/domain/discord-publications/panel-graphics"
 import type {
@@ -22,6 +23,20 @@ import { panelImageCopy } from "@/domain/discord-publications/panel-image-copy"
 import { DEFAULT_MESSAGE_ACCENT_HEX } from "@/domain/discord-messages/format"
 import { seedProgress } from "@/domain/discord-seed/progress"
 import { getPanelMessages } from "@/lib/clan-language/panels"
+import {
+    leagueFixturesMessage,
+    leagueStandingsMessage,
+    type LeaguePanelLook,
+} from "@/domain/wardogs-league/panel-views"
+import type {
+    LeagueFixturesView,
+    LeaguePanelOptions,
+    LeagueStandingsView,
+} from "@/domain/wardogs-league/panels"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
+import { getLeagueMessages } from "@/lib/clan-language/league"
+import { getSystemMessages } from "@/lib/clan-language/system"
+import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
 
 /**
  * The editor preview (P2-27, P2-43..45, P2-B09): the exact view the bot
@@ -344,4 +359,81 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
         now: input.now,
         banner: null,
     })
+}
+
+/**
+ * The WD League messages of the editor preview (P2-54, P2-55), drawn with
+ * the bot's own builders (`panel-views.ts`) from the League data and the
+ * draft's switches, as the bot posts them: the table, then the nearest
+ * fixtures with the recent results. The bot's installed faction emoji are
+ * not known here, so the neutral marker stands in for them.
+ */
+export function leaguePreviews(input: {
+    standings: LeagueStandingsView | null
+    fixtures: LeagueFixturesView | null
+    options: LeaguePanelOptions
+    language: string
+    timeZone: string
+    style: MessageStyle | null
+    accentColor: string | null
+    paused: boolean
+    /** Map pictures on the fixtures (the panel's map art switch). */
+    artwork: boolean
+    assetOrigin: string
+    now: number
+}): MessageView[] {
+    const copy = getLeagueMessages(input.language)
+    const look: LeaguePanelLook = {
+        copy,
+        locale: copy.locale,
+        timeZone: input.timeZone,
+        accentColor: input.accentColor,
+        layout: {
+            copy: getSystemMessages(input.language).kit,
+            locale: getIntlLocaleForClanLanguage(input.language),
+            style: input.style,
+        },
+        emoji: {},
+        paused: input.paused ? { since: null } : null,
+        now: input.now,
+    }
+    const views: MessageView[] = []
+    if (input.options.table && input.standings)
+        views.push(leagueStandingsMessage(input.standings, look))
+    const { fixtures } = input
+    if (fixtures && (input.options.fixtures || input.options.recentResults)) {
+        const shown = input.options.fixtures
+            ? fixtures.fixtures.slice(0, input.options.fixtureCount)
+            : []
+        const view: LeagueFixturesView = {
+            ...fixtures,
+            fixtures: shown,
+            hidden: input.options.fixtures
+                ? fixtures.hidden + fixtures.fixtures.length - shown.length
+                : 0,
+            recentResults: input.options.recentResults
+                ? fixtures.recentResults
+                : null,
+        }
+        const thumbnails = new Map<string, MessageMedia>()
+        if (input.artwork)
+            for (const fixture of shown) {
+                const media = fixture.map
+                    ? mapThumbnail(
+                          input.assetOrigin,
+                          "wardogs",
+                          panelMapKey("wardogs", fixture.map.name),
+                          copy.fixtures.mapAlt(fixture.map.name)
+                      )
+                    : null
+                if (media) thumbnails.set(fixture.matchId, media)
+            }
+        views.push(
+            leagueFixturesMessage(view, look, {
+                fixtures: input.options.fixtures,
+                thumbnails,
+            })
+        )
+    }
+    return views
 }

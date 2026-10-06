@@ -86,6 +86,7 @@ export function upsertNotice(input: {
         userId: input.userId,
         reason: input.reason.trim(),
         createdAt: input.now.toISOString(),
+        kind: "late",
     })
 
     return notices

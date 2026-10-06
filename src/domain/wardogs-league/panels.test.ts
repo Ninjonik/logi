@@ -6,7 +6,7 @@ import {
     leaguePanelOptionsSchema,
     DEFAULT_LEAGUE_PANEL_OPTIONS,
     LEAGUE_LINKS,
-    LEAGUE_PANEL_KEYS,
+    leaguePanelKey,
     LEAGUE_PANEL_ORDER,
     type StoredLeagueFixture,
 } from "./panels"
@@ -112,7 +112,10 @@ test("panel options default to all content and six fixtures, and reject unknown 
         false
     )
     assert.deepEqual(LEAGUE_PANEL_ORDER, ["standings", "fixtures"])
-    assert.notEqual(LEAGUE_PANEL_KEYS.standings, LEAGUE_PANEL_KEYS.fixtures)
+    assert.deepEqual(
+        LEAGUE_PANEL_ORDER.map((part) => leaguePanelKey("p1", part)),
+        ["panel:p1:standings", "panel:p1:fixtures"]
+    )
 })
 
 test("without results the table waits: 'Tabulka se zobrazí po prvních výsledcích'", () => {
@@ -129,6 +132,7 @@ test("without results the table waits: 'Tabulka se zobrazí po prvních výsledc
         pointsRule: [3, 2, 1],
         rows: [],
         revision: 0,
+        dataAt: null,
         links: { league: LEAGUE_LINKS.league },
     })
 })

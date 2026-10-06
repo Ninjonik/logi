@@ -23,6 +23,7 @@ import {
     logRouteError,
 } from "@/lib/server-route-errors"
 import { trainingResultView } from "@/domain/discord-messages/direct-message-views"
+import { isMessageEnabled } from "@/domain/discord-messages/notification-settings"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
 import { getDirectMessages } from "@/lib/clan-language/direct-messages"
@@ -103,6 +104,7 @@ const postHandler = createServerEventPostHandler({
             : []
         const rewardedUserIds: string[] = []
         const dmSentUserIds: string[] = []
+        const sendResultDm = isMessageEnabled(discordConfig, "trainingResultDm")
         const layout = {
             copy: getSystemMessages(language).kit,
             locale: getIntlLocaleForClanLanguage(language),
@@ -129,6 +131,8 @@ const postHandler = createServerEventPostHandler({
                     rewardedUserIds.push(participant.userId)
                 }
 
+                // "Výsledek tréninku" is a clan switch (board N1-23).
+                if (!sendResultDm) return
                 try {
                     // The result card in the clan language (board L2-52, L2-53).
                     await sendDiscordBotDm(

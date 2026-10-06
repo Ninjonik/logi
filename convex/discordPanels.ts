@@ -1,4 +1,5 @@
 import { makeFunctionReference } from "convex/server"
+import { seedPublicationKey } from "../src/domain/discord-seed/publication-keys"
 import { v } from "convex/values"
 
 import {
@@ -116,7 +117,7 @@ async function controlMessages(
     ctx: Pick<QueryCtx, "db">,
     guildId: string
 ): Promise<StoredControlMessage[]> {
-    const [plans, messages] = await Promise.all([
+    const [plans, messages, publications] = await Promise.all([
         ctx.db
             .query("discordSeedPlans")
             .withIndex("guildId", (q) => q.eq("guildId", guildId))
@@ -125,26 +126,42 @@ async function controlMessages(
             .query("discordSeedMessages")
             .withIndex("guildId", (q) => q.eq("guildId", guildId))
             .collect(),
+        ctx.db
+            .query("discordPublications")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .collect(),
     ])
     return plans.map((plan) => {
+        // The outbox row counts the requests; the bot delivers the message
+        // through the managed publication `seed:control:<connectionId>`.
         const row = messages.find(
             (message) =>
                 message.kind === "control" && message.key === plan.connectionId
         )
+        const key = seedPublicationKey("control", plan.connectionId)
+        const publication = publications.find((entry) => entry.key === key)
         return {
             connectionId: plan.connectionId,
             channelId: plan.settings.controlChannelId,
-            message: row
-                ? {
-                      channelId: row.channelId,
-                      messageId: row.messageId,
-                      revision: row.revision,
-                      deliveredRevision: row.deliveredRevision,
-                      lastSuccessAt: row.lastSuccessAt,
-                      error: row.error,
-                      pending: row.pending !== null,
-                  }
-                : null,
+            message:
+                row || publication
+                    ? {
+                          channelId:
+                              publication?.channelId ?? row?.channelId ?? null,
+                          messageId:
+                              publication?.messageId ?? row?.messageId ?? null,
+                          revision: row?.revision ?? 0,
+                          deliveredRevision: row?.deliveredRevision ?? 0,
+                          lastSuccessAt:
+                              publication?.lastSuccessAt ??
+                              row?.lastSuccessAt ??
+                              null,
+                          error: publication?.error ?? row?.error ?? null,
+                          pending:
+                              Boolean(publication?.pending) ||
+                              (row?.pending ?? null) !== null,
+                      }
+                    : null,
         }
     })
 }

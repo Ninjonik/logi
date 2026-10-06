@@ -48,7 +48,7 @@ import { deliverPlayerReport } from "../../src/application/player-reports/delive
 import { interactionLanguage, reportToErrorsChannel } from "./ui/replies"
 import { getSystemMessages } from "../../src/lib/clan-language/system"
 import { getPanelMessages } from "../../src/lib/clan-language/panels"
-import { listReportMembers } from "./interactions/report-members"
+import { listReportMembers } from "./interactions/tickets-report-members"
 import { readReportObservation } from "./public-panels/worker"
 import type * as reports from "../../convex/playerReports"
 import { env } from "./environment"

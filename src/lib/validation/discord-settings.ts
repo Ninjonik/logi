@@ -4,6 +4,7 @@ import {
     MESSAGE_ICON_DENSITIES,
     normalizeAccentColor,
 } from "@/domain/discord-messages/message-style"
+import { ROSTER_MESSAGE_VARIANTS } from "@/domain/discord-messages/roster-message"
 import { supportedClanLanguages } from "@/lib/clan-language/core"
 import { supportedTimezones } from "@/lib/discord-timezones"
 
@@ -85,6 +86,27 @@ const messageStyleSchema = z
     })
     .strict()
 
+/**
+ * The "Zprávy a panely" page's message settings (board N1): the roster
+ * message default, the publish dialog's defaults, the attendance post in
+ * the match thread and the per-message switches. Only sent fields change.
+ */
+const messageSettingsSchema = z
+    .object({
+        rosterMessageVariant: z.enum(ROSTER_MESSAGE_VARIANTS),
+        rosterChangesPost: z.boolean(),
+        rosterChangesDm: z.boolean(),
+        attendanceNoticesInThread: z.boolean(),
+        debriefPost: z.boolean(),
+        scheduledEvent: z.boolean(),
+        matchRecapDm: z.boolean(),
+        trainingResultDm: z.boolean(),
+        applicationCloseDm: z.boolean(),
+        ticketCloseDm: z.boolean(),
+    })
+    .partial()
+    .strict()
+
 const playerStatsServerSchema = z.object({
     token: z.string().trim().min(1, "Server stats token is required."),
     url: z.string().trim().url("Server stats URL must be a valid URL."),
@@ -140,6 +162,16 @@ const ticketCategorySchema = z.object({
         .max(5, "Discord modals can have up to 5 questions."),
 })
 
+/** A ticket category with the title of its thread card (L4-42). */
+const ticketCategoryWithTitleSchema = ticketCategorySchema.extend({
+    threadTitle: z
+        .string()
+        .trim()
+        .max(200, "The thread card title can be up to 200 characters.")
+        .optional()
+        .transform((value) => value || undefined),
+})
+
 const membershipCategorySchema = ticketCategorySchema.extend({
     gameId: z
         .enum(["hell_let_loose", "hell_let_loose_vietnam", "wardogs"])
@@ -181,8 +213,17 @@ const ticketSettingsSchema = z
                 "Discord embed descriptions can be up to 4096 characters."
             ),
         panelImageUrl: imageUrlField,
+        panelAccentColor: z
+            .string()
+            .trim()
+            .regex(
+                /^(#[0-9a-f]{6})?$/i,
+                "The panel colour must be a hex colour such as #E8A33D."
+            )
+            .optional()
+            .transform((value) => normalizeAccentColor(value)),
         categories: z
-            .array(ticketCategorySchema)
+            .array(ticketCategoryWithTitleSchema)
             .max(20, "Keep ticket categories to 20 or fewer buttons."),
     })
     .superRefine((value, ctx) => {
@@ -408,6 +449,7 @@ export const discordSettingsPatchSchema = z.object({
     membershipSettings: membershipSettingsSchema.optional(),
     statsSettings: statsSettingsSchema.optional(),
     messageStyle: messageStyleSchema.optional(),
+    messageSettings: messageSettingsSchema.optional(),
     gameOverrides: z
         .object({
             hell_let_loose: gameDiscordOverridesSchema.optional(),

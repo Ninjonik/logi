@@ -24,6 +24,11 @@ import {
     readStoredPanelGraphics,
 } from "./discordPanelGraphics"
 import { discordPanelsPatchSchema } from "../src/domain/api/discord-panels-settings-slice"
+import {
+    prepareSeedSettingsChange,
+    readSeedSettingsApi,
+} from "./discordSeedApiStore"
+import { seedSettingsPatchSchema } from "../src/domain/api/seed-settings-slice"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { attachableAsset } from "./imageAssets"
 
@@ -129,6 +134,15 @@ export const CLAN_SETTINGS_STORES: Readonly<Record<string, ClanSettingsStore>> =
                     },
                 }
             },
+        },
+        seed: {
+            read: readSeedSettingsApi,
+            prepare: (ctx, guildId, patch) =>
+                prepareSeedSettingsChange(
+                    ctx,
+                    guildId,
+                    seedSettingsPatchSchema.parse(patch)
+                ),
         },
     }
 

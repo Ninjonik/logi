@@ -38,9 +38,9 @@ another.
 | Clan                     | Event categories         | Labels and colours of matches and trainings, such as Friendly or League                                                                    |
 | Matches                  | Match templates          | What a new match or training starts with: times, sign-ups and Discord options                                                              |
 | Matches                  | Squad and topic presets  | Links to the squad presets and topic presets, with how many each has                                                                       |
-| Matches                  | Discord messages         | Message look and where the bot sends what; the live score and results rows open Discord panels                                             |
-| Discord                  | Channels and language    | Time zone, bot language, announcement, event info, error, calendar, forum and voice rooms                                                  |
-| Discord                  | Discord panels           | Panels the bot keeps up to date and the panel editor; see [Public Discord panels](/configuration/public-panels)                            |
+| Discord                  | Channels and language    | Time zone, bot language, announcement, event info, forum and voice rooms                                                                     |
+| Discord                  | Messages and panels      | The look of every bot message, what the bot sends and where, the switches of optional messages, the panels and the bot errors channel      |
+| Discord                  | Discord panels           | Panels the bot keeps up to date and the panel editor; see [Public Discord panels](/configuration/public-panels)                              |
 | Discord                  | Panel graphics           | Default panel style, server banners, map images and the fixed signs; see [Panel graphics](/configuration/panel-graphics)                   |
 | Discord                  | Roles and access         | Clan role, dashboard admin role and the dashboard-access resync                                                                            |
 | Discord                  | Commands                 | Who may use each slash command, where and how it replies; `/stats` games, sharing channel and old stats servers                            |
@@ -140,7 +140,7 @@ For example, after a scheduling or Discord-related change, inspect an event or t
 
 ### Preview a Wardogs League match
 
-For scheduled discovery, manual tracking and persistent Discord cards, see [Wardogs League tracking](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
+For scheduled discovery, manual tracking and the WD League panels in Discord, see [Wardogs League](/wiki/configuration/league-tracking). The standalone preview below remains available without registering a match.
 
 Open **Settings → Wardogs League**; the **Wardogs League match** preview is below the tracking form.
 Paste a public `https://wardogsleague.net/matches/{id}` link and choose **Load match**.
@@ -455,7 +455,7 @@ role permissions required for the relevant action.
 | Default language            | Bot panel, event, and interaction wording                                   | Existing content is not translated; the bot uses its configured fallback where needed.                                                                      |
 | Announcements channel       | Event announcement messages                                                 | No announcement is created there.                                                                                                                           |
 | Event information channel   | Separate match information message                                          | The separate message is not created. It is meaningful only alongside announcements.                                                                         |
-| Errors channel              | Delivery of bot error reports                                               | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                               |
+| Errors channel              | Bot error reports for managers, set on **Messages and panels**              | Errors remain in the bot's logs rather than reaching a staff Discord channel.                                                                               |
 | Calendar channel            | One managed calendar-panel message                                          | No Discord calendar panel is maintained. Removing the configured channel clears the stored panel state after cleanup is attempted.                          |
 | Forum category              | Match forum-post provisioning                                               | A match cannot get a Logi forum post from the workspace default.                                                                                            |
 | Meeting voice/stage channel | Discord scheduled event and meeting-channel attendance tools                | No scheduled event is maintained. A text/category channel is not a substitute.                                                                              |
@@ -463,27 +463,76 @@ role permissions required for the relevant action.
 | Dashboard admin role        | Dashboard manager access; Player-page admin changes add or remove this role | A configured, manageable role is required for Logi to mirror Player-page admin changes. Discord Administrator remains an independent bootstrap access path. |
 | Commands                    | Which slash commands work, for whom, where, and how they reply              | See [Discord commands](/configuration/commands). The bot checks each use freshly from Discord; Discord's own command permissions are not used.              |
 
-### Discord messages, Roles and access, and Commands
+### Messages and panels, Roles and access, and Commands
 
-**Discord messages** sets one look for every bot message and lists what the bot
-sends and where. **Clan colour** is the accent of every message; events with a
-category keep the category colour, and without a clan colour messages use Logi
-orange (`#E8A33D`). **Icons in messages** is either **Sparse** (only team signs) or **Emoji
-on every line** (side, start, map and details, status and forum get an icon).
-The language of every bot message is shown here and changed under **Channels
-and language**.
+**Messages and panels** (in the Discord group, after **Channels and language**)
+shows everything the bot sends: where it goes, whether it is sent at all and how
+it looks. The bot writes in the clan language with the clan colour. The page is
+clan-wide, whichever game is selected.
 
-The message list shows the match announcement, the roster and assignments
-message (posted to the event information channel once the roster is
-published), reminders (direct messages: sign-up reminders daily until
-registration closes for the memberships chosen on each match, attendance
-reminders 24, 18, 12 and 6 hours before the meeting), the live score and result
-panels, Wardogs League cards and bot errors. **Edit** opens the channel picker
-of the announcement, roster and error messages under the row; these are the
-clan-wide channels, and a game with its own channel is named with a link to
-**Channels and language**. The live score and results rows open **Discord
-panels** (see [Public Discord panels](/configuration/public-panels));
-reminders open the match templates, league cards the league page.
+**Look of all messages** applies to announcements, panels, direct messages and
+command replies:
+
+- **Clan colour** is the bar of every message. Without a clan colour messages
+  use Logi orange (`#E8A33D`). An event category shows as a label and does not
+  change the bar; a panel can have its own colour in the panel editor.
+- **Icons in messages** is either **Sparse** or **Emoji on every line**, in
+  every message, not only in announcements.
+- **Faction signs** shows the signs used in announcements, results, panels and
+  `/stats`; **Change signs** opens [Panel graphics](/configuration/panel-graphics).
+- **Language** shows the clan language with a link to **Channels and
+  language**, where it is changed.
+- **Live preview** draws a match announcement and changes with the colour and
+  icons as you edit them.
+
+**What the bot sends** lists every message in five groups: **Matches**,
+**Private messages** (DMs and replies only one person sees), **Panels**,
+**Membership and tickets** and **System**. Each row says where the message goes.
+A channel with a lock belongs to another page and links there (for example the
+announcements channel on **Channels and language**, the recruitment channel on
+**Membership**); a game with its own channel is shown next to the clan-wide one.
+**Preview** opens an example of the message with sample data, in the clan
+language.
+
+The switches on this page:
+
+| Message                                            | Default | What turning it off does                                                                                  |
+| -------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| Roster changes                                     | On      | **Roster changes** is no longer pre-selected in the Publish dialog; it can still be chosen there.         |
+| Debrief in the forum                               | On      | No Debrief post is created in the match forum thread after the match.                                     |
+| Absences and late notices in the match thread      | Off     | When on, `/notice`, **Running late** and **Can't make it** post who, late or absent and the arrival time. |
+| Discord event                                      | On      | The bot does not keep a Discord scheduled event with the meeting time.                                    |
+| Match recap                                        | On      | No player gets the recap DM. When on, each player can still turn it off.                                  |
+| Training result                                    | On      | Participants do not get the training result DM.                                                           |
+| Assignment change                                  | On      | **Assignment changes** is no longer pre-selected in the Publish dialog.                                   |
+| DM to the applicant when the application is closed | On      | The result card stays in the application thread, but the applicant gets no DM.                            |
+| DM to the author when the ticket is closed         | On      | The closing card stays in the ticket thread, but the author gets no DM.                                   |
+
+The absence and late posts never contain the reason; only the leaders see it,
+on the web. The **Roster** row also sets the **Default look** of the roster
+message, **Photo and text** or **Photo only**; it can still be changed when
+publishing. Messages without a switch (the announcement, the forum, reminders,
+team request decisions, button and command replies, the application and ticket
+threads) are always sent when their feature is on; the row says where that is
+decided, for example the match template.
+
+**Panels** gives an overview of the live server panels, the result panels, the
+calendar and the Wardogs League panels with their channel and state (for example
+**Paused**). A panel's switch pauses or resumes it (**Save** sends the change);
+a panel not sent yet is sent from **Discord panels**. **Edit** opens the panel
+in **Discord panels** (see [Public Discord panels](/configuration/public-panels))
+and **Add panel** starts a new one there; the server control row opens **Server
+seeding**. The calendar's channel is set on **Discord panels** too.
+
+**Bot errors** holds the **Channel for bot errors**. The bot posts there what it
+could not do and how to fix it, for managers only, with a grey bar: what
+failed, for which match, ticket or application, why (for example a missing
+permission with its name) and what to do, with buttons to the match or the
+settings page that fixes it. Reports contain no error codes or technical
+details. Without a channel the errors stay in the bot's logs.
+
+A bar at the bottom counts unsaved changes; **Save** stores the look, the
+switches, the errors channel and the panel switches together.
 
 **Roles and access** has the clan role and the manager role, each with how many
 members of the Discord server have it. People with the manager role can change

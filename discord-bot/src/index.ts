@@ -158,8 +158,10 @@ function startFallbackWorker() {
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
 import { startPublicPanelWorker } from "./public-panels/worker"
+import { startAnnouncementMigration } from "./events/announcement-migration"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
+import { startSeedWorker } from "./seed/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
     startLeagueWorker(client)
@@ -168,6 +170,8 @@ client.once(Events.ClientReady, async (readyClient) => {
         refreshCalendar: (guildId) => syncService.refreshCalendar(guildId),
     })
     startManagedRoleWorker(client)
+    // Seed calls, control messages and intros (board P5).
+    startSeedWorker(client)
     startTeamRequestNotificationWorker(client)
     startApplicationEmojiProvisioning(client)
     try {
@@ -186,6 +190,11 @@ client.once(Events.ClientReady, async (readyClient) => {
 
         await meetingAttendanceRequestService.start()
         await syncService.start()
+        // Redraws pre-redesign match announcements once, a few a minute.
+        startAnnouncementMigration({
+            queueEventSync: (eventId) => syncService.queueEventSync(eventId),
+            triggerSoon: () => syncService.triggerSoon(250),
+        })
         // A backend without the reminder queue must not stop the rest of the
         // bot from starting; reminders then simply wait for the deploy.
         await manualReminderRequestService.start().catch((error) =>

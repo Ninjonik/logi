@@ -1,4 +1,10 @@
 import {
+    leagueCollectionActive,
+    trackingAdmission,
+    trackingConfig,
+    updateTracked,
+} from "./leagueTrackingStore"
+import {
     MAX_RETRY_AFTER_MS,
     leagueReadSchema,
     leagueSnapshotSchema,
@@ -7,11 +13,6 @@ import {
     refreshIntervalMs,
     sharedScanIntervalMs,
 } from "../src/domain/wardogs-league/discovery"
-import {
-    trackingAdmission,
-    trackingConfig,
-    updateTracked,
-} from "./leagueTrackingStore"
 import { selectTrackedSnapshot } from "../src/application/wardogs-league/accept-snapshot"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { internalMutation, internalQuery } from "./_generated/server"
@@ -45,13 +46,8 @@ export const pruneReferences = internalMutation({
 export const claimScan = internalMutation({
     args: {},
     handler: async (ctx) => {
-        if (
-            !(await ctx.db
-                .query("leagueTrackingSettings")
-                .withIndex("enabled", (q) => q.eq("enabled", true))
-                .first())
-        )
-            return null
+        // A WD League panel needs the shared index even without tracking.
+        if (!(await leagueCollectionActive(ctx))) return null
         let row = await ctx.db
             .query("leagueIndexCache")
             .withIndex("key", (q) => q.eq("key", "indexes"))

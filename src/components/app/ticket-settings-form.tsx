@@ -9,6 +9,15 @@ import {
     channelOptions,
     SettingsChannelPicker,
 } from "@/components/app/settings/settings-channel-picker"
+import {
+    layoutMessageView,
+    layoutTextLength,
+} from "@/domain/discord-messages/message-layout"
+import {
+    getIntlLocaleForClanLanguage,
+    type ClanLanguage,
+} from "@/lib/clan-language/core"
+import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import type {
     DiscordConfig,
     TicketCategory,
@@ -17,10 +26,15 @@ import type {
 import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
 import { ModalQuestionsEditor } from "@/components/app/settings/modal-questions-editor"
 import { DiscordMultiEntitySelect } from "@/components/app/discord-multi-entity-select"
+import { DISCORD_MESSAGE_LIMITS } from "@/domain/discord-messages/message-view"
+import { normalizeAccentColor } from "@/domain/discord-messages/message-style"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
+import { ticketPanelView } from "@/domain/discord-tickets/ticket-views"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
+import { getTicketMessages } from "@/lib/clan-language/tickets"
+import { getSystemMessages } from "@/lib/clan-language/system"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { AvatarPicker } from "@/components/app/avatar-picker"
 import { EmptyState } from "@/components/app/empty-state"
@@ -33,8 +47,6 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 type EditableTicketCategory = TicketCategory
-
-const MAX_TICKET_CATEGORY_FIELD_LENGTH = 1024
 
 function makeId(prefix: string) {
     return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
@@ -61,11 +73,13 @@ function buildDefaultTicketSettings(
             panelTitle: config.ticketSettings.panelTitle ?? "",
             panelDescription: config.ticketSettings.panelDescription ?? "",
             panelImageUrl: config.ticketSettings.panelImageUrl ?? "",
+            panelAccentColor: config.ticketSettings.panelAccentColor ?? "",
             categories: config.ticketSettings.categories.map((category) => ({
                 ...category,
                 emoji: category.emoji ?? "",
                 label: category.label ?? "",
                 description: category.description ?? "",
+                threadTitle: category.threadTitle ?? "",
                 supportRoleIds: [...category.supportRoleIds],
                 modalQuestions: category.modalQuestions.map((question) => ({
                     ...question,
@@ -82,27 +96,8 @@ function buildDefaultTicketSettings(
         panelTitle: dictionary.ticketSettings.defaultPanelTitle,
         panelDescription: dictionary.ticketSettings.defaultPanelDescription,
         panelImageUrl: "",
+        panelAccentColor: "",
         categories: [],
-    }
-}
-
-function buildTicketCategoryFieldPreview(categories: EditableTicketCategory[]) {
-    const lines = categories
-        .map((category) => {
-            const pieces = [
-                category.emoji?.trim(),
-                category.label?.trim(),
-            ].filter(Boolean)
-            const title = pieces.join(" ") || category.id
-            const description = category.description?.trim()
-            return description ? `${title}: ${description}` : title
-        })
-        .filter(Boolean)
-
-    const fullText = lines.join("\n")
-    return {
-        tooLong: fullText.length > MAX_TICKET_CATEGORY_FIELD_LENGTH,
-        length: fullText.length,
     }
 }
 
@@ -132,10 +127,35 @@ export function TicketSettingsForm({
 
     const roles = metadata?.roles ?? []
     const emojiOptions = metadata?.emojis ?? []
-    const categoryFieldPreview = useMemo(
-        () => buildTicketCategoryFieldPreview(ticketSettings.categories),
-        [ticketSettings.categories]
+    const clanLanguage: ClanLanguage = config?.defaultLanguage ?? "en"
+    const typedColor = ticketSettings.panelAccentColor?.trim() ?? ""
+    const panelColor = normalizeAccentColor(typedColor)
+    const colorInvalid = Boolean(typedColor) && !panelColor
+    // The same card the bot posts (L4-35..37), so the preview is exact.
+    const panelPreview = useMemo(
+        () =>
+            ticketPanelView({
+                title: ticketSettings.panelTitle || t.defaultPanelTitle,
+                description: ticketSettings.panelDescription,
+                imageUrl: ticketSettings.panelImageUrl,
+                accentColor: panelColor,
+                categories: ticketSettings.categories.map((category) => ({
+                    ...category,
+                    label: category.label?.trim() || t.untitledCategory,
+                })),
+                copy: getTicketMessages(clanLanguage),
+            }),
+        [ticketSettings, panelColor, clanLanguage, t]
     )
+    const categoryFieldPreview = useMemo(() => {
+        const length = layoutTextLength(
+            layoutMessageView(panelPreview, {
+                copy: getSystemMessages(clanLanguage).kit,
+                locale: getIntlLocaleForClanLanguage(clanLanguage),
+            })
+        )
+        return { length, tooLong: length > DISCORD_MESSAGE_LIMITS.totalText }
+    }, [panelPreview, clanLanguage])
     const missingTicketParts: string[] = []
     if (!ticketSettings.submitChannelId)
         missingTicketParts.push(t.submitChannel)
@@ -186,6 +206,10 @@ export function TicketSettingsForm({
     }
 
     async function handleSave() {
+        if (colorInvalid) {
+            toast.error(t.panelColorInvalid)
+            return
+        }
         const normalizedTicketSettings: TicketSettings | undefined =
             ticketSettings.enabled
                 ? {
@@ -197,12 +221,15 @@ export function TicketSettingsForm({
                       panelTitle: ticketSettings.panelTitle,
                       panelDescription: ticketSettings.panelDescription,
                       panelImageUrl: ticketSettings.panelImageUrl || undefined,
+                      panelAccentColor: panelColor,
                       categories: ticketSettings.categories.map((category) => ({
                           ...category,
                           emoji: category.emoji?.trim() || undefined,
                           label: category.label?.trim() || undefined,
                           description:
                               category.description?.trim() || undefined,
+                          threadTitle:
+                              category.threadTitle?.trim() || undefined,
                           supportRoleIds: category.supportRoleIds,
                           modalQuestions: category.modalQuestions.map(
                               (question) => ({
@@ -215,6 +242,7 @@ export function TicketSettingsForm({
                   }
                 : {
                       ...ticketSettings,
+                      panelAccentColor: panelColor,
                       enabled: false,
                   }
 
@@ -419,6 +447,52 @@ export function TicketSettingsForm({
                         disabled={isPending}
                         className="border-border/60 rounded-2xl border p-4"
                     />
+                    <div className="space-y-2">
+                        <Label htmlFor="ticket-panel-color">
+                            {t.panelColor}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="color"
+                                aria-label={t.panelColor}
+                                value={panelColor ?? "#E8A33D"}
+                                onChange={(event) =>
+                                    patchTicketSettings({
+                                        panelAccentColor:
+                                            event.target.value.toUpperCase(),
+                                    })
+                                }
+                                className="border-input size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent p-1"
+                            />
+                            <Input
+                                id="ticket-panel-color"
+                                value={ticketSettings.panelAccentColor ?? ""}
+                                onChange={(event) =>
+                                    patchTicketSettings({
+                                        panelAccentColor: event.target.value,
+                                    })
+                                }
+                                maxLength={7}
+                                placeholder="#E8A33D"
+                                aria-invalid={colorInvalid || undefined}
+                                aria-describedby="ticket-panel-color-hint"
+                                className="max-w-40 font-mono"
+                            />
+                        </div>
+                        <p
+                            id="ticket-panel-color-hint"
+                            className={cn(
+                                "text-xs",
+                                colorInvalid
+                                    ? "text-destructive"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            {colorInvalid
+                                ? t.panelColorInvalid
+                                : t.panelColorHint}
+                        </p>
+                    </div>
                 </section>
 
                 <aside
@@ -426,58 +500,13 @@ export function TicketSettingsForm({
                     className="min-w-0 space-y-2"
                 >
                     <p className="text-sm font-semibold">{t.previewTitle}</p>
-                    <div className="rounded-2xl bg-zinc-900 p-3 text-zinc-100 shadow-sm dark:bg-zinc-950">
-                        <div className="space-y-3 rounded-lg border-l-4 border-amber-500 bg-zinc-800/80 p-4 text-sm">
-                            <p className="text-base font-semibold break-words">
-                                {ticketSettings.panelTitle ||
-                                    t.defaultPanelTitle}
-                            </p>
-                            {ticketSettings.panelDescription ? (
-                                <p className="line-clamp-6 text-[13px] leading-5 break-words whitespace-pre-wrap text-zinc-300">
-                                    {ticketSettings.panelDescription}
-                                </p>
-                            ) : null}
-                            {ticketSettings.categories.length ? (
-                                <ul className="space-y-1.5 text-[13px] text-zinc-300">
-                                    {ticketSettings.categories.map(
-                                        (category) => (
-                                            <li
-                                                key={category.id}
-                                                className="break-words"
-                                            >
-                                                <strong className="text-zinc-100">
-                                                    {category.label?.trim() ||
-                                                        t.untitledCategory}
-                                                </strong>
-                                                {category.description?.trim()
-                                                    ? ` · ${category.description.trim()}`
-                                                    : ""}
-                                            </li>
-                                        )
-                                    )}
-                                </ul>
-                            ) : null}
-                            {ticketSettings.categories.length ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {ticketSettings.categories.map(
-                                        (category) => (
-                                            <span
-                                                key={category.id}
-                                                className="max-w-full truncate rounded bg-zinc-600 px-3 py-1.5 text-[13px] font-medium text-white"
-                                            >
-                                                {category.emoji &&
-                                                !category.emoji.startsWith("<")
-                                                    ? `${category.emoji} `
-                                                    : ""}
-                                                {category.label?.trim() ||
-                                                    t.untitledCategory}
-                                            </span>
-                                        )
-                                    )}
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
+                    <DiscordMessagePreview
+                        view={panelPreview}
+                        language={clanLanguage}
+                        style={config?.messageStyle}
+                        labels={dictionary.discordPreview}
+                        author={{}}
+                    />
                 </aside>
             </div>
 
@@ -501,7 +530,7 @@ export function TicketSettingsForm({
                         )}
                     >
                         {categoryFieldPreview.tooLong
-                            ? `${t.embedLimitNotice} ${categoryFieldPreview.length}/${MAX_TICKET_CATEGORY_FIELD_LENGTH} ${t.embedLimitExceeded}`
+                            ? `${t.embedLimitNotice} ${categoryFieldPreview.length}/${DISCORD_MESSAGE_LIMITS.totalText} ${t.embedLimitExceeded}`
                             : t.categoriesEditorNote}
                     </p>
                 </div>
@@ -768,6 +797,25 @@ function TicketCategoryEditor({
                     preview="edit"
                     placeholder={t.categoryDescriptionPlaceholder}
                 />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor={`${id}-thread-title`}>{t.threadTitle}</Label>
+                <Input
+                    id={`${id}-thread-title`}
+                    value={category.threadTitle ?? ""}
+                    onChange={(event) =>
+                        onChange({ threadTitle: event.target.value })
+                    }
+                    placeholder={t.threadTitlePlaceholder}
+                    maxLength={200}
+                    aria-describedby={`${id}-thread-title-hint`}
+                />
+                <p
+                    id={`${id}-thread-title-hint`}
+                    className="text-muted-foreground text-xs"
+                >
+                    {t.threadTitleHint}
+                </p>
             </div>
             <div className="space-y-2">
                 <Label>{t.columns.handledBy}</Label>

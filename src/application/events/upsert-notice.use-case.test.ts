@@ -99,6 +99,7 @@ test("UpsertNoticeUseCase replaces an existing notice for the same user", async 
             userId: "user-1",
             reason: "Updated reason",
             createdAt: "2026-01-01T10:30:00.000Z",
+            kind: "late",
         },
     ])
 })

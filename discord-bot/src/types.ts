@@ -18,6 +18,8 @@ export type TicketCategory = {
     description?: string
     supportRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
+    /** The title of the thread card, e.g. "{author} nahlašuje hráče". */
+    threadTitle?: string
 }
 
 export type MembershipCategory = {
@@ -42,6 +44,8 @@ export type TicketSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour (`#RRGGBB`); missing means the clan colour. */
+    panelAccentColor?: string
     categories: TicketCategory[]
 }
 
@@ -139,6 +143,13 @@ export type DiscordConfig = {
     rosterChangesPostDefault?: boolean
     rosterChangesDmDefault?: boolean
     attendanceNoticesInThread?: boolean
+    /** Per-message switches of "Zprávy a panely" (board N1); missing is on. */
+    debriefPostEnabled?: boolean
+    scheduledEventEnabled?: boolean
+    matchRecapDmEnabled?: boolean
+    trainingResultDmEnabled?: boolean
+    applicationCloseDmEnabled?: boolean
+    ticketCloseDmEnabled?: boolean
     updatedAt: string
 }
 
@@ -350,6 +361,8 @@ export type EventRecord = {
         userId: string
         reason: string
         createdAt: string
+        /** "late" or "cannot_come"; older notices have none and read as late. */
+        kind?: "late" | "cannot_come"
     }>
     signUps: Array<{
         userId: string
@@ -359,6 +372,8 @@ export type EventRecord = {
         userId: string
         status: "attending" | "not_attending"
         group?: string | null
+        /** The full capped group a reserve chose. */
+        requestedGroup?: string | null
         completed?: "passed" | "failed"
         updatedAt: string
     }>

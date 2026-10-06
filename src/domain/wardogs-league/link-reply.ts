@@ -7,6 +7,9 @@ import type { LeagueMatch } from "./contracts"
  * scanner finds on its own gets no reply; neither does a link posted in the
  * panel channel itself.
  */
+/** Only links posted this recently are answered, so a deploy never replies to old posts. */
+export const LINK_REPLY_WINDOW_MS = 24 * 3600_000
+
 export type LeagueLinkReplyView = {
     matchId: string
     sourceUrl: string

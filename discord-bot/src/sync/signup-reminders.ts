@@ -7,8 +7,8 @@ import { getDirectMessages } from "../../../src/lib/clan-language/direct-message
 import { dmFrame, eventCategory, eventMapLabel } from "../events/match-context"
 import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
-import { SIGNUP_NOT_ATTENDING, SIGNUP_PRIMARY_GROUP } from "../constants"
 import { matchesGameScope } from "../../../src/domain/games/game"
+import { SIGNUP_NOT_ATTENDING } from "../constants"
 import { messagePayload } from "../ui/message-kit"
 import { buildDiscordMessageLink } from "../utils"
 import type { SyncPayload } from "../types"
@@ -49,8 +49,9 @@ export function isSignupReminderRecipient(input: {
  * The sign-up reminder DM (board L2-06..15): "Připomínka přihlášky" with the
  * match, its sides, the weekday start, the sign-up deadline, why the DM came
  * and "Přihlásit se", "Nepřijdu" and "Otevřít ohlášení", which answer in the
- * same DM. Used by the scheduled reminder and by reminders an admin sends
- * from the dashboard ("Připomínku poslalo velení z Logi.").
+ * same DM. Used by the scheduled reminder and by reminders leadership sends
+ * from the dashboard or with "Připomenout bez odpovědi" under "Zobrazit
+ * přihlášené" ("Připomínku poslalo velení z Logi.").
  */
 export function buildSignupReminderMessage(
     payload: SyncPayload,
@@ -83,9 +84,10 @@ export function buildSignupReminderMessage(
                 meetingStart: event.meetingStart,
                 gameStart: event.gameStart,
             },
-            // The same sign-up buttons as the announcement; they answer in the DM.
+            // The same sign-up buttons as the announcement; they answer in the
+            // DM ("Přihlásit se" opens the group picker there, board L1-87).
             ids: {
-                signUp: `signup:${event.id}:${SIGNUP_PRIMARY_GROUP}:${guildId}`,
+                signUp: `signup-picker:${event.id}:${guildId}`,
                 decline: `signup:${event.id}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${guildId}`,
             },
             announcementUrl,

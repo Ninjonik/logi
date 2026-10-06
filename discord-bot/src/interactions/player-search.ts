@@ -1,6 +1,8 @@
 export type PlayerSearchResult = {
     playerId: string
     playerName: string
+    /** When CRCON last saw the player (epoch ms), if it says. */
+    lastSeenAt?: number
 }
 
 type StatsPlayerRecord = {
@@ -12,6 +14,22 @@ type StatsPlayerRecord = {
     names?: Array<{
         name?: unknown
     }> | null
+    last_seen_timestamp_ms?: unknown
+    last_seen?: unknown
+}
+
+/** CRCON's last sighting: epoch milliseconds or an ISO date. */
+function lastSeenOf(player: StatsPlayerRecord) {
+    const value = player.last_seen_timestamp_ms ?? player.last_seen
+    const ms =
+        typeof value === "number"
+            ? value
+            : typeof value === "string"
+              ? /^\d+$/.test(value)
+                  ? Number(value)
+                  : Date.parse(value)
+              : Number.NaN
+    return Number.isFinite(ms) && ms > 0 ? ms : undefined
 }
 
 type StatsSearchResponse = {
@@ -54,7 +72,12 @@ export function extractPlayerSearchResults(
             return []
         }
 
-        return [{ playerId, playerName }]
+        const lastSeenAt = lastSeenOf(player)
+        return [
+            lastSeenAt === undefined
+                ? { playerId, playerName }
+                : { playerId, playerName, lastSeenAt },
+        ]
     })
 }
 

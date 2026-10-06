@@ -4,6 +4,10 @@ import {
     teamChipCode,
     type NewMatchStep,
 } from "@/domain/events/new-match-flow"
+import {
+    panelMapDefinition,
+    panelMapKey,
+} from "@/domain/discord-publications/panel-graphics"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { EventCategory, Group } from "@/types/domain"
 import { getStratmapMapById } from "@/lib/game-stratmaps"
@@ -304,9 +308,11 @@ export function flowPreviewModel(
             : []),
         ...(extraCode ? [{ code: extraCode, side: values.extraSide }] : []),
     ]
+    const game = values.gameId ?? "hell_let_loose"
     return {
         kind: values.kind,
         language: context.botLanguage,
+        timeZone: context.timezone,
         title: name,
         categoryLabel: category?.label ?? null,
         teams: isMatch
@@ -317,7 +323,13 @@ export function flowPreviewModel(
                   : []
             : [],
         map: map ? { name: map.name, time: values.timeOfDay || null } : null,
+        // The bot's own map picture (board L1-15), when Logi has one.
+        mapImageUrl: values.mapId
+            ? (panelMapDefinition(game, panelMapKey(game, values.mapId))
+                  ?.builtIn ?? null)
+            : null,
         cap: values.cap || null,
+        server: isMatch ? null : values.server || null,
         meetingStart: schedule?.meetingStart ?? null,
         gameStart: schedule?.gameStart ?? null,
         registrationEnd: schedule?.registrationEnd ?? null,

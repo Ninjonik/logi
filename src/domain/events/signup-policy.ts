@@ -62,6 +62,8 @@ export function toggleSignup(input: {
     group: string | null
     now: Date
     membershipStatus?: SignupMembershipStatus | null
+    /** The full capped group the player chose; they get a reserve place. */
+    requestedGroup?: string | null
 }) {
     if (!canAcceptSignups(input.event, input.now)) {
         throw new Error("Signups are closed for this event.")
@@ -88,6 +90,11 @@ export function toggleSignup(input: {
             userId: input.userId,
             status: nextStatus,
             group: normalizedNextGroup,
+            ...(nextStatus === "attending" &&
+            !normalizedNextGroup &&
+            input.requestedGroup
+                ? { requestedGroup: input.requestedGroup }
+                : {}),
             updatedAt: input.now.toISOString(),
             completed: existing?.completed,
         },

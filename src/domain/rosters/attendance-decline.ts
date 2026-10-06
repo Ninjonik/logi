@@ -85,24 +85,24 @@ export function declineRosterAttendance<T extends RosterLike>(input: {
         input.userId,
         "pending"
     )
-    const changed =
-        previous?.reason !== reason ||
-        isAcknowledged(input.roster, input.userId)
+    // A late notice with the same words is still replaced: the player now
+    // cannot come at all.
+    const sameNotice =
+        previous?.reason === reason && previous.kind === "cannot_come"
+    const changed = !sameNotice || isAcknowledged(input.roster, input.userId)
     return {
         roster,
-        absenceNotices:
-            previous?.reason === reason
-                ? notices
-                : [
-                      ...notices.filter(
-                          (notice) => notice.userId !== input.userId
-                      ),
-                      {
-                          userId: input.userId,
-                          reason,
-                          createdAt: input.now.toISOString(),
-                      },
-                  ],
+        absenceNotices: sameNotice
+            ? notices
+            : [
+                  ...notices.filter((notice) => notice.userId !== input.userId),
+                  {
+                      userId: input.userId,
+                      reason,
+                      createdAt: input.now.toISOString(),
+                      kind: "cannot_come" as const,
+                  },
+              ],
         placement,
         changed,
     }

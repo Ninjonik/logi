@@ -2,13 +2,14 @@ import { NextResponse } from "next/server"
 
 import { invalidPublicationDestination } from "@/domain/discord-publications/destinations"
 import { discordSettingsPatchSchema } from "@/lib/validation/discord-settings"
+import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { saveDiscordConfig } from "@/lib/server-discord-settings"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { fetchDiscordGuildChannels } from "@/lib/discord"
+import { readBoundedJson } from "@/lib/api/request-json"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
-import { getSiteUrl } from "@/lib/env"
 
 export async function POST(
     request: Request,
@@ -18,17 +19,14 @@ export async function POST(
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
     const serverContext = await getServerContext(serverId)
-    const origin = request.headers.get("origin")
-    if (
-        !serverContext?.canAdmin ||
-        // Browsers send Origin with every cross-site POST.
-        (origin && origin !== new URL(getSiteUrl()).origin)
-    ) {
+    if (!serverContext?.canAdmin || !isDashboardWriteOrigin(request)) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
     try {
-        const json = await request.json()
+        // Settings pages send at most a few kilobytes; ticket and membership
+        // forms with every category stay far below this bound.
+        const json = await readBoundedJson(request, 256 * 1024)
         const parsed = discordSettingsPatchSchema.safeParse(json)
 
         if (!parsed.success) {

@@ -32,7 +32,6 @@ import {
     serverJoinSlugBase,
     serverJoinUrl,
 } from "@/domain/discord-publications/server-join"
-import { leaguePanelPreviews } from "@/domain/discord-publications/league-panel-preview"
 import { unsavedChangesLabel } from "@/components/app/settings/unsaved-changes-bar"
 import { panelImageCopy } from "@/domain/discord-publications/panel-image-copy"
 import type { PanelStyle } from "@/domain/discord-publications/panel-graphics"
@@ -77,6 +76,7 @@ import {
 } from "./panels-api"
 import {
     combinedPreview,
+    leaguePreviews,
     liveServerPreview,
     previewBannerModel,
     previewScoreModel,
@@ -632,13 +632,17 @@ export function PanelEditor(props: PanelEditorProps) {
                 })
                 if (league.status === "done")
                     previewViews.push(
-                        ...leaguePanelPreviews({
+                        ...leaguePreviews({
                             standings: league.data.standings,
                             fixtures: league.data.fixtures,
                             options: draft.league,
                             language: props.clan.language,
                             timeZone: props.clan.timeZone,
+                            style: props.clan.messageStyle,
                             accentColor,
+                            paused: Boolean(item?.paused),
+                            artwork: draft.artwork && draft.layout.showMap,
+                            assetOrigin: previewInput.assetOrigin,
                             now,
                         })
                     )

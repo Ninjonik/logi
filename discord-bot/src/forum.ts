@@ -40,6 +40,10 @@ import type {
     TopicPreset,
 } from "./types"
 import {
+    isMessageEnabled,
+    resolveMatchMessageSettings,
+} from "../../src/domain/discord-messages/notification-settings"
+import {
     eventCategory,
     eventMapLabel,
     meetingChannelOf,
@@ -49,7 +53,6 @@ import {
     matchForumChannelName,
     matchTitle,
 } from "../../src/domain/discord-messages/match-text"
-import { resolveMatchMessageSettings } from "../../src/domain/discord-messages/notification-settings"
 import type { MessageView } from "../../src/domain/discord-messages/message-view"
 import { footerText } from "../../src/domain/discord-messages/message-layout"
 import { getRosterMessages } from "../../src/lib/clan-language/rosters"
@@ -752,6 +755,8 @@ export async function finalizeForumAfterConclusion(
         forumContext?: MatchForumContext | null
     } = {}
 ) {
+    // "Debrief ve fóru" is a clan switch on "Zprávy a panely" (N1-14).
+    if (!isMessageEnabled(config, "debriefPost")) return
     const copy = getRosterMessages(config.defaultLanguage)
     const activePosts = await forumChannel.threads
         .fetchActive()

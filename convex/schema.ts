@@ -180,6 +180,9 @@ const eventParticipant = v.object({
     userId: v.string(),
     status: v.union(v.literal("attending"), v.literal("not_attending")),
     group: v.optional(v.union(v.string(), v.null())),
+    // The capped group a player chose while it was full; they hold a reserve
+    // place without a group. Missing on older sign-ups.
+    requestedGroup: v.optional(v.union(v.string(), v.null())),
     completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
 })
@@ -215,6 +218,8 @@ const ticketCategory = v.object({
     description: v.optional(v.string()),
     supportRoleIds: v.array(v.string()),
     modalQuestions: v.array(ticketModalQuestion),
+    /** The thread card's title, e.g. "{author} nahlašuje hráče" (L4-42). */
+    threadTitle: v.optional(v.string()),
 })
 
 const membershipCategory = v.object({
@@ -282,6 +287,8 @@ const ticketSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-45). */
+    panelAccentColor: v.optional(v.string()),
     categories: v.array(ticketCategory),
 })
 
@@ -515,6 +522,9 @@ const eventNotice = v.object({
     // Set when a clan admin excused the player after the match; the player's
     // own late notice has no admin.
     excusedBy: v.optional(v.string()),
+    // "Přijdu později" (late) or "Nemůžu" (cannot_come); older notices have
+    // none and read as late.
+    kind: v.optional(v.union(v.literal("late"), v.literal("cannot_come"))),
 })
 
 const rosterSquad = v.object({
@@ -777,6 +787,14 @@ export default defineSchema({
         rosterChangesPostDefault: v.optional(v.boolean()),
         rosterChangesDmDefault: v.optional(v.boolean()),
         attendanceNoticesInThread: v.optional(v.boolean()),
+        // Per-message switches of "Zprávy a panely" (board N1, see
+        // notification-settings.ts). Missing means on (N1-B06).
+        debriefPostEnabled: v.optional(v.boolean()),
+        scheduledEventEnabled: v.optional(v.boolean()),
+        matchRecapDmEnabled: v.optional(v.boolean()),
+        trainingResultDmEnabled: v.optional(v.boolean()),
+        applicationCloseDmEnabled: v.optional(v.boolean()),
+        ticketCloseDmEnabled: v.optional(v.boolean()),
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
@@ -786,7 +804,14 @@ export default defineSchema({
         statusMessageId: v.optional(v.string()),
         statusUpdatesThreadId: v.optional(v.string()),
         serviceStates: v.optional(
-            v.array(v.object({ name: v.string(), online: v.boolean() }))
+            v.array(
+                v.object({
+                    name: v.string(),
+                    online: v.boolean(),
+                    // When the service last changed state (board L5-37).
+                    since: v.optional(v.string()),
+                })
+            )
         ),
         updatedAt: v.string(),
     }).index("workspaceGuildId", ["workspaceGuildId"]),
@@ -1015,7 +1040,10 @@ export default defineSchema({
             v.literal("create-squad-voice-channels"),
             v.literal("conclude-event"),
             v.literal("attendance-reminder"),
-            v.literal("signup-reminder")
+            v.literal("signup-reminder"),
+            // Redraws the match announcement when its card changes by the
+            // clock alone: at the meeting ("Začíná") and the start ("Hraje se").
+            v.literal("refresh-announcement")
         ),
         dueAt: v.string(),
         status: v.union(v.literal("pending"), v.literal("processing")),
@@ -1188,6 +1216,17 @@ export default defineSchema({
     })
         .index("eventId", ["eventId"])
         .index("eventId_userId", ["eventId", "userId"]),
+    // The match announcement card the bot keeps in the announcement channel
+    // (board L1): whether its first post pinged the roles, so a re-created
+    // card never pings again, and the card layout it was last drawn with, so
+    // the one-time redraw of older cards runs once.
+    discordAnnouncements: defineTable({
+        eventId: v.id("events"),
+        guildId: v.string(),
+        pingedAt: v.optional(v.string()),
+        layoutVersion: v.optional(v.string()),
+        updatedAt: v.string(),
+    }).index("eventId", ["eventId"]),
     discordEventSyncs: defineTable({
         eventId: v.id("events"),
         guildId: v.string(),

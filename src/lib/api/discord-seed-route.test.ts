@@ -172,6 +172,49 @@ test("verifyOnly reports the channel checks without saving", async () => {
     )
 })
 
+test("verifyOnly checks only the channels and role of an unfinished plan", async () => {
+    const checked: unknown[] = []
+    const { routes, request } = fixture({
+        verifyChannels: async (access, settings) => {
+            checked.push(settings)
+            return okChannels
+        },
+    })
+    const unfinished = { ...boardSeedSettings(), liveFrom: 1, startBelow: 90 }
+    const response = await routes.PUT(
+        request("PUT", { ...planBody(unfinished), verifyOnly: true }),
+        params
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(checked, [
+        {
+            seedChannelId: unfinished.seedChannelId,
+            controlChannelId: unfinished.controlChannelId,
+            seedRoleId: unfinished.seedRoleId,
+            roleSelfService: unfinished.roleSelfService,
+        },
+    ])
+    const badChannel = await routes.PUT(
+        request("PUT", {
+            ...planBody({ ...unfinished, controlChannelId: "#spravci" }),
+            verifyOnly: true,
+        }),
+        params
+    )
+    assert.equal(badChannel.status, 400)
+    const outage = fixture({
+        verifyChannels: async () => {
+            throw new Error("discord down")
+        },
+    })
+    const down = await outage.routes.PUT(
+        outage.request("PUT", { ...planBody(), verifyOnly: true }),
+        params
+    )
+    assert.equal(down.status, 503)
+    assert.deepEqual(await down.json(), { error: "verification_unavailable" })
+})
+
 test("invalid bodies and plans are refused with codes", async () => {
     const { routes, request } = fixture()
     assert.equal(

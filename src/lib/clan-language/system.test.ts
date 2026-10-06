@@ -54,6 +54,64 @@ test("every language has the same kit keys and placeholders", () => {
     }
 })
 
+/** Every string of a nested copy object with its path. */
+function strings(value: unknown, path = ""): Array<[string, string]> {
+    if (typeof value === "string") return [[path, value]]
+    if (value && typeof value === "object")
+        return Object.entries(value).flatMap(([key, child]) =>
+            strings(child, path ? `${path}.${key}` : key)
+        )
+    return []
+}
+
+test("the errors channel, service status and team requests share keys and placeholders", () => {
+    const cs = getSystemMessages("cs")
+    for (const section of [
+        "errorsChannel",
+        "serviceStatus",
+        "teamRequests",
+    ] as const) {
+        const reference = new Map(strings(cs[section]))
+        for (const language of ["en", "de"]) {
+            const other = new Map(strings(getSystemMessages(language)[section]))
+            for (const [path, value] of reference) {
+                // Plural forms may differ per language; `one` and `other` must exist.
+                if (/\.(few|many)$/.test(path)) continue
+                assert.ok(other.has(path), `${language} ${section}.${path}`)
+                assert.deepEqual(
+                    placeholders(other.get(path)!),
+                    placeholders(value),
+                    `${language} ${section}.${path}`
+                )
+            }
+        }
+    }
+})
+
+test("the system message copy in Czech is the board's wording (L5)", () => {
+    const cs = getSystemMessages("cs")
+    assert.equal(cs.errorsChannel.labelWithArea, "Chyba bota · {area}")
+    assert.equal(cs.errorsChannel.reasonHeading, "Proč")
+    assert.equal(cs.errorsChannel.fixHeading, "Co udělat")
+    assert.deepEqual(cs.errorsChannel.retry, {
+        afterFix: "Zkusí se znovu po opravě",
+        byItself: "Zkusí se znovu sám",
+        playerTold: "Hráč dostal zprávu, ať to zkusí později",
+    })
+    assert.equal(cs.serviceStatus.threadName, "Změny stavu")
+    assert.equal(cs.serviceStatus.allRunning, "Všechno běží")
+    assert.equal(cs.teamRequests.approvedTitle, "Tým je v katalogu")
+    assert.equal(cs.teamRequests.mergedTitle, "Tým už v katalogu byl")
+    assert.equal(cs.teamRequests.rejectedTitle, "Žádost o tým nebyla přijata")
+    for (const language of ["cs", "de"])
+        assert.doesNotMatch(
+            strings(getSystemMessages(language).errorsChannel)
+                .map(([, value]) => value)
+                .join(" "),
+            /Bot missing permissions|Discord said|While doing|Scope/
+        )
+})
+
 test("delivery errors fit the stored error field and contain no English in cs or de", () => {
     for (const language of ["en", "cs", "de"]) {
         const { publication } = getSystemMessages(language)

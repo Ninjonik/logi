@@ -44,7 +44,8 @@ Shared rules live in `src/domain/discord-messages/format.ts`. Bot copy in the
 clan language lives in feature modules under `src/lib/clan-language/`:
 `events.ts` (announcements, rosters, reminders and their DMs), `panels.ts`
 (live server, combined, results, calendar and competition panels, the player
-list and the report flow), `membership.ts` (tickets, applications, account linking),
+list and the report flow), `membership.ts` (applications), `tickets.ts` (tickets
+and `/close_ticket`), `game-accounts.ts` (`/link`),
 `commands.ts` (slash commands and player stats) and `system.ts` (team request
 decisions and the shared message kit); `core.ts` resolves the language and its
 locale. Each workstream edits only its own module. League copy is in
@@ -138,6 +139,14 @@ without it the bot reports its package version.
   with the bot version; private "Zobrazit hráče" pages and the private
   "Nahlásit hráče" flow (`interactions.ts`, `../player-reports.ts`). See the
   [panels contract](../docs/superpowers/specs/discord-redesign/PANELS-API.md)
+- Run server seeding (`src/seed/worker.ts`, every 20 s and after a button): the
+  seed call with its 10-piece progress, refreshed every 60 s, then edited to
+  "Server je živý" or deleted; the pinned intro with "Zvát mě na seed"; one
+  "Ovládání serveru" message per server, posted only into a channel
+  `@everyone` cannot view. Its buttons (`src/seed/interactions.ts`) re-check
+  the member's Logi admin role before they start or end a seed or refresh or
+  pause the server's panel. The role is pinged only when a call is posted. See
+  the [seed wiki page](../content/configuration/server-seeding.mdx)
 - Write sync state back to Convex
 - Reconcile actor-backed membership roles through a durable queue, including
   independent recovery after reconnect. `src/sync/managed-member-roles.ts` owns
@@ -195,6 +204,11 @@ attempt instead of continuing with stale Discord permissions.
   sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
   players who answered or confirmed in the meantime are skipped
 - `src/interactions/attendance-decline.ts` handles **Can't make it** from reminder DMs
+- `src/interactions/tickets.ts` opens tickets from the panel (button, select,
+  category window) and `tickets-panel.ts` builds the panel card;
+  `close-ticket.ts` handles `/close_ticket`; `link.ts` and `link-search.ts`
+  handle `/link` and its search on the clan's stats servers. All are routed
+  through the interaction registry (`src/interactions/features.ts`)
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data
