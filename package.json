@@ -19,6 +19,7 @@
         "build-show-all-errors": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=4096 __NEXT_TEST_MODE=true next build",
         "start": "next start",
         "typecheck": "tsc --noEmit",
+        "check:convex-bundles": "node scripts/check-convex-bundles.mjs",
         "lint": "eslint .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",

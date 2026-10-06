@@ -173,6 +173,7 @@ npm run test:domain     # domain tests only
 npm run bot:test        # bot tests only
 npm run test:coverage   # all tests with Node coverage
 npm run typecheck       # TypeScript without emit
+npm run check:convex-bundles  # Convex modules bundle for their runtime (no node: imports in V8 modules)
 npm run lint            # configured lint script
 npm run build           # production Next.js build
 npm run convex:deploy   # deploy Convex; external side effect

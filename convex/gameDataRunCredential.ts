@@ -1,3 +1,5 @@
+"use node"
+
 import { actionCredential } from "../src/infrastructure/game-data/credential-resolver"
 import type { ResolvedSource } from "../src/domain/game-data/credentials"
 import type { ActionCtx } from "./_generated/server"
