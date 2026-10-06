@@ -102,4 +102,4 @@ one line per visible element and behaviour rule, with IDs such as `L1-23`.
    rendered previews, marking each one as done or missing.
 3. Missing items are fixed before the PR is offered for merge.
 
-The final audit report is attached to the PR.
+The final audit report is [`discord-redesign/AUDIT-REPORT.md`](discord-redesign/AUDIT-REPORT.md), with the per-board audit files of both rounds in [`discord-redesign/audit/`](discord-redesign/audit/).

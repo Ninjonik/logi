@@ -15,6 +15,8 @@ There are 21 checklists, one per design board. Each one lists every visible elem
   - **MISSING**: nothing exists for it.
 - **Variants.** A variant that was not chosen is marked "varianta, nevybráno" and stays listed. An item that a later board replaces is marked **SUPERSEDED** and points to that board.
 
+The implementation and audit result is in [AUDIT-REPORT.md](AUDIT-REPORT.md).
+
 ## Counts per board
 
 | Code | Board | Checklist | Elements | Rules | Total | EXISTS | PARTIAL | MISSING | Workstream |
@@ -424,3 +426,6 @@ These resolve the questions above for implementation. The owner can override any
 81. **Clan questions in the review (L6-39).** The review before sending lists the clan's own questions as "Otázka: odpověď" pairs ("Kolik hodin týdně hraješ: 10–15 hodin · Máš mikrofon: Ano"), not the board's prose ("10–15 hodin týdně · mikrofon ano"). Clans write their own questions, and prose cannot be generated from them. Accepted.
 82. **The server's own name in the style B banner (P7-13, P7-18, P8-07).** The banner subtitle uses the server's own name ("Vlci #1 · Public · Hell Let Loose", "Vlci WD · Wardogs"), not the board's placeholder "Server #1 · Public · Hell Let Loose". Logi does not rewrite names the clan chose. The bot, the P2 preview and the P8 card stay the same. Accepted.
 83. **Stat tiles on one line (M2-13, M2-19, M2-37, M2-B02, N3-14).** `/stats` (Wardogs and HLL), `/player` and the `/stats` preview on "Příkazy" show the board's three tiles as one line: "Zabití **412** · K/D **1,37** · Výhry **14 / 23**". Components V2 has no tiles or columns; this is the same limit as resolution 47. Accepted.
+84. **Discord window limits (L6-23, L6-31, L6-36, L6-37, L6-53).** These differences from the board are accepted.
+    - A Discord modal has no footer, so the "x z 5 polí" counter cannot appear inside a window. The message between windows shows the progress instead.
+    - Discord sends no event when someone closes a window. "Okno se zavřelo…" therefore appears only when the form changed while a window was open; a returning applicant gets the progress message.
