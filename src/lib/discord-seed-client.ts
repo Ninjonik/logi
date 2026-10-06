@@ -182,7 +182,6 @@ export type SeedActionError =
     | "cooldown"
     | "running"
     | "duplicate"
-    | "disabled"
     | "not_configured"
     | "offline"
     | "already_live"
@@ -197,7 +196,6 @@ export type SeedActionOutcome =
     | { ok: false; error: SeedActionError; retryAt?: string }
 
 const REASONS = [
-    "disabled",
     "not_configured",
     "offline",
     "already_live",

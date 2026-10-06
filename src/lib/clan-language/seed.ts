@@ -190,8 +190,6 @@ const cs: SeedMessages = {
             `Na serveru je aspoň ${liveFrom} hráčů, seed teď není potřeba.`,
         offlineTitle: "Server neodpovídá",
         offlineBody: "Seed spustíš, až bude server zase online.",
-        disabledTitle: "Plán seedu je vypnutý",
-        disabledBody: "Zapni ho v Logi v nastavení Seed serverů.",
         notConfiguredTitle: "Seed není nastavený",
         notConfiguredBody:
             "Vyber kanál pro výzvu v Logi v nastavení Seed serverů.",
@@ -373,8 +371,6 @@ const en: SeedMessages = {
             `The server has at least ${liveFrom} players, so no seed is needed now.`,
         offlineTitle: "The server is not answering",
         offlineBody: "You can start a seed once the server is online again.",
-        disabledTitle: "The seed plan is off",
-        disabledBody: "Turn it on in Logi under Server seeding.",
         notConfiguredTitle: "Seeding is not set up",
         notConfiguredBody:
             "Choose the call channel in Logi under Server seeding.",
@@ -555,8 +551,6 @@ const de: SeedMessages = {
         offlineTitle: "Der Server antwortet nicht",
         offlineBody:
             "Du kannst den Seed starten, sobald der Server wieder online ist.",
-        disabledTitle: "Der Seed-Plan ist aus",
-        disabledBody: "Schalte ihn in Logi unter Server-Seeding ein.",
         notConfiguredTitle: "Seeding ist nicht eingerichtet",
         notConfiguredBody:
             "Wähle den Aufruf-Kanal in Logi unter Server-Seeding.",

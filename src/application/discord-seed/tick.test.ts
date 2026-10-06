@@ -12,6 +12,7 @@ import type {
     SeedPlanState,
 } from "@/domain/discord-seed/plan"
 
+import { startSeedManually } from "./start-seed"
 import { evaluateSeedPlan } from "./tick"
 
 const MINUTE = 60_000
@@ -219,4 +220,27 @@ test("a plan that is off only follows its running seed", async () => {
     const env = setup(SLOT, { enabled: false })
     assert.deepEqual(await tick(env, 12), { kind: "idle" })
     assert.equal(env.store.runs.size, 0)
+
+    // "Seed teď" works with the switch off (P3-09); the tick still ends it.
+    const started = await startSeedManually(env.ports, {
+        server: SEED_TEST_SERVER,
+        actor: { id: "100000000000000001", name: "Kowalski" },
+        via: "web",
+        channelId: null,
+        requestKey: "click-1",
+    })
+    assert.equal(started.kind, "started")
+    const runId = (await state(env)).activeRunId!
+    assert.deepEqual(
+        (await env.store.plansToEvaluate()).map((plan) => plan.id),
+        [(await env.store.plan(SEED_TEST_SERVER))!.id]
+    )
+    advance(env, 30)
+    assert.deepEqual(await tick(env, 41), {
+        kind: "ended",
+        runId,
+        status: "live",
+    })
+    assert.equal((await state(env)).activeRunId, null)
+    assert.deepEqual(await env.store.plansToEvaluate(), [])
 })

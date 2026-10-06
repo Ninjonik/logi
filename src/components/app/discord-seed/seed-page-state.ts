@@ -22,6 +22,7 @@ import type {
 import type { MessageView } from "@/domain/discord-messages/message-view"
 import type { SeedMessagesCopy } from "@/domain/discord-seed/seed-copy"
 import { SEED_TEMPLATE_TOKENS } from "@/domain/discord-seed/template"
+import type { SeedMapFacts } from "@/domain/discord-seed/map"
 import type { SeedRun } from "@/domain/discord-seed/run"
 
 /**
@@ -278,14 +279,16 @@ const MINUTE_MS = 60_000
 /**
  * The call while seeding and the same message at the live threshold, from the
  * plan being edited (P3-19, P3-20). The words are the bot's own (P5), in the
- * clan language; the counts are the server's current ones when they fit.
+ * clan language; the counts are the server's current ones when they fit. The
+ * map line and picture come from `seedMapFacts`, the rule the bot posts with.
  */
 export function seedCallPreviews(input: {
     draft: SeedPlanDraft
     fallback: Pick<SeedPlanSettings, "liveFrom">
     server: { name: string; gameId: SeedGame }
     reading: { players: number | null; capacity: number | null }
-    mapLine: string | null
+    /** "Foy · Warfare · Den" and the map picture, as the bot shows them. */
+    map: Pick<SeedMapFacts, "mapLine" | "thumbnail">
     actorName: string
     joinUrl: string
     now: number
@@ -336,10 +339,10 @@ export function seedCallPreviews(input: {
     }
     const shared = {
         server: input.server,
-        mapLine: input.mapLine,
+        mapLine: input.map.mapLine,
         template: draft.template.trim() || null,
         joinUrl: input.joinUrl,
-        thumbnail: null,
+        thumbnail: input.map.thumbnail,
         // "Aktualizováno před 20 s", as between two refreshes.
         updatedAt: now - 20_000,
         timeZone: input.timeZone,

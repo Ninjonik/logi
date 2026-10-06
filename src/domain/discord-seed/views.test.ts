@@ -464,7 +464,6 @@ test("the control replies read as on the board (P5-30..32)", () => {
     for (const result of [
         { status: "running" },
         { status: "duplicate" },
-        { status: "unavailable", reason: "disabled" },
         { status: "unavailable", reason: "not_configured" },
         { status: "unavailable", reason: "offline" },
         { status: "unavailable", reason: "not_running" },

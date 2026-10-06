@@ -7283,8 +7283,6 @@ export const deMessages = {
                 "Ein Seed kann jetzt nicht starten. Der nächste kann {time} starten.",
             running: "Ein Seed läuft bereits.",
             duplicate: "Dieser Seed läuft bereits.",
-            disabled:
-                "Der Seed-Plan ist aus. Schalten Sie ihn ein und speichern Sie.",
             not_configured:
                 "Wählen Sie zuerst den Aufruf-Kanal und speichern Sie den Plan.",
             offline:
