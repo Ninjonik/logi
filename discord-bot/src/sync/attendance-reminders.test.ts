@@ -94,6 +94,26 @@ test("the reminder DM: label, weekday schedule, place with the leader, buttons a
     assert.doesNotMatch(content, /heslo|password/i)
 })
 
+test("the reminder's buttons name the clan's server, so a click after the match is gone keeps the clan language", () => {
+    // L1-B19, L2-B01: a DM click has no server of its own.
+    const content = json(
+        buildAttendanceReminderDm({
+            payload,
+            event: { ...event, guildId: "900000000000000001" },
+            now: Date.parse("2026-10-10T17:30:00.000Z"),
+        })
+    )
+    for (const prefix of [
+        "attendance-confirm",
+        "attendance-late",
+        "attendance-decline",
+    ])
+        assert.match(
+            content,
+            new RegExp(`"custom_id":"${prefix}:event-1:900000000000000001"`)
+        )
+})
+
 test("only unconfirmed players and reserves are reminded", () => {
     const places = rosterPlaces(roster, {})
     assert.deepEqual([...places.keys()], ["medic", "reserve-1"])

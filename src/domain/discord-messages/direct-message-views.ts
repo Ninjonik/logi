@@ -65,6 +65,12 @@ export type DmEvent = {
     meetingStart: string
     gameStart: string
     meetingChannelId?: string
+    /**
+     * The clan's Discord server. A DM click has no server, so the DM's
+     * attendance and "Zobrazit zařazení" buttons name it: a click after the
+     * match is gone still answers in the clan language (L1-B19, L2-B01).
+     */
+    guildId?: string
 }
 
 /** "ne 11. 10. · sraz 19:30 · start 20:00", with the relative time when asked. */
@@ -232,7 +238,10 @@ function placeLine(place: DmPlace | undefined, copy: DmCopy) {
  * time and "Připomínku poslalo velení z Logi."
  */
 export function attendanceReminderView(input: {
-    event: Pick<DmEvent, "id" | "title" | "meetingStart" | "gameStart">
+    event: Pick<
+        DmEvent,
+        "id" | "title" | "meetingStart" | "gameStart" | "guildId"
+    >
     place?: DmPlace
     now: number
     sentByLeaders?: boolean
@@ -276,19 +285,25 @@ export function attendanceReminderView(input: {
                 buttons: [
                     {
                         kind: "action",
-                        id: attendanceButtonIds.confirm(event.id),
+                        id: attendanceButtonIds.confirm(
+                            event.id,
+                            event.guildId
+                        ),
                         label: copy.attendanceReminder.confirm,
                         style: "primary",
                     },
                     {
                         kind: "action",
-                        id: attendanceButtonIds.late(event.id),
+                        id: attendanceButtonIds.late(event.id, event.guildId),
                         label: copy.attendanceReminder.late,
                         style: "secondary",
                     },
                     {
                         kind: "action",
-                        id: attendanceButtonIds.decline(event.id),
+                        id: attendanceButtonIds.decline(
+                            event.id,
+                            event.guildId
+                        ),
                         label: copy.attendanceReminder.decline,
                         style: "danger",
                     },
@@ -461,7 +476,10 @@ export function attendanceModalCopy(
  * together. A player without a role reads "bez role".
  */
 export function rosterChangeDmView(input: {
-    event: Pick<DmEvent, "id" | "title" | "meetingStart" | "gameStart">
+    event: Pick<
+        DmEvent,
+        "id" | "title" | "meetingStart" | "gameStart" | "guildId"
+    >
     change: RosterPlayerChange
     /** The leader of the player's new squad, already escaped. */
     leader?: string
@@ -550,7 +568,8 @@ export function rosterChangeDmView(input: {
                         : {
                               ...showAssignmentButton(
                                   input.event.id,
-                                  rosterCopy
+                                  rosterCopy,
+                                  input.event.guildId
                               ),
                               label: c.showAssignment,
                           },

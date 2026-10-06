@@ -81,7 +81,7 @@ test("the attendance answers are routed by the registry, next to the other featu
 
 test("the late form names the match in the clan language", () => {
     const modal = buildLateNoticeModal({ config, event }).toJSON()
-    assert.equal(modal.custom_id, "attendance-late-modal:event-1")
+    assert.equal(modal.custom_id, "attendance-late-modal:event-1:guild-1")
     assert.equal(modal.title, "Přijdu později · VLK vs ROG")
     const row = modal.components[0]
     const input = row && "components" in row ? row.components[0] : undefined

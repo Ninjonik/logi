@@ -159,6 +159,8 @@ test("one DM per changed member with all their changes; closed DMs are reported"
     assert.match(removed, /Velení tě odebralo z F1 \(Anti-Tank\)/)
     // Moved into the reserves: the reserve line and "Zobrazit zařazení".
     assert.match(removed, /\*\*Záloha\*\* · když se uvolní místo/)
+    // The DM's "Zobrazit zařazení" names the server (L1-B19, L2-B01).
+    assert.match(removed, /"custom_id":"roster-assignment:event-1:guild-1"/)
     assert.doesNotMatch(dms.map((dm) => dm.json).join(""), /Unassigned/)
 })
 

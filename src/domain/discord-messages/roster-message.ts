@@ -98,6 +98,11 @@ export type RosterCardEvent = {
     serverPassword?: string
     /** Late and absence notices; only the arrival time is ever shown. */
     notices?: Array<{ userId: string; reason: string }>
+    /**
+     * The clan's Discord server. "Moje zařazení" can arrive in a DM, so its
+     * attendance buttons name the server (see {@link eventCustomId}).
+     */
+    guildId?: string
 }
 
 /** What every roster card needs besides the roster. */
@@ -375,22 +380,58 @@ export type RosterMessageInput = {
     publishedAt?: string
 }
 
+/**
+ * `<prefix><event>`, or `<prefix><event>:<guild>` for a button a DM carries
+ * (and the form it opens): a DM click has no server, so when the match is
+ * gone the server in the ID still gives the clan language (L1-B19, L2-B01),
+ * like `signup-picker:<event>:<guild>`. Cards in the server keep the short
+ * form. Read back with {@link parseEventButtonId}.
+ */
+export function eventCustomId(
+    prefix: string,
+    eventId: string,
+    guildId?: string
+) {
+    return guildId ? `${prefix}${eventId}:${guildId}` : `${prefix}${eventId}`
+}
+
+/**
+ * The event and, when the ID names one, the Discord server of an attendance
+ * or "Zobrazit zařazení" button (or its form). Buttons in DMs sent before
+ * the server was added have none; a value that is not a Discord ID is
+ * ignored.
+ */
+export function parseEventButtonId(
+    customId: string,
+    prefix: string
+): { eventId: string; guildId?: string } {
+    const [eventId = "", guildId = ""] = customId
+        .slice(prefix.length)
+        .split(":")
+    return /^\d{17,20}$/.test(guildId) ? { eventId, guildId } : { eventId }
+}
+
 /** The custom IDs of the roster buttons. */
 export const rosterButtonIds = {
-    assignment: (eventId: string) => `roster-assignment:${eventId}`,
+    assignment: (eventId: string, guildId?: string) =>
+        eventCustomId("roster-assignment:", eventId, guildId),
     squads: (eventId: string) => `roster-squads:${eventId}`,
     squadSelect: (eventId: string) => `roster-squads-select:${eventId}`,
     full: (eventId: string, page = 1) => `roster-full:${eventId}:${page}`,
 } as const
 
-/** "Zobrazit zařazení": the one primary action of roster cards. */
+/**
+ * "Zobrazit zařazení": the one primary action of roster cards. In a DM the
+ * button also names the clan's server.
+ */
 export function showAssignmentButton(
     eventId: string,
-    copy: RosterMessageCopy
+    copy: RosterMessageCopy,
+    guildId?: string
 ): MessageButton {
     return {
         kind: "action",
-        id: rosterButtonIds.assignment(eventId),
+        id: rosterButtonIds.assignment(eventId, guildId),
         label: copy.common.showAssignment,
         style: "primary",
     }
@@ -742,11 +783,17 @@ export function rosterFullView(input: {
 
 // --- "Moje zařazení" (L1-112..119) ---------------------------------------
 
-/** The custom IDs of the attendance buttons. */
+/**
+ * The custom IDs of the attendance buttons; the buttons a DM carries also
+ * name the clan's server.
+ */
 export const attendanceButtonIds = {
-    confirm: (eventId: string) => `attendance-confirm:${eventId}`,
-    late: (eventId: string) => `attendance-late:${eventId}`,
-    decline: (eventId: string) => `attendance-decline:${eventId}`,
+    confirm: (eventId: string, guildId?: string) =>
+        eventCustomId("attendance-confirm:", eventId, guildId),
+    late: (eventId: string, guildId?: string) =>
+        eventCustomId("attendance-late:", eventId, guildId),
+    decline: (eventId: string, guildId?: string) =>
+        eventCustomId("attendance-decline:", eventId, guildId),
 } as const
 
 /** Inline code that survives backticks inside the password. */
@@ -872,7 +919,7 @@ export function myAssignmentView(input: {
             ? [
                   {
                       kind: "action" as const,
-                      id: attendanceButtonIds.confirm(event.id),
+                      id: attendanceButtonIds.confirm(event.id, event.guildId),
                       label: copy.assignment.confirm,
                       style: "primary" as const,
                   },
@@ -883,7 +930,7 @@ export function myAssignmentView(input: {
             : [
                   {
                       kind: "action" as const,
-                      id: attendanceButtonIds.late(event.id),
+                      id: attendanceButtonIds.late(event.id, event.guildId),
                       label: copy.assignment.late,
                       style: "secondary" as const,
                   },
