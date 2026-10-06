@@ -206,6 +206,21 @@ character stepped up)` on the same index (`publicationKeyRange`).
   repositories out of modules that only project or read. Measure with
   `npx esbuild convex/<module>.ts --bundle --platform=node --format=esm
 --external:convex --metafile=out.json`.
+- Zod is 537 KB once bundled and nothing of it tree-shakes, so one schema
+  defined at the top level of any imported file costs the whole library. A
+  domain file that exports both schemas and pure projections keeps the
+  schemas in a sibling `<name>.schema.ts` (`settings.schema.ts`,
+  `change.schema.ts`, `observation.schema.ts`); the pure file re-exports
+  the inferred types with `export type { … } from "./<name>.schema"`, which
+  is erased at runtime, and only the functions that validate import the
+  schema file. The same holds for Convex modules: a helper another module
+  calls inside its transaction lives in a module without function
+  definitions (`imageAssetStore.ts`, `membershipAccess.ts`,
+  `clanTeamStore.ts`), because `mutation({ … })` at the top level of a
+  module is a side effect that bundles the module's whole graph into every
+  importer. The website's per-request reads live in `publicApiReads.ts`;
+  the idempotent writes, their use-cases and the stratmap catalogue stay in
+  `publicApi.ts`.
 
 Tests of these functions assert which index a read uses (see
 `src/infrastructure/convex/event-recurrence.test.ts`) and which fields a
