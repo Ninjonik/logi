@@ -306,3 +306,5 @@ These resolve the questions above for implementation. The owner can override any
 7. **wardogsleague.net results** need network access to the site to build and verify a results parser. Until then:
    - the fixtures panel ships;
    - the standings panel shows "Tabulka se zobrazí po prvních výsledcích".
+8. **Password on the combined "Naše servery" panel.** P2-40 shows "Ukázat heslo serveru" in the combined panel's editor example, but P4-31, P4-39 and P4-B08 say the combined panel shows public data only and never a password. The stricter rule applies: the combined panel never shows a password, and its editor shows a note pointing to the server's own panel.
+9. **Join button label on the combined panel.** P2-45 previews "Připojit se: Vlci #1", but P7-20, the Discord rendering board, says "Připojit: Vlci #1". The editor preview renders the bot's real output, so both use the P7-20 label.
