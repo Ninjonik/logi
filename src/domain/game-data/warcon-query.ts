@@ -194,14 +194,6 @@ export function allowsWarconUrl(url: URL, serverId: string): boolean {
     )
 }
 
-export function warconCacheMs(query: WarconQuery) {
-    return query.view === "live"
-        ? 10_000
-        : query.view === "kills"
-          ? 15_000
-          : ["catalog", "capabilities", "experiences", "alternators"].includes(
-                  query.view
-              )
-            ? 300_000
-            : 60_000
-}
+// `warconCacheMs` lives in `warcon-query-payload.ts` with the Zod-free
+// reader of a normalised query, which the cache mutations use.
+export { warconCacheMs } from "./warcon-query-payload"

@@ -32,16 +32,19 @@ export const read = action({
         if (args.queryJson.length > 1500)
             throw new Error("Invalid Warcon query.")
         const query = warconQuerySchema.parse(JSON.parse(args.queryJson))
+        // The cache mutations receive the query normalised here (defaults
+        // filled, unknown fields refused), so they read it without Zod.
+        const normalized = { ...args, queryJson: JSON.stringify(query) }
         return serveWarconRead(args.connectionId, query, {
             now: Date.now,
             prepare: () =>
                 ctx.runMutation(
                     makeFunctionReference<
                         "mutation",
-                        typeof args,
+                        typeof normalized,
                         WarconPrepared
                     >("warconReads:reserve"),
-                    args
+                    normalized
                 ),
             read: (source, input, claim) =>
                 readWarcon(
@@ -60,7 +63,7 @@ export const read = action({
                 ctx.runMutation(
                     makeFunctionReference<"mutation">("warconReads:finish"),
                     {
-                        ...args,
+                        ...normalized,
                         ...claim,
                         ...(value.envelope
                             ? { envelopeJson: JSON.stringify(value.envelope) }

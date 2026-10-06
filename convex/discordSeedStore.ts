@@ -11,6 +11,10 @@ import type {
     StoredSeedRun,
 } from "../src/application/discord-seed/ports"
 import {
+    hllLiveWithFreshness,
+    readHllLivePayload,
+} from "../src/domain/game-data/hll-live-payload"
+import {
     isPanelPaused,
     normalizePanelKind,
 } from "../src/domain/discord-publications/settings"
@@ -21,7 +25,6 @@ import {
 import type { SeedServerTab } from "../src/application/discord-seed/read-dashboard"
 import { resolveClanTimeZone } from "../src/domain/discord-seed/clock"
 import { resolveSource, workspaceSources } from "./gameDataCatalog"
-import { hllLiveSchema } from "../src/domain/game-data/hll-live"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -365,27 +368,23 @@ export function seedPlayerCounts(
                 .unique()
             if (cache?.generation !== row.generation || !cache.dataJson)
                 return null
-            try {
-                const parsed = hllLiveSchema.safeParse(
-                    JSON.parse(cache.dataJson)
-                )
-                if (!parsed.success) return null
-                const data = parsed.data
-                const at = Date.parse(data.playersAt ?? "")
-                if (
-                    data.playersFreshness !== "fresh" ||
-                    !Number.isFinite(at) ||
-                    now() - at > ROSTER_MAX_AGE_MS
-                )
-                    return null
-                return {
-                    ids: data.players.flatMap((player) =>
-                        player.playerId ? [player.playerId] : []
-                    ),
-                    observedAt: at,
-                }
-            } catch {
+            // Stored by `hllLiveReads:finish` after validation; the row
+            // carries the latest read's times.
+            const stored = readHllLivePayload(cache.dataJson)
+            if (!stored) return null
+            const data = hllLiveWithFreshness(stored, cache)
+            const at = Date.parse(data.playersAt ?? "")
+            if (
+                data.playersFreshness !== "fresh" ||
+                !Number.isFinite(at) ||
+                now() - at > ROSTER_MAX_AGE_MS
+            )
                 return null
+            return {
+                ids: data.players.flatMap((player) =>
+                    player.playerId ? [player.playerId] : []
+                ),
+                observedAt: at,
             }
         },
         async read(server): Promise<SeedServerReading | null> {

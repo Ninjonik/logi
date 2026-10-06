@@ -19,6 +19,10 @@ import {
     runningMatchFor,
     type RunningMatch,
 } from "../src/domain/discord-publications/running-match"
+import {
+    hllLiveWithFreshness,
+    readHllLivePayload,
+} from "../src/domain/game-data/hll-live-payload"
 import type { CompetitionDivisionTable } from "../src/domain/discord-publications/competition-panel"
 import {
     internalQuery,
@@ -32,7 +36,6 @@ import { joinPagePlayers } from "../src/domain/discord-publications/server-join"
 import { normalizePanelKind } from "../src/domain/discord-publications/settings"
 import { deriveDivisionStandings } from "../src/domain/competitions/standings"
 import { hllLiveFacts } from "../src/domain/discord-publications/live-panel"
-import { hllLiveSchema } from "../src/domain/game-data/hll-live"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelAction } from "./discordPublicationTable"
 import { assertInternalSecret } from "./discord_shared"
@@ -476,12 +479,10 @@ async function latestHllLive(
         .unique()
     if (cache?.generation !== connection.generation || !cache.dataJson)
         return null
-    try {
-        const parsed = hllLiveSchema.safeParse(JSON.parse(cache.dataJson))
-        return parsed.success ? hllLiveFacts(parsed.data) : null
-    } catch {
-        return null
-    }
+    // Stored by `hllLiveReads:finish` after validation; the row carries the
+    // latest read's times.
+    const data = readHllLivePayload(cache.dataJson)
+    return data ? hllLiveFacts(hllLiveWithFreshness(data, cache)) : null
 }
 
 /**
