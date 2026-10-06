@@ -9,7 +9,11 @@ import {
     type PanelEmojiGroup,
     type PanelEmojiKey,
 } from "../../../src/domain/discord-publications/panel-emblems"
-import { panelMapDefinition } from "../../../src/domain/discord-publications/panel-graphics"
+import {
+    panelMapDefinition,
+    resolvePanelMapImage,
+    type MapImageOverride,
+} from "../../../src/domain/discord-publications/panel-graphics"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
 import { artworkPath } from "./render"
 
@@ -180,4 +184,103 @@ export async function builtInMapImage(
     return image
         ? { ...image, description: panelImageCopy(language).alt.map(map.name) }
         : null
+}
+
+/** A clan's own image, read once per version; Discord gets a resized copy. */
+const REMOTE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
+const remoteImageCache = new Map<
+    string,
+    Promise<Omit<PanelMapImage, "description"> | null>
+>()
+async function downloadImage(url: string): Promise<Buffer | null> {
+    if (!/^https?:\/\//.test(url)) return null
+    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+    if (!response.ok) return null
+    if (
+        !/^image\/(png|jpeg|webp)\b/.test(
+            response.headers.get("content-type") ?? ""
+        )
+    )
+        return null
+    const length = Number(response.headers.get("content-length"))
+    if (Number.isFinite(length) && length > REMOTE_IMAGE_MAX_BYTES) return null
+    const bytes = Buffer.from(await response.arrayBuffer())
+    return bytes.byteLength > REMOTE_IMAGE_MAX_BYTES ? null : bytes
+}
+/**
+ * A clan's uploaded image (a map image from P8 or a panel banner from P2) as
+ * a file the message attaches, like Logi's own art (P8-30): resized for
+ * Discord and named by its content, e.g. `mapa-foy-thumb-3fa9c2.webp`, so a
+ * new upload is a new file name. The URL is the asset's public address that
+ * Logi verified when it was saved; nothing else is fetched.
+ */
+export async function uploadedImageFile(input: {
+    url: string
+    look: keyof typeof MAP_LOOKS
+    base: string
+}): Promise<Omit<PanelMapImage, "description"> | null> {
+    const key = `${input.url}:${input.look}`
+    let pending = remoteImageCache.get(key)
+    if (!pending) {
+        if (remoteImageCache.size > 200) remoteImageCache.clear()
+        pending = (async () => {
+            try {
+                const source = await downloadImage(input.url)
+                if (!source) return null
+                const size = MAP_LOOKS[input.look]
+                const bytes = await sharp(source, {
+                    limitInputPixels: 8192 * 8192,
+                })
+                    .resize(size.width, size.height, { fit: "cover" })
+                    .webp({ quality: 80 })
+                    .toBuffer()
+                return {
+                    name: `${input.base}-${digestOf(bytes).slice(0, 6)}.webp`,
+                    bytes,
+                }
+            } catch {
+                return null
+            }
+        })()
+        remoteImageCache.set(key, pending)
+        // A failed read is tried again on a later pass.
+        void pending.then((value) => {
+            if (!value) remoteImageCache.delete(key)
+        })
+    }
+    return pending
+}
+
+/**
+ * The map picture of a panel as a file (P7-B04, P8-30): the clan's own image
+ * when it set one, else Logi's built-in art.
+ */
+export async function panelMapImage(
+    game: string,
+    mapKey: string | null | undefined,
+    look: keyof typeof MAP_LOOKS,
+    language: string,
+    overrides: readonly MapImageOverride[]
+): Promise<PanelMapImage | null> {
+    const source = resolvePanelMapImage({
+        game,
+        mapKey: mapKey ?? null,
+        overrides,
+    })
+    if (source?.kind === "override") {
+        const file = await uploadedImageFile({
+            url: source.url,
+            look,
+            base: `mapa-${source.mapKey}-${look}`,
+        })
+        const map = panelMapDefinition(game, source.mapKey)
+        if (file)
+            return {
+                ...file,
+                description: panelImageCopy(language).alt.map(
+                    map?.name ?? source.mapKey
+                ),
+            }
+    }
+    return builtInMapImage(game, mapKey, look, language)
 }

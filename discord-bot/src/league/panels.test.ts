@@ -53,6 +53,7 @@ const pass: GuildPass = {
     language: "cs",
     timeZone: "Europe/Prague",
     clanName: "Vlci",
+    clanTag: "VLK",
     siteUrl: "https://logi.app",
     style: null,
     graphics: { defaultStyle: "a", revision: 0, servers: [], mapOverrides: [] },

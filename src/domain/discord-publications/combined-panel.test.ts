@@ -56,7 +56,11 @@ test("Naše servery lists every server with its chip and a join button each", ()
     assert.match(view.text, /NAŠE SERVERY · VLCI/)
     assert.match(view.text, /Kde se hraje/)
     assert.match(view.text, /Vlci #1/)
-    assert.match(view.text, /Hell Let Loose · .* · 78 \/ 100 · fronta 3/)
+    // P7-19: the map, then the coloured gauge with the players and queue.
+    assert.match(
+        view.text,
+        /Hell Let Loose · Utah Beach\n(?:🟩|⬛)+ 🟨 78 \/ 100 · fronta 3/u
+    )
     assert.match(view.text, /Prázdný/)
     assert.match(view.text, /obnovuje se každých 60 s/)
     assert.deepEqual(
@@ -150,7 +154,7 @@ test("each row carries its map on the right while Discord's component limit allo
     )
 })
 
-test("rows show the address, the join code and a running seed; only HLL servers get a join button (P2-39, P2-43..45)", () => {
+test("rows show the address, the join code, a running seed and a join button each (P2-43..45, P7-19, P7-20)", () => {
     const wardogs = server(3, {
         title: "Vlci WD",
         joinCode: "VLCI-7Q2",
@@ -181,10 +185,13 @@ test("rows show the address, the join code and a running seed; only HLL servers 
     assert.match(view.text, /Adresa `203\.0\.113\.24:7777`/)
     assert.match(view.text, /▰▰▰▱▱▱▱▱▱▱ \*\*12 \/ 40\*\*/)
     assert.match(view.text, /Join kód `VLCI-7Q2`/)
-    assert.match(view.text, /Spojenci \d+ : \d+ Osa/)
+    // P7-19: the signs with the score, the map and the time left.
+    assert.match(view.text, /★ \*\*3 : 2\*\* ✚ · Utah Beach · zbývá 51 min/)
+    assert.match(view.text, /seedujeme 12 \/ 40/)
+    // P7-20: the Wardogs row joins through the page that shows its code.
     assert.deepEqual(
         view.buttons.map((button) => button.label),
-        ["Připojit: Vlci #1", "Připojit: Vlci #2"]
+        ["Připojit: Vlci #1", "Připojit: Vlci #2", "Připojit: Vlci WD"]
     )
 })
 
@@ -209,7 +216,10 @@ test("the round time shows only with the score; the board's row is map, players 
             servers: [row],
         })
     )
-    assert.match(board.text, /Hell Let Loose · .* · 78 \/ 100 · fronta 3/)
+    assert.match(
+        board.text,
+        /Hell Let Loose · Utah Beach\n.* 78 \/ 100 · fronta 3/
+    )
     assert.doesNotMatch(board.text, /zbývá/)
     const scored = renderedView(
         combinedPanelView({
@@ -219,4 +229,60 @@ test("the round time shows only with the score; the board's row is map, players 
         })
     )
     assert.match(scored.text, /zbývá 47 min/)
+})
+
+test("style B puts the banner on top; style C has no map pictures (P7-19)", () => {
+    const banner = { url: "attachment://banner-abc.png", description: "Banner" }
+    const thumbnail = { url: "attachment://mapa-foy.webp", description: "Mapa" }
+    const b = combinedPanelView({
+        ...base,
+        style: "b",
+        banner,
+        servers: [server(1, { thumbnail })],
+    })
+    assert.equal(b.lead?.url, banner.url)
+    assert.equal(b.header?.title, undefined)
+    const laidOut = renderedView(b)
+    assert.equal(laidOut.media[0], banner.url)
+    assert.deepEqual(laidOut.validation, { ok: true, issues: [] })
+    const c = renderedView(
+        combinedPanelView({
+            ...base,
+            style: "c",
+            banner,
+            servers: [server(1, { thumbnail })],
+        })
+    )
+    assert.deepEqual(c.media, [])
+    const a = combinedPanelView({
+        ...base,
+        banner,
+        servers: [server(1, { thumbnail })],
+    })
+    assert.equal(a.lead, undefined, "only style B shows the banner")
+    assert.equal(a.header?.title, "Kde se hraje")
+})
+
+test("Wardogs rows carry the faction signs (P7-19)", () => {
+    const row = server(1, { title: "Vlci WD" })
+    row.facts = {
+        ...row.facts,
+        game: "wardogs",
+        hll: null,
+        wardogs: {
+            factions: [
+                { key: "valkyra", name: "Valkyra", points: 23 },
+                { key: "manticore", name: "Manticore", points: 12 },
+            ],
+        },
+    }
+    const view = renderedView(
+        combinedPanelView({
+            ...base,
+            show: { score: true, nextMap: false, queue: true },
+            emoji: { valkyra: "<:v:1>", manticore: "<:m:2>" },
+            servers: [row],
+        })
+    )
+    assert.match(view.text, /<:v:1> \*\*23\*\* <:m:2> \*\*12\*\*/)
 })

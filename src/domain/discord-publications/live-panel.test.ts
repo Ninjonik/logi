@@ -58,7 +58,7 @@ function input(
             },
             content: { ...DEFAULT_PANEL_CONTENT },
             accentColor: null,
-            style: "b",
+            style: "a",
             ...panel,
         },
         facts: hll(),
@@ -419,7 +419,8 @@ test("style A in a clan channel keeps the running match with its chip and Z KLAN
     assert.match(panel.text, /Přátelák/, "the match's category chip")
     assert.match(panel.text, /Z KLANU HRAJE · 2/)
     assert.match(panel.text, /Rex\\_CZ · Bizon/)
-    assert.match(panel.text, /VLK Spojenci ★  3 : 2  ✚ Osa ROG/)
+    // P7-08: the summary names the teams, without signs.
+    assert.match(panel.text, /VLK Spojenci 3 : 2 Osa ROG/)
 })
 
 test("style A for Wardogs names the map once, in the header (P7-16)", () => {
@@ -452,8 +453,10 @@ test("style A in server-status mode shows no score and no round time (L3-43, L3-
             },
         },
     })
-    assert.match(view.text, /STAV SERVERU · HELL LET LOOSE/)
-    assert.match(view.text, /Online/)
+    // P7-07: the image carries the name; the text starts with the chip line.
+    assert.doesNotMatch(view.text, /STAV SERVERU|### /)
+    assert.match(view.text, /^🟢 \*\*Online\*\* · Utah Beach · 78 \/ 100 hráčů/)
+    assert.match(view.text, /\nDalší mapa Foy · Noc\n/)
     assert.doesNotMatch(view.text, /3 : 2|zbývá|NEJVÍC ZABITÍ/)
 })
 
@@ -591,4 +594,50 @@ test("collected snapshots give facts without a roster", () => {
     assert.equal(facts.rosterFresh, false)
     assert.equal(facts.hll?.allies, 2)
     assert.equal(facts.players, 30)
+})
+
+test("the three styles follow board P7: image first, banner first, one compact line (P7-07, P7-08, P7-11, P7-13)", () => {
+    const banner = {
+        url: "attachment://banner-vlci1-abc.png",
+        description: "Banner",
+    }
+    const a = styleA()
+    assert.equal(a.layout.nodes[0]?.type, "gallery")
+    assert.doesNotMatch(a.text, /ŽIVÝ SERVER|### /)
+    assert.match(
+        a.text,
+        /^🟢 \*\*Živě\*\* · 78 \/ 100 hráčů · fronta 3 · zbývá 51 min\nUtah Beach · Warfare · Den · další mapa Foy · Noc · Spojenci 3 : 2 Osa\nAdresa `203\.0\.113\.24:7777`/
+    )
+    assert.equal(a.media[0], SCORE_IMAGE.url)
+
+    const b = renderedView(
+        liveServerPanelView(
+            input({
+                panel: { style: "b" },
+                images: { score: null, banner, thumbnail: null },
+            })
+        )
+    )
+    assert.equal(b.layout.nodes[0]?.type, "gallery")
+    assert.equal(b.media[0], banner.url)
+    assert.match(
+        b.text,
+        /^-# \*\*ŽIVÝ SERVER · HELL LET LOOSE\*\*\n### Vlci #1 · Public\n🟢 \*\*Živě\*\* · Utah Beach · Warfare · Den · zbývá 51 min\n★ Spojenci \*\*3 : 2\*\* Osa ✚\n/
+    )
+    assert.match(b.text, /78 \/ 100 · fronta 3\n\*\*NEJVÍC ZABITÍ\*\*/)
+    assert.match(b.text, /Adresa `203\.0\.113\.24:7777` · další mapa Foy · Noc/)
+
+    const c = renderedView(
+        liveServerPanelView(input({ panel: { style: "c" } }))
+    )
+    assert.match(
+        c.text,
+        /^🟢 \*\*Vlci #1 · Public\*\* Hell Let Loose · Utah Beach · Warfare · Den\n★ Spojenci \*\*3 : 2\*\* Osa ✚ · zbývá 51 min\n.*78 \/ 100 · fronta 3\n-# Aktualizováno <t:\d+:R> · Spravováno v Logi$/u
+    )
+    assert.doesNotMatch(c.text, /Adresa|ŽIVÝ SERVER/)
+    assert.deepEqual(
+        c.buttons.map((button) => button.label),
+        ["Připojit se", "Zobrazit hráče"]
+    )
+    assert.deepEqual(c.media, [])
 })

@@ -1,10 +1,6 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
-import {
-    PublicPage,
-    PublicSiteShell,
-} from "@/components/public/public-site-shell"
 import { ServerJoinCard } from "@/components/public/server-join-card"
 import { getServerJoinPage } from "@/lib/read-models/server-join"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -35,7 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /**
  * `/join/<server>` (P4-44..46, P4-B10): opened by the "Připojit se" button
  * of a server panel, readable without login. Public data only: the server's
- * name, game, address or join code and players. Never a password.
+ * name, game, address or join code, players and queue. Never a password.
+ * A bare centred page as the board draws it, without the site's header.
  */
 export default async function ServerJoinPage({ params }: Props) {
     const { locale, server } = await params
@@ -45,8 +42,8 @@ export default async function ServerJoinPage({ params }: Props) {
     const t = getDictionary(safeLocale).joinPage
 
     return (
-        <PublicSiteShell locale={safeLocale}>
-            <PublicPage className="max-w-[48rem]">
+        <main className="bg-background text-foreground flex min-h-dvh items-center justify-center px-4 py-12">
+            <div className="w-full max-w-md">
                 <ServerJoinCard
                     gameId={page.gameId}
                     gameName={GAME_NAMES[page.gameId]}
@@ -55,10 +52,10 @@ export default async function ServerJoinPage({ params }: Props) {
                     joinCode={page.joinCode}
                     players={page.players}
                     capacity={page.capacity}
-                    map={page.map}
+                    queue={page.queue}
                     copy={t}
                 />
-            </PublicPage>
-        </PublicSiteShell>
+            </div>
+        </main>
     )
 }

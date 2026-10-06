@@ -109,6 +109,8 @@ export type PanelEditorProps = {
     siteUrl: string
     clan: {
         name: string
+        /** The banner badge from "Grafika panelů" (P8-07). */
+        tag: string
         language: string
         timeZone: string
         messageStyle: MessageStyle | null
@@ -494,6 +496,7 @@ export function PanelEditor(props: PanelEditorProps) {
               language: props.clan.language,
               timeZone: props.clan.timeZone,
               clanName: props.clan.name,
+              clanTag: props.clan.tag,
               defaultStyle: props.defaultStyle,
               now,
               channelPrivate,

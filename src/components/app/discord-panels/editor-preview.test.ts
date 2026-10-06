@@ -84,6 +84,7 @@ const input = (
     language: "cs",
     timeZone: "Europe/Prague",
     clanName: "Vlci",
+    clanTag: "VLK",
     defaultStyle: "a",
     now,
     channelPrivate: false,
@@ -170,7 +171,8 @@ test("style A asks for the score image; style B without its own banner for a gen
     assert.equal(previewBannerModel(a, "#E8A33D"), null)
     const b = input()
     assert.equal(previewScoreModel(b, null), null)
-    assert.equal(previewBannerModel(b, null)?.clanTag, "VLC")
+    // P8-07: the badge the page computed (the team short code), not a local rule.
+    assert.equal(previewBannerModel(b, null)?.clanTag, "VLK")
     b.draft = { ...b.draft, bannerUrl: "https://cdn.example/b.webp" }
     assert.equal(previewBannerModel(b, null), null)
 })
@@ -192,11 +194,11 @@ test("Naše servery: rows in the chosen order with address, join code and seed b
     )
     assert.match(rendered.text, /VLCI-7Q2/)
     assert.match(rendered.text, /203\.0\.113\.24:7777/)
-    assert.match(rendered.text, /Spojenci 3 : 2 Osa/)
-    // One join button per HLL server; Wardogs joins with its code (P2-39).
+    assert.match(rendered.text, /\*\*3 : 2\*\*/)
+    // P7-20: a join button per server; Wardogs opens the page with its code.
     assert.deepEqual(
         rendered.buttons.map((button) => button.label),
-        ["Připojit: Vlci #1"]
+        ["Připojit: Vlci WD", "Připojit: Vlci #1"]
     )
     assert.doesNotMatch(rendered.text, /Heslo/)
 })

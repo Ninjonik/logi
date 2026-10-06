@@ -6461,10 +6461,9 @@ export const deMessages = {
         metaDescription: "Tritt dem Spielserver {name} bei.",
         opening: "Öffne {game}…",
         players: "{players} / {capacity} Spieler",
-        map: "Karte {map}",
+        queue: "Warteschlange {queue}",
         steamPrompt:
             "Steam fragt, ob der Link geöffnet werden soll. Bestätige Öffnen.",
-        openAgain: "Erneut öffnen",
         manualTitle: "Manuell beitreten",
         addressLabel: "Serveradresse",
         copy: "Kopieren",

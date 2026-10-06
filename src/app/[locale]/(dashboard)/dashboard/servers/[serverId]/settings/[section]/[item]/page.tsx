@@ -10,6 +10,7 @@ import {
     readDiscordPanels,
 } from "@/lib/gateways/discord-panels"
 import { SettingsSectionFrame } from "@/components/app/settings/settings-section-frame"
+import { clanBadgeTag } from "@/domain/discord-publications/panel-graphics-settings"
 import { normalizeMessageStyle } from "@/domain/discord-messages/message-style"
 import { settingsHref } from "@/components/app/settings/settings-section-meta"
 import { settingsSnapshot } from "@/components/app/settings/settings-snapshot"
@@ -117,6 +118,7 @@ export default async function PanelEditorPage({
                 siteUrl={getSiteUrl()}
                 clan={{
                     name: server.name,
+                    tag: graphics?.clanTag ?? clanBadgeTag(server.name),
                     language,
                     timeZone,
                     messageStyle: style,

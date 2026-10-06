@@ -11,7 +11,10 @@ import {
     type PanelRunPorts,
     type PublicationBinding,
 } from "./panel-runner"
-import type { PanelScoreImage } from "../../../src/domain/discord-publications/panel-image-model"
+import type {
+    PanelBannerImage,
+    PanelScoreImage,
+} from "../../../src/domain/discord-publications/panel-image-model"
 import type { ResultEvent } from "../../../src/application/discord-publications/results"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import { hllLiveFixture } from "../../../src/infrastructure/testing/hll-live"
@@ -83,6 +86,7 @@ const pass: GuildPass = {
     language: "cs",
     timeZone: "Europe/Prague",
     clanName: "Vlci",
+    clanTag: "VLK",
     siteUrl: "https://logi.app",
     style: null,
     graphics: {
@@ -138,6 +142,7 @@ function fakes(overrides: Partial<PanelRunPorts> = {}) {
         scoreImage: async () => null,
         bannerImage: async () => null,
         mapImage: async () => null,
+        assetImage: async () => null,
         resultsPage: async () => ({ cursor: null, events: [] }),
         competition: async () => null,
         refreshCalendar: async () => {
@@ -207,7 +212,8 @@ test("a live panel is posted as one Components V2 message with chip, data and bu
     const { text, buttons } = render(sent.message)
     assert.match(text, /ŽIVÝ SERVER · HELL LET LOOSE/)
     assert.match(text, /Živě/)
-    assert.match(text, /2 \/ 100 hráčů/)
+    // Style B (this clan's default): the gauge carries the players (P7-13).
+    assert.match(text, /2 \/ 100/)
     assert.match(text, /obnovuje se každých 60 s/)
     assert.deepEqual(
         buttons.map((button) => button.label),
@@ -777,4 +783,167 @@ test("Naše servery shows the queue and next map from the live read (P4-38)", as
     assert.match(text, /fronta 3/)
     assert.match(text, /další mapa Carentan/)
     assert.doesNotMatch(text, /Synthetic Allied/)
+})
+
+test("style B: the banner follows Použít obrázek mapy and carries the clan badge (P7-B04, P7-13, P8-10)", async () => {
+    const banners: PanelBannerImage[] = []
+    const fake = fakes({
+        bannerImage: async (_key, model) => {
+            banners.push(model)
+            return {
+                name: "banner-vlci1-2041-abc.png",
+                bytes: new Uint8Array([1]),
+                description: "Banner",
+                hash: "abc",
+                fresh: true,
+            }
+        },
+        mapImage: async (_game, mapKey, look) => ({
+            name: `mapa-${mapKey}-${look}-0f1e2d.webp`,
+            bytes: new Uint8Array([1]),
+            description: "Mapa",
+        }),
+    })
+    const graphics = (useMapImage: boolean) => ({
+        ...pass.graphics,
+        defaultStyle: "b" as const,
+        servers: [
+            {
+                connectionId: "hll-1",
+                banner: {
+                    publicId: null,
+                    url: null,
+                    crop: "center" as const,
+                    useMapImage,
+                },
+                barColor: null,
+            },
+        ],
+    })
+    await runPanel(
+        panel({ artwork: true }),
+        { ...pass, graphics: graphics(true) },
+        fake.ports,
+        createPanelRunMemory()
+    )
+    assert.equal(banners.length, 1)
+    assert.equal(banners[0]?.clanTag, "VLK")
+    assert.equal(banners[0]?.background?.kind, "builtin")
+    const first = fake.published[0]
+    assert.ok(first)
+    const firstJson = JSON.stringify(
+        first.message.components?.map((c) => ("toJSON" in c ? c.toJSON() : c))
+    )
+    // The banner is the top of the card (P7-03, P7-13).
+    assert.ok(
+        firstJson.indexOf("attachment://banner-vlci1-2041-abc.png") <
+            firstJson.indexOf("ŽIVÝ SERVER"),
+        firstJson
+    )
+    // Off and no banner of its own: no picture on top, only the thumbnail.
+    await runPanel(
+        panel({ artwork: true }),
+        { ...pass, graphics: graphics(false) },
+        fake.ports,
+        createPanelRunMemory()
+    )
+    assert.equal(banners.length, 1, "no banner was drawn")
+    const second = fake.published[1]
+    assert.ok(second)
+    const names = (second.message.files ?? []).map((file) =>
+        typeof file === "object" && file && "name" in file ? file.name : null
+    )
+    assert.deepEqual(names, ["mapa-utah-beach-thumb-0f1e2d.webp"])
+})
+
+test("style B: the panel's own banner is attached as a file, not linked (P8-30)", async () => {
+    const asked: string[] = []
+    const fake = fakes({
+        assetImage: async ({ url, description }) => {
+            asked.push(url)
+            return {
+                name: "banner-4d5e6f.webp",
+                bytes: new Uint8Array([1]),
+                description,
+            }
+        },
+    })
+    await runPanel(
+        panel({
+            presentation: {
+                style: "b",
+                bannerUrl: "https://logi.app/api/image-assets/abc.webp",
+            },
+        }),
+        pass,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    assert.deepEqual(asked, ["https://logi.app/api/image-assets/abc.webp"])
+    const sent = fake.published[0]
+    assert.ok(sent)
+    const json = JSON.stringify(
+        sent.message.components?.map((c) => ("toJSON" in c ? c.toJSON() : c))
+    )
+    assert.match(json, /attachment:\/\/banner-4d5e6f\.webp/)
+    assert.doesNotMatch(json, /logi\.app\/api\/image-assets/)
+})
+
+test("style C is compact: no header, no address, no report button (P7-11)", async () => {
+    const fake = fakes()
+    await runPanel(
+        panel({ presentation: { style: "c" } }),
+        pass,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    const sent = fake.published[0]
+    assert.ok(sent)
+    const { text, buttons } = render(sent.message)
+    assert.match(
+        text,
+        /^🟢 \*\*Vlci #1 · Public\*\* Hell Let Loose · Utah Beach · Warfare/
+    )
+    assert.doesNotMatch(text, /ŽIVÝ SERVER|Adresa|obnovuje se/)
+    assert.deepEqual(
+        buttons.map((button) => button.label),
+        ["Připojit se", "Zobrazit hráče"]
+    )
+})
+
+test("Naše servery in style B draws the banner on top with the clan badge (P7-19)", async () => {
+    const banners: PanelBannerImage[] = []
+    const fake = fakes({
+        bannerImage: async (_key, model) => {
+            banners.push(model)
+            return {
+                name: "banner-nase-servery-abc.png",
+                bytes: new Uint8Array([1]),
+                description: "Banner",
+                hash: "abc",
+                fresh: true,
+            }
+        },
+    })
+    const base = panel()
+    await runPanel(
+        panel({
+            kind: "servers",
+            connectionId: undefined,
+            connectionIds: ["hll-1"],
+            presentation: { style: "b" },
+            servers: base.servers,
+        }),
+        pass,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    assert.equal(banners[0]?.subtitle, "Naše servery · Hell Let Loose")
+    assert.equal(banners[0]?.clanTag, "VLK")
+    const sent = fake.published[0]
+    assert.ok(sent)
+    const names = (sent.message.files ?? []).map((file) =>
+        typeof file === "object" && file && "name" in file ? file.name : null
+    )
+    assert.deepEqual(names, ["banner-nase-servery-abc.png"])
 })

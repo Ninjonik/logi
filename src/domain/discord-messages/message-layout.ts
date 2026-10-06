@@ -312,6 +312,7 @@ export function layoutMessageView(
     options: MessageLayoutOptions
 ): MessageLayout {
     const nodes: LayoutNode[] = []
+    if (view.lead) nodes.push({ type: "gallery", items: [view.lead] })
     const header = view.header ? headerLines(view.header, options) : []
     if (header.length) {
         const content = header.join("\n")

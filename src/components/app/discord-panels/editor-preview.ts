@@ -65,6 +65,8 @@ export type EditorPreviewInput = {
     language: string
     timeZone: string
     clanName: string
+    /** The round banner badge, the bot's rule (`clanBadgeTag`, P8-07). */
+    clanTag: string
     defaultStyle: PanelStyle
     now: number
     /** `@everyone` cannot view the channel; null before it was checked. */
@@ -162,26 +164,41 @@ export function previewScoreModel(
     })
 }
 
-/** The style B banner model when the panel has no banner of its own. */
+/**
+ * The style B banner model when the panel has no banner of its own: the
+ * server panel's name, or "Naše servery · Hell Let Loose a Wardogs" over the
+ * first server's map (P7-13, P7-19).
+ */
 export function previewBannerModel(
     input: EditorPreviewInput,
     clanAccent: string | null
 ): PanelBannerImage | null {
     const { draft } = input
     if (
-        draft.kind !== "server" ||
+        (draft.kind !== "server" && draft.kind !== "servers") ||
         draftStyle(draft, input.defaultStyle) !== "b" ||
         draft.bannerUrl
     )
         return null
-    const facts = input.facts[draft.connectionId]
-    if (!facts) return null
-    const server = input.servers[draft.connectionId]
     const copy = getPanelMessages(input.language).live
-    const mapKey = facts.map?.key ?? null
-    const map = mapKey ? panelMapDefinition(facts.game, mapKey) : null
+    const ids =
+        draft.kind === "server" ? [draft.connectionId] : draft.connectionIds
+    const shown = ids.flatMap((id) => {
+        const facts = input.facts[id]
+        return facts ? [{ id, facts }] : []
+    })
+    const first = shown[0]
+    if (!first) return null
+    const server = input.servers[first.id]
+    const mapKey = first.facts.map?.key ?? null
+    const map = mapKey ? panelMapDefinition(first.facts.game, mapKey) : null
     const title =
-        draft.title.trim() || server?.name || facts.serverName || "Logi"
+        draft.kind === "server"
+            ? draft.title.trim() ||
+              server?.name ||
+              first.facts.serverName ||
+              "Logi"
+            : draft.title.trim() || copy.combinedTitle
     const language = ["cs", "en", "de"].includes(input.language)
         ? (input.language as PanelBannerImage["language"])
         : "en"
@@ -189,13 +206,14 @@ export function previewBannerModel(
         version: 1,
         language,
         accentColor: resolvedAccent(draft, clanAccent),
-        clanTag:
-            Array.from(input.clanName.replace(/[^\p{L}\p{N}]/gu, ""))
-                .slice(0, 3)
-                .join("")
-                .toLocaleUpperCase() || "LOGI",
+        clanTag: input.clanTag,
         clanName: input.clanName.slice(0, 40) || "Logi",
-        subtitle: `${title} · ${copy.game[facts.game]}`.slice(0, 80),
+        subtitle: (draft.kind === "server"
+            ? `${title} · ${copy.game[first.facts.game]}`
+            : copy.combinedBanner([
+                  ...new Set(shown.map((entry) => copy.game[entry.facts.game])),
+              ])
+        ).slice(0, 80),
         background: map?.builtIn
             ? { kind: "builtin", game: map.game, mapKey: map.key }
             : null,
@@ -345,6 +363,7 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
         ]
     })
     if (!servers.length) return null
+    const style = draftStyle(draft, input.defaultStyle)
     return combinedPanelView({
         copy: copy.live,
         language: input.language,
@@ -360,7 +379,19 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
         },
         servers,
         now: input.now,
-        banner: null,
+        style,
+        emoji: {},
+        banner:
+            style === "b"
+                ? draft.bannerUrl
+                    ? { url: draft.bannerUrl, description: alt.banner("") }
+                    : input.images.banner
+                      ? {
+                            url: input.images.banner,
+                            description: alt.banner(""),
+                        }
+                      : null
+                : null,
     })
 }
 

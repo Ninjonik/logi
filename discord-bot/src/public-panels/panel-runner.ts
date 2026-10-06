@@ -6,10 +6,14 @@ import {
     planPanelAttachments,
     resolvePanelAccent,
     resolvePanelMapImage,
+    panelBannerBackground,
+    resolvePanelBanner,
     resolvePanelStyle,
     resolveScoreImageBackground,
     type MapChangeState,
+    type PanelImageSource,
     type PanelStyle,
+    type ServerBannerSettings,
 } from "../../../src/domain/discord-publications/panel-graphics"
 import {
     hllLiveFacts,
@@ -153,6 +157,8 @@ export type GuildPass = {
     language: string
     timeZone: string
     clanName: string
+    /** The round badge on banners: the team short code or initials (P8-07). */
+    clanTag: string
     siteUrl: string
     style: MessageStyle | null
     graphics: PanelGraphicsForBot
@@ -196,11 +202,20 @@ export type PanelRunPorts = {
         serverName: string,
         timeZone: string
     ): Promise<PanelImageAttachment | null>
+    /**
+     * A map picture as a file with a versioned name: the clan's own image
+     * when it set one (P8-30), else Logi's built-in art.
+     */
     mapImage(
         game: string,
         mapKey: string | null,
         look: "thumb" | "banner"
     ): Promise<{ name: string; bytes: Uint8Array; description: string } | null>
+    /** The panel's own banner (P2) as a file with a versioned name (P8-30). */
+    assetImage(input: {
+        url: string
+        description: string
+    }): Promise<{ name: string; bytes: Uint8Array; description: string } | null>
     resultsPage(
         panelId: string,
         cursor: string | null
@@ -362,6 +377,63 @@ type PanelFile = {
     name: string
     bytes: Uint8Array
     description: string
+}
+
+/**
+ * The style B banner (P7-13, P7-25, P8-10): the panel's own banner as it was
+ * uploaded, else the server banner or — only with "Použít obrázek mapy" on —
+ * the current map drawn under the clan badge. With neither there is none.
+ */
+async function styleBBanner(
+    panel: BotPanel,
+    pass: GuildPass,
+    ports: PanelRunPorts,
+    input: {
+        accent: string
+        title: string
+        subtitle: string
+        server: ServerBannerSettings | null
+        game: string
+        mapKey: string | null
+        mapImage: PanelImageSource | null
+    }
+): Promise<PanelFile | null> {
+    const source = resolvePanelBanner({
+        panelBannerUrl: panelBannerImage(resolvePanelPresentation(panel)),
+        server: input.server,
+        mapImage: input.mapImage,
+    })
+    if (!source) return null
+    if (source.kind === "banner" && source.origin === "panel")
+        return ports
+            .assetImage({
+                url: source.url,
+                description: panelImageCopy(pass.language).alt.banner(
+                    input.title
+                ),
+            })
+            .catch(() => null)
+    const model: PanelBannerImage = {
+        version: 1,
+        language: (["cs", "en", "de"].includes(pass.language)
+            ? pass.language
+            : "en") as PanelBannerImage["language"],
+        accentColor: input.accent,
+        clanTag: pass.clanTag,
+        clanName: pass.clanName.slice(0, 40) || "Logi",
+        subtitle: input.subtitle.slice(0, 80),
+        background: panelBannerBackground(source),
+    }
+    return (
+        (await ports
+            .bannerImage(keyOf(panel), model, input.title, pass.timeZone)
+            .catch(() => null)) ??
+        (source.kind === "map"
+            ? await ports
+                  .mapImage(input.game, input.mapKey, "banner")
+                  .catch(() => null)
+            : null)
+    )
 }
 
 /** The images of one message within Discord's attachment limit, score first (P7-B06). */
@@ -551,46 +623,18 @@ async function runLive(
             ? await ports.scoreImage(keyOf(panel), model).catch(() => null)
             : null
     }
-    let banner: {
-        name: string
-        bytes: Uint8Array
-        description: string
-    } | null = null
-    let bannerUrl: string | null = null
-    if (style === "b" && state !== "offline") {
-        const own = panelBannerImage(look)
-        if (own) bannerUrl = own
-        else if (showImages) {
-            const model: PanelBannerImage = {
-                version: 1,
-                language: (["cs", "en", "de"].includes(pass.language)
-                    ? pass.language
-                    : "en") as PanelBannerImage["language"],
-                accentColor: accent,
-                clanTag:
-                    Array.from(pass.clanName.replace(/[^\p{L}\p{N}]/gu, ""))
-                        .slice(0, 3)
-                        .join("")
-                        .toLocaleUpperCase() || "LOGI",
-                clanName: pass.clanName.slice(0, 40) || "Logi",
-                subtitle: `${title} · ${copy.live.game[facts.game]}`.slice(
-                    0,
-                    80
-                ),
-                background: resolveScoreImageBackground({
-                    server: graphicsServer?.banner ?? null,
-                    mapImage,
-                }),
-            }
-            banner =
-                (await ports
-                    .bannerImage(keyOf(panel), model, title, pass.timeZone)
-                    .catch(() => null)) ??
-                (mapImage && (graphicsServer?.banner.useMapImage ?? true)
-                    ? await ports.mapImage(facts.game, mapKey, "banner")
-                    : null)
-        }
-    }
+    const banner =
+        style === "b" && state !== "offline" && showImages
+            ? await styleBBanner(panel, pass, ports, {
+                  accent,
+                  title,
+                  subtitle: `${title} · ${copy.live.game[facts.game]}`,
+                  server: graphicsServer?.banner ?? null,
+                  game: facts.game,
+                  mapKey,
+                  mapImage,
+              })
+            : null
     let thumbnail: MessageMedia | null = null
     let thumbFile: {
         name: string
@@ -604,15 +648,11 @@ async function runLive(
         state !== "offline" &&
         !(style === "a" && score)
     ) {
-        if (mapImage?.kind === "override")
-            thumbnail = {
-                url: mapImage.url,
-                description: panelImageCopy(pass.language).alt.map(
-                    facts.map?.name ?? ""
-                ),
-            }
-        else if (showImages && mapImage) {
-            thumbFile = await ports.mapImage(facts.game, mapKey, "thumb")
+        // P8-30: a clan's own map image is attached like the built-in art.
+        if (showImages && mapImage) {
+            thumbFile = await ports
+                .mapImage(facts.game, mapKey, "thumb")
+                .catch(() => null)
             if (thumbFile)
                 thumbnail = {
                     url: `attachment://${thumbFile.name}`,
@@ -669,14 +709,7 @@ async function runLive(
                       url: `attachment://${banner.name}`,
                       description: banner.description,
                   }
-                : bannerUrl
-                  ? {
-                        url: bannerUrl,
-                        description: panelImageCopy(pass.language).alt.banner(
-                            title
-                        ),
-                    }
-                  : null,
+                : null,
             thumbnail,
         },
         ids: {
@@ -778,12 +811,17 @@ async function runCombined(
             }
         })
     )
-    // Each row carries its current map on the right (P7-B09).
+    const style: PanelStyle = resolvePanelStyle(
+        { presentation: { style: panel.presentation?.style ?? null } },
+        pass.graphics.defaultStyle
+    )
+    // Each row carries its current map on the right (P7-B09); style C is
+    // text only (P7-12).
     const servers = await Promise.all(
         rows.map(async (row) => {
             const mapKey = row.facts.map?.key ?? null
             const image =
-                look.layout.showMap && panel.artwork && mapKey
+                look.layout.showMap && panel.artwork && mapKey && style !== "c"
                     ? resolvePanelMapImage({
                           game: row.facts.game,
                           mapKey,
@@ -791,14 +829,8 @@ async function runCombined(
                       })
                     : null
             let thumbnail: MessageMedia | null = null
-            if (image?.kind === "override")
-                thumbnail = {
-                    url: image.url,
-                    description: panelImageCopy(pass.language).alt.map(
-                        row.facts.map?.name ?? ""
-                    ),
-                }
-            else if (image && channel.canAttach) {
+            // P8-30: a clan's own map image is attached like Logi's art.
+            if (image && channel.canAttach) {
                 const file = await ports
                     .mapImage(row.facts.game, mapKey, "thumb")
                     .catch(() => null)
@@ -813,6 +845,39 @@ async function runCombined(
             return { ...row, thumbnail }
         })
     )
+    // P7-19: in style B the banner on top, "Vlci · Naše servery · Hell Let
+    // Loose a Wardogs" over the first server's banner or map.
+    const first = servers[0]
+    const bannerFile =
+        style === "b" && first && channel.canAttach
+            ? await styleBBanner(panel, pass, ports, {
+                  accent: resolvePanelAccent({
+                      style,
+                      panelAccent: look.accentColor,
+                      serverBarColor: null,
+                      clanAccent: pass.style?.accentColor ?? null,
+                  }),
+                  title: panel.title?.trim() || copy.live.combinedTitle,
+                  subtitle: copy.live.combinedBanner([
+                      ...new Set(
+                          servers.map(
+                              (server) => copy.live.game[server.facts.game]
+                          )
+                      ),
+                  ]),
+                  server:
+                      pass.graphics.servers.find(
+                          (entry) => entry.connectionId === first.connectionId
+                      )?.banner ?? null,
+                  game: first.facts.game,
+                  mapKey: first.facts.map?.key ?? null,
+                  mapImage: resolvePanelMapImage({
+                      game: first.facts.game,
+                      mapKey: first.facts.map?.key ?? null,
+                      overrides: pass.graphics.mapOverrides,
+                  }),
+              })
+            : null
     const view = combinedPanelView({
         copy: copy.live,
         language: pass.language,
@@ -828,7 +893,14 @@ async function runCombined(
         },
         servers,
         now: pass.now,
-        banner: null,
+        style,
+        emoji: pass.emoji,
+        banner: bannerFile
+            ? {
+                  url: `attachment://${bannerFile.name}`,
+                  description: bannerFile.description,
+              }
+            : null,
     })
     if (isPanelPaused(panel) && view.header)
         view.header.chips = [{ label: copy.live.state.paused, tone: "neutral" }]
@@ -844,11 +916,14 @@ async function runCombined(
                 : []
         )
     )
-    const files = planPanelAttachments(
-        thumbFiles
+    const files = planPanelAttachments([
+        ...(bannerFile && view.lead
+            ? [{ ...bannerFile, role: "banner" as const }]
+            : []),
+        ...thumbFiles
             .filter((file) => shown.has(file.name))
-            .map((file) => ({ ...file, role: "thumbnail" as const }))
-    ).attached.map((file) => ({
+            .map((file) => ({ ...file, role: "thumbnail" as const })),
+    ]).attached.map((file) => ({
         attachment: Buffer.from(file.bytes),
         name: file.name,
         description: file.description.slice(0, 1024),

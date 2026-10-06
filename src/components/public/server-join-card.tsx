@@ -1,7 +1,7 @@
 "use client"
 
-import { ArrowLeft, Check, Copy, ExternalLink } from "lucide-react"
 import { useEffect, useId, useState } from "react"
+import { Check, Copy } from "lucide-react"
 
 import { steamConnectUrl } from "@/domain/discord-publications/server-join"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,8 @@ import { Input } from "@/components/ui/input"
 export type ServerJoinCardCopy = {
     opening: string
     players: string
-    map: string
+    queue: string
     steamPrompt: string
-    openAgain: string
     manualTitle: string
     addressLabel: string
     copy: string
@@ -35,7 +34,7 @@ type Props = {
     joinCode: string | null
     players: number | null
     capacity: number | null
-    map: string | null
+    queue: number | null
     copy: ServerJoinCardCopy
 }
 
@@ -43,11 +42,14 @@ type Props = {
 const DISCORD_APP_URL = "https://discord.com/app"
 
 /**
- * The join page of one server (P4-44..46, P4-B10). Discord link buttons
+ * The join page of one server (P4-44..46, P4-B10), laid out as the board
+ * draws it: the Logi mark, "Otevírám Hell Let Loose…", "Vlci #1 · Public ·
+ * 78 / 100 hráčů · fronta 3", the Steam prompt, the manual address with
+ * "Kopírovat" and "Zpět do Discordu", all centred. Discord link buttons
  * allow only http(s), so the panel's "Připojit se" opens this page, which
- * immediately hands `steam://connect/<ip:port>` to the browser. When the
- * browser blocks it, the address stays here to copy. Wardogs shows the
- * join code. Never a password.
+ * immediately hands `steam://connect/<ip:port>` to the browser; when the
+ * browser blocks it, the address stays here to copy. Wardogs shows the join
+ * code. Never a password.
  */
 export function ServerJoinCard({
     gameId,
@@ -57,7 +59,7 @@ export function ServerJoinCard({
     joinCode,
     players,
     capacity,
-    map,
+    queue,
     copy,
 }: Props) {
     const connectUrl =
@@ -88,60 +90,56 @@ export function ServerJoinCard({
                   .replace("{players}", String(players))
                   .replace("{capacity}", String(capacity))
             : null,
-        map ? copy.map.replace("{map}", map) : null,
+        queue ? copy.queue.replace("{queue}", String(queue)) : null,
     ].filter((part): part is string => Boolean(part))
 
     return (
-        <section className="bg-card mx-auto flex w-full max-w-xl flex-col gap-6 rounded-xl border p-6 shadow-xs sm:p-8">
-            <header className="flex flex-col gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    {connectUrl
-                        ? copy.opening.replace("{game}", gameName)
-                        : name}
-                </h1>
+        <section className="flex w-full flex-col items-center gap-3 text-center">
+            <span
+                aria-hidden="true"
+                className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-[10px] font-semibold"
+            >
+                L
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight">
+                {connectUrl ? copy.opening.replace("{game}", gameName) : name}
+            </h1>
+            {facts.length ? (
                 <p className="text-muted-foreground text-sm">
                     {facts.join(" · ")}
                 </p>
-                {connectUrl ? (
-                    <p className="text-sm">{copy.steamPrompt}</p>
-                ) : null}
-            </header>
-
+            ) : null}
             {connectUrl ? (
-                <Button asChild className="self-start">
-                    <a href={connectUrl}>
-                        <ExternalLink aria-hidden="true" />
-                        {copy.openAgain}
-                    </a>
-                </Button>
+                <p className="text-muted-foreground text-[13px]">
+                    {copy.steamPrompt}
+                </p>
             ) : null}
 
             {value ? (
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-base font-semibold">
+                <div className="flex w-full max-w-[380px] flex-col gap-1.5 text-left">
+                    <label
+                        htmlFor={inputId}
+                        className="text-[13px] font-medium"
+                    >
                         {gameId === "hell_let_loose"
                             ? copy.manualTitle
                             : copy.joinCodeTitle}
-                    </h2>
-                    <label htmlFor={inputId} className="sr-only">
-                        {gameId === "hell_let_loose"
-                            ? copy.addressLabel
-                            : copy.joinCodeLabel}
+                        <span className="sr-only">
+                            {" · "}
+                            {gameId === "hell_let_loose"
+                                ? copy.addressLabel
+                                : copy.joinCodeLabel}
+                        </span>
                     </label>
-                    <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex gap-2">
                         <Input
                             id={inputId}
                             readOnly
                             value={value}
                             onFocus={(event) => event.currentTarget.select()}
-                            className="font-mono"
+                            className="min-w-0 flex-1 font-mono"
                         />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={copyValue}
-                            className="self-start sm:self-auto"
-                        >
+                        <Button type="button" onClick={copyValue}>
                             {copied === "copied" ? (
                                 <Check aria-hidden="true" />
                             ) : (
@@ -151,7 +149,7 @@ export function ServerJoinCard({
                         </Button>
                     </div>
                     <p
-                        className="text-muted-foreground text-sm"
+                        className="text-muted-foreground text-xs"
                         aria-live="polite"
                     >
                         {copied === "failed"
@@ -162,7 +160,7 @@ export function ServerJoinCard({
                     </p>
                 </div>
             ) : (
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground max-w-[380px] text-sm">
                     {gameId === "hell_let_loose"
                         ? copy.noAddress
                         : copy.noJoinCode}
@@ -171,9 +169,8 @@ export function ServerJoinCard({
 
             <a
                 href={DISCORD_APP_URL}
-                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 self-start text-sm underline-offset-4 hover:underline"
+                className="text-foreground text-[13px] underline underline-offset-4"
             >
-                <ArrowLeft aria-hidden="true" className="size-4" />
                 {copy.backToDiscord}
             </a>
         </section>

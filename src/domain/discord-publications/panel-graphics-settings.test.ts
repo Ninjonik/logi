@@ -294,4 +294,11 @@ test("the banner badge uses the clan's initials", () => {
     assert.equal(clanBadgeTag("Váš klan"), "VK")
     assert.equal(clanBadgeTag("Česká Elitní Jednotka Alfa"), "CEJ")
     assert.equal(clanBadgeTag("  "), "LOGI")
+    // P7-13, P8-07: the clan's team short code wins over the initials.
+    assert.equal(clanBadgeTag("Vlci", "VLK"), "VLK")
+    assert.equal(clanBadgeTag("Vlci", " vlk "), "VLK")
+    assert.equal(clanBadgeTag("Vlci", "Č-1"), "C1")
+    assert.equal(clanBadgeTag("Vlci", "ABCDEFG"), "ABCDE")
+    assert.equal(clanBadgeTag("Vlci", "  "), "VLC")
+    assert.equal(clanBadgeTag("Vlci", null), "VLC")
 })

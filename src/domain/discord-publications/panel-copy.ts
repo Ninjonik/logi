@@ -53,6 +53,10 @@ export type LivePanelCopy = {
     points: string
     newMap: string
     combinedTitle: string
+    /** P7-19: "seedujeme 9 / 40" in a row of "Naše servery". */
+    seedingProgress: (count: string, target: string) => string
+    /** P7-19: the banner subtitle "Naše servery · Hell Let Loose a Wardogs". */
+    combinedBanner: (games: string[]) => string
     buttons: {
         join: string
         players: string

@@ -1510,7 +1510,8 @@ export function LookStep({
     const id = useId()
     const accentName = useId()
     const styleName = useId()
-    const hasStyle = draft.kind === "server"
+    // P7-19: "Naše servery" has the three styles as well.
+    const hasStyle = draft.kind === "server" || draft.kind === "servers"
     const summary = [
         draft.title.trim()
             ? fill(look.summary.title, { title: draft.title.trim() })
@@ -1518,7 +1519,7 @@ export function LookStep({
         draft.description.trim()
             ? look.summary.description
             : look.summary.noDescription,
-        ...(draft.kind === "server"
+        ...(hasStyle
             ? [
                   draft.bannerAssetId
                       ? look.summary.banner
@@ -1593,7 +1594,7 @@ export function LookStep({
                             }
                         />
                     </Field>
-                    {draft.kind === "server" ? (
+                    {hasStyle ? (
                         <BannerField
                             serverId={ctx.serverId}
                             value={{
