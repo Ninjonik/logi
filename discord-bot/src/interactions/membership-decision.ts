@@ -60,6 +60,7 @@ import {
 } from "../ui/message-kit"
 import { checkCloseAuthority, type CloseAuthority } from "./close-authority"
 import { threadUrl } from "./membership-application-create"
+import { dmSettingsUrl } from "../events/match-context"
 import type { InteractionFeature } from "./registry"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -261,7 +262,9 @@ async function runDecision(
                             roleNames: roleNames(guild, roles.after),
                             threadUrl: threadUrl(guild.id, thread.id),
                             ticketChannelName: ticketChannel?.name ?? null,
-                            settingsUrl: `${env.appSiteUrl}/${context.config.defaultLanguage}/dashboard/settings/user`,
+                            settingsUrl: dmSettingsUrl(
+                                context.config.defaultLanguage
+                            ),
                         }),
                         options
                     )
@@ -298,6 +301,7 @@ async function runDecision(
                             ? "applicationIntro"
                             : "applicationRename",
                     channelId: thread.parentId ?? undefined,
+                    userId: application.creatorId,
                     categoryLabel: application.categoryLabel,
                     number: application.applicationNumber,
                 })

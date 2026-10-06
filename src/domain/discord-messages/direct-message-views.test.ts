@@ -230,10 +230,21 @@ test("replies in the same DM carry the DM footer and are not private there", () 
         text(declined),
         /### Velení ví, že nedorazíš\nTvoje místo v F1 obsadí někdo ze záloh\. Díky, že dáváš vědět včas\./
     )
+    // The board draws a divider above the DM footer (L2-28..34).
+    for (const view of [confirmed, started, late, declined])
+        assert.deepEqual(view.blocks.at(-1), {
+            kind: "separator",
+            divider: true,
+            spacing: "small",
+        })
     // In the server the same reply is private and has no DM footer.
     const inGuild = declineSavedReply({ squad: "F1", copy, dm: false })
     assert.equal(inGuild.ephemeral, true)
     assert.equal(inGuild.footer, undefined)
+    assert.equal(
+        inGuild.blocks.some((block) => block.kind === "separator"),
+        false
+    )
 })
 
 test("the late and cannot-come forms name the match", () => {
@@ -442,4 +453,7 @@ test("training result: passed with the new role, failed with the next date", () 
         text(failed),
         /🔴 \*\*Nesplněno\*\*\nDalší termín najdeš v kalendáři klanu\./
     )
+    // A divider above the DM footer, as on the board (L2-52).
+    for (const view of [passed, failed])
+        assert.equal(view.blocks.at(-1)?.kind, "separator")
 })

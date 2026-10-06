@@ -54,6 +54,7 @@ import {
     readWindowValues,
 } from "./membership-application-modals"
 import { watchVerifiedSteam } from "./membership-steam-watch"
+import { dmSettingsUrl } from "../events/match-context"
 import type { InteractionFeature } from "./registry"
 import { interactionLanguage } from "../ui/replies"
 import { env } from "../environment"
@@ -400,7 +401,9 @@ async function sendConfirmationDm(
                         submission.clanName || interaction.guild?.name || "",
                     number,
                     threadUrl: url,
-                    settingsUrl: `${env.appSiteUrl}/${submission.config.defaultLanguage}/dashboard/settings/user`,
+                    settingsUrl: dmSettingsUrl(
+                        submission.config.defaultLanguage
+                    ),
                 }),
                 {
                     language: submission.config.defaultLanguage,

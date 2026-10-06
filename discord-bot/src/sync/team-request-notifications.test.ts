@@ -86,10 +86,58 @@ test("approved DMs are the clan card with the code, chip and team link (L5-39, L
         card.text,
         /-# Klan Vlci · \[Nastavit zprávy\]\(https:\/\/logi\.example\/cs\/dashboard\/settings\/user#zpravy-od-bota\)/
     )
+    // No page per team: the clan's Týmy searched for the team (L5-39).
     assert.deepEqual(card.buttons, [
         {
             label: "Otevřít tým v Logi",
-            url: "https://logi.example/cs/dashboard/servers/k17abc/teams?game=hell_let_loose",
+            url: "https://logi.example/cs/dashboard/servers/k17abc/teams?game=hell_let_loose&search=Vlci",
+        },
+    ])
+})
+
+test("team links open the team searched in the list, the rejected one the list (L5-39..41)", () => {
+    assert.deepEqual(
+        teamRequestLinks(
+            {
+                language: "en",
+                serverId: "k17abc",
+                gameId: "wardogs",
+                teamName: "Rogue Company",
+                requestedName: "Rogue Co.",
+            },
+            SITE
+        ),
+        {
+            team: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs&search=Rogue+Company",
+            teams: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs",
+            settings:
+                "https://logi.example/en/dashboard/settings/user#zpravy-od-bota",
+        }
+    )
+    // Without the catalogue team, the requested name is searched.
+    assert.equal(
+        teamRequestLinks(
+            {
+                language: "cs",
+                serverId: "k17abc",
+                gameId: "hell_let_loose",
+                teamName: null,
+                requestedName: "Vlci & spol",
+            },
+            SITE
+        ).team,
+        "https://logi.example/cs/dashboard/servers/k17abc/teams?game=hell_let_loose&search=Vlci+%26+spol"
+    )
+    const rejected = cardOf(
+        buildTeamRequestDecisionMessage(
+            notification({ status: "rejected", reason: "Duplicita." }),
+            SITE
+        )
+    )
+    assert.deepEqual(rejected.buttons, [
+        {
+            label: "Open Teams in Logi",
+            url: "https://logi.example/en/dashboard/servers/k17abc/teams?game=wardogs",
         },
     ])
 })
@@ -187,6 +235,7 @@ test("without a clan dashboard ID the DM has no team link", () => {
             SITE
         ),
         {
+            team: undefined,
             teams: undefined,
             settings:
                 "https://logi.example/cs/dashboard/settings/user#zpravy-od-bota",

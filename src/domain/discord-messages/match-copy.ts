@@ -129,6 +129,8 @@ export type RosterMessageCopy = {
         lateTitle: string
         /** "{name} nepřijde". */
         absentTitle: string
+        /** "start {time}", as the notice's meta line reads (L5-43). */
+        startAt: string
         reasonHidden: string
         attendanceLink: string
     }

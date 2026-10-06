@@ -22,6 +22,7 @@ const textOf = (html: string) =>
 
 const partial: ReminderDeliveryNoticeView = {
     kind: "partial",
+    automatic: false,
     audience: "unconfirmed",
     sent: 9,
     total: 12,
@@ -87,6 +88,7 @@ test("a failed send says so in the admin's language without names", () => {
         render(
             {
                 kind: "failed",
+                automatic: false,
                 audience: "unconfirmed",
                 sentAt: "2026-10-11T15:05:00.000Z",
                 requestedBy: "4",
@@ -101,4 +103,27 @@ test("a failed send says so in the admin's language without names", () => {
     assert.doesNotMatch(text, /The bot could not send the reminders/)
     assert.doesNotMatch(text, /Copy names/)
     assert.match(text, /Attendance reminder · sent .* · by Kowalski/)
+})
+
+test("a scheduled reminder that missed players has no sender (L2-64)", () => {
+    const scheduled: ReminderDeliveryNoticeView = {
+        ...partial,
+        automatic: true,
+        requestedBy: null,
+        senderName: null,
+    }
+    const cs = textOf(render(scheduled))
+    assert.match(cs, /Připomínka došla 9 z 12 hráčů/)
+    assert.match(cs, /Mrak, Ježek a Liška mají v Discordu vypnuté/)
+    assert.match(
+        cs,
+        /Připomínka docházky · odeslána ne 11\. 10\. v 17:05 · automaticky podle plánu/
+    )
+    assert.doesNotMatch(cs, /poslal/)
+    const en = textOf(render(scheduled, enMessages, "en"))
+    assert.match(
+        en,
+        /Attendance reminder · sent .* · automatically, as scheduled/
+    )
+    assert.doesNotMatch(en, /by an admin/)
 })

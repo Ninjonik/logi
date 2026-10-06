@@ -1268,6 +1268,9 @@ export function applicationDecisionDmView(
         blocks.push({ kind: "text", markdown: body })
         if (reason) blocks.push({ kind: "text", markdown: reason })
     }
+    // The board's divider sits between the quoted reason and the button,
+    // or above the footer without one (L2-54).
+    blocks.push({ kind: "separator", divider: true, spacing: "small" })
     if (input.threadUrl)
         blocks.push({
             kind: "buttons",

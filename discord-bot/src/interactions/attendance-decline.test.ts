@@ -106,6 +106,8 @@ test("the reply card tells the player what happened in the clan language", () =>
             markdown:
                 "Tvoje místo v F1 obsadí někdo ze záloh. Díky, že dáváš vědět včas.",
         },
+        // The board's divider above the DM footer (L2-34).
+        { kind: "separator", divider: true, spacing: "small" },
     ])
     assert.equal(saved.ephemeral, undefined)
     assert.equal(

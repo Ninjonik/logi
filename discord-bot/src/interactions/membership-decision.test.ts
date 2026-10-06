@@ -301,6 +301,11 @@ test("/close_application by a recruiter writes the membership, closes and DMs (M
     assert.match(dm, /Role Klan a Člen dostaneš na serveru během minuty\./)
     assert.match(dm, /> Pohovor proběhl\./)
     assert.doesNotMatch(dm, /<@&/)
+    // The footer opens "Zprávy od bota" on the account page (L2-05).
+    assert.match(
+        dm,
+        /\[Nastavit zprávy\]\(https?:\/\/[^)]+\/cs\/dashboard\/settings\/user#zpravy-od-bota\)/
+    )
     assert.ok(calls.includes("locked") && calls.includes("archived"))
     assert.ok(calls.includes("name:uzavřeno · přihláška-hráč-17"))
     assert.match(

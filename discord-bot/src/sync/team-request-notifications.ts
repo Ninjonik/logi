@@ -7,6 +7,7 @@ import {
 } from "../../../src/domain/discord-messages/team-request-dm"
 import { getSystemMessages } from "../../../src/lib/clan-language/system"
 import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
+import { clanTeamsPath } from "../../../src/domain/teams/team-links"
 import { GAME_LABELS } from "../../../src/domain/games/game"
 import { TEAM_GAMES } from "../../../src/domain/teams/team"
 import { messagePayload } from "../ui/message-kit"
@@ -37,23 +38,46 @@ export type TeamRequestDecisionMessage = MessageCreateOptions
 const DISCORD_USER_ID = /^\d{17,20}$/
 const SERVER_ID = /^[A-Za-z0-9_-]{1,64}$/
 
-/** Logi pages the DM links to, in the clan language. */
+/**
+ * Logi pages the DM links to, in the clan language. The catalogue has no
+ * page per team, so "Otevřít tým v Logi" opens the clan's Týmy for the
+ * game searched for the team (L5-39..40); "Otevřít Týmy v Logi" the list.
+ */
 export function teamRequestLinks(
     notification: Pick<
         TeamRequestNotification,
         "language" | "serverId" | "gameId"
-    >,
+    > &
+        Partial<Pick<TeamRequestNotification, "teamName" | "requestedName">>,
     siteUrl: string
 ) {
     const language = resolveClanLanguage(notification.language)
     const page = (path: string) => new URL(path, siteUrl).toString()
-    const teams =
+    const serverId =
         notification.serverId && SERVER_ID.test(notification.serverId)
-            ? page(
-                  `/${language}/dashboard/servers/${notification.serverId}/teams?game=${notification.gameId}`
-              )
+            ? notification.serverId
             : undefined
+    const teams = serverId
+        ? page(
+              clanTeamsPath({
+                  language,
+                  serverId,
+                  gameId: notification.gameId,
+              })
+          )
+        : undefined
+    const team = serverId
+        ? page(
+              clanTeamsPath({
+                  language,
+                  serverId,
+                  gameId: notification.gameId,
+                  team: notification.teamName ?? notification.requestedName,
+              })
+          )
+        : undefined
     return {
+        team,
         teams,
         settings: page(`/${language}/dashboard/settings/user#zpravy-od-bota`),
     }
@@ -83,7 +107,7 @@ export function buildTeamRequestDecisionMessage(
             ? { name: notification.teamName, code: notification.teamCode }
             : null,
         reason: notification.reason,
-        teamUrl: links.teams,
+        teamUrl: links.team,
         teamsUrl: links.teams,
         frame: {
             clanName: notification.clanName ?? "",

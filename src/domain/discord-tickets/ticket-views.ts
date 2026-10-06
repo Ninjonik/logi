@@ -420,6 +420,8 @@ export function ticketClosedDmView(input: {
                 }),
             },
             ...(reason ? [{ kind: "text" as const, markdown: reason }] : []),
+            // The divider sits between the quoted reason and the button (L2-56).
+            { kind: "separator", divider: true, spacing: "small" },
             {
                 kind: "buttons",
                 buttons: [
@@ -430,7 +432,6 @@ export function ticketClosedDmView(input: {
                     },
                 ],
             },
-            { kind: "separator", divider: true, spacing: "small" },
         ],
         footer: {
             kind: "dm",

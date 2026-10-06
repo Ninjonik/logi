@@ -331,7 +331,11 @@ with `{"audience": "unanswered" | "unconfirmed"}`, answering `{queued}`) and
 post-match admin excuses (`POST .../events/{eventId}/excuses`) are dashboard
 only. A reminder sends Discord DMs to clan members, so an API key must not be
 able to trigger it; excuses only change scoring, which the API does not do.
-Both are deliberately excluded from `/api/v1`. Excuses stay visible to API
+Both are deliberately excluded from `/api/v1`. The match page's reminder
+delivery notice (which players a manual or scheduled sign-up or attendance
+reminder did not reach because their Discord DMs are closed, board L2-60..64)
+is excluded with them: it names members' DM settings for the clan's managers
+in the dashboard and has no API lifecycle. Excuses stay visible to API
 readers: an excused player has an `absenceNotices` entry with an empty reason
 and `excusedBy` set to the admin's Discord ID, and a roster read includes
 `meetingAttendance` (when attendance was last read from the meeting voice

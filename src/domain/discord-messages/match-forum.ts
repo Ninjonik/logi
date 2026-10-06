@@ -316,7 +316,7 @@ export function attendanceNoticeView(input: {
     const start = discordTimestamp(event.gameStart, "t")
     const meta = joinParts([
         date,
-        start ? fillTemplate(copy.common.startAt, { time: start }) : undefined,
+        start ? fillTemplate(copy.notice.startAt, { time: start }) : undefined,
         input.place
             ? escapeMarkdownText(oneLine(input.place.squad))
             : undefined,
@@ -340,13 +340,9 @@ export function attendanceNoticeView(input: {
                 ? [{ kind: "meta" as const, lines: [{ text: meta }] }]
                 : []),
             { kind: "text", markdown: copy.notice.reasonHidden },
+            // The board draws no divider in this card (L5-43).
             ...(input.attendanceUrl && /^https?:\/\//.test(input.attendanceUrl)
                 ? [
-                      {
-                          kind: "separator" as const,
-                          divider: true,
-                          spacing: "small" as const,
-                      },
                       {
                           kind: "buttons" as const,
                           buttons: [

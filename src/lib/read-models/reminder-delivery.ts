@@ -16,11 +16,12 @@ const latestOutcomeReference = makeFunctionReference<"query">(
 )
 
 const outcomeSchema = z.object({
+    automatic: z.boolean().optional(),
     audience: z.enum(MANUAL_REMINDER_AUDIENCES),
     status: z.enum(["sent", "failed"]),
     requestedAt: z.string(),
     completedAt: z.string().nullable(),
-    requestedBy: z.string(),
+    requestedBy: z.string().nullable(),
     recipientCount: z.number().int().nonnegative(),
     sentCount: z.number().int().nonnegative(),
     failedUserIds: z.array(z.string()),
@@ -34,8 +35,8 @@ export type ReminderDeliveryNoticeView = ReminderDeliveryNotice & {
 }
 
 /**
- * The last manual reminder of a match that did not reach everyone (board
- * L2-60..62). For clan admins: callers pass an event they found in the
+ * The last reminder of a match that did not reach everyone, sent by an admin
+ * or on schedule (board L2-60..62, L2-64). For clan admins: callers pass an event they found in the
  * admin's clan context and that clan's Discord guild ID, which Convex checks
  * against the event. Null when there is nothing to report or Convex cannot be
  * reached; the page then shows nothing.
@@ -60,14 +61,15 @@ export async function getReminderDeliveryNotice(input: {
     const notice = reminderDeliveryNotice(outcome)
     if (!notice) return null
     const failedUserIds = notice.kind === "partial" ? notice.failedUserIds : []
+    const sender = notice.requestedBy
     const users = await getUsersByIds(
-        [...new Set([...failedUserIds, notice.requestedBy])],
+        [...new Set([...failedUserIds, ...(sender ? [sender] : [])])],
         input.guildId
     ).catch(() => [])
     const names = new Map(users.map((user) => [user.discordId, user.name]))
     return {
         ...notice,
         failedNames: failedUserIds.map((id) => names.get(id) ?? null),
-        senderName: names.get(notice.requestedBy) ?? null,
+        senderName: sender ? (names.get(sender) ?? null) : null,
     }
 }

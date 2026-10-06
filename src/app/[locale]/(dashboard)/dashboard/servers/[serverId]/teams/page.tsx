@@ -4,6 +4,7 @@ import { DEFAULT_GAME_ID, GAME_LABELS, isGameId } from "@/domain/games/game"
 import { matchTeamGame } from "@/lib/teams/match-team-selection"
 import { TeamDirectory } from "@/components/app/team-directory"
 import { ConfigNotice } from "@/components/app/config-notice"
+import { teamSearchParam } from "@/domain/teams/team-links"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -21,10 +22,13 @@ export default async function ServerTeamsPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{ game?: string | string[] }>
+    searchParams: Promise<{
+        game?: string | string[]
+        search?: string | string[]
+    }>
 }) {
     const { locale, serverId } = await params
-    const { game } = await searchParams
+    const { game, search } = await searchParams
     const resolvedLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(resolvedLocale)
     const context = await getServerContext(serverId, "all")
@@ -52,6 +56,7 @@ export default async function ServerTeamsPage({
                         locale={resolvedLocale}
                         dictionary={dictionary}
                         settingsHref={`/${locale}/dashboard/servers/${serverId}/settings/games`}
+                        initialSearch={teamSearchParam(search)}
                         sections={games.flatMap((gameId) =>
                             gameId
                                 ? [

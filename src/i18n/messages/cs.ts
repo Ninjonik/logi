@@ -6253,6 +6253,7 @@ export const csMessages = {
         copied: "Jména zkopírována",
         howTo: "Jak zapnout zprávy od serveru",
         meta: "{kind} · odeslána {time} · poslal {name}",
+        metaAutomatic: "{kind} · odeslána {time} · automaticky podle plánu",
         kindUnanswered: "Připomínka přihlášky",
         kindUnconfirmed: "Připomínka docházky",
         unknownSender: "správce",
