@@ -18,8 +18,11 @@ import {
     DiscordMessagePreview,
     type DiscordPreviewMentions,
 } from "@/components/app/discord-preview/discord-message-preview"
+import type {
+    ChipTone,
+    MessageView,
+} from "@/domain/discord-messages/message-view"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
-import type { MessageView } from "@/domain/discord-messages/message-view"
 import type { GameServerSource } from "@/domain/game-data/credentials"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
@@ -73,6 +76,7 @@ export function PreviewCard({
     note,
     language,
     messageStyle,
+    chipIcons,
     labels,
     now,
     timeZone,
@@ -86,6 +90,8 @@ export function PreviewCard({
     note?: string | null
     language: string
     messageStyle: MessageStyle | null
+    /** The bot's chip icons for this panel (installed status emoji, P2-B09). */
+    chipIcons?: Partial<Record<ChipTone, string>>
     labels: Dictionary["discordPreview"]
     now: number
     timeZone: string
@@ -104,6 +110,7 @@ export function PreviewCard({
                             view={view}
                             language={language}
                             style={messageStyle}
+                            chipIcons={chipIcons}
                             labels={labels}
                             now={now}
                             timeZone={timeZone}
@@ -186,12 +193,16 @@ export function JoinPageMock({
                         <p className="text-muted-foreground text-xs">
                             {joinCode
                                 ? fill(text.joinCode, { code: joinCode })
-                                : text.noAddress}
+                                : text.noJoinCode}
                         </p>
                     )}
                 </div>
             </div>
-            <p className="text-muted-foreground text-xs">{text.caption}</p>
+            <p className="text-muted-foreground text-xs">
+                {game === "hell_let_loose"
+                    ? text.caption
+                    : text.captionJoinCode}
+            </p>
         </section>
     )
 }

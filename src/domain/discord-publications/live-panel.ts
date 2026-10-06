@@ -658,6 +658,22 @@ function stateIcon(tone: MessageChip["tone"], emoji: PanelEmojiMarkup) {
 }
 
 /**
+ * Installed status emoji as chip icons per tone, as the bot lays out the
+ * chips of every panel and the editor preview draws them (P2-B09). Tones
+ * without an installed emoji keep the kit's coloured circle.
+ */
+export function panelChipIcons(
+    emoji: PanelEmojiMarkup
+): Partial<Record<MessageChip["tone"], string>> {
+    const icons: Partial<Record<MessageChip["tone"], string>> = {}
+    for (const [tone, key] of Object.entries(TONE_EMOJI) as Array<
+        [MessageChip["tone"], PanelEmojiKey]
+    >)
+        if (emoji[key]) icons[tone] = emoji[key]
+    return icons
+}
+
+/**
  * The first line of style C (P7-11): "◉ **Vlci #1 · Public** Hell Let Loose ·
  * Foy · Warfare · Den". A server that is not simply up names its state.
  */

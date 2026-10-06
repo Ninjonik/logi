@@ -9,6 +9,7 @@ import {
     combinedPreview,
     liveServerPreview,
     previewBannerModel,
+    previewChipIcons,
     previewScoreModel,
     type EditorPreviewInput,
 } from "./editor-preview"
@@ -251,4 +252,78 @@ test("Naše servery: rows in the chosen order with address, join code and seed b
         ["Připojit: Vlci WD", "Připojit: Vlci #1"]
     )
     assert.doesNotMatch(rendered.text, /Heslo/)
+})
+
+/** Installed application emoji, as the overview returns them (res. 79). */
+const installed = {
+    us: "<:logi_us_1a2b3c4d:200000000000000021>",
+    ger: "<:logi_ger_1a2b3c4d:200000000000000022>",
+    valkyra: "<:logi_valkyra_1a2b3c4d:200000000000000023>",
+    manticore: "<:logi_manticore_1a2b3c4d:200000000000000024>",
+    live: "<:logi_live_1a2b3c4d:200000000000000025>",
+    seeding: "<:logi_seeding_1a2b3c4d:200000000000000026>",
+    empty: "<:logi_empty_1a2b3c4d:200000000000000027>",
+    offline: "<:logi_offline_1a2b3c4d:200000000000000028>",
+    gauge_players: "<:logi_gauge_players_1a2b3c4d:200000000000000029>",
+    gauge_queue: "<:logi_gauge_queue_1a2b3c4d:200000000000000030>",
+    gauge_free: "<:logi_gauge_free_1a2b3c4d:200000000000000031>",
+}
+
+test("Naše servery draws the installed emoji and chip icons the bot uses (P2-B09)", () => {
+    const value = input({ emoji: installed })
+    value.draft = {
+        ...newPanelDraft({ kind: "servers" }),
+        channelId: "123456789012345678",
+        connectionIds: ["hll-1", "wd-1"],
+    }
+    const view = combinedPreview(value)!
+    assert.deepEqual(previewChipIcons(value), {
+        success: installed.live,
+        warning: installed.seeding,
+        neutral: installed.empty,
+        danger: installed.offline,
+    })
+    const signed = renderedView(view, "cs").text
+    for (const sign of [
+        installed.us,
+        installed.ger,
+        installed.valkyra,
+        installed.gauge_players,
+    ])
+        assert.ok(signed.includes(sign), sign)
+    assert.doesNotMatch(signed, /[★✚◈🟩🟨⬛]/u)
+    // The same rows without installed emoji keep the plain signs.
+    const plain = renderedView(
+        combinedPreview({ ...value, emoji: {} })!,
+        "cs"
+    ).text
+    assert.match(plain, /★/)
+    assert.doesNotMatch(plain, /logi_/)
+})
+
+test("chip icons follow the bot: status emoji on live, combined, League and results panels only (P2-B09)", () => {
+    for (const kind of ["server", "servers", "league", "results"] as const)
+        assert.equal(
+            previewChipIcons({
+                draft: newPanelDraft({ kind }),
+                emoji: installed,
+            }).success,
+            installed.live,
+            kind
+        )
+    for (const kind of ["calendar", "competition"] as const)
+        assert.deepEqual(
+            previewChipIcons({
+                draft: newPanelDraft({ kind }),
+                emoji: installed,
+            }),
+            {}
+        )
+    assert.deepEqual(
+        previewChipIcons({
+            draft: newPanelDraft({ kind: "server" }),
+            emoji: {},
+        }),
+        {}
+    )
 })

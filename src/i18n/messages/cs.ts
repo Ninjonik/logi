@@ -2937,7 +2937,7 @@ export const csMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Přidávat členy support rolí jednotlivě",
         inviteSupportMembersIndividuallyDescription:
-            "Když je vypnuto, Logi místo toho pingne support role kategorie. Discord přidá členy podporovaných malých rolí; dashboard administrátoři mohou přihlášky spravovat, aniž by se přidávali do každého threadu.",
+            "Zapnuto: Logi do vlákna každé přihlášky přidá jednoho po druhém všechny, kdo mají role podpory dané kategorie. Vypnuto: Logi je nepřidává a do vlákna se dostanou jen přes označení rolí podpory; Discord tak přidá jen členy rolí, které mají méně než 100 lidí. Správci Logi mohou přihlášky vyřizovat v Logi, i když ve vlákně nejsou.",
         panelTitle: "Nadpis panelu",
         panelDescription: "Popis panelu",
         welcomeMessage: "Uvítací zpráva v application threadu",
@@ -6919,11 +6919,16 @@ export const csMessages = {
                 open: "Otevřít ve Steamu",
                 fallback:
                     "Steam se neotevřel? Ve hře zvolte Připojit přes IP a zadejte {address}.",
-                joinCode: "Ve hře otevři připojení ke hře a zadej kód {code}.",
+                joinCode:
+                    "Ve hře otevřete připojení ke hře a zadejte kód {code}.",
                 noAddress:
                     "Bez adresy stránka jen napíše, ať se hráč zeptá správce.",
+                noJoinCode:
+                    "Bez kódu stránka jen napíše, ať se hráč zeptá správce.",
                 caption:
                     "Discord v tlačítku dovolí jen odkaz http(s). Tahle stránka hned otevře steam://connect a jinak ukáže IP.",
+                captionJoinCode:
+                    "Discord v tlačítku dovolí jen odkaz http(s). Tahle stránka ukáže kód pro připojení do hry a nabídne ho zkopírovat.",
             },
             data: {
                 title: "Data ze serveru",
