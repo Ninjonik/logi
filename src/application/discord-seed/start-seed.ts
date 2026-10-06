@@ -56,6 +56,7 @@ export async function beginSeed(
             plan: plan.settings,
             ping,
             observation: runObservation(input.reading),
+            roster: await ports.players.roster(plan).catch(() => null),
         }),
         guildId: plan.guildId,
         connectionId: plan.connectionId,

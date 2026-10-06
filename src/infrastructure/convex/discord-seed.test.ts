@@ -498,6 +498,8 @@ test("the bot gets everything to draw the call, the control message and the intr
                 runId,
                 startedAt: SLOT,
                 liveFrom: 40,
+                // P5-16: the run's latest count, the number the call shows.
+                players: 11,
                 call: {
                     channelId: settings.seedChannelId,
                     messageId: "999999999999999999",

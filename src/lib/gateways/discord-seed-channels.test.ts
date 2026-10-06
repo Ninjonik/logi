@@ -1,7 +1,11 @@
 import test, { type TestContext } from "node:test"
 import assert from "node:assert/strict"
 
-import { verifySeedChannels } from "./discord-seed-channels"
+import {
+    createSeedRole,
+    SeedRolePermissionError,
+    verifySeedChannels,
+} from "./discord-seed-channels"
 
 const GUILD = "100000000000000000"
 const BOT = "100000000000000009"
@@ -176,4 +180,74 @@ test("unset channels are not fetched", async (t) => {
         requested.some((path) => path.startsWith("/channels/")),
         false
     )
+})
+
+test("Vytvořit roli Seed makes a mentionable role without permissions, or reuses one (P5-22)", async (t) => {
+    const previous = process.env.DISCORD_BOT_TOKEN
+    process.env.DISCORD_BOT_TOKEN = "placeholder-token"
+    t.after(() => {
+        if (previous === undefined) delete process.env.DISCORD_BOT_TOKEN
+        else process.env.DISCORD_BOT_TOKEN = previous
+    })
+    let existing: Array<Record<string, unknown>> = [
+        {
+            id: GUILD,
+            name: "@everyone",
+            permissions: String(VIEW),
+            position: 0,
+            mentionable: false,
+            managed: false,
+        },
+    ]
+    let refuse = false
+    const posted: unknown[] = []
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async (input: string | URL, init?: RequestInit) => {
+            const path = String(input).replace(
+                "https://discord.com/api/v10",
+                ""
+            )
+            assert.equal(path, `/guilds/${GUILD}/roles`)
+            if (init?.method === "POST") {
+                if (refuse) return new Response("{}", { status: 403 })
+                const body = JSON.parse(String(init.body)) as unknown
+                posted.push(body)
+                return new Response(
+                    JSON.stringify({ id: ROLE, name: "Seed" }),
+                    { status: 200 }
+                )
+            }
+            return new Response(JSON.stringify(existing), { status: 200 })
+        }
+    )
+    assert.deepEqual(await createSeedRole(GUILD), {
+        id: ROLE,
+        name: "Seed",
+        created: true,
+    })
+    assert.deepEqual(posted, [
+        { name: "Seed", permissions: "0", mentionable: true, hoist: false },
+    ])
+    existing = [
+        ...existing,
+        {
+            id: "444444444444444444",
+            name: "seed",
+            permissions: "0",
+            position: 1,
+            mentionable: true,
+            managed: false,
+        },
+    ]
+    assert.deepEqual(await createSeedRole(GUILD), {
+        id: "444444444444444444",
+        name: "seed",
+        created: false,
+    })
+    assert.equal(posted.length, 1, "a second click reuses the role")
+    existing = existing.slice(0, 1)
+    refuse = true
+    await assert.rejects(createSeedRole(GUILD), SeedRolePermissionError)
 })

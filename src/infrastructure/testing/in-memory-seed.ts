@@ -14,6 +14,7 @@ import {
     type SeedPlanSettings,
     type SeedPlanState,
 } from "@/domain/discord-seed/plan"
+import type { SeedRoster } from "@/domain/discord-seed/run"
 
 import { FakeClock } from "./fake-clock"
 
@@ -140,13 +141,22 @@ export class InMemorySeedStore implements SeedStore {
 
 export class FakeSeedPlayerCounts implements SeedPlayerCountPort {
     readings = new Map<string, SeedServerReading | null>()
+    rosters = new Map<string, SeedRoster | null>()
 
     set(server: SeedServerRef, reading: SeedServerReading | null) {
         this.readings.set(keyOf(server), reading)
     }
 
+    setRoster(server: SeedServerRef, roster: SeedRoster | null) {
+        this.rosters.set(keyOf(server), roster)
+    }
+
     async read(server: SeedServerRef) {
         return this.readings.get(keyOf(server)) ?? null
+    }
+
+    async roster(server: SeedServerRef) {
+        return this.rosters.get(keyOf(server)) ?? null
     }
 }
 

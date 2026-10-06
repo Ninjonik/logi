@@ -220,3 +220,38 @@ test("a plan that is off only follows its running seed", async () => {
     assert.deepEqual(await tick(env, 12), { kind: "idle" })
     assert.equal(env.store.runs.size, 0)
 })
+
+test("the tick counts distinct seeders from the named roster and keeps only the number (P5-B04)", async () => {
+    const env = setup()
+    const at = () => env.clock.now().getTime()
+    env.players.setRoster(SEED_TEST_SERVER, {
+        ids: ["a", "b"],
+        observedAt: at(),
+    })
+    await tick(env, 2)
+    const runId = (await state(env)).activeRunId!
+    assert.deepEqual((await env.store.run(runId))?.joins, {
+        present: ["a", "b"],
+        joined: [],
+        count: null,
+    })
+    advance(env, 1)
+    env.players.setRoster(SEED_TEST_SERVER, {
+        ids: ["a", "b", "c", "d"],
+        observedAt: at(),
+    })
+    await tick(env, 4)
+    assert.deepEqual((await env.store.run(runId))?.joins?.joined, ["c", "d"])
+    advance(env, 1)
+    env.players.setRoster(SEED_TEST_SERVER, {
+        ids: ["c", "d", "e"],
+        observedAt: at(),
+    })
+    const live = await tick(env, 41)
+    assert.equal(live.kind, "ended")
+    assert.deepEqual((await env.store.run(runId))?.joins, {
+        present: [],
+        joined: [],
+        count: 3,
+    })
+})

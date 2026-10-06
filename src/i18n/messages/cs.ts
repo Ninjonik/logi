@@ -7112,6 +7112,16 @@ export const csMessages = {
             seedChannelOkNoRole: "Bot může do kanálu psát.",
             role: "Role, kterou výzva označí",
             rolePlaceholder: "Bez označení role",
+            createRole: "Vytvořit roli Seed",
+            createRoleBusy: "Vytvářím roli…",
+            createRoleHint:
+                "Logi vytvoří v Discordu roli Seed, kterou jde označit, a hned ji vybere. Můžete vybrat i roli, kterou už máte.",
+            roleCreated: "Role @Seed je vytvořená a vybraná.",
+            roleReused: "Role @Seed už na serveru je, vybrali jsme ji.",
+            rolePermission:
+                "Roli se nepodařilo vytvořit. Dejte roli Logi v Discordu oprávnění Spravovat role.",
+            roleUnavailable:
+                "Discord teď neodpovídá. Zkuste roli vytvořit za chvíli znovu.",
             roleMembers: {
                 one: "{count} člen",
                 few: "{count} členové",

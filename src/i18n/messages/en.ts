@@ -7153,6 +7153,17 @@ export const enMessages = {
             seedChannelOkNoRole: "The bot can post in the channel.",
             role: "Role the call pings",
             rolePlaceholder: "No role ping",
+            createRole: "Create Seed role",
+            createRoleBusy: "Creating the role…",
+            createRoleHint:
+                "Logi creates a mentionable Seed role in Discord and selects it. You can also pick a role you already have.",
+            roleCreated: "The @Seed role was created and selected.",
+            roleReused:
+                "The server already has a @Seed role; it is now selected.",
+            rolePermission:
+                "The role could not be created. Give the Logi role the Manage Roles permission in Discord.",
+            roleUnavailable:
+                "Discord is not answering right now. Try creating the role again in a moment.",
             roleMembers: {
                 one: "{count} member",
                 few: "{count} members",

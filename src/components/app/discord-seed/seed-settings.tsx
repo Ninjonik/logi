@@ -197,20 +197,80 @@ function SeedServerEditor({
         status: "idle",
     })
     const metadata = useDiscordMetadataState(serverId)
+    // P5-22: a role made here shows before Discord's role list reloads.
+    const [createdRoles, setCreatedRoles] = useState<
+        Array<{ id: string; name: string }>
+    >([])
+    const [roleBusy, setRoleBusy] = useState(false)
+    const [roleMessage, setRoleMessage] = useState<{
+        text: string
+        error: boolean
+    } | null>(null)
 
     const pickers: SeedPickerOptions = useMemo(() => {
         const ready = metadata.status === "ready" ? metadata.metadata : null
+        const roles = ready
+            ? ready.roles
+                  .filter((role) => role.name !== "@everyone")
+                  .map((role) => ({ id: role.id, name: role.name }))
+            : []
         return {
             channels: ready ? channelOptions(ready.channels, "text") : [],
-            roles: ready
-                ? ready.roles
-                      .filter((role) => role.name !== "@everyone")
-                      .map((role) => ({ id: role.id, name: role.name }))
-                : [],
+            roles: [
+                ...roles,
+                ...createdRoles.filter(
+                    (role) => !roles.some((known) => known.id === role.id)
+                ),
+            ],
             loading: metadata.status === "loading",
             unavailable: metadata.status === "failed",
         }
-    }, [metadata])
+    }, [metadata, createdRoles])
+
+    async function createRole() {
+        setRoleBusy(true)
+        setRoleMessage(null)
+        try {
+            const response = await fetch(
+                `/api/servers/${encodeURIComponent(serverId)}/discord-seed/role`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: "{}",
+                }
+            )
+            const body = (await response.json().catch(() => null)) as {
+                role?: { id: string; name: string; created: boolean }
+                error?: string
+            } | null
+            const role = body?.role
+            if (response.ok && role) {
+                setCreatedRoles((current) =>
+                    current.some((entry) => entry.id === role.id)
+                        ? current
+                        : [...current, { id: role.id, name: role.name }]
+                )
+                change({ seedRoleId: role.id })
+                setRoleMessage({
+                    text: role.created
+                        ? text.plan.roleCreated
+                        : text.plan.roleReused,
+                    error: false,
+                })
+            } else
+                setRoleMessage({
+                    text:
+                        body?.error === "role_permission"
+                            ? text.plan.rolePermission
+                            : text.plan.roleUnavailable,
+                    error: true,
+                })
+        } catch {
+            setRoleMessage({ text: text.plan.roleUnavailable, error: true })
+        } finally {
+            setRoleBusy(false)
+        }
+    }
     const channelName = (id: string) =>
         pickers.channels.find((channel) => channel.id === id)?.name ?? null
     const roleName = (id: string) =>
@@ -429,6 +489,11 @@ function SeedServerEditor({
                     locale={locale}
                     text={text}
                     onChange={change}
+                    roleCreator={{
+                        busy: roleBusy,
+                        message: roleMessage,
+                        onCreate: () => void createRole(),
+                    }}
                 />
                 <div className="min-w-0 xl:sticky xl:top-4">
                     <SeedCallPreviews

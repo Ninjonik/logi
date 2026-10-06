@@ -1,8 +1,12 @@
 import type {
+    SeedObservation,
+    SeedRoster,
+    SeedRun,
+} from "@/domain/discord-seed/run"
+import type {
     SeedPlanSettings,
     SeedPlanState,
 } from "@/domain/discord-seed/plan"
-import type { SeedObservation, SeedRun } from "@/domain/discord-seed/run"
 import type { SeedTriggerReading } from "@/domain/discord-seed/triggers"
 import type { Clock } from "@/application/ports/clock"
 
@@ -28,6 +32,11 @@ export type SeedServerReading = {
 export type SeedPlayerCountPort = {
     /** Null when the connection is not (or no longer) a server of this clan. */
     read(server: SeedServerRef): Promise<SeedServerReading | null>
+    /**
+     * The players by their provider IDs from the latest fresh live read, to
+     * count distinct seeders (P5-B04); null when no read names them.
+     */
+    roster(server: SeedServerRef): Promise<SeedRoster | null>
 }
 
 export type StoredSeedPlan = SeedServerRef & {

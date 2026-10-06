@@ -7341,6 +7341,17 @@ export const deMessages = {
             seedChannelOkNoRole: "Der Bot kann in den Kanal schreiben.",
             role: "Rolle, die der Aufruf markiert",
             rolePlaceholder: "Keine Rollenmarkierung",
+            createRole: "Rolle Seed erstellen",
+            createRoleBusy: "Rolle wird erstellt…",
+            createRoleHint:
+                "Logi erstellt in Discord eine markierbare Rolle Seed und wählt sie aus. Sie können auch eine vorhandene Rolle wählen.",
+            roleCreated: "Die Rolle @Seed wurde erstellt und ausgewählt.",
+            roleReused:
+                "Der Server hat bereits eine Rolle @Seed; sie ist jetzt ausgewählt.",
+            rolePermission:
+                "Die Rolle konnte nicht erstellt werden. Geben Sie der Logi-Rolle in Discord die Berechtigung Rollen verwalten.",
+            roleUnavailable:
+                "Discord antwortet gerade nicht. Versuchen Sie es gleich noch einmal.",
             roleMembers: {
                 one: "{count} Mitglied",
                 few: "{count} Mitglieder",

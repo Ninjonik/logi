@@ -41,7 +41,7 @@ export type SeedPlanTick =
  * (P3-B04, P3-B05, P5-B01). A server that disappeared fails the run.
  */
 export async function advanceActiveSeed(
-    ports: Pick<SeedPorts, "store" | "messages">,
+    ports: Pick<SeedPorts, "store" | "messages" | "players">,
     input: {
         state: SeedPlanState
         reading: SeedServerReading | null
@@ -71,6 +71,7 @@ export async function advanceActiveSeed(
                   kind: "observe",
                   at: input.now,
                   observation: runObservation(input.reading),
+                  roster: await ports.players.roster(run).catch(() => null),
               }
             : { kind: "fail", at: input.now, reason: "server_unavailable" }
     )

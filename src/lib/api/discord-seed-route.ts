@@ -74,8 +74,19 @@ export type DiscordSeedRoutePorts<A extends DiscordSeedAccess> = {
         input: { connectionId: string; requestKey: string }
     ): Promise<SeedActionResult>
     stop(access: A, input: { connectionId: string }): Promise<SeedActionResult>
+    /**
+     * "Vytvořit roli Seed" (P5-22): makes (or reuses) the mentionable role
+     * "Seed" in the clan's Discord. Throws `"missing_permission"` as the
+     * error message when the bot may not manage roles.
+     */
+    createRole(
+        access: A
+    ): Promise<{ id: string; name: string; created: boolean }>
     now?: () => number
 }
+
+/** `POST /role` body: nothing to choose, the role is always "Seed". */
+export const seedRoleRequestSchema = z.strictObject({})
 
 function actionResponse(result: SeedActionResult, now: number): Response {
     switch (result.status) {
@@ -199,6 +210,29 @@ export function discordSeedRoutes<A extends DiscordSeedAccess>(
                 }
             } catch {
                 return json({ error: "unavailable" }, 503)
+            }
+        },
+
+        /**
+         * `POST /role`: "Vytvořit roli Seed" (P5-22). A live Discord action
+         * on behalf of the clan admin, like starting a seed; outside
+         * `/api/v1` for the same reason.
+         */
+        async ROLE(request: Request, params: { serverId: string }) {
+            const access = await writeAccess(request, params.serverId)
+            if (!access) return json({ error: "forbidden" }, 403)
+            const body = seedRoleRequestSchema.safeParse(
+                await readBoundedJson(request, 256)
+            )
+            if (!body.success) return json({ error: "invalid_request" }, 400)
+            try {
+                const role = await ports.createRole(access)
+                return json({ role }, role.created ? 201 : 200)
+            } catch (error) {
+                return error instanceof Error &&
+                    error.message === "missing_permission"
+                    ? json({ error: "role_permission" }, 409)
+                    : json({ error: "unavailable" }, 503)
             }
         },
 

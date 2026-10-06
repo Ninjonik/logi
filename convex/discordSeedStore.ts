@@ -21,6 +21,7 @@ import {
 import type { SeedServerTab } from "../src/application/discord-seed/read-dashboard"
 import { resolveClanTimeZone } from "../src/domain/discord-seed/clock"
 import { resolveSource, workspaceSources } from "./gameDataCatalog"
+import { hllLiveSchema } from "../src/domain/game-data/hll-live"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -71,6 +72,7 @@ function runFields(run: Omit<NewSeedRun, "planId">) {
         pingedMembers: run.pingedMembers,
         endedBy: run.endedBy,
         failure: run.failure,
+        joins: run.joins ?? null,
     }
 }
 
@@ -330,12 +332,62 @@ export async function seedServerPanel(ctx: Reader, server: SeedServerRef) {
         : null
 }
 
+/** A live read this old no longer names who is on the server. */
+const ROSTER_MAX_AGE_MS = 3 * 60 * 1000
+
 /** The collected snapshot the panels read, with the admin's server alias. */
 export function seedPlayerCounts(
     ctx: Reader,
     now: () => number
 ): SeedPlayerCountPort {
     return {
+        /**
+         * The named players of the latest fresh HLL live read (the read the
+         * server panel keeps in `hllLiveCache`), for distinct seeders
+         * (P5-B04). Null without one: Logi then counts the growth.
+         */
+        async roster(server) {
+            const id = ctx.db.normalizeId(
+                "gameDataConnections",
+                server.connectionId
+            )
+            const row = id ? await ctx.db.get(id) : null
+            if (
+                !row ||
+                row.guildId !== server.guildId ||
+                row.gameId !== "hell_let_loose" ||
+                row.provider !== "hll_crcon"
+            )
+                return null
+            const cache = await ctx.db
+                .query("hllLiveCache")
+                .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
+                .unique()
+            if (cache?.generation !== row.generation || !cache.dataJson)
+                return null
+            try {
+                const parsed = hllLiveSchema.safeParse(
+                    JSON.parse(cache.dataJson)
+                )
+                if (!parsed.success) return null
+                const data = parsed.data
+                const at = Date.parse(data.playersAt ?? "")
+                if (
+                    data.playersFreshness !== "fresh" ||
+                    !Number.isFinite(at) ||
+                    now() - at > ROSTER_MAX_AGE_MS
+                )
+                    return null
+                return {
+                    ids: data.players.flatMap((player) =>
+                        player.playerId ? [player.playerId] : []
+                    ),
+                    observedAt: at,
+                }
+            } catch {
+                return null
+            }
+        },
         async read(server): Promise<SeedServerReading | null> {
             const found = await seedServerSnapshot(ctx, server, now())
             if (!found) return null

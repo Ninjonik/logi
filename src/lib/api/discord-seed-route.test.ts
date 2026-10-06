@@ -62,6 +62,10 @@ function fixture(
             calls.push({ stop: input })
             return { status: "stopped", runId: "run-1" }
         },
+        createRole: async (access) => {
+            calls.push({ createRole: access.guildId })
+            return { id: "333333333333333333", name: "Seed", created: true }
+        },
         now: () => NOW,
         ...overrides,
     }
@@ -372,4 +376,83 @@ test("refusals keep their meaning: cooldown 429 with Retry-After, running and un
         ).status,
         503
     )
+})
+
+test("Vytvořit roli Seed: dashboard origin and a clan admin only, then the role (P5-22)", async () => {
+    const url = `${base}/role`
+    const ok = fixture()
+    const created = await ok.routes.ROLE(
+        ok.request("POST", {}, { origin }, url),
+        params
+    )
+    assert.equal(created.status, 201)
+    assert.deepEqual(await created.json(), {
+        role: { id: "333333333333333333", name: "Seed", created: true },
+    })
+    assert.deepEqual(ok.calls.at(-1), { createRole: "910000000000000001" })
+
+    const foreign = fixture()
+    assert.equal(
+        (
+            await foreign.routes.ROLE(
+                foreign.request(
+                    "POST",
+                    {},
+                    { origin: "https://evil.invalid" },
+                    url
+                ),
+                params
+            )
+        ).status,
+        403
+    )
+    assert.equal(foreign.calls.length, 0, "the origin is checked first")
+
+    const member = fixture({}, false)
+    assert.equal(
+        (
+            await member.routes.ROLE(
+                member.request("POST", {}, { origin }, url),
+                params
+            )
+        ).status,
+        403
+    )
+    const odd = fixture()
+    assert.equal(
+        (
+            await odd.routes.ROLE(
+                odd.request("POST", { name: "Admin" }, { origin }, url),
+                params
+            )
+        ).status,
+        400
+    )
+    const reused = fixture({
+        createRole: async () => ({
+            id: "444444444444444444",
+            name: "seed",
+            created: false,
+        }),
+    })
+    assert.equal(
+        (
+            await reused.routes.ROLE(
+                reused.request("POST", {}, { origin }, url),
+                params
+            )
+        ).status,
+        200
+    )
+    const refused = fixture({
+        createRole: async () => {
+            throw new Error("missing_permission")
+        },
+    })
+    const answer = await refused.routes.ROLE(
+        refused.request("POST", {}, { origin }, url),
+        params
+    )
+    assert.equal(answer.status, 409)
+    assert.deepEqual(await answer.json(), { error: "role_permission" })
 })
