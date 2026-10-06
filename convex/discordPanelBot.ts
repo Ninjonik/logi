@@ -3,38 +3,26 @@ import { v } from "convex/values"
 import {
     guildPanel,
     guildPanels,
-    panelActionStore,
     panelServerRow,
-    panelStatusRecord,
     panelStatusRow,
-    purgePanel,
     serverNames,
 } from "./discordPanelStore"
-import {
-    botHeartbeatSchema,
-    nextPanelStatus,
-    panelAttemptSchema,
-} from "../src/domain/discord-publications/panel-delivery"
 import {
     runningMatchFor,
     type RunningMatch,
 } from "../src/domain/discord-publications/running-match"
-import type { CompetitionDivisionTable } from "../src/domain/discord-publications/competition-panel"
 import {
-    internalQuery,
-    mutation,
-    query,
-    type QueryCtx,
-} from "./_generated/server"
-import { requestPanelAction } from "../src/application/discord-publications/panel-actions"
-import { clanBadgeTag } from "../src/domain/discord-publications/panel-graphics-settings"
+    hllLiveWithFreshness,
+    readHllLivePayload,
+} from "../src/domain/game-data/hll-live-payload"
+import type { CompetitionDivisionTable } from "../src/domain/discord-publications/competition-panel"
+import { clanBadgeTag } from "../src/domain/discord-publications/panel-graphics-projection"
 import { joinPagePlayers } from "../src/domain/discord-publications/server-join"
 import { normalizePanelKind } from "../src/domain/discord-publications/settings"
 import { deriveDivisionStandings } from "../src/domain/competitions/standings"
 import { hllLiveFacts } from "../src/domain/discord-publications/live-panel"
-import { hllLiveSchema } from "../src/domain/game-data/hll-live"
+import { internalQuery, query, type QueryCtx } from "./_generated/server"
 import { projectSnapshot } from "../src/domain/game-data/policy"
-import { panelAction } from "./discordPublicationTable"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { connectionSource } from "./gameDataCatalog"
@@ -42,133 +30,15 @@ import { getGuildByDiscordId } from "./identity"
 import { clanShortCode } from "./clanTeamStore"
 
 /**
- * The bot's side of "Panely v Discordu": the heartbeat, the result of each
- * pass over a panel, removing a panel once its messages are gone, actions
- * from the "Ovládání serveru" message, and the reads a panel needs (clan
- * players, the running match, competition tables, the join page). Every
- * function requires the internal secret.
+ * The bot's reads of "Panely v Discordu": what every panel of a workspace
+ * is drawn with, clan players, the running match, competition tables, the
+ * calendar panel and the join page. The bot calls them every 15 s per clan,
+ * so this module stays small: the writes (heartbeat, pass reports, purge,
+ * actions), which validate with Zod, live in `discordPanelBotWrites.ts`
+ * (ARCHITECTURE.md, "Convex hot paths"). Every function requires the
+ * internal secret.
  */
 type Db = Pick<QueryCtx, "db">
-const snowflake = /^\d{17,20}$/
-
-/** "Bot online · verze … · poslední kontakt před 12 s" (P1-04..06, P1-B05). */
-export const heartbeat = mutation({
-    args: {
-        secret: v.string(),
-        heartbeat: v.object({
-            version: v.string(),
-            protocol: v.number(),
-            startedAt: v.number(),
-        }),
-        /** Workspaces with panels this bot visited on its last pass. */
-        guildIds: v.array(v.string()),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const beat = botHeartbeatSchema.parse(args.heartbeat)
-        const now = Date.now()
-        const keys = [
-            "bot",
-            ...[...new Set(args.guildIds)]
-                .filter((id) => snowflake.test(id))
-                .slice(0, 200)
-                .map((id) => `guild:${id}`),
-        ]
-        for (const key of keys) {
-            const row = await ctx.db
-                .query("discordBotHeartbeats")
-                .withIndex("key", (q) => q.eq("key", key))
-                .unique()
-            const value = { ...beat, key, seenAt: now }
-            if (row) await ctx.db.patch(row._id, value)
-            else await ctx.db.insert("discordBotHeartbeats", value)
-        }
-    },
-})
-
-/** The result of one pass over a panel; feeds the dashboard's state and timeline. */
-export const report = mutation({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        panelId: v.string(),
-        attempt: v.any(),
-        /** The admins were just told the channel turned public (P4-30). */
-        passwordNotified: v.optional(v.boolean()),
-        /** The channel is private again; a later change notifies again. */
-        passwordReset: v.optional(v.boolean()),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const attempt = panelAttemptSchema.parse(args.attempt)
-        const panel = await guildPanel(ctx, args.guildId, args.panelId)
-        if (!panel) return
-        const row = await panelStatusRow(ctx, args.panelId)
-        const next = nextPanelStatus(panelStatusRecord(row), attempt)
-        const notified = args.passwordNotified
-            ? attempt.attemptAt
-            : args.passwordReset
-              ? null
-              : (row?.passwordNotifiedAt ?? null)
-        const value = {
-            ...next,
-            guildId: args.guildId,
-            panelId: args.panelId,
-            passwordNotifiedAt: notified,
-        }
-        if (row) await ctx.db.patch(row._id, value)
-        else await ctx.db.insert("discordPanelStatus", value)
-    },
-})
-
-/** Deletes a removed panel once the bot took its messages down. */
-export const purge = mutation({
-    args: { secret: v.string(), guildId: v.string(), panelId: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const panel = await guildPanel(ctx, args.guildId, args.panelId)
-        if (!panel?.removing) return false
-        return await purgePanel(ctx, panel)
-    },
-})
-
-/**
- * "Obnovit panel" / "Pozastavit panel" / "Pokračovat" from the "Ovládání
- * serveru" message (P5-26..33). The bot checks the admin role freshly on
- * every click before calling this; the panel is the server's live panel.
- */
-export const act = mutation({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        actorId: v.string(),
-        action: panelAction,
-        panelId: v.optional(v.string()),
-        connectionId: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        if (!snowflake.test(args.actorId)) throw new Error("Invalid actor.")
-        let panelId = args.panelId ?? null
-        if (!panelId && args.connectionId) {
-            const panel = (await guildPanels(ctx, args.guildId)).find(
-                (row) =>
-                    normalizePanelKind(row.kind) === "server" &&
-                    row.connectionId === args.connectionId &&
-                    !row.removing
-            )
-            panelId = panel ? String(panel._id) : null
-        }
-        if (!panelId) return { status: "not_found" as const }
-        return await requestPanelAction(panelActionStore(ctx), {
-            guildId: args.guildId,
-            panelId,
-            action: args.action,
-            actorId: args.actorId,
-            now: Date.now(),
-        })
-    },
-})
 
 /** The calendar panel of a workspace, when it has one (L3-12..18). */
 export const calendarPanel = query({
@@ -476,12 +346,10 @@ async function latestHllLive(
         .unique()
     if (cache?.generation !== connection.generation || !cache.dataJson)
         return null
-    try {
-        const parsed = hllLiveSchema.safeParse(JSON.parse(cache.dataJson))
-        return parsed.success ? hllLiveFacts(parsed.data) : null
-    } catch {
-        return null
-    }
+    // Stored by `hllLiveReads:finish` after validation; the row carries the
+    // latest read's times.
+    const data = readHllLivePayload(cache.dataJson)
+    return data ? hllLiveFacts(hllLiveWithFreshness(data, cache)) : null
 }
 
 /**

@@ -50,6 +50,7 @@ import { listReportMembers } from "./interactions/tickets-report-members"
 import { interactionLanguage, reportToErrorsChannel } from "./ui/replies"
 import { getSystemMessages } from "../../src/lib/clan-language/system"
 import { getPanelMessages } from "../../src/lib/clan-language/panels"
+import type * as drafts from "../../convex/playerReportDrafts"
 import { readReportObservation } from "./public-panels/worker"
 import { clanStyleForGuild } from "./runtime/clan-language"
 import type * as reports from "../../convex/playerReports"
@@ -65,24 +66,33 @@ import { convex } from "./convex"
  */
 type ReportsApi = ApiFromModules<{
     playerReports: typeof reports
-}>["playerReports"]
-type Entry = NonNullable<FunctionReturnType<ReportsApi["entry"]>>
-type Draft = NonNullable<FunctionReturnType<ReportsApi["draft"]>>
+    playerReportDrafts: typeof drafts
+}>
+type Entry = NonNullable<
+    FunctionReturnType<ReportsApi["playerReports"]["entry"]>
+>
+type Draft = NonNullable<
+    FunctionReturnType<ReportsApi["playerReportDrafts"]["draft"]>
+>
 type Claimed = Extract<
-    FunctionReturnType<ReportsApi["claim"]>,
+    FunctionReturnType<ReportsApi["playerReports"]["claim"]>,
     { kind: "claimed" }
 >
 type Scope = { guildId: string; reporterId: string }
+/** The draft flow lives in `playerReportDrafts`; the delivery steps and polling in `playerReports`. */
+const DRAFT_FUNCTIONS = new Set(["createDraft", "draft", "submit"])
+const modulePath = (name: string) =>
+    `${DRAFT_FUNCTIONS.has(name) ? "playerReportDrafts" : "playerReports"}:${name}`
 const query = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
-    convex.query(makeFunctionReference<"query">(`playerReports:${name}`), {
+    convex.query(makeFunctionReference<"query">(modulePath(name)), {
         secret: env.internalSecret,
         ...args,
     })
 const mutation = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
-    convex.mutation(
-        makeFunctionReference<"mutation">(`playerReports:${name}`),
-        { secret: env.internalSecret, ...args }
-    )
+    convex.mutation(makeFunctionReference<"mutation">(modulePath(name)), {
+        secret: env.internalSecret,
+        ...args,
+    })
 type Policy = Pick<
     Entry,
     | "guildId"

@@ -1,12 +1,24 @@
-import { z } from "zod"
-
 /**
  * Delivery of the panels in "Panely v Discordu" (P1, P2): what the bot last
  * did with a panel, the state chip the dashboard shows, the actions an admin
  * can request and the bot heartbeat. Pure: the caller passes stored rows and
  * the clock. Discord calls happen only in the bot; the dashboard requests an
  * action by writing a flag the bot's worker consumes idempotently.
+ *
+ * The Zod schemas of the bot's reports (`panelErrorSchema`,
+ * `panelAttemptSchema`, `botHeartbeatSchema`) live in
+ * `panel-delivery.schema.ts`; their types are re-exported here.
  */
+export type {
+    BotHeartbeat,
+    PanelAttempt,
+    PanelError,
+} from "./panel-delivery.schema"
+import type {
+    BotHeartbeat,
+    PanelAttempt,
+    PanelError,
+} from "./panel-delivery.schema"
 
 // ---- Errors ------------------------------------------------------------------
 
@@ -44,19 +56,6 @@ export const PANEL_PERMISSIONS = [
 ] as const
 export type PanelPermission = (typeof PANEL_PERMISSIONS)[number]
 
-export const panelErrorSchema = z.strictObject({
-    code: z.enum(PANEL_ERROR_CODES),
-    at: z.number().int().nonnegative(),
-    /** Missing channel permissions, for `missing_permissions`. */
-    permissions: z.array(z.enum(PANEL_PERMISSIONS)).max(5).optional(),
-    /** The provider failure category, e.g. `timeout` or `rate_limited`. */
-    category: z
-        .string()
-        .regex(/^[a-z_]{1,40}$/)
-        .optional(),
-})
-export type PanelError = z.infer<typeof panelErrorSchema>
-
 /** Not errors: the panel was delivered, with something worth telling the admin. */
 export const PANEL_WARNINGS = [
     /** The channel became public, so the password was removed (P4-30). */
@@ -67,29 +66,6 @@ export const PANEL_WARNINGS = [
     "attach_files_missing",
 ] as const
 export type PanelWarning = (typeof PANEL_WARNINGS)[number]
-
-/** What the bot reports after every pass over a panel. */
-export const panelAttemptSchema = z.strictObject({
-    attemptAt: z.number().int().nonnegative(),
-    ok: z.boolean(),
-    error: panelErrorSchema.nullable(),
-    /** When the bot will look at the panel again. */
-    nextAt: z.number().int().nonnegative().nullable(),
-    /** When the shown server data was read. */
-    dataAt: z.number().int().nonnegative().nullable(),
-    /** The admin request (`requestedAt`) this pass answered. */
-    handledRequestAt: z.number().int().nonnegative().nullable(),
-    warnings: z.array(z.enum(PANEL_WARNINGS)).max(PANEL_WARNINGS.length),
-    /** Messages the panel owns in Discord after this pass. */
-    messages: z.number().int().min(0).max(1000),
-    /**
-     * Whether `@everyone` cannot view the panel's channel, as the bot saw it
-     * on this pass ("veřejný kanál" / "soukromý kanál", P1-13, P1-14).
-     * Absent when the pass did not look at the channel.
-     */
-    channelPrivate: z.boolean().optional(),
-})
-export type PanelAttempt = z.infer<typeof panelAttemptSchema>
 
 /** The stored delivery record of one panel (`discordPanelStatus`). */
 export type PanelStatusRecord = {
@@ -416,13 +392,6 @@ export const MINIMUM_BOT_VERSION = "1.1.0"
 /** The bot writes its heartbeat every 30 s; silence for 3 min is "offline" (P1-05). */
 export const BOT_HEARTBEAT_INTERVAL_MS = 30_000
 export const BOT_OFFLINE_AFTER_MS = 3 * 60_000
-
-export const botHeartbeatSchema = z.strictObject({
-    version: z.string().regex(/^[A-Za-z0-9._+-]{1,40}$/),
-    protocol: z.number().int().min(1).max(1000),
-    startedAt: z.number().int().nonnegative(),
-})
-export type BotHeartbeat = z.infer<typeof botHeartbeatSchema>
 
 export type BotHeartbeatState =
     | { state: "unknown" }

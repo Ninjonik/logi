@@ -1,9 +1,4 @@
 import {
-    credentialAad,
-    gameServerSourceSchema,
-    type CredentialBinding,
-} from "../../domain/game-data/credentials"
-import {
     migrateLegacyCredentials,
     reencryptCredentials,
 } from "../../application/game-data/migrate-credentials"
@@ -12,6 +7,11 @@ import {
     encryptCredential,
     parseKeyring,
 } from "../game-data/credential-cipher"
+import {
+    credentialAad,
+    type CredentialBinding,
+} from "../../domain/game-data/credentials"
+import { gameServerSourceSchema } from "../../domain/game-data/credentials.schema"
 import * as migration from "../../../convex/gameDataCredentialMigration"
 import * as credentials from "../../../convex/gameDataCredentials"
 import * as sources from "../../../convex/gameDataSources"

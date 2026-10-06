@@ -2,10 +2,12 @@ import {
     buildFixturesView,
     buildStandingsView,
     leagueDataAt,
-    type LeagueFixturesView,
-    type LeaguePanelOptions,
-    type LeagueStandingsView,
     type StoredLeagueFixture,
+} from "../../domain/wardogs-league/panel-data"
+import type {
+    LeagueFixturesView,
+    LeaguePanelOptions,
+    LeagueStandingsView,
 } from "../../domain/wardogs-league/panels"
 import {
     leagueSeason,

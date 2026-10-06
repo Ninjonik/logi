@@ -1,8 +1,8 @@
 import {
-    parseSeedPlanSettings,
     seedPlanCapacityIssues,
     type SeedPlanIssue,
 } from "@/domain/discord-seed/plan"
+import { parseSeedPlanSettings } from "@/domain/discord-seed/plan.schema"
 
 import type { SeedPorts, SeedServerRef, StoredSeedPlan } from "./ports"
 

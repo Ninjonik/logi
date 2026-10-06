@@ -1,26 +1,21 @@
+import {
+    DATA_CAPABILITIES,
+    DATA_GAMES,
+    DATA_PROVIDERS,
+    ERROR_CATEGORIES,
+    OBSERVED_STATES,
+} from "./vocabulary"
 import { warconHistoryMetadataSchema } from "./warcon-history-facts"
 import { z } from "zod"
 
 /** Provider clocks may run slightly ahead of ours without being an invalid response. */
 export const CLOCK_SKEW_TOLERANCE_MS = 5000
-export const providerSchema = z.enum([
-    "hll_crcon",
-    "wardogs_rcon",
-    "wardogs_warcon",
-    "wardogs_public_directory",
-])
-export const dataGameSchema = z.enum(["hell_let_loose", "wardogs"])
-export const capabilitySchema = z.enum(["server_snapshot", "match_history"])
-export const errorCategorySchema = z.enum([
-    "timeout",
-    "network",
-    "rate_limited",
-    "unauthorized",
-    "invalid_response",
-    "unsupported",
-    "configuration",
-    "not_listed",
-])
+// The vocabularies live in `vocabulary.ts`, so readers of validated rows can
+// narrow with plain guards and never load Zod.
+export const providerSchema = z.enum(DATA_PROVIDERS)
+export const dataGameSchema = z.enum(DATA_GAMES)
+export const capabilitySchema = z.enum(DATA_CAPABILITIES)
+export const errorCategorySchema = z.enum(ERROR_CATEGORIES)
 const text = z.string().min(1).max(200)
 const count = z.number().int().nonnegative().safe()
 export const scoreSchema = z.strictObject({
@@ -88,7 +83,7 @@ export const observationSchema = z.strictObject({
     observedAt: z.iso.datetime(),
     providerUpdatedAt: z.iso.datetime().nullable(),
     displayName: text.nullable(),
-    state: z.enum(["online", "offline", "unknown"]),
+    state: z.enum(OBSERVED_STATES),
     map: text.nullable(),
     players: count.nullable(),
     capacity: count.nullable(),
@@ -124,6 +119,7 @@ export const integrationHealthSchema = z.strictObject({
     historyErrorCategory: errorCategorySchema.nullable(),
 })
 export type ServerSnapshot = z.infer<typeof serverSnapshotSchema>
+export type IntegrationHealth = z.infer<typeof integrationHealthSchema>
 export const gameDataSettingsSchema = z.strictObject({
     sources: z.array(
         z.strictObject({

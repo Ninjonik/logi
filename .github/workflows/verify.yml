@@ -43,5 +43,7 @@ jobs:
           git diff --exit-code -- src/lib/api/generated-openapi-schemas.ts convex/_generated/api.d.ts
       - name: Typecheck
         run: npm run typecheck
+      - name: Convex modules bundle for their runtime
+        run: npm run check:convex-bundles
       - name: Unit and adapter regression tests
         run: npm run test

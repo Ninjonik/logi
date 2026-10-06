@@ -1,5 +1,6 @@
 import { leagueSnapshotFixture } from "../../infrastructure/testing/league-fixtures"
-import { preparationChips, preparationChipSchema } from "./preparation"
+import { preparationChipSchema } from "./preparation.schema"
+import { preparationChips } from "./preparation"
 import type { LeagueMatch } from "./contracts"
 import assert from "node:assert/strict"
 import test from "node:test"

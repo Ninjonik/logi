@@ -4,12 +4,9 @@ import {
     finish,
     save,
 } from "../../../convex/discordPublications"
-import {
-    configure,
-    list,
-    resultsPage,
-} from "../../../convex/discordPublicPanels"
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
+import { list, resultsPage } from "../../../convex/discordPublicPanels"
+import { configure } from "../../../convex/discordPublicPanelsAdmin"
 import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
 import test from "node:test"

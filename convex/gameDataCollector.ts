@@ -15,15 +15,14 @@ import {
     readHllSessionPage,
 } from "../src/infrastructure/game-data/hll-sessions"
 import { wardogsDirectoryProvider } from "../src/infrastructure/game-data/wardogs-public-directory"
-import { actionCredential } from "../src/infrastructure/game-data/credential-resolver"
 import { createProviderHttp } from "../src/infrastructure/game-data/provider-http"
 import { wardogsRconProvider } from "../src/infrastructure/game-data/wardogs-rcon"
 import { collectSnapshot } from "../src/application/game-data/collect-snapshot"
 import { collectSessions } from "../src/application/game-data/collect-sessions"
 import { hllCrconProvider } from "../src/infrastructure/game-data/hll-crcon"
-import type { ResolvedSource } from "../src/domain/game-data/credentials"
-import { internalAction, type ActionCtx } from "./_generated/server"
 import { retryDelay } from "../src/domain/game-data/policy"
+import { runCredential } from "./gameDataRunCredential"
+import { internalAction } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 
@@ -32,23 +31,6 @@ const providers: Record<ClaimedConnection["provider"], GameDataProvider> = {
     wardogs_rcon: wardogsRconProvider,
     wardogs_warcon: warconProvider,
     wardogs_public_directory: wardogsDirectoryProvider,
-}
-
-/** The key for one claimed run, decrypted only while its generation is current. */
-export function runCredential(
-    ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
-    source: ResolvedSource,
-    run: { connectionId: string; generation: number }
-) {
-    return actionCredential(source, {
-        loadEnvelope: () =>
-            ctx.runQuery(internal.gameDataCredentials.envelope, run),
-        reportFailure: (category) =>
-            ctx.runMutation(internal.gameDataCredentials.reportFailure, {
-                ...run,
-                category,
-            }),
-    })
 }
 
 export const collectDue = internalAction({

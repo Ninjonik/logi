@@ -1,5 +1,4 @@
 import {
-    parseSeedPlanSettings,
     seedPlanCapacityIssues,
     SEED_LIMITS,
     type SeedEndAction,
@@ -20,6 +19,7 @@ import type {
     SeedOutcome,
 } from "@/domain/discord-seed/history"
 import type { MessageView } from "@/domain/discord-messages/message-view"
+import { parseSeedPlanSettings } from "@/domain/discord-seed/plan.schema"
 import type { SeedMessagesCopy } from "@/domain/discord-seed/seed-copy"
 import { SEED_TEMPLATE_TOKENS } from "@/domain/discord-seed/template"
 import type { SeedMapFacts } from "@/domain/discord-seed/map"

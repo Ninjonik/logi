@@ -1,6 +1,10 @@
 import { LEAGUE_POINTS_RULE, parseScoringRule } from "./scoring"
+import type { LeagueResultRecord } from "./results.schema"
 import type { LeagueSnapshot } from "./contracts"
-import { z } from "zod"
+
+// `leagueResultRecordSchema` lives in `results.schema.ts`; its type is
+// re-exported here for the builders below.
+export type { LeagueResultRecord } from "./results.schema"
 
 /** The League runs on Central European time; seasons and days follow Prague. */
 export const LEAGUE_TIME_ZONE = "Europe/Prague"
@@ -8,39 +12,6 @@ export const LEAGUE_TIME_ZONE = "Europe/Prague"
 export const RECENT_RESULT_DAYS = 7
 /** Podium places shown in recent results. */
 export const PODIUM_PLACES = 3
-
-const text = z.string().min(1).max(500)
-/**
- * One League result as Logi keeps it for the table and recent results. It is
- * derived from a parsed match snapshot and never verified by Logi: the clan's
- * confirmed results live in its own events.
- */
-export const leagueResultRecordSchema = z
-    .object({
-        matchId: text,
-        sourceUrl: z.url(),
-        fixtureNumber: z.number().int().nonnegative().nullable(),
-        type: text.nullable(),
-        /** Kickoff, or when Logi first saw the result if kickoff is unknown. */
-        occurredAt: z.iso.datetime(),
-        season: z.string().regex(/^\d{4}$/),
-        pointsRule: z.array(z.number().int().nonnegative()).min(1).max(20),
-        pointsRuleSource: z.enum(["published", "default"]),
-        confirmed: z.boolean(),
-        placements: z
-            .array(
-                z.object({
-                    place: z.number().int().min(1).max(20),
-                    teamCode: text,
-                    teamName: text.nullable(),
-                    faction: text.nullable(),
-                })
-            )
-            .min(1)
-            .max(20),
-    })
-    .strict()
-export type LeagueResultRecord = z.infer<typeof leagueResultRecordSchema>
 
 /** Season label of a moment: the calendar year in League time ("SEZÓNA 2026"). */
 export function leagueSeason(iso: string, timeZone = LEAGUE_TIME_ZONE) {
@@ -67,7 +38,8 @@ export function resultRecordFromSnapshot(
     const teams = new Map(
         (snapshot.teams ?? []).map((team) => [team.code, team])
     )
-    return leagueResultRecordSchema.parse({
+    // Built from a validated snapshot; the record is typed, not re-parsed.
+    return {
         matchId: snapshot.id,
         sourceUrl: snapshot.sourceUrl,
         fixtureNumber: snapshot.fixtureNumber,
@@ -88,7 +60,7 @@ export function resultRecordFromSnapshot(
                 teamName: teams.get(entry.teamCode)?.name ?? null,
                 faction: teams.get(entry.teamCode)?.faction ?? null,
             })),
-    })
+    }
 }
 
 /** Whether two stored results would show the same thing (no table refresh needed). */

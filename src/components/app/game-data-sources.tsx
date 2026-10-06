@@ -1,7 +1,6 @@
 "use client"
 
 import {
-    gameServerSourceListSchema,
     type ConnectionTestOutcome,
     type DataProvider,
     type GameServerSource,
@@ -29,6 +28,7 @@ import {
     type RefObject,
 } from "react"
 import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
+import { gameServerSourceListSchema } from "@/domain/game-data/credentials.schema"
 import { SegmentedControl } from "@/components/app/settings/segmented-control"
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { Ellipsis, Plus, Server, TriangleAlert, X } from "lucide-react"

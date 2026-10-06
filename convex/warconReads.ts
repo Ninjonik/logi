@@ -1,18 +1,23 @@
 import {
+    readWarconEnvelope,
+    warconComparable,
+    warconEnvelopeWithFreshness,
+    warconFreshnessOf,
+} from "../src/domain/game-data/warcon-payload"
+import {
+    readWarconQueryPayload,
+    warconCacheMs,
+} from "../src/domain/game-data/warcon-query-payload"
+import {
     authorizeDashboardAdmin,
     dashboardActor,
     type DashboardActor,
 } from "./dashboardActor"
 import {
-    warconQuerySchema,
-    warconCacheMs,
-} from "../src/domain/game-data/warcon-query"
-import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
 import { panelReadsConnection } from "../src/domain/discord-publications/settings"
-import { warconEnvelopeSchema } from "../src/domain/game-data/warcon-contracts"
 import type { WarconPrepared } from "../src/application/game-data/read-warcon"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { makeFunctionReference } from "convex/server"
@@ -45,7 +50,10 @@ async function authorize(ctx: MutationCtx, args: Access) {
     )
         throw new Error("Unauthorized.")
     if (args.queryJson.length > 1500) throw new Error("Invalid Warcon query.")
-    const input = warconQuerySchema.parse(JSON.parse(args.queryJson))
+    // `warconData:read` parsed and normalised the query with
+    // `warconQuerySchema` before calling these internal mutations.
+    const input = readWarconQueryPayload(args.queryJson)
+    if (!input) throw new Error("Invalid Warcon query.")
     if (args.panelId !== undefined) {
         if (
             args.keyHash !== undefined ||
@@ -114,10 +122,14 @@ export const reserve = internalMutation({
             existing.cacheUntil > now &&
             existing.envelopeJson
         ) {
-            const parsed = warconEnvelopeSchema.safeParse(
-                JSON.parse(existing.envelopeJson)
-            )
-            if (parsed.success) return { kind: "cached", envelope: parsed.data }
+            // Stored by `finish` after the action validated it; served with
+            // the row's latest times.
+            const stored = readWarconEnvelope(existing.envelopeJson)
+            if (stored)
+                return {
+                    kind: "cached",
+                    envelope: warconEnvelopeWithFreshness(stored, existing),
+                }
         }
         if (
             existing?.generation === row.generation &&
@@ -218,9 +230,10 @@ export const finish = internalMutation({
                 new TextEncoder().encode(args.envelopeJson).length > 512 * 1024
             )
                 throw new Error("Invalid Warcon response.")
-            const value = warconEnvelopeSchema.parse(
-                JSON.parse(args.envelopeJson)
-            )
+            // The action built the envelope with `warconEnvelopeSchema`
+            // before calling this internal mutation; the guard checks the shape.
+            const value = readWarconEnvelope(args.envelopeJson)
+            if (!value) throw new Error("Invalid Warcon response.")
             const cacheUntil = Date.parse(value.cacheUntil)
             if (
                 value.connectionId !== args.connectionId ||
@@ -229,10 +242,20 @@ export const finish = internalMutation({
                 cacheUntil > now + warconCacheMs(access.input) + 5000
             )
                 throw new Error("Invalid Warcon response.")
+            // An idle server reads the same every time: the large payload is
+            // rewritten only when the provider data changed; the times go to
+            // their own small fields (ARCHITECTURE.md, "Convex hot paths").
+            const stored = cache.envelopeJson
+                ? readWarconEnvelope(cache.envelopeJson)
+                : null
+            const unchanged =
+                stored !== null &&
+                warconComparable(stored) === warconComparable(value)
             await ctx.db.patch(cache._id, {
                 leaseUntil: 0,
                 cacheUntil,
-                envelopeJson: JSON.stringify(value),
+                ...(unchanged ? {} : { envelopeJson: JSON.stringify(value) }),
+                ...warconFreshnessOf(value),
                 retainUntil: now + 3_600_000,
             })
         } else {

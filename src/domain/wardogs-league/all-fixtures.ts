@@ -1,4 +1,5 @@
-import { CACHE_MS, type LeagueMatch } from "./contracts"
+import type { LeagueMatch } from "./contracts"
+import { CACHE_MS } from "./league-constants"
 
 /**
  * The whole League, not only the clan's matches (P6-14, P6-B01): every match

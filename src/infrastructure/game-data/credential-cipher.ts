@@ -2,8 +2,8 @@ import {
     credentialEnvelopeSchema,
     keyIdSchema,
     providerKeySchema,
-    type CredentialEnvelope,
-} from "../../domain/game-data/credentials"
+} from "../../domain/game-data/credentials.schema"
+import { type CredentialEnvelope } from "../../domain/game-data/credentials"
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto"
 import { z } from "zod"
 

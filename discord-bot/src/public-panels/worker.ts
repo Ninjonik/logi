@@ -328,7 +328,7 @@ export function startPublicPanelWorker(
             await options.refreshCalendar(guild.id)
         },
         purge: (panelId) =>
-            mutation<boolean>("discordPanelBot:purge", {
+            mutation<boolean>("discordPanelBotWrites:purge", {
                 guildId: guild.id,
                 panelId,
             }),
@@ -372,7 +372,7 @@ export function startPublicPanelWorker(
         attempt: PanelAttempt,
         flags: { passwordNotified?: boolean; passwordReset?: boolean }
     ) =>
-        mutation("discordPanelBot:report", {
+        mutation("discordPanelBotWrites:report", {
             guildId,
             panelId,
             attempt,
@@ -485,7 +485,7 @@ export function startPublicPanelWorker(
             }
             if (Date.now() - heartbeatAt >= BOT_HEARTBEAT_INTERVAL_MS) {
                 heartbeatAt = Date.now()
-                await mutation("discordPanelBot:heartbeat", {
+                await mutation("discordPanelBotWrites:heartbeat", {
                     heartbeat: {
                         version: env.botVersion,
                         protocol: PANEL_PROTOCOL,

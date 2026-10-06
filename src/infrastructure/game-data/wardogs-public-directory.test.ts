@@ -1,5 +1,5 @@
 import { wardogsDirectoryProvider } from "./wardogs-public-directory"
-import { parseSources } from "../../domain/game-data/policy"
+import { parseSources } from "../../domain/game-data/policy.schema"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"

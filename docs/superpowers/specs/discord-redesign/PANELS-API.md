@@ -226,7 +226,7 @@ else the version in the repository's `package.json` the bot ships in) and
 bot's version and `MINIMUM_BOT_VERSION` (1.1.0), the first release with the
 required protocol; raise both together with the package version.
 
-Application emoji: `discordPanelGraphics:reportEmoji` also takes `installed`
+Application emoji: `discordPanelGraphicsWrites:reportEmoji` also takes `installed`
 (`key`, public emoji `id`, `name`) so previews can draw the signs from Discord's
 emoji CDN; older bots omit it.
 
@@ -291,7 +291,7 @@ is ever part of the answer.
 The worker (`discord-bot/src/public-panels/worker.ts`) ticks every 15 s, isolates
 each workspace, decides per panel with `panelWork`, runs one pass with
 `runPanel` (`panel-runner.ts`, all Discord/Convex/image calls are ports) and
-reports every pass to `discordPanelBot:report`. It never skips a post because a
+reports every pass to `discordPanelBotWrites:report`. It never skips a post because a
 live read failed; it then shows the collected data with the warning
 `live_data_unavailable`.
 
@@ -300,10 +300,10 @@ Convex functions for the bot (internal secret):
 | Function                                      | Purpose                                                                                    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `discordPublicPanels:forGuild`                | Every panel with its servers (snapshot, seed plan, join details, `hasPassword`) and status |
-| `discordPanelBot:heartbeat`                   | Version, protocol, servers visited                                                         |
-| `discordPanelBot:report`                      | One pass: `panelAttemptSchema`; `passwordNotified` / `passwordReset`                       |
-| `discordPanelBot:purge`                       | Deletes a removed panel once its messages are gone                                         |
-| `discordPanelBot:act`                         | An action from Discord: `{ guildId, actorId, action, panelId? \| connectionId? }`          |
+| `discordPanelBotWrites:heartbeat`             | Version, protocol, servers visited                                                         |
+| `discordPanelBotWrites:report`                | One pass: `panelAttemptSchema`; `passwordNotified` / `passwordReset`                       |
+| `discordPanelBotWrites:purge`                 | Deletes a removed panel once its messages are gone                                         |
+| `discordPanelBotWrites:act`                   | An action from Discord: `{ guildId, actorId, action, panelId? \| connectionId? }`          |
 | `discordPanelBot:calendarPanel`               | The calendar panel row and its handled request                                             |
 | `discordPanelBot:clanPlayers`                 | Which live Steam IDs belong to members (verified links)                                    |
 | `discordPanelBot:runningMatch`                | The Logi match running on a server now                                                     |
@@ -348,7 +348,7 @@ clan-only panels. All are registered through the interaction feature
   (`src/components/app/discord-panels/`). "Ověřit" is `POST /channel-check`;
   the password field writes `PUT /servers/{connectionId}`.
 - **W4 (seed control message)**: "Obnovit panel" / "Pozastavit panel" /
-  "Pokračovat" call `discordPanelBot:act` with `connectionId` after the bot's own
+  "Pokračovat" call `discordPanelBotWrites:act` with `connectionId` after the bot's own
   fresh admin-role check. The live panel reads running seeds from
   `discordSeedBot:panelStates` and draws "Seedujeme" with the progress bar.
 - **W5 (WD League)**: `PanelRunPorts.league(panel, pass)` is implemented in

@@ -1814,6 +1814,14 @@ export default defineSchema({
         nextAt: v.number(),
         retainUntil: v.number(),
         dataJson: v.optional(v.string()),
+        /**
+         * The latest read's times, kept out of the payload: `finish` rewrites
+         * `dataJson` only when the provider data changed and readers merge
+         * these in (absent on rows from before them).
+         */
+        fetchedAt: v.optional(v.string()),
+        statusAt: v.optional(v.union(v.string(), v.null())),
+        playersAt: v.optional(v.union(v.string(), v.null())),
     }).index("connectionId", ["connectionId"]),
     warconReadCache: defineTable({
         connectionId: v.id("gameDataConnections"),
@@ -1825,6 +1833,16 @@ export default defineSchema({
         retryUntil: v.optional(v.number()),
         retainUntil: v.number(),
         envelopeJson: v.optional(v.string()),
+        /**
+         * The latest read's times, kept out of the payload: `finish` rewrites
+         * `envelopeJson` only when the provider data changed and readers merge
+         * these in (absent on rows from before them; the live view's own
+         * `statusAt`, `playersAt` and `observedAt` only for that view).
+         */
+        fetchedAt: v.optional(v.string()),
+        statusAt: v.optional(v.union(v.string(), v.null())),
+        playersAt: v.optional(v.union(v.string(), v.null())),
+        observedAt: v.optional(v.union(v.string(), v.null())),
     })
         .index("connection_query", ["connectionId", "queryJson"])
         .index("connectionId", ["connectionId"]),

@@ -7,10 +7,10 @@ import {
 } from "../src/domain/api/seed-settings-slice"
 import {
     defaultSeedPlanSettings,
-    parseSeedPlanSettings,
     seedPlanCapacityIssues,
     type SeedPlanSettings,
 } from "../src/domain/discord-seed/plan"
+import { parseSeedPlanSettings } from "../src/domain/discord-seed/plan.schema"
 import { seedPorts, seedReadPorts, seedServers } from "./discordSeedStore"
 import { saveSeedPlan } from "../src/application/discord-seed/save-plan"
 import type { MutationCtx, QueryCtx } from "./_generated/server"

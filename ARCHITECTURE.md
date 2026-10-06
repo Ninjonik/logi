@@ -245,6 +245,30 @@ character stepped up)` on the same index (`publicationKeyRange`).
   importer. The website's per-request reads live in `publicApiReads.ts`;
   the idempotent writes, their use-cases and the stratmap catalogue stay in
   `publicApi.ts`.
+- A stored document is not validated again on read. The schema validates
+  every structured field on write (`convex/schema.ts` has validation on),
+  and a JSON payload is written only by Logi's own `finish` after the
+  action validated it, so a read uses a typed access to the row
+  (`projectSnapshot` reads `gameDataConnections.observation` as stored) or
+  a hand-written guard for a JSON payload (`hll-live-payload.ts`,
+  `warcon-payload.ts`, `snapshot-payload.ts`, `operator-sources.ts`) and
+  never a Zod `parse`. The Zod schema stays in the `*.schema.ts` sibling for
+  the write side and the tests. A module the bot calls on a timer
+  (`discordPublicPanels:forGuild`, `discordPanelBot`, `discordSeedBot`,
+  `hllLiveReads`, `warconReads`, `leagueDiscoveryPanels`,
+  `playerReports:pending`, `gameData`, `gameDataHistory`) holds no
+  validating mutation; those live in their own modules
+  (`discordPanelBotWrites.ts`, `discordPanelGraphicsWrites.ts`,
+  `discordPublicPanelsAdmin.ts`, `playerReportDrafts.ts`) and the bot calls
+  them by their new paths.
+- A cache that holds a large payload writes it only when it changed. The
+  HLL and Warcon live caches compare the new read, minus its times, with
+  the stored one (`hllLiveComparable`, `warconComparable`) and on a match
+  patch only the lease and the small freshness fields (`fetchedAt`,
+  `statusAt`, `playersAt`, `observedAt`); every reader merges those fields
+  into the served payload, so the response carries the latest read's times
+  while an idle server stores one version of its data instead of one per
+  refresh.
 
 Tests of these functions assert which index a read uses (see
 `src/infrastructure/convex/event-recurrence.test.ts` and

@@ -1,14 +1,14 @@
 import {
-    leagueResultRecordSchema,
+    completedLeagueSnapshot,
+    leagueSnapshotFixture,
+} from "../../infrastructure/testing/league-fixtures"
+import {
     leagueSeason,
     recentResults,
     resultRecordFromSnapshot,
     sameResult,
 } from "./results"
-import {
-    completedLeagueSnapshot,
-    leagueSnapshotFixture,
-} from "../../infrastructure/testing/league-fixtures"
+import { leagueResultRecordSchema } from "./results.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 

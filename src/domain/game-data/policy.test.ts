@@ -1,11 +1,11 @@
 import {
-    parseSources,
     projectSnapshot,
     projectLastState,
     acceptsRun,
     retryDelay,
     LAST_STATE_MAX_AGE_MS,
 } from "./policy"
+import { parseSources } from "./policy.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 

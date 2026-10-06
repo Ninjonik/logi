@@ -1,4 +1,10 @@
 import {
+    hllLiveComparable,
+    hllLiveFreshness,
+    hllLiveWithFreshness,
+    readHllLivePayload,
+} from "../src/domain/game-data/hll-live-payload"
+import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
@@ -6,7 +12,6 @@ import { panelReadsConnection } from "../src/domain/discord-publications/setting
 import type { HllPrepared } from "../src/application/game-data/read-hll-live"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { internalMutation, type MutationCtx } from "./_generated/server"
-import { hllLiveSchema } from "../src/domain/game-data/hll-live"
 import type { DashboardActor } from "./dashboardActor"
 import { makeFunctionReference } from "convex/server"
 import { connectionSource } from "./gameDataCatalog"
@@ -96,10 +101,15 @@ export const reserve = internalMutation({
             .query("hllLiveCache")
             .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
             .unique()
-        const previous =
+        // The payload was validated by the read action before `finish` stored
+        // it; it is read back through the guard with the row's latest times.
+        const stored =
             cache?.generation === row.generation && cache.dataJson
-                ? hllLiveSchema.parse(JSON.parse(cache.dataJson))
-                : undefined
+                ? readHllLivePayload(cache.dataJson)
+                : null
+        const previous = stored
+            ? hllLiveWithFreshness(stored, cache!)
+            : undefined
         const mapChanged = Boolean(
             previous?.status &&
             row.observation &&
@@ -187,7 +197,10 @@ export const finish = internalMutation({
             return false
         if (new TextEncoder().encode(args.dataJson).length > 256 * 1024)
             throw new Error("Invalid HLL response.")
-        const data = hllLiveSchema.parse(JSON.parse(args.dataJson))
+        // The read action parsed the provider's reply with `hllLiveSchema`
+        // before calling this internal mutation; the guard checks the shape.
+        const data = readHllLivePayload(args.dataJson)
+        if (!data) throw new Error("Invalid HLL response.")
         if (
             Date.parse(data.fetchedAt) > now + 5000 ||
             now - Date.parse(data.fetchedAt) > 35_000 ||
@@ -196,8 +209,18 @@ export const finish = internalMutation({
             )
         )
             throw new Error("Invalid HLL observation time.")
+        // An idle server reads the same every time: the large payload is
+        // rewritten only when the provider data changed; the times go to
+        // their own small fields (ARCHITECTURE.md, "Convex hot paths").
+        const stored = cache.dataJson
+            ? readHllLivePayload(cache.dataJson)
+            : null
+        const unchanged =
+            stored !== null &&
+            hllLiveComparable(stored) === hllLiveComparable(data)
         await ctx.db.patch(cache._id, {
-            dataJson: JSON.stringify(data),
+            ...(unchanged ? {} : { dataJson: JSON.stringify(data) }),
+            ...hllLiveFreshness(data),
             leaseUntil: 0,
             nextAt: now + data.refreshAfterSeconds * 1000,
             retainUntil: now + 3_600_000,

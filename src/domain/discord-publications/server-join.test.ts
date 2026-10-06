@@ -5,18 +5,20 @@ import {
     isServerAddress,
     JOIN_PAGE_LIVE_MAX_AGE_MS,
     joinPagePlayers,
-    joinCodeSchema,
     passwordShown,
     passwordWithheldNotice,
     serverJoinSlugBase,
     serverJoinUrl,
     serverPasswordAad,
-    serverPasswordFromPlaintext,
-    serverPasswordPlaintext,
-    serverPasswordSchema,
     steamConnectUrl,
     uniqueServerJoinSlug,
 } from "./server-join"
+import {
+    joinCodeSchema,
+    serverPasswordFromPlaintext,
+    serverPasswordPlaintext,
+    serverPasswordSchema,
+} from "./server-join.schema"
 
 test("only host:port addresses become steam://connect links", () => {
     for (const address of [

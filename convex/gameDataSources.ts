@@ -1,19 +1,21 @@
 import {
-    credentialEnvelopeSchema,
     credentialRequirement,
     displayNameKey,
-    displayNameSchema,
-    draftSource,
     GAME_SERVER_SOURCE_LIMIT,
-    generatedSourceRefSchema,
-    keyringIndex,
     sameSourceIdentity,
-    sourceDraftSchema,
     sourceFingerprint,
     type ConnectionTestOutcome,
     type GameServerSource,
     type SourceCommandError,
 } from "../src/domain/game-data/credentials"
+import {
+    credentialEnvelopeSchema,
+    displayNameSchema,
+    draftSource,
+    generatedSourceRefSchema,
+    keyringIndex,
+    sourceDraftSchema,
+} from "../src/domain/game-data/credentials.schema"
 import {
     connectionFor,
     operatorSources,

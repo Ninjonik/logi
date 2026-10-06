@@ -38,7 +38,7 @@ const handlers = panelGraphicsHandlers<Access>({
         panelGraphicsUpdateResultSchema.parse(
             await fetchMutation(
                 makeFunctionReference<"mutation">(
-                    "discordPanelGraphics:update"
+                    "discordPanelGraphicsWrites:update"
                 ),
                 { ...access, patch }
             )

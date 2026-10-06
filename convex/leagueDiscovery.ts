@@ -11,12 +11,12 @@ import {
     type LeagueLinkReplyView,
 } from "../src/domain/wardogs-league/link-reply"
 import {
-    trackingSettingsSchema,
     DEFAULT_TRACKING_SETTINGS,
     MAX_TRACKED,
 } from "../src/domain/wardogs-league/discovery"
 import { storedLeagueSnapshot } from "../src/infrastructure/convex/league-fixture-store"
 import { acceptMessageVersion } from "../src/application/wardogs-league/intake-policy"
+import { trackingSettingsSchema } from "../src/domain/wardogs-league/discovery.schema"
 import { LEAGUE_CARD_KEY_PREFIX } from "../src/domain/discord-publications/keys"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"

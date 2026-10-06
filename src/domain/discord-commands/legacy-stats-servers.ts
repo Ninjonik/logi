@@ -1,4 +1,4 @@
-import { providerKeySchema } from "../game-data/credentials"
+import { providerKeySchema } from "../game-data/credentials.schema"
 
 /** An old stats server connection: a CRCON address and its API key. */
 export type LegacyStatsServer = { url: string; token: string }

@@ -3,14 +3,12 @@ import { randomBytes } from "node:crypto"
 import assert from "node:assert/strict"
 
 import {
-    serverPasswordAad,
-    serverPasswordPlaintext,
-} from "../../domain/discord-publications/server-join"
-import {
     openSecret,
     parseKeyring,
     sealSecret,
 } from "../game-data/credential-cipher"
+import { serverPasswordPlaintext } from "../../domain/discord-publications/server-join.schema"
+import { serverPasswordAad } from "../../domain/discord-publications/server-join"
 import * as secrets from "../../../convex/discordPanelSecrets"
 
 const secret = "synthetic-panel-secret"
