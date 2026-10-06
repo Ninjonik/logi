@@ -178,6 +178,20 @@ function that such a path calls:
   `.take()` where the number of rows the pass can act on is limited anyway.
   A string prefix becomes a range of `[prefix, prefix with its last
 character stepped up)` on the same index (`publicationKeyRange`).
+- A bot subscription (`convex.watchQuery`) re-runs on every write to every
+  table it reads, and the bot takes the whole result each time. It
+  therefore reads only the rows the bot acts on, through an index:
+  `discordSync:listEventSyncIndex` reads the events that are not
+  historical (every status but `concluded`, plus the concluded ones that
+  ended after a cutoff) through `status_gameEnd` and their rosters through
+  `eventId`, never the archive. Anything the bot needs only now and then
+  stays out of the subscription: a sign-up reminder's recipients are read
+  once, when the reminder is due (`listGuildAssignments`, through
+  `serverId`), not cached from a subscription over `userAssignments`.
+- A cron that reconciles derived rows walks what changed, not everything:
+  `peopleSummaries:reconcileResultLinks` keeps an `updatedAt` watermark of
+  its last complete run and reads the events updated since through the
+  `updatedAt` index, with one full walk a day for rows without the field.
 - Never rewrite a large document just to refresh a lease. A claim patches
   the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
   `retainUntil`); the payload is written once, when the read finished, and
@@ -208,9 +222,11 @@ character stepped up)` on the same index (`publicationKeyRange`).
 --external:convex --metafile=out.json`.
 
 Tests of these functions assert which index a read uses (see
-`src/infrastructure/convex/event-recurrence.test.ts`) and which fields a
-claim patches (`hll-live-cache.test.ts`), so a later change cannot quietly
-bring a whole-table read back.
+`src/infrastructure/convex/event-recurrence.test.ts` and
+`discord-sync-reads.test.ts`, with the `spyReads` helper in
+`testing/database.ts`) and which fields a claim patches
+(`hll-live-cache.test.ts`), so a later change cannot quietly bring a
+whole-table read back.
 
 ### `discord-bot/`
 
