@@ -5,19 +5,21 @@ import {
     BOT_OFFLINE_AFTER_MS,
     MINIMUM_BOT_VERSION,
     REQUIRED_PANEL_PROTOCOL,
-    botHeartbeatSchema,
     botHeartbeatState,
     isRequestPending,
     nextPanelStatus,
     panelActionPatch,
-    panelAttemptSchema,
     panelDeliveryState,
-    panelErrorSchema,
     panelMessageState,
     panelWork,
     type PanelAttempt,
     type PanelDeliveryInput,
 } from "./panel-delivery"
+import {
+    botHeartbeatSchema,
+    panelAttemptSchema,
+    panelErrorSchema,
+} from "./panel-delivery.schema"
 
 const attempt = (overrides: Partial<PanelAttempt> = {}): PanelAttempt => ({
     attemptAt: 1_000,

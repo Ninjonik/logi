@@ -1,7 +1,7 @@
 import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
-import { serverJoinSlugSchema } from "@/domain/discord-publications/server-join"
+import { serverJoinSlugSchema } from "@/domain/discord-publications/server-join.schema"
 import { getInternalAuthSecret } from "@/lib/env"
 
 /**

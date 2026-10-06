@@ -7,10 +7,8 @@ import {
     openSecret,
     parseKeyring,
 } from "../src/infrastructure/game-data/credential-cipher"
-import {
-    serverPasswordAad,
-    serverPasswordFromPlaintext,
-} from "../src/domain/discord-publications/server-join"
+import { serverPasswordFromPlaintext } from "../src/domain/discord-publications/server-join.schema"
+import { serverPasswordAad } from "../src/domain/discord-publications/server-join"
 import type { CredentialEnvelope } from "../src/domain/game-data/credentials"
 import { action } from "./_generated/server"
 

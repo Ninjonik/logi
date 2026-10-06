@@ -1,19 +1,16 @@
-import { z } from "zod"
-
 /**
  * Joining a server from Discord (P4-04, P4-44..46, P4-B10) and the server
  * password of a private panel (P4-29..31, P4-B06). Discord buttons allow only
  * http(s), so "Připojit se" opens `/join/<slug>`, which opens
  * `steam://connect/<ip:port>` and shows a manual fallback. The join page and
  * public panels never show a password.
+ *
+ * The Zod schemas (`serverAddressSchema`, `joinCodeSchema`,
+ * `serverJoinSlugSchema`, `serverPasswordSchema`) and the password sealing
+ * helpers live in `server-join.schema.ts`, so the bot's panel reads stay
+ * free of Zod.
  */
 
-/** "203.0.113.24:7777", "[2001:db8::1]:7777" or "hll.example.net:7777". */
-export const serverAddressSchema = z
-    .string()
-    .trim()
-    .max(100)
-    .refine(isServerAddress, "Use host:port, e.g. 203.0.113.24:7777.")
 export function isServerAddress(value: string): boolean {
     const match = /^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+):(\d{1,5})$/.exec(value)
     if (!match) return false
@@ -27,12 +24,6 @@ export function isServerAddress(value: string): boolean {
         host
     )
 }
-/** The Wardogs join code (P4-35, P2-39). */
-export const joinCodeSchema = z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z0-9-]{1,24}$/, "Use letters, digits and dashes.")
-
 /** The Steam link the join page opens; null for an invalid address. */
 export function steamConnectUrl(address: string): string | null {
     return isServerAddress(address) ? `steam://connect/${address}` : null
@@ -51,9 +42,10 @@ export function serverJoinSlugBase(name: string): string {
         .replace(/-+$/g, "")
     return slug || "server"
 }
-export const serverJoinSlugSchema = z
-    .string()
-    .regex(/^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/)
+export const SERVER_JOIN_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
+export function isServerJoinSlug(value: string): boolean {
+    return SERVER_JOIN_SLUG_PATTERN.test(value)
+}
 /** A free slug: the base, then "-2", "-3", … (links are global, logi.app/join/vlci-1). */
 export function uniqueServerJoinSlug(
     name: string,
@@ -68,7 +60,7 @@ export function uniqueServerJoinSlug(
     throw new Error("No free join link.")
 }
 export function serverJoinUrl(siteUrl: string, slug: string): string | null {
-    if (!serverJoinSlugSchema.safeParse(slug).success) return null
+    if (!isServerJoinSlug(slug)) return null
     try {
         const origin = new URL(siteUrl)
         if (origin.protocol !== "https:" && origin.protocol !== "http:")
@@ -81,15 +73,8 @@ export function serverJoinUrl(siteUrl: string, slug: string): string | null {
 
 // ---- Password ---------------------------------------------------------------
 
-/** "Heslo serveru": what HLL accepts; no control characters. */
-export const serverPasswordSchema = z
-    .string()
-    .min(1)
-    .max(64)
-    .refine(
-        (value) => !/[\u0000-\u001f\u007f]/.test(value),
-        "No control characters."
-    )
+/** "Heslo serveru": what HLL accepts (`serverPasswordSchema` in `server-join.schema.ts`). */
+export const SERVER_PASSWORD_MAX_LENGTH = 64
 /**
  * Additional authenticated data of an encrypted password: a ciphertext
  * copied to another workspace or server cannot be opened.
@@ -104,20 +89,6 @@ export function serverPasswordAad(input: {
         input.guildId,
         input.connectionId,
     ])
-}
-/** The sealed text; a JSON wrapper keeps even a one-letter password above the cipher's minimum. */
-export function serverPasswordPlaintext(password: string) {
-    return JSON.stringify({
-        v: 1,
-        password: serverPasswordSchema.parse(password),
-    })
-}
-export function serverPasswordFromPlaintext(plaintext: string): string {
-    const parsed = z
-        .strictObject({ v: z.literal(1), password: serverPasswordSchema })
-        .safeParse(JSON.parse(plaintext))
-    if (!parsed.success) throw new Error("Invalid server password.")
-    return parsed.data.password
 }
 
 /**

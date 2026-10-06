@@ -97,7 +97,7 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
             ? convex
                   .mutation(
                       makeFunctionReference<"mutation">(
-                          "discordPanelBot:report"
+                          "discordPanelBotWrites:report"
                       ),
                       {
                           secret: env.internalSecret,

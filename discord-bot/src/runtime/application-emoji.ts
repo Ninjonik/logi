@@ -122,7 +122,7 @@ export function applicationEmoji(client: Client) {
             ])
             await convex.mutation(
                 makeFunctionReference<"mutation">(
-                    "discordPanelGraphics:reportEmoji"
+                    "discordPanelGraphicsWrites:reportEmoji"
                 ),
                 { secret: env.internalSecret, report }
             )

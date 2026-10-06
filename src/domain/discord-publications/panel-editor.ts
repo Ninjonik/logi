@@ -15,8 +15,9 @@ import {
     DEFAULT_LEAGUE_PANEL_OPTIONS,
     type LeaguePanelOptions,
 } from "../wardogs-league/panels"
-import { isServerAddress, serverPasswordSchema } from "./server-join"
+import { serverPasswordSchema } from "./server-join.schema"
 import type { PanelStyle } from "./panel-graphics"
+import { isServerAddress } from "./server-join"
 
 /**
  * The panel editor of "Panely v Discordu" (board P2): the editable draft,

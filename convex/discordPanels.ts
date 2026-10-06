@@ -22,12 +22,6 @@ import {
     storedPublication,
 } from "./discordPanelStore"
 import {
-    joinCodeSchema,
-    serverAddressSchema,
-    serverJoinUrl,
-    uniqueServerJoinSlug,
-} from "../src/domain/discord-publications/server-join"
-import {
     buildPanelOverview,
     type PanelOverview,
     type StoredControlMessage,
@@ -41,6 +35,10 @@ import {
     requestPanelAction,
     type PanelActionResult,
 } from "../src/application/discord-publications/panel-actions"
+import {
+    joinCodeSchema,
+    serverAddressSchema,
+} from "../src/domain/discord-publications/server-join.schema"
 import {
     testPanelFetch,
     type PanelTestResult,
@@ -64,6 +62,10 @@ import {
     savePanel,
     type PanelSaveResult,
 } from "../src/application/discord-publications/save-panel"
+import {
+    serverJoinUrl,
+    uniqueServerJoinSlug,
+} from "../src/domain/discord-publications/server-join"
 import {
     leagueOverviewSchema,
     type LeagueOverview,

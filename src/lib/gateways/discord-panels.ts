@@ -12,16 +12,14 @@ import {
     sealSecret,
 } from "@/infrastructure/game-data/credential-cipher"
 import {
-    serverPasswordAad,
-    serverPasswordPlaintext,
-} from "@/domain/discord-publications/server-join"
-import {
     inspectPanelChannel,
     type PanelChannelCheck,
 } from "@/lib/gateways/discord-public-channel"
+import { serverPasswordPlaintext } from "@/domain/discord-publications/server-join.schema"
 import type { PanelActionResult } from "@/application/discord-publications/panel-actions"
 import type { PanelSaveResult } from "@/application/discord-publications/save-panel"
 import type { PanelAction } from "@/domain/discord-publications/panel-delivery"
+import { serverPasswordAad } from "@/domain/discord-publications/server-join"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import type { CredentialEnvelope } from "@/domain/game-data/credentials"
 import { getCredentialKeyring, getInternalAuthSecret } from "@/lib/env"

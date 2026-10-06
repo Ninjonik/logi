@@ -2,6 +2,7 @@ import test, { type TestContext } from "node:test"
 import assert from "node:assert/strict"
 
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
+import * as panelBotWrites from "../../../convex/discordPanelBotWrites"
 import * as publicPanels from "../../../convex/discordPublicPanels"
 import { sourceSchema } from "../../domain/game-data/contracts"
 import * as panelBot from "../../../convex/discordPanelBot"
@@ -146,7 +147,7 @@ test("save, Odeslat do kanálu, the bot's pass and the overview work end to end"
 
     // The bot checks in, takes the request and confirms the message.
     advance(5_000)
-    await invoke(panelBot.heartbeat, ctx, {
+    await invoke(panelBotWrites.heartbeat, ctx, {
         secret,
         heartbeat: { version: "1.0.268", protocol: 2, startedAt: now },
         guildIds: [guildId],
@@ -163,7 +164,7 @@ test("save, Odeslat do kanálu, the bot's pass and the overview work end to end"
         leaseUntil: 0,
         error: null,
     })
-    await invoke(panelBot.report, ctx, {
+    await invoke(panelBotWrites.report, ctx, {
         secret,
         guildId,
         panelId: saved.id,
@@ -222,7 +223,7 @@ test("pause is a real flag kept across saves; the control message resumes by ser
     assert.equal(row.pausedBy, actorFixture.subject)
     assert.equal(row.title, "Vlci #1")
 
-    const resumed = await invoke(panelBot.act, ctx, {
+    const resumed = await invoke(panelBotWrites.act, ctx, {
         secret,
         guildId,
         actorId: "100000000000000002",
@@ -232,7 +233,7 @@ test("pause is a real flag kept across saves; the control message resumes by ser
     assert.equal(resumed.status, "accepted")
     assert.equal(row.paused, false)
     await assert.rejects(
-        invoke(panelBot.act, ctx, {
+        invoke(panelBotWrites.act, ctx, {
             secret,
             guildId,
             actorId: "not-a-user",
@@ -463,21 +464,21 @@ test("the bot's report is validated, scoped and remembers the password notice on
         messages: 0,
     }
     await assert.rejects(
-        invoke(panelBot.report, ctx, {
+        invoke(panelBotWrites.report, ctx, {
             secret,
             guildId,
             panelId: saved.id,
             attempt: { ...attempt, detail: "DiscordAPIError: token" },
         })
     )
-    await invoke(panelBot.report, ctx, {
+    await invoke(panelBotWrites.report, ctx, {
         secret,
         guildId: "200000000000000099",
         panelId: saved.id,
         attempt,
     })
     assert.ok(!ctx.db.tables.discordPanelStatus?.length)
-    await invoke(panelBot.report, ctx, {
+    await invoke(panelBotWrites.report, ctx, {
         secret,
         guildId,
         panelId: saved.id,
@@ -486,7 +487,7 @@ test("the bot's report is validated, scoped and remembers the password notice on
     })
     const status = ctx.db.tables.discordPanelStatus![0]!
     assert.equal(status.passwordNotifiedAt, now)
-    await invoke(panelBot.report, ctx, {
+    await invoke(panelBotWrites.report, ctx, {
         secret,
         guildId,
         panelId: saved.id,
@@ -511,7 +512,7 @@ test("a removed panel is purged only after its messages are gone", async (t) => 
         expectedRevision: null,
     })
     assert.equal(
-        await invoke(panelBot.purge, ctx, {
+        await invoke(panelBotWrites.purge, ctx, {
             secret,
             guildId,
             panelId: saved.id,
@@ -536,7 +537,7 @@ test("a removed panel is purged only after its messages are gone", async (t) => 
         error: null,
     })
     assert.equal(
-        await invoke(panelBot.purge, ctx, {
+        await invoke(panelBotWrites.purge, ctx, {
             secret,
             guildId,
             panelId: saved.id,
@@ -545,7 +546,7 @@ test("a removed panel is purged only after its messages are gone", async (t) => 
     )
     ctx.db.tables.discordPublications![0]!.messageId = null
     assert.equal(
-        await invoke(panelBot.purge, ctx, {
+        await invoke(panelBotWrites.purge, ctx, {
             secret,
             guildId,
             panelId: saved.id,

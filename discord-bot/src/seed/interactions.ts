@@ -355,7 +355,7 @@ export const defaultSeedButtonPorts: SeedButtonPorts = {
         query<SeedDeliveryState>("discordSeedBot:deliveryState", { guildId }),
     start: (input) => mutation("discordSeedBot:startFromDiscord", input),
     stop: (input) => mutation("discordSeedBot:stopFromDiscord", input),
-    panel: (input) => mutation("discordPanelBot:act", input),
+    panel: (input) => mutation("discordPanelBotWrites:act", input),
     refresh: refreshSeedGuild,
     planUrl: async (guildId, language, connectionId) => {
         const workspace = await workspaceOf(guildId)

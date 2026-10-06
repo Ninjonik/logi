@@ -1,3 +1,4 @@
+import * as graphicsWrites from "../../../convex/discordPanelGraphicsWrites"
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
 import * as graphics from "../../../convex/discordPanelGraphics"
 import { invoke, testContext } from "./testing/database"
@@ -78,7 +79,7 @@ const update = (
     ctx: ReturnType<typeof testContext>,
     patch: unknown,
     extra = {}
-) => invoke(graphics.update, ctx, { ...access, ...extra, patch })
+) => invoke(graphicsWrites.update, ctx, { ...access, ...extra, patch })
 
 test("only a workspace admin with a live dashboard session reads or writes graphics", async () => {
     const ctx = setup()
@@ -243,17 +244,17 @@ test("the bot reads the projection and reports emoji only with the internal secr
         checkedAt: 1000,
     }
     await assert.rejects(
-        invoke(graphics.reportEmoji, ctx, { secret: "wrong", report }),
+        invoke(graphicsWrites.reportEmoji, ctx, { secret: "wrong", report }),
         /Unauthorized/
     )
     await assert.rejects(
-        invoke(graphics.reportEmoji, ctx, {
+        invoke(graphicsWrites.reportEmoji, ctx, {
             secret,
             report: { ...report, applicationId: "x" },
         })
     )
-    await invoke(graphics.reportEmoji, ctx, { secret, report })
-    await invoke(graphics.reportEmoji, ctx, {
+    await invoke(graphicsWrites.reportEmoji, ctx, { secret, report })
+    await invoke(graphicsWrites.reportEmoji, ctx, {
         secret,
         report: { ...report, checkedAt: 2000 },
     })

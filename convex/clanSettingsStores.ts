@@ -11,7 +11,7 @@ import { PANEL_GRAPHICS_API_ERRORS } from "../src/domain/api/panel-graphics-sett
 import { discordPanelsPatchSchema } from "../src/domain/api/discord-panels-settings-slice"
 import { CLAN_SETTINGS_READS, type ClanSettingsRead } from "./clanSettingsReads"
 import { seedSettingsPatchSchema } from "../src/domain/api/seed-settings-slice"
-import { preparePanelGraphicsChange } from "./discordPanelGraphics"
+import { preparePanelGraphicsChange } from "./discordPanelGraphicsWrites"
 import { prepareSeedSettingsChange } from "./discordSeedApiStore"
 import type { MutationCtx } from "./_generated/server"
 import { panelSaveStore } from "./discordPanelStore"

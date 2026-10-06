@@ -4,7 +4,7 @@ import {
     joinCodeSchema,
     serverAddressSchema,
     serverPasswordSchema,
-} from "@/domain/discord-publications/server-join"
+} from "@/domain/discord-publications/server-join.schema"
 import {
     panelImageRequestSchema,
     type PanelImageRequest,
