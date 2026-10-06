@@ -5,7 +5,9 @@ import { makeFunctionReference } from "convex/server"
 
 import type { DashboardActor } from "../../convex/dashboardActor"
 import type { ApiKeyReadAccess } from "@/domain/api/key-access"
+import { publicApiMemory } from "@/lib/api/public-api-memory"
 import type { GameSelection } from "@/domain/games/game"
+import { keyUseDue } from "@/domain/api/key-usage"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const createKeyReference = makeFunctionReference<"mutation">(
@@ -15,11 +17,11 @@ const listKeysReference = makeFunctionReference<"query">("publicApi:listKeys")
 const revokeKeyReference = makeFunctionReference<"mutation">(
     "publicApi:revokeKey"
 )
-const rateLimitReference = makeFunctionReference<"mutation">(
-    "publicApi:checkRateLimit"
-)
-const authenticateKeyReference = makeFunctionReference<"mutation">(
+const authenticateKeyReference = makeFunctionReference<"query">(
     "publicApi:authenticateKey"
+)
+const recordKeyUseReference = makeFunctionReference<"mutation">(
+    "publicApi:recordKeyUse"
 )
 const clanResourcePageReference = makeFunctionReference<"query">(
     "publicApi:getClanResourcePage"
@@ -142,20 +144,41 @@ export async function revokeClanApiKey(
     })
 }
 
+/**
+ * A fixed one-minute window per bucket, counted in this web process. The
+ * request path makes no Convex write: one counter document patched on every
+ * request made parallel requests conflict and retry in the backend.
+ */
 export async function checkPublicApiRateLimit(bucket: string, limit: number) {
-    return (await fetchMutation(rateLimitReference, {
-        secret: getInternalAuthSecret(),
-        bucket,
-        limit,
-        windowMs: 60_000,
-    })) as { allowed: boolean; remaining: number; resetAt: number }
+    return publicApiMemory.takeToken(bucket, limit, 60_000)
 }
 
+/**
+ * Authenticates through a read-only query and records the key's last use
+ * off the request path, at most once per interval per key and process.
+ */
 export async function authenticateClanApiKey(key: string) {
-    return (await fetchMutation(authenticateKeyReference, {
-        secret: getInternalAuthSecret(),
-        keyHash: hashApiKey(key),
-    })) as { guildId: string; readAccess?: ApiKeyReadAccess } | null
+    const keyHash = hashApiKey(key)
+    const secret = getInternalAuthSecret()
+    const authenticated = (await fetchQuery(authenticateKeyReference, {
+        secret,
+        keyHash,
+    })) as {
+        guildId: string
+        lastUsedAt: string | null
+        readAccess?: ApiKeyReadAccess
+    } | null
+    if (!authenticated) return null
+    const now = Date.now()
+    if (
+        keyUseDue(authenticated.lastUsedAt, now) &&
+        publicApiMemory.claimKeyUse(keyHash, now)
+    )
+        void fetchMutation(recordKeyUseReference, { secret, keyHash }).catch(
+            () => undefined
+        )
+    const { guildId, readAccess } = authenticated
+    return { guildId, ...(readAccess !== undefined ? { readAccess } : {}) }
 }
 
 export async function getClanApiResourcePage(

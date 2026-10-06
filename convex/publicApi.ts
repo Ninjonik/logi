@@ -70,6 +70,7 @@ import { currentEventStatus } from "../src/domain/events/status"
 import { requestRegistrationAfterSave } from "./discordCommands"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
+import { keyUseDue } from "../src/domain/api/key-usage"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { internalAuthSecret } from "./discord_shared"
 import { resolveEventMatchTeams } from "./matchTeams"
@@ -147,49 +148,6 @@ export const revokeKey = mutation({
         if (!key || key.guildId !== args.guildId)
             throw new Error("API key not found.")
         await ctx.db.patch(args.keyId, { revokedAt: new Date().toISOString() })
-    },
-})
-
-export const checkRateLimit = mutation({
-    args: {
-        secret: v.string(),
-        bucket: v.string(),
-        limit: v.number(),
-        windowMs: v.number(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const now = Date.now()
-        const existing = await ctx.db
-            .query("apiRateLimitBuckets")
-            .withIndex("bucket", (q) => q.eq("bucket", args.bucket))
-            .unique()
-        if (!existing || existing.resetAt <= now) {
-            if (existing)
-                await ctx.db.patch(existing._id, {
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            else
-                await ctx.db.insert("apiRateLimitBuckets", {
-                    bucket: args.bucket,
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            return {
-                allowed: true,
-                remaining: args.limit - 1,
-                resetAt: now + args.windowMs,
-            }
-        }
-        if (existing.count >= args.limit)
-            return { allowed: false, remaining: 0, resetAt: existing.resetAt }
-        await ctx.db.patch(existing._id, { count: existing.count + 1 })
-        return {
-            allowed: true,
-            remaining: args.limit - existing.count - 1,
-            resetAt: existing.resetAt,
-        }
     },
 })
 
@@ -1606,8 +1564,13 @@ export const mutateClanCalendarItem = mutation({
     },
 })
 
-/** Authenticates a hash only; callers never receive a bearer key or its hash. */
-export const authenticateKey = mutation({
+/**
+ * Authenticates a hash only; callers never receive a bearer key or its hash.
+ * A read-only query: the request path must not write, because a write to the
+ * key document on every request made parallel requests from one website
+ * conflict and retry inside Convex until the backend degraded.
+ */
+export const authenticateKey = query({
     args: { secret: v.string(), keyHash: v.string() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -1618,15 +1581,36 @@ export const authenticateKey = mutation({
         if (!key || key.revokedAt) return null
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         if (!guild) return null
-        // Usage telemetry must not alter authorization; this best-effort write is
-        // deliberately separate from every resource read.
-        await ctx.db.patch(key._id, { lastUsedAt: new Date().toISOString() })
         return {
             guildId: key.guildId,
+            lastUsedAt: key.lastUsedAt ?? null,
             ...(key.readAccess !== undefined
                 ? { readAccess: key.readAccess }
                 : {}),
         }
+    },
+})
+
+/**
+ * Usage telemetry, off the request path: the gateway calls this at most once
+ * per `KEY_USAGE_INTERVAL_MS` per key, and the mutation checks the stored
+ * time again so concurrent calls write once. Never alters authorization.
+ */
+export const recordKeyUse = mutation({
+    args: { secret: v.string(), keyHash: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const key = await ctx.db
+            .query("apiKeys")
+            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
+            .unique()
+        if (!key || key.revokedAt) return false
+        const now = Date.now()
+        if (!keyUseDue(key.lastUsedAt, now)) return false
+        await ctx.db.patch(key._id, {
+            lastUsedAt: new Date(now).toISOString(),
+        })
+        return true
     },
 })
 
