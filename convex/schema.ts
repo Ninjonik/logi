@@ -1923,6 +1923,8 @@ export default defineSchema({
         bytes: v.number(),
         sha256: v.string(),
         publicUrl: v.string(),
+        /** The uploaded file's own name, for display only (P8-08). */
+        fileName: v.optional(v.string()),
         state: v.union(v.literal("ready"), v.literal("deleting")),
         createdAt: v.string(),
         createdBy: v.string(),

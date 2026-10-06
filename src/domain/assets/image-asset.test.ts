@@ -1,4 +1,5 @@
 import {
+    imageAssetFileName,
     canAttachImageAsset,
     cleanupDue,
     IMAGE_MAX_INPUT_BYTES,
@@ -269,4 +270,13 @@ test("only the kind's normalized format within the byte bound is storable", () =
         }),
         false
     )
+})
+
+test("an upload keeps only a clean display name (P8-08)", () => {
+    assert.equal(imageAssetFileName("vlci-public.png"), "vlci-public.png")
+    assert.equal(imageAssetFileName("C:\\fotky\\vlci.png"), "vlci.png")
+    assert.equal(imageAssetFileName("../../x/banner\u0000.png"), "banner.png")
+    assert.equal(imageAssetFileName("  "), null)
+    assert.equal(imageAssetFileName(null), null)
+    assert.equal(imageAssetFileName("a".repeat(300))?.length, 100)
 })

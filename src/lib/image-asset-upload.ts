@@ -102,7 +102,11 @@ export async function uploadImageAsset(
     if (rejected) return { ok: false, error: rejected, retryAfterMs: null }
     try {
         const response = await fetcher(
-            `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=${kind}`,
+            `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=${kind}${
+                "name" in file && typeof file.name === "string" && file.name
+                    ? `&name=${encodeURIComponent(file.name.slice(0, 200))}`
+                    : ""
+            }`,
             {
                 method: "POST",
                 headers: { "Content-Type": file.type },

@@ -314,3 +314,28 @@ test("storeNormalized stores and records together and deletes the blob when reco
     await assert.rejects(run({ secret: "wrong" }), /Unauthorized/)
     assert.equal(sequence, 3)
 })
+
+test("image assets keep the uploaded file's own name for display (P8-08)", async () => {
+    const ctx = setup()
+    const created = await invoke(imageAssets.record, ctx, {
+        ...access,
+        asset: {
+            kind: "panel-banner",
+            publicId: "c".repeat(32),
+            storageId: "storage:named",
+            contentType: "image/webp",
+            width: 1200,
+            height: 400,
+            bytes: 2048,
+            sha256: "d".repeat(64),
+            publicUrl:
+                "https://logi.test/api/image-assets/" +
+                "c".repeat(32) +
+                ".webp",
+            fileName: "fotky/vlci-public.png",
+        },
+    })
+    assert.equal(created.ok, true)
+    const row = await ctx.db.get(created.asset.id)
+    assert.equal(row?.fileName, "vlci-public.png")
+})

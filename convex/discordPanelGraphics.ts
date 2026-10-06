@@ -172,6 +172,8 @@ export const get = query({
                       width: asset.width,
                       height: asset.height,
                       bytes: asset.bytes,
+                      // P8-08: "Nahráno vlci-public.png · 1200 × 400 · 380 kB".
+                      fileName: asset.fileName ?? null,
                   }
                 : null
         }

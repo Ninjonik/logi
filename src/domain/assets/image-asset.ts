@@ -224,3 +224,20 @@ export function parseImageAssetFile(
     const match = /^([a-f0-9]{32})\.(png|webp|jpg)$/.exec(file)
     return match ? { publicId: match[1]!, extension: match[2]! } : null
 }
+
+/**
+ * The uploaded file's own name, kept so a page can say "Nahráno
+ * vlci-public.png · 1200 × 400 · 380 kB" after a reload (P8-08): the last
+ * path segment, without control characters, at most 100 characters. Null
+ * when nothing usable is left. Display only; never a storage key.
+ */
+export function imageAssetFileName(
+    value: string | null | undefined
+): string | null {
+    const last = (value ?? "").split(/[\\/]/).pop() ?? ""
+    const clean = last
+        .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+    return clean ? Array.from(clean).slice(0, 100).join("") : null
+}

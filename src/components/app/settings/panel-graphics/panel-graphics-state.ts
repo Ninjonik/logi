@@ -29,7 +29,13 @@ export function knownFiles(
 ): Record<string, KnownFile> {
     const files: Record<string, KnownFile> = {}
     for (const server of data.servers)
-        if (server.banner) files[server.banner.assetId] = server.banner
+        if (server.banner)
+            files[server.banner.assetId] = {
+                ...server.banner,
+                ...(server.banner.fileName
+                    ? { name: server.banner.fileName }
+                    : {}),
+            }
     for (const map of data.maps)
         if (map.image) files[map.image.assetId] = map.image
     return files
