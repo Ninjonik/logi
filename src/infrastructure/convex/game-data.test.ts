@@ -548,3 +548,95 @@ test("source changes and expired claims reject writes until a new generation is 
     )
     assert.equal(ctx.db.tables.gameDataConnections[0].errorCategory, null)
 })
+
+test("history commit records an unchanged session and its connection at most once a minute, with no feed entry", async (t) => {
+    const ctx = fixture(t)
+    const hll = {
+        ...source,
+        ref: "hll",
+        gameId: "hell_let_loose",
+        provider: "hll_crcon",
+        providerServerId: "1",
+    }
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([hll])
+    await handler(gameData.configure)(ctx, {
+        secret: "synthetic-data-secret",
+        guildId: "guild-a",
+        sourceRef: "hll",
+        enabled: true,
+    })
+    const session = {
+        externalId: "42",
+        startedAt: null,
+        endedAt: null,
+        complete: false,
+        map: null as string | null,
+        participants: [],
+        players: [],
+        sourceDigest: "a".repeat(64),
+    }
+    const commit = async (value = session) => {
+        const run = ctx.db.tables.gameDataHistoryRuns[0]
+        run.nextAttemptAt = 0
+        run.leaseUntil = 0
+        const claim = (await handler(history.claimNext)(ctx, {})) as {
+            runId: string
+            generation: number
+            fence: number
+        }
+        assert.ok(claim)
+        return handler(history.commit)(ctx, {
+            runId: claim.runId,
+            generation: claim.generation,
+            fence: claim.fence,
+            result: {
+                session: value,
+                progress: { page: 2, pendingIds: [], nextPage: null },
+                completed: false,
+            },
+        })
+    }
+    const feedRows = () => (ctx.db.tables.integrationChanges ?? []).length
+    const row = () => ctx.db.tables.gameSessions[0]
+    const connection = () => ctx.db.tables.gameDataConnections[0]
+    assert.equal(await commit(), true)
+    const written = {
+        feed: feedRows(),
+        fetchedAt: row().fetchedAt,
+        updatedAt: row().updatedAt,
+        success: connection().historyLastSuccessAt,
+    }
+    assert.ok(written.feed > 0, "the first session and count are a change")
+    assert.equal(await commit(), true)
+    assert.equal(feedRows(), written.feed, "a revisit is not a change")
+    assert.equal(
+        row().fetchedAt,
+        written.fetchedAt,
+        "the row was not rewritten"
+    )
+    assert.equal(row().updatedAt, written.updatedAt)
+    assert.equal(connection().historyLastSuccessAt, written.success)
+    row().fetchedAt = Date.now() - 61_000
+    connection().historyLastSuccessAt = new Date(
+        Date.now() - 61_000
+    ).toISOString()
+    assert.equal(await commit(), true)
+    assert.ok(
+        (row().fetchedAt as number) > Date.now() - 1_000,
+        "a visit is recorded again after a minute"
+    )
+    assert.equal(
+        row().updatedAt,
+        written.updatedAt,
+        "a visit alone keeps the content stamp"
+    )
+    assert.notEqual(connection().historyLastSuccessAt, written.success)
+    assert.equal(feedRows(), written.feed, "recording a visit is not a change")
+    assert.equal(await commit({ ...session, map: "Foy" }), true)
+    assert.equal((row().session as { map: string }).map, "Foy")
+    assert.notEqual(
+        row().updatedAt,
+        written.updatedAt,
+        "changed content is written"
+    )
+})

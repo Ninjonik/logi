@@ -1,4 +1,5 @@
 import type { ProviderSession } from "./contracts"
+import { canonicalJson } from "./canonical-json"
 
 /**
  * The rules of the retained Warcon history, as plain predicates. `history.ts`
@@ -62,5 +63,44 @@ export function isHistoryProgress(progress: {
         (progress.nextPage === null || page(progress.nextPage)) &&
         progress.pendingIds.length <= 50 &&
         progress.pendingIds.every((id) => ID.test(id))
+    )
+}
+
+/**
+ * How often a history run may rewrite a row that did not change, just to
+ * record that it was seen (`gameSessions.fetchedAt`, the connection's
+ * `historyLastSuccessAt`). A walk commits once a second; rewriting the row
+ * each time stored a new version per second (ARCHITECTURE.md, "Convex hot
+ * paths").
+ */
+export const HISTORY_TOUCH_INTERVAL_MS = 60_000
+
+/** Whether a seen-at time (ms or ISO string, or none) is old enough to record again. */
+export function historyTouchDue(
+    lastAt: number | string | null | undefined,
+    now: number
+): boolean {
+    if (lastAt == null) return true
+    const at = typeof lastAt === "number" ? lastAt : Date.parse(lastAt)
+    return Number.isNaN(at) || now - at >= HISTORY_TOUCH_INTERVAL_MS
+}
+
+/** Whether a stored session row differs from a freshly collected one in what the row serves. */
+export function sessionRecordChanged(
+    stored: {
+        session: ProviderSession
+        complete: boolean
+        sourceGeneration?: number
+    },
+    next: {
+        session: ProviderSession
+        complete: boolean
+        sourceGeneration: number
+    }
+): boolean {
+    return (
+        canonicalJson(stored.session) !== canonicalJson(next.session) ||
+        stored.complete !== next.complete ||
+        stored.sourceGeneration !== next.sourceGeneration
     )
 }

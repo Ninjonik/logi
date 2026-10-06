@@ -488,6 +488,23 @@ test("session changes have revisions and deletion has a retained tombstone", asy
             fetchedAt: Date.now(),
         })
     })
+    assert.equal(
+        (await poll(ctx, before.peopleScopeVersion)).items.length,
+        0,
+        "a session seen again with the same content is not a change"
+    )
+    await changed(ctx, async (tracked) => {
+        const row = await tracked.db.get("gameSessions:one" as never)
+        await tracked.db.patch(
+            "gameSessions:one" as never,
+            {
+                session: {
+                    ...(row as { session: object }).session,
+                    map: "Foy",
+                },
+            } as never
+        )
+    })
     const changes = await poll(ctx, before.peopleScopeVersion)
     assert.equal(changes.resetRequired, false)
     assert.equal(changes.items[0].resource, "player-stat-summaries")

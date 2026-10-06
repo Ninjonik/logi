@@ -1,6 +1,8 @@
 import {
+    historyTouchDue,
     isHistoryProgress,
     isProviderSessionWithinLimits,
+    sessionRecordChanged,
 } from "../src/domain/game-data/history-rules"
 import {
     gameDataError,
@@ -196,8 +198,15 @@ export const commit = internalMutation({
                 sourceGeneration: connection.generation,
                 updatedAt,
             }
-            if (existing) await ctx.db.patch(existing._id, record)
-            else {
+            // A walk revisits the same sessions every few minutes; rewriting
+            // an unchanged row stores a version and a change-feed entry per
+            // visit. Record the visit at most once a minute instead.
+            if (existing) {
+                if (sessionRecordChanged(existing, record))
+                    await ctx.db.patch(existing._id, record)
+                else if (historyTouchDue(existing.fetchedAt, now))
+                    await ctx.db.patch(existing._id, { fetchedAt: now })
+            } else {
                 await ctx.db.insert("gameSessions", {
                     ...record,
                     connectionId: row.connectionId,
@@ -218,12 +227,17 @@ export const commit = internalMutation({
             ...(args.result.completed ? { lastCompletedAt: updatedAt } : {}),
             nextAttemptAt: now + (args.result.completed ? 300_000 : 1_000),
         })
-        await ctx.db.patch(connection._id, {
-            historyCount: count,
-            historyLastSuccessAt: updatedAt,
-            historyErrorCategory: null,
-            updatedAt,
-        })
+        if (
+            (connection.historyCount ?? 0) !== count ||
+            connection.historyErrorCategory != null ||
+            historyTouchDue(connection.historyLastSuccessAt, now)
+        )
+            await ctx.db.patch(connection._id, {
+                historyCount: count,
+                historyLastSuccessAt: updatedAt,
+                historyErrorCategory: null,
+                updatedAt,
+            })
         await ctx.scheduler.runAfter(
             args.result.completed ? 300_000 : 1_000,
             internal.gameDataCollector.collectHistoryDue,

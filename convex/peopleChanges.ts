@@ -197,6 +197,19 @@ function fields(row: Row | null, names: string[]) {
     const value = row as unknown as Record<string, unknown>
     return JSON.stringify(names.map((name) => value[name]))
 }
+// Fields a collector rewrites on every run without changing what the
+// people projections serve; comparing them appended a change per run.
+const volatile: Partial<Record<Table, string[]>> = {
+    gameSessions: ["fetchedAt", "updatedAt"],
+}
+function comparable(table: Table, row: Row | null) {
+    if (!row) return null
+    const skip = volatile[table]
+    if (!skip) return JSON.stringify(row)
+    const value = { ...(row as unknown as Record<string, unknown>) }
+    for (const name of skip) delete value[name]
+    return JSON.stringify(value)
+}
 
 /** One global dependency generation avoids an unbounded cross-user/session write fanout. */
 export async function withPeopleChanges<T>(
@@ -285,7 +298,11 @@ export async function withPeopleChanges<T>(
                 ...captured.identity,
                 operation: "remove",
             })
-        if (next && JSON.stringify(captured.before) !== JSON.stringify(after))
+        if (
+            next &&
+            comparable(captured.table, captured.before) !==
+                comparable(captured.table, after)
+        )
             await appendIntegrationChange(ctx, { ...next, operation: "upsert" })
     }
     if (invalidate) await invalidatePeopleGeneration(ctx)

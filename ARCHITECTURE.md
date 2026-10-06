@@ -211,6 +211,20 @@ character stepped up)` on the same index (`publicationKeyRange`).
   degraded on exactly this. Authenticate through a query, count rate limits
   in the web process, and record usage from a separate mutation that writes
   at most once per interval and re-checks before it writes.
+- A change feed records what a consumer must re-fetch, never that a row was
+  rewritten. The tracked-mutation wrappers compare the fields the website
+  projections serve and leave bookkeeping out of the comparison: a
+  collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
+  `updatedAt`, a session's `fetchedAt`. A history walk commits once a second
+  and rewrote its connection and session rows each time; that appended three
+  `integrationChanges` rows and a head, record and payload version per
+  second until the log held 666,000 rows and the backend's reads took
+  seconds. A commit now patches a session only when its content changed and
+  records a visit (`fetchedAt`, `historyLastSuccessAt`) at most once a
+  minute (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
+  each guild head once per batch, and `integrationChanges:resetFeed` is the
+  operator's way out of a flooded log: it raises every floor to its head so
+  consumers bootstrap again, then empties the log in batches.
 - A per-request endpoint serves counts from a maintained summary document,
   never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
   enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
