@@ -403,7 +403,7 @@ export const csMessages = {
             card: {
                 status: {
                     collecting: "Sbírá data",
-                    stopped: "Sběr zastaven",
+                    stopped: "Pozastaveno chybou",
                     off: "Nesbírá",
                     none: "Bez sběru",
                 },

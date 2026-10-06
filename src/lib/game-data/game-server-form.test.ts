@@ -1,4 +1,5 @@
 import {
+    abortAfter,
     fill,
     keyField,
     PROVIDERS_BY_GAME,
@@ -53,4 +54,20 @@ test("placeholders are filled and unknown ones stay visible", () => {
         fill("Retry in {seconds} s ({x})", { seconds: 3 }),
         "Retry in 3 s ({x})"
     )
+})
+
+test("abortAfter aborts on its deadline and follows a parent abort", async () => {
+    const timed = abortAfter(10)
+    assert.equal(timed.aborted, false)
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    assert.equal(timed.aborted, true)
+    assert.equal((timed.reason as { name?: string }).name, "TimeoutError")
+    const parent = new AbortController()
+    const child = abortAfter(10_000, parent.signal)
+    parent.abort(new Error("gone"))
+    assert.equal(child.aborted, true)
+    assert.equal((child.reason as Error).message, "gone")
+    const late = new AbortController()
+    late.abort()
+    assert.equal(abortAfter(10_000, late.signal).aborted, true)
 })

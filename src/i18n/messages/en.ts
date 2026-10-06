@@ -408,7 +408,7 @@ export const enMessages = {
             card: {
                 status: {
                     collecting: "Collecting",
-                    stopped: "Collection stopped",
+                    stopped: "Paused by an error",
                     off: "Not collecting",
                     none: "No collection",
                 },

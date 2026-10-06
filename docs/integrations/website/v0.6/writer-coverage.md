@@ -36,7 +36,11 @@ automatic proof of future code. Scope, retention and rollback tests are separate
 
 Membership tracking in v0.7 also covers assignment rekey/deletion during user
 merge: both affected subjects are invalidated on rekey, and the removed subject
-is invalidated when a duplicate assignment is deleted.
+is invalidated when a duplicate assignment is deleted. A member observation
+with the same state, role set and epoch as the stored one (every five-minute
+reconciliation of an unchanged clan, a nickname-only gateway update) refreshes
+`observedAt`/`receivedAt` only and allocates neither a revision nor a
+`membership-summaries` entry.
 
 The standalone legacy HLL scope repository currently has no production caller;
 any future caller must use the decorator. Scheduled jobs call covered event

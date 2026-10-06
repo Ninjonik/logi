@@ -606,9 +606,9 @@ reads only public data. A CRCON key's user needs permission to view connection
 information.
 
 A saved key is never shown again and cannot be exported. Each server card
-shows its state (**Collecting**, **Collection stopped**, **Not collecting**),
+shows its state (**Collecting**, **Paused by an error**, **Not collecting**),
 whether a key is stored and when it was changed, the last test and how long
-ago it ran, and the **last game**: the map the collector last saw and when. A
+ago it ran, and the **last game**: the map the collector last saw and when. A source **paused by an error** is still switched on: Logi retries it and the card keeps the **Stop collecting** button next to the key actions, so it can be turned off without a working key. A
 stopped server says what to do instead, for example to create a new CRCON key
 that may read server information and enter it with **Change key**. For a
 collecting Warcon server, **Live score** in the **…** menu opens the live

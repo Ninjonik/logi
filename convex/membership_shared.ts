@@ -7,11 +7,14 @@ import {
     membershipPolicy,
 } from "./membershipAccess"
 import {
+    observationChanged,
+    type ProviderObservation,
+} from "../src/domain/membership/observation"
+import {
     appendIntegrationChange,
     integrationRecord,
 } from "./integrationChangeLog"
 import { projectMembership } from "../src/domain/membership/observation.schema"
-import type { ProviderObservation } from "../src/domain/membership/observation"
 import { nextRevision, revisionOrder } from "../src/domain/integrations/change"
 import { GAME_IDS, type GameId } from "../src/domain/games/game"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
@@ -82,20 +85,40 @@ export async function storeMemberObservation(
 ) {
     const guild = await ensureMembershipGuild(ctx, guildId),
         previous = await memberObservation(ctx, guildId, discordUserId)
-    const revision = nextRevision(guild.revision)
-    const patch = {
-        state: value.state,
-        roleIds:
+    const roleIds =
             value.state === "present" ? [...new Set(value.roleIds)].sort() : [],
+        unavailable = value.state === "unknown"
+    const evidence = {
         observedAt: value.observedAt,
         receivedAt: new Date().toISOString(),
-        epoch: guild.epoch,
-        revision,
-        unavailable: value.state === "unknown",
-        refreshFence: previous?.refreshFence ?? 0,
         refreshUntil: 0,
         nextRefreshAt: 0,
         seenRunId,
+    }
+    if (
+        previous &&
+        !observationChanged(previous, {
+            state: value.state,
+            roleIds,
+            epoch: guild.epoch,
+            unavailable,
+        })
+    ) {
+        // Same state, roles and epoch: newer evidence only. The guild
+        // revision, the subject's revision and the change feed stay as they
+        // are; a reconciliation of an unchanged clan writes nothing else.
+        await ctx.db.patch(previous._id, evidence)
+        return
+    }
+    const revision = nextRevision(guild.revision)
+    const patch = {
+        state: value.state,
+        roleIds,
+        ...evidence,
+        epoch: guild.epoch,
+        revision,
+        unavailable,
+        refreshFence: previous?.refreshFence ?? 0,
         departureRevision:
             value.state === "left" ? revision : previous?.departureRevision,
     }

@@ -1,18 +1,19 @@
 "use client"
 
 import {
-    type ConnectionTestOutcome,
-    type DataProvider,
-    type GameServerSource,
-    type GameServerSourceList,
-} from "@/domain/game-data/credentials"
-import {
+    abortAfter,
     fill,
     keyField,
     PUBLIC_DIRECTORY_ORIGIN,
     readCommandResult,
     type CommandResult,
 } from "@/lib/game-data/game-server-form"
+import {
+    type ConnectionTestOutcome,
+    type DataProvider,
+    type GameServerSource,
+    type GameServerSourceList,
+} from "@/domain/game-data/credentials"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,6 +44,10 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { useLocale } from "next-intl"
 import { cn } from "@/lib/utils"
+
+/** How long a command or a list read may take before the page gives up on it. */
+const COMMAND_TIMEOUT_MS = 20_000
+const LOAD_TIMEOUT_MS = 15_000
 
 /** What the collector last saw on a server, from the live connection. */
 export type ServerLastGame = {
@@ -120,15 +125,35 @@ function Servers({
     const [notice, setNotice] = useState<Notice | null>(null)
     const [formOpen, setFormOpen] = useState(false)
     const formRef = useRef<HTMLFormElement>(null)
+    const mounted = useRef(true)
+    const requestSequence = useRef(0)
+    const loadSequence = useRef(0)
+    useEffect(() => {
+        mounted.current = true
+        return () => {
+            mounted.current = false
+        }
+    }, [])
 
     const load = useCallback(
         async (signal?: AbortSignal) => {
-            const response = await fetch(url, { cache: "no-store", signal })
+            const sequence = ++loadSequence.current
+            const response = await fetch(url, {
+                cache: "no-store",
+                signal: abortAfter(LOAD_TIMEOUT_MS, signal),
+            })
             if (!response.ok) throw new Error()
             const value = gameServerSourceListSchema.parse(
                 await response.json()
             )
-            if (!signal?.aborted) setList(value)
+            // A reply overtaken by a newer read, or one that arrives after
+            // the page gave up or unmounted, must not replace the list.
+            if (
+                !signal?.aborted &&
+                sequence === loadSequence.current &&
+                mounted.current
+            )
+                setList(value)
             return value
         },
         [url]
@@ -151,6 +176,11 @@ function Servers({
     }, [load, t, setup])
 
     const post: Post = async (body) => {
+        const request = ++requestSequence.current
+        const settle = () => {
+            if (mounted.current && request === requestSequence.current)
+                setPending(false)
+        }
         setPending(true)
         setNotice(null)
         try {
@@ -158,20 +188,27 @@ function Servers({
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify(body),
+                signal: abortAfter(COMMAND_TIMEOUT_MS),
             })
             const result = readCommandResult(
                 response.status,
                 await response.json().catch(() => null)
             )
             if (body.action !== "test" && body.action !== "test_stored") {
+                // The command is answered: the buttons stop waiting here,
+                // not after the readback, which can hang on an overloaded
+                // backend. A failed readback keeps the list as it was.
+                settle()
                 await load().catch(() => undefined)
                 onChanged?.()
             }
             return result
         } catch {
+            // A deadline or a network failure. The command may still have
+            // run, so it is reported as unavailable and never retried here.
             return readCommandResult(503, null)
         } finally {
-            setPending(false)
+            settle()
         }
     }
     const report = (result: CommandResult, success: string) =>
@@ -766,19 +803,31 @@ function ServerCard({
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
                 {stopped ? (
-                    canChangeKey ? (
+                    <>
+                        {canChangeKey ? (
+                            <Button
+                                size="sm"
+                                className="rounded-lg"
+                                disabled={disabled}
+                                aria-expanded={mode === "key"}
+                                onClick={() =>
+                                    setMode(mode === "key" ? "view" : "key")
+                                }
+                            >
+                                {t.actions.changeKey}
+                            </Button>
+                        ) : null}
+                        {/* A source paused by an error is still enabled; turning it off must not hide behind the menu. */}
                         <Button
                             size="sm"
+                            variant="outline"
                             className="rounded-lg"
                             disabled={disabled}
-                            aria-expanded={mode === "key"}
-                            onClick={() =>
-                                setMode(mode === "key" ? "view" : "key")
-                            }
+                            onClick={() => void toggleCollection()}
                         >
-                            {t.actions.changeKey}
+                            {enabled ? t.actions.disable : t.actions.enable}
                         </Button>
-                    ) : null
+                    </>
                 ) : (
                     <>
                         <Button
@@ -831,18 +880,11 @@ function ServerCard({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                         {stopped ? (
-                            <>
-                                <DropdownMenuItem
-                                    onSelect={() => void testStored()}
-                                >
-                                    {t.card.testKey}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onSelect={() => void toggleCollection()}
-                                >
-                                    {t.actions.disable}
-                                </DropdownMenuItem>
-                            </>
+                            <DropdownMenuItem
+                                onSelect={() => void testStored()}
+                            >
+                                {t.card.testKey}
+                            </DropdownMenuItem>
                         ) : null}
                         {liveAvailable ? (
                             <DropdownMenuItem onSelect={() => setLive(!live)}>

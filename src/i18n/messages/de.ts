@@ -423,7 +423,7 @@ export const deMessages = {
             card: {
                 status: {
                     collecting: "Sammelt Daten",
-                    stopped: "Sammeln gestoppt",
+                    stopped: "Durch Fehler pausiert",
                     off: "Sammelt nicht",
                     none: "Kein Sammeln",
                 },
