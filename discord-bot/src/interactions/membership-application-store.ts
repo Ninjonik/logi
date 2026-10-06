@@ -104,6 +104,14 @@ export type ApplicationThreadContext = {
         status: "pending" | "recruit" | "active"
         membershipCategoryId?: string
     } | null
+    /** The applicant's memberships in this server, one per game. */
+    assignments?: Array<{
+        id: string
+        gameId: GameId
+        type: "member" | "reserve_member" | "mercenary"
+        status: "pending" | "recruit" | "active"
+        membershipCategoryId?: string
+    }>
     category: MembershipCategory | null
     clanName: string
     guildRecordId: string | null

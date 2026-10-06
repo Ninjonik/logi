@@ -144,3 +144,49 @@ test("a clan that switched decision DMs off sends none, and says so (N1-39)", as
     assert.equal(result.status === "decided" && result.dm, "off")
     assert.ok(!calls.includes("report:dm"))
 })
+
+test("'Přijmout jako žoldáka' moves to the mercenary category and its roles (L6-B08)", async () => {
+    const { ports, changes } = fake()
+    const result = await decideApplication(ports, {
+        outcome: "mercenary",
+        categoryType: "member",
+        before: "recruit",
+        policy: {
+            ...policy,
+            mercenaryCategory: { recruitRoleIds: [], finalRoleIds: ["merc"] },
+        },
+        mercenaryCategory: { id: "merc-wd", gameId: "wardogs" },
+    })
+    assert.deepEqual(changes, [
+        {
+            kind: "upsert",
+            type: "mercenary",
+            status: "active",
+            category: { id: "merc-wd", gameId: "wardogs" },
+        },
+    ])
+    assert.deepEqual(result, {
+        status: "decided",
+        roles: {
+            after: ["clan", "merc"],
+            added: ["clan", "merc"],
+            removed: ["recruit"],
+        },
+        dm: "sent",
+    })
+})
+
+test("without a mercenary category nothing is claimed or written", async () => {
+    const { ports, calls } = fake()
+    assert.deepEqual(
+        await decideApplication(ports, {
+            outcome: "mercenary",
+            categoryType: "member",
+            before: "recruit",
+            policy,
+            mercenaryCategory: null,
+        }),
+        { status: "no-mercenary-category" }
+    )
+    assert.deepEqual(calls, [])
+})

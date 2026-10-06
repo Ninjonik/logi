@@ -2885,7 +2885,7 @@ export const csMessages = {
             "Přeskočit čekání a přidat rovnou jako rekruta",
         skipPendingCategoryHelp: "Jen u hlavních členů.",
         categoryDescriptionHelp:
-            "Zobrazí se v panelu v Discordu u názvu kategorie.",
+            "V panelu je za názvem a hrou, v okně 1 pod názvem kategorie.",
         addRole: "role",
         addRoleAria: "Přidat roli: {status}",
         removeRole: "Odebrat roli {role}",
@@ -2898,9 +2898,9 @@ export const csMessages = {
             scores: "Body za docházku",
             roleChanges: "Změny rolí",
         },
-        categoryButtonTitle: "Tlačítko v panelu",
-        categoryText: "Text",
-        categoryDescriptionLabel: "Popis pod tlačítkem",
+        categoryButtonTitle: "V panelu a v okně 1",
+        categoryText: "Název",
+        categoryDescriptionLabel: "Popis",
         resultTitle: "Po přijetí se z hráče stane",
         rolesByStatus: "Role podle stavu",
         statusPending: "Čeká na rozhodnutí",
@@ -2970,9 +2970,6 @@ export const csMessages = {
         noQuestions:
             "Zatím tu nejsou žádné modal otázky. Nechte to prázdné, pokud má kategorie otevřít thread hned po prechecku.",
         noCategories: "Zatím tu nejsou žádné kategorie přihlášek.",
-        defaultPanelTitle: "Přihlásit se do klanu",
-        defaultPanelDescription:
-            "Vyberte typ přihlášky, který vám odpovídá. Pokud ještě potřebujeme vaše platform ID, nejdřív vás tím provedeme.",
         embedFieldUsage: "Využití embed fieldu: {length} / {max}",
         embedFieldTooLong:
             "(příliš dlouhé, před uložením zkraťte popisy kategorií)",
@@ -7523,6 +7520,11 @@ export const csMessages = {
                 pending: "Poznámku na kartě, bez DM",
             },
             noRoleChange: "beze změny",
+            mercenaryMissing: "Chybí kategorie žoldáků",
+            mercenaryMissingNote:
+                "Tlačítko Přijmout jako žoldáka zůstane v Discordu vypnuté, dokud klan nemá kategorii žoldáků. Přidejte kategorii s výsledkem Žoldák.",
+            mercenaryCategoryNote:
+                "Přijmout jako žoldáka dá role kategorie {category}, ne kategorie, kterou si uchazeč vybral.",
             roleSyncOff:
                 "Synchronizace rolí je vypnutá, takže Logi role nemění.",
             decisionNote:

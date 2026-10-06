@@ -226,7 +226,7 @@ export const getMembershipApplicationThreadContext = query({
             .withIndex("threadId", (q) => q.eq("threadId", args.threadId))
             .unique()
         if (!application) return null
-        const [config, assignment] = await Promise.all([
+        const [config, assignment, assignments] = await Promise.all([
             ctx.db
                 .query("discordConfigs")
                 .withIndex("guildId", (q) =>
@@ -236,6 +236,16 @@ export const getMembershipApplicationThreadContext = query({
             application.assignmentId
                 ? ctx.db.get(application.assignmentId)
                 : null,
+            // "Přijmout jako žoldáka" may move the membership to the
+            // mercenary category of another game (L6-B08).
+            ctx.db
+                .query("userAssignments")
+                .withIndex("serverId_userId", (q) =>
+                    q
+                        .eq("serverId", application.guildId)
+                        .eq("userId", application.creatorId)
+                )
+                .take(10),
         ])
         if (!config) return null
         const category =
@@ -247,6 +257,13 @@ export const getMembershipApplicationThreadContext = query({
             config: normalizeConfigDoc(config),
             application: normalizeDoc(application),
             assignment: assignment ? normalizeDoc(assignment) : null,
+            assignments: assignments.map((row) => ({
+                id: String(row._id),
+                gameId: row.gameId ?? "hell_let_loose",
+                type: row.type,
+                status: row.status,
+                membershipCategoryId: row.membershipCategoryId,
+            })),
             category,
             // For the decision card, DM and "Členové v Logi" (L6-50, L6-59).
             clanName: guild?.name ?? "",

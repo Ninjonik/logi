@@ -339,6 +339,7 @@ test("the card: label, title, chip, fields and five decision buttons (L6-43..46)
             },
         ],
         supportRoleIds: ["777777777777777777"],
+        mercenaryAvailable: true,
     })
     valid(view)
     const body = text(view)
@@ -375,6 +376,37 @@ test("the card: label, title, chip, fields and five decision buttons (L6-43..46)
     )
 })
 
+test("without a mercenary category the žoldák button is disabled, with the reason", () => {
+    const view = applicationCardView(cs, {
+        number: 42,
+        games: ["hell_let_loose"],
+        applicantId: "111111111111111111",
+        applicantName: "Hráč 17",
+        categoryLabel: "Hlavní člen",
+        submittedAt: "2026-10-11T18:14:00.000Z",
+        timeZone: "Europe/Prague",
+        accounts: { steamVerified: false },
+        answers: [],
+        supportRoleIds: [],
+        mercenaryAvailable: false,
+    })
+    valid(view)
+    const mercenary = buttons(view).find(
+        (button) =>
+            button.kind === "action" &&
+            button.id === "application-decision:mercenary"
+    )
+    assert.equal(mercenary?.disabled, true)
+    assert.equal(buttons(view).filter((button) => button.disabled).length, 1)
+    assert.match(
+        text(view),
+        /-# Žoldáka zatím nejde přijmout: klan nemá kategorii žoldáků\./
+    )
+    // The chip is the board's "Čeká na rozhodnutí" in every waiting state.
+    assert.match(text(view), /🟡 \*\*Čeká na rozhodnutí\*\*/)
+    assert.doesNotMatch(text(view), /Rekrut · čeká/)
+})
+
 test("Ještě nerozhodnuto keeps the buttons and records who and when (L6-49)", () => {
     const view = applicationCardView(cs, {
         number: 42,
@@ -387,6 +419,7 @@ test("Ještě nerozhodnuto keeps the buttons and records who and when (L6-49)", 
         accounts: { steamVerified: false },
         answers: [],
         supportRoleIds: [],
+        mercenaryAvailable: true,
         undecided: { name: "Hráč 02", at: "2026-10-11T19:05:00.000Z" },
     })
     valid(view)

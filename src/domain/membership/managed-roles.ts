@@ -86,9 +86,16 @@ export function appliesAsRecruit(
     })
 }
 
+/**
+ * The managed roles a membership should have. `applicant` marks the write of
+ * a submitted application: while the recruiters decide, a recruit-on-apply
+ * applicant holds only the category's recruit roles ("Dát roli Rekrut hned
+ * po odeslání"); the clan role comes with acceptance (N4-32, N4-40).
+ */
 export function desiredMembershipRoles(
     policy: ManagedRolePolicy,
-    assignment: RoleAssignment | null
+    assignment: RoleAssignment | null,
+    options: { applicant?: boolean } = {}
 ) {
     if (
         !assignment ||
@@ -100,6 +107,8 @@ export function desiredMembershipRoles(
     const category = policy.settings.categories.find(
         (row) => row.id === assignment.membershipCategoryId
     )
+    if (options.applicant && assignment.status === "recruit")
+        return unique(category?.recruitRoleIds ?? [])
     return unique([
         ...(policy.clanRoleId ? [policy.clanRoleId] : []),
         ...(assignment.status === "recruit"

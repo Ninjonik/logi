@@ -5,6 +5,7 @@ import {
     type SubmitApplicationResult,
     type SubmitApplicationStep,
 } from "../../../src/application/membership/submit-application"
+import { mercenaryCategoryFor } from "../../../src/domain/membership/application-decision"
 import { applicationCardView } from "../../../src/domain/membership/application-views"
 import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { getApplicationMessages } from "../../../src/lib/clan-language/application"
@@ -238,8 +239,14 @@ export async function createApplicationThread(input: {
                         inGameName: submission.inGameName,
                         accounts: submission.accounts,
                         answers: submission.answers,
-                        status: submission.initialStatus,
                         supportRoleIds,
+                        // "Přijmout jako žoldáka" needs the clan's mercenary category.
+                        mercenaryAvailable:
+                            mercenaryCategoryFor(settings?.categories ?? [], {
+                                categoryId: category.id,
+                                gameId: category.gameId ?? "hell_let_loose",
+                                games: submission.games,
+                            }) !== null,
                     }),
                     {
                         language: config.defaultLanguage,

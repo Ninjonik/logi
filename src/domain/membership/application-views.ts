@@ -307,6 +307,11 @@ export type ApplicationPanelInput = {
     categories: readonly ApplicationCategory[]
     /** Windows of the longest application: two or three. */
     windows: 2 | 3
+    /**
+     * The note "Přihláška má tři krátká okna…" under the categories; left
+     * out when the panel text is the default, which already says it.
+     */
+    windowsNote?: boolean
     /** Variant B (N4-42): the link to the web form when it is switched on. */
     webFormUrl?: string | null
     accentColor?: string | null
@@ -369,14 +374,18 @@ export function applicationPanelView(
         ...(lines.length
             ? [{ kind: "text" as const, markdown: lines.join("\n") }]
             : []),
-        {
-            kind: "text",
-            markdown: `-# ${
-                input.windows === 3
-                    ? copy.panel.windowsNote.three
-                    : copy.panel.windowsNote.two
-            }`,
-        },
+        ...(input.windowsNote === false
+            ? []
+            : [
+                  {
+                      kind: "text" as const,
+                      markdown: `-# ${
+                          input.windows === 3
+                              ? copy.panel.windowsNote.three
+                              : copy.panel.windowsNote.two
+                      }`,
+                  },
+              ]),
         { kind: "separator", divider: true, spacing: "small" },
         { kind: "buttons", buttons },
     ]
@@ -900,9 +909,13 @@ export type ApplicationCardInput = {
     inGameName?: string
     accounts: SubmittedAccounts
     answers: readonly SubmittedAnswer[]
-    /** Initial status of the membership; a recruit already has roles. */
-    status?: "pending" | "recruit"
     supportRoleIds: readonly string[]
+    /**
+     * Whether the clan has a mercenary category for "Přijmout jako žoldáka"
+     * (`mercenaryCategoryFor`); without one the button is disabled and a
+     * short line under the buttons says why.
+     */
+    mercenaryAvailable: boolean
     undecided?: { name: string; at: string }
 }
 
@@ -981,7 +994,12 @@ export function applicationCardFields(
     return fields
 }
 
-/** The application card with the five decision buttons (L6-43..L6-46). */
+/**
+ * The application card with the five decision buttons (L6-43..L6-46). The
+ * chip reads "Čeká na rozhodnutí" until the decision, also when the
+ * applicant already holds the recruit role ("Dát roli Rekrut hned po
+ * odeslání"), as on the boards.
+ */
 export function applicationCardView(
     copy: ApplicationCopy,
     input: ApplicationCardInput
@@ -998,13 +1016,7 @@ export function applicationCardView(
               }),
               tone: "warning",
           }
-        : {
-              label:
-                  input.status === "recruit"
-                      ? copy.card.recruitPending
-                      : copy.card.pending,
-              tone: "warning",
-          }
+        : { label: copy.card.pending, tone: "warning" }
     const submitted = discordWeekdayTimestamp(
         input.submittedAt,
         copy.locale,
@@ -1071,6 +1083,7 @@ export function applicationCardView(
                         id: decisionButtonId("mercenary"),
                         label: copy.card.accept.mercenary,
                         style: "secondary",
+                        ...(input.mercenaryAvailable ? {} : { disabled: true }),
                     },
                     {
                         kind: "action",
@@ -1086,6 +1099,14 @@ export function applicationCardView(
                     },
                 ],
             },
+            ...(input.mercenaryAvailable
+                ? []
+                : [
+                      {
+                          kind: "text" as const,
+                          markdown: `-# ${copy.card.mercenaryUnavailable}`,
+                      },
+                  ]),
         ],
         footer: {
             kind: "managed",
@@ -1368,6 +1389,12 @@ export const decisionErrors = {
         errorCard({
             title: copy.decision.unverifiable.title,
             body: copy.decision.unverifiable.body,
+        }),
+    /** "Přijmout jako žoldáka" while the clan has no mercenary category. */
+    noMercenaryCategory: (copy: ApplicationCopy) =>
+        errorCard({
+            title: copy.decision.noMercenaryCategory.title,
+            body: copy.decision.noMercenaryCategory.body,
         }),
     alreadyDecided: (
         copy: ApplicationCopy,

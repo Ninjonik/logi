@@ -1,3 +1,4 @@
+import type { PanelDefaultCopy } from "../../domain/membership/application-panel-copy"
 import type { ApplicationCopy } from "../../domain/membership/application-copy"
 
 import { clanCopy, type ClanLanguage } from "./core"
@@ -56,6 +57,12 @@ const cs: Copy = {
         windowsNote: {
             two: "Přihláška má dvě krátká okna a zabere asi 2 minuty.",
             three: "Přihláška má tři krátká okna a zabere asi 3 minuty.",
+        },
+        defaultTitle: "Přidej se ke klanu {clan}",
+        defaultTitleNoClan: "Přidej se k nám",
+        defaultText: {
+            two: "Vyber, jak s námi chceš hrát. Přihláška má dvě krátká okna a zabere pár minut.",
+            three: "Vyber, jak s námi chceš hrát. Přihláška má tři krátká okna a zabere pár minut.",
         },
     },
     label: "Přihláška do klanu {clan}",
@@ -227,7 +234,6 @@ const cs: Copy = {
         closedLabel: "Přihláška #{number} · uzavřena",
         title: "{name} · {category}",
         pending: "Čeká na rozhodnutí",
-        recruitPending: "Rekrut · čeká na rozhodnutí",
         submitted: "podáno {time}",
         inGameName: "herní jméno {name}",
         accounts: "Účty",
@@ -245,6 +251,8 @@ const cs: Copy = {
         },
         reject: "Zamítnout…",
         undecidedButton: "Ještě nerozhodnuto",
+        mercenaryUnavailable:
+            "Žoldáka zatím nejde přijmout: klan nemá kategorii žoldáků.",
         decidedTitle: {
             member: "{name} je přijatý jako Člen",
             recruit: "{name} je přijatý jako Rekrut",
@@ -297,6 +305,10 @@ const cs: Copy = {
         notTracked: {
             title: "Tohle vlákno není přihláška",
             body: "Rozhoduje se ve vlákně, které vzniklo z přihlášky.",
+        },
+        noMercenaryCategory: {
+            title: "Klan nemá kategorii žoldáků",
+            body: "Správce ji založí v Logi v Nastavení → Členství → Kategorie. Pak půjde žoldáka přijmout.",
         },
         dmFailed:
             "Uchazeči nejde poslat DM. Rozhodnutí najde ve vlákně přihlášky.",
@@ -397,6 +409,12 @@ const en: Copy = {
         windowsNote: {
             two: "The application has two short windows and takes about 2 minutes.",
             three: "The application has three short windows and takes about 3 minutes.",
+        },
+        defaultTitle: "Join the {clan} clan",
+        defaultTitleNoClan: "Join us",
+        defaultText: {
+            two: "Choose how you want to play with us. The application has two short windows and takes a few minutes.",
+            three: "Choose how you want to play with us. The application has three short windows and takes a few minutes.",
         },
     },
     label: "Application to {clan}",
@@ -569,7 +587,6 @@ const en: Copy = {
         closedLabel: "Application #{number} · closed",
         title: "{name} · {category}",
         pending: "Awaiting decision",
-        recruitPending: "Recruit · awaiting decision",
         submitted: "sent {time}",
         inGameName: "in-game name {name}",
         accounts: "Accounts",
@@ -587,6 +604,8 @@ const en: Copy = {
         },
         reject: "Reject…",
         undecidedButton: "Not decided yet",
+        mercenaryUnavailable:
+            "A mercenary can't be accepted yet: the clan has no mercenary category.",
         decidedTitle: {
             member: "{name} is accepted as Member",
             recruit: "{name} is accepted as Recruit",
@@ -640,6 +659,10 @@ const en: Copy = {
         notTracked: {
             title: "This thread is not an application",
             body: "Decisions are made in the thread created from an application.",
+        },
+        noMercenaryCategory: {
+            title: "The clan has no mercenary category",
+            body: "An admin adds one in Logi under Settings → Membership → Categories. Then you can accept a mercenary.",
         },
         dmFailed:
             "The applicant cannot receive DMs. They will find the decision in the application thread.",
@@ -741,6 +764,12 @@ const de: Copy = {
         windowsNote: {
             two: "Die Bewerbung hat zwei kurze Fenster und dauert etwa 2 Minuten.",
             three: "Die Bewerbung hat drei kurze Fenster und dauert etwa 3 Minuten.",
+        },
+        defaultTitle: "Werde Teil des Clans {clan}",
+        defaultTitleNoClan: "Mach mit",
+        defaultText: {
+            two: "Wähl aus, wie du mit uns spielen willst. Die Bewerbung hat zwei kurze Fenster und dauert ein paar Minuten.",
+            three: "Wähl aus, wie du mit uns spielen willst. Die Bewerbung hat drei kurze Fenster und dauert ein paar Minuten.",
         },
     },
     label: "Bewerbung bei {clan}",
@@ -916,7 +945,6 @@ const de: Copy = {
         closedLabel: "Bewerbung #{number} · geschlossen",
         title: "{name} · {category}",
         pending: "Wartet auf Entscheidung",
-        recruitPending: "Rekrut · wartet auf Entscheidung",
         submitted: "abgeschickt {time}",
         inGameName: "Spielername {name}",
         accounts: "Konten",
@@ -934,6 +962,8 @@ const de: Copy = {
         },
         reject: "Ablehnen…",
         undecidedButton: "Noch nicht entschieden",
+        mercenaryUnavailable:
+            "Söldner können noch nicht aufgenommen werden: Der Clan hat keine Söldner-Kategorie.",
         decidedTitle: {
             member: "{name} ist als Mitglied aufgenommen",
             recruit: "{name} ist als Rekrut aufgenommen",
@@ -987,6 +1017,10 @@ const de: Copy = {
         notTracked: {
             title: "Dieser Thread ist keine Bewerbung",
             body: "Entschieden wird im Thread, der aus einer Bewerbung entstanden ist.",
+        },
+        noMercenaryCategory: {
+            title: "Der Clan hat keine Söldner-Kategorie",
+            body: "Ein Admin legt sie in Logi unter Einstellungen → Mitgliedschaft → Kategorien an. Dann kannst du Söldner aufnehmen.",
         },
         dmFailed:
             "Dem Bewerber kann keine DM geschickt werden. Er findet die Entscheidung im Bewerbungsthread.",
@@ -1047,3 +1081,10 @@ const applicationMessages: Record<ClanLanguage, Copy> = { cs, en, de }
 export const getApplicationMessages: (
     language?: string | null
 ) => ApplicationCopy = clanCopy(applicationMessages)
+
+/** The panel defaults of every clan language, to recognise a default text. */
+export const applicationPanelDefaults: readonly PanelDefaultCopy[] = [
+    cs.panel,
+    en.panel,
+    de.panel,
+]

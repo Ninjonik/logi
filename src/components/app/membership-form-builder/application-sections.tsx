@@ -15,6 +15,7 @@ import {
     type DecisionRolePolicy,
 } from "@/domain/membership/application-decision"
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
+import { categoryInitials } from "@/components/app/membership-form-builder/category-initials"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
 import type { MessageView } from "@/domain/discord-messages/message-view"
 import { categoryName } from "@/domain/membership/application-views"
@@ -58,17 +59,6 @@ function RoleChip({ children }: { children: ReactNode }) {
         <span className="bg-background rounded-md border px-1.5 py-0.5 text-xs whitespace-nowrap">
             {children}
         </span>
-    )
-}
-
-function categoryInitials(category: MembershipCategory) {
-    const words = (category.label ?? "").trim().split(/\s+/).filter(Boolean)
-    return (
-        words
-            .slice(0, 2)
-            .map((word) => word[0])
-            .join("")
-            .toUpperCase() || "?"
     )
 }
 
@@ -171,7 +161,9 @@ export function CategoriesSummary({
                                                     aria-hidden="true"
                                                     className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold"
                                                 >
-                                                    {categoryInitials(category)}
+                                                    {categoryInitials(
+                                                        category.label
+                                                    )}
                                                 </span>
                                                 {name}
                                             </span>
@@ -369,6 +361,8 @@ export function AfterSubmitSection({
     welcome,
     decisionCard,
     decisionCategory,
+    mercenaryCategory,
+    recruitOnApply,
     policy,
     roleName,
     preview,
@@ -384,6 +378,10 @@ export function AfterSubmitSection({
     welcome: string
     decisionCard: MessageView | null
     decisionCategory: MembershipCategory | null
+    /** The clan's mercenary category for "Přijmout jako žoldáka". */
+    mercenaryCategory: MembershipCategory | null
+    /** Whether the category's applicant waits with the recruit role. */
+    recruitOnApply: boolean
     policy: DecisionRolePolicy | null
     roleName(roleId: string): string
     preview: FormBuilderPreview
@@ -398,7 +396,7 @@ export function AfterSubmitSection({
 }) {
     const rows =
         decisionCategory && policy
-            ? decisionTable(policy, decisionCategory.assignmentType)
+            ? decisionTable(policy, { recruitOnApply })
             : []
     const changes = (add: readonly string[], remove: readonly string[]) => {
         const parts = [
@@ -549,12 +547,15 @@ export function AfterSubmitSection({
                                                 {t.outcomes[row.outcome]}
                                             </th>
                                             <td className="px-3 py-2">
-                                                {policy.roleSync
-                                                    ? changes(
-                                                          row.add,
-                                                          row.remove
-                                                      )
-                                                    : t.noRoleChange}
+                                                {row.unavailable ? (
+                                                    <span className="text-amber-700 dark:text-amber-400">
+                                                        {t.mercenaryMissing}
+                                                    </span>
+                                                ) : policy.roleSync ? (
+                                                    changes(row.add, row.remove)
+                                                ) : (
+                                                    t.noRoleChange
+                                                )}
                                             </td>
                                             <td className="px-3 py-2">
                                                 {row.outcome === "denied"
@@ -585,6 +586,19 @@ export function AfterSubmitSection({
                         <p className="text-muted-foreground text-xs">
                             {t.roleSyncOff}
                         </p>
+                    ) : null}
+                    {decisionCategory && policy ? (
+                        mercenaryCategory ? (
+                            <p className="text-muted-foreground text-xs">
+                                {fillTemplate(t.mercenaryCategoryNote, {
+                                    category: categoryName(mercenaryCategory),
+                                })}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                {t.mercenaryMissingNote}
+                            </p>
+                        )
                     ) : null}
                     <p className="text-muted-foreground text-xs">
                         {t.decisionNote}

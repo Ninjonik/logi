@@ -44,6 +44,8 @@ function backend(
         transcriptMessageId?: string
         /** "DM po rozhodnutí o přihlášce" (N1-39); missing is on. */
         decisionDm?: boolean
+        /** The clan's categories besides the applicant's own. */
+        categories?: Array<Record<string, unknown>>
     }
 ) {
     const writes: Array<{ name: string; args: Record<string, unknown> }> = []
@@ -65,7 +67,10 @@ function backend(
                         timezone: "Europe/Prague",
                         dashboardAdminRoleId: "logi-admin",
                         clanRoleId: "clan",
-                        membershipSettings: { enabled: true },
+                        membershipSettings: {
+                            enabled: true,
+                            categories: input.categories ?? [],
+                        },
                         ...(input.decisionDm === false
                             ? { applicationCloseDmEnabled: false }
                             : {}),
@@ -153,6 +158,7 @@ function discord(input: {
             cache: new Map([
                 ["clan", { name: "Klan" }],
                 ["member", { name: "Člen" }],
+                ["merc", { name: "Žoldák" }],
             ]),
         },
         members: {
@@ -428,4 +434,81 @@ test("decision DMs switched off in Zprávy a panely are not sent (N1-39)", async
         texts(replies.at(-1)),
         /DM o rozhodnutí má klan v nastavení zpráv vypnuté\./
     )
+})
+
+const mercenaryCategory = {
+    id: "merc-wd",
+    gameId: "wardogs",
+    label: "Žoldák",
+    supportRoleIds: [],
+    recruitRoleIds: [],
+    finalRoleIds: ["merc"],
+    modalQuestions: [],
+    assignmentType: "mercenary",
+}
+
+test("Přijmout jako žoldáka grants the clan's mercenary category, not @Člen (L6-B08)", async (t) => {
+    const guildId = newGuildId()
+    const writes = backend(t, { guildId, categories: [mercenaryCategory] })
+    const { base, replies, dms, sent } = discord({
+        guildId,
+        roles: ["recruiters"],
+    })
+    await handleCloseApplicationCommand({
+        ...base,
+        options: {
+            getString: (name: string) =>
+                name === "outcome" ? "mercenary" : null,
+        },
+    } as unknown as ChatInputCommandInteraction)
+    assert.deepEqual(
+        writes.map((write) => write.name),
+        [
+            "membershipApplications:claimApplicationDecision",
+            "userAssignments:upsertByServerDiscordId",
+            "userAssignments:remove",
+            "discordMembership:closeMembershipApplicationThread",
+        ]
+    )
+    // The Wardogs mercenary category: its game first, then the HLL membership goes.
+    assert.equal(writes[1]!.args.gameId, "wardogs")
+    assert.equal(writes[1]!.args.type, "mercenary")
+    assert.equal(writes[1]!.args.status, "active")
+    assert.equal(writes[1]!.args.membershipCategoryId, "merc-wd")
+    assert.equal(writes[1]!.args.assignmentId, undefined)
+    assert.equal(writes[2]!.args.assignmentId, "assignment-1")
+    assert.match(
+        texts(sent[0]),
+        /Role <@&clan> a <@&merc> přidá Logi do minuty\./
+    )
+    assert.doesNotMatch(texts(sent[0]), /<@&member>/)
+    const dm = texts(dms[0])
+    assert.match(dm, /### Vítej v klanu, jsi Žoldák/)
+    assert.match(dm, /přihlášku do Wardogs\. Role Klan a Žoldák dostaneš/)
+    assert.match(texts(replies.at(-1)), /Přihláška #42 uzavřena: Žoldák/)
+})
+
+test("without a mercenary category the žoldák decision changes nothing", async (t) => {
+    const guildId = newGuildId()
+    const writes = backend(t, { guildId })
+    const command = discord({ guildId, roles: ["recruiters"] })
+    await handleCloseApplicationCommand({
+        ...command.base,
+        options: {
+            getString: (name: string) =>
+                name === "outcome" ? "mercenary" : null,
+        },
+    } as unknown as ChatInputCommandInteraction)
+    assert.match(
+        texts(command.replies.at(-1)),
+        /### Klan nemá kategorii žoldáků\nSprávce ji založí v Logi v Nastavení → Členství → Kategorie\. Pak půjde žoldáka přijmout\./
+    )
+    // An old card's button gets the same private answer.
+    const button = discord({ guildId, roles: ["recruiters"] })
+    await handleDecisionButton({
+        ...button.base,
+        customId: "application-decision:mercenary",
+    } as unknown as ButtonInteraction)
+    assert.match(texts(button.replies[0]), /### Klan nemá kategorii žoldáků/)
+    assert.deepEqual(writes, [])
 })

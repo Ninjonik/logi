@@ -108,6 +108,7 @@ test("the decision preview is the real card with all five buttons (N4-39)", () =
         inGameName: "Hráč 17",
         ...previewCardAnswers(cs, applicant),
         supportRoleIds: [],
+        mercenaryAvailable: true,
     })
     const json = JSON.stringify(card)
     for (const label of [

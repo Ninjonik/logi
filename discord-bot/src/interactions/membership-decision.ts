@@ -23,6 +23,7 @@ import {
 } from "../../../src/domain/membership/application-views"
 import {
     isApplicationOutcome,
+    mercenaryCategoryFor,
     type ApplicationOutcome,
     type AssignmentType,
 } from "../../../src/domain/membership/application-decision"
@@ -97,6 +98,22 @@ const applicantNameOf = (context: ApplicationThreadContext) =>
     context.application.inGameName?.trim() ||
     `#${context.application.applicationNumber}`
 
+/**
+ * The clan's mercenary category for "Přijmout jako žoldáka" (L6-B08): the
+ * role it grants is that category's, never the applicant's member category.
+ */
+export function mercenaryCategoryOf(context: ApplicationThreadContext) {
+    const application = context.application
+    return mercenaryCategoryFor(
+        context.config.membershipSettings?.categories ?? [],
+        {
+            categoryId: application.categoryId,
+            gameId: application.gameId ?? "hell_let_loose",
+            games: application.games,
+        }
+    )
+}
+
 function roleNames(guild: Guild, roleIds: readonly string[]) {
     return roleIds
         .map((roleId) => guild.roles.cache.get(roleId)?.name)
@@ -123,9 +140,8 @@ function openCardView(context: ApplicationThreadContext): MessageView {
             label: answer.label,
             value: answer.value,
         })),
-        status:
-            context.assignment?.status === "recruit" ? "recruit" : "pending",
         supportRoleIds: context.category?.supportRoleIds ?? [],
+        mercenaryAvailable: mercenaryCategoryOf(context) !== null,
         undecided:
             application.undecidedAt && application.undecidedByName
                 ? {
@@ -164,7 +180,10 @@ async function runDecision(
         application.assignmentType
     const decidedAt = new Date().toISOString()
     const actor = { userId: decider.id, kind: "recruitment" as const }
+    const mercenary = mercenaryCategoryOf(context)
+    const applicationGame = application.gameId ?? "hell_let_loose"
     let assignmentId = application.assignmentId
+    let decidedGame = applicationGame
 
     return await decideApplication(
         {
@@ -176,27 +195,42 @@ async function runDecision(
             },
             release: () => releaseApplicationDecision(application.threadId),
             writeAssignment: async (change) => {
-                if (change.kind === "remove") {
-                    if (!assignmentId) return
+                const remove = async (id: string) => {
                     await convex.mutation(applicationRefs.removeAssignment, {
                         secret,
-                        assignmentId,
+                        assignmentId: id,
                         roleActor: actor,
                         roleGuildId: guild.id,
                     })
+                }
+                if (change.kind === "remove") {
+                    if (assignmentId) await remove(assignmentId)
                 } else {
+                    // "Přijmout jako žoldáka" may move the membership to the
+                    // mercenary category of another game: the new game's
+                    // membership first, so the clan role is never dropped,
+                    // then the application's one goes.
+                    const game = change.category?.gameId ?? applicationGame
+                    const moved = game !== applicationGame
+                    const previousId = assignmentId
+                    decidedGame = game
                     assignmentId = (await convex.mutation(
                         applicationRefs.upsertAssignment,
                         {
                             secret,
                             serverDiscordId: guild.id,
-                            assignmentId,
+                            assignmentId: moved
+                                ? context.assignments?.find(
+                                      (row) => row.gameId === game
+                                  )?.id
+                                : assignmentId,
                             roleActor: actor,
-                            gameId: application.gameId,
+                            gameId: game,
                             userId: application.creatorId,
                             type: change.type,
                             status: change.status,
                             membershipCategoryId:
+                                change.category?.id ??
                                 context.assignment?.membershipCategoryId ??
                                 application.categoryId,
                             primaryGroupId: undefined,
@@ -205,6 +239,7 @@ async function runDecision(
                             pausedNote: undefined,
                         }
                     )) as string
+                    if (moved && previousId) await remove(previousId)
                 }
                 await revalidateAppData({
                     type: "assignment-changed",
@@ -255,7 +290,7 @@ async function runDecision(
                             clanName: context.clanName || guild.name,
                             number: application.applicationNumber,
                             outcome,
-                            gameId: application.gameId ?? "hell_let_loose",
+                            gameId: decidedGame,
                             reason,
                             // Mentions do not render outside the server (L2-B13).
                             roleNames: roleNames(guild, roles.after),
@@ -307,6 +342,7 @@ async function runDecision(
             outcome,
             categoryType,
             before: context.assignment?.status ?? null,
+            mercenaryCategory: mercenary,
             policy: {
                 clanRoleId: context.config.clanRoleId,
                 roleSync: syncsMembershipRoles(settings),
@@ -314,6 +350,7 @@ async function runDecision(
                     recruitRoleIds: category?.recruitRoleIds ?? [],
                     finalRoleIds: category?.finalRoleIds ?? [],
                 },
+                mercenaryCategory: mercenary,
             },
         }
     )
@@ -510,6 +547,17 @@ export async function handleDecisionButton(interaction: ButtonInteraction) {
     }
     if (action !== "member" && action !== "recruit" && action !== "mercenary")
         return
+    // A card posted before the clan removed its mercenary category.
+    if (action === "mercenary" && !mercenaryCategoryOf(context)) {
+        await replyPrivately(
+            interaction,
+            decisionErrors.noMercenaryCategory(
+                getApplicationMessages(context.config.defaultLanguage)
+            ),
+            options
+        )
+        return
+    }
     await interaction.deferUpdate()
     const result = await safeDecision(interaction, context, () =>
         runDecision(
@@ -629,6 +677,15 @@ async function reportDecisionResult(
             await interaction.deleteReply().catch(() => null)
         return
     }
+    if (result.status === "no-mercenary-category") {
+        await interaction.followUp(
+            interactionReplyPayload(
+                decisionErrors.noMercenaryCategory(copy),
+                options
+            )
+        )
+        return
+    }
     const fresh = await loadApplicationThreadContext(
         context.application.threadId
     )
@@ -665,6 +722,12 @@ export async function handleCloseApplicationCommand(
         : "pending"
     const reason = interaction.options.getString("reason")?.trim() || undefined
     await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+    if (outcome === "mercenary" && !mercenaryCategoryOf(context)) {
+        await interaction.editReply(
+            editPayload(decisionErrors.noMercenaryCategory(copy), options)
+        )
+        return
+    }
     const result = await runDecision(
         context,
         {
@@ -690,6 +753,12 @@ export async function handleCloseApplicationCommand(
         outcome,
         reason
     )
+    if (result.status === "no-mercenary-category") {
+        await interaction.editReply(
+            editPayload(decisionErrors.noMercenaryCategory(copy), options)
+        )
+        return
+    }
     if (result.status !== "decided") {
         const fresh = await loadApplicationThreadContext(thread.id)
         await interaction.editReply(

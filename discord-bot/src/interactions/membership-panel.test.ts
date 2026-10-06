@@ -65,7 +65,7 @@ function flatten(component: Json): Json[] {
 }
 
 function render(value: DiscordConfig) {
-    const payload = buildMembershipPanelPayload(value)
+    const payload = buildMembershipPanelPayload(value, "Vlci")
     assert.ok(payload)
     const container = JSON.parse(
         JSON.stringify(payload.components[0]!.toJSON())
@@ -139,15 +139,57 @@ test("the window note follows the form: two windows without clan questions", () 
 
 test("a panel without categories is not posted", () => {
     assert.equal(
-        buildMembershipPanelPayload({
-            ...config,
-            membershipSettings: {
-                ...config.membershipSettings!,
-                categories: [],
+        buildMembershipPanelPayload(
+            {
+                ...config,
+                membershipSettings: {
+                    ...config.membershipSettings!,
+                    categories: [],
+                },
             },
-        }),
+            "Vlci"
+        ),
         null
     )
+})
+
+test("a never-changed default reads the board copy in the clan language (L6-12, N4-07/08)", () => {
+    // The pre-redesign default the dashboard seeded, even in another language.
+    for (const legacy of [
+        {
+            panelTitle: "Přihlásit se do klanu",
+            panelDescription:
+                "Vyberte typ přihlášky, který vám odpovídá. Pokud ještě potřebujeme vaše platform ID, nejdřív vás tím provedeme.",
+        },
+        {
+            panelTitle: "Apply to the clan",
+            panelDescription:
+                "Pick the application type that matches you. If we still need your platform ID, we will guide you through it first.",
+        },
+        // The English default seeded before a switch to Czech.
+        {
+            panelTitle: "Join the Vlci clan",
+            panelDescription:
+                "Choose how you want to play with us. The application has three short windows and takes a few minutes.",
+        },
+    ]) {
+        const { text } = render({
+            ...config,
+            membershipSettings: { ...config.membershipSettings!, ...legacy },
+        })
+        assert.match(text, /### Přidej se ke klanu Vlci/)
+        assert.match(
+            text,
+            /Vyber, jak s námi chceš hrát\. Přihláška má tři krátká okna a zabere pár minut\./
+        )
+        // The default text already says it: no second windows note.
+        assert.doesNotMatch(text, /zabere asi 3 minuty/)
+        assert.doesNotMatch(text, /platform ID|Vyberte/)
+    }
+    // Custom text stays as written, with the note.
+    const custom = render(config).text
+    assert.match(custom, /Hrajeme Hell Let Loose a Wardogs/)
+    assert.match(custom, /zabere asi 3 minuty/)
 })
 
 test("a panel colour replaces the clan colour on the bar (L4-10)", () => {
