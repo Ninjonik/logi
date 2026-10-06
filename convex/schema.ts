@@ -613,6 +613,14 @@ export default defineSchema({
         reconciliationRun: v.optional(v.string()),
         reconciliationCursor: v.optional(v.union(v.string(), v.null())),
         reconciliationLeaseUntil: v.optional(v.number()),
+        // The watermarks of `peopleSummaries:reconcileResultLinks`: when the
+        // current run started and whether it walks every event, when the
+        // last complete run started (the next incremental run walks the
+        // events updated since) and when the last complete full walk started.
+        reconciliationStartedAt: v.optional(v.string()),
+        reconciliationFull: v.optional(v.boolean()),
+        reconciliationSince: v.optional(v.string()),
+        reconciliationFullWalkAt: v.optional(v.string()),
     }).index("key", ["key"]),
     peopleResultLinks: defineTable({
         eventId: v.id("events"),

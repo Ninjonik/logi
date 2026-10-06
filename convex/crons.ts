@@ -10,9 +10,11 @@ crons.interval(
     makeFunctionReference<"action">("leagueDiscoveryJobs:collectDue"),
     {}
 )
+// Walks the events updated since its last complete run, and every event once
+// a day; the inline rebuild on a reviewed-result change does the real work.
 crons.interval(
     "reconcile people result relationships",
-    { minutes: 5 },
+    { minutes: 15 },
     makeFunctionReference<"mutation">("peopleSummaries:reconcileResultLinks"),
     {}
 )
