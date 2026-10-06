@@ -138,8 +138,6 @@ export type SeedMessagesCopy = {
         alreadyLiveBody: (liveFrom: string) => string
         offlineTitle: string
         offlineBody: string
-        disabledTitle: string
-        disabledBody: string
         notConfiguredTitle: string
         notConfiguredBody: string
         stoppedTitle: (server: string) => string

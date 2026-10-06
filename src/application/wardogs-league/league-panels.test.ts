@@ -66,6 +66,8 @@ test("before any parsed result: fixtures ship and the table waits for the first 
         [38, 39]
     )
     assert.deepEqual(panels.fixtures?.recentResults?.items, [])
+    // Nothing collected yet: the recent results wait instead of reading empty (P6-18).
+    assert.equal(panels.fixtures?.recentResults?.state, "waiting_for_results")
     assert.equal(store.fixtures.get("m37")?.phase, "completed")
 })
 
@@ -119,8 +121,18 @@ test("once results are parsed the table, recent results and revisions follow", a
         panels.fixtures?.recentResults?.items.map((r) => r.fixtureNumber),
         [37, 33]
     )
+    assert.equal(panels.fixtures?.recentResults?.state, "ready")
     assert.equal(panels.standings?.revision, 2)
     assert.equal(panels.fixtures?.revision, 6)
+
+    // A quiet week after results were collected says so.
+    const later = await loadLeaguePanels(store.panelSource(), {
+        now: now + 30 * 86_400_000,
+        ourTeamCodes: ["VLK"],
+        options: DEFAULT_LEAGUE_PANEL_OPTIONS,
+    })
+    assert.deepEqual(later.fixtures?.recentResults?.items, [])
+    assert.equal(later.fixtures?.recentResults?.state, "ready")
 })
 
 test("switched-off content produces no panel", async () => {

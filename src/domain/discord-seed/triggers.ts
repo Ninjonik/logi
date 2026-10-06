@@ -117,18 +117,18 @@ export function evaluateSeedTriggers(input: {
 
 export type SeedManualRefusal =
     | { kind: "running" }
-    | { kind: "disabled" }
     | { kind: "not_configured" }
     | { kind: "offline" }
     | { kind: "already_live"; players: number }
     | { kind: "cooldown"; retryAt: number; remainingMs: number }
 
 /**
- * "Seed teď" and "Spustit seed" (P3-09): work at any time of day and at any
- * player count below the live threshold, but never twice at once, never on a
- * plan that is off or has no seed channel, never on a server the provider
- * reports offline, and never inside the cooldown. Without fresh data the admin
- * decides.
+ * "Seed teď" and "Spustit seed" (P3-09, P3-B02): "Jde vždy" — at any time of
+ * day, at any player count below the live threshold and also while the plan
+ * switch is off, which governs only the schedule and the automatic trigger.
+ * Never twice at once, never without a seed channel, never on a server the
+ * provider reports offline, and never inside the cooldown. Without fresh data
+ * the admin decides.
  */
 export function decideManualSeedStart(input: {
     plan: SeedPlanSettings
@@ -142,7 +142,6 @@ export function decideManualSeedStart(input: {
         refusal,
     })
     if (state.activeRunId) return refuse({ kind: "running" })
-    if (!plan.enabled) return refuse({ kind: "disabled" })
     if (!plan.seedChannelId) return refuse({ kind: "not_configured" })
     if (reading?.online === false) return refuse({ kind: "offline" })
     if (reading && reading.players >= plan.liveFrom)

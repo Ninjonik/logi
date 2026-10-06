@@ -493,12 +493,7 @@ export type SeedButtonResult =
     | { status: "cooldown"; retryAt: string }
     | {
           status: "unavailable"
-          reason:
-              | "disabled"
-              | "not_configured"
-              | "offline"
-              | "already_live"
-              | "not_running"
+          reason: "not_configured" | "offline" | "already_live" | "not_running"
       }
     | { status: "forbidden" }
     | { status: "not_found" }
@@ -588,12 +583,6 @@ export function seedActionReplyView(input: {
                     return seedReplyView({
                         title: r.offlineTitle,
                         body: r.offlineBody,
-                    })
-                case "disabled":
-                    return seedReplyView({
-                        title: r.disabledTitle,
-                        body: r.disabledBody,
-                        action: link(input.planUrl, r.openInLogi),
                     })
                 case "not_configured":
                     return seedReplyView({

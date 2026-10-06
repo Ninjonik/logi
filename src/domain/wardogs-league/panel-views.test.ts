@@ -55,6 +55,7 @@ const fixtures = buildFixturesView(
         ourTeamCodes: ["VLK"],
         options: DEFAULT_LEAGUE_PANEL_OPTIONS,
         revision: 1,
+        resultsCollected: true,
         dataAt: now,
     }
 )

@@ -543,7 +543,10 @@ test("a new results panel backfills the last five confirmed results, oldest firs
             (i) => `panel:discordPublicPanels:1:result:events:${i}`
         )
     )
-    assert.match(render(fake.published[0]!.message).text, /Spojenci 4 : 1 Osa/)
+    assert.match(
+        render(fake.published[0]!.message).text,
+        /### Spojenci ★ 4 : 1 Osa ✚/
+    )
 })
 
 test("the calendar redraws only on a request; League waits for its renderer", async () => {

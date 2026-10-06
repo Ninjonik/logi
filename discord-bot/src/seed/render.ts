@@ -5,22 +5,18 @@ import {
     seedIntroView,
 } from "../../../src/domain/discord-seed/views"
 import {
-    liveMapLine,
-    snapshotLiveFacts,
-} from "../../../src/domain/discord-publications/live-panel"
-import type {
-    MessageMedia,
-    MessageView,
-} from "../../../src/domain/discord-messages/message-view"
+    seedMapFacts as sharedSeedMapFacts,
+    type SeedMapFacts,
+} from "../../../src/domain/discord-seed/map"
 import type {
     SeedDeliveryServer,
     SeedDeliveryState,
 } from "../../../convex/discordSeedBot"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
+import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import type { StoredSeedRun } from "../../../src/application/discord-seed/ports"
 import type { ServerSnapshot } from "../../../src/domain/game-data/contracts"
 import { getSeedMessages } from "../../../src/lib/clan-language/seed"
-import { artworkPath } from "../public-panels/render"
 
 /** The clan the seed messages are drawn for. */
 export type SeedGuildContext = {
@@ -32,36 +28,23 @@ export type SeedGuildContext = {
     siteUrl: string
 }
 
-/** The map line ("Foy · Warfare · Den"), the map name and its picture. */
+/**
+ * The map line ("Foy · Warfare · Den"), the map name and its picture, from
+ * the shared domain rule the P3 previews use too (P3-19, P3-20).
+ */
 export function seedMapFacts(
     snapshot: ServerSnapshot | null,
     language: string,
     siteUrl: string
-): {
-    mapLine: string | null
-    mapName: string | null
-    thumbnail: MessageMedia | null
-} {
-    if (!snapshot) return { mapLine: null, mapName: null, thumbnail: null }
-    const facts = snapshotLiveFacts(snapshot)
-    const path = facts.map
-        ? artworkPath(snapshot.gameId, facts.map.key ?? snapshot.map)
-        : null
-    let thumbnail: MessageMedia | null = null
-    if (path && facts.map)
-        try {
-            thumbnail = {
-                url: new URL(path, siteUrl).href,
-                description: facts.map.name,
-            }
-        } catch {
-            thumbnail = null
-        }
-    return {
-        mapLine: liveMapLine(facts, language) || null,
-        mapName: facts.map?.name ?? null,
-        thumbnail,
-    }
+): SeedMapFacts {
+    return sharedSeedMapFacts(
+        {
+            gameId: snapshot?.gameId ?? "hell_let_loose",
+            map: snapshot?.map ?? null,
+        },
+        language,
+        siteUrl
+    )
 }
 
 /** The call of a run, with its "@Seed" line while it may ping. */

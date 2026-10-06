@@ -90,6 +90,7 @@ const fixtures: LeagueFixturesView = {
     hidden: 3,
     total: 6,
     recentResults: {
+        state: "ready",
         from: new Date(now - 7 * 86_400_000).toISOString(),
         to: new Date(now).toISOString(),
         items: [

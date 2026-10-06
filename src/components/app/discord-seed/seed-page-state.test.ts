@@ -4,6 +4,7 @@ import test from "node:test"
 import { boardSeedSettings } from "@/infrastructure/testing/in-memory-seed"
 import type { SeedHistoryEntry } from "@/domain/discord-seed/history"
 import { getSeedMessages } from "@/lib/clan-language/seed"
+import { seedMapFacts } from "@/domain/discord-seed/map"
 import { csMessages } from "@/i18n/messages/cs"
 
 import {
@@ -170,7 +171,10 @@ test("the call preview uses the bot's words, the plan and the current count (P3-
         fallback: { liveFrom: 40 },
         server: { name: "Vlci #1 · Public", gameId: "hell_let_loose" },
         reading: { players: 12, capacity: 100 },
-        mapLine: "Foy",
+        map: seedMapFacts(
+            { gameId: "hell_let_loose", map: "foy_warfare_day" },
+            "cs"
+        ),
         actorName: "Hráč 01",
         joinUrl: "https://logi.invalid/cs/join/vlci-1",
         now: NOW,
@@ -184,6 +188,15 @@ test("the call preview uses the bot's words, the plan and the current count (P3-
     assert.match(blocks, /Plán Po–Pá 17:00|Po–Pá 17:00/)
     assert.match(blocks, /Zvát mě na seed/)
     assert.equal(previews.live?.header?.title, "Server je živý")
+    // The bot's map rule: the full map line and the built-in map picture.
+    const picture = { url: "/maps/foy.webp", description: "Foy" }
+    assert.deepEqual(previews.seeding.header?.thumbnail, picture)
+    assert.match(blocks, /"Foy · Warfare · Den · /)
+    assert.deepEqual(previews.live?.header?.thumbnail, picture)
+    assert.match(
+        JSON.stringify(previews.live?.blocks),
+        /Vlci #1 · Public · Foy · Warfare · Den/
+    )
 
     const custom = seedCallPreviews({
         draft: {
@@ -196,7 +209,7 @@ test("the call preview uses the bot's words, the plan and the current count (P3-
         fallback: { liveFrom: 40 },
         server: { name: "Vlci #1 · Public", gameId: "hell_let_loose" },
         reading: { players: 55, capacity: 100 },
-        mapLine: null,
+        map: seedMapFacts({ gameId: "hell_let_loose", map: null }, "cs"),
         actorName: "Hráč 01",
         joinUrl: "https://logi.invalid/cs/join/vlci-1",
         now: NOW,
@@ -213,6 +226,11 @@ test("the call preview uses the bot's words, the plan and the current count (P3-
     )
     assert.match(customBlocks, /Chybí 28, pak hrajeme na Vlci #1 · Public\./)
     assert.doesNotMatch(customBlocks, /Zvát mě na seed/)
+    assert.equal(
+        custom.seeding.header?.thumbnail,
+        undefined,
+        "no map, no picture"
+    )
 })
 
 test("times read as today, yesterday or a date in the clan's zone", () => {

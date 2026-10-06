@@ -46,12 +46,7 @@ export type SeedActionResult =
     | { status: "cooldown"; retryAt: string }
     | {
           status: "unavailable"
-          reason:
-              | "disabled"
-              | "not_configured"
-              | "offline"
-              | "already_live"
-              | "not_running"
+          reason: "not_configured" | "offline" | "already_live" | "not_running"
       }
     /** The clicking member is not a Logi admin of the clan. */
     | { status: "forbidden" }

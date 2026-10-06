@@ -75,6 +75,7 @@ const fixtures = (options = DEFAULT_LEAGUE_PANEL_OPTIONS) =>
         ourTeamCodes: ["VLK"],
         options,
         revision: 1,
+        resultsCollected: true,
         dataAt: now - 60_000,
     })
 
@@ -193,6 +194,43 @@ test("nejbližší zápasy shows the board's fixtures, chips, links and the rece
     ])
 })
 
+test("before Logi collects League results the recent results wait instead of claiming none (P6-18)", () => {
+    const view = (resultsCollected: boolean) =>
+        buildFixturesView(boardLeagueFixtures(now), [], {
+            now,
+            ourTeamCodes: ["VLK"],
+            options: DEFAULT_LEAGUE_PANEL_OPTIONS,
+            revision: 1,
+            resultsCollected,
+            dataAt: now - 60_000,
+        })
+    const shown = (resultsCollected: boolean, language = "cs") =>
+        texts(
+            json(
+                fixturesPayload(view(resultsCollected), context({ language }), {
+                    fixtures: true,
+                }).payload
+            )
+        ).join("\n")
+    const waiting = shown(false)
+    assert.match(waiting, /\*\*Poslední výsledky\*\* · 2\.–9\. 10\./)
+    assert.match(waiting, /^Výsledky se zobrazí po prvních výsledcích ligy$/m)
+    assert.doesNotMatch(waiting, /nejsou žádné výsledky/)
+    assert.match(
+        shown(false, "en"),
+        /^Results appear after the first league results$/m
+    )
+    assert.match(
+        shown(false, "de"),
+        /^Die Ergebnisse erscheinen nach den ersten Liga-Ergebnissen$/m
+    )
+    // Once results are collected, a quiet week says so.
+    assert.match(
+        shown(true),
+        /^Za posledních 7 dní nejsou žádné výsledky ligy\.$/m
+    )
+})
+
 test("results alone are the board's 'WD League · poslední výsledky'", () => {
     const view = fixtures({ ...DEFAULT_LEAGUE_PANEL_OPTIONS, fixtures: false })
     const all = texts(
@@ -272,6 +310,7 @@ test("too many long fixtures stay within 4000 characters and say how many more a
         ourTeamCodes: ["VLK"],
         options: { ...DEFAULT_LEAGUE_PANEL_OPTIONS, fixtureCount: 10 },
         revision: 1,
+        resultsCollected: true,
     })
     const rendered = fixturesPayload(view, context(), { fixtures: true })
     const all = texts(json(rendered.payload)).join("")

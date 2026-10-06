@@ -17,10 +17,10 @@ import type { SeedDashboardResponse } from "@/application/discord-seed/read-dash
 import { channelOptions } from "@/components/app/settings/settings-channel-picker"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
-import { escapeMarkdownText } from "@/domain/discord-messages/message-view"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import { seedControlView } from "@/domain/discord-seed/views"
 import { getSeedMessages } from "@/lib/clan-language/seed"
+import { seedMapFacts } from "@/domain/discord-seed/map"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { pluralize } from "@/i18n/plural"
@@ -352,6 +352,11 @@ function SeedServerEditor({
         Number.isInteger(typedLiveFrom) && typedLiveFrom >= 1
             ? typedLiveFrom
             : fallback.liveFrom
+    // The bot's own map rule: "Foy · Warfare · Den" and the built-in map picture.
+    const map = seedMapFacts(
+        { gameId: selected.server.gameId, map: selected.status.map },
+        language
+    )
     const previews = seedCallPreviews({
         draft,
         fallback,
@@ -360,9 +365,7 @@ function SeedServerEditor({
             players: selected.status.players,
             capacity: selected.status.capacity,
         },
-        mapLine: selected.status.map
-            ? escapeMarkdownText(selected.status.map)
-            : null,
+        map,
         actorName,
         joinUrl,
         now,
@@ -376,7 +379,7 @@ function SeedServerEditor({
         seeding: selected.status.running,
         players: selected.status.players,
         capacity: selected.status.capacity,
-        mapName: selected.status.map,
+        mapName: map.mapName,
         liveFrom,
         panel: selected.panel ? { paused: selected.panel.paused } : null,
         locale: copy.locale,

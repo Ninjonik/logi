@@ -215,10 +215,6 @@ test("a manual start works below the live threshold at any time of day", () => {
         ok: false,
         refusal: { kind: "running" },
     })
-    assert.deepEqual(manual({ plan: plan({ enabled: false }) }), {
-        ok: false,
-        refusal: { kind: "disabled" },
-    })
     assert.deepEqual(manual({ plan: plan({ seedChannelId: null }) }), {
         ok: false,
         refusal: { kind: "not_configured" },
@@ -243,5 +239,47 @@ test("a manual start works below the live threshold at any time of day", () => {
                 remainingMs: 80 * 60_000,
             },
         }
+    )
+})
+
+test("a manual start works with the plan switched off; only the cooldown limits it (P3-09, P3-B02)", () => {
+    const off = plan({
+        enabled: false,
+        schedule: { enabled: false, slots: [] },
+        auto: { enabled: false, below: 20, from: "15:00", to: "22:00" },
+    })
+    const manual = (
+        overrides: Partial<Parameters<typeof decideManualSeedStart>[0]> = {}
+    ) =>
+        decideManualSeedStart({
+            plan: off,
+            state: state(),
+            reading: { players: 12, online: true },
+            now: at("2026-10-06T11:00:00Z"),
+            ...overrides,
+        })
+    assert.deepEqual(manual(), { ok: true }, "Seed teď: Jde vždy")
+    assert.deepEqual(manual({ reading: null }), { ok: true })
+    assert.deepEqual(
+        manual({ state: state({ lastStartedAt: at("2026-10-06T10:00:00Z") }) }),
+        {
+            ok: false,
+            refusal: {
+                kind: "cooldown",
+                retryAt: at("2026-10-06T12:00:00Z"),
+                remainingMs: HOUR,
+            },
+        },
+        "the cooldown between seeds still applies"
+    )
+    assert.deepEqual(
+        manual({ state: state({ lastStartedAt: at("2026-10-06T09:00:00Z") }) }),
+        { ok: true },
+        "a start exactly at the end of the cooldown works"
+    )
+    // The switch still stops the schedule and the automatic trigger.
+    assert.deepEqual(
+        evaluate({ plan: { ...off, schedule: plan().schedule } }),
+        { kind: "idle" }
     )
 })

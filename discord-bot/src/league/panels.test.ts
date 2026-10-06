@@ -78,6 +78,7 @@ function data(options: LeaguePanelOptions, results = boardLeagueResults()) {
                       ourTeamCodes: ["VLK"],
                       options,
                       revision: 1,
+                      resultsCollected: results.length > 0,
                       dataAt: now - 60_000,
                   })
                 : null,

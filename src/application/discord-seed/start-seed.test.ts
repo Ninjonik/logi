@@ -135,19 +135,12 @@ test("a seed inside the ping window runs without a ping, also across servers sha
     )
 })
 
-test("refusals: no plan, plan off, already live, offline, unknown server", async () => {
+test("refusals: no plan, already live, offline, unknown server", async () => {
     const empty = createSeedTestPorts(NOW)
     empty.players.set(SEED_TEST_SERVER, seedReading(12, NOW.getTime()))
     assert.deepEqual(await start(empty), {
         kind: "refused",
         refusal: { kind: "not_configured" },
-    })
-
-    const off = setup()
-    off.store.addPlan(SEED_TEST_SERVER, boardSeedSettings({ enabled: false }))
-    assert.deepEqual(await start(off), {
-        kind: "refused",
-        refusal: { kind: "disabled" },
     })
 
     const live = setup()
@@ -182,4 +175,28 @@ test("without fresh data the admin may still start; the run has no starting coun
     const result = await start(env)
     assert.equal(result.kind, "started")
     assert.equal(result.kind === "started" && result.run.players.start, null)
+})
+
+test("Seed teď works with the plan switched off, subject only to the cooldown (P3-09, P3-B02)", async () => {
+    const off = setup()
+    off.store.addPlan(SEED_TEST_SERVER, boardSeedSettings({ enabled: false }))
+    const result = await start(off)
+    assert.equal(result.kind, "started")
+    assert.equal(result.kind === "started" && result.run.trigger.kind, "manual")
+
+    const recent = setup()
+    recent.store.addPlan(
+        SEED_TEST_SERVER,
+        boardSeedSettings({ enabled: false }),
+        { lastStartedAt: NOW.getTime() - HOUR }
+    )
+    assert.deepEqual(await start(recent), {
+        kind: "refused",
+        refusal: {
+            kind: "cooldown",
+            retryAt: NOW.getTime() + HOUR,
+            remainingMs: HOUR,
+        },
+    })
+    assert.equal(recent.store.runs.size, 0)
 })

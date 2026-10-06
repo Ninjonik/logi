@@ -7096,7 +7096,6 @@ export const enMessages = {
             cooldown: "A seed cannot start now. The next one can start {time}.",
             running: "A seed is already running.",
             duplicate: "This seed is already running.",
-            disabled: "The seed plan is off. Turn it on and save.",
             not_configured: "Choose the call channel and save the plan first.",
             offline:
                 "The server is not answering. Start the seed once it is online.",

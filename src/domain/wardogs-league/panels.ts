@@ -145,6 +145,12 @@ export const leagueFixturesViewSchema = z.object({
     /** Null when the panel option "Poslední výsledky" is off. */
     recentResults: z
         .object({
+            /**
+             * "waiting_for_results" until Logi has collected any League result
+             * (INDEX resolution 7): the panel says so instead of claiming the
+             * League had no results (P6-18).
+             */
+            state: z.enum(["waiting_for_results", "ready"]),
             from: iso,
             to: iso,
             items: z.array(leagueRecentResultViewSchema),
@@ -271,7 +277,8 @@ export function buildStandingsView(
  * "WD League · nejbližší zápasy" (P6-21..31) with "poslední výsledky"
  * (P6-17..20) folded in: the nearest `fixtureCount` fixtures of the whole
  * League with teams, map, host and preparation, then podiums of the last
- * seven days.
+ * seven days. `resultsCollected` says whether Logi has stored any League
+ * result yet; until then the recent results wait instead of reading empty.
  */
 export function buildFixturesView(
     fixtures: readonly StoredLeagueFixture[],
@@ -281,6 +288,7 @@ export function buildFixturesView(
         ourTeamCodes: readonly string[]
         options: LeaguePanelOptions
         revision: number
+        resultsCollected: boolean
         dataAt?: number | null
     }
 ): LeagueFixturesView {
@@ -297,6 +305,7 @@ export function buildFixturesView(
     const shown = nearest.shown.map((fixture) =>
         fixtureView(fixture, ours, input.now)
     )
+    const recent = recentResults(results, input.now)
     return leagueFixturesViewSchema.parse({
         kind: "fixtures",
         fixtures: shown,
@@ -304,11 +313,15 @@ export function buildFixturesView(
         total: nearest.total,
         recentResults: input.options.recentResults
             ? {
+                  state:
+                      input.resultsCollected || recent.length
+                          ? "ready"
+                          : "waiting_for_results",
                   from: new Date(
                       input.now - RECENT_RESULT_DAYS * 86_400_000
                   ).toISOString(),
                   to: new Date(input.now).toISOString(),
-                  items: recentResults(results, input.now).map((result) => ({
+                  items: recent.map((result) => ({
                       ...result,
                       podium: result.podium.map((entry) => ({
                           place: entry.place,

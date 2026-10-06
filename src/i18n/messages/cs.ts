@@ -7057,7 +7057,6 @@ export const csMessages = {
             cooldown: "Seed teď spustit nejde. Další jde spustit {time}.",
             running: "Seed už běží.",
             duplicate: "Tento seed už běží.",
-            disabled: "Plán seedu je vypnutý. Zapněte ho a uložte.",
             not_configured: "Nejdřív vyberte kanál pro výzvu a plán uložte.",
             offline: "Server neodpovídá. Seed spustíte, až bude online.",
             already_live: "Server už je živý, seed není potřeba.",
