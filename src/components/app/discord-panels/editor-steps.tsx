@@ -23,6 +23,7 @@ import { useId, useState, type ReactNode } from "react"
 import Link from "next/link"
 
 import {
+    freeResultsGame,
     moveServer,
     panelTypeOptions,
     passwordAllowed,
@@ -80,6 +81,8 @@ export type EditorContext = {
     now: number
     sent: boolean
     takenKinds: PanelKind[]
+    /** Games that already have a results panel; results are one per game (P2-04). */
+    resultsTaken: ReadonlyArray<"hell_let_loose" | "wardogs">
     sources: Source[]
     servers: Record<string, ServerInfo>
     joins: Record<string, ServerJoinDraft>
@@ -183,7 +186,21 @@ export function TypeStep({
                                     checked={option.selected}
                                     disabled={option.disabled || ctx.disabled}
                                     onChange={() =>
-                                        ctx.update({ kind: option.kind })
+                                        ctx.update(
+                                            option.kind === "results"
+                                                ? {
+                                                      kind: option.kind,
+                                                      // A game without results yet (P2-04).
+                                                      gameId: freeResultsGame({
+                                                          current:
+                                                              ctx.draft.gameId,
+                                                          taken: ctx.resultsTaken,
+                                                          enabledGames:
+                                                              ctx.enabledGames,
+                                                      }),
+                                                  }
+                                                : { kind: option.kind }
+                                        )
                                     }
                                     className="peer sr-only"
                                 />
@@ -559,7 +576,13 @@ export function GameStep({
                                 type="radio"
                                 name={name}
                                 checked={ctx.draft.gameId === game}
-                                disabled={ctx.disabled || ctx.sent}
+                                disabled={
+                                    ctx.disabled ||
+                                    ctx.sent ||
+                                    // One results panel per game (P2-04).
+                                    (ctx.draft.gameId !== game &&
+                                        ctx.resultsTaken.includes(game))
+                                }
                                 onChange={() => ctx.update({ gameId: game })}
                             />
                             {text.gameNames[game]}
@@ -893,24 +916,52 @@ function JoinInputs({
             htmlFor={id}
             error={problems.includes(field) ? text.errors[field] : null}
         >
-            <Input
-                id={id}
-                value={join[field]}
-                disabled={ctx.disabled}
-                maxLength={field === "address" ? 100 : 24}
-                placeholder={
-                    field === "address"
-                        ? text.content.address.placeholder
-                        : "VLCI-7Q2"
-                }
-                spellCheck={false}
-                autoComplete="off"
-                className="max-w-56 rounded-lg font-mono"
-                aria-invalid={problems.includes(field) || undefined}
-                onChange={(event) =>
-                    ctx.setJoin(connectionId, { [field]: event.target.value })
-                }
-            />
+            <div className="flex flex-wrap items-center gap-2">
+                <Input
+                    id={id}
+                    value={join[field]}
+                    disabled={ctx.disabled}
+                    maxLength={field === "address" ? 100 : 24}
+                    placeholder={
+                        field === "address"
+                            ? text.content.address.placeholder
+                            : "VLCI-7Q2"
+                    }
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="max-w-56 rounded-lg font-mono"
+                    aria-invalid={problems.includes(field) || undefined}
+                    onChange={(event) =>
+                        ctx.setJoin(connectionId, {
+                            [field]: event.target.value,
+                        })
+                    }
+                />
+                {/* A saved address or code stays editable and can be removed (P2-15, P2-39). */}
+                {join[field].trim() ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8 rounded-lg px-2 text-xs"
+                        disabled={ctx.disabled}
+                        aria-label={fill(
+                            field === "address"
+                                ? text.content.address.clearFor
+                                : text.content.joinCode.clearFor,
+                            { server: name }
+                        )}
+                        onClick={() =>
+                            ctx.setJoin(connectionId, { [field]: "" })
+                        }
+                    >
+                        <X className="size-3.5" aria-hidden="true" />
+                        {field === "address"
+                            ? text.content.address.clear
+                            : text.content.joinCode.clear}
+                    </Button>
+                ) : null}
+            </div>
         </Field>
     )
 }
@@ -997,7 +1048,10 @@ export function ServerContentStep({
     const hll = game !== "wardogs"
     const server = ctx.servers[draft.connectionId]
     const join = ctx.joins[draft.connectionId]
-    const address = join?.address.trim() || server?.address || null
+    // The address as edited here; the saved one until the join details load.
+    const address = join
+        ? join.address.trim() || null
+        : (server?.address ?? null)
     const allowed = passwordAllowed({
         kind: "server",
         channelPrivate: ctx.channelPrivate,
@@ -1065,7 +1119,7 @@ export function ServerContentStep({
                         disabled={ctx.disabled}
                         onChange={(value) => set({ address: value })}
                     >
-                        {content.address && !server?.address ? (
+                        {content.address ? (
                             <JoinInputs
                                 ctx={ctx}
                                 connectionId={draft.connectionId}
@@ -1307,16 +1361,14 @@ export function ServersContentStep({
                     onChange={(address) => set({ address })}
                 >
                     {content.address
-                        ? hllServers
-                              .filter((id) => !ctx.servers[id]?.address)
-                              .map((id) => (
-                                  <JoinInputs
-                                      key={id}
-                                      ctx={ctx}
-                                      connectionId={id}
-                                      field="address"
-                                  />
-                              ))
+                        ? hllServers.map((id) => (
+                              <JoinInputs
+                                  key={id}
+                                  ctx={ctx}
+                                  connectionId={id}
+                                  field="address"
+                              />
+                          ))
                         : null}
                 </SwitchRow>
                 <SwitchRow

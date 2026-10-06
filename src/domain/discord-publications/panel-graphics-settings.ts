@@ -17,6 +17,7 @@ import {
     PANEL_EMOJI,
     PANEL_EMOJI_GROUP_SIZE,
     type PanelEmojiGroup,
+    type PanelEmojiKey,
 } from "./panel-emblems"
 
 /**
@@ -425,8 +426,42 @@ export const panelEmojiReportSchema = z.strictObject({
     ready: z.array(z.string().max(32)).max(PANEL_EMOJI.length),
     failed: z.array(z.string().max(32)).max(PANEL_EMOJI.length),
     checkedAt: z.number().int().min(0),
+    /**
+     * The installed emoji themselves (public IDs and names), so dashboard
+     * previews show them as Discord does (P2-B09). Absent from older bots.
+     */
+    installed: z
+        .array(
+            z.strictObject({
+                key: z.string().max(32),
+                id: z.string().regex(/^\d{17,20}$/),
+                name: z.string().regex(/^[A-Za-z0-9_]{2,32}$/),
+            })
+        )
+        .max(PANEL_EMOJI.length)
+        .optional(),
 })
 export type PanelEmojiReport = z.infer<typeof panelEmojiReportSchema>
+
+/**
+ * Discord markup (`<:name:id>`) of every installed panel sign the bot
+ * reported, by key, for the previews (P2-B09). Unknown keys are left out;
+ * an older report without IDs gives none, so previews use plain markers.
+ */
+export function panelEmojiMarkup(
+    report: Pick<PanelEmojiReport, "installed"> | null
+): Partial<Record<PanelEmojiKey, string>> {
+    const keys = new Set<string>(PANEL_EMOJI.map((emoji) => emoji.key))
+    const markup: Partial<Record<PanelEmojiKey, string>> = {}
+    for (const emoji of report?.installed ?? [])
+        if (
+            keys.has(emoji.key) &&
+            /^\d{17,20}$/.test(emoji.id) &&
+            /^[A-Za-z0-9_]{2,32}$/.test(emoji.name)
+        )
+            markup[emoji.key as PanelEmojiKey] = `<:${emoji.name}:${emoji.id}>`
+    return markup
+}
 export type PanelEmojiStatus = Record<
     PanelEmojiGroup,
     { ready: number; total: number; complete: boolean }

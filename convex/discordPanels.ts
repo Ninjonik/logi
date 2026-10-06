@@ -77,6 +77,7 @@ import { PANEL_WINDOW } from "../src/domain/wardogs-league/all-fixtures"
 import type { ServerSnapshot } from "../src/domain/game-data/contracts"
 import { getPanelMessages } from "../src/lib/clan-language/panels"
 import { projectSnapshot } from "../src/domain/game-data/policy"
+import { installedPanelEmoji } from "./discordPanelGraphics"
 import { panelAction } from "./discordPublicationTable"
 import { trackingConfig } from "./leagueTrackingStore"
 import { seedMessageOutbox } from "./discordSeedStore"
@@ -217,6 +218,7 @@ export const overview = query({
             panelServerInfos(ctx, args.guildId),
             controlMessages(ctx, args.guildId),
         ])
+        const emoji = await installedPanelEmoji(ctx)
         const people = await panelPeople(
             ctx,
             args.guildId,
@@ -244,6 +246,7 @@ export const overview = query({
             servers,
             controls,
             people,
+            emoji,
         })
         return {
             ...view,

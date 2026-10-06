@@ -112,6 +112,8 @@ const input = (
     liveFrom: {},
     images: { score: null, banner: null },
     assetOrigin: "https://logi.app",
+    canAttach: true,
+    emoji: {},
     ...overrides,
 })
 
@@ -173,6 +175,54 @@ test("style A asks for the score image; style B without its own banner for a gen
     assert.equal(previewBannerModel(b, null)?.clanTag, "VLC")
     b.draft = { ...b.draft, bannerUrl: "https://cdn.example/b.webp" }
     assert.equal(previewBannerModel(b, null), null)
+})
+
+test("without Attach Files the preview is the bot's text-only panel (P2-B09)", () => {
+    const a = input({ images: { score: "blob:score", banner: null } })
+    a.draft = { ...a.draft, style: null }
+    // With the permission: the score image (no map thumbnail beside it).
+    assert.ok(previewScoreModel(a, "#E8A33D"))
+    assert.match(JSON.stringify(liveServerPreview(a)), /blob:score/)
+    // Without it: no score image, no generated banner and no Logi map art.
+    const text = { ...a, canAttach: false }
+    assert.equal(previewScoreModel(text, "#E8A33D"), null)
+    const view = JSON.stringify(liveServerPreview(text))
+    assert.doesNotMatch(view, /blob:score/)
+    assert.doesNotMatch(view, /_next\/image/)
+    const b = input({ canAttach: false })
+    assert.equal(previewBannerModel(b, null), null)
+    // A banner of its own is a web address, so the bot still shows it.
+    b.draft = { ...b.draft, bannerUrl: "https://cdn.example/b.webp" }
+    assert.match(JSON.stringify(liveServerPreview(b)), /cdn\.example\/b\.webp/)
+    const combined = input({ canAttach: false })
+    combined.draft = {
+        ...newPanelDraft({ kind: "servers" }),
+        channelId: "123456789012345678",
+        connectionIds: ["hll-1"],
+    }
+    assert.doesNotMatch(
+        JSON.stringify(combinedPreview(combined)),
+        /_next\/image/
+    )
+})
+
+test("installed application emoji replace the plain side markers (P2-B09)", () => {
+    const plain = renderedView(liveServerPreview(input())!, "cs").text
+    assert.match(plain, /Spojenci ★/)
+    const signed = renderedView(
+        liveServerPreview(
+            input({
+                emoji: {
+                    us: "<:logi_us_1a2b3c4d:200000000000000021>",
+                    ger: "<:logi_ger_1a2b3c4d:200000000000000022>",
+                },
+            })
+        )!,
+        "cs"
+    ).text
+    assert.match(signed, /<:logi_us_1a2b3c4d:200000000000000021>/)
+    assert.match(signed, /<:logi_ger_1a2b3c4d:200000000000000022>/)
+    assert.doesNotMatch(signed, /Spojenci ★/)
 })
 
 test("Naše servery: rows in the chosen order with address, join code and seed bar (P2-43..45)", () => {

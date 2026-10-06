@@ -4,6 +4,11 @@ import assert from "node:assert/strict"
 import { createElement } from "react"
 import test from "node:test"
 
+import {
+    BOARD_EVENT_CATEGORIES,
+    BOARD_PANEL_CHANNELS,
+    boardPanelOverview,
+} from "@/infrastructure/testing/panel-overview"
 import { getDictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
 import { enMessages } from "@/i18n/messages/en"
@@ -43,35 +48,14 @@ const channels = [
     { id: "206", name: "Sraz", type: 2 },
     { id: "207", name: "Čety", type: 4 },
     { id: "208", name: "wd-zapasy", type: 0 },
-    { id: "209", name: "servery", type: 0 },
+    ...BOARD_PANEL_CHANNELS,
 ]
 
+// The board's panels as "Panely v Discordu" reports them (P1 overview).
 const overview: Overview = {
     status: "ready",
-    panels: [
-        {
-            _id: "p1",
-            kind: "server",
-            connectionId: "c1",
-            channelId: "209",
-            enabled: true,
-            refreshSeconds: 60,
-            publications: [{ messageId: "1" }],
-        },
-        {
-            _id: "p2",
-            kind: "results",
-            connectionId: "c1",
-            channelId: "209",
-            enabled: false,
-            publications: [],
-        },
-    ],
-    sources: new Map([
-        ["c1", { name: "Vlci #1 · Public", gameId: "hell_let_loose" }],
-    ]),
-    reportCategories: [],
-    seed: null,
+    panels: boardPanelOverview(Date.parse("2026-10-05T16:00:00.000Z")),
+    seed: { configured: true, enabled: true },
 }
 
 function render(locale: "cs" | "en" | "de" = "cs") {
@@ -101,6 +85,7 @@ function render(locale: "cs" | "en" | "de" = "cs") {
                     panels: "/cs/x/discord-panels",
                     seed: "/cs/x/discord-seed",
                 },
+                categories: BOARD_EVENT_CATEGORIES,
                 dictionary,
                 channels,
                 channelsStatus: "ready",
@@ -161,12 +146,26 @@ test("the page shows the board's sections and rows in Czech (N1-02..44)", () => 
         "Odpovědi příkazů",
         "Panely",
         "Přidat panel",
+        // Every panel of "Panely v Discordu" with its state (N1-29..36).
         "Vlci #1 · Public",
+        "Živý server · obnovuje se každých 60 s · tlačítka Připojit se, Zobrazit hráče a Nahlásit hráče",
+        "Vlci #2 · Trénink a zápasy",
+        "Živý server v soukromém kanálu · ukazuje i heslo serveru",
+        "Vlci WD",
+        "Chyba",
+        "Bot nemá oprávnění Vkládat odkazy v #servery-wd",
+        "Naše servery",
+        "Neodesláno",
+        "Vlci #1, Vlci #2 a Vlci WD v jedné zprávě",
+        "Ovládání serveru",
+        "Seed, Obnovit a Pozastavit · smí jen Správci Logi",
         "Výsledky HLL",
-        "Pozastaveno",
-        "Kalendář",
-        "Nadcházející akce klanu, kategorie Zápas, Liga",
+        "Po potvrzení výsledku v Logi · po vytvoření pošle posledních 5 potvrzených",
         "WD League",
+        "Dvě zprávy pod sebou: tabulka a nejbližší zápasy celé ligy · obnovují se každých 60 s",
+        "Kalendář",
+        "Pozastaveno",
+        "Nadcházející akce klanu, kategorie Zápas a Liga · pozastavil Hráč 01",
         "Členství a tickety",
         "Panel náboru",
         "Tlačítko Podat přihlášku",
@@ -204,7 +203,12 @@ test("every switch and the errors channel picker have their board names (N1-45a)
         "DM žadateli po uzavření přihlášky",
         "DM autorovi po uzavření ticketu",
         "Panel Vlci #1 · Public",
+        "Panel Vlci #2 · Trénink a zápasy",
+        "Panel Vlci WD",
+        "Panel Naše servery",
+        "Ovládání serveru",
         "Panel Výsledky HLL",
+        "Panely WD League",
         "Panel Kalendář",
     ])
         assert.ok(html.includes(`aria-label="${label}"`), label)
@@ -238,4 +242,16 @@ test("the page copy has the same keys in cs, en and de", () => {
     const cs = keys(csMessages.settingsHub.messagesPage).sort()
     assert.deepEqual(keys(enMessages.settingsHub.messagesPage).sort(), cs)
     assert.deepEqual(keys(deMessages.settingsHub.messagesPage).sort(), cs)
+})
+
+test("the panel rows link to their editor and keep the paused calendar off", () => {
+    const html = render()
+    assert.match(html, /href="\/cs\/x\/discord-panels\/p-v1"/)
+    assert.match(html, /href="\/cs\/x\/discord-seed"/)
+    assert.match(
+        html,
+        /aria-checked="false"[^>]*aria-label="Panel Kalendář"|aria-label="Panel Kalendář"[^>]*aria-checked="false"/
+    )
+    // The "Nahlásit hráče" row names the ticket category the panels use.
+    assert.doesNotMatch(text(html), /event-category-/)
 })

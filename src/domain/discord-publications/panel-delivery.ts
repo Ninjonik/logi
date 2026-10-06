@@ -204,6 +204,51 @@ export function panelDeliveryState(
     return "published"
 }
 
+/** One message's managed publication, as the overview reads it. */
+export type PanelMessagePublication = {
+    channelId: string | null
+    messageId: string | null
+    /** A create Discord has not confirmed yet. */
+    pending: boolean
+    /** The last delivery of this message failed (stored summary). */
+    error: string | null
+    lastSuccessAt: number | null
+}
+
+/**
+ * The state of one message of a panel that owns several (the WD League
+ * "tabulka" and "nejbližší zápasy", P1-20, P1-21), from that message's own
+ * managed publication. A paused or unsent panel holds every message; a
+ * message whose last delivery failed, or that was never posted while the
+ * panel fails, reads "Chyba"; one not posted yet reads "Čeká na bota"; a
+ * message the bot confirmed after the pending request and after the
+ * panel's error reads "Zveřejněno".
+ */
+export function panelMessageState(input: {
+    /** The panel's own state (`panelDeliveryState`). */
+    panel: PanelDeliveryState
+    requestedAt: number | null
+    /** When the panel's current error happened; null without one. */
+    errorAt: number | null
+    publication: PanelMessagePublication | null
+}): PanelDeliveryState {
+    if (input.panel === "unsent" || input.panel === "paused") return input.panel
+    const publication = input.publication
+    if (publication?.error) return "error"
+    if (!publication?.channelId || !publication.messageId)
+        return input.panel === "error" ? "error" : "waiting"
+    const success = publication.lastSuccessAt ?? 0
+    if (input.panel === "error")
+        return input.errorAt === null || success >= input.errorAt
+            ? "published"
+            : "error"
+    if (input.panel === "waiting")
+        return input.requestedAt !== null && success >= input.requestedAt
+            ? "published"
+            : "waiting"
+    return "published"
+}
+
 /** A request is pending until the bot reports handling it or a later one. */
 export function isRequestPending(
     requestedAt: number | null | undefined,
@@ -362,6 +407,12 @@ export function panelWork(input: {
  */
 export const PANEL_PROTOCOL = 2
 export const REQUIRED_PANEL_PROTOCOL = 2
+/**
+ * The first bot release that speaks `REQUIRED_PANEL_PROTOCOL`, named in the
+ * outdated warning ("potřebují verzi 1.1.0 nebo novější", P1-06). Raise it
+ * together with the protocol and the package version the bot reports.
+ */
+export const MINIMUM_BOT_VERSION = "1.1.0"
 /** The bot writes its heartbeat every 30 s; silence for 3 min is "offline" (P1-05). */
 export const BOT_HEARTBEAT_INTERVAL_MS = 30_000
 export const BOT_OFFLINE_AFTER_MS = 3 * 60_000
@@ -381,13 +432,16 @@ export type BotHeartbeatState =
           protocol: number
           seenAt: number
           requiredProtocol: number
+          /** The release the warning asks for (P1-06). */
+          requiredVersion: string
       }
 
 /** "Bot online", "Bot neodpovídá" or "Bot běží starší verzi" (P1-04..06). */
 export function botHeartbeatState(
     beat: (BotHeartbeat & { seenAt: number }) | null,
     now: number,
-    requiredProtocol = REQUIRED_PANEL_PROTOCOL
+    requiredProtocol = REQUIRED_PANEL_PROTOCOL,
+    requiredVersion = MINIMUM_BOT_VERSION
 ): BotHeartbeatState {
     if (!beat) return { state: "unknown" }
     const state =
@@ -402,5 +456,6 @@ export function botHeartbeatState(
         protocol: beat.protocol,
         seenAt: beat.seenAt,
         requiredProtocol,
+        requiredVersion,
     }
 }

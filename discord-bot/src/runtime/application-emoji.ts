@@ -26,6 +26,8 @@ export type ApplicationEmojiPorts = {
         ready: string[]
         failed: string[]
         checkedAt: number
+        /** Public IDs and names, so dashboard previews show the signs (P2-B09). */
+        installed: Array<{ key: string; id: string; name: string }>
     }): Promise<void>
     applicationId(): string | null
     now(): number
@@ -65,6 +67,12 @@ export function createApplicationEmojiService(ports: ApplicationEmojiPorts) {
                     ready: Object.keys(markup),
                     failed: result.failed,
                     checkedAt,
+                    installed: Object.entries(result.emoji).flatMap(
+                        ([key, emoji]) =>
+                            emoji
+                                ? [{ key, id: emoji.id, name: emoji.name }]
+                                : []
+                    ),
                 })
                 .catch(() => undefined)
         return markup

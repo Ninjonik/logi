@@ -3,6 +3,8 @@ import test from "node:test"
 
 import {
     BOT_OFFLINE_AFTER_MS,
+    MINIMUM_BOT_VERSION,
+    REQUIRED_PANEL_PROTOCOL,
     botHeartbeatSchema,
     botHeartbeatState,
     isRequestPending,
@@ -11,6 +13,7 @@ import {
     panelAttemptSchema,
     panelDeliveryState,
     panelErrorSchema,
+    panelMessageState,
     panelWork,
     type PanelAttempt,
     type PanelDeliveryInput,
@@ -257,10 +260,14 @@ test("the heartbeat reads online, offline after three minutes, or outdated", () 
         botHeartbeatState(beat, 1_000 + BOT_OFFLINE_AFTER_MS + 1).state,
         "offline"
     )
-    assert.equal(
-        botHeartbeatState({ ...beat, protocol: 1 }, 2_000).state,
-        "outdated"
-    )
+    assert.deepEqual(botHeartbeatState({ ...beat, protocol: 1 }, 2_000), {
+        state: "outdated",
+        version: "1.0.268",
+        protocol: 1,
+        seenAt: 1_000,
+        requiredProtocol: REQUIRED_PANEL_PROTOCOL,
+        requiredVersion: MINIMUM_BOT_VERSION,
+    })
     assert.equal(
         botHeartbeatSchema.safeParse({
             version: "1.0.268; rm -rf",
@@ -299,4 +306,46 @@ test("the last error stays after a success, with the first success after it (P2-
         ).channelPrivate,
         false
     )
+})
+
+test("each message of a panel reads its own state from its publication (P1-20, P1-21)", () => {
+    const delivered = {
+        channelId: "1",
+        messageId: "2",
+        pending: false,
+        error: null,
+        lastSuccessAt: 5_000,
+    }
+    const state = (input: Partial<Parameters<typeof panelMessageState>[0]>) =>
+        panelMessageState({
+            panel: "published",
+            requestedAt: null,
+            errorAt: null,
+            publication: delivered,
+            ...input,
+        })
+    assert.equal(state({}), "published")
+    // A paused or unsent panel holds every message.
+    assert.equal(state({ panel: "paused" }), "paused")
+    assert.equal(state({ panel: "unsent", publication: null }), "unsent")
+    // Its own failed delivery, also an unconfirmed create.
+    assert.equal(
+        state({
+            publication: { ...delivered, error: "Panel se neaktualizoval." },
+        }),
+        "error"
+    )
+    // Not posted yet: waiting, or failing with the panel.
+    assert.equal(state({ panel: "waiting", publication: null }), "waiting")
+    assert.equal(
+        state({ panel: "error", errorAt: 6_000, publication: null }),
+        "error"
+    )
+    // A request: confirmed after it is published, before it waits.
+    assert.equal(state({ panel: "waiting", requestedAt: 4_000 }), "published")
+    assert.equal(state({ panel: "waiting", requestedAt: 6_000 }), "waiting")
+    // The panel's error: a message confirmed after it is fine.
+    assert.equal(state({ panel: "error", errorAt: 4_000 }), "published")
+    assert.equal(state({ panel: "error", errorAt: 6_000 }), "error")
+    assert.equal(state({ panel: "error", errorAt: null }), "published")
 })

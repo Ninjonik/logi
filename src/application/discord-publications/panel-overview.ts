@@ -1,6 +1,7 @@
 import {
     botHeartbeatState,
     panelDeliveryState,
+    panelMessageState,
     PANEL_DELIVERY_STATES,
     type BotHeartbeat,
     type BotHeartbeatState,
@@ -17,9 +18,15 @@ import {
     type PanelContent,
     type PanelKind,
 } from "@/domain/discord-publications/settings"
+import {
+    leaguePanelKey,
+    LEAGUE_PANEL_ORDER,
+    type LeaguePanelOptions,
+    type LeaguePanelPart,
+} from "@/domain/wardogs-league/panels"
 import type { PanelPresentation } from "@/domain/discord-publications/panel-presentation"
 import { resolvePanelStyle } from "@/domain/discord-publications/panel-graphics"
-import type { LeaguePanelOptions } from "@/domain/wardogs-league/panels"
+import type { PanelEmojiKey } from "@/domain/discord-publications/panel-emblems"
 
 /**
  * The read model of "Panely v Discordu" (P1, P2-03, P2-31..33): every panel
@@ -67,6 +74,20 @@ export type StoredPublication = {
     lastSuccessAt: number | null
     retryAt: number
     error: string | null
+}
+
+/**
+ * One message of a panel that owns several (the WD League "tabulka" and
+ * "nejbližší zápasy", P1-20, P1-21), with its own delivery from its managed
+ * publication. Actions still apply to the whole panel.
+ */
+export type PanelMessageItem = {
+    part: LeaguePanelPart
+    state: PanelDeliveryState
+    lastUpdateAt: number | null
+    /** A create of this message Discord did not confirm (P2-33). */
+    uncertain: boolean
+    message: { channelId: string; messageId: string } | null
 }
 
 export type PanelOverviewItem = {
@@ -131,6 +152,8 @@ export type PanelOverviewItem = {
     /** The panel's first message, for "Otevřít zprávu" (P1-13). */
     message: { channelId: string; messageId: string } | null
     messages: number
+    /** Each message of a WD League panel with its own state; empty for other kinds. */
+    parts: PanelMessageItem[]
     /** Every panel uses the clan's default style unless it sets its own. */
     style: "a" | "b" | "c"
 }
@@ -196,6 +219,12 @@ export type PanelOverview = {
     controls: PanelControlItem[]
     /** Display names of the admins who saved or paused a panel ("Hráč 01"). */
     people: Record<string, string>
+    /**
+     * Discord markup of the panel signs the bot installed as application
+     * emoji, by key, so the editor preview shows them as Discord does
+     * (P2-B09). Empty until a bot reports them.
+     */
+    emoji: Partial<Record<PanelEmojiKey, string>>
 }
 
 /** The state chip of a seed control message, from its managed-message row. */
@@ -256,6 +285,7 @@ export function buildPanelOverview(input: {
     servers: PanelServerInfo[]
     controls?: StoredControlMessage[]
     people?: Record<string, string>
+    emoji?: Partial<Record<PanelEmojiKey, string>>
 }): PanelOverview {
     const counts = Object.fromEntries(
         PANEL_DELIVERY_STATES.map((state) => [state, 0])
@@ -350,6 +380,35 @@ export function buildPanelOverview(input: {
                 ? { channelId: main.channelId!, messageId: main.messageId! }
                 : null,
             messages: delivered.length,
+            parts:
+                kind === "league"
+                    ? LEAGUE_PANEL_ORDER.map((part): PanelMessageItem => {
+                          const own =
+                              publications.find(
+                                  (publication) =>
+                                      publication.key ===
+                                      leaguePanelKey(panel.id, part)
+                              ) ?? null
+                          return {
+                              part,
+                              state: panelMessageState({
+                                  panel: state,
+                                  requestedAt: panel.requestedAt ?? null,
+                                  errorAt: status?.error?.at ?? null,
+                                  publication: own,
+                              }),
+                              lastUpdateAt: own?.lastSuccessAt ?? null,
+                              uncertain: Boolean(own?.pending && own.error),
+                              message:
+                                  own?.channelId && own.messageId
+                                      ? {
+                                            channelId: own.channelId,
+                                            messageId: own.messageId,
+                                        }
+                                      : null,
+                          }
+                      })
+                    : [],
             style: resolvePanelStyle(
                 {
                     presentation: {
@@ -391,5 +450,6 @@ export function buildPanelOverview(input: {
         servers: input.servers,
         controls,
         people: input.people ?? {},
+        emoji: input.emoji ?? {},
     }
 }

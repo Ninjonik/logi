@@ -330,6 +330,74 @@ export function draftProblems(draft: PanelEditorDraft): DraftProblem[] {
     return problems
 }
 
+/** The games a results panel can be for: the clan's panel games, in board order. */
+export function resultsGames(enabledGames: readonly string[]): PanelGame[] {
+    const games = (["hell_let_loose", "wardogs"] as const).filter((game) =>
+        enabledGames.includes(game)
+    )
+    return games.length ? games : ["hell_let_loose"]
+}
+
+/**
+ * The games that already have a results panel, other than the edited one
+ * (P2-04): results are one panel per game, so each of these is taken.
+ */
+export function resultsGamesTaken(
+    panels: ReadonlyArray<{ id: string; kind: string; gameId: string }>,
+    currentId: string | null
+): PanelGame[] {
+    return (["hell_let_loose", "wardogs"] as const).filter((game) =>
+        panels.some(
+            (panel) =>
+                panel.id !== currentId &&
+                panel.kind === "results" &&
+                panel.gameId === game
+        )
+    )
+}
+
+/**
+ * The kinds a workspace may have only once and already has (P2-04, P2-35):
+ * League and Calendar once per clan; results once per game, so "Výsledky"
+ * is taken only when every game of the clan already has its results panel.
+ */
+export function takenPanelKinds(input: {
+    panels: ReadonlyArray<{ id: string; kind: string; gameId: string }>
+    currentId: string | null
+    enabledGames: readonly string[]
+}): PanelKind[] {
+    const others = input.panels.filter((panel) => panel.id !== input.currentId)
+    const taken = resultsGamesTaken(input.panels, input.currentId)
+    return [
+        ...(others.some((panel) => panel.kind === "league")
+            ? (["league"] as const)
+            : []),
+        ...(others.some((panel) => panel.kind === "calendar")
+            ? (["calendar"] as const)
+            : []),
+        ...(resultsGames(input.enabledGames).every((game) =>
+            taken.includes(game)
+        )
+            ? (["results"] as const)
+            : []),
+    ]
+}
+
+/**
+ * The game a results panel starts with when "Výsledky" is picked: the
+ * current one while it is free, else the first game without results.
+ */
+export function freeResultsGame(input: {
+    current: PanelGame
+    taken: readonly PanelGame[]
+    enabledGames: readonly string[]
+}): PanelGame {
+    const games = resultsGames(input.enabledGames)
+    if (games.includes(input.current) && !input.taken.includes(input.current))
+        return input.current
+    return games.find((game) => !input.taken.includes(game)) ?? input.current
+}
+
 /** P2-05: a sent panel keeps its type; the other cards are disabled. */
 export function panelTypeOptions(input: {
     current: PanelKind

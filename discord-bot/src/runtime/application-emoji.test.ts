@@ -77,6 +77,24 @@ test("provisioning uploads the missing signs once and reports what is installed"
             ready: ["allies", "valkyra", "live"],
             failed: [],
             checkedAt: 1_000_000,
+            // Public IDs and names, so the dashboard previews draw them (P2-B09).
+            installed: [
+                {
+                    key: "allies",
+                    id: "200000000000000011",
+                    name: "logi_allies_11111111",
+                },
+                {
+                    key: "valkyra",
+                    id: "100000000000000001",
+                    name: "logi_valkyra_22222222",
+                },
+                {
+                    key: "live",
+                    id: "200000000000000012",
+                    name: "logi_live_33333333",
+                },
+            ],
         },
     ])
     // Fresh within the hour: no Discord call at all.

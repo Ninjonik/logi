@@ -118,6 +118,8 @@ export type PanelTimingPart =
     | { kind: "resultsBackfill" }
     | { kind: "controlButtons" }
     | { kind: "calendarSetting" }
+    /** A WD League row: its buttons act on both messages of the panel (P1-20, P1-21). */
+    | { kind: "leagueBoth" }
     | { kind: "open" }
 
 export type PanelTimingInput = {
@@ -142,8 +144,16 @@ export type PanelTimingInput = {
  * The timing line of a row (P1-B02): last update or last attempt, the next
  * refresh or retry, when an unsent panel was saved and who paused a panel.
  * A time already past reads as "now" rather than as a negative countdown.
+ * A WD League row adds that its buttons act on both messages.
  */
 export function panelTimingParts(input: PanelTimingInput): PanelTimingPart[] {
+    const parts = rowTimingParts(input)
+    return input.source === "league-table" || input.source === "league-fixtures"
+        ? [...parts, { kind: "leagueBoth" }]
+        : parts
+}
+
+function rowTimingParts(input: PanelTimingInput): PanelTimingPart[] {
     const parts: PanelTimingPart[] = []
     const open = () => {
         if (input.hasMessage) parts.push({ kind: "open" })

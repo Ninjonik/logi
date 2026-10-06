@@ -9,7 +9,10 @@ import {
     type PanelRowSource,
     type PanelTimingPart,
 } from "@/domain/discord-publications/panel-list"
-import type { PanelDeliveryState } from "@/domain/discord-publications/panel-delivery"
+import type {
+    PanelDeliveryState,
+    PanelError,
+} from "@/domain/discord-publications/panel-delivery"
 import { DEFAULT_LEAGUE_PANEL_OPTIONS } from "@/domain/wardogs-league/panels"
 import type { PanelKind } from "@/domain/discord-publications/settings"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -129,16 +132,18 @@ export function panelRows(
             messages: panel.messages,
             hasMessage: Boolean(panel.message),
         })
+    const errorText = (panel: PanelOverviewItem, error: PanelError) =>
+        panelErrorText(error, {
+            channel: channelLabel(
+                panel.channelId,
+                context.channels,
+                list.meta.unknownChannel
+            ),
+            dictionary: context.dictionary,
+        })
     const errorOf = (panel: PanelOverviewItem) =>
         panel.state === "error" && panel.error
-            ? panelErrorText(panel.error, {
-                  channel: channelLabel(
-                      panel.channelId,
-                      context.channels,
-                      list.meta.unknownChannel
-                  ),
-                  dictionary: context.dictionary,
-              })
+            ? errorText(panel, panel.error)
             : null
     const base = (panel: PanelOverviewItem, rowSource: PanelRowSource) => ({
         key: `${panel.id}:${rowSource}`,
@@ -157,6 +162,37 @@ export function panelRows(
             state: panel.state,
         }),
     })
+    /**
+     * A WD League message (P1-20, P1-21): its own state, time, link and
+     * error from its publication; the buttons still act on the panel.
+     */
+    const leagueBase = (
+        panel: PanelOverviewItem,
+        rowSource: "league-table" | "league-fixtures"
+    ) => {
+        const part = (panel.parts ?? []).find(
+            (entry) =>
+                entry.part ===
+                (rowSource === "league-table" ? "standings" : "fixtures")
+        )
+        if (!part) return base(panel, rowSource)
+        const own: PanelOverviewItem = {
+            ...panel,
+            state: part.state,
+            message: part.message,
+            timeline: { ...panel.timeline, lastUpdateAt: part.lastUpdateAt },
+        }
+        const error: PanelError | null =
+            part.state !== "error"
+                ? null
+                : part.uncertain
+                  ? { code: "delivery_uncertain", at: context.now }
+                  : (panel.error ?? { code: "unknown", at: context.now })
+        return {
+            ...base(own, rowSource),
+            error: error ? errorText(panel, error) : null,
+        }
+    }
 
     for (const panel of overview.panels) {
         switch (panel.kind) {
@@ -263,7 +299,7 @@ export function panelRows(
                           )
                         : list.meta.leagueRecentOnly
                     rows.push({
-                        ...base(panel, part),
+                        ...leagueBase(panel, part),
                         title:
                             part === "league-table"
                                 ? list.titles.leagueTable
