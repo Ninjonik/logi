@@ -191,6 +191,21 @@ character stepped up)` on the same index (`publicationKeyRange`).
   start, then every 15 minutes for the recurrence pass), not on the
   one-minute reconcile tick, and back off a pass whose backend call keeps
   failing instead of retrying it every minute.
+- The request path never writes. A mutation that patches one document on
+  every API request (a `lastUsedAt`, a rate-limit counter) makes parallel
+  requests conflict on that document and retry inside Convex; the backend
+  degraded on exactly this. Authenticate through a query, count rate limits
+  in the web process, and record usage from a separate mutation that writes
+  at most once per interval and re-checks before it writes.
+- A function pays for its whole module graph. Convex evaluates a function's
+  module, with everything it imports, on each fresh isolate, so under
+  parallel load a function in a 1.2 MB module costs about 100 ms of CPU
+  before it reads anything, while one in a 10 KB module costs a few
+  milliseconds. Keep what runs on every request or every tick in small
+  modules (`convex/apiKeyAuth.ts`), and keep Zod schemas, use-cases and
+  repositories out of modules that only project or read. Measure with
+  `npx esbuild convex/<module>.ts --bundle --platform=node --format=esm
+--external:convex --metafile=out.json`.
 
 Tests of these functions assert which index a read uses (see
 `src/infrastructure/convex/event-recurrence.test.ts`) and which fields a
