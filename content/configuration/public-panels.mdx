@@ -35,7 +35,9 @@ serverů** (Server seeding) are pages under it.
    **Results**, **WD League**, **Calendar** or **Competition table**. A clan
    has at most one results panel per game and one WD League and calendar panel;
    a type the clan already has is greyed out with a note to edit that panel.
-   Once a panel has been sent, its type cannot change.
+   **Results** stays available while one of the clan's games has no results
+   panel yet, and choosing it picks that game. Once a panel has been sent, its
+   type cannot change.
 3. Choose the source: the **game server** for a live server (its collection
    state and whether live data works are shown under it), up to ten
    **servers** for Our servers (drag them, or use the arrows, to set their order
@@ -50,9 +52,12 @@ serverů** (Server seeding) are pages under it.
    score, top players, next map, queue, the IP:port (HLL) or join code
    (Wardogs), the **Join** button, the server password, **Show players**,
    **Report player** with its ticket category and the seed progress. The
-   address, join code and password are typed in right here; the password is
-   stored encrypted and is never shown back. For WD League: the table, the next
-   matches, recent results and how many matches to show.
+   address, join code and password are typed in right here (they are not taken
+   from **Game servers**) and apply to every panel of that server and its join
+   page. A saved address or join code stays editable here, and **Smazat**
+   (Remove) clears it on the next save. The password is stored encrypted and is
+   never shown back. For WD League: the table, the next matches, recent results
+   and how many matches to show.
 6. **Vzhled** (Look): the panel's name and an optional description, a banner,
    the bar colour (the clan colour or an own colour) and the panel style (as in
    Panel graphics, or A, B or C for this panel only); see [Look](#look).
@@ -62,6 +67,10 @@ serverů** (Server seeding) are pages under it.
    ze serveru** (Load data from the server): Logi runs the same live read as the
    bot and redraws the preview from it, with every change you make in the form.
    Live server panels also show the join page a player opens after **Join**.
+   When the bot may not attach files in the chosen channel, the preview is the
+   text-only message the bot will post and names the missing permission. The
+   faction and status signs show as the bot's installed emoji once the bot has
+   reported them.
 9. Choose **Uložit** (Save) to keep the panel as **Not sent**, or **Odeslat do
    kanálu** (Send to channel) to save and send it. The bot picks the request up
    within about 15 seconds; the **Doručení** (Delivery) card ticks **Saved**,
@@ -83,7 +92,10 @@ channel and the server password stay in the dashboard.
 
 The top of **Panely v Discordu** shows whether the bot is online, its version
 and its last contact, and warns when the bot is offline, outdated or not on the
-Discord server. **Zdroje dat** (Data sources) shows for every game server
+Discord server. The outdated warning names the bot's version and the version
+panels need ("Bot běží starší verzi 1.0.251. Panely v Discordu potřebují verzi
+1.1.0 nebo novější."); update and restart the bot. The bot reports the version
+set in `LOGI_BOT_VERSION`, otherwise the version of its `package.json`. **Zdroje dat** (Data sources) shows for every game server
 whether Logi collects its data, when the last data came in and whether live
 reads work. Below, the panels are grouped: live servers, Our servers, the
 **Server control** messages of server seeding (in each server's private admin
@@ -91,7 +103,10 @@ channel, with the Seed, Refresh and Pause buttons; **Obnovit teď** redraws
 one), results, WD League,
 calendar and competitions. Each row shows the channel, whether it is public or
 private, when the panel was updated and when the next refresh is due, and the
-actions it allows. The page refreshes itself every few seconds.
+actions it allows. The two WD League messages (**tabulka** and **nejbližší
+zápasy**) have a row each with their own state, time and **Otevřít zprávu**;
+their buttons act on the whole panel, so **Pozastavit** pauses both messages,
+as the rows say. The page refreshes itself every few seconds.
 
 ## Sending, refreshing and pausing
 
@@ -104,8 +119,8 @@ seconds. Every panel shows one state:
 - **Error**: the last attempt failed. Logi names the cause and the fix, for
   example the missing channel permission, and when the next attempt runs. Fix
   it, then choose **Try again**. In the editor, **Delivery** keeps the last
-  error even after the panel recovers ("The next attempt 1 min later went
-  through").
+  error even after the panel recovers, in the past tense ("Discord did not
+  respond in time. The next attempt a minute later went through.").
 - **Not sent**: saved, but not in Discord.
 - **Paused**: the message stays in Discord with a **Paused** chip and is not
   refreshed until you resume it.

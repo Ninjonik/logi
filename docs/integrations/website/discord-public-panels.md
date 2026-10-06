@@ -25,7 +25,9 @@ boards L3, P4–P8) turns the panels into one model with explicit delivery:
 - **Status**: the bot reports every pass (`discordPanelBot:report`) with a typed
   error code, missing permission names, warnings and timing; the dashboard
   turns the code into a plain sentence with its fix step. The bot writes a
-  heartbeat with its version every 30 s.
+  heartbeat with its version every 30 s (`LOGI_BOT_VERSION`, else the version
+  in `package.json`); a bot with an older panel protocol is named with the
+  minimum release the panels need (`MINIMUM_BOT_VERSION`).
 - **Test fetch**: `discordPanels:testFetch` runs the CRCON or Warcon live read
   with the admin's session and returns the provider status, a summary and the
   rendered preview, never a key, address or password. HLL live reads accept a
@@ -269,7 +271,9 @@ verifies each asset with `attachableAsset`, stores its public URL and keeps
 `imageAssetReferences` with owner `panelGraphics`, so referenced files survive
 the unattached-upload sweep and removed ones are released in the same
 transaction. The bot reads `discordPanelGraphics:forBot` and reports installed
-emoji through `discordPanelGraphics:reportEmoji` (both internal secret).
+emoji through `discordPanelGraphics:reportEmoji` (both internal secret),
+including each emoji's public ID and name (`installed`), so the panel editor's
+preview draws the same signs from Discord's emoji CDN.
 
 ## Appearance
 

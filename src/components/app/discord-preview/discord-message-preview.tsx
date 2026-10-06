@@ -205,7 +205,7 @@ function Inline({
                         height={22}
                         loading="lazy"
                         draggable={false}
-                        className="inline-block size-[1.375em] object-contain align-[-0.3em]"
+                        className="inline-block size-[1.375em] overflow-hidden object-contain align-[-0.3em]"
                     />
                 )
         }

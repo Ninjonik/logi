@@ -224,6 +224,16 @@ export default async function ServerSettingsSectionPage({
                         )}#panel-graphics-factions`,
                         accountMessages: `/${locale}/dashboard/settings/user#zpravy-od-bota`,
                     }}
+                    // The calendar row names its categories (N1-36).
+                    categories={(server.eventCategories ?? []).map(
+                        (category) => ({
+                            id: category.id,
+                            label: category.label,
+                        })
+                    )}
+                    competitions={await panelCompetitions(
+                        snapshot.enabledGames
+                    )}
                     dictionary={dictionary}
                 />
             )

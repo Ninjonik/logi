@@ -509,7 +509,7 @@ export function DiscordMessagesSettingsView({
     const membership = config?.membershipSettings
     const ticketSettings = config?.ticketSettings
     const previewClan: SettingsPreviewClan = {
-        membership: membership?.categories.length
+        membership: membership?.categories?.length
             ? {
                   title: membership.panelTitle,
                   text: membership.panelDescription,
@@ -524,7 +524,7 @@ export function DiscordMessagesSettingsView({
                           : null,
               }
             : null,
-        tickets: ticketSettings?.categories.length
+        tickets: ticketSettings?.categories?.length
             ? {
                   title: ticketSettings.panelTitle,
                   description: ticketSettings.panelDescription,
@@ -625,7 +625,7 @@ export function DiscordMessagesSettingsView({
         .map((panel) => panel.settings.reportCategoryId)
         .find((id): id is string => Boolean(id))
     const reportCategory = config?.ticketSettings?.enabled
-        ? config.ticketSettings.categories.find(
+        ? (config.ticketSettings.categories ?? []).find(
               (category) => category.id === reportCategoryId
           )
         : undefined
