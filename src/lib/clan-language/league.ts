@@ -94,6 +94,7 @@ const leagueMessages: Record<ClanLanguage, LeagueMessages> = {
                     ? `${from.day}–${to.day} ${to.monthShort}`
                     : `${from.day} ${from.monthShort}–${to.day} ${to.monthShort}`,
             empty: "No league results in the last 7 days.",
+            waiting: "Results appear after the first league results",
             link: "Results on the league site",
         },
         pausedReason: "an admin paused updates",
@@ -186,6 +187,7 @@ const leagueMessages: Record<ClanLanguage, LeagueMessages> = {
                     ? `${from.day}.–${to.day}. ${to.month}.`
                     : `${from.day}. ${from.month}.–${to.day}. ${to.month}.`,
             empty: "Za posledních 7 dní nejsou žádné výsledky ligy.",
+            waiting: "Výsledky se zobrazí po prvních výsledcích ligy",
             link: "Výsledky na webu ligy",
         },
         pausedReason: "správce zastavil obnovování",
@@ -272,6 +274,8 @@ const leagueMessages: Record<ClanLanguage, LeagueMessages> = {
                     ? `${from.day}.–${to.day}.${to.month}.`
                     : `${from.day}.${from.month}.–${to.day}.${to.month}.`,
             empty: "Keine Liga-Ergebnisse in den letzten 7 Tagen.",
+            waiting:
+                "Die Ergebnisse erscheinen nach den ersten Liga-Ergebnissen",
             link: "Ergebnisse auf der Liga-Website",
         },
         pausedReason: "ein Admin hat die Aktualisierung angehalten",

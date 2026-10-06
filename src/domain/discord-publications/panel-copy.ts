@@ -92,6 +92,8 @@ export type ResultPanelCopy = {
     confirmedBy: (name: string) => string
     correctedAt: (time: string, previous: string) => string
     match: (number: string) => string
+    /** "#38 Friendly": a League fixture with its type (P6-38). */
+    fixture: (number: string, type: string) => string
     points: string
     viewMatch: string
 }

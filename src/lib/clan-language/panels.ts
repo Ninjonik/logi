@@ -139,6 +139,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             correctedAt: (time, previous) =>
                 `corrected ${time} · previously ${previous}`,
             match: (number) => `Match ${number}`,
+            fixture: (number, type) => `#${number} ${type}`,
             points: "pts",
             viewMatch: "View match",
         },
@@ -324,6 +325,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             correctedAt: (time, previous) =>
                 `opraveno ${time} · dřív ${previous}`,
             match: (number) => `Zápas ${number}`,
+            fixture: (number, type) => `#${number} ${type}`,
             points: "b.",
             viewMatch: "Zobrazit zápas",
         },
@@ -509,6 +511,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             correctedAt: (time, previous) =>
                 `korrigiert ${time} · vorher ${previous}`,
             match: (number) => `Match ${number}`,
+            fixture: (number, type) => `#${number} ${type}`,
             points: "Pkt.",
             viewMatch: "Match ansehen",
         },

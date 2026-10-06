@@ -21,7 +21,10 @@ export type LeaguePanelSource = {
     seasonResults: (season: string) => Promise<LeagueResultRecord[]>
     /** Results dated at or after `since`, for "poslední výsledky". */
     resultsSince: (since: number) => Promise<LeagueResultRecord[]>
-    /** Highest change revision of the results and of the open fixtures. */
+    /**
+     * Highest change revision of the results and of the open fixtures. The
+     * results revision stays 0 until the first League result is stored.
+     */
     revisions: () => Promise<{ results: number; fixtures: number }>
 }
 
@@ -73,6 +76,7 @@ export async function loadLeaguePanels(
                   ourTeamCodes: input.ourTeamCodes,
                   options: input.options,
                   revision: Math.max(revisions.fixtures, revisions.results),
+                  resultsCollected: revisions.results > 0,
                   dataAt,
               })
             : null,

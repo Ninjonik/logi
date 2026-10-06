@@ -32,6 +32,12 @@ test("the WD League overview documents the table, nearest fixtures, recent resul
     const schema = document.components.schemas.LeagueOverview
     assert.deepEqual(Object.keys(schema.properties), ["standings", "fixtures"])
     assert.ok(schema.properties.fixtures.properties.recentResults)
+    assert.match(operation.description, /recentResults\.state/)
+    assert.deepEqual(
+        schema.properties.fixtures.properties.recentResults.anyOf[0].properties
+            .state.enum,
+        ["waiting_for_results", "ready"]
+    )
     assert.ok(
         document.components.schemas.LeagueFixture.properties.snapshot.properties
             .results

@@ -357,7 +357,12 @@ function recentBlocks(
             : []),
         {
             kind: "text",
-            markdown: rows.length ? rows.join("\n") : copy.empty,
+            markdown:
+                recent.state === "waiting_for_results"
+                    ? copy.waiting
+                    : rows.length
+                      ? rows.join("\n")
+                      : copy.empty,
         },
     ]
 }

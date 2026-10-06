@@ -170,6 +170,7 @@ test("nejbližší zápasy: six nearest fixtures of the whole League with teams,
         ourTeamCodes: ["VLK"],
         options: DEFAULT_LEAGUE_PANEL_OPTIONS,
         revision: 3,
+        resultsCollected: true,
     })
     assert.ok(leagueFixturesViewSchema.parse(view))
     assert.deepEqual(
@@ -227,8 +228,10 @@ test("recent results sit under the fixtures: last seven days, podium, our team m
         ourTeamCodes: ["VLK"],
         options: DEFAULT_LEAGUE_PANEL_OPTIONS,
         revision: 0,
+        resultsCollected: true,
     })
     const recent = view.recentResults!
+    assert.equal(recent.state, "ready")
     assert.equal(recent.from, "2026-10-02T20:00:00.000Z")
     assert.equal(recent.to, "2026-10-09T20:00:00.000Z")
     assert.deepEqual(
@@ -264,6 +267,7 @@ test("switched-off content is left out and live fixtures lead with no preparatio
             fixtureCount: 2,
         },
         revision: 0,
+        resultsCollected: true,
     })
     assert.equal(view.recentResults, null)
     assert.deepEqual(
@@ -281,10 +285,44 @@ test("switched-off content is left out and live fixtures lead with no preparatio
         ourTeamCodes: [],
         options: { ...DEFAULT_LEAGUE_PANEL_OPTIONS, fixtures: false },
         revision: 0,
+        resultsCollected: true,
     })
     assert.deepEqual(none.fixtures, [])
     assert.equal(none.hidden, 0)
     assert.equal(none.recentResults?.items.length, 5)
+})
+
+test("recent results wait until Logi collects League results, then say when a week had none (P6-18)", () => {
+    const view = (results: typeof RECENT, resultsCollected: boolean) =>
+        buildFixturesView(BOARD_FIXTURES, results, {
+            now,
+            ourTeamCodes: ["VLK"],
+            options: DEFAULT_LEAGUE_PANEL_OPTIONS,
+            revision: 0,
+            resultsCollected,
+        }).recentResults
+    assert.deepEqual(
+        [view([], false)?.state, view([], false)?.items],
+        ["waiting_for_results", []],
+        "no results parser yet: nothing was ever collected"
+    )
+    assert.deepEqual(
+        [view([], true)?.state, view([], true)?.items],
+        ["ready", []],
+        "collected, but the League played nothing in seven days"
+    )
+    assert.equal(view(RECENT, false)?.state, "ready")
+    assert.ok(
+        leagueFixturesViewSchema.parse(
+            buildFixturesView(BOARD_FIXTURES, [], {
+                now,
+                ourTeamCodes: [],
+                options: DEFAULT_LEAGUE_PANEL_OPTIONS,
+                revision: 0,
+                resultsCollected: false,
+            })
+        )
+    )
 })
 
 test("fixtures that do not fit 4000 characters are dropped and counted", () => {

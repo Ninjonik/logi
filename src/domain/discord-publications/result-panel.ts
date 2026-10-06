@@ -14,6 +14,12 @@ import type { PanelGame } from "./settings"
  * in the game's results channel. A correction edits the same card and says
  * what the score was before. Values the result does not record are left out,
  * never guessed.
+ *
+ * A two-sided result reads as the board's score row, on one line because
+ * Discord text has no columns: "VLK Spojenci ★ 4 : 1 Osa ✚ ROG" — the first
+ * side left, the score in the middle, the second side mirrored (P6-33). Team
+ * logos cannot sit inline in Discord text, so the emblems stand beside the
+ * sides.
  */
 export type ResultCardEvent = {
     id: string
@@ -111,35 +117,51 @@ export function resultCardView(input: ResultCardInput): MessageView {
         isClan(entry.participant.label)
     )
     const league = card?.league
+    const leagueType = league?.type?.trim() || null
     const labelParts = [
         copy.label,
         card?.category ?? undefined,
         corrected
             ? copy.corrected
             : league?.fixtureNumber != null
-              ? copy.match(String(league.fixtureNumber))
+              ? leagueType
+                  ? copy.fixture(String(league.fixtureNumber), leagueType)
+                  : copy.match(String(league.fixtureNumber))
               : input.gameName,
     ].filter((part): part is string => Boolean(part))
     const code = (label: string) => teamOf(label, card)
     const named = (label: string) => code(label) ?? input.sideName(label)
 
-    let title: string
+    let title: string | undefined
+    /** The score row as a heading with the emblems, which a title would escape. */
+    let scoreRow: string | undefined
     const content: MessageBlock[] = []
     if (!multi && participants.length === 2) {
         const [first, second] = participants as [
             (typeof participants)[0],
             (typeof participants)[0],
         ]
-        title = `${named(first.label)} ${scoreText(first.score)} : ${scoreText(second.score)} ${named(second.label)}`
-        if (!input.compact && (code(first.label) || code(second.label))) {
+        const score = `${scoreText(first.score)} : ${scoreText(second.score)}`
+        if (input.compact)
+            title = `${named(first.label)} ${score} ${named(second.label)}`
+        else {
             const side = (label: string) => {
                 const sign = input.sideSign(label)
                 return `${escapeMarkdownText(input.sideName(label))}${sign ? ` ${sign}` : ""}`
             }
-            content.push({
-                kind: "text",
-                markdown: `${side(first.label)} · ${side(second.label)}`,
-            })
+            const team = (label: string) => {
+                const value = code(label)
+                return value ? escapeMarkdownText(value) : null
+            }
+            scoreRow = `### ${[
+                team(first.label),
+                side(first.label),
+                score,
+                side(second.label),
+                team(second.label),
+            ]
+                .filter(Boolean)
+                .join(" ")}`
         }
     } else {
         const codes = ranked
@@ -242,7 +264,7 @@ export function resultCardView(input: ResultCardInput): MessageView {
     const view = panelFrame({
         accentColor: input.accentColor,
         label: labelParts.join(" · "),
-        title,
+        title: title ?? "",
         ...(chip ? { state: { chip, detail: facts.join(" · ") } } : {}),
         content: chip
             ? content
@@ -265,6 +287,11 @@ export function resultCardView(input: ResultCardInput): MessageView {
             : [],
         updatedAt: reviewed ?? "",
     })
+    if (scoreRow && view.header) {
+        // The score row stands where the title would, before the chip line.
+        delete view.header.title
+        view.header.subtitle = scoreRow
+    }
     if (view.footer?.kind === "managed") view.footer.updatedStyle = "f"
     return view
 }

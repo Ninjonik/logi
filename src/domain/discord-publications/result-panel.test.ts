@@ -63,13 +63,16 @@ function input(
     }
 }
 
-test("an HLL result: VLK 4 : 1 ROG with the outcome chip, map, date, reviewer and match link", () => {
+test("an HLL result: the two-sided score row with the outcome chip, map, date, reviewer and match link (P6-33)", () => {
     const view = renderedView(resultCardView(input()))
     assert.deepEqual(view.validation, { ok: true, issues: [] })
-    assert.match(view.text, /VÝSLEDEK · PŘÁTELÁK · HELL LET LOOSE/)
-    assert.match(view.text, /VLK 4 : 1 ROG/)
-    assert.match(view.text, /Výhra/)
-    assert.match(view.text, /Spojenci ★ · Osa ✚/)
+    // The board's row "[VLK] VLK Spojenci ★ 4 : 1 Osa ✚ ROG [ROG]" on one
+    // line, in the board's order, right after the label and before the chip.
+    assert.match(
+        view.text,
+        /-# \*\*VÝSLEDEK · PŘÁTELÁK · HELL LET LOOSE\*\*\n### VLK Spojenci ★ 4 : 1 Osa ✚ ROG\n🟢 \*\*Výhra\*\*/
+    )
+    assert.doesNotMatch(view.text, /Spojenci ★ · Osa ✚/)
     assert.match(view.text, /Foy · den · ne 11\. 10\. · potvrdil Hráč\\_01/)
     assert.deepEqual(
         view.buttons.map((button) => button.label),
@@ -102,7 +105,7 @@ test("a correction edits the card and says what the score was", () => {
         )
     )
     assert.match(view.text, /OPRAVENO/)
-    assert.match(view.text, /VLK 3 : 2 ROG/)
+    assert.match(view.text, /### VLK Spojenci ★ 3 : 2 Osa ✚ ROG/)
     assert.match(view.text, /opraveno <t:\d+:f> · dřív 4 : 1/)
 })
 
@@ -142,7 +145,7 @@ test("a Wardogs result lists places with points and the clan's place chip", () =
             )
         )
     )
-    assert.match(view.text, /VÝSLEDEK · ZÁPAS 14/)
+    assert.match(view.text, /VÝSLEDEK · #14 LEAGUE/)
     assert.match(view.text, /1\. \*\*VLK\*\* · ✚ Bravo · \*\*23\*\* b\./)
     assert.match(view.text, /2\. ✚ Alpha · \*\*12\*\* b\./)
     assert.match(view.text, /\*\*1\\\. místo\*\*/)
@@ -159,8 +162,97 @@ test("values the result does not record are left out", () => {
             )
         )
     )
-    assert.match(view.text, /Spojenci 4 : 1 Osa/)
+    assert.match(view.text, /### Spojenci ★ 4 : 1 Osa ✚\n/)
     assert.doesNotMatch(view.text, /potvrdil|Výhra|Prohra/)
+})
+
+test("the score row keeps application emoji and escapes League text; compact keeps the short title", () => {
+    const emoji = renderedView(
+        resultCardView(
+            input(
+                {
+                    card: {
+                        ...input().event.card!,
+                        teams: [
+                            { code: "V_K", side: "Allies" },
+                            { code: "ROG", side: "Axis" },
+                        ],
+                    },
+                },
+                {
+                    sideSign: (label) =>
+                        label.toLowerCase() === "allies"
+                            ? "<:allies:123456789012345678>"
+                            : "<:axis:223456789012345678>",
+                }
+            )
+        )
+    )
+    assert.match(
+        emoji.text,
+        /### V\\_K Spojenci <:allies:123456789012345678> 4 : 1 Osa <:axis:223456789012345678> ROG/
+    )
+    const compact = renderedView(resultCardView(input({}, { compact: true })))
+    assert.match(compact.text, /### VLK 4 : 1 ROG\n/)
+    assert.doesNotMatch(compact.text, /Spojenci/)
+})
+
+test("a Wardogs League result is labelled with its fixture number and type, as on the board (P6-38)", () => {
+    const wardogs = (type: string | null) =>
+        renderedView(
+            resultCardView(
+                input(
+                    {
+                        name: "Wardogs League #38",
+                        result: {
+                            status: "confirmed",
+                            version: 1,
+                            reviewedAt: "2026-10-10T19:50:00.000Z",
+                            participants: [
+                                { label: "Valkyra", score: 23 },
+                                { label: "Manticore", score: 12 },
+                                { label: "Lonestar", score: 7 },
+                            ],
+                        },
+                        card: {
+                            category: "Wardogs League",
+                            side: "Valkyra",
+                            teams: [
+                                { code: "VLK", side: "Valkyra" },
+                                { code: "ROG", side: "Manticore" },
+                                { code: "BAMC", side: "Lonestar" },
+                            ],
+                            reviewer: "Kowalski",
+                            publicMatch: true,
+                            imported: null,
+                            playedAt: "2026-10-10T18:30:00.000Z",
+                            league: {
+                                fixtureNumber: 38,
+                                type,
+                                map: "Zestafona",
+                                zone: "SmallFactory",
+                            },
+                        },
+                    },
+                    { game: "wardogs", gameName: "Wardogs" }
+                )
+            )
+        ).text
+    assert.match(
+        wardogs("Friendly"),
+        /\*\*VÝSLEDEK · WARDOGS LEAGUE · #38 FRIENDLY\*\*\n### VLK vs ROG vs BAMC/
+    )
+    assert.match(
+        wardogs("Friendly"),
+        /1\\\. místo\*\* · Zestafona · SmallFactory · so 10\. 10\. · potvrdil Kowalski/
+    )
+    assert.match(wardogs(null), /VÝSLEDEK · WARDOGS LEAGUE · ZÁPAS 38/)
+    assert.match(wardogs("  "), /VÝSLEDEK · WARDOGS LEAGUE · ZÁPAS 38/)
+    for (const language of ["en", "de"] as const)
+        assert.equal(
+            getPanelMessages(language).results.fixture("38", "Friendly"),
+            "#38 Friendly"
+        )
 })
 
 test("short dates use the clan's zone and fall back to UTC", () => {

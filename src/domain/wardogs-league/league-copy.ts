@@ -94,7 +94,10 @@ export type LeagueCopy = {
         heading: string
         /** "3.–9. 10.". */
         range: (from: LeagueDay, to: LeagueDay) => string
+        /** No League result in the last seven days, once results are collected. */
         empty: string
+        /** Before Logi has collected any League result (P6-18, INDEX resolution 7). */
+        waiting: string
         /** "Výsledky na webu ligy". */
         link: string
     }
