@@ -211,6 +211,16 @@ character stepped up)` on the same index (`publicationKeyRange`).
   degraded on exactly this. Authenticate through a query, count rate limits
   in the web process, and record usage from a separate mutation that writes
   at most once per interval and re-checks before it writes.
+- A per-request endpoint serves counts from a maintained summary document,
+  never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
+  enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
+  recomputes that row through the guild indexes at most once a minute, off
+  the request path (fired by the web gateway when the stored `computedAt`
+  is older than `CLAN_META_INTERVAL_MS`, throttled per clan in the web
+  process and re-checked by the mutation), synchronously only for a clan
+  that has no row yet. The same holds for the people a timed read names:
+  `discordSync:listSyncPayloads` reads the users its events and rosters
+  reference one by one through the `users` indexes, never the table.
 - A function pays for its whole module graph. Convex evaluates a function's
   module, with everything it imports, on each fresh isolate, so under
   parallel load a function in a 1.2 MB module costs about 100 ms of CPU
