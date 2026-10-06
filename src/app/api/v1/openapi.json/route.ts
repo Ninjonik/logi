@@ -570,6 +570,8 @@ const paths: Record<string, unknown> = {
         get: {
             summary:
                 "Get authenticated guild identity, enabled games, resource counts, API limits, and server time",
+            description:
+                "guild, enabledGames, updatedAt (the clan's sync marker), limits and serverTime are current on every call. counts come from the clan's stored summary, which Logi recomputes at most once a minute off the request path, so they can lag the clan's records by up to 60 seconds; computedAt says when they were computed. The first call after a deployment computes the summary before answering. Use counts as a hint for sweeps, never as proof that a record exists or is absent; the resource lists and /clan/changes stay authoritative.",
             tags: ["Clan API — Overview"],
             security: [{ clanApiKey: [] }],
             responses,

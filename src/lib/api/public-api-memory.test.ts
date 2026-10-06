@@ -28,3 +28,13 @@ test("expired entries are dropped once the memory grows large", () => {
     memory.takeToken("key:late", 5, 1_000, 5_000)
     assert.equal(memory.size(), 1)
 })
+
+test("a clan's meta refresh is claimed once per interval per process", () => {
+    const memory = createPublicApiMemory()
+    assert.equal(memory.claimClanMetaRefresh("guild-a", 1_000, 60_000), true)
+    assert.equal(memory.claimClanMetaRefresh("guild-a", 30_000, 60_000), false)
+    assert.equal(memory.claimClanMetaRefresh("guild-b", 30_000, 60_000), true)
+    assert.equal(memory.claimClanMetaRefresh("guild-a", 61_000, 60_000), true)
+    // The meta claims never block a key's own use mark.
+    assert.equal(memory.claimKeyUse("guild-a", 61_000, 5_000), true)
+})

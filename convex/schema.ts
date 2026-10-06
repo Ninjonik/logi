@@ -2044,6 +2044,29 @@ export default defineSchema({
     })
         .index("guildId", ["guildId"])
         .index("keyHash", ["keyHash"]),
+    // The counts of `/api/v1/clan/meta`, one row per clan, recomputed by
+    // `clanMeta:refreshClanMeta` at most once a minute off the request path;
+    // the request reads this row instead of scanning the clan's tables
+    // (ARCHITECTURE.md, "Convex hot paths"). `revision` counts the writes.
+    clanMetaSummaries: defineTable({
+        guildId: v.string(),
+        tallies: v.object({
+            events: v.number(),
+            groups: v.number(),
+            rosters: v.number(),
+            assignments: v.number(),
+            users: v.number(),
+            calendarItems: v.number(),
+            stratmaps: v.number(),
+            topicPresets: v.number(),
+            squadPresets: v.number(),
+            matches: v.number(),
+            articles: v.number(),
+            apiKeys: v.number(),
+        }),
+        computedAt: v.string(),
+        revision: v.number(),
+    }).index("guildId", ["guildId"]),
     websiteEventPolicies: defineTable({
         applicationRecordId: v.id("ssoApplications"),
         apiKeyId: v.id("apiKeys"),

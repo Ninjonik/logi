@@ -3,6 +3,11 @@ import { createHash, randomBytes } from "node:crypto"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import {
+    readClanApiMeta,
+    type ClanMetaRead,
+    type ClanMetaRefresh,
+} from "@/lib/api/clan-meta-read"
 import type { DashboardActor } from "../../convex/dashboardActor"
 import type { ApiKeyReadAccess } from "@/domain/api/key-access"
 import { publicApiMemory } from "@/lib/api/public-api-memory"
@@ -57,6 +62,9 @@ const mutateAssignmentReference = makeFunctionReference<"mutation">(
 )
 const clanMetaReference = makeFunctionReference<"query">(
     "publicApiReads:getClanMeta"
+)
+const refreshClanMetaReference = makeFunctionReference<"mutation">(
+    "clanMeta:refreshClanMeta"
 )
 const clanSettingsReference = makeFunctionReference<"query">(
     "publicApiReads:getClanSettings"
@@ -213,10 +221,30 @@ export async function getClanApiResource(
     })
 }
 
+/**
+ * The meta's counts come from the clan's stored summary; the request never
+ * scans the clan's tables. A missing summary is computed synchronously once,
+ * a stale one is refreshed off the request path, at most once per clan and
+ * `CLAN_META_INTERVAL_MS` in this process (and once in the backend, which
+ * re-checks before it writes).
+ */
 export async function getClanApiMeta(key: string) {
-    return await fetchQuery(clanMetaReference, {
-        secret: getInternalAuthSecret(),
-        keyHash: hashApiKey(key),
+    const secret = getInternalAuthSecret()
+    const keyHash = hashApiKey(key)
+    return await readClanApiMeta({
+        read: async () =>
+            (await fetchQuery(clanMetaReference, {
+                secret,
+                keyHash,
+            })) as ClanMetaRead | null,
+        refresh: async () =>
+            (await fetchMutation(refreshClanMetaReference, {
+                secret,
+                keyHash,
+            })) as ClanMetaRefresh,
+        claimRefresh: (guildId, now) =>
+            publicApiMemory.claimClanMetaRefresh(guildId, now),
+        now: Date.now,
     })
 }
 
