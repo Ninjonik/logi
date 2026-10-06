@@ -8,9 +8,14 @@ import {
     type SettingsPreviewInput,
     type SettingsPreviewKind,
 } from "./settings-previews"
+import { getAnnouncementMessages } from "../../lib/clan-language/announcements"
+import { getApplicationMessages } from "../../lib/clan-language/application"
 import { getDirectMessages } from "../../lib/clan-language/direct-messages"
+import { getTicketMessages } from "../../lib/clan-language/tickets"
 import { getRosterMessages } from "../../lib/clan-language/rosters"
 import { getSystemMessages } from "../../lib/clan-language/system"
+import { getPanelMessages } from "../../lib/clan-language/panels"
+import { buildAnnouncementView } from "./match-announcement"
 import { validateMessageView } from "./message-validation"
 import { layoutMessageView } from "./message-layout"
 
@@ -27,6 +32,10 @@ function input(
         roster: getRosterMessages(language),
         errors: system.errorsChannel,
         teamRequests: system.teamRequests,
+        announcement: getAnnouncementMessages(language),
+        applications: getApplicationMessages(language),
+        tickets: getTicketMessages(language),
+        reports: getPanelMessages(language).report,
         layout: { copy: system.kit, locale: system.locale },
         timeZone: "Europe/Prague",
         now: SETTINGS_PREVIEW_NOW,
@@ -73,28 +82,160 @@ test("every message row has a valid preview in every clan language (N1-B07)", ()
         }
 })
 
-test("the live preview is the board's announcement (N1-08)", () => {
+test("the live preview is the bot's own announcement while sign-ups are open (N1-08)", () => {
     const preview = settingsPreview(input("announcement"))
     assert.equal(preview.content, "@Klan")
     assert.equal(preview.view.accent, "clan")
-    assert.equal(preview.view.header?.title, "VLK vs ROG")
-    assert.deepEqual(preview.view.header?.chips?.[0]?.label, "Přátelák")
+    // Exactly what the bot's builder makes of the sample match.
+    assert.deepEqual(
+        preview.view,
+        buildAnnouncementView({
+            event: {
+                kind: "match",
+                eventId: "sample",
+                guildId: "sample",
+                name: "VLK vs ROG",
+                category: { label: "Přátelák", color: "#3ba55c" },
+                teams: [
+                    { code: "VLK", side: "Allies" },
+                    { code: "ROG", side: "Axis" },
+                ],
+                mapLabel: "Foy · den",
+                meetingStart: "2026-10-11T17:30:00.000Z",
+                gameStart: "2026-10-11T18:00:00.000Z",
+                registrationEnd: "2026-10-10T17:30:00.000Z",
+                timeZone: "Europe/Prague",
+                locale: getSystemMessages("cs").locale,
+            },
+            state: "open",
+            counts: {
+                groups: [
+                    { id: "Pěchota", name: "Pěchota", count: 15 },
+                    { id: "Tanky", name: "Tanky", count: 6, max: 6 },
+                    { id: "Recon", name: "Recon", count: 2, max: 2 },
+                ],
+                withoutGroup: 0,
+                total: 23,
+                declined: 0,
+            },
+            meetingChannelId: "100000000000000001",
+            links: { calendar: "https://logi.example/calendar" },
+            copy: getAnnouncementMessages("cs"),
+        })
+    )
     const rendered = text(preview)
-    assert.match(rendered, /\*\*VLK\*\* Spojenci ★  vs  \*\*ROG\*\* Osa ✚/)
-    assert.match(rendered, /\*\*ne <t:\d+:d> · <t:\d+:t>\*\* · <t:\d+:R>/)
-    assert.match(
-        rendered,
-        /Foy · den · sraz <t:\d+:t> · přihlášky do so <t:\d+:d> · <t:\d+:t>/
-    )
-    assert.match(
-        rendered,
-        /\*\*Přihlášeno 23\*\* · Pěchota 15 · Tanky 6\/6 · Recon 2\/2/
-    )
+    assert.equal(preview.view.header?.title, "VLK vs ROG")
+    assert.match(rendered, /Spojenci ★ {2}vs {2}`ROG` Osa ✚/)
+    assert.match(rendered, /Foy · den · sraz <t:\d+:t>/)
+    assert.match(rendered, /\*\*Přihlášeno 23\*\* · Pěchota 15 · Tanky 6\/6/)
     assert.match(
         rendered,
         /\[Přihlásit se\] \[Upravit přihlášku\] \[Nepřijdu\]/
     )
     assert.match(rendered, /Spravováno v Logi/)
+})
+
+test("the Discord event shows the name and description the bot writes", () => {
+    const preview = settingsPreview(input("scheduledEvent"))
+    assert.equal(preview.view.header?.title, "VLK vs ROG · Přátelák")
+    const rendered = text(preview)
+    assert.match(rendered, /Přátelák proti ROG, hrajeme za Spojence\./)
+    assert.match(rendered, /Sraz 19:30, start 20:00 · Foy · den/)
+    assert.match(rendered, /Přihláška a soupiska: <#100000000000000002>/)
+    // The password itself never appears (L1-B07).
+    assert.match(rendered, /Heslo k serveru dostanou hráči na soupisce/)
+})
+
+test("membership, ticket and report previews are the bot's own cards (N1-B07)", () => {
+    const panel = settingsPreview(input("recruitmentPanel"))
+    assert.match(text(panel), /### Přidej se ke klanu Vlci/)
+    assert.match(
+        text(panel),
+        /\*\*Žoldák\*\* · Wardogs · výpomoc na jednotlivé zápasy/
+    )
+    assert.match(text(panel), /\[Podat přihlášku\]/)
+    const card = text(settingsPreview(input("application")))
+    assert.match(card, /PŘIHLÁŠKA #42 · HELL LET LOOSE/)
+    assert.match(card, /Hráč 17 · Hlavní člen/)
+    assert.match(card, /\[Přijmout jako člena\]/)
+    const accepted = text(settingsPreview(input("applicationClose")))
+    assert.match(accepted, /Vítej v klanu, jsi Člen/)
+    assert.match(accepted, /Role Klan a Člen dostaneš/)
+    assert.match(accepted, /> Pohovor proběhl, vítej mezi námi\./)
+    const tickets = text(settingsPreview(input("ticketPanel")))
+    assert.match(tickets, /\[Nahlásit hráče\] \[Žádost o roli\]/)
+    const ticket = settingsPreview(input("ticket"))
+    assert.equal(ticket.content, "<@200000000000000017>")
+    assert.deepEqual(ticket.users, { "200000000000000017": "Hráč 17" })
+    assert.match(text(ticket), /TICKET #12 · NAHLÁSIT HRÁČE/)
+    assert.match(text(ticket), /Hráč 17 nahlašuje hráče/)
+    const closed = text(settingsPreview(input("ticketClose")))
+    assert.match(closed, /Tvůj ticket je vyřešený/)
+    assert.match(closed, /Nahlásit hráče · zavřel Hráč 02/)
+    const report = settingsPreview(input("playerReport"))
+    assert.match(text(report), /HLÁŠENÍ HRÁČE #17 · K PROVĚŘENÍ/)
+    assert.match(text(report), /Hans\\_88 · Osa/)
+    assert.match(text(report), /Vlci #1 · Foy · nahlásil <@200000000000000033>/)
+    assert.deepEqual(report.users, { "200000000000000033": "Ořech" })
+})
+
+test("the clan's own recruitment and ticket panels replace the samples", () => {
+    const clan = {
+        membership: {
+            title: "Nábor Vlků",
+            text: "Hledáme hráče.",
+            categories: [
+                {
+                    id: "member",
+                    label: "Člen",
+                    gameId: "hell_let_loose" as const,
+                    assignmentType: "member" as const,
+                },
+            ],
+            webFormUrl: "https://logi.example/cs/apply/1",
+        },
+        tickets: {
+            title: "Podpora",
+            description: "Napiš nám.",
+            categories: [
+                {
+                    id: "report",
+                    label: "Hlášení",
+                    description: "chování",
+                    threadTitle: "{author} hlásí",
+                },
+            ],
+        },
+    }
+    const panel = text(
+        settingsPreview(input("recruitmentPanel", "cs", { clan }))
+    )
+    assert.match(panel, /### Nábor Vlků/)
+    assert.match(panel, /\*\*Člen\*\* · Hell Let Loose/)
+    assert.doesNotMatch(panel, /Žoldák/)
+    assert.match(panel, /\[Vyplnit přihlášku na webu\]/)
+    assert.match(
+        text(settingsPreview(input("application", "cs", { clan }))),
+        /Hráč 17 · Člen/
+    )
+    const tickets = text(settingsPreview(input("ticketPanel", "cs", { clan })))
+    assert.match(tickets, /### Podpora/)
+    assert.match(tickets, /\[Hlášení\]/)
+    assert.match(
+        text(settingsPreview(input("ticket", "cs", { clan }))),
+        /Hráč 17 hlásí/
+    )
+    // Empty clan settings keep the samples.
+    assert.match(
+        text(
+            settingsPreview(
+                input("ticketPanel", "cs", {
+                    clan: { tickets: { title: "x", categories: [] } },
+                })
+            )
+        ),
+        /Potřebuješ pomoc\?/
+    )
 })
 
 test("the clan's icon density changes the announcement's lines", () => {

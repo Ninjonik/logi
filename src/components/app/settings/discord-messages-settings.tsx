@@ -60,6 +60,10 @@ import {
     ROSTER_MESSAGE_VARIANTS,
     type RosterMessageVariant,
 } from "@/domain/discord-messages/roster-message"
+import type {
+    SettingsPreviewClan,
+    SettingsPreviewKind,
+} from "@/domain/discord-messages/settings-previews"
 import {
     channelOptions,
     SettingsChannelPicker,
@@ -68,7 +72,6 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
-import type { SettingsPreviewKind } from "@/domain/discord-messages/settings-previews"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -502,12 +505,44 @@ export function DiscordMessagesSettingsView({
 
     // --- Rows ---------------------------------------------------------------
 
+    // The clan's own recruitment and ticket panels in their previews (N1-B07).
+    const membership = config?.membershipSettings
+    const ticketSettings = config?.ticketSettings
+    const previewClan: SettingsPreviewClan = {
+        membership: membership?.categories.length
+            ? {
+                  title: membership.panelTitle,
+                  text: membership.panelDescription,
+                  imageUrl: membership.panelImageUrl ?? null,
+                  accentColor:
+                      normalizeAccentColor(membership.panelAccentColor) ?? null,
+                  categories: membership.categories,
+                  form: membership.applicationForm,
+                  webFormUrl:
+                      membership.webFormEnabled && config?.guildId
+                          ? `${siteUrl.replace(/\/+$/, "")}/${language}/apply/${config.guildId}`
+                          : null,
+              }
+            : null,
+        tickets: ticketSettings?.categories.length
+            ? {
+                  title: ticketSettings.panelTitle,
+                  description: ticketSettings.panelDescription,
+                  imageUrl: ticketSettings.panelImageUrl,
+                  accentColor:
+                      normalizeAccentColor(ticketSettings.panelAccentColor) ??
+                      null,
+                  categories: ticketSettings.categories,
+              }
+            : null,
+    }
     const previewProps = {
         language,
         style,
         rosterVariant: draft.settings.rosterMessageVariant,
         timeZone,
         siteUrl,
+        clan: previewClan,
         dictionary,
     }
     const previewOf = (
