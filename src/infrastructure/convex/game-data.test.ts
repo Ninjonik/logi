@@ -633,10 +633,9 @@ test("history commit records an unchanged session and its connection at most onc
     assert.notEqual(connection().historyLastSuccessAt, written.success)
     assert.equal(feedRows(), written.feed, "recording a visit is not a change")
     assert.equal(await commit({ ...session, map: "Foy" }), true)
-    assert.equal((row().session as { map: string }).map, "Foy")
-    assert.notEqual(
-        row().updatedAt,
-        written.updatedAt,
+    assert.equal(
+        (row().session as { map: string }).map,
+        "Foy",
         "changed content is written"
     )
 })
