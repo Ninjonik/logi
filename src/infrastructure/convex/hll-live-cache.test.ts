@@ -196,6 +196,9 @@ test("HLL source generation changes discard the previous provider's data", async
     await ctx.db.patch("gameDataConnections:one", { generation: 2 })
     const second = await invoke(reads.reserve, ctx, args)
     assert.equal(second.previous, undefined)
+    // The old generation's data is dropped with the claim, not kept behind
+    // the new generation number.
+    assert.equal(ctx.db.tables.hllLiveCache[0].dataJson, undefined)
     advance(40_000)
     const retry = await invoke(reads.reserve, ctx, args)
     assert.equal(retry.previous, undefined)
@@ -220,4 +223,62 @@ test("HLL preserves the cache backoff when the aggregate map changes", async (t)
     assert.equal((await invoke(reads.reserve, ctx, args)).kind, "busy")
     advance(120_000)
     assert.equal((await invoke(reads.reserve, ctx, args)).previous, undefined)
+})
+test("an HLL claim patches the lease only; the large data is dropped once when the map changes, never copied", async (t) => {
+    const { ctx, args, advance } = fixture(t),
+        data = hllLiveFixture(),
+        first = await invoke(reads.reserve, ctx, args)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...first.claim,
+        dataJson: JSON.stringify(data),
+    })
+    const row = () => ctx.db.tables.hllLiveCache[0]
+    const stored = row().dataJson
+    assert.ok(stored)
+    const patches: Array<Record<string, unknown>> = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    t.mock.method(
+        ctx.db,
+        "patch",
+        async (id: string, value: Record<string, unknown>) => {
+            patches.push(value)
+            return await patch(id, value)
+        }
+    )
+    // The cache budget passed: the next claim keeps the data as `previous`
+    // and writes nothing but the lease (every version is retained for days).
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    const second = await invoke(reads.reserve, ctx, args)
+    assert.equal(second.kind, "claimed")
+    assert.equal(second.previous?.fetchedAt, data.fetchedAt)
+    assert.deepEqual(
+        patches.map((value) => Object.keys(value).sort()),
+        [["fence", "generation", "leaseUntil", "nextAt", "retainUntil"]]
+    )
+    assert.equal(row().dataJson, stored)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...second.claim,
+        dataJson: JSON.stringify(data),
+    })
+    // The collected observation shows another map: the data no longer
+    // serves as `previous`, so the claim drops it in its one patch.
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    ctx.db.tables.gameDataConnections[0].observation = {
+        observedAt: new Date(Date.now()).toISOString(),
+        map: "Foy Warfare",
+    }
+    const third = await invoke(reads.reserve, ctx, args)
+    assert.equal(third.kind, "claimed")
+    assert.equal(third.previous, undefined)
+    const last = patches[patches.length - 1]
+    assert.ok("dataJson" in last)
+    assert.equal(last.dataJson, undefined)
+    assert.equal(row().dataJson, undefined)
+    // Without data there is nothing to drop: the claim is the lease alone.
+    advance(40_000)
+    const fourth = await invoke(reads.reserve, ctx, args)
+    assert.equal(fourth.kind, "claimed")
+    assert.ok(!("dataJson" in patches[patches.length - 1]))
 })

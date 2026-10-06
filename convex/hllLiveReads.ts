@@ -119,22 +119,30 @@ export const reserve = internalMutation({
         )
             return { kind: "busy", retryAfterMs: cache.nextAt - now }
         const fence = (cache?.fence ?? 0) + 1,
-            state = {
+            lease = {
                 generation: row.generation,
                 fence,
                 leaseUntil: now + 35_000,
                 nextAt: 0,
                 retainUntil: now + 3_600_000,
-                dataJson:
-                    previous && !mapChanged
-                        ? JSON.stringify(previous)
-                        : undefined,
             }
+        // `dataJson` is large and every version of it is retained, so a
+        // claim patches the lease fields only; `finish` writes the data. It
+        // is dropped, never copied, when it stops serving as `previous`: the
+        // map changed, or the source generation did (ARCHITECTURE.md,
+        // "Convex hot paths").
+        const keepData = Boolean(previous) && !mapChanged
         let cacheId = cache?._id
-        if (cacheId) await ctx.db.patch(cacheId, state)
+        if (cache)
+            await ctx.db.patch(cache._id, {
+                ...lease,
+                ...(keepData || cache.dataJson === undefined
+                    ? {}
+                    : { dataJson: undefined }),
+            })
         else {
             cacheId = await ctx.db.insert("hllLiveCache", {
-                ...state,
+                ...lease,
                 connectionId: row._id,
             })
             await ctx.scheduler.runAfter(
