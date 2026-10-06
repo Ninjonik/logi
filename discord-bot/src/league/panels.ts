@@ -30,6 +30,7 @@ import {
 import type { PanelWarning } from "../../../src/domain/discord-publications/panel-delivery"
 import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
 import { panelChipIcons } from "../../../src/domain/discord-publications/live-panel"
+import { panelPartKeyPrefix } from "../../../src/domain/discord-publications/keys"
 import { isPanelPaused } from "../../../src/domain/discord-publications/settings"
 import { getLeagueMessages } from "../../../src/lib/clan-language/league"
 import { PanelPassError } from "../public-panels/panel-errors"
@@ -68,7 +69,7 @@ const withdrawAll = async (
     ports: LeagueRunPorts,
     parts: readonly LeaguePanelPart[]
 ) => {
-    const bindings = await ports.bindings()
+    const bindings = await ports.bindings(panelPartKeyPrefix(panel._id))
     for (const part of parts) {
         const key = leaguePanelKey(panel._id, part)
         if (
@@ -198,7 +199,7 @@ export async function runLeaguePanels(
     }
     // Posted once in the fixed order (P6-B07): when an earlier message has
     // to be created while a later one exists, the later one is re-posted.
-    const bindings = await ports.bindings()
+    const bindings = await ports.bindings(panelPartKeyPrefix(panel._id))
     const posted = (part: LeaguePanelPart) =>
         bindings.some(
             (binding) =>

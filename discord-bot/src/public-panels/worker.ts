@@ -252,7 +252,7 @@ export function startPublicPanelWorker(
                 channelId: input.channelId,
                 message: input.message as MessageCreateOptions,
             }),
-        bindings: async () =>
+        bindings: async (prefix) =>
             (
                 await query<
                     Array<{
@@ -262,7 +262,10 @@ export function startPublicPanelWorker(
                         hash: string | null
                         lastSuccessAt: number | null
                     }>
-                >("discordPublications:bindings", { guildId: guild.id })
+                >("discordPublications:bindings", {
+                    guildId: guild.id,
+                    ...(prefix ? { prefix } : {}),
+                })
             ).map((row) => ({
                 key: row.key,
                 channelId: row.channelId,

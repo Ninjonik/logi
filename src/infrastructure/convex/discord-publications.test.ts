@@ -1,10 +1,15 @@
 import {
+    bindings,
+    claim,
+    finish,
+    save,
+} from "../../../convex/discordPublications"
+import {
     configure,
     list,
     resultsPage,
 } from "../../../convex/discordPublicPanels"
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
-import { claim, save, finish } from "../../../convex/discordPublications"
 import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -502,4 +507,66 @@ test("result pages add the card facts: category, sides, confirming admin and pub
         previous: null,
         league: null,
     })
+})
+test("bindings read one owner's keys through a prefix range of the guild index, or every key without a prefix", async () => {
+    const ctx = testContext()
+    const row = (id: string, guildId: string, key: string) =>
+        ctx.db.seed("discordPublications", {
+            _id: `discordPublications:${id}`,
+            guildId,
+            key,
+            revision: 1,
+            channelId: null,
+            messageId: null,
+            pending: null,
+            hash: null,
+            fence: 0,
+            leaseUntil: 0,
+            retryAt: 0,
+            lastSuccessAt: null,
+            error: null,
+        })
+    const own = [
+        "calendar",
+        "league:leagueTrackedMatches:1",
+        "panel:a",
+        "panel:a:result:events:1",
+        "panel:b",
+        "panels",
+        "seed:call:run-1",
+        "seed;odd",
+    ]
+    own.forEach((key, index) => row(String(index), "guild-a", key))
+    row("foreign", "guild-b", "seed:call:run-2")
+    const keys = async (prefix?: string) =>
+        (
+            (await invoke(bindings, ctx, {
+                secret,
+                guildId: "guild-a",
+                ...(prefix === undefined ? {} : { prefix }),
+            })) as Array<{ key: string }>
+        )
+            .map((binding) => binding.key)
+            .sort()
+    assert.deepEqual(await keys("seed:"), ["seed:call:run-1"])
+    assert.deepEqual(await keys("panel:a"), [
+        "panel:a",
+        "panel:a:result:events:1",
+    ])
+    assert.deepEqual(await keys("panel:"), [
+        "panel:a",
+        "panel:a:result:events:1",
+        "panel:b",
+    ])
+    assert.deepEqual(await keys("league:"), ["league:leagueTrackedMatches:1"])
+    assert.deepEqual(await keys("calendar"), ["calendar"])
+    assert.deepEqual(await keys(""), own)
+    assert.deepEqual(await keys(), own)
+    await assert.rejects(
+        invoke(bindings, ctx, {
+            secret,
+            guildId: "guild-a",
+            prefix: "p".repeat(151),
+        })
+    )
 })

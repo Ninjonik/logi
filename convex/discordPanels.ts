@@ -1,13 +1,17 @@
-import { seedPublicationKey } from "../src/domain/discord-seed/publication-keys"
+import {
+    seedPublicationKey,
+    seedPublicationKeyPrefix,
+} from "../src/domain/discord-seed/publication-keys"
+import { publicationsWithPrefix } from "./discordPublications"
 import { makeFunctionReference } from "convex/server"
 import { v } from "convex/values"
 
 import {
     guildPanel,
     guildPanels,
-    guildPublications,
     panelActionStore,
     panelOwnsKey,
+    panelPublications,
     panelSaveStore,
     panelServerInfos,
     panelServerRow,
@@ -127,10 +131,11 @@ async function controlMessages(
             .query("discordSeedMessages")
             .withIndex("guildId", (q) => q.eq("guildId", guildId))
             .collect(),
-        ctx.db
-            .query("discordPublications")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect(),
+        publicationsWithPrefix(
+            ctx,
+            guildId,
+            seedPublicationKeyPrefix("control")
+        ),
     ])
     return plans.map((plan) => {
         // The outbox row counts the requests; the bot delivers the message
@@ -208,7 +213,7 @@ export const overview = query({
             controls,
         ] = await Promise.all([
             guildPanels(ctx, args.guildId),
-            guildPublications(ctx, args.guildId),
+            panelPublications(ctx, args.guildId),
             ctx.db
                 .query("discordPanelStatus")
                 .withIndex("guildId", (q) => q.eq("guildId", args.guildId))

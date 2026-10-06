@@ -75,6 +75,7 @@ import { resultCardView } from "../../../src/domain/discord-publications/result-
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
 import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
 import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
+import { panelPublicationKey } from "../../../src/domain/discord-publications/keys"
 import type { LeaguePanelOptions } from "../../../src/domain/wardogs-league/panels"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
@@ -180,7 +181,12 @@ export type PanelRunPorts = {
         channelId: string | null
         message: MessageCreateOptions
     }): Promise<string | null | undefined>
-    bindings(): Promise<PublicationBinding[]>
+    /**
+     * The guild's managed publications whose key starts with `prefix`
+     * (every one without). A pass asks for the narrowest prefix it needs,
+     * so it never reads a guild's whole, ever-growing table.
+     */
+    bindings(prefix?: string): Promise<PublicationBinding[]>
     /** Fresh channel facts; null when the channel no longer exists. */
     channelAccess(
         channelId: string
@@ -271,7 +277,7 @@ export function panelStateKey(panel: BotPanel) {
     ].join(":")
 }
 
-const keyOf = (panel: BotPanel) => `panel:${panel._id}`
+const keyOf = (panel: BotPanel) => panelPublicationKey(panel._id)
 const ownsKey = (panel: BotPanel, key: string) =>
     key === keyOf(panel) ||
     key.startsWith(`${keyOf(panel)}:`) ||
@@ -957,7 +963,10 @@ async function runResults(
     const look = resolvePanelPresentation(panel)
     const game = panel.gameId === "wardogs" ? "wardogs" : "hell_let_loose"
     const bindings = new Map(
-        (await ports.bindings()).map((binding) => [binding.key, binding])
+        (await ports.bindings(`${keyOf(panel)}:result:`)).map((binding) => [
+            binding.key,
+            binding,
+        ])
     )
     const icons = {
         allies: pass.emoji.allies,
@@ -1101,7 +1110,7 @@ async function runCompetition(
             ),
         })
     }
-    for (const binding of await ports.bindings())
+    for (const binding of await ports.bindings(`${keyOf(panel)}:division:`))
         if (
             binding.key.startsWith(`${keyOf(panel)}:division:`) &&
             !wanted.has(binding.key)
@@ -1121,11 +1130,21 @@ async function runCompetition(
     }
 }
 
+/** The bindings a panel owns, read by its key prefix (and the calendar's fixed key). */
+async function ownedBindings(panel: BotPanel, ports: PanelRunPorts) {
+    const own = await ports.bindings(keyOf(panel))
+    const calendar =
+        panel.kind === "calendar" ? await ports.bindings("calendar") : []
+    return [...own, ...calendar].filter((binding) =>
+        ownsKey(panel, binding.key)
+    )
+}
+
 /** Takes every message of a panel out of Discord. */
 async function withdraw(panel: BotPanel, ports: PanelRunPorts) {
     let removed = 0
-    for (const binding of await ports.bindings()) {
-        if (!ownsKey(panel, binding.key) || !binding.messageId) continue
+    for (const binding of await ownedBindings(panel, ports)) {
+        if (!binding.messageId) continue
         await ports.publish({
             key: binding.key,
             revision: panel.revision,
@@ -1205,11 +1224,9 @@ export async function runPanel(
                         attempt: attempt(pass, {
                             handledRequestAt,
                             nextAt: null,
-                            messages: (await ports.bindings()).filter(
-                                (binding) =>
-                                    ownsKey(panel, binding.key) &&
-                                    binding.messageId
-                            ).length,
+                            messages: (
+                                await ownedBindings(panel, ports)
+                            ).filter((binding) => binding.messageId).length,
                         }),
                     }
                 }

@@ -8,6 +8,7 @@ import {
 } from "discord.js"
 import type { LeagueLinkReplyView } from "../../../src/domain/wardogs-league/link-reply"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
+import { LEAGUE_CARD_KEY_PREFIX } from "../../../src/domain/discord-publications/keys"
 import { humanLeagueInput, linkReplyPayload } from "./render"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
@@ -126,9 +127,12 @@ export function startLeagueWorker(client: Client) {
                                 "leagueDiscovery:forGuild",
                                 { guildId: guild.id }
                             ),
+                        // Only the retired cards' keys, never the guild's
+                        // whole publication table.
                         bindings: () =>
                             query<Binding[]>("discordPublications:bindings", {
                                 guildId: guild.id,
+                                prefix: LEAGUE_CARD_KEY_PREFIX,
                             }),
                         withdraw: (key, revision) =>
                             publishManagedMessage(client, {

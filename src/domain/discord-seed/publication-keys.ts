@@ -5,8 +5,16 @@
  */
 export type SeedMessageKind = "call" | "control" | "intro"
 
+/** `seed:`: every seed message of a guild, for a prefix read of the publications. */
+export const SEED_PUBLICATION_KEY_PREFIX = "seed:"
+
+/** `seed:<kind>:`: the seed messages of one kind. */
+export function seedPublicationKeyPrefix(kind: SeedMessageKind) {
+    return `${SEED_PUBLICATION_KEY_PREFIX}${kind}:`
+}
+
 export function seedPublicationKey(kind: SeedMessageKind, key: string) {
-    return `seed:${kind}:${key}`
+    return `${seedPublicationKeyPrefix(kind)}${key}`
 }
 
 export function parseSeedPublicationKey(
