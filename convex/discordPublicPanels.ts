@@ -1,4 +1,5 @@
 import {
+    isPanelPaused,
     publicPanelSettingsSchema,
     type PublicPanelSaveResult,
 } from "../src/domain/discord-publications/settings"
@@ -195,7 +196,24 @@ export const list = query({
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
+        // The calendar panel ("Panely v Discordu"); its message keeps the
+        // key `calendar`. "Zprávy a panely" shows it instead of the channel
+        // saved before panels existed (N1-47).
+        const calendar = panels.find(
+            (p) => p.kind === "calendar" && !p.removing
+        )
+        const calendarMessage = publications.find((b) => b.key === "calendar")
         return {
+            calendarPanel: calendar
+                ? {
+                      _id: calendar._id,
+                      channelId: calendar.channelId,
+                      paused: isPanelPaused(calendar),
+                      draft: Boolean(calendar.draft),
+                      messageId: calendarMessage?.messageId ?? null,
+                      error: calendarMessage?.error ?? null,
+                  }
+                : null,
             reportCategories: config?.ticketSettings?.enabled
                 ? config.ticketSettings.categories.map((c) => ({
                       id: c.id,

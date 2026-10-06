@@ -45,6 +45,27 @@ export const panelListSchema = z.object({
     panels: z.array(z.unknown()).default([]),
 })
 
+/**
+ * The calendar panel of "Panely v Discordu" as the list reports it
+ * (`calendarPanel`); null when the clan has none.
+ */
+export const calendarPanelSchema = z.object({
+    _id: z.string(),
+    channelId: z.string(),
+    paused: z.boolean(),
+    draft: z.boolean(),
+    messageId: z.string().nullable(),
+    error: z.string().nullable(),
+})
+export type CalendarPanel = z.infer<typeof calendarPanelSchema>
+
+export function parseCalendarPanel(body: unknown): CalendarPanel | null {
+    const parsed = calendarPanelSchema.safeParse(
+        (body as { calendarPanel?: unknown } | null)?.calendarPanel
+    )
+    return parsed.success ? parsed.data : null
+}
+
 /** The saved panels of a list response; broken entries are left out. */
 export function parseSavedPanels(body: unknown): SavedPanel[] {
     const parsed = panelListSchema.safeParse(body)
@@ -124,10 +145,13 @@ export function panelOverviewItems(input: {
         enabled: boolean
         controlChannelId: string | null
     } | null
+    /** The channel saved before panels existed (N1-47). */
     calendar: {
         channelId?: string
         messageId?: string
     }
+    /** The calendar panel; it wins over the old channel setting. */
+    calendarPanel?: CalendarPanel | null
     wardogs: boolean
 }): PanelOverviewItem[] {
     const items: PanelOverviewItem[] = input.panels.map((panel) => {
@@ -173,16 +197,39 @@ export function panelOverviewItems(input: {
         })
     if (input.wardogs && !items.some((item) => item.kind === "league"))
         items.push({ key: "league", kind: "league", toggleable: false })
-    items.push({
-        key: "calendar",
-        kind: "calendar",
-        channelId: input.calendar.channelId,
-        enabled: Boolean(input.calendar.channelId),
-        toggleable: false,
-        ...(input.calendar.channelId && !input.calendar.messageId
-            ? { status: "unsent" as const }
-            : {}),
-    })
+    const calendar = input.calendarPanel
+    items.push(
+        calendar
+            ? {
+                  key: "calendar",
+                  kind: "calendar",
+                  channelId: calendar.channelId,
+                  enabled: !calendar.draft && !calendar.paused,
+                  toggleable: !calendar.draft,
+                  panelId: calendar._id,
+                  ...panelStatus({
+                      enabled: true,
+                      paused: calendar.paused,
+                      draft: calendar.draft,
+                      publications: [
+                          {
+                              messageId: calendar.messageId,
+                              error: calendar.error,
+                          },
+                      ],
+                  }),
+              }
+            : {
+                  key: "calendar",
+                  kind: "calendar",
+                  channelId: input.calendar.channelId,
+                  enabled: Boolean(input.calendar.channelId),
+                  toggleable: false,
+                  ...(input.calendar.channelId && !input.calendar.messageId
+                      ? { status: "unsent" as const }
+                      : {}),
+              }
+    )
     return items.sort((a, b) => ORDER[a.kind] - ORDER[b.kind])
 }
 

@@ -4006,7 +4006,7 @@ export const csMessages = {
                 leagueSwitch: "Panely WD League",
                 calendarSwitch: "Panel Kalendář",
                 calendarHint:
-                    "Kanál kalendáře se nastavuje na stránce Kanály a jazyk.",
+                    "Kanál kalendáře se nastavuje v Panely v Discordu.",
                 errorFallback: "Poslední odeslání se nepovedlo.",
                 loading: "Načítám panely…",
                 unavailable: "Panely se nenačetly.",
@@ -6560,6 +6560,8 @@ export const csMessages = {
                 resultsBackfill:
                     "při vytvoření poslal posledních 5 potvrzených",
                 controlButtons: "tlačítka Seed, Obnovit a Pozastavit",
+                calendarSetting:
+                    "kanál z dřívějšího nastavení, Upravit z něj udělá panel",
                 open: "Otevřít zprávu",
             },
             buttons: {
@@ -6956,6 +6958,8 @@ export const csMessages = {
                 },
             },
             bar: {
+                adoptCalendar:
+                    "Kalendář už v {channel} je. Uložení ho převezme: zpráva se upraví, nová se neposílá.",
                 editsMessage:
                     "Uložení upraví zprávu v {channel}, nová se neposílá.",
                 notInDiscord: "Panel zatím není v Discordu.",

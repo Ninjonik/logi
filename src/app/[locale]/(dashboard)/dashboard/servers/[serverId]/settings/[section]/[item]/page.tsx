@@ -111,6 +111,9 @@ export default async function PanelEditorPage({
                 guildId={server.discordId}
                 panelId={panelId}
                 initialKind={type && isPanelKind(type) ? type : null}
+                calendarSettingChannelId={
+                    discordConfig?.calendarChannelId ?? null
+                }
                 siteUrl={getSiteUrl()}
                 clan={{
                     name: server.name,

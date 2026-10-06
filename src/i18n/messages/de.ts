@@ -4132,7 +4132,7 @@ export const deMessages = {
                 leagueSwitch: "Panels WD League",
                 calendarSwitch: "Panel Kalender",
                 calendarHint:
-                    "Der Kalenderkanal wird auf der Seite Kanäle und Sprache festgelegt.",
+                    "Der Kalenderkanal wird unter Panels in Discord festgelegt.",
                 errorFallback: "Das letzte Senden ist fehlgeschlagen.",
                 loading: "Panels werden geladen…",
                 unavailable: "Die Panels konnten nicht geladen werden.",
@@ -6747,6 +6747,8 @@ export const deMessages = {
                     "hat beim Erstellen die letzten 5 bestätigten gesendet",
                 controlButtons:
                     "Schaltflächen Seed, Aktualisieren und Pausieren",
+                calendarSetting:
+                    "Kanal aus der früheren Einstellung; Bearbeiten macht daraus ein Panel",
                 open: "Nachricht öffnen",
             },
             buttons: {
@@ -7170,6 +7172,8 @@ export const deMessages = {
                 },
             },
             bar: {
+                adoptCalendar:
+                    "Der Kalender ist schon in {channel}. Speichern übernimmt ihn: Die Nachricht wird bearbeitet, keine neue gesendet.",
                 editsMessage:
                     "Speichern bearbeitet die Nachricht in {channel}; es wird keine neue gesendet.",
                 notInDiscord: "Das Panel ist noch nicht in Discord.",

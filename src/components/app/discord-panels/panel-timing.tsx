@@ -57,6 +57,8 @@ export function timingText(
             return t.resultsBackfill
         case "controlButtons":
             return t.controlButtons
+        case "calendarSetting":
+            return t.calendarSetting
     }
 }
 

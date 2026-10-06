@@ -1,17 +1,27 @@
 import {
+    leagueFixturesMessage,
+    leagueStandingsMessage,
+    type LeaguePanelLook,
+} from "@/domain/wardogs-league/panel-views"
+import {
     liveServerPanelView,
     liveServerState,
     type LiveServerFacts,
 } from "@/domain/discord-publications/live-panel"
 import type {
-    PanelBannerImage,
-    PanelScoreImage,
-} from "@/domain/discord-publications/panel-image-model"
+    LeagueFixturesView,
+    LeaguePanelOptions,
+    LeagueStandingsView,
+} from "@/domain/wardogs-league/panels"
 import {
     panelMapDefinition,
     panelMapKey,
     type PanelStyle,
 } from "@/domain/discord-publications/panel-graphics"
+import type {
+    PanelBannerImage,
+    PanelScoreImage,
+} from "@/domain/discord-publications/panel-image-model"
 import type {
     MessageMedia,
     MessageView,
@@ -21,22 +31,12 @@ import type { PanelEditorDraft } from "@/domain/discord-publications/panel-edito
 import { combinedPanelView } from "@/domain/discord-publications/combined-panel"
 import { panelImageCopy } from "@/domain/discord-publications/panel-image-copy"
 import { DEFAULT_MESSAGE_ACCENT_HEX } from "@/domain/discord-messages/format"
+import type { MessageStyle } from "@/domain/discord-messages/message-style"
+import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
+import { getSystemMessages } from "@/lib/clan-language/system"
+import { getLeagueMessages } from "@/lib/clan-language/league"
 import { seedProgress } from "@/domain/discord-seed/progress"
 import { getPanelMessages } from "@/lib/clan-language/panels"
-import {
-    leagueFixturesMessage,
-    leagueStandingsMessage,
-    type LeaguePanelLook,
-} from "@/domain/wardogs-league/panel-views"
-import type {
-    LeagueFixturesView,
-    LeaguePanelOptions,
-    LeagueStandingsView,
-} from "@/domain/wardogs-league/panels"
-import type { MessageStyle } from "@/domain/discord-messages/message-style"
-import { getLeagueMessages } from "@/lib/clan-language/league"
-import { getSystemMessages } from "@/lib/clan-language/system"
-import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
 
 /**
  * The editor preview (P2-27, P2-43..45, P2-B09): the exact view the bot

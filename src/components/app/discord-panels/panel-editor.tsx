@@ -32,6 +32,7 @@ import {
     serverJoinSlugBase,
     serverJoinUrl,
 } from "@/domain/discord-publications/server-join"
+import { saveDiscordSettings } from "@/components/app/settings/save-discord-settings"
 import { unsavedChangesLabel } from "@/components/app/settings/unsaved-changes-bar"
 import { panelImageCopy } from "@/domain/discord-publications/panel-image-copy"
 import type { PanelStyle } from "@/domain/discord-publications/panel-graphics"
@@ -119,6 +120,11 @@ export type PanelEditorProps = {
     eventCategories: ReadonlyArray<{ id: string; label: string }>
     competitions: ReadonlyArray<{ id: string; name: string; gameId: string }>
     calendarEntries: readonly CalendarEntry[]
+    /**
+     * The calendar channel saved before panels existed (N1-47). A new
+     * calendar panel starts in it and takes its message over on save.
+     */
+    calendarSettingChannelId: string | null
     resultEvents: Partial<
         Record<
             "hell_let_loose" | "wardogs",
@@ -184,15 +190,19 @@ export function PanelEditor(props: PanelEditorProps) {
         saved: PanelEditorDraft
         draft: PanelEditorDraft
         revision: number | null
-    } | null>(() =>
-        panelId
-            ? null
-            : {
-                  saved: newPanelDraft({ kind: props.initialKind ?? "server" }),
-                  draft: newPanelDraft({ kind: props.initialKind ?? "server" }),
-                  revision: null,
-              }
-    )
+    } | null>(() => {
+        if (panelId) return null
+        const kind = props.initialKind ?? "server"
+        const fresh = newPanelDraft({ kind })
+        return {
+            saved: fresh,
+            draft:
+                kind === "calendar" && props.calendarSettingChannelId
+                    ? { ...fresh, channelId: props.calendarSettingChannelId }
+                    : fresh,
+            revision: null,
+        }
+    })
     if (panelId && item && !loaded) {
         const draft = draftFromSettings(item.settings)
         setLoaded({ saved: draft, draft, revision: item.revision })
@@ -722,7 +732,15 @@ export function PanelEditor(props: PanelEditorProps) {
     const problems = draft ? draftProblems(draft) : []
     const busy = saving || uploading
     const sent = Boolean(item?.sent)
-    const unsent = !item || item.state === "unsent"
+    // A new calendar panel takes over the calendar the clan already has in
+    // Discord: saving sends it, so its message is edited, not posted again.
+    const adoptsCalendar =
+        !panelId &&
+        draft?.kind === "calendar" &&
+        Boolean(props.calendarSettingChannelId) &&
+        Boolean(overview) &&
+        !overview!.panels.some((panel) => panel.kind === "calendar")
+    const unsent = (!item || item.state === "unsent") && !adoptsCalendar
 
     async function save(send: boolean) {
         if (!draft || !loaded) return
@@ -774,6 +792,12 @@ export function PanelEditor(props: PanelEditorProps) {
                 toast.error(editor.errors[known] ?? editor.errors.unavailable)
                 return
             }
+            if (adoptsCalendar)
+                // The panel owns the calendar now; the old channel setting
+                // would bring it back if the panel were ever removed.
+                await saveDiscordSettings(serverId, {
+                    calendarChannelId: null,
+                }).catch(() => null)
             toast.success(send ? editor.savedSent : editor.saved)
             setJoinEdits({})
             setLoaded({ saved: draft, draft, revision: result.revision })
@@ -1207,13 +1231,19 @@ export function PanelEditor(props: PanelEditorProps) {
                             </span>
                             <span className="text-muted-foreground">
                                 {" · "}
-                                {item?.paused
-                                    ? editor.bar.pausedNote
-                                    : fill(editor.bar.editsMessage, {
+                                {adoptsCalendar
+                                    ? fill(editor.bar.adoptCalendar, {
                                           channel:
                                               channelName ??
                                               editor.preview.noChannel,
-                                      })}
+                                      })
+                                    : item?.paused
+                                      ? editor.bar.pausedNote
+                                      : fill(editor.bar.editsMessage, {
+                                            channel:
+                                                channelName ??
+                                                editor.preview.noChannel,
+                                        })}
                             </span>
                         </>
                     )}
@@ -1284,65 +1314,74 @@ export function PanelEditor(props: PanelEditorProps) {
                         </>
                     ) : (
                         <>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-lg border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400"
-                                disabled={busy}
-                                onClick={() => void act("delete")}
-                            >
-                                <Trash2 className="size-4" aria-hidden="true" />
-                                {editor.bar.delete}
-                            </Button>
-                            {item?.paused ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="rounded-lg"
-                                    disabled={busy}
-                                    onClick={() => void act("resume")}
-                                >
-                                    <Play
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {editor.bar.resume}
-                                </Button>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="rounded-lg"
-                                    disabled={busy}
-                                    onClick={() => void act("pause")}
-                                >
-                                    <Pause
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {editor.bar.pause}
-                                </Button>
+                            {adoptsCalendar ? null : (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-lg border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400"
+                                        disabled={busy}
+                                        onClick={() => void act("delete")}
+                                    >
+                                        <Trash2
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        {editor.bar.delete}
+                                    </Button>
+                                    {item?.paused ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="rounded-lg"
+                                            disabled={busy}
+                                            onClick={() => void act("resume")}
+                                        >
+                                            <Play
+                                                className="size-4"
+                                                aria-hidden="true"
+                                            />
+                                            {editor.bar.resume}
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="rounded-lg"
+                                            disabled={busy}
+                                            onClick={() => void act("pause")}
+                                        >
+                                            <Pause
+                                                className="size-4"
+                                                aria-hidden="true"
+                                            />
+                                            {editor.bar.pause}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-lg"
+                                        disabled={busy || Boolean(item?.paused)}
+                                        onClick={() => void act("refresh")}
+                                    >
+                                        <RefreshCw
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        {editor.bar.refresh}
+                                    </Button>
+                                </>
                             )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-lg"
-                                disabled={busy || Boolean(item?.paused)}
-                                onClick={() => void act("refresh")}
-                            >
-                                <RefreshCw
-                                    className="size-4"
-                                    aria-hidden="true"
-                                />
-                                {editor.bar.refresh}
-                            </Button>
                             <Button
                                 type="button"
                                 className="rounded-lg"
                                 disabled={
-                                    busy || !changes || problems.length > 0
+                                    busy ||
+                                    (!changes && !adoptsCalendar) ||
+                                    problems.length > 0
                                 }
-                                onClick={() => void save(false)}
+                                onClick={() => void save(adoptsCalendar)}
                             >
                                 {saving ? editor.bar.saving : editor.bar.save}
                             </Button>

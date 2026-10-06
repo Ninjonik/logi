@@ -219,3 +219,32 @@ test("live data of a source comes from its own panel's reads (P1-08, P1-B07)", (
         null
     )
 })
+
+test("a calendar saved before panels existed is listed until it becomes a panel (N1-47)", () => {
+    assert.deepEqual(
+        panelRowActions({
+            source: "calendar-setting",
+            kind: "calendar",
+            state: "published",
+        }),
+        { buttons: ["edit"], errorBox: false }
+    )
+    assert.deepEqual(
+        panelTimingParts({
+            source: "calendar-setting",
+            kind: "calendar",
+            state: "published",
+            now: 10_000,
+            savedAt: null,
+            requestedAt: null,
+            lastUpdateAt: null,
+            lastAttemptAt: null,
+            nextUpdateAt: null,
+            pausedAt: null,
+            pausedBy: null,
+            messages: 1,
+            hasMessage: true,
+        }),
+        [{ kind: "calendarSetting" }, { kind: "open" }]
+    )
+})

@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     panelOverviewItems,
     panelStatus,
+    parseCalendarPanel,
     panelToggleAction,
     parseSavedPanels,
 } from "./panel-overview"
@@ -120,4 +121,36 @@ test("a switch pauses or resumes the panel; the paused flag wins over enabled", 
             ["c", "unsent", false, false],
         ]
     )
+})
+
+test("the calendar panel of Panely v Discordu wins over the old channel setting (N1-47)", () => {
+    const list = {
+        panels: [],
+        calendarPanel: {
+            _id: "cal",
+            channelId: "7",
+            paused: true,
+            draft: false,
+            messageId: "9",
+            error: null,
+        },
+    }
+    const [calendar] = panelOverviewItems({
+        panels: [],
+        sources: new Map(),
+        calendar: { channelId: "6", messageId: "8" },
+        calendarPanel: parseCalendarPanel(list),
+        wardogs: false,
+    })
+    assert.deepEqual(
+        [
+            calendar?.channelId,
+            calendar?.panelId,
+            calendar?.status,
+            calendar?.enabled,
+            calendar?.toggleable,
+        ],
+        ["7", "cal", "paused", false, true]
+    )
+    assert.equal(parseCalendarPanel({ panels: [] }), null)
 })

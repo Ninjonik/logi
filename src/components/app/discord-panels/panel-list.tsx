@@ -262,7 +262,6 @@ function PanelRow({
 export function PanelListCard({
     groups,
     editHref,
-    seedHref,
     busy,
     onAction,
     now,
@@ -270,8 +269,8 @@ export function PanelListCard({
     dictionary,
 }: {
     groups: Array<{ group: PanelRowModel["group"]; rows: PanelRowModel[] }>
-    editHref: (panelId: string) => string
-    seedHref: string
+    /** "Upravit": the editor, the seed page of a control message, or a new calendar panel. */
+    editHref: (row: PanelRowModel) => string
     busy: boolean
     onAction: (action: RowAction) => void
     now: number
@@ -327,11 +326,7 @@ export function PanelListCard({
                                 <PanelRow
                                     key={row.key}
                                     row={row}
-                                    editHref={
-                                        row.panelId
-                                            ? editHref(row.panelId)
-                                            : seedHref
-                                    }
+                                    editHref={editHref(row)}
                                     busy={busy}
                                     onAction={onAction}
                                     now={now}

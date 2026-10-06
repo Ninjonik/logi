@@ -4018,8 +4018,7 @@ export const enMessages = {
                 controlSwitch: "Server control",
                 leagueSwitch: "WD League panels",
                 calendarSwitch: "Calendar panel",
-                calendarHint:
-                    "The calendar channel is set on the Channels and language page.",
+                calendarHint: "The calendar channel is set on Discord panels.",
                 errorFallback: "The last delivery failed.",
                 loading: "Loading panels…",
                 unavailable: "The panels could not be loaded.",
@@ -6583,6 +6582,8 @@ export const enMessages = {
                 resultsBackfill:
                     "sent the last 5 confirmed ones when it was created",
                 controlButtons: "Seed, Refresh and Pause buttons",
+                calendarSetting:
+                    "channel from the earlier setting; Edit turns it into a panel",
                 open: "Open message",
             },
             buttons: {
@@ -6991,6 +6992,8 @@ export const enMessages = {
                 },
             },
             bar: {
+                adoptCalendar:
+                    "The calendar is already in {channel}. Saving takes it over: the message is edited, no new one is sent.",
                 editsMessage:
                     "Saving edits the message in {channel}; no new one is sent.",
                 notInDiscord: "The panel is not in Discord yet.",

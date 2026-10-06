@@ -276,6 +276,22 @@ export default async function ServerSettingsSectionPage({
                     competitions={await panelCompetitions(
                         snapshot.enabledGames
                     )}
+                    calendarSetting={
+                        discordConfig?.calendarChannelId
+                            ? {
+                                  channelId: discordConfig.calendarChannelId,
+                                  message: discordConfig.calendarMessageId
+                                      ? {
+                                            channelId:
+                                                discordConfig.calendarMessageChannelId ??
+                                                discordConfig.calendarChannelId,
+                                            messageId:
+                                                discordConfig.calendarMessageId,
+                                        }
+                                      : null,
+                              }
+                            : null
+                    }
                     dictionary={dictionary}
                 />
             )

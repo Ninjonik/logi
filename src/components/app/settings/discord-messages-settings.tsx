@@ -79,8 +79,11 @@ import { Button } from "@/components/ui/button"
 
 import {
     panelOverviewItems,
+    panelPaused,
     panelToggleAction,
+    parseCalendarPanel,
     parseSavedPanels,
+    type CalendarPanel,
     type PanelOverviewItem,
     type PanelSource,
     type SavedPanel,
@@ -129,6 +132,8 @@ function initialDraft(config: DiscordConfig | null): Draft {
 export type Overview = {
     status: "loading" | "ready" | "failed"
     panels: SavedPanel[]
+    /** The calendar panel of "Panely v Discordu"; null without one. */
+    calendarPanel?: CalendarPanel | null
     sources: Map<string, PanelSource>
     reportCategories: Array<{ id: string; label: string }>
     seed: {
@@ -189,6 +194,7 @@ function usePanelOverview(serverId: string, version: number): Overview {
                 version,
                 status: list ? "ready" : "failed",
                 panels: parseSavedPanels(list),
+                calendarPanel: parseCalendarPanel(list),
                 sources,
                 reportCategories: Array.isArray(
                     (list as { reportCategories?: unknown })?.reportCategories
@@ -325,11 +331,24 @@ export function DiscordMessagesSettingsView({
     const errorsChanged =
         (draft.errorsChannelId || undefined) !==
         (saved.errorsChannelId || undefined)
-    const panelById = new Map(
-        overview.panels.map((panel) => [panel._id, panel])
-    )
+    // A switch is on while its panel runs (sent and not paused).
+    const savedEnabled = new Map<string, boolean>([
+        ...overview.panels.map((panel): [string, boolean] => [
+            panel._id,
+            !panel.draft && !panelPaused(panel),
+        ]),
+        ...(overview.calendarPanel
+            ? [
+                  [
+                      overview.calendarPanel._id,
+                      !overview.calendarPanel.draft &&
+                          !overview.calendarPanel.paused,
+                  ] as [string, boolean],
+              ]
+            : []),
+    ])
     const changedPanels = Object.entries(draft.panels).filter(
-        ([id, enabled]) => panelById.get(id)?.enabled !== enabled
+        ([id, enabled]) => savedEnabled.get(id) !== enabled
     )
     const changes =
         (accentColor ?? "") !== (normalizeAccentColor(saved.accentColor) ?? "")
@@ -604,6 +623,7 @@ export function DiscordMessagesSettingsView({
             channelId: config?.calendarChannelId,
             messageId: config?.calendarMessageId,
         },
+        calendarPanel: overview.calendarPanel,
         wardogs: enabledGames.includes("wardogs"),
     })
 
@@ -1261,7 +1281,9 @@ function PanelRow({
             ? hrefs.seed
             : item.panelId
               ? `${hrefs.panels}/${encodeURIComponent(item.panelId)}`
-              : hrefs.panels
+              : item.kind === "calendar"
+                ? `${hrefs.panels}/new?type=calendar`
+                : hrefs.panels
     return (
         <MessageRow
             icon={PANEL_ICONS[item.kind]}
@@ -1320,7 +1342,12 @@ function PanelRow({
                       }
             }
             action={
-                <Button asChild variant="outline" size="sm" className="rounded-lg">
+                <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                >
                     <Link href={editHref}>
                         {text.edit}
                         <ChevronRight className="size-3.5" aria-hidden="true" />

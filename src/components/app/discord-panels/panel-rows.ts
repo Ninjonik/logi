@@ -58,6 +58,14 @@ export type PanelRowContext = {
     categories: ReadonlyArray<{ id: string; label: string }>
     /** Competition names for competition rows. */
     competitions: ReadonlyArray<{ id: string; name: string }>
+    /**
+     * The calendar channel saved before panels existed (N1-47); listed while
+     * the clan has no calendar panel.
+     */
+    calendarSetting?: {
+        channelId: string
+        message: { channelId: string; messageId: string } | null
+    } | null
 }
 
 export function discordMessageUrl(
@@ -342,6 +350,45 @@ export function panelRows(
             }
         }
     }
+
+    const setting = context.calendarSetting
+    if (setting && !overview.panels.some((panel) => panel.kind === "calendar"))
+        rows.push({
+            key: "calendar-setting",
+            source: "calendar-setting",
+            group: "calendar",
+            panelId: null,
+            connectionId: null,
+            kind: "calendar",
+            state: setting.message ? "published" : "waiting",
+            title: list.titles.calendar,
+            meta: [
+                { kind: "text", text: list.meta.calendarAll },
+                channel(setting.channelId),
+            ],
+            timing: panelTimingParts({
+                source: "calendar-setting",
+                kind: "calendar",
+                state: setting.message ? "published" : "waiting",
+                now: context.now,
+                savedAt: null,
+                requestedAt: null,
+                lastUpdateAt: null,
+                lastAttemptAt: null,
+                nextUpdateAt: null,
+                pausedAt: null,
+                pausedBy: null,
+                messages: setting.message ? 1 : 0,
+                hasMessage: Boolean(setting.message),
+            }),
+            messageUrl: discordMessageUrl(context.guildId, setting.message),
+            error: null,
+            actions: panelRowActions({
+                source: "calendar-setting",
+                kind: "calendar",
+                state: "published",
+            }),
+        })
 
     for (const control of overview.controls) {
         const health = source(control.connectionId)

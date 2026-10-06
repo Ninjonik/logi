@@ -23,11 +23,11 @@ import {
     preparePanelGraphicsChange,
     readStoredPanelGraphics,
 } from "./discordPanelGraphics"
-import { discordPanelsPatchSchema } from "../src/domain/api/discord-panels-settings-slice"
 import {
     prepareSeedSettingsChange,
     readSeedSettingsApi,
 } from "./discordSeedApiStore"
+import { discordPanelsPatchSchema } from "../src/domain/api/discord-panels-settings-slice"
 import { seedSettingsPatchSchema } from "../src/domain/api/seed-settings-slice"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { attachableAsset } from "./imageAssets"

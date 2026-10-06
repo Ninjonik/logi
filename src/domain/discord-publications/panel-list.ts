@@ -37,9 +37,17 @@ export function panelListGroup(kind: PanelKind): PanelListGroup {
     }
 }
 
-/** A row is a panel, one of the two WD League messages or a seed control message. */
+/**
+ * A row is a panel, one of the two WD League messages, a seed control
+ * message, or the calendar posted to the channel saved before panels
+ * existed ("calendar-setting", N1-47) until "Upravit" turns it into a panel.
+ */
 export type PanelRowSource =
-    "panel" | "league-table" | "league-fixtures" | "control"
+    | "panel"
+    | "league-table"
+    | "league-fixtures"
+    | "control"
+    | "calendar-setting"
 
 export type PanelRowButton =
     /** "Upravit" → editor (or the seed page for a control message). */
@@ -72,6 +80,8 @@ export function panelRowActions(input: {
 }): PanelRowActions {
     if (input.source === "control")
         return { buttons: ["edit", "refresh"], errorBox: false }
+    if (input.source === "calendar-setting")
+        return { buttons: ["edit"], errorBox: false }
     switch (input.state) {
         case "unsent":
             return { buttons: ["edit", "publish"], errorBox: false }
@@ -107,6 +117,7 @@ export type PanelTimingPart =
     | { kind: "resultsInChannel"; count: number }
     | { kind: "resultsBackfill" }
     | { kind: "controlButtons" }
+    | { kind: "calendarSetting" }
     | { kind: "open" }
 
 export type PanelTimingInput = {
@@ -146,6 +157,13 @@ export function panelTimingParts(input: PanelTimingInput): PanelTimingPart[] {
             parts.push({ kind: "updated", at: input.lastUpdateAt })
         else if (input.state === "waiting") parts.push({ kind: "pickup" })
         parts.push({ kind: "controlButtons" })
+        open()
+        return parts
+    }
+    if (input.source === "calendar-setting") {
+        if (input.lastUpdateAt !== null)
+            parts.push({ kind: "updated", at: input.lastUpdateAt })
+        parts.push({ kind: "calendarSetting" })
         open()
         return parts
     }

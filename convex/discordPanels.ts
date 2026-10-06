@@ -1,5 +1,5 @@
-import { makeFunctionReference } from "convex/server"
 import { seedPublicationKey } from "../src/domain/discord-seed/publication-keys"
+import { makeFunctionReference } from "convex/server"
 import { v } from "convex/values"
 
 import {

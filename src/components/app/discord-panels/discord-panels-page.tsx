@@ -9,10 +9,10 @@ import type { Dictionary } from "@/i18n/dictionaries"
 
 import { refreshControlMessage, requestPanelAction } from "./panels-api"
 import { usePanelOverview, useNow } from "./use-panel-overview"
+import { panelRows, type PanelRowContext } from "./panel-rows"
 import { PanelListCard, type RowAction } from "./panel-list"
 import { DataSourcesCard } from "./data-sources-card"
 import { BotStatusStrip } from "./bot-status-strip"
-import { panelRows } from "./panel-rows"
 
 export type DiscordPanelsHrefs = {
     /** The panels page; the editor is `${panels}/<panelId>` and `${panels}/new`. */
@@ -32,6 +32,7 @@ export function DiscordPanelsPage({
     hrefs,
     categories,
     competitions,
+    calendarSetting = null,
     dictionary,
 }: {
     serverId: string
@@ -39,6 +40,8 @@ export function DiscordPanelsPage({
     hrefs: DiscordPanelsHrefs
     categories: ReadonlyArray<{ id: string; label: string }>
     competitions: ReadonlyArray<{ id: string; name: string }>
+    /** The calendar channel saved before panels existed (N1-47). */
+    calendarSetting?: PanelRowContext["calendarSetting"]
     dictionary: Dictionary
 }) {
     const locale = useLocale()
@@ -59,6 +62,7 @@ export function DiscordPanelsPage({
                       now,
                       categories,
                       competitions,
+                      calendarSetting,
                   })
                 : [],
         [
@@ -70,6 +74,7 @@ export function DiscordPanelsPage({
             now,
             categories,
             competitions,
+            calendarSetting,
         ]
     )
 
@@ -136,10 +141,14 @@ export function DiscordPanelsPage({
             />
             <PanelListCard
                 groups={groups}
-                editHref={(panelId) =>
-                    `${hrefs.panels}/${encodeURIComponent(panelId)}`
+                editHref={(row) =>
+                    row.panelId
+                        ? `${hrefs.panels}/${encodeURIComponent(row.panelId)}`
+                        : row.source === "control" && row.connectionId
+                          ? `${hrefs.seed}?server=${encodeURIComponent(row.connectionId)}`
+                          : // The calendar saved before panels existed becomes a panel.
+                            `${hrefs.panels}/new?type=calendar`
                 }
-                seedHref={hrefs.seed}
                 busy={busy}
                 onAction={(action) => void onAction(action)}
                 now={now}

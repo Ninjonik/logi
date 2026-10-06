@@ -161,7 +161,10 @@ test("the WD League preview is the bot's two messages: the table and the nearest
     assert.match(text(next!), /… a další 4 zápasy/)
     assert.match(text(next!), /Poslední výsledky/)
     // Built-in map art through the dashboard's image route.
-    assert.match(text(next!), /logi\.example\/_next\/image\?url=%2Fmaps%2Fwardogs%2Fzestafona/)
+    assert.match(
+        text(next!),
+        /logi\.example\/_next\/image\?url=%2Fmaps%2Fwardogs%2Fzestafona/
+    )
     for (const view of views) {
         const rendered = renderedView(view, "cs")
         assert.ok(rendered.validation.ok, JSON.stringify(rendered.validation))

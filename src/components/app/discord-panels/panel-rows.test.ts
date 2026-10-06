@@ -242,3 +242,37 @@ test("seed control messages are their own group (P1-18)", () => {
     )
     assert.deepEqual(row.actions.buttons, ["edit", "refresh"])
 })
+
+test("a calendar channel saved before panels existed is listed until a calendar panel takes it over (N1-47)", () => {
+    const calendarSetting = {
+        channelId: "200000000000000006",
+        message: {
+            channelId: "200000000000000006",
+            messageId: "300000000000000010",
+        },
+    }
+    const groups = panelRows(overview([]), { ...context, calendarSetting })
+    const row = groups.find((group) => group.group === "calendar")!.rows[0]!
+    assert.equal(row.source, "calendar-setting")
+    assert.equal(row.panelId, null)
+    assert.equal(row.state, "published")
+    assert.deepEqual(row.actions.buttons, ["edit"])
+    assert.match(row.messageUrl ?? "", /300000000000000010$/)
+    const withPanel = panelRows(
+        overview([
+            item({
+                id: "cal",
+                kind: "calendar",
+                gameId: "any",
+                connectionId: null,
+            }),
+        ]),
+        { ...context, calendarSetting }
+    )
+    assert.deepEqual(
+        withPanel
+            .find((group) => group.group === "calendar")!
+            .rows.map((entry) => entry.source),
+        ["panel"]
+    )
+})
