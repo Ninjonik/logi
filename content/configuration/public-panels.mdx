@@ -146,14 +146,44 @@ In a channel that `@everyone` cannot view, the panel is a clan panel: it also
 shows the Logi match running on the server, which clan members are playing
 (through verified Steam links) and, if you switch it on, the server password.
 
+While a seed runs, the panel counts players from the seed's own reading, the
+same number the seed call shows, so the two never disagree.
+
+With **Score** switched off the panel is a server status: **Online** instead of
+**Live**, the map and the players, without the score, the top players or the
+time left in the round.
+
+### The three styles
+
+- **Style A** (the default) puts the score image at the top of the message: the
+  map, the state, the players and queue, the score with the side signs and the
+  top three. The image follows the panel's switches: without **Score** it shows
+  the player count large, without **Top players** it has no top three. On an
+  empty server it says **Nobody is playing on the server right now**, and while
+  a seed runs it shows the progress toward the live threshold, e.g. **12 / 40**.
+  Under the image the text keeps everything the panel says for its state: the
+  empty sentence, the seed bar and the call link, the running Logi match and
+  **Clan members playing**.
+- **Style B** puts the banner at the top, then the name with the map thumbnail,
+  the score with the signs, the coloured player gauge, the top players and
+  the address with the next map. With no banner of its own the server's banner
+  or, with **Use the map image when the banner is missing** on, the current
+  map is drawn under the clan badge; with the switch off there is no picture
+  on top.
+- **Style C** is one compact line: the state icon, the name, the game and the
+  map, then the score with the time left and the player gauge, with **Join**
+  and **Show players** only.
+
 ### Server password
 
 The server password is stored encrypted. It appears only on a server's own
 panel, only with **Show password** switched on, and only while `@everyone`
 cannot view the channel. The bot checks this on every refresh. If the channel
 becomes public, the bot removes the password from the panel and tells the
-admins once in the errors channel. The password never appears on **Our
-servers**, on the join page or in any API response.
+admins once in the errors channel with its own entry, **The bot removed the
+password from the panel**, saying which channel everyone can now see and to
+make it private again. The password never appears on **Our servers**, on the
+join page or in any API response.
 
 ### Join a server
 
@@ -162,7 +192,8 @@ buttons can only open web links, so the page opens Steam
 (`steam://connect/<address>`) immediately. If the browser blocks it, the page
 shows the address with **Copy** and the steps for adding the server in Steam.
 For Wardogs it shows the join code. The page needs no login and shows only the
-server's name, players, map and address or join code.
+server's name, players, the queue (from the panel's latest live read) and the
+address or join code.
 
 ### Show players
 
@@ -187,11 +218,16 @@ fix are posted to the errors channel. Choose or change the destination in
 ## Our servers
 
 The optional **Our servers** message lists up to ten servers in the order you
-set, each with its state, map, players and, as switched on, the score, the next
-map, the queue, the IP:port of Hell Let Loose servers, the join code of Wardogs
-servers and the seed progress while a seed runs. Hell Let Loose servers get a
-**Join** button each; Wardogs players join with the code. It shows public data
-only: no player names, no password and no clan match.
+set. Each row has its state, the side or faction signs with the score (and the
+time left) when **Score** is on, the map, a coloured player gauge with the queue
+and, as switched on, the next map, the IP:port of Hell Let Loose servers and the
+join code of Wardogs servers. A server that is seeding shows **seeding 9 / 40**
+and its seed bar. The rows read the same live data as each server's own panel,
+so the queue and the next map appear when the server reports them. Every server
+gets a **Join: name** button; a Wardogs button opens the join page, which shows
+its join code. The panel has the three styles too: style B puts a banner with
+the clan badge on top, style C leaves out the map pictures. It shows public
+data only: no player names, no password and no clan match.
 
 ## Results
 
@@ -202,12 +238,15 @@ one. A card shows the category, the score with the teams' codes
 the date and who confirmed it. Wardogs and other multi-team results list the
 places with points and the clan's place. A correction edits the same card and
 says what the score was before. **Match details** links to the public match
-page when one exists.
+page when one exists. **Compact look** in the results panel's **Content** step
+draws each result as a shorter card: the score without the sides line, and a
+correction only says when and what it was before.
 
 ## Calendar and competition tables
 
 The calendar shows the next match with its sign-up deadline, then compact rows
-of upcoming events with their type as a word. Titles link to the event's
+of upcoming events with their type as a word; a competition match names its
+round, e.g. **ECL, 3. kolo**. Titles link to the event's
 announcement in Discord. **Open calendar** opens the Logi calendar. You can
 limit the calendar to chosen event categories. Times show in each reader's own
 time zone.
@@ -229,10 +268,11 @@ is lost, the bot searches recent messages for an invisible identifier it set on
 that message; members never see a marker. **Try again** sends a message whose
 delivery Discord never confirmed. Repeating an action never sends a duplicate.
 
-**Map artwork** uses the packaged map or game image as a compact, clickable
-thumbnail. The bot uploads it once and reuses the attachment on updates and
-restart. The bot installs the faction and status signs as application emoji
-itself; workspace administrators do not need to upload faction logos (see
+**Map artwork** uses the clan's own map image from Panel graphics, else the
+packaged map or game image, as a compact, clickable thumbnail. The bot attaches
+a resized copy with a versioned file name and reuses the attachment on updates
+and restart; a panel's own banner is attached the same way. The bot installs
+the faction and status signs as application emoji itself; workspace administrators do not need to upload faction logos (see
 [Panel graphics](/configuration/panel-graphics)). Missing artwork and icons
 have readable fallbacks.
 
@@ -256,10 +296,10 @@ seconds. The preview shows the change at once.
   available to the workspace, saving asks you to upload it again or remove it.
   Discord shows the banner only when Logi runs on a public HTTPS address.
 - **Bar colour** is the clan colour, or an own `#RRGGBB` colour for this panel
-  only. Stale or paused panels keep the amber warning colour.
+  only. A paused panel keeps its colour and shows a grey **Paused** chip.
 - **Panel style** follows **Výchozí styl** in Panel graphics, or sets style A
-  (score image), B (banner and thumbnail) or C (compact text) for this panel;
-  see [Panel graphics](/configuration/panel-graphics).
+  (score image), B (banner and thumbnail) or C (compact text) for a server panel
+  or for **Our servers**; see [Panel graphics](/configuration/panel-graphics).
 
 Faction and status signs are fixed: the old per-panel faction emoji setting is
 gone, and a panel saved in the editor drops an override it had.

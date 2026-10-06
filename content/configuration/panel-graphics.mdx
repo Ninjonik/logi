@@ -17,14 +17,20 @@ refresh, within 60 seconds.
 
 Three styles show the same server data:
 
-| Style                           | What the panel shows                                                                                                                                                                                                    |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Styl A · Obrázek** (default)  | A score image the bot draws: the map in the background, server name, state, players with the queue, the score or sectors, the top three players and the time it was drawn. The text with the same facts stays under it. |
-| **Styl B · Banner a miniatura** | The server banner on top, a map thumbnail on the right, faction signs and the player bar.                                                                                                                               |
-| **Styl C · Kompaktní**          | Text only, with the signs and the player bar. The shortest message.                                                                                                                                                     |
+| Style                           | What the panel shows                                                                                                                                                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Styl A · Obrázek** (default)  | A score image the bot draws at the top: the map in the background, server name, state, players with the queue, the score or sectors, the top three players and the time it was drawn. The text with the same facts stays under it. |
+| **Styl B · Banner a miniatura** | The server banner on top, a map thumbnail on the right, faction signs and the player bar.                                                                                                                                          |
+| **Styl C · Kompaktní**          | Text only: one line with the state, name, game and map, then the score and the player bar, with **Připojit** and **Zobrazit hráče**. No pictures. The shortest message.                                                            |
 
-**Výchozí styl** applies to every panel without a style of its own. One panel
-can get another style in its panel editor.
+**Výchozí styl** applies to every panel without a style of its own, the
+**Naše servery** message included. One panel can get another style in its
+panel editor.
+
+The score image follows the panel's switches: with **Skóre** off it shows the
+player count large and the word **Online**, with **Nejlepší hráči** off it has
+no top three. On an empty server it shows **Na serveru teď nikdo nehraje.**,
+and during a seed the progress toward the live threshold ("12 / 40").
 
 The bot redraws the style A image only when something in it changed, and at
 most once every 60 seconds. Every new image gets a new file name, so Discord
@@ -34,15 +40,20 @@ never shows an old copy.
 
 **Bannery serverů** has one card per game server. The banner is the image on
 top of a style B panel and the background of the style A score image. The card
-shows a preview with the clan badge and the server name in the bar colour.
+shows a preview with the clan badge and the server name in the bar colour, and
+the file name of the saved banner.
+
+The clan badge is the short code of the clan's team in the team catalogue (for
+example **VLK**). Without a team it is the initials of the clan name. The
+dashboard previews and the bot use the same rule.
 
 - **Nahrát banner**: PNG, JPG or WebP up to 2 MB. A 3 : 1 image such as
   1200 × 400 fits best. **Odebrat** removes it.
 - **Výřez**: which part of a taller image stays visible (**Nahoře**, **Střed**,
   **Dole**).
 - **Použít obrázek mapy, když banner chybí**: without a banner the panel shows
-  the image of the map the server is playing now. Switched off, the panel has
-  no image on top.
+  the image of the map the server is playing now under the clan badge.
+  Switched off, a style B panel has no image on top.
 - **Barva lišty**: the colour of the panel's bar in style B. **Barva klanu**
   goes back to the clan colour. A panel's own colour from its editor still
   wins.
@@ -54,7 +65,9 @@ search and a game filter. Each map has a built-in Logi image (**Výchozí Logi**
 **Nahradit vlastním** uploads the clan's own image (PNG, JPG or WebP, a square
 of at least 160 × 160 pixels, up to 2 MB); **Obnovit výchozí** brings Logi's
 image back. Map images are the panel thumbnail and the score image background
-when the server has no banner of its own.
+when the server has no banner of its own. The bot attaches a resized copy of
+the clan's image to the message with a versioned file name, so Discord shows
+the new image after a change and the original upload address is never posted.
 
 ## Fixed signs
 
