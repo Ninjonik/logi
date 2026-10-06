@@ -212,3 +212,17 @@ test("the League preview shows the installed faction emoji when the overview kno
     })
     assert.match(text(signed!), /<:logi_valkyra_1a2b3c4d:200000000000000031>/)
 })
+
+test("the preparation chips use the bot's installed status emoji (P2-B09)", () => {
+    const [, plain] = leaguePreviews(base)
+    assert.match(text(plain!), /🟡 \*\*Hlasování o mapě\*\*/)
+    const [, signed] = leaguePreviews({
+        ...base,
+        emoji: { seeding: "<:logi_seeding_1a2b3c4d:200000000000000026>" },
+    })
+    assert.match(
+        text(signed!),
+        /<:logi_seeding_1a2b3c4d:200000000000000026> \*\*Hlasování o mapě\*\*/
+    )
+    assert.doesNotMatch(text(signed!), /🟡/)
+})

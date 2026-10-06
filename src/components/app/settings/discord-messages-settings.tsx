@@ -179,6 +179,8 @@ type MessagesSettingsProps = {
     config: DiscordConfig | null
     enabledGames: readonly GameId[]
     siteUrl: string
+    /** The clan's name, as the bot fills it into the default panel title. */
+    clanName?: string
     hrefs: {
         channels: string
         matchTemplates: string
@@ -245,6 +247,7 @@ export function DiscordMessagesSettingsView({
     config,
     enabledGames,
     siteUrl,
+    clanName,
     hrefs,
     categories = [],
     competitions = [],
@@ -513,6 +516,7 @@ export function DiscordMessagesSettingsView({
             ? {
                   title: membership.panelTitle,
                   text: membership.panelDescription,
+                  ...(clanName ? { clanName } : {}),
                   imageUrl: membership.panelImageUrl ?? null,
                   accentColor:
                       normalizeAccentColor(membership.panelAccentColor) ?? null,

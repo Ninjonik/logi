@@ -183,6 +183,22 @@ test("the thread card pings the staff roles once and hides internal IDs", () => 
     for (const text of all) assert.ok(text.length <= 4000)
 })
 
+test("the thread card carries the clan's own colour, like the ticket cards (L3-65)", () => {
+    const card = (style?: { accentColor: string }) =>
+        (
+            json(
+                buildReportThreadMessage(claim, "111111111111111111", {
+                    language: "cs",
+                    staffRoleIds: [],
+                    ...(style ? { style } : {}),
+                })
+            ).components as Json[]
+        )[0]
+    assert.equal(card({ accentColor: "#4F9DE0" })?.accent_color, 0x4f9de0)
+    // Without a clan style the card keeps Logi amber.
+    assert.equal(card()?.accent_color, 0xe8a33d)
+})
+
 test("the thread is named Hlášení #N · player; older reports keep their marker", () => {
     assert.equal(reportThreadTitle(claim, "cs"), "Hlášení #17 · Hans_88")
     assert.equal(

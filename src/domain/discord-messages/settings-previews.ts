@@ -54,16 +54,16 @@ import {
     type MatchCardEvent,
 } from "./match-announcement"
 import {
-    resolveApplicationForm,
-    type ApplicationCategory,
-} from "../membership/application-form"
+    membershipPanelCopy,
+    type PanelDefaultCopy,
+} from "../membership/application-panel-copy"
 import {
     teamRequestDecisionView,
     type TeamRequestDmCopy,
 } from "./team-request-dm"
 import { buildScheduledEventContent } from "../events/scheduled-event-content"
+import type { ApplicationCategory } from "../membership/application-form"
 import type { DirectMessageCopy, RosterMessageCopy } from "./match-copy"
-import { applicationWindowCount } from "../membership/application-plan"
 import type { MatchAnnouncementCopy } from "./match-announcement-copy"
 import type { ApplicationCopy } from "../membership/application-copy"
 import { escapeMarkdownText, type MessageView } from "./message-view"
@@ -174,6 +174,8 @@ export type SettingsPreviewClan = {
     membership?: {
         title: string
         text: string
+        /** The clan's name in the default title; the sample clan without it. */
+        clanName?: string
         imageUrl?: string | null
         accentColor?: string | null
         categories: readonly ApplicationCategory[]
@@ -203,6 +205,12 @@ export type SettingsPreviewInput = {
     /** The bot's own copy of the announcement, applications, tickets and reports. */
     announcement: MatchAnnouncementCopy
     applications: ApplicationCopy
+    /**
+     * The recruitment panel defaults of every clan language
+     * (`applicationPanelDefaults`), so a title or text the clan never
+     * changed shows today's default, as the bot does (res. 23).
+     */
+    applicationPanelDefaults: readonly PanelDefaultCopy[]
     tickets: TicketCopy
     reports: ReportCopy
     /** The clan's membership and ticket panels; the samples stand in without them. */
@@ -457,6 +465,7 @@ function membershipOf(input: SettingsPreviewInput) {
     return {
         title: fillTemplate(p.title, { clan: input.samples.clan }),
         text: p.body,
+        clanName: input.samples.clan,
         imageUrl: null,
         accentColor: null,
         categories: p.categories.map(
@@ -492,7 +501,7 @@ function ticketsOf(input: SettingsPreviewInput) {
     }
 }
 
-/** One sample per message row; the same builders as the bot where they exist. */ /** One sample per message row; the same builders as the bot where they exist. */
+/** One sample per message row; the same builders as the bot where they exist. */
 export function settingsPreview(input: SettingsPreviewInput): SettingsPreview {
     const { samples } = input
     const event = sampleEvent(input)
@@ -748,21 +757,28 @@ export function settingsPreview(input: SettingsPreviewInput): SettingsPreview {
             }
         case "recruitmentPanel": {
             const panel = membershipOf(input)
-            return {
-                view: applicationPanelView(input.applications, {
+            // The bot's rule (res. 23): a title or text the clan never
+            // changed, also the pre-redesign default, shows today's default.
+            const words = membershipPanelCopy(
+                {
                     title: panel.title,
                     text: panel.text,
+                    clanName: panel.clanName ?? input.samples.clan,
+                    form: panel.form,
+                    categories: panel.categories,
+                },
+                input.applications,
+                input.applicationPanelDefaults
+            )
+            return {
+                view: applicationPanelView(input.applications, {
+                    title: words.title,
+                    text: words.text,
+                    windowsNote: words.windowsNote,
                     imageUrl: panel.imageUrl,
                     accentColor: panel.accentColor,
                     categories: panel.categories,
-                    windows: applicationWindowCount(
-                        resolveApplicationForm(
-                            panel.form,
-                            panel.categories,
-                            input.applications.defaultForm
-                        ),
-                        panel.categories
-                    ),
+                    windows: words.windows,
                     webFormUrl: panel.webFormUrl,
                     managedUrl: input.siteUrl,
                 }),

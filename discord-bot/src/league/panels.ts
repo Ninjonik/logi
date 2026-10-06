@@ -11,17 +11,16 @@ import {
     type LeagueStandingsView,
 } from "../../../src/domain/wardogs-league/panels"
 import {
-    panelChipIcons,
-    type BotPanel,
-    type GuildPass,
-    type LeaguePassResult,
-    type PanelRunPorts,
-} from "../public-panels/panel-runner"
-import {
     panelMapKey,
     planPanelAttachments,
     resolvePanelMapImage,
 } from "../../../src/domain/discord-publications/panel-graphics"
+import type {
+    BotPanel,
+    GuildPass,
+    LeaguePassResult,
+    PanelRunPorts,
+} from "../public-panels/panel-runner"
 import { resolvePanelPresentation } from "../../../src/domain/discord-publications/panel-presentation"
 import {
     fixturesPayload,
@@ -30,6 +29,7 @@ import {
 } from "./render"
 import type { PanelWarning } from "../../../src/domain/discord-publications/panel-delivery"
 import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
+import { panelChipIcons } from "../../../src/domain/discord-publications/live-panel"
 import { isPanelPaused } from "../../../src/domain/discord-publications/settings"
 import { getLeagueMessages } from "../../../src/lib/clan-language/league"
 import { PanelPassError } from "../public-panels/panel-errors"

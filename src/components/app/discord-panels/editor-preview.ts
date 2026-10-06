@@ -1,6 +1,7 @@
 import {
     liveServerPanelView,
     liveServerState,
+    panelChipIcons,
     type LiveServerFacts,
     type PanelEmojiMarkup,
 } from "@/domain/discord-publications/live-panel"
@@ -24,6 +25,7 @@ import type {
     PanelScoreImage,
 } from "@/domain/discord-publications/panel-image-model"
 import type {
+    ChipTone,
     MessageMedia,
     MessageView,
 } from "@/domain/discord-messages/message-view"
@@ -92,6 +94,28 @@ export type EditorPreviewInput = {
 }
 
 const MASKED_PASSWORD = "••••••"
+
+/** The panel kinds whose chips the bot draws with its installed status emoji. */
+const CHIP_ICON_KINDS = new Set<PanelEditorDraft["kind"]>([
+    "server",
+    "servers",
+    "league",
+    "results",
+])
+
+/**
+ * The chip icons the bot lays this panel out with (P2-B09): the installed
+ * status emoji ("Živě", "Seedujeme", "Pozastaveno", "Offline"), else the
+ * kit's coloured circles. The calendar and competition panels keep the
+ * circles, as the bot posts them.
+ */
+export function previewChipIcons(
+    input: Pick<EditorPreviewInput, "draft" | "emoji">
+): Partial<Record<ChipTone, string>> {
+    return CHIP_ICON_KINDS.has(input.draft.kind)
+        ? panelChipIcons(input.emoji)
+        : {}
+}
 
 /** The panel's resolved style: its own, else the clan default (P2-B16). */
 export function draftStyle(draft: PanelEditorDraft, clanDefault: PanelStyle) {
@@ -398,7 +422,7 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
         servers,
         now: input.now,
         style,
-        emoji: {},
+        emoji: input.emoji,
         banner:
             style === "b"
                 ? draft.bannerUrl
@@ -437,6 +461,8 @@ export function leaguePreviews(input: {
     emoji?: PanelEmojiMarkup
 }): MessageView[] {
     const copy = getLeagueMessages(input.language)
+    // The bot's chip icons, also in the preparation chips and the fit (P2-B09).
+    const chipIcons = panelChipIcons(input.emoji ?? {})
     const look: LeaguePanelLook = {
         copy,
         locale: copy.locale,
@@ -446,8 +472,10 @@ export function leaguePreviews(input: {
             copy: getSystemMessages(input.language).kit,
             locale: getIntlLocaleForClanLanguage(input.language),
             style: input.style,
+            chipIcons,
         },
         emoji: input.emoji ?? {},
+        chipIcons,
         paused: input.paused ? { since: null } : null,
         now: input.now,
     }

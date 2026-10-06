@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 
 import {
     parseDiscordMarkdown,
+    parseInlineMarkdown,
     type MarkdownLineBlock,
     type MarkdownInline,
 } from "./markdown"
@@ -48,6 +49,11 @@ export type DiscordMessagePreviewProps = {
     language: string
     /** The clan's message style (clan colour and icon density). */
     style?: MessageStyle | null
+    /**
+     * The emoji the bot puts in front of a chip per tone, e.g. the installed
+     * status emoji of the panels (`<:name:id>`); the coloured dot otherwise.
+     */
+    chipIcons?: Partial<Record<ChipTone, string>>
     /** Discord's own words (ephemeral line, APP tag) in the dashboard language. */
     labels: Dictionary["discordPreview"]
     /**
@@ -85,7 +91,7 @@ const hex = (color: number) => `#${color.toString(16).padStart(6, "0")}`
 
 type RenderContext = Pick<
     DiscordMessagePreviewProps,
-    "language" | "now" | "timeZone" | "mentions" | "labels"
+    "language" | "now" | "timeZone" | "mentions" | "labels" | "chipIcons"
 >
 
 function Inline({
@@ -314,14 +320,31 @@ function MarkdownText({
     )
 }
 
-function Chip({ chip }: { chip: MessageChip }) {
+function Chip({
+    chip,
+    context,
+}: {
+    chip: MessageChip
+    context: RenderContext
+}) {
+    // The bot's icon for this tone (an installed emoji), as Discord shows it.
+    const icon = context.chipIcons?.[chip.tone]?.trim()
     return (
         <span className="inline-flex h-[22px] flex-none items-center gap-1.5 rounded-full bg-[#3f4147] px-[9px] text-xs font-semibold whitespace-nowrap text-[#f2f3f5]">
-            <span
-                aria-hidden="true"
-                className="size-2 rounded-full"
-                style={{ background: TONE_COLORS[chip.tone] }}
-            />
+            {icon ? (
+                <span aria-hidden="true" className="inline-flex text-sm">
+                    <Inline
+                        nodes={parseInlineMarkdown(icon)}
+                        context={context}
+                    />
+                </span>
+            ) : (
+                <span
+                    aria-hidden="true"
+                    className="size-2 rounded-full"
+                    style={{ background: TONE_COLORS[chip.tone] }}
+                />
+            )}
             {chip.label}
         </span>
     )
@@ -445,7 +468,7 @@ function Field({
                 <span className="font-semibold text-[#f2f3f5]">
                     {field.title}
                 </span>
-                {field.chip && <Chip chip={field.chip} />}
+                {field.chip && <Chip chip={field.chip} context={context} />}
             </div>
             {field.text?.trim() && (
                 <MarkdownText
@@ -606,6 +629,7 @@ export function DiscordMessagePreview({
     content,
     language,
     style,
+    chipIcons,
     labels,
     now,
     timeZone,
@@ -616,7 +640,14 @@ export function DiscordMessagePreview({
 }: DiscordMessagePreviewProps) {
     const copy = getSystemMessages(language).kit
     const locale = getIntlLocaleForClanLanguage(language)
-    const context: RenderContext = { language, now, timeZone, mentions, labels }
+    const context: RenderContext = {
+        language,
+        now,
+        timeZone,
+        mentions,
+        labels,
+        chipIcons,
+    }
     const accent = hex(resolveMessageViewAccent(view.accent, style))
     const header = view.header
     const state = header ? headerState(header, copy) : undefined
@@ -741,6 +772,7 @@ export function DiscordMessagePreview({
                                                         <Chip
                                                             key={index}
                                                             chip={chip}
+                                                            context={context}
                                                         />
                                                     )
                                                 )}

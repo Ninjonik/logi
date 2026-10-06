@@ -283,6 +283,8 @@ export function buildReportThreadMessage(
         language?: string
         staffRoleIds: string[]
         serverTitle?: string | null
+        /** The clan's colour and icon density, as on the ticket cards (L3-65). */
+        style?: MessageStyle | null
     }
 ): MessageCreateOptions {
     const copy = getPanelMessages(options.language)
@@ -301,6 +303,7 @@ export function buildReportThreadMessage(
     })
     const { container } = renderMessageView(view, {
         language: options.language,
+        style: options.style ?? null,
     })
     const roles = options.staffRoleIds.slice(0, 5)
     return {
@@ -454,6 +457,7 @@ export async function deliverReport(
                     ...buildReportThreadMessage(claim, scope.reporterId, {
                         language: claim.language,
                         staffRoleIds: claim.supportRoleIds,
+                        style: await clanStyleForGuild(scope.guildId),
                     }),
                     nonce: reportId.slice(-24),
                     enforceNonce: true,

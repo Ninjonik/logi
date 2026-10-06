@@ -2,9 +2,24 @@ import assert from "node:assert/strict"
 import test, { after } from "node:test"
 
 import {
+    SETTINGS_PREVIEW_NOW,
+    settingsPreview,
+} from "../../../src/domain/discord-messages/settings-previews"
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "../../../src/lib/clan-language/application"
+import {
     buildMembershipPanelPayload,
     panelWindowCount,
 } from "./membership-panel"
+import { layoutMessageView } from "../../../src/domain/discord-messages/message-layout"
+import { getAnnouncementMessages } from "../../../src/lib/clan-language/announcements"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { getTicketMessages } from "../../../src/lib/clan-language/tickets"
+import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
+import { getSystemMessages } from "../../../src/lib/clan-language/system"
+import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import { closeConvexClient } from "../convex"
 import type { DiscordConfig } from "../types"
 
@@ -190,6 +205,63 @@ test("a never-changed default reads the board copy in the clan language (L6-12, 
     const custom = render(config).text
     assert.match(custom, /Hrajeme Hell Let Loose a Wardogs/)
     assert.match(custom, /zabere asi 3 minuty/)
+})
+
+test("the 'Zprávy a panely' preview draws the panel words the bot posts (N1-B07, res. 23)", () => {
+    const system = getSystemMessages("cs")
+    for (const stored of [
+        {
+            panelTitle: "Přihlásit se do klanu",
+            panelDescription:
+                "Vyberte typ přihlášky, který vám odpovídá. Pokud ještě potřebujeme vaše platform ID, nejdřív vás tím provedeme.",
+        },
+        {
+            panelTitle: "Nábor Vlků",
+            panelDescription: "Hledáme hráče na zápasy.",
+        },
+    ]) {
+        const settings = { ...config.membershipSettings!, ...stored }
+        const bot = render({ ...config, membershipSettings: settings }).text
+        const preview = settingsPreview({
+            kind: "recruitmentPanel",
+            samples: system.previews,
+            dm: getDirectMessages("cs"),
+            roster: getRosterMessages("cs"),
+            errors: system.errorsChannel,
+            teamRequests: system.teamRequests,
+            announcement: getAnnouncementMessages("cs"),
+            applications: getApplicationMessages("cs"),
+            applicationPanelDefaults,
+            tickets: getTicketMessages("cs"),
+            reports: getPanelMessages("cs").report,
+            clan: {
+                membership: {
+                    title: settings.panelTitle,
+                    text: settings.panelDescription,
+                    clanName: "Vlci",
+                    categories: settings.categories,
+                    form: settings.applicationForm,
+                },
+            },
+            layout: { copy: system.kit, locale: system.locale },
+            timeZone: "Europe/Prague",
+            now: SETTINGS_PREVIEW_NOW,
+            rosterVariant: "photo_text",
+            siteUrl: "https://logi.example",
+        })
+        const shown = layoutMessageView(preview.view, {
+            copy: system.kit,
+            locale: system.locale,
+        })
+            .nodes.flatMap((node) =>
+                node.type === "text" ? [node.content] : []
+            )
+            .join("\n")
+        // Everything but the "Spravováno v Logi" link is the same.
+        const words = (value: string) =>
+            value.split("\n").filter((line) => !line.includes("Logi"))
+        assert.deepEqual(words(shown), words(bot))
+    }
 })
 
 test("a panel colour replaces the clan colour on the bar (L4-10)", () => {

@@ -8,9 +8,13 @@ import {
     type SettingsPreviewInput,
     type SettingsPreviewKind,
 } from "./settings-previews"
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "../../lib/clan-language/application"
 import { getAnnouncementMessages } from "../../lib/clan-language/announcements"
-import { getApplicationMessages } from "../../lib/clan-language/application"
 import { getDirectMessages } from "../../lib/clan-language/direct-messages"
+import { membershipPanelCopy } from "../membership/application-panel-copy"
 import { getTicketMessages } from "../../lib/clan-language/tickets"
 import { getRosterMessages } from "../../lib/clan-language/rosters"
 import { getSystemMessages } from "../../lib/clan-language/system"
@@ -34,6 +38,7 @@ function input(
         teamRequests: system.teamRequests,
         announcement: getAnnouncementMessages(language),
         applications: getApplicationMessages(language),
+        applicationPanelDefaults,
         tickets: getTicketMessages(language),
         reports: getPanelMessages(language).report,
         layout: { copy: system.kit, locale: system.locale },
@@ -177,6 +182,100 @@ test("membership, ticket and report previews are the bot's own cards (N1-B07)", 
     assert.match(text(report), /Hans\\_88 · Osa/)
     assert.match(text(report), /Vlci #1 · Foy · nahlásil <@200000000000000033>/)
     assert.deepEqual(report.users, { "200000000000000033": "Ořech" })
+})
+
+test("the recruitment preview shows today's default for an old stored default, as the bot does (N1-B07, res. 23)", () => {
+    const categories = [
+        {
+            id: "member",
+            label: "Člen",
+            gameId: "hell_let_loose" as const,
+            assignmentType: "member" as const,
+        },
+    ]
+    const legacy = text(
+        settingsPreview(
+            input("recruitmentPanel", "cs", {
+                clan: {
+                    membership: {
+                        title: "Přihlásit se do klanu",
+                        text: "Vyberte typ přihlášky, který vám odpovídá. Pokud ještě potřebujeme vaše platform ID, nejdřív vás tím provedeme.",
+                        clanName: "Vlci",
+                        categories,
+                    },
+                },
+            })
+        )
+    )
+    assert.match(legacy, /### Přidej se ke klanu Vlci/)
+    assert.match(
+        legacy,
+        /Vyber, jak s námi chceš hrát\. Přihláška má (dvě|tři) krátká okna a zabere pár minut\./
+    )
+    assert.doesNotMatch(legacy, /Přihlásit se do klanu|Vyberte typ přihlášky/)
+    // The default text names the windows, so the separate note is left out.
+    const note = getApplicationMessages("cs").panel.windowsNote
+    assert.equal(legacy.includes(note.two), false)
+    assert.equal(legacy.includes(note.three), false)
+    // An old English default and the clan's name, in a German clan.
+    const german = text(
+        settingsPreview(
+            input("recruitmentPanel", "de", {
+                clan: {
+                    membership: {
+                        title: "Apply to the clan",
+                        text: "",
+                        clanName: "Wölfe",
+                        categories,
+                    },
+                },
+            })
+        ),
+        "de"
+    )
+    assert.match(german, /### Werde Teil des Clans Wölfe/)
+    // Text the clan wrote stays, with the windows note under it.
+    const own = text(
+        settingsPreview(
+            input("recruitmentPanel", "cs", {
+                clan: {
+                    membership: {
+                        title: "Nábor Vlků",
+                        text: "Hledáme hráče.",
+                        clanName: "Vlci",
+                        categories,
+                    },
+                },
+            })
+        )
+    )
+    assert.match(own, /### Nábor Vlků/)
+    assert.match(own, /Hledáme hráče\./)
+    assert.ok(own.includes(note.two) || own.includes(note.three))
+})
+
+test("the recruitment preview and the bot's panel agree on the words (N1-B07)", () => {
+    const panel = membershipPanelCopy(
+        {
+            title: "Přihlásit se do klanu",
+            text: "Vyberte typ přihlášky, který vám odpovídá. Pokud ještě potřebujeme vaše platform ID, nejdřív vás tím provedeme.",
+            clanName: "Vlci",
+            form: undefined,
+            categories: [
+                {
+                    id: "member",
+                    label: "Člen",
+                    gameId: "hell_let_loose",
+                    assignmentType: "member",
+                },
+            ],
+        },
+        getApplicationMessages("cs"),
+        applicationPanelDefaults
+    )
+    assert.equal(panel.title, "Přidej se ke klanu Vlci")
+    assert.equal(panel.windowsNote, false)
+    assert.match(panel.text, /^Vyber, jak s námi chceš hrát\./)
 })
 
 test("the clan's own recruitment and ticket panels replace the samples", () => {

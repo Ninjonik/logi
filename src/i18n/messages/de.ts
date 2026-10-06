@@ -3039,7 +3039,7 @@ export const deMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Mitglieder der Support-Rolle einzeln hinzufügen",
         inviteSupportMembersIndividuallyDescription:
-            "Wenn deaktiviert, erwähnt Logi stattdessen die Support-Rollen der Kategorie. Discord fügt Mitglieder geeigneter kleiner Rollen hinzu; Dashboard-Administratoren können Bewerbungen verwalten, ohne jedem Thread hinzugefügt zu werden.",
+            "Ein: Logi fügt alle mit den Support-Rollen der Kategorie einzeln zum Thread jeder Bewerbung hinzu. Aus: Logi fügt sie nicht hinzu, und sie kommen nur über die Erwähnung ihrer Support-Rolle in den Thread; Discord macht das nur bei Rollen mit weniger als 100 Mitgliedern. Logi-Admins können Bewerbungen in Logi bearbeiten, ohne im Thread zu sein.",
         panelTitle: "Panel-Titel",
         panelDescription: "Panel-Beschreibung",
         welcomeMessage: "Begrüßungsnachricht im Bewerbungs-Thread",
@@ -7131,11 +7131,15 @@ export const deMessages = {
                 fallback:
                     "Steam hat sich nicht geöffnet? Wählen Sie im Spiel Über IP beitreten und geben Sie {address} ein.",
                 joinCode:
-                    "Im Spiel den Beitritt öffnen und den Code {code} eingeben.",
+                    "Öffnen Sie im Spiel den Beitritt und geben Sie den Code {code} ein.",
                 noAddress:
                     "Ohne Adresse sagt die Seite nur, dass der Spieler einen Admin fragen soll.",
+                noJoinCode:
+                    "Ohne Beitrittscode sagt die Seite nur, dass der Spieler einen Admin fragen soll.",
                 caption:
                     "Discord erlaubt in einer Schaltfläche nur http(s)-Links. Diese Seite öffnet sofort steam://connect und zeigt sonst die IP.",
+                captionJoinCode:
+                    "Discord erlaubt in einer Schaltfläche nur http(s)-Links. Diese Seite zeigt den Beitrittscode des Spiels und bietet an, ihn zu kopieren.",
             },
             data: {
                 title: "Serverdaten",

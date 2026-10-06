@@ -254,3 +254,39 @@ test("a custom emoji is drawn from Discord's emoji CDN, as Discord shows it (P2-
     assert.match(html, /alt=":logi_us_1a2b3c4d:"/)
     assert.doesNotMatch(textOf(html), /logi_us/)
 })
+
+test("chips carry the bot's installed status emoji instead of the dot (P2-B09)", () => {
+    const view = panelFrame({
+        label: "Živé skóre · Hell Let Loose",
+        title: "Vlci #1",
+        state: { chip: { label: "Živě", tone: "success" } },
+        content: [
+            {
+                kind: "fields",
+                items: [
+                    {
+                        title: "#38 · Friendly",
+                        chip: { label: "Živě", tone: "success" },
+                        text: "VLK vs ROG",
+                    },
+                ],
+            },
+        ],
+        updatedAt: now,
+    })
+    const plain = render({ view })
+    assert.doesNotMatch(plain, /cdn\.discordapp\.com\/emojis/)
+    assert.match(plain, /background:#3ba55c/)
+    const html = render({
+        view,
+        chipIcons: { success: "<:logi_live_1a2b3c4d:200000000000000025>" },
+    })
+    // Header chip and field chip, both drawn from Discord's emoji CDN.
+    assert.equal(
+        html.match(/cdn\.discordapp\.com\/emojis\/200000000000000025\.webp/g)
+            ?.length,
+        2
+    )
+    assert.doesNotMatch(html, /background:#3ba55c/)
+    assert.equal(textOf(html).match(/Živě/g)?.length, 2)
+})

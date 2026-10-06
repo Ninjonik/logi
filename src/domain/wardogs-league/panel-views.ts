@@ -136,10 +136,13 @@ export function leagueStandingsMessage(
             footerNotes: [copy.footer],
         })
     }
+    // Measured as posted: the paused chip and detail count too (L3-54, P6-B05).
+    const finish = (rows: LeagueStandingsView["rows"], hidden: number) =>
+        markPaused(build(rows, hidden), look, dataAt)
     const fitted = fitWithinLimit(view.rows, (rows, hidden) =>
-        fits(build([...rows], hidden), look.layout)
+        fits(finish([...rows], hidden), look.layout)
     )
-    return markPaused(build(fitted.shown, fitted.hidden), look, dataAt)
+    return finish(fitted.shown, fitted.hidden)
 }
 
 function chipLabel(chip: PreparationChip, copy: LeagueCopy["fixtures"]) {
@@ -469,13 +472,16 @@ export function leagueFixturesMessage(
             ],
         })
     }
+    // Measured as posted: the paused chip and detail count too (L3-54, P6-B05).
+    const finish = (shown: readonly LeagueFixtureView[], hidden: number) =>
+        markPaused(build(shown, hidden), look, dataAt)
     const fitted = fitWithinLimit(
         view.fixtures,
-        (shown, hidden) => fits(build(shown, hidden), look.layout),
+        (shown, hidden) => fits(finish(shown, hidden), look.layout),
         DISCORD_MESSAGE_LIMITS.totalText,
         view.hidden
     )
-    return markPaused(build(fitted.shown, fitted.hidden), look, dataAt)
+    return finish(fitted.shown, fitted.hidden)
 }
 
 /**

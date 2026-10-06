@@ -84,6 +84,7 @@ import {
     leaguePreviews,
     liveServerPreview,
     previewBannerModel,
+    previewChipIcons,
     previewScoreModel,
     type EditorPreviewInput,
     type PreviewServer,
@@ -722,7 +723,8 @@ export function PanelEditor(props: PanelEditorProps) {
                                     : label.trim().toLowerCase() === "axis"
                                       ? copy.live.axis
                                       : label,
-                            sideSign: (label) => factionEmblem(label),
+                            sideSign: (label) =>
+                                factionEmblem(label, previewInput.emoji),
                             compact: draft.layout.compact,
                             showMap: draft.layout.showMap,
                             accentColor,
@@ -1067,6 +1069,9 @@ export function PanelEditor(props: PanelEditorProps) {
                 note={previewNote}
                 language={props.clan.language}
                 messageStyle={props.clan.messageStyle}
+                chipIcons={
+                    previewInput ? previewChipIcons(previewInput) : undefined
+                }
                 labels={dictionary.discordPreview}
                 now={now}
                 timeZone={props.clan.timeZone}

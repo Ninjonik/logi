@@ -176,6 +176,7 @@ export default async function ServerSettingsSectionPage({
                     config={discordConfig}
                     enabledGames={snapshot.enabledGames}
                     siteUrl={getSiteUrl()}
+                    clanName={server.name}
                     hrefs={{
                         channels: settingsHref(
                             locale,

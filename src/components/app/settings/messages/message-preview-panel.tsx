@@ -6,11 +6,14 @@ import {
     type SettingsPreviewClan,
     type SettingsPreviewKind,
 } from "@/domain/discord-messages/settings-previews"
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "@/lib/clan-language/application"
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import type { RosterMessageVariant } from "@/domain/discord-messages/roster-message"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
-import { getApplicationMessages } from "@/lib/clan-language/application"
 import { getDirectMessages } from "@/lib/clan-language/direct-messages"
 import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
 import { getTicketMessages } from "@/lib/clan-language/tickets"
@@ -54,6 +57,7 @@ export function SettingsMessagePreview({
         teamRequests: system.teamRequests,
         announcement: getAnnouncementMessages(language),
         applications: getApplicationMessages(language),
+        applicationPanelDefaults,
         tickets: getTicketMessages(language),
         reports: getPanelMessages(language).report,
         clan,

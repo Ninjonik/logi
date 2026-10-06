@@ -2949,7 +2949,7 @@ export const enMessages = {
         inviteSupportMembersIndividuallyTitle:
             "Add support-role members individually",
         inviteSupportMembersIndividuallyDescription:
-            "When off, Logi pings the category support roles instead. Discord adds members of eligible small roles; dashboard administrators can manage applications without being added to every thread.",
+            "On: Logi adds everyone with the category's support roles to each application's thread, one by one. Off: Logi does not add them, and they only get into the thread when their support role is mentioned there; Discord does that only for roles with fewer than 100 members. Logi admins can handle applications in Logi without being in the thread.",
         panelTitle: "Panel title",
         panelDescription: "Panel description",
         welcomeMessage: "Application thread welcome message",
@@ -6955,8 +6955,12 @@ export const enMessages = {
                     "In the game, open joining and enter the code {code}.",
                 noAddress:
                     "Without an address the page only tells the player to ask an admin.",
+                noJoinCode:
+                    "Without a join code the page only tells the player to ask an admin.",
                 caption:
                     "Discord allows only http(s) links in a button. This page opens steam://connect at once and otherwise shows the IP.",
+                captionJoinCode:
+                    "Discord allows only http(s) links in a button. This page shows the game's join code and offers to copy it.",
             },
             data: {
                 title: "Server data",

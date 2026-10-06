@@ -19,6 +19,7 @@ import {
     hllLiveFacts,
     liveServerPanelView,
     liveServerState,
+    panelChipIcons,
     snapshotLiveFacts,
     wardogsLiveFacts,
     type LiveServerFacts,
@@ -67,15 +68,12 @@ import {
     type SeedPanelState,
 } from "../../../src/application/discord-seed/panel-state"
 import type { PanelGraphicsForBot } from "../../../src/domain/discord-publications/panel-graphics-settings"
-import type {
-    ChipTone,
-    MessageMedia,
-} from "../../../src/domain/discord-messages/message-view"
 import { liveScoreImageModel } from "../../../src/domain/discord-publications/live-panel-image"
 import { combinedPanelView } from "../../../src/domain/discord-publications/combined-panel"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
 import { resultCardView } from "../../../src/domain/discord-publications/result-panel"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
+import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
 import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
 import type { LeaguePanelOptions } from "../../../src/domain/wardogs-league/panels"
 import type { WarconServed } from "../../../src/application/game-data/read-warcon"
@@ -278,16 +276,6 @@ const ownsKey = (panel: BotPanel, key: string) =>
     key === keyOf(panel) ||
     key.startsWith(`${keyOf(panel)}:`) ||
     (panel.kind === "calendar" && key === "calendar")
-
-/** Installed status emoji as chip icons per tone. */
-export function panelChipIcons(emoji: PanelEmojiMarkup) {
-    const icons: Partial<Record<ChipTone, string>> = {}
-    if (emoji.live) icons.success = emoji.live
-    if (emoji.seeding) icons.warning = emoji.seeding
-    if (emoji.empty) icons.neutral = emoji.empty
-    if (emoji.offline) icons.danger = emoji.offline
-    return icons
-}
 
 function attempt(
     pass: GuildPass,
