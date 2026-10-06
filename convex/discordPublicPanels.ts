@@ -18,7 +18,7 @@ import {
 import { buildResultCardFacts } from "../src/domain/discord-publications/result-card"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
-import { attachableAsset, syncAssetReferences } from "./imageAssets"
+import { attachableAsset, syncAssetReferences } from "./imageAssetStore"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelSettingsInput } from "./discordPublicationTable"

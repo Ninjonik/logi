@@ -1,6 +1,7 @@
 import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import { clanSettingsOpenApiSchemas } from "../../lib/api/settings-openapi"
 import { parseClanSettingsPatch } from "../../domain/api/settings-patch"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import { invoke, testContext } from "./testing/database"
 import * as publicApi from "../../../convex/publicApi"
 import assert from "node:assert/strict"
@@ -73,7 +74,7 @@ const patch = (
 
 test("GET shows the panel graphics slice with defaults", async () => {
     const ctx = setup()
-    const read = await invoke(publicApi.getClanSettings, ctx, {
+    const read = await invoke(publicApiReads.getClanSettings, ctx, {
         secret,
         keyHash: "key",
     })

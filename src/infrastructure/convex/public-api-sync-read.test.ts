@@ -1,8 +1,8 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import * as publicApiReads from "../../../convex/publicApiReads"
 import * as migrations from "../../../convex/migrations"
-import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
 
@@ -200,7 +200,7 @@ function handler(value: unknown) {
 }
 
 function resourcePage(overrides: Record<string, unknown> = {}) {
-    return handler(publicApi.getClanResourcePage)(
+    return handler(publicApiReads.getClanResourcePage)(
         { db: new FakeDb() },
         {
             secret: "dev-internal-auth-secret",
@@ -240,7 +240,7 @@ test("user projection timestamps support a bounded updatedSince page", async () 
 })
 
 test("roster pages use the roster update index and keep legacy HLL event scope", async () => {
-    const result = (await handler(publicApi.getClanResourcePage)(
+    const result = (await handler(publicApiReads.getClanResourcePage)(
         { db: new FakeDb() },
         {
             secret: "dev-internal-auth-secret",

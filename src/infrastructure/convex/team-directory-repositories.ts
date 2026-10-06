@@ -13,7 +13,7 @@ import {
     assetPublicUrl,
     attachableAsset,
     syncAssetReferences,
-} from "../../../convex/imageAssets"
+} from "../../../convex/imageAssetStore"
 import {
     TEAM_DIRECTORY_LIMIT,
     teamSearchText,

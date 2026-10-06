@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import test from "node:test"
 
 import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -324,7 +325,7 @@ test("settings responses carry the feature slices and refuse unknown slices", as
         playerStatsServers: [{ token: "secret" }],
     })
     const read = (await (
-        publicApi.getClanSettings as unknown as {
+        publicApiReads.getClanSettings as unknown as {
             _handler: (
                 ctx: { db: FakeDb },
                 args: Record<string, unknown>

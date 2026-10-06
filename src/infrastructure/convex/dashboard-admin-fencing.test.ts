@@ -1,4 +1,5 @@
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import { invoke, testContext } from "./testing/database"
 import * as gameData from "../../../convex/gameData"
 import test, { type TestContext } from "node:test"
@@ -39,13 +40,20 @@ test("API key management accepts the current bound dashboard administrator", asy
     const ctx = fixture(t)
     const created = await invoke(keys.createKey, ctx, keyInput)
     assert.ok(created)
-    assert.equal((await invoke(keys.listKeys, ctx, keyInput)).length, 2)
+    assert.equal(
+        (await invoke(publicApiReads.listKeys, ctx, keyInput)).length,
+        2
+    )
     await invoke(keys.revokeKey, ctx, keyInput)
     assert.ok((await ctx.db.get("keys:old"))?.revokedAt)
 })
 
 test("each API key operation rejects revoked, expired, rebound, cross-guild and missing actors before effects", async (t) => {
-    for (const operation of [keys.createKey, keys.listKeys, keys.revokeKey]) {
+    for (const operation of [
+        keys.createKey,
+        publicApiReads.listKeys,
+        keys.revokeKey,
+    ]) {
         for (const mode of [
             "rights",
             "global-logout",
