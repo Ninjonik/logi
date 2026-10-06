@@ -204,10 +204,6 @@ export type ApplicationCopy = {
         confirmationBody: string
     }
     command: {
-        description: string
-        outcomeOption: string
-        reasonOption: string
-        choices: Record<ApplicationOutcome, string>
         /** "Přihláška #{number} uzavřena: {outcome}". */
         closedTitle: string
         rejectedTitle: string

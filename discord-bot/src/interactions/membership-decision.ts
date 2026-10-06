@@ -2,7 +2,6 @@ import {
     LabelBuilder,
     MessageFlags,
     ModalBuilder,
-    SlashCommandBuilder,
     TextDisplayBuilder,
     TextInputBuilder,
     TextInputStyle,
@@ -23,7 +22,6 @@ import {
     decisionErrors,
 } from "../../../src/domain/membership/application-views"
 import {
-    APPLICATION_OUTCOMES,
     isApplicationOutcome,
     type ApplicationOutcome,
     type AssignmentType,
@@ -723,52 +721,6 @@ export async function handleCloseApplicationCommand(
             options
         )
     )
-}
-
-/** The `/close_application` definition with the clan-language choices (M3-38). */
-export function buildCloseApplicationCommand(language?: string | null) {
-    const copy = getApplicationMessages(language)
-    const cs = getApplicationMessages("cs")
-    const de = getApplicationMessages("de")
-    return new SlashCommandBuilder()
-        .setName("close_application")
-        .setDescription(copy.command.description)
-        .setDescriptionLocalizations({
-            cs: cs.command.description,
-            de: de.command.description,
-        })
-        .addStringOption((option) =>
-            option
-                .setName("outcome")
-                .setDescription(copy.command.outcomeOption)
-                .setDescriptionLocalizations({
-                    cs: cs.command.outcomeOption,
-                    de: de.command.outcomeOption,
-                })
-                .setRequired(true)
-                .addChoices(
-                    ...APPLICATION_OUTCOMES.map((outcome) => ({
-                        name: copy.command.choices[outcome],
-                        value: outcome,
-                        name_localizations: {
-                            cs: cs.command.choices[outcome],
-                            de: de.command.choices[outcome],
-                        },
-                    }))
-                )
-        )
-        .addStringOption((option) =>
-            option
-                .setName("reason")
-                .setDescription(copy.command.reasonOption)
-                .setDescriptionLocalizations({
-                    cs: cs.command.reasonOption,
-                    de: de.command.reasonOption,
-                })
-                .setMaxLength(500)
-                .setRequired(false)
-        )
-        .setDMPermission(false)
 }
 
 export const membershipDecisionInteractions: InteractionFeature = {

@@ -6,7 +6,6 @@ import { ConvexReactClient } from "convex/react"
 import { getFunctionName } from "convex/server"
 
 import {
-    buildCloseApplicationCommand,
     handleCloseApplicationCommand,
     handleDecisionButton,
 } from "./membership-decision"
@@ -409,40 +408,6 @@ test("Ještě nerozhodnuto records who and keeps the buttons (L6-49)", async (t)
     const text = texts(replies[0])
     assert.match(text, /Ještě nerozhodnuto · Hráč 02, 21:05/)
     assert.match(text, /Vlákno zůstává otevřené, uchazeč nic nedostane\./)
-})
-
-test("the command lists the outcomes in the clan language (M3-38)", () => {
-    const command = buildCloseApplicationCommand("cs").toJSON()
-    const outcome = command.options?.[0] as {
-        description: string
-        choices: {
-            name: string
-            value: string
-            name_localizations: Record<string, string>
-        }[]
-    }
-    assert.equal(outcome.description, "Čím se uchazeč stane")
-    assert.deepEqual(
-        outcome.choices.map((choice) => [choice.name, choice.value]),
-        [
-            ["Člen", "member"],
-            ["Rekrut", "recruit"],
-            ["Žoldák", "mercenary"],
-            ["Čeká na rozhodnutí", "pending"],
-            ["Zamítnuto", "denied"],
-        ]
-    )
-    // German shows German, not English (M3-37).
-    assert.deepEqual(
-        outcome.choices.map((choice) => choice.name_localizations.de),
-        [
-            "Mitglied",
-            "Rekrut",
-            "Söldner",
-            "Wartet auf Entscheidung",
-            "Abgelehnt",
-        ]
-    )
 })
 
 test("decision DMs switched off in Zprávy a panely are not sent (N1-39)", async (t) => {

@@ -327,16 +327,6 @@ const cs: Copy = {
             "Nábor se ti ozve ve vlákně přihlášky. Rozhodnutí ti přijde i sem do DM.",
     },
     command: {
-        description: "Rozhodne o přihlášce v tomto vlákně.",
-        outcomeOption: "Čím se uchazeč stane",
-        reasonOption: "Důvod, který uchazeč uvidí v DM.",
-        choices: {
-            member: "Člen",
-            recruit: "Rekrut",
-            mercenary: "Žoldák",
-            pending: "Čeká na rozhodnutí",
-            denied: "Zamítnuto",
-        },
         closedTitle: "Přihláška #{number} uzavřena: {outcome}",
         rejectedTitle: "Přihláška #{number} zamítnuta",
         roles: {
@@ -680,16 +670,6 @@ const en: Copy = {
             "Recruiters will get back to you in the application thread. You also get the decision here by DM.",
     },
     command: {
-        description: "Decides the application in this thread.",
-        outcomeOption: "What the applicant becomes",
-        reasonOption: "Reason the applicant sees in the DM.",
-        choices: {
-            member: "Member",
-            recruit: "Recruit",
-            mercenary: "Mercenary",
-            pending: "Awaiting decision",
-            denied: "Rejected",
-        },
         closedTitle: "Application #{number} closed: {outcome}",
         rejectedTitle: "Application #{number} rejected",
         roles: {
@@ -1038,16 +1018,6 @@ const de: Copy = {
             "Die Rekrutierung meldet sich im Bewerbungsthread. Die Entscheidung bekommst du auch hier per DM.",
     },
     command: {
-        description: "Entscheidet über die Bewerbung in diesem Thread.",
-        outcomeOption: "Was der Bewerber wird",
-        reasonOption: "Grund, den der Bewerber in der DM sieht.",
-        choices: {
-            member: "Mitglied",
-            recruit: "Rekrut",
-            mercenary: "Söldner",
-            pending: "Wartet auf Entscheidung",
-            denied: "Abgelehnt",
-        },
         closedTitle: "Bewerbung #{number} geschlossen: {outcome}",
         rejectedTitle: "Bewerbung #{number} abgelehnt",
         roles: {
