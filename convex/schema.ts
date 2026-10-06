@@ -990,7 +990,14 @@ export default defineSchema({
             "recurrenceSeriesId",
             "gameStart",
         ])
-        .index("gameEnd", ["gameEnd"]),
+        .index("gameEnd", ["gameEnd"])
+        // The bot's subscriptions read the events it acts on: every status
+        // but `concluded` (a legacy row without a status is `undefined`),
+        // and the concluded ones that ended after a cutoff.
+        .index("status_gameEnd", ["status", "gameEnd"])
+        // The people reconciliation walks the events changed since its last
+        // complete run; rows without `updatedAt` wait for the daily full walk.
+        .index("updatedAt", ["updatedAt"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"]),

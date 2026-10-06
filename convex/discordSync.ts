@@ -7,13 +7,15 @@ import {
     normalizeGuildDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import { historicalConcludedEventCutoff } from "../src/application/discord-sync/relevance"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
 import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { applyGatewayObservation } from "./memberObservations"
+import { query, type QueryCtx } from "./_generated/server"
+import type { Doc, Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
-import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 /**
@@ -31,36 +33,134 @@ function withCompetitionRound(
         : { ...normalized, competitionRound: round }
 }
 
+/**
+ * The statuses of events the bot keeps acting on whatever their date; a
+ * legacy row without a status (`undefined`) counts as one of them.
+ */
+const CURRENT_EVENT_STATUSES = [
+    "registration",
+    "closed",
+    "starting",
+    undefined,
+] as const
+
+/**
+ * The published events the bot acts on, which `isHistoricalConcludedEvent`
+ * (shared in `src/application/discord-sync/relevance.ts`) decides exactly:
+ * every event that is not concluded, whatever its date, plus the concluded
+ * ones that ended at or after the cutoff, seven days ago with a day of
+ * slack. Read through `status_gameEnd`, one range per status, so the bot's
+ * subscriptions, which re-run on every write to `events`, never read the
+ * concluded archive, which grows for as long as a clan exists
+ * (ARCHITECTURE.md, "Convex hot paths"). Drafts are left out: the bot never
+ * sees them.
+ */
+async function listBotEvents(ctx: QueryCtx, now: Date) {
+    const cutoff = historicalConcludedEventCutoff(now)
+    const groups = await Promise.all([
+        ...CURRENT_EVENT_STATUSES.map((status) =>
+            ctx.db
+                .query("events")
+                .withIndex("status_gameEnd", (q) => q.eq("status", status))
+                .collect()
+        ),
+        ctx.db
+            .query("events")
+            .withIndex("status_gameEnd", (q) =>
+                q.eq("status", "concluded").gte("gameEnd", cutoff)
+            )
+            .collect(),
+    ])
+    return withoutDrafts(groups.flat())
+}
+
+/**
+ * One row per event through the table's `eventId` index. The first row
+ * wins so that a duplicate, which `getEventSyncContext` reports for its own
+ * event, never breaks a subscription over every event.
+ */
+async function perEvent<T extends object>(
+    events: ReadonlyArray<Doc<"events">>,
+    read: (eventId: Id<"events">) => Promise<T | null>
+): Promise<T[]> {
+    const rows: Array<T | null> = await Promise.all(
+        events.map((event) => read(event._id))
+    )
+    return rows.filter((row): row is T => row !== null)
+}
+
+/** What the bot needs of an assignment to pick a reminder's recipients. */
+function projectAssignment(assignment: Doc<"userAssignments">) {
+    return {
+        userId: assignment.userId,
+        type: assignment.type,
+        status: assignment.status,
+        gameId: assignment.gameId,
+    }
+}
+
+/**
+ * Every configured clan's payload. The events are the ones the bot acts on
+ * (`listBotEvents`): every published event whose status is not `concluded`
+ * (`registration`, `closed`, `starting` or a legacy row without one),
+ * whatever its date, plus the concluded ones whose `gameEnd` is at or after
+ * now minus seven days, with a day of slack; drafts never. Rosters, sync
+ * states and competition fixtures are read per event through `eventId`,
+ * assignments per clan through `serverId`. The small per-clan tables and
+ * `users` (display names of everyone signed up) are read whole.
+ */
 export const listSyncPayloads = query({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
+        const events = await listBotEvents(ctx, new Date())
         const [
             guilds,
             configs,
             groups,
-            events,
             calendarItems,
             topicPresets,
             syncStates,
             rosters,
             users,
-            assignments,
             fixtures,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
             ctx.db.query("discordConfigs").collect(),
             ctx.db.query("groups").collect(),
-            ctx.db.query("events").collect(),
             ctx.db.query("calendarItems").collect(),
             ctx.db.query("topicPresets").collect(),
-            ctx.db.query("discordEventSyncs").collect(),
-            ctx.db.query("rosters").collect(),
+            perEvent(events, (eventId) =>
+                ctx.db
+                    .query("discordEventSyncs")
+                    .withIndex("eventId", (q) => q.eq("eventId", eventId))
+                    .first()
+            ),
+            perEvent(events, (eventId) =>
+                ctx.db
+                    .query("rosters")
+                    .withIndex("eventId", (q) => q.eq("eventId", eventId))
+                    .first()
+            ),
             ctx.db.query("users").collect(),
-            ctx.db.query("userAssignments").collect(),
-            ctx.db.query("competitionFixtures").collect(),
+            perEvent(events, (eventId) =>
+                ctx.db
+                    .query("competitionFixtures")
+                    .withIndex("eventId", (q) => q.eq("eventId", eventId))
+                    .first()
+            ),
         ])
+        const assignmentsByGuild = await Promise.all(
+            configs.map((config) =>
+                ctx.db
+                    .query("userAssignments")
+                    .withIndex("serverId", (q) =>
+                        q.eq("serverId", config.guildId)
+                    )
+                    .collect()
+            )
+        )
         // L3-14: the calendar names a competition match's round.
         const rounds = new Map(
             fixtures.flatMap((fixture) =>
@@ -70,7 +170,7 @@ export const listSyncPayloads = query({
             )
         )
 
-        return configs.map((config) => {
+        return configs.map((config, configIndex) => {
             const normalizedUsers = users.map((user) =>
                 normalizeUserDoc(user, { guildId: config.guildId })
             )
@@ -80,8 +180,7 @@ export const listSyncPayloads = query({
             const guildGroups = groups
                 .filter((group) => group.guildId === config.guildId)
                 .map(normalizeDoc)
-            // Drafts are not announced: the bot never sees them.
-            const guildEvents = withoutDrafts(events)
+            const guildEvents = events
                 .filter((event) => event.guildId === config.guildId)
                 .map((event) => withCompetitionRound(event, rounds))
             const guildCalendarItems = calendarItems
@@ -156,21 +255,18 @@ export const listSyncPayloads = query({
                 rosters: guildRosters,
                 topicPresets: guildTopicPresets,
                 syncStates: guildSyncStates,
-                assignments: assignments
-                    .filter(
-                        (assignment) => assignment.serverId === config.guildId
-                    )
-                    .map((assignment) => ({
-                        userId: assignment.userId,
-                        type: assignment.type,
-                        status: assignment.status,
-                        gameId: assignment.gameId,
-                    })),
+                assignments:
+                    assignmentsByGuild[configIndex].map(projectAssignment),
             }
         })
     },
 })
 
+/**
+ * The bot's guild cache: the per-clan configuration tables, read whole. The
+ * bot subscribes to this, so it re-runs on every write to these tables; the
+ * clan's assignments are not part of it (see `listGuildAssignments`).
+ */
 export const listGuildCacheSnapshot = query({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
@@ -183,7 +279,6 @@ export const listGuildCacheSnapshot = query({
             calendarItems,
             squadPresets,
             topicPresets,
-            assignments,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
             ctx.db.query("discordConfigs").collect(),
@@ -191,7 +286,6 @@ export const listGuildCacheSnapshot = query({
             ctx.db.query("calendarItems").collect(),
             ctx.db.query("squadPresets").collect(),
             ctx.db.query("topicPresets").collect(),
-            ctx.db.query("userAssignments").collect(),
         ])
 
         return {
@@ -201,29 +295,50 @@ export const listGuildCacheSnapshot = query({
             calendarItems: calendarItems.map(normalizeCalendarItemDoc),
             squadPresets: squadPresets.map(normalizeDoc),
             topicPresets: topicPresets.map(normalizeDoc),
-            assignments: assignments.map((assignment) => ({
-                userId: assignment.userId,
-                type: assignment.type,
-                status: assignment.status,
-                gameId: assignment.gameId,
-                serverId: assignment.serverId,
-            })),
         }
     },
 })
 
+/**
+ * One clan's member assignments, projected to what a sign-up reminder needs
+ * to pick its recipients. The bot reads them once per due reminder through
+ * `serverId`; they are deliberately not part of the guild cache
+ * subscription, which would otherwise re-run on every assignment write and
+ * read the whole table.
+ */
+export const listGuildAssignments = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const assignments = await ctx.db
+            .query("userAssignments")
+            .withIndex("serverId", (q) => q.eq("serverId", args.guildId))
+            .collect()
+        return assignments.map(projectAssignment)
+    },
+})
+
+/**
+ * The index the bot subscribes to for event changes: the events it acts on
+ * (`listBotEvents`) and their rosters, read per event through `eventId`.
+ * An event that becomes historical drops out of the index; the bot only
+ * queues the events it still sees, so a drop-out is not a deletion.
+ */
 export const listEventSyncIndex = query({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
-        const [events, rosters] = await Promise.all([
-            ctx.db.query("events").collect(),
-            ctx.db.query("rosters").collect(),
-        ])
+        const events = await listBotEvents(ctx, new Date())
+        const rosters = await perEvent(events, (eventId) =>
+            ctx.db
+                .query("rosters")
+                .withIndex("eventId", (q) => q.eq("eventId", eventId))
+                .first()
+        )
 
         return {
-            events: withoutDrafts(events).map((event) => {
+            events: events.map((event) => {
                 const normalized = normalizeEventDoc(event)
                 return {
                     id: normalized.id,
