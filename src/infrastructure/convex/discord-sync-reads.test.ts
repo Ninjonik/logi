@@ -21,6 +21,7 @@ function eventRow(
         status?: "registration" | "closed" | "starting" | "concluded"
         gameEnd: string
         isDraft?: boolean
+        signUps?: Array<{ userId: string }>
     }
 ) {
     return {
@@ -40,7 +41,7 @@ function eventRow(
         ...(fields.status ? { status: fields.status } : {}),
         ...(fields.isDraft ? { isDraft: true } : {}),
         attendanceReminderLog: [],
-        signUps: [],
+        signUps: fields.signUps ?? [],
         participants: [],
         createdAt: "2026-01-01T00:00:00.000Z",
         updatedAt: "2026-01-01T00:00:00.000Z",
@@ -55,6 +56,7 @@ function fixture(t: TestContext) {
         eventRow("upcoming", {
             status: "registration",
             gameEnd: "2026-10-20T20:00:00.000Z",
+            signUps: [{ userId: "user-1" }],
         }),
         eventRow("closed", {
             status: "closed",
@@ -104,9 +106,45 @@ function fixture(t: TestContext) {
             _id: `rosters:${id}`,
             eventId: `events:${id}`,
             guildId: "guild-a",
-            squads: [],
+            squads:
+                id === "upcoming"
+                    ? [
+                          {
+                              name: "Able",
+                              group: "infantry",
+                              order: 0,
+                              color: "#fff",
+                              players: [{ id: "user-2", ack: true }],
+                          },
+                      ]
+                    : [],
+            reservePlayerIds: id === "upcoming" ? ["user-5"] : [],
             notAttendingPlayerIds: [],
             updatedAt: "2026-01-02T00:00:00.000Z",
+        })
+    // The people the payload names: a signed-up member with a clan nickname,
+    // a rostered legacy user known by Discord ID only, an assignee on no
+    // event and a member of no clan the events name.
+    for (const row of [
+        {
+            _id: "users:1",
+            id: "user-1",
+            discordId: "user-1",
+            name: "Alpha",
+            nicknames: { "guild-a": " Alpha of A " },
+        },
+        { _id: "users:2", discordId: "user-2", name: "Bravo" },
+        { _id: "users:3", id: "user-3", discordId: "user-3", name: "Charlie" },
+        { _id: "users:9", id: "user-9", discordId: "user-9", name: "Zulu" },
+    ])
+        ctx.db.seed("users", {
+            avatar: "",
+            managedGuildIds: [],
+            mercenaryGuildIds: [],
+            isStreamer: false,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+            ...row,
         })
     for (const id of ["upcoming", "archived"])
         ctx.db.seed("discordEventSyncs", {
@@ -186,6 +224,7 @@ type Payload = {
     syncStates: Array<{ id: string }>
     rosters: Array<{ id: string }>
     assignments: unknown[]
+    userDisplayNames: Record<string, string>
 }
 
 const botEventIds = [
@@ -309,6 +348,36 @@ test("the sync payloads bound events the same way and read sync states, rosters,
     assert.deepEqual(indexesOf(calls, "discordEventSyncs"), ["eventId"])
     assert.deepEqual(indexesOf(calls, "competitionFixtures"), ["eventId"])
     assert.deepEqual(indexesOf(calls, "userAssignments"), ["serverId"])
+})
+
+test("the sync payloads name the people the events and rosters reference, read through the users indexes and never as a whole table", async (t) => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = fixture(t)
+    const calls = spyReads(ctx)
+    const payloads: Payload[] = await invoke(discord.listSyncPayloads, ctx, {
+        secret,
+    })
+    const guildA = payloads.find(
+        (payload) => payload.config.guildId === "guild-a"
+    )
+    const guildB = payloads.find(
+        (payload) => payload.config.guildId === "guild-b"
+    )
+    assert.ok(guildA && guildB)
+    // The signed-up member under the clan nickname, the rostered legacy
+    // user under both of its identifiers; the reserve without a user row,
+    // the assignee on no event and the unreferenced member are absent.
+    assert.deepEqual(guildA.userDisplayNames, {
+        "user-1": "Alpha of A",
+        "user-2": "Bravo",
+    })
+    assert.deepEqual(guildB.userDisplayNames, {})
+    const userReads = calls.filter((call) => call.table === "users")
+    assert.ok(userReads.length > 0)
+    assert.deepEqual([...new Set(userReads.map((call) => call.index))].sort(), [
+        "discordId",
+        "id",
+    ])
 })
 
 test("the guild cache snapshot reads neither events nor assignments", async (t) => {

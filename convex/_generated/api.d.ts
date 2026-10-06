@@ -17,6 +17,7 @@ import type * as apiKeyAuth from "../apiKeyAuth.js";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
+import type * as clanMeta from "../clanMeta.js";
 import type * as clanPlayerHistory from "../clanPlayerHistory.js";
 import type * as clanPublicPage from "../clanPublicPage.js";
 import type * as clanSettingsReads from "../clanSettingsReads.js";
@@ -182,6 +183,7 @@ declare const fullApi: ApiFromModules<{
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
   calendarFeed: typeof calendarFeed;
+  clanMeta: typeof clanMeta;
   clanPlayerHistory: typeof clanPlayerHistory;
   clanPublicPage: typeof clanPublicPage;
   clanSettingsReads: typeof clanSettingsReads;

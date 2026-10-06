@@ -89,6 +89,69 @@ async function perEvent<T extends object>(
     return rows.filter((row): row is T => row !== null)
 }
 
+/**
+ * The people a clan's payload names: everyone signed up, participating or
+ * excused on the served events and everyone placed on their rosters (squads,
+ * reserves, not attending, the streamer). The clan's assignments are served
+ * too, but nothing in the bot names an assignee who is on no event
+ * (`memberNames` reads any other name from Discord), so they add no reads.
+ */
+function referencedUserIds(
+    events: ReadonlyArray<Doc<"events">>,
+    rosters: ReadonlyArray<Doc<"rosters">>
+) {
+    const ids = new Set<string>()
+    for (const event of events) {
+        for (const signUp of event.signUps ?? []) ids.add(signUp.userId)
+        for (const participant of event.participants ?? [])
+            ids.add(participant.userId)
+        for (const notice of event.absenceNotices ?? []) ids.add(notice.userId)
+    }
+    for (const roster of rosters) {
+        for (const squad of roster.squads)
+            for (const player of squad.players)
+                if (player.id) ids.add(player.id)
+        for (const id of roster.reservePlayerIds) ids.add(id)
+        for (const id of roster.notAttendingPlayerIds) ids.add(id)
+        if (roster.streamerId) ids.add(roster.streamerId)
+    }
+    ids.delete("")
+    return ids
+}
+
+/**
+ * The referenced users, one by one through the `users` indexes (`id`, then
+ * `discordId`, as a reference may carry either; a record ID as a last
+ * resort), never the whole table, which holds every Discord member ever
+ * seen across all clans (ARCHITECTURE.md, "Convex hot paths"). The first
+ * row wins so a duplicate never fails the payload. Keyed by the identifier
+ * looked up.
+ */
+async function usersByIdentifier(
+    ctx: QueryCtx,
+    identifiers: ReadonlySet<string>
+): Promise<Map<string, Doc<"users">>> {
+    const found = await Promise.all(
+        [...identifiers].map(async (identifier) => {
+            const recordId = ctx.db.normalizeId("users", identifier)
+            const user =
+                (await ctx.db
+                    .query("users")
+                    .withIndex("id", (q) => q.eq("id", identifier))
+                    .first()) ??
+                (await ctx.db
+                    .query("users")
+                    .withIndex("discordId", (q) =>
+                        q.eq("discordId", identifier)
+                    )
+                    .first()) ??
+                (recordId ? await ctx.db.get(recordId) : null)
+            return user ? ([identifier, user] as const) : null
+        })
+    )
+    return new Map(found.filter((entry) => entry !== null))
+}
+
 /** What the bot needs of an assignment to pick a reminder's recipients. */
 function projectAssignment(assignment: Doc<"userAssignments">) {
     return {
@@ -106,8 +169,9 @@ function projectAssignment(assignment: Doc<"userAssignments">) {
  * whatever its date, plus the concluded ones whose `gameEnd` is at or after
  * now minus seven days, with a day of slack; drafts never. Rosters, sync
  * states and competition fixtures are read per event through `eventId`,
- * assignments per clan through `serverId`. The small per-clan tables and
- * `users` (display names of everyone signed up) are read whole.
+ * assignments per clan through `serverId`, and the users the events and
+ * rosters name one by one through the `users` indexes
+ * (`usersByIdentifier`). Only the small per-clan tables are read whole.
  */
 export const listSyncPayloads = query({
     args: { secret: v.string() },
@@ -123,7 +187,6 @@ export const listSyncPayloads = query({
             topicPresets,
             syncStates,
             rosters,
-            users,
             fixtures,
         ] = await Promise.all([
             ctx.db.query("guilds").collect(),
@@ -143,7 +206,6 @@ export const listSyncPayloads = query({
                     .withIndex("eventId", (q) => q.eq("eventId", eventId))
                     .first()
             ),
-            ctx.db.query("users").collect(),
             perEvent(events, (eventId) =>
                 ctx.db
                     .query("competitionFixtures")
@@ -151,16 +213,19 @@ export const listSyncPayloads = query({
                     .first()
             ),
         ])
-        const assignmentsByGuild = await Promise.all(
-            configs.map((config) =>
-                ctx.db
-                    .query("userAssignments")
-                    .withIndex("serverId", (q) =>
-                        q.eq("serverId", config.guildId)
-                    )
-                    .collect()
-            )
-        )
+        const [assignmentsByGuild, users] = await Promise.all([
+            Promise.all(
+                configs.map((config) =>
+                    ctx.db
+                        .query("userAssignments")
+                        .withIndex("serverId", (q) =>
+                            q.eq("serverId", config.guildId)
+                        )
+                        .collect()
+                )
+            ),
+            usersByIdentifier(ctx, referencedUserIds(events, rosters)),
+        ])
         // L3-14: the calendar names a competition match's round.
         const rounds = new Map(
             fixtures.flatMap((fixture) =>
@@ -171,18 +236,21 @@ export const listSyncPayloads = query({
         )
 
         return configs.map((config, configIndex) => {
-            const normalizedUsers = users.map((user) =>
-                normalizeUserDoc(user, { guildId: config.guildId })
-            )
             const guild = guilds.find(
                 (item) => getGuildDiscordId(item) === config.guildId
             )
             const guildGroups = groups
                 .filter((group) => group.guildId === config.guildId)
                 .map(normalizeDoc)
-            const guildEvents = events
-                .filter((event) => event.guildId === config.guildId)
-                .map((event) => withCompetitionRound(event, rounds))
+            const clanEvents = events.filter(
+                (event) => event.guildId === config.guildId
+            )
+            const clanRosters = rosters.filter((roster) =>
+                clanEvents.some((event) => event._id === roster.eventId)
+            )
+            const guildEvents = clanEvents.map((event) =>
+                withCompetitionRound(event, rounds)
+            )
             const guildCalendarItems = calendarItems
                 .filter((item) => item.guildId === config.guildId)
                 .map(normalizeCalendarItemDoc)
@@ -192,29 +260,19 @@ export const listSyncPayloads = query({
             const guildSyncStates = syncStates
                 .filter((state) => state.guildId === config.guildId)
                 .map(normalizeDoc)
-            const guildRosters = rosters
-                .filter((roster) =>
-                    guildEvents.some(
-                        (event) => String(roster.eventId) === event.id
-                    )
-                )
-                .map(normalizeDoc)
-            const userIds = new Set<string>()
-
-            for (const event of guildEvents) {
-                for (const signUp of event.signUps ?? []) {
-                    userIds.add(signUp.userId)
-                }
-                for (const participant of event.participants ?? []) {
-                    userIds.add(participant.userId)
-                }
+            const guildRosters = clanRosters.map(normalizeDoc)
+            // The clan's referenced people, each user once whichever of its
+            // identifiers the references carried.
+            const clanUsers = new Map<string, Doc<"users">>()
+            for (const id of referencedUserIds(clanEvents, clanRosters)) {
+                const user = users.get(id)
+                if (user) clanUsers.set(String(user._id), user)
             }
 
             const userDisplayNames = Object.fromEntries(
-                normalizedUsers
-                    .filter(
-                        (user) =>
-                            userIds.has(user.id) || userIds.has(user.discordId)
+                [...clanUsers.values()]
+                    .map((user) =>
+                        normalizeUserDoc(user, { guildId: config.guildId })
                     )
                     .flatMap((user) => {
                         const nickname =

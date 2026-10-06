@@ -18,9 +18,10 @@ import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
 import { readClanSettingsSlices } from "../src/domain/api/settings-slices"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { projectResultSummary } from "../src/domain/api/result-summaries"
-import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
+import { projectClanMetaCounts } from "../src/domain/api/clan-meta"
 import { allowsApiKeyRead } from "../src/domain/api/key-access"
 import { readExternalClanSettings } from "./clanSettingsReads"
+import { isDraftEvent } from "../src/domain/events/drafts"
 import type { Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
 import { query } from "./_generated/server"
@@ -59,7 +60,16 @@ export const listKeys = query({
     },
 })
 
-/** A deliberately small, authenticated sync marker and count projection. */
+/**
+ * A deliberately small, authenticated sync marker and count projection. The
+ * marker is the clan document's own `updatedAt`, read here; the counts come
+ * from the clan's stored summary (`clanMetaSummaries`), which
+ * `clanMeta:refreshClanMeta` recomputes at most once a minute off the
+ * request path, so this read never scans the clan's tables
+ * (ARCHITECTURE.md, "Convex hot paths"). `counts` and `computedAt` are null
+ * only until the first refresh; the web gateway then refreshes
+ * synchronously, so the website never sees them.
+ */
 export const getClanMeta = query({
     args: { secret: v.string(), keyHash: v.string() },
     handler: async (ctx, args) => {
@@ -73,93 +83,23 @@ export const getClanMeta = query({
         const guild = await getGuildByDiscordId(ctx, key.guildId)
         if (!guild) return null
         const guildId = key.guildId
-        const events = withoutDrafts(
-            await ctx.db
-                .query("events")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect()
-        )
-        const [
-            groups,
-            assignments,
-            calendarItems,
-            stratmaps,
-            topicPresets,
-            squadPresets,
-            matches,
-            articles,
-            apiKeys,
-            enabledGames,
-        ] = await Promise.all([
-            ctx.db
-                .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("userAssignments")
-                .withIndex("serverId", (q) => q.eq("serverId", guildId))
-                .collect(),
-            ctx.db
-                .query("calendarItems")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("stratmaps")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("topicPresets")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("squadPresets")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("matchStats")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("articles")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("apiKeys")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
+        const [enabledGames, summary] = await Promise.all([
             ctx.db
                 .query("guildGames")
-                .filter((q) => q.eq(q.field("guildId"), guildId))
+                .withIndex("guildId_gameId", (q) => q.eq("guildId", guildId))
                 .collect(),
+            ctx.db
+                .query("clanMetaSummaries")
+                .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                .unique(),
         ])
-        const rosters = await Promise.all(
-            events.map((event) =>
-                ctx.db
-                    .query("rosters")
-                    .withIndex("eventId", (q) => q.eq("eventId", event._id))
-                    .unique()
-            )
-        )
         return {
             guild: { id: String(guild._id), guildId, name: guild.name },
             enabledGames: enabledGames
                 .filter((entry) => entry.enabled)
                 .map((entry) => entry.gameId),
-            counts: {
-                events: events.length,
-                groups: groups.length,
-                rosters: rosters.filter(Boolean).length,
-                assignments: assignments.length,
-                users: new Set(assignments.map((entry) => entry.userId)).size,
-                "calendar-items": calendarItems.length,
-                stratmaps: stratmaps.length,
-                "topic-presets": topicPresets.length,
-                "squad-presets": squadPresets.length,
-                matches: matches.length,
-                articles: articles.length,
-                settings: 1,
-                "api-keys": apiKeys.length,
-            },
+            counts: summary ? projectClanMetaCounts(summary.tallies) : null,
+            computedAt: summary?.computedAt ?? null,
             updatedAt: guild.updatedAt,
         }
     },
