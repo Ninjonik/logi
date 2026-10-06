@@ -230,6 +230,12 @@ character stepped up)` on the same index (`publicationKeyRange`).
   each guild head once per batch, and `integrationChanges:resetFeed` is the
   operator's way out of a flooded log: it raises every floor to its head so
   consumers bootstrap again, then empties the log in batches.
+- Every table that gains a row per request or per window has a cron that
+  removes the expired rows in bounded batches through an expiry index:
+  `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per
+  Idempotency-Key, 24 h, with the stored response) and
+  `apiRateLimitBuckets` (one row per window), hourly. Tens of thousands of
+  dead rows in each were found in production because nothing removed them.
 - A per-request endpoint serves counts from a maintained summary document,
   never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
   enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`

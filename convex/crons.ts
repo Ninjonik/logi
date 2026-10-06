@@ -95,6 +95,15 @@ crons.interval(
     {}
 )
 
+// Expired idempotency records (24 h) and rate-limit windows are removed in
+// bounded batches; nothing else does, and the rows carry stored responses.
+crons.interval(
+    "prune expired API idempotency keys and rate-limit buckets",
+    { hours: 1 },
+    makeFunctionReference<"mutation">("apiHousekeeping:pruneExpired"),
+    {}
+)
+
 // Unfinished clan applications are kept 24 h, then deleted (L6-08, N4-37).
 crons.interval(
     "delete expired clan application drafts",

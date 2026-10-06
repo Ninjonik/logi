@@ -2136,7 +2136,9 @@ export default defineSchema({
         bucket: v.string(),
         resetAt: v.number(),
         count: v.number(),
-    }).index("bucket", ["bucket"]),
+    })
+        .index("bucket", ["bucket"])
+        .index("resetAt", ["resetAt"]),
     apiIdempotencyKeys: defineTable({
         guildId: v.string(),
         key: v.string(),
