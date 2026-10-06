@@ -255,3 +255,60 @@ test("the overview lists seed control messages, names and the editor's flags (P1
         messageId: "423456789012345678",
     })
 })
+
+test("a WD League panel lists each message with its own delivery (P1-20, P1-21)", () => {
+    const league = panel({
+        id: "lg",
+        kind: "league",
+        gameId: "wardogs",
+        connectionId: undefined,
+        requestedAt: 95_000,
+    })
+    const result = overview([
+        {
+            panel: league,
+            status: status({ handledRequestAt: 80_000 }),
+            publications: [
+                publication({
+                    key: "panel:lg:standings",
+                    lastSuccessAt: 96_000,
+                }),
+            ],
+        },
+    ])
+    const item = result.panels[0]!
+    assert.equal(item.state, "waiting")
+    assert.deepEqual(
+        item.parts.map((part) => [part.part, part.state, part.lastUpdateAt]),
+        [
+            ["standings", "published", 96_000],
+            ["fixtures", "waiting", null],
+        ]
+    )
+    assert.deepEqual(item.parts[0]!.message, {
+        channelId: "123456789012345678",
+        messageId: "223456789012345678",
+    })
+    assert.equal(item.parts[1]!.message, null)
+    // Other kinds have no parts.
+    assert.deepEqual(
+        overview([
+            { panel: panel(), status: status(), publications: [publication()] },
+        ]).panels[0]!.parts,
+        []
+    )
+    // Paused holds both messages.
+    assert.deepEqual(
+        overview([
+            {
+                panel: { ...league, paused: true },
+                status: status(),
+                publications: [
+                    publication({ key: "panel:lg:standings" }),
+                    publication({ key: "panel:lg:fixtures" }),
+                ],
+            },
+        ]).panels[0]!.parts.map((part) => part.state),
+        ["paused", "paused"]
+    )
+})

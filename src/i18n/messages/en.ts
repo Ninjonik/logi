@@ -3988,8 +3988,14 @@ export const enMessages = {
             panels: {
                 intro: "You manage every panel on the {link} page. This is only an overview.",
                 add: "Add panel",
-                liveDetail:
-                    "Live server · refreshes every {seconds} s · Join, View players and Report player buttons",
+                liveDetail: "Live server · refreshes every {seconds} s",
+                liveButtons: "{buttons} buttons",
+                buttonNames: {
+                    join: "Join",
+                    players: "View players",
+                    report: "Report player",
+                },
+                and: "and",
                 privateDetail:
                     "Live server in a private channel · also shows the server password",
                 combinedTitle: "Our servers",
@@ -3998,7 +4004,7 @@ export const enMessages = {
                 controlDetail: "Seed, Refresh and Pause · Logi managers only",
                 resultsTitle: "{game} results",
                 resultsDetail:
-                    "After a result is confirmed in Logi · only results confirmed since the panel was turned on",
+                    "After a result is confirmed in Logi · posts the last 5 confirmed when created",
                 leagueTitle: "WD League",
                 leagueDetail:
                     "Two messages: the table and the league's next matches · refresh every 60 s",
@@ -4006,8 +4012,15 @@ export const enMessages = {
                 calendarDetail:
                     "The clan's upcoming events, categories {categories}",
                 calendarAll: "all",
+                competitionTitle: "Competition table",
+                competitionDetail:
+                    "Group table of the competition {name} · after every confirmed result",
+                competitionDetailAny:
+                    "Group table of the competition · after every confirmed result",
+                pausedBy: "paused by {name}",
                 chips: {
                     error: "Error",
+                    waiting: "Waiting for the bot",
                     unsent: "Not sent",
                     paused: "Paused",
                 },
@@ -6337,7 +6350,7 @@ export const enMessages = {
         botNeverSeen:
             "The bot has not checked in yet. Panels do not refresh and new ones are not sent until the bot runs.",
         botOutdated:
-            "The bot runs an older version {version}. Discord panels need a newer version. Restart the bot after updating; while the old version runs, panels do not refresh.",
+            "The bot runs an older version {version}. Discord panels need version {required} or newer. Restart the bot after updating; while the old version runs, panels do not refresh.",
         permissions: {
             view_channel: "View Channel",
             send_messages: "Send Messages",
@@ -6348,62 +6361,77 @@ export const enMessages = {
         errors: {
             bot_not_in_server: {
                 title: "The bot is not in the Discord server.",
+                past: "The bot was not in the Discord server.",
                 fix: "Invite the Logi bot to the server again, then click Try again.",
             },
             channel_missing: {
                 title: "Channel {channel} no longer exists or the bot cannot see it.",
+                past: "Channel {channel} did not exist or the bot could not see it.",
                 fix: "Choose another channel in the editor and save.",
             },
             channel_type: {
                 title: "Messages cannot be posted in {channel}.",
+                past: "Messages could not be posted in {channel}.",
                 fix: "Choose a text or announcement channel in the editor.",
             },
             missing_permissions: {
                 title: "The bot lacks the {permissions} permission in {channel}.",
+                past: "The bot lacked the {permissions} permission in {channel}.",
                 fix: "In Discord open Edit Channel → Permissions → Logi and turn on {permissions}. Then click Try again.",
             },
             delivery_uncertain: {
                 title: "Discord did not confirm whether it received the message.",
+                past: "Discord did not confirm whether it received the message.",
                 fix: "The bot finds the message on the next refresh or sends it again. Nothing to do.",
             },
             discord_unavailable: {
                 title: "Discord is not responding right now.",
+                past: "Discord did not respond in time.",
                 fix: "The bot retries on its own. If it takes long, click Try again.",
             },
             source_missing: {
                 title: "The panel's game server is no longer in Logi.",
+                past: "The panel's game server was not in Logi.",
                 fix: "Choose another server in the editor, or delete the panel.",
             },
             source_not_collecting: {
                 title: "Logi is not collecting data from the game server.",
+                past: "Logi was not collecting data from the game server.",
                 fix: "Turn on collection in Game servers, then click Try again.",
             },
             provider_unreachable: {
                 title: "The game server is not responding.",
+                past: "The game server did not respond.",
                 fix: "The panel shows the last data. Check the address and key in Game servers.",
             },
             provider_rate_limited: {
                 title: "The data provider is refusing more requests right now.",
+                past: "The data provider refused further requests.",
                 fix: "The panel shows the last data and retries. If it lasts over an hour, raise the key's limit or replace it in Game servers.",
             },
             render_failed: {
                 title: "The panel could not be built.",
+                past: "The panel could not be built.",
                 fix: "Shorten the panel's title or description. If the error persists, report it to Logi support.",
             },
             unsupported_kind: {
                 title: "The bot does not support this panel kind yet.",
+                past: "The bot did not support this panel kind.",
                 fix: "Update the bot and restart it.",
             },
             competition_missing: {
                 title: "The panel's competition no longer exists.",
+                past: "The panel's competition did not exist.",
                 fix: "Choose another competition in the editor, or delete the panel.",
             },
             league_disabled: {
                 title: "Wardogs League is turned off in Settings, so the bot deleted the panel's messages.",
+                past: "Wardogs League was turned off in Settings.",
                 fix: "Turn Wardogs League on in Settings → Wardogs League; the bot then posts both messages again.",
             },
             unknown: {
                 title: "The message could not be sent.",
+                past: "The message could not be sent.",
                 fix: "Click Try again. If the error persists, report it to Logi support.",
             },
         },
@@ -6433,7 +6461,7 @@ export const enMessages = {
                 "Panels are not refreshing and new ones will not be sent. Check that the bot is running; restart it after an update.",
             outdatedTitle: "The bot runs an older version {version}.",
             outdatedBody:
-                "Discord panels need a newer bot version. Restart the bot after updating it; while the old version runs, panels do not refresh.",
+                "Discord panels need version {required} or newer. Restart the bot after updating it; while the old version runs, panels do not refresh.",
             unknownTitle: "The bot has not checked in yet.",
             unknownBody:
                 "Panels do not refresh and new ones are not sent until the bot runs. Start the bot; its state appears here within 30 s.",
@@ -6584,6 +6612,7 @@ export const enMessages = {
                 controlButtons: "Seed, Refresh and Pause buttons",
                 calendarSetting:
                     "channel from the earlier setting; Edit turns it into a panel",
+                leagueBoth: "buttons apply to both League messages",
                 open: "Open message",
             },
             buttons: {
@@ -6744,16 +6773,21 @@ export const enMessages = {
                 connection: "Joining",
                 address: {
                     label: "Show IP:port",
-                    help: "{address} from Game servers.",
-                    helpCombined: "For HLL servers.",
-                    missing: "The server address is not saved yet.",
+                    help: "The panel shows {address}. You enter the address here; it applies to every panel of this server.",
+                    helpCombined:
+                        "For HLL servers. You enter the addresses here; each applies to every panel of its server.",
+                    missing: "No server address is saved yet. Enter it here.",
                     field: "IP:port · {server}",
                     placeholder: "203.0.113.24:7777",
+                    clear: "Remove",
+                    clearFor: "Remove IP:port · {server}",
                 },
                 joinCode: {
                     label: "Show join code",
                     help: "For Wardogs servers.",
                     field: "Join code · {server}",
+                    clear: "Remove",
+                    clearFor: "Remove join code · {server}",
                 },
                 joinButton: {
                     label: "Join button (through Logi)",
@@ -6908,6 +6942,8 @@ export const enMessages = {
                     "Preview from the events in Logi; the bot adds the links to the announcements.",
                 competitionNote:
                     "The bot builds the group tables after saving.",
+                noAttach:
+                    "The bot lacks the {permission} permission in {channel}, so the panel is posted as text without images, like this preview.",
             },
             joinPage: {
                 title: "After clicking Join · Logi page",
@@ -6989,6 +7025,32 @@ export const enMessages = {
                 hint: "After Send to channel the steps get ticked, usually within 15 s. The page refreshes itself.",
                 lastError: "Last error:",
                 recovered: "The next attempt {after} later went through.",
+                recoveredAfter: {
+                    second: {
+                        one: "a second",
+                        few: "{count} seconds",
+                        many: "{count} seconds",
+                        other: "{count} seconds",
+                    },
+                    minute: {
+                        one: "a minute",
+                        few: "{count} minutes",
+                        many: "{count} minutes",
+                        other: "{count} minutes",
+                    },
+                    hour: {
+                        one: "an hour",
+                        few: "{count} hours",
+                        many: "{count} hours",
+                        other: "{count} hours",
+                    },
+                    day: {
+                        one: "a day",
+                        few: "{count} days",
+                        many: "{count} days",
+                        other: "{count} days",
+                    },
+                },
                 stuck: {
                     title: "When delivery gets stuck",
                     lead: "Sending not confirmed.",

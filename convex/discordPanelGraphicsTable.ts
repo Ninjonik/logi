@@ -57,4 +57,8 @@ export const discordApplicationEmoji = defineTable({
     ready: v.array(v.string()),
     failed: v.array(v.string()),
     checkedAt: v.number(),
+    /** Installed emoji IDs and names for dashboard previews (P2-B09); absent from older bots. */
+    installed: v.optional(
+        v.array(v.object({ key: v.string(), id: v.string(), name: v.string() }))
+    ),
 }).index("key", ["key"])

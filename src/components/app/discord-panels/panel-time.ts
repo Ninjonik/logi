@@ -1,5 +1,7 @@
 import type { Dictionary } from "@/i18n/dictionaries"
 
+import { plural, type PluralForms } from "./panel-copy"
+
 type TimeText = Dictionary["discordPanelsPage"]["time"]
 
 const SECOND = 1000
@@ -92,12 +94,17 @@ export function shortDay(at: number, locale: string) {
         .replace(/,/g, "")
 }
 
-/** "o minutu" style gap between an error and the next success, as "1 min" / "40 s". */
-export function duration(ms: number, locale: string) {
+/**
+ * The gap between an error and the next success in words, for "Další
+ * pokus o {after} později prošel." (P2-32): "minutu", "2 minuty", "40 sekund".
+ */
+export function recoveryGap(
+    ms: number,
+    locale: string,
+    forms: Record<"second" | "minute" | "hour" | "day", PluralForms>
+) {
     const [value, unit] = unitOf(Math.max(SECOND, ms))
-    return new Intl.NumberFormat(locale, {
-        style: "unit",
-        unit,
-        unitDisplay: "short",
-    }).format(Math.abs(value))
+    const key =
+        unit === "second" || unit === "minute" || unit === "hour" ? unit : "day"
+    return plural(forms[key], Math.abs(value), locale)
 }

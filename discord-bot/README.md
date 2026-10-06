@@ -117,7 +117,10 @@ npm run dev:all
 
 Optional: `LOGI_BOT_VERSION` (letters, digits, `.`, `_`, `+`, `-`; at most 40
 characters) is the version the panel heartbeat reports to "Panely v Discordu";
-without it the bot reports its package version.
+without it the bot reports the version in the repository's `package.json`.
+When the bot speaks an older panel protocol, the dashboard names this version
+and the minimum release the panels need (`MINIMUM_BOT_VERSION` in
+`src/domain/discord-publications/panel-delivery.ts`).
 
 ## Current responsibilities
 

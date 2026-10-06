@@ -12,7 +12,7 @@ import {
     squadCategoryName,
     squadVoiceChannelName,
 } from "../../../src/domain/events/match-discord-names"
-import { buildScheduledEventContent } from "../../../src/application/discord-sync/scheduled-event-content"
+import { buildScheduledEventContent } from "../../../src/domain/events/scheduled-event-content"
 import { panelFactionOf } from "../../../src/domain/discord-publications/panel-presentation"
 import { getAnnouncementMessages } from "../../../src/lib/clan-language/announcements"
 import { plainText } from "../../../src/domain/events/calendar-link"

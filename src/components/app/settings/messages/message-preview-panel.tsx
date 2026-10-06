@@ -3,18 +3,27 @@ import type { ReactNode } from "react"
 import {
     SETTINGS_PREVIEW_NOW,
     settingsPreview,
+    type SettingsPreviewClan,
     type SettingsPreviewKind,
 } from "@/domain/discord-messages/settings-previews"
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import type { RosterMessageVariant } from "@/domain/discord-messages/roster-message"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
+import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
+import { getApplicationMessages } from "@/lib/clan-language/application"
 import { getDirectMessages } from "@/lib/clan-language/direct-messages"
 import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
+import { getTicketMessages } from "@/lib/clan-language/tickets"
 import { getRosterMessages } from "@/lib/clan-language/rosters"
 import { getSystemMessages } from "@/lib/clan-language/system"
+import { getPanelMessages } from "@/lib/clan-language/panels"
 import type { Dictionary } from "@/i18n/dictionaries"
 
-/** The sample message of one row, as the bot draws it, with the clan's look. */
+/**
+ * The sample message of one row, as the bot draws it with its own builder,
+ * with the clan's look and, where set, the clan's membership and ticket
+ * panels (N1-08, N1-B07).
+ */
 export function SettingsMessagePreview({
     kind,
     language,
@@ -22,6 +31,7 @@ export function SettingsMessagePreview({
     rosterVariant,
     timeZone,
     siteUrl,
+    clan,
     dictionary,
 }: {
     kind: SettingsPreviewKind
@@ -30,6 +40,8 @@ export function SettingsMessagePreview({
     rosterVariant: RosterMessageVariant
     timeZone: string
     siteUrl: string
+    /** The clan's membership and ticket panels; samples without them. */
+    clan?: SettingsPreviewClan
     dictionary: Dictionary
 }) {
     const system = getSystemMessages(language)
@@ -40,6 +52,11 @@ export function SettingsMessagePreview({
         roster: getRosterMessages(language),
         errors: system.errorsChannel,
         teamRequests: system.teamRequests,
+        announcement: getAnnouncementMessages(language),
+        applications: getApplicationMessages(language),
+        tickets: getTicketMessages(language),
+        reports: getPanelMessages(language).report,
+        clan,
         layout: {
             copy: system.kit,
             locale: getIntlLocaleForClanLanguage(language),
@@ -58,7 +75,11 @@ export function SettingsMessagePreview({
             labels={dictionary.discordPreview}
             now={SETTINGS_PREVIEW_NOW}
             timeZone={timeZone}
-            mentions={{ channels: preview.channels }}
+            mentions={{
+                channels: preview.channels,
+                users: preview.users,
+                roles: preview.roles,
+            }}
             author={{ time: dictionary.settingsHub.messagesPage.previewTime }}
             content={preview.content}
         />

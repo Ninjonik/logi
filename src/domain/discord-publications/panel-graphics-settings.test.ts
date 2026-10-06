@@ -3,6 +3,7 @@ import {
     clanBadgeTag,
     DEFAULT_PANEL_GRAPHICS,
     filterPanelMapTiles,
+    panelEmojiMarkup,
     panelEmojiReportSchema,
     panelEmojiStatus,
     panelGraphicsChangeCount,
@@ -301,4 +302,33 @@ test("the banner badge uses the clan's initials", () => {
     assert.equal(clanBadgeTag("Vlci", "ABCDEFG"), "ABCDE")
     assert.equal(clanBadgeTag("Vlci", "  "), "VLC")
     assert.equal(clanBadgeTag("Vlci", null), "VLC")
+})
+
+test("the installed emoji become Discord markup for the previews (P2-B09)", () => {
+    const report = panelEmojiReportSchema.parse({
+        applicationId: "123456789012345678",
+        ready: ["allies", "live"],
+        failed: [],
+        checkedAt: 1,
+        installed: [
+            { key: "allies", id: "200000000000000011", name: "logi_allies_1" },
+            { key: "live", id: "200000000000000012", name: "logi_live_2" },
+            { key: "nonsense", id: "200000000000000013", name: "x_y" },
+        ],
+    })
+    assert.deepEqual(panelEmojiMarkup(report), {
+        allies: "<:logi_allies_1:200000000000000011>",
+        live: "<:logi_live_2:200000000000000012>",
+    })
+    // Older bots report no IDs: the previews keep the plain markers.
+    assert.deepEqual(panelEmojiMarkup(null), {})
+    assert.deepEqual(panelEmojiMarkup({ installed: undefined }), {})
+    // Only public IDs and Discord-safe names are accepted.
+    assert.equal(
+        panelEmojiReportSchema.safeParse({
+            ...report,
+            installed: [{ key: "live", id: "x", name: "logi_live_2" }],
+        }).success,
+        false
+    )
 })

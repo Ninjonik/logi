@@ -59,6 +59,8 @@ export function timingText(
             return t.controlButtons
         case "calendarSetting":
             return t.calendarSetting
+        case "leagueBoth":
+            return t.leagueBoth
     }
 }
 

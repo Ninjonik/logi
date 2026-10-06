@@ -192,10 +192,21 @@ function Inline({
                 )
             }
             case "emoji":
+                // A custom emoji as Discord draws it, from Discord's emoji
+                // CDN (the ID is digits only), e.g. the installed panel signs.
                 return (
-                    <span key={index} className="text-[#b5bac1]">
-                        :{node.name}:
-                    </span>
+                    // eslint-disable-next-line @next/next/no-img-element -- Discord's own emoji CDN
+                    <img
+                        key={index}
+                        src={`https://cdn.discordapp.com/emojis/${node.id}.${node.animated ? "gif" : "webp"}?size=48`}
+                        alt={`:${node.name}:`}
+                        title={`:${node.name}:`}
+                        width={22}
+                        height={22}
+                        loading="lazy"
+                        draggable={false}
+                        className="inline-block size-[1.375em] overflow-hidden object-contain align-[-0.3em]"
+                    />
                 )
         }
     })

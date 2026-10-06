@@ -233,3 +233,24 @@ test("the header subtitle renders under the title with its mentions", () => {
     assert.match(text, /#oznameni/)
     assert.match(html, /border-left-color:#80848e/)
 })
+
+test("a custom emoji is drawn from Discord's emoji CDN, as Discord shows it (P2-B09)", () => {
+    const html = render({
+        view: {
+            accent: "clan",
+            blocks: [
+                {
+                    kind: "text",
+                    markdown:
+                        "Spojenci <:logi_us_1a2b3c4d:200000000000000021> 3 : 2",
+                },
+            ],
+        },
+    })
+    assert.match(
+        html,
+        /<img[^>]*src="https:\/\/cdn\.discordapp\.com\/emojis\/200000000000000021\.webp\?size=48"[^>]*>/
+    )
+    assert.match(html, /alt=":logi_us_1a2b3c4d:"/)
+    assert.doesNotMatch(textOf(html), /logi_us/)
+})

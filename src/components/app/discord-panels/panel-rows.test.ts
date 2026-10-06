@@ -60,6 +60,7 @@ const item = (overrides: Partial<PanelOverviewItem>): PanelOverviewItem => ({
         messageId: "300000000000000001",
     },
     messages: 1,
+    parts: [],
     style: "a",
     ...overrides,
 })
@@ -96,6 +97,7 @@ const overview = (
     servers: [],
     controls,
     people: { u1: "Hráč 01" },
+    emoji: {},
 })
 const context = {
     dictionary,
@@ -208,6 +210,144 @@ test("WD League lists its two messages and the paused calendar names who paused 
         at: now - 3_600_000,
     })
     assert.deepEqual(calendar.actions.buttons, ["edit", "resume"])
+})
+
+test("each WD League message has its own state; the buttons act on both (P1-20, P1-21)", () => {
+    const league = item({
+        id: "lg",
+        kind: "league",
+        gameId: "wardogs",
+        channelId: "200000000000000006",
+        connectionId: null,
+        state: "waiting",
+        timeline: {
+            ...item({}).timeline,
+            requestedAt: now - 8_000,
+        },
+        settings: {
+            ...item({}).settings,
+            kind: "league",
+            league: {
+                table: true,
+                fixtures: true,
+                recentResults: true,
+                fixtureCount: 6,
+            },
+        },
+        parts: [
+            {
+                part: "standings",
+                state: "published",
+                lastUpdateAt: now - 30_000,
+                uncertain: false,
+                message: {
+                    channelId: "200000000000000006",
+                    messageId: "300000000000000006",
+                },
+            },
+            {
+                part: "fixtures",
+                state: "waiting",
+                lastUpdateAt: null,
+                uncertain: false,
+                message: null,
+            },
+        ],
+    })
+    const rows = panelRows(overview([league]), context).find(
+        (group) => group.group === "league"
+    )!.rows
+    assert.deepEqual(
+        rows.map((row) => [row.title, row.state]),
+        [
+            ["WD League · tabulka", "published"],
+            ["WD League · nejbližší zápasy", "waiting"],
+        ]
+    )
+    // Zveřejněno: its own time and link; Čeká na bota: the request.
+    assert.deepEqual(rows[0]!.timing.slice(0, 1), [
+        { kind: "updated", at: now - 30_000 },
+    ])
+    assert.equal(
+        rows[0]!.messageUrl,
+        "https://discord.com/channels/100000000000000001/200000000000000006/300000000000000006"
+    )
+    assert.deepEqual(rows[0]!.actions.buttons, ["edit", "refresh", "pause"])
+    assert.deepEqual(rows[1]!.timing, [
+        { kind: "requested", at: now - 8_000 },
+        { kind: "pickup" },
+        { kind: "leagueBoth" },
+    ])
+    assert.equal(rows[1]!.messageUrl, null)
+    assert.deepEqual(rows[1]!.actions.buttons, ["edit", "pause"])
+    // Both rows act on the one panel and say so.
+    assert.deepEqual(
+        rows.map((row) => row.panelId),
+        ["lg", "lg"]
+    )
+    for (const row of rows)
+        assert.deepEqual(row.timing[row.timing.length - 1], {
+            kind: "leagueBoth",
+        })
+})
+
+test("a failing WD League message shows the panel's cause; an unconfirmed one says so", () => {
+    const league = (uncertain: boolean) =>
+        item({
+            id: "lg",
+            kind: "league",
+            gameId: "wardogs",
+            channelId: "200000000000000006",
+            connectionId: null,
+            state: "error",
+            error: {
+                code: "missing_permissions",
+                at: now - 10_000,
+                permissions: ["attach_files"],
+            },
+            settings: {
+                ...item({}).settings,
+                kind: "league",
+                league: {
+                    table: true,
+                    fixtures: false,
+                    recentResults: false,
+                    fixtureCount: 6,
+                },
+            },
+            parts: [
+                {
+                    part: "standings",
+                    state: "error",
+                    lastUpdateAt: now - 90_000,
+                    uncertain,
+                    message: null,
+                },
+                {
+                    part: "fixtures",
+                    state: "published",
+                    lastUpdateAt: now - 5_000,
+                    uncertain: false,
+                    message: null,
+                },
+            ],
+        })
+    const rowOf = (uncertain: boolean) =>
+        panelRows(overview([league(uncertain)]), context).find(
+            (group) => group.group === "league"
+        )!.rows
+    const [table] = rowOf(false)
+    assert.equal(rowOf(false).length, 1)
+    assert.equal(table!.state, "error")
+    assert.equal(
+        table!.error?.title,
+        "Bot nemá oprávnění Přikládat soubory v #liga."
+    )
+    assert.ok(table!.actions.errorBox)
+    assert.equal(
+        rowOf(true)[0]!.error?.title,
+        "Discord nepotvrdil, jestli zprávu přijal."
+    )
 })
 
 test("seed control messages are their own group (P1-18)", () => {

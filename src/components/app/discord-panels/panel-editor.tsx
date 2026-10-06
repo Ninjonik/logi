@@ -12,10 +12,13 @@ import {
     draftFromSettings,
     draftProblems,
     draftToSettings,
+    freeResultsGame,
     newPanelDraft,
+    resultsGamesTaken,
     serverJoinDraft,
     serverJoinPatch,
     serverJoinProblems,
+    takenPanelKinds,
     type PanelEditorDraft,
     type ServerJoinDraft,
 } from "@/domain/discord-publications/panel-editor"
@@ -147,28 +150,6 @@ export type PanelEditorProps = {
 
 type SeedInfo = { running: { liveFrom: number } | null; liveFrom: number }
 
-/** The panel kinds a workspace may have only once (results per game, League, calendar). */
-function takenKinds(
-    panels: ReadonlyArray<{ id: string; kind: PanelKind; gameId: string }>,
-    currentId: string | null,
-    gameId: string
-): PanelKind[] {
-    const others = panels.filter((panel) => panel.id !== currentId)
-    return [
-        ...(others.some((panel) => panel.kind === "league")
-            ? (["league"] as const)
-            : []),
-        ...(others.some((panel) => panel.kind === "calendar")
-            ? (["calendar"] as const)
-            : []),
-        ...(others.some(
-            (panel) => panel.kind === "results" && panel.gameId === gameId
-        )
-            ? (["results"] as const)
-            : []),
-    ]
-}
-
 /**
  * The panel editor (board P2): steps 1–6 on the left, on the right the
  * rendered preview from real server data, the join page, "Data ze serveru",
@@ -237,6 +218,25 @@ export function PanelEditor(props: PanelEditorProps) {
                   }
                 : current
         )
+    }
+    // A new results panel ("?type=results") moves to a game without results
+    // once the clan's panels are known: one results panel per game (P2-04).
+    if (draft && !panelId && overview && draft.kind === "results") {
+        const gameId = freeResultsGame({
+            current: draft.gameId,
+            taken: resultsGamesTaken(overview.panels, null),
+            enabledGames: props.enabledGames,
+        })
+        if (gameId !== draft.gameId)
+            setLoaded((current) =>
+                current
+                    ? {
+                          ...current,
+                          draft: { ...current.draft, gameId },
+                          saved: { ...current.saved, gameId },
+                      }
+                    : current
+            )
     }
 
     // ---- Join details per server -------------------------------------------------
@@ -315,6 +315,18 @@ export function PanelEditor(props: PanelEditorProps) {
             : item && draft && item.channelId === draft.channelId
               ? item.channelPrivate
               : null
+    // Attach Files in the chosen channel: the check, else what the bot last
+    // saw there. Without it the bot posts text only, and so does the
+    // preview (P2-B02, P2-B09).
+    const canAttach =
+        channelCheck.status === "done"
+            ? channelCheck.result.permissions.attach_files
+            : !(
+                  item &&
+                  draft &&
+                  item.channelId === draft.channelId &&
+                  item.warnings.includes("attach_files_missing")
+              )
     // Check the channel once it is chosen or loaded (P2-09).
     const checkedFor = useRef<string | null>(null)
     useEffect(() => {
@@ -470,8 +482,9 @@ export function PanelEditor(props: PanelEditorProps) {
                             (source) => source.connectionId === connectionId
                         )?.gameId ?? "hell_let_loose",
                     joinUrl: predictedJoinUrl(connectionId),
-                    address: join.address.trim() || saved?.address || null,
-                    joinCode: join.joinCode.trim() || saved?.joinCode || null,
+                    // As edited: a removed address or code leaves the preview too.
+                    address: join.address.trim() || null,
+                    joinCode: join.joinCode.trim() || null,
                     hasPassword:
                         Boolean(join.password) ||
                         (Boolean(saved?.hasPassword) && !join.clearPassword),
@@ -517,6 +530,8 @@ export function PanelEditor(props: PanelEditorProps) {
                   typeof window === "undefined"
                       ? props.siteUrl
                       : window.location.origin,
+              canAttach,
+              emoji: overview?.emoji ?? {},
           }
         : null
     const scoreModel = previewInput
@@ -655,9 +670,13 @@ export function PanelEditor(props: PanelEditorProps) {
                             style: props.clan.messageStyle,
                             accentColor,
                             paused: Boolean(item?.paused),
-                            artwork: draft.artwork && draft.layout.showMap,
+                            artwork:
+                                draft.artwork &&
+                                draft.layout.showMap &&
+                                canAttach,
                             assetOrigin: previewInput.assetOrigin,
                             now,
+                            emoji: previewInput.emoji,
                         })
                     )
                 previewPlaceholder =
@@ -717,6 +736,23 @@ export function PanelEditor(props: PanelEditorProps) {
                 previewPlaceholder = editor.preview.competitionNote
                 break
         }
+        // Text only, as the bot posts it, with the permission named (P2-B09).
+        if (
+            !canAttach &&
+            (draft.kind === "server" ||
+                draft.kind === "servers" ||
+                draft.kind === "league")
+        )
+            previewNote = [
+                fill(editor.preview.noAttach, {
+                    permission:
+                        dictionary.discordPanelStatus.permissions.attach_files,
+                    channel: channelName ?? editor.preview.noChannel,
+                }),
+                previewNote,
+            ]
+                .filter(Boolean)
+                .join(" ")
     }
 
     // ---- Save and actions -----------------------------------------------------------
@@ -917,7 +953,12 @@ export function PanelEditor(props: PanelEditorProps) {
         locale,
         now,
         sent,
-        takenKinds: takenKinds(overview?.panels ?? [], panelId, draft.gameId),
+        takenKinds: takenPanelKinds({
+            panels: overview?.panels ?? [],
+            currentId: panelId,
+            enabledGames: props.enabledGames,
+        }),
+        resultsTaken: resultsGamesTaken(overview?.panels ?? [], panelId),
         sources,
         servers,
         joins,

@@ -1,13 +1,14 @@
 import {
+    liveServerPanelView,
+    liveServerState,
+    type LiveServerFacts,
+    type PanelEmojiMarkup,
+} from "@/domain/discord-publications/live-panel"
+import {
     leagueFixturesMessage,
     leagueStandingsMessage,
     type LeaguePanelLook,
 } from "@/domain/wardogs-league/panel-views"
-import {
-    liveServerPanelView,
-    liveServerState,
-    type LiveServerFacts,
-} from "@/domain/discord-publications/live-panel"
 import type {
     LeagueFixturesView,
     LeaguePanelOptions,
@@ -41,8 +42,10 @@ import { getPanelMessages } from "@/lib/clan-language/panels"
 /**
  * The editor preview (P2-27, P2-43..45, P2-B09): the exact view the bot
  * posts, built with the bot's own builders from the server data the test
- * read returned and the editor's unsaved settings. Pure; the editor owns the
- * requests and the rendered images.
+ * read returned and the editor's unsaved settings. Like the bot, it is text
+ * only where the bot may not attach files, and it shows the panel signs the
+ * bot installed as application emoji. Pure; the editor owns the requests
+ * and the rendered images.
  */
 
 export type PreviewServer = {
@@ -78,6 +81,14 @@ export type EditorPreviewInput = {
     images: { score: string | null; banner: string | null }
     /** The dashboard's origin, for Logi's built-in map art. */
     assetOrigin: string
+    /**
+     * The bot may attach files in the channel. Without Attach Files the bot
+     * posts text only: no score image, generated banner or Logi map art
+     * (P2-B02, P2-B09). Unknown before the channel check counts as allowed.
+     */
+    canAttach: boolean
+    /** Installed panel signs (`<:name:id>`), as the bot uses them; empty draws ★/✚. */
+    emoji: PanelEmojiMarkup
 }
 
 const MASKED_PASSWORD = "••••••"
@@ -128,7 +139,8 @@ export function previewScoreModel(
     const { draft } = input
     if (
         draft.kind !== "server" ||
-        draftStyle(draft, input.defaultStyle) !== "a"
+        draftStyle(draft, input.defaultStyle) !== "a" ||
+        !input.canAttach
     )
         return null
     const facts = input.facts[draft.connectionId]
@@ -177,7 +189,8 @@ export function previewBannerModel(
     if (
         (draft.kind !== "server" && draft.kind !== "servers") ||
         draftStyle(draft, input.defaultStyle) !== "b" ||
-        draft.bannerUrl
+        draft.bannerUrl ||
+        !input.canAttach
     )
         return null
     const copy = getPanelMessages(input.language).live
@@ -278,11 +291,15 @@ export function liveServerPreview(
             joinUrl: server?.joinUrl ?? null,
         },
         newMap: false,
-        emoji: {},
+        emoji: input.emoji,
         images: {
-            score: input.images.score
-                ? { url: input.images.score, description: alt.score([mapName]) }
-                : null,
+            score:
+                input.images.score && input.canAttach
+                    ? {
+                          url: input.images.score,
+                          description: alt.score([mapName]),
+                      }
+                    : null,
             banner:
                 style === "b"
                     ? draft.bannerUrl
@@ -290,15 +307,16 @@ export function liveServerPreview(
                               url: draft.bannerUrl,
                               description: alt.banner(mapName),
                           }
-                        : input.images.banner
+                        : input.images.banner && input.canAttach
                           ? {
                                 url: input.images.banner,
                                 description: alt.banner(mapName),
                             }
                           : null
                     : null,
+            // Logi's map art is attached; without Attach Files there is none.
             thumbnail:
-                draft.artwork && style !== "c"
+                draft.artwork && style !== "c" && input.canAttach
                     ? mapThumbnail(
                           input.assetOrigin,
                           facts.game,
@@ -339,7 +357,7 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
                         : server?.address
                 ),
                 thumbnail:
-                    draft.layout.showMap && draft.artwork
+                    draft.layout.showMap && draft.artwork && input.canAttach
                         ? mapThumbnail(
                               input.assetOrigin,
                               facts.game,
@@ -399,8 +417,8 @@ export function combinedPreview(input: EditorPreviewInput): MessageView | null {
  * The WD League messages of the editor preview (P2-54, P2-55), drawn with
  * the bot's own builders (`panel-views.ts`) from the League data and the
  * draft's switches, as the bot posts them: the table, then the nearest
- * fixtures with the recent results. The bot's installed faction emoji are
- * not known here, so the neutral marker stands in for them.
+ * fixtures with the recent results. The faction signs are the bot's
+ * installed emoji when the overview knows them, else the neutral marker.
  */
 export function leaguePreviews(input: {
     standings: LeagueStandingsView | null
@@ -411,10 +429,12 @@ export function leaguePreviews(input: {
     style: MessageStyle | null
     accentColor: string | null
     paused: boolean
-    /** Map pictures on the fixtures (the panel's map art switch). */
+    /** Map pictures on the fixtures (the panel's map art switch and Attach Files). */
     artwork: boolean
     assetOrigin: string
     now: number
+    /** Installed faction signs (`<:name:id>`); empty draws the neutral marker. */
+    emoji?: PanelEmojiMarkup
 }): MessageView[] {
     const copy = getLeagueMessages(input.language)
     const look: LeaguePanelLook = {
@@ -427,7 +447,7 @@ export function leaguePreviews(input: {
             locale: getIntlLocaleForClanLanguage(input.language),
             style: input.style,
         },
-        emoji: {},
+        emoji: input.emoji ?? {},
         paused: input.paused ? { since: null } : null,
         now: input.now,
     }

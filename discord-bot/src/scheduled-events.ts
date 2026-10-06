@@ -9,7 +9,7 @@ import {
     GuildScheduledEventStatus,
 } from "discord.js"
 
-import { resolveScheduledEventEndTime } from "../../src/application/discord-sync/scheduled-event-content"
+import { resolveScheduledEventEndTime } from "../../src/domain/events/scheduled-event-content"
 import { deriveScheduledEventLifecycle } from "../../src/domain/discord-sync/rules"
 
 import { reportClanDiscordError } from "./error-reporting"

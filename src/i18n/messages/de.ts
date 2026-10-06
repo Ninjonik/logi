@@ -4100,8 +4100,14 @@ export const deMessages = {
             panels: {
                 intro: "Alle Panels verwalten Sie auf der Seite {link}. Hier ist nur die Übersicht.",
                 add: "Panel hinzufügen",
-                liveDetail:
-                    "Live-Server · wird alle {seconds} s aktualisiert · Buttons Beitreten, Spieler anzeigen und Spieler melden",
+                liveDetail: "Live-Server · wird alle {seconds} s aktualisiert",
+                liveButtons: "Buttons {buttons}",
+                buttonNames: {
+                    join: "Beitreten",
+                    players: "Spieler anzeigen",
+                    report: "Spieler melden",
+                },
+                and: "und",
                 privateDetail:
                     "Live-Server in einem privaten Kanal · zeigt auch das Serverpasswort",
                 combinedTitle: "Unsere Server",
@@ -4111,7 +4117,7 @@ export const deMessages = {
                     "Seed, Aktualisieren und Pausieren · nur Logi-Admins",
                 resultsTitle: "Ergebnisse {game}",
                 resultsDetail:
-                    "Nach der Bestätigung des Ergebnisses in Logi · nur seit dem Einschalten des Panels bestätigte",
+                    "Nach der Bestätigung des Ergebnisses in Logi · sendet beim Erstellen die letzten 5 bestätigten",
                 leagueTitle: "WD League",
                 leagueDetail:
                     "Zwei Nachrichten untereinander: Tabelle und nächste Matches der ganzen Liga · alle 60 s aktualisiert",
@@ -4119,8 +4125,15 @@ export const deMessages = {
                 calendarDetail:
                     "Kommende Events des Clans, Kategorien {categories}",
                 calendarAll: "alle",
+                competitionTitle: "Wettbewerbstabelle",
+                competitionDetail:
+                    "Gruppentabelle des Wettbewerbs {name} · nach jedem bestätigten Ergebnis",
+                competitionDetailAny:
+                    "Gruppentabelle des Wettbewerbs · nach jedem bestätigten Ergebnis",
+                pausedBy: "pausiert von {name}",
                 chips: {
                     error: "Fehler",
+                    waiting: "Wartet auf den Bot",
                     unsent: "Nicht gesendet",
                     paused: "Pausiert",
                 },
@@ -6500,7 +6513,7 @@ export const deMessages = {
         botNeverSeen:
             "Der Bot hat sich noch nicht gemeldet. Panels werden erst aktualisiert und gesendet, wenn der Bot läuft.",
         botOutdated:
-            "Der Bot läuft mit der älteren Version {version}. Discord-Panels brauchen eine neuere Version. Startet den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
+            "Der Bot läuft mit der älteren Version {version}. Discord-Panels brauchen Version {required} oder neuer. Starten Sie den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
         permissions: {
             view_channel: "Kanal ansehen",
             send_messages: "Nachrichten senden",
@@ -6511,62 +6524,77 @@ export const deMessages = {
         errors: {
             bot_not_in_server: {
                 title: "Der Bot ist nicht auf dem Discord-Server.",
+                past: "Der Bot war nicht auf dem Discord-Server.",
                 fix: "Ladet den Logi-Bot erneut auf den Server ein und klickt dann Erneut versuchen.",
             },
             channel_missing: {
                 title: "Der Kanal {channel} existiert nicht mehr oder der Bot sieht ihn nicht.",
+                past: "Der Kanal {channel} existierte nicht oder der Bot sah ihn nicht.",
                 fix: "Wählt im Editor einen anderen Kanal und speichert.",
             },
             channel_type: {
                 title: "In {channel} können keine Nachrichten gesendet werden.",
+                past: "In {channel} konnten keine Nachrichten gesendet werden.",
                 fix: "Wählt im Editor einen Text- oder Ankündigungskanal.",
             },
             missing_permissions: {
                 title: "Dem Bot fehlt die Berechtigung {permissions} in {channel}.",
+                past: "Dem Bot fehlte die Berechtigung {permissions} in {channel}.",
                 fix: "Öffnet in Discord Kanal bearbeiten → Berechtigungen → Logi und aktiviert {permissions}. Klickt dann Erneut versuchen.",
             },
             delivery_uncertain: {
                 title: "Discord hat nicht bestätigt, ob die Nachricht angekommen ist.",
+                past: "Discord hat nicht bestätigt, ob die Nachricht angekommen ist.",
                 fix: "Der Bot findet die Nachricht bei der nächsten Aktualisierung oder sendet sie erneut. Nichts zu tun.",
             },
             discord_unavailable: {
                 title: "Discord antwortet gerade nicht.",
+                past: "Discord hat nicht rechtzeitig geantwortet.",
                 fix: "Der Bot versucht es selbst erneut. Dauert es lange, klickt Erneut versuchen.",
             },
             source_missing: {
                 title: "Der Spielserver des Panels ist nicht mehr in Logi.",
+                past: "Der Spielserver des Panels war nicht in Logi.",
                 fix: "Wählt im Editor einen anderen Server oder löscht das Panel.",
             },
             source_not_collecting: {
                 title: "Logi sammelt keine Daten vom Spielserver.",
+                past: "Logi hat keine Daten vom Spielserver gesammelt.",
                 fix: "Aktiviert die Sammlung unter Spielserver und klickt dann Erneut versuchen.",
             },
             provider_unreachable: {
                 title: "Der Spielserver antwortet nicht.",
+                past: "Der Spielserver hat nicht geantwortet.",
                 fix: "Das Panel zeigt die letzten Daten. Prüft Adresse und Schlüssel unter Spielserver.",
             },
             provider_rate_limited: {
                 title: "Der Datenanbieter lehnt gerade weitere Anfragen ab.",
+                past: "Der Datenanbieter hat weitere Anfragen abgelehnt.",
                 fix: "Das Panel zeigt die letzten Daten und versucht es erneut. Dauert es über eine Stunde, erhöht das Limit des Schlüssels oder ersetzt ihn unter Spielserver.",
             },
             render_failed: {
                 title: "Das Panel konnte nicht erstellt werden.",
+                past: "Das Panel konnte nicht erstellt werden.",
                 fix: "Kürzt Titel oder Beschreibung des Panels. Bleibt der Fehler, meldet ihn dem Logi-Support.",
             },
             unsupported_kind: {
                 title: "Der Bot kann diese Panelart noch nicht.",
+                past: "Der Bot konnte diese Panelart nicht.",
                 fix: "Aktualisiert den Bot und startet ihn neu.",
             },
             competition_missing: {
                 title: "Der Wettbewerb des Panels existiert nicht mehr.",
+                past: "Der Wettbewerb des Panels existierte nicht.",
                 fix: "Wählt im Editor einen anderen Wettbewerb oder löscht das Panel.",
             },
             league_disabled: {
                 title: "Wardogs League ist in den Einstellungen ausgeschaltet, daher hat der Bot die Nachrichten des Panels gelöscht.",
+                past: "Wardogs League war in den Einstellungen ausgeschaltet.",
                 fix: "Schaltet Wardogs League unter Einstellungen → Wardogs League ein; der Bot sendet dann beide Nachrichten neu.",
             },
             unknown: {
                 title: "Die Nachricht konnte nicht gesendet werden.",
+                past: "Die Nachricht konnte nicht gesendet werden.",
                 fix: "Klickt Erneut versuchen. Bleibt der Fehler, meldet ihn dem Logi-Support.",
             },
         },
@@ -6596,7 +6624,7 @@ export const deMessages = {
                 "Panels werden gerade nicht aktualisiert und neue nicht gesendet. Prüfen Sie, ob der Bot läuft; starten Sie ihn nach einem Update neu.",
             outdatedTitle: "Der Bot läuft mit der älteren Version {version}.",
             outdatedBody:
-                "Discord-Panels brauchen eine neuere Bot-Version. Starten Sie den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
+                "Discord-Panels brauchen Version {required} oder neuer. Starten Sie den Bot nach dem Update neu; solange die alte Version läuft, werden Panels nicht aktualisiert.",
             unknownTitle: "Der Bot hat sich noch nicht gemeldet.",
             unknownBody:
                 "Panels werden nicht aktualisiert und neue nicht gesendet, bis der Bot läuft. Starten Sie den Bot; sein Zustand erscheint hier innerhalb von 30 s.",
@@ -6749,6 +6777,7 @@ export const deMessages = {
                     "Schaltflächen Seed, Aktualisieren und Pausieren",
                 calendarSetting:
                     "Kanal aus der früheren Einstellung; Bearbeiten macht daraus ein Panel",
+                leagueBoth: "Schaltflächen gelten für beide Liga-Nachrichten",
                 open: "Nachricht öffnen",
             },
             buttons: {
@@ -6914,16 +6943,22 @@ export const deMessages = {
                 connection: "Beitreten",
                 address: {
                     label: "IP:Port anzeigen",
-                    help: "{address} aus Spielserver.",
-                    helpCombined: "Bei HLL-Servern.",
-                    missing: "Die Serveradresse ist noch nicht gespeichert.",
+                    help: "Das Panel zeigt {address}. Die Adresse geben Sie hier ein; sie gilt für alle Panels dieses Servers.",
+                    helpCombined:
+                        "Bei HLL-Servern. Die Adressen geben Sie hier ein; jede gilt für alle Panels ihres Servers.",
+                    missing:
+                        "Noch ist keine Serveradresse gespeichert. Geben Sie sie hier ein.",
                     field: "IP:Port · {server}",
                     placeholder: "203.0.113.24:7777",
+                    clear: "Entfernen",
+                    clearFor: "IP:Port entfernen · {server}",
                 },
                 joinCode: {
                     label: "Join-Code anzeigen",
                     help: "Bei Wardogs-Servern.",
                     field: "Join-Code · {server}",
+                    clear: "Entfernen",
+                    clearFor: "Join-Code entfernen · {server}",
                 },
                 joinButton: {
                     label: "Schaltfläche Beitreten (über Logi)",
@@ -7086,6 +7121,8 @@ export const deMessages = {
                     "Vorschau aus den Events in Logi; die Links zu den Ankündigungen ergänzt der Bot.",
                 competitionNote:
                     "Die Gruppentabellen erstellt der Bot nach dem Speichern.",
+                noAttach:
+                    "Dem Bot fehlt die Berechtigung {permission} in {channel}, daher sendet er das Panel nur als Text ohne Bilder, wie diese Vorschau.",
             },
             joinPage: {
                 title: "Nach Klick auf Beitreten · Logi-Seite",
@@ -7169,6 +7206,32 @@ export const deMessages = {
                 hint: "Nach In den Kanal senden werden die Schritte abgehakt, meist innerhalb von 15 s. Die Seite aktualisiert sich selbst.",
                 lastError: "Letzter Fehler:",
                 recovered: "Der nächste Versuch {after} später ging durch.",
+                recoveredAfter: {
+                    second: {
+                        one: "eine Sekunde",
+                        few: "{count} Sekunden",
+                        many: "{count} Sekunden",
+                        other: "{count} Sekunden",
+                    },
+                    minute: {
+                        one: "eine Minute",
+                        few: "{count} Minuten",
+                        many: "{count} Minuten",
+                        other: "{count} Minuten",
+                    },
+                    hour: {
+                        one: "eine Stunde",
+                        few: "{count} Stunden",
+                        many: "{count} Stunden",
+                        other: "{count} Stunden",
+                    },
+                    day: {
+                        one: "einen Tag",
+                        few: "{count} Tage",
+                        many: "{count} Tage",
+                        other: "{count} Tage",
+                    },
+                },
                 stuck: {
                     title: "Wenn die Zustellung hängt",
                     lead: "Senden nicht bestätigt.",

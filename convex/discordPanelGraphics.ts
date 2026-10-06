@@ -2,6 +2,7 @@ import {
     applyPanelGraphicsPatch,
     clanBadgeTag,
     DEFAULT_PANEL_GRAPHICS,
+    panelEmojiMarkup,
     panelEmojiReportSchema,
     panelEmojiStatus,
     panelGraphicsForBot,
@@ -107,6 +108,11 @@ async function emojiReport(ctx: Db) {
         .query("discordApplicationEmoji")
         .withIndex("key", (q) => q.eq("key", "global"))
         .unique()
+}
+
+/** Markup of the installed panel signs for dashboard previews (P2-B09); public IDs only. */
+export async function installedPanelEmoji(ctx: Db) {
+    return panelEmojiMarkup(await emojiReport(ctx))
 }
 async function connections(ctx: Db, guildId: string) {
     const rows = await ctx.db

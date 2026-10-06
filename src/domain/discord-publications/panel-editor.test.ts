@@ -6,13 +6,16 @@ import {
     draftFromSettings,
     draftProblems,
     draftToSettings,
+    freeResultsGame,
     moveServer,
     newPanelDraft,
     panelTypeOptions,
     passwordAllowed,
+    resultsGamesTaken,
     serverJoinDraft,
     serverJoinPatch,
     serverJoinProblems,
+    takenPanelKinds,
     toggleServer,
 } from "./panel-editor"
 import { DEFAULT_PANEL_CONTENT, panelSaveSchema } from "./settings"
@@ -167,6 +170,61 @@ test("a sent panel keeps its type; single-instance types already taken are off (
     assert.equal(
         fresh.find((option) => option.kind === "servers")?.selected,
         true
+    )
+})
+
+test("results are one panel per game: an HLL one never blocks a Wardogs one (P2-04, P2-35)", () => {
+    const panels = [
+        { id: "r-hll", kind: "results", gameId: "hell_let_loose" },
+        { id: "lg", kind: "league", gameId: "wardogs" },
+        { id: "cal", kind: "calendar", gameId: "any" },
+    ]
+    const both = ["hell_let_loose", "wardogs"]
+    assert.deepEqual(resultsGamesTaken(panels, null), ["hell_let_loose"])
+    // Výsledky stays free while Wardogs has none; League and Calendar are taken.
+    assert.deepEqual(
+        takenPanelKinds({ panels, currentId: null, enabledGames: both }),
+        ["league", "calendar"]
+    )
+    // Picking Výsledky starts on the free game.
+    assert.equal(
+        freeResultsGame({
+            current: "hell_let_loose",
+            taken: resultsGamesTaken(panels, null),
+            enabledGames: both,
+        }),
+        "wardogs"
+    )
+    // A clan with HLL only has nothing left; with both games taken, neither.
+    assert.deepEqual(
+        takenPanelKinds({
+            panels,
+            currentId: null,
+            enabledGames: ["hell_let_loose"],
+        }),
+        ["league", "calendar", "results"]
+    )
+    const all = [...panels, { id: "r-wd", kind: "results", gameId: "wardogs" }]
+    assert.ok(
+        takenPanelKinds({
+            panels: all,
+            currentId: null,
+            enabledGames: both,
+        }).includes("results")
+    )
+    // The edited panel never takes its own kind.
+    assert.deepEqual(
+        takenPanelKinds({ panels: all, currentId: "r-wd", enabledGames: both }),
+        ["league", "calendar"]
+    )
+    assert.deepEqual(resultsGamesTaken(all, "r-wd"), ["hell_let_loose"])
+    assert.equal(
+        freeResultsGame({
+            current: "wardogs",
+            taken: ["hell_let_loose"],
+            enabledGames: both,
+        }),
+        "wardogs"
     )
 })
 

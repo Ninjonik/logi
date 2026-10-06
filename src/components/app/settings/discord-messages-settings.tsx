@@ -60,6 +60,10 @@ import {
     ROSTER_MESSAGE_VARIANTS,
     type RosterMessageVariant,
 } from "@/domain/discord-messages/roster-message"
+import type {
+    SettingsPreviewClan,
+    SettingsPreviewKind,
+} from "@/domain/discord-messages/settings-previews"
 import {
     channelOptions,
     SettingsChannelPicker,
@@ -68,26 +72,17 @@ import {
     clearableId,
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
-import type { SettingsPreviewKind } from "@/domain/discord-messages/settings-previews"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
-import { gameDataSettingsSchema } from "@/domain/game-data/contracts"
-import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { DiscordConfig } from "@/types/domain"
+import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 
-import {
-    panelOverviewItems,
-    panelPaused,
-    panelToggleAction,
-    parseCalendarPanel,
-    parseSavedPanels,
-    type CalendarPanel,
-    type PanelOverviewItem,
-    type PanelSource,
-    type SavedPanel,
-} from "./messages/panel-overview"
+import type { PanelOverviewResponse } from "@/components/app/discord-panels/panels-api"
+import { usePanelOverview } from "@/components/app/discord-panels/use-panel-overview"
+import type { PanelListGroup } from "@/domain/discord-publications/panel-list"
+
 import {
     MessageGroup,
     MessageRow,
@@ -96,6 +91,11 @@ import {
     RowChip,
     type MessageTarget,
 } from "./messages/message-row"
+import {
+    messagesPanelRows,
+    panelToggleAction,
+    type MessagesPanelRow,
+} from "./messages/panel-overview"
 import {
     PreviewPanel,
     SettingsMessagePreview,
@@ -129,102 +129,49 @@ function initialDraft(config: DiscordConfig | null): Draft {
     }
 }
 
+/**
+ * The panels of "Panely v Discordu" (P1) and the seed switch behind
+ * "Ovládání serveru", for the "Panely" group (N1-28..36, N1-B08).
+ */
 export type Overview = {
     status: "loading" | "ready" | "failed"
-    panels: SavedPanel[]
-    /** The calendar panel of "Panely v Discordu"; null without one. */
-    calendarPanel?: CalendarPanel | null
-    sources: Map<string, PanelSource>
-    reportCategories: Array<{ id: string; label: string }>
-    seed: {
-        configured: boolean
-        enabled: boolean
-        controlChannelId: string | null
-    } | null
+    /** The P1 overview (`GET /api/servers/{serverId}/discord-panels`). */
+    panels: PanelOverviewResponse | null
+    seed: { configured: boolean; enabled: boolean } | null
 }
 
-/** The clan's panels, their names and the seed control, for the overview. */
-function usePanelOverview(serverId: string, version: number): Overview {
-    const [state, setState] = useState<Overview & { version: number }>({
-        version: -1,
-        status: "loading",
-        panels: [],
-        sources: new Map(),
-        reportCategories: [],
-        seed: null,
-    })
+/** Whether the seed plan is set up and switched on (`/discord-seed`). */
+function useSeedSwitch(serverId: string, version: number) {
+    const [seed, setSeed] = useState<Overview["seed"]>(null)
     useEffect(() => {
         let active = true
-        const json = (path: string) =>
-            fetch(path)
-                .then((response) => (response.ok ? response.json() : null))
-                .catch(() => null)
-        void Promise.all([
-            json(`/api/servers/${serverId}/discord-public-panels`),
-            json(`/api/servers/${serverId}/game-data`),
-            json(`/api/servers/${serverId}/discord-seed`),
-        ]).then(([list, data, seed]) => {
-            if (!active) return
-            const parsed = gameDataSettingsSchema.safeParse(data)
-            const sources = new Map<string, PanelSource>(
-                parsed.success
-                    ? parsed.data.connections.map((connection) => [
-                          connection.snapshot.id,
-                          {
-                              name:
-                                  connection.snapshot.displayName ??
-                                  connection.sourceRef,
-                              gameId: connection.snapshot.gameId,
-                          },
-                      ])
-                    : []
-            )
-            const selected = (
-                seed as {
-                    selected?: {
-                        configured?: boolean
-                        settings?: {
-                            enabled?: boolean
-                            controlChannelId?: string | null
-                        }
+        void fetch(`/api/servers/${encodeURIComponent(serverId)}/discord-seed`)
+            .then((response) => (response.ok ? response.json() : null))
+            .catch(() => null)
+            .then((body: unknown) => {
+                if (!active) return
+                const selected = (
+                    body as {
+                        selected?: {
+                            configured?: boolean
+                            settings?: { enabled?: boolean }
+                        } | null
                     } | null
-                } | null
-            )?.selected
-            setState({
-                version,
-                status: list ? "ready" : "failed",
-                panels: parseSavedPanels(list),
-                calendarPanel: parseCalendarPanel(list),
-                sources,
-                reportCategories: Array.isArray(
-                    (list as { reportCategories?: unknown })?.reportCategories
-                )
-                    ? (
-                          list as {
-                              reportCategories: Array<{
-                                  id: string
-                                  label: string
-                              }>
+                )?.selected
+                setSeed(
+                    selected
+                        ? {
+                              configured: Boolean(selected.configured),
+                              enabled: Boolean(selected.settings?.enabled),
                           }
-                      ).reportCategories
-                    : [],
-                seed: selected
-                    ? {
-                          configured: Boolean(selected.configured),
-                          enabled: Boolean(selected.settings?.enabled),
-                          controlChannelId:
-                              selected.settings?.controlChannelId ?? null,
-                      }
-                    : null,
+                        : null
+                )
             })
-        })
         return () => {
             active = false
         }
     }, [serverId, version])
-    return state.version === version
-        ? state
-        : { ...state, status: "loading" as const }
+    return seed
 }
 
 type MessagesSettingsProps = {
@@ -246,6 +193,10 @@ type MessagesSettingsProps = {
         /** "Seed serverů" (board P3), where the server control message is set. */
         seed: string
     }
+    /** Event categories by ID, so the calendar row names them (N1-36). */
+    categories?: ReadonlyArray<{ id: string; label: string }>
+    /** Competition names for competition panels. */
+    competitions?: ReadonlyArray<{ id: string; name: string }>
     dictionary: Dictionary
 }
 
@@ -257,17 +208,27 @@ export function DiscordMessagesSettings(props: MessagesSettingsProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const metadata = useDiscordMetadataState(props.serverId)
-    const [overviewVersion, setOverviewVersion] = useState(0)
-    const overview = usePanelOverview(props.serverId, overviewVersion)
+    // The same overview as "Panely v Discordu", read again every few seconds
+    // so a chip turns from "Čeká na bota" to its result (N1-B08, P1-B09).
+    const panels = usePanelOverview(props.serverId)
+    const [seedVersion, setSeedVersion] = useState(0)
+    const seed = useSeedSwitch(props.serverId, seedVersion)
     return (
         <DiscordMessagesSettingsView
             {...props}
             channels={metadata.metadata?.channels ?? []}
             channelsStatus={metadata.status}
-            overview={overview}
+            overview={{
+                status: panels.status,
+                panels: panels.overview,
+                seed,
+            }}
             refreshing={isPending}
             onSaved={() => startTransition(() => router.refresh())}
-            onPanelsChanged={() => setOverviewVersion((value) => value + 1)}
+            onPanelsChanged={() => {
+                void panels.refresh()
+                setSeedVersion((value) => value + 1)
+            }}
         />
     )
 }
@@ -285,6 +246,8 @@ export function DiscordMessagesSettingsView({
     enabledGames,
     siteUrl,
     hrefs,
+    categories = [],
+    competitions = [],
     dictionary,
     channels,
     channelsStatus,
@@ -331,22 +294,30 @@ export function DiscordMessagesSettingsView({
     const errorsChanged =
         (draft.errorsChannelId || undefined) !==
         (saved.errorsChannelId || undefined)
-    // A switch is on while its panel runs (sent and not paused).
-    const savedEnabled = new Map<string, boolean>([
-        ...overview.panels.map((panel): [string, boolean] => [
-            panel._id,
-            !panel.draft && !panelPaused(panel),
-        ]),
-        ...(overview.calendarPanel
-            ? [
-                  [
-                      overview.calendarPanel._id,
-                      !overview.calendarPanel.draft &&
-                          !overview.calendarPanel.paused,
-                  ] as [string, boolean],
-              ]
-            : []),
-    ])
+    // Every panel of "Panely v Discordu" with its state, chip and switch.
+    const panelRows = overview.panels
+        ? messagesPanelRows({
+              overview: overview.panels,
+              dictionary,
+              channels,
+              categories,
+              competitions,
+              seed: overview.seed,
+              calendarSetting: config?.calendarChannelId
+                  ? {
+                        channelId: config.calendarChannelId,
+                        posted: Boolean(config.calendarMessageId),
+                    }
+                  : null,
+              hrefs,
+          })
+        : []
+    // A switch is on while its panel runs (not paused).
+    const savedEnabled = new Map<string, boolean>(
+        panelRows.flatMap((row): Array<[string, boolean]> =>
+            row.panelId && row.toggleable ? [[row.panelId, row.enabled]] : []
+        )
+    )
     const changedPanels = Object.entries(draft.panels).filter(
         ([id, enabled]) => savedEnabled.get(id) !== enabled
     )
@@ -383,29 +354,39 @@ export function DiscordMessagesSettingsView({
         }
         setSaving(true)
         try {
-            const result = await saveDiscordSettings(serverId, {
-                ...(styleChanged
-                    ? {
-                          messageStyle: {
-                              accentColor: accentColor ?? null,
-                              iconDensity: draft.iconDensity,
-                          },
-                      }
-                    : {}),
-                ...(errorsChanged
-                    ? { errorsChannelId: clearableId(draft.errorsChannelId) }
-                    : {}),
-                ...(changedSettings.length
-                    ? {
-                          messageSettings: Object.fromEntries(
-                              changedSettings.map((key) => [
-                                  key,
-                                  draft.settings[key],
-                              ])
-                          ),
-                      }
-                    : {}),
-            })
+            const settingsChanged =
+                styleChanged || errorsChanged || changedSettings.length > 0
+            // Only panel switches changed: the settings route is not needed,
+            // so a Discord outage there never blocks a pause or resume.
+            const result = !settingsChanged
+                ? ({ ok: true } as const)
+                : await saveDiscordSettings(serverId, {
+                      ...(styleChanged
+                          ? {
+                                messageStyle: {
+                                    accentColor: accentColor ?? null,
+                                    iconDensity: draft.iconDensity,
+                                },
+                            }
+                          : {}),
+                      ...(errorsChanged
+                          ? {
+                                errorsChannelId: clearableId(
+                                    draft.errorsChannelId
+                                ),
+                            }
+                          : {}),
+                      ...(changedSettings.length
+                          ? {
+                                messageSettings: Object.fromEntries(
+                                    changedSettings.map((key) => [
+                                        key,
+                                        draft.settings[key],
+                                    ])
+                                ),
+                            }
+                          : {}),
+                  })
             if (!result.ok) {
                 toast.error(
                     result.error ??
@@ -524,12 +505,44 @@ export function DiscordMessagesSettingsView({
 
     // --- Rows ---------------------------------------------------------------
 
+    // The clan's own recruitment and ticket panels in their previews (N1-B07).
+    const membership = config?.membershipSettings
+    const ticketSettings = config?.ticketSettings
+    const previewClan: SettingsPreviewClan = {
+        membership: membership?.categories?.length
+            ? {
+                  title: membership.panelTitle,
+                  text: membership.panelDescription,
+                  imageUrl: membership.panelImageUrl ?? null,
+                  accentColor:
+                      normalizeAccentColor(membership.panelAccentColor) ?? null,
+                  categories: membership.categories,
+                  form: membership.applicationForm,
+                  webFormUrl:
+                      membership.webFormEnabled && config?.guildId
+                          ? `${siteUrl.replace(/\/+$/, "")}/${language}/apply/${config.guildId}`
+                          : null,
+              }
+            : null,
+        tickets: ticketSettings?.categories?.length
+            ? {
+                  title: ticketSettings.panelTitle,
+                  description: ticketSettings.panelDescription,
+                  imageUrl: ticketSettings.panelImageUrl,
+                  accentColor:
+                      normalizeAccentColor(ticketSettings.panelAccentColor) ??
+                      null,
+                  categories: ticketSettings.categories,
+              }
+            : null,
+    }
     const previewProps = {
         language,
         style,
         rosterVariant: draft.settings.rosterMessageVariant,
         timeZone,
         siteUrl,
+        clan: previewClan,
         dictionary,
     }
     const previewOf = (
@@ -607,25 +620,15 @@ export function DiscordMessagesSettingsView({
     const variantOther = ROSTER_MESSAGE_VARIANTS.find(
         (variant) => variant !== draft.settings.rosterMessageVariant
     )!
-    const reportCategoryId = overview.panels
-        .map(
-            (panel) => (panel as { reportCategoryId?: string }).reportCategoryId
-        )
+    // "Nahlásit hráče" goes to the ticket category the live panels use.
+    const reportCategoryId = (overview.panels?.panels ?? [])
+        .map((panel) => panel.settings.reportCategoryId)
         .find((id): id is string => Boolean(id))
-    const reportCategory = overview.reportCategories.find(
-        (category) => category.id === reportCategoryId
-    )
-    const panelItems = panelOverviewItems({
-        panels: overview.panels,
-        sources: overview.sources,
-        seed: overview.seed,
-        calendar: {
-            channelId: config?.calendarChannelId,
-            messageId: config?.calendarMessageId,
-        },
-        calendarPanel: overview.calendarPanel,
-        wardogs: enabledGames.includes("wardogs"),
-    })
+    const reportCategory = config?.ticketSettings?.enabled
+        ? (config.ticketSettings.categories ?? []).find(
+              (category) => category.id === reportCategoryId
+          )
+        : undefined
 
     return (
         <div className="space-y-6">
@@ -1000,7 +1003,7 @@ export function DiscordMessagesSettingsView({
                                 {text.panels.unavailable}
                             </li>
                         ) : null}
-                        {panelItems.map((item) => (
+                        {panelRows.map((item) => (
                             <PanelRow
                                 key={item.key}
                                 item={item}
@@ -1020,10 +1023,6 @@ export function DiscordMessagesSettingsView({
                                     }))
                                 }
                                 channelName={channelName}
-                                calendarCategories={
-                                    config?.calendarCategories ?? []
-                                }
-                                hrefs={hrefs}
                                 dictionary={dictionary}
                             />
                         ))}
@@ -1117,7 +1116,8 @@ export function DiscordMessagesSettingsView({
                                         text: reportCategory
                                             ? text.category.replace(
                                                   "{name}",
-                                                  reportCategory.label
+                                                  reportCategory.label ||
+                                                      reportCategory.id
                                               )
                                             : text.notSet,
                                         kind: "plain",
@@ -1196,122 +1196,64 @@ export function DiscordMessagesSettingsView({
     )
 }
 
-const PANEL_ICONS: Record<PanelOverviewItem["kind"], LucideIcon> = {
+const PANEL_ICONS: Record<PanelListGroup, LucideIcon> = {
     live: Radio,
     combined: Layers,
     control: Shield,
     results: Trophy,
     league: Medal,
     calendar: CalendarDays,
+    competition: ListChecks,
 }
 
-/** One panel of the overview (N1-29..36) with its status chip and switch. */
+const CHIP_TONES = {
+    error: "error",
+    waiting: "new",
+    unsent: "warning",
+    paused: "neutral",
+} as const
+
+/** One panel of the overview (N1-29..36) with its live state chip and switch. */
 function PanelRow({
     item,
     enabled,
     onToggle,
     channelName,
-    calendarCategories,
-    hrefs,
     dictionary,
 }: {
-    item: PanelOverviewItem
-    enabled: boolean | undefined
+    item: MessagesPanelRow
+    enabled: boolean
     onToggle(enabled: boolean): void
     channelName(id: string | undefined): string | undefined
-    calendarCategories: readonly string[]
-    hrefs: { panels: string; seed: string }
     dictionary: Dictionary
 }) {
     const text = dictionary.settingsHub.messagesPage
     const t = text.panels
     const hintId = useId()
-    const game = item.game
-    const name =
-        item.kind === "control"
-            ? t.controlTitle
-            : item.kind === "calendar"
-              ? t.calendarTitle
-              : item.kind === "league"
-                ? t.leagueTitle
-                : item.kind === "combined"
-                  ? t.combinedTitle
-                  : item.kind === "results"
-                    ? t.resultsTitle.replace(
-                          "{game}",
-                          game ? GAME_SHORT[game] : (item.name ?? "")
-                      )
-                    : (item.name ?? GAME_LABELS[game ?? "hell_let_loose"])
-    const detail =
-        item.status === "error"
-            ? (item.error ?? t.errorFallback)
-            : item.kind === "control"
-              ? t.controlDetail
-              : item.kind === "calendar"
-                ? t.calendarDetail.replace(
-                      "{categories}",
-                      calendarCategories.length
-                          ? calendarCategories.join(", ")
-                          : t.calendarAll
-                  )
-                : item.kind === "league"
-                  ? t.leagueDetail
-                  : item.kind === "results"
-                    ? t.resultsDetail
-                    : item.kind === "combined"
-                      ? t.combinedDetail.replace("{servers}", item.name ?? "")
-                      : item.showPassword
-                        ? t.privateDetail
-                        : t.liveDetail.replace(
-                              "{seconds}",
-                              String(item.refreshSeconds ?? 60)
-                          )
-    const switchLabel =
-        item.kind === "control"
-            ? t.controlSwitch
-            : item.kind === "calendar"
-              ? t.calendarSwitch
-              : item.kind === "league"
-                ? t.leagueSwitch
-                : t.switchLabel.replace("{name}", name)
-    const channel = channelName(item.channelId)
-    // The calendar's channel is set on "Panely v Discordu" too (N1-47, N1-48).
-    const editHref =
-        item.kind === "control"
-            ? hrefs.seed
-            : item.panelId
-              ? `${hrefs.panels}/${encodeURIComponent(item.panelId)}`
-              : item.kind === "calendar"
-                ? `${hrefs.panels}/new?type=calendar`
-                : hrefs.panels
+    const channels = item.channelIds.flatMap((id) => {
+        const name = channelName(id)
+        return name ? [name] : []
+    })
     return (
         <MessageRow
-            icon={PANEL_ICONS[item.kind]}
-            title={name}
+            icon={PANEL_ICONS[item.group]}
+            title={item.title}
             chips={
                 <>
-                    {game && item.kind !== "results" ? (
-                        <RowChip tone="game">{GAME_SHORT[game]}</RowChip>
+                    {item.game ? (
+                        <RowChip tone="game">{GAME_SHORT[item.game]}</RowChip>
                     ) : null}
-                    {item.status ? (
-                        <RowChip
-                            tone={
-                                item.status === "error"
-                                    ? "error"
-                                    : item.status === "unsent"
-                                      ? "warning"
-                                      : "neutral"
-                            }
-                        >
-                            {t.chips[item.status]}
+                    {item.chip ? (
+                        <RowChip tone={CHIP_TONES[item.chip]}>
+                            {t.chips[item.chip]}
                         </RowChip>
                     ) : null}
                 </>
             }
             detail={
                 <>
-                    {detail}
-                    {item.kind === "calendar" ? (
+                    {item.detail}
+                    {item.group === "calendar" ? (
                         <span id={hintId} className="sr-only">
                             {t.calendarHint}
                         </span>
@@ -1321,26 +1263,22 @@ function PanelRow({
             target={
                 <MessageTargetView
                     target={{
-                        lines: [
-                            channel
-                                ? { text: channel, kind: "channel" }
-                                : { text: text.notSet, kind: "plain" },
-                        ],
+                        lines: channels.length
+                            ? channels.map((name) => ({
+                                  text: name,
+                                  kind: "channel" as const,
+                              }))
+                            : [{ text: text.notSet, kind: "plain" }],
                     }}
                 />
             }
-            toggle={
-                enabled === undefined
-                    ? undefined
-                    : {
-                          checked: enabled,
-                          onChange: onToggle,
-                          label: switchLabel,
-                          disabled: !item.toggleable,
-                          describedBy:
-                              item.kind === "calendar" ? hintId : undefined,
-                      }
-            }
+            toggle={{
+                checked: enabled,
+                onChange: onToggle,
+                label: item.switchLabel,
+                disabled: !item.toggleable,
+                describedBy: item.group === "calendar" ? hintId : undefined,
+            }}
             action={
                 <Button
                     asChild
@@ -1348,7 +1286,7 @@ function PanelRow({
                     size="sm"
                     className="rounded-lg"
                 >
-                    <Link href={editHref}>
+                    <Link href={item.href}>
                         {text.edit}
                         <ChevronRight className="size-3.5" aria-hidden="true" />
                     </Link>

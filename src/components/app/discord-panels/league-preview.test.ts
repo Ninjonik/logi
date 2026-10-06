@@ -202,3 +202,13 @@ test("switched-off parts post no message, map art follows its switch and a pause
     })
     assert.doesNotMatch(text(waiting!), /ansi/)
 })
+
+test("the League preview shows the installed faction emoji when the overview knows them (P2-B09)", () => {
+    const [, plain] = leaguePreviews(base)
+    assert.doesNotMatch(text(plain!), /logi_valkyra/)
+    const [, signed] = leaguePreviews({
+        ...base,
+        emoji: { valkyra: "<:logi_valkyra_1a2b3c4d:200000000000000031>" },
+    })
+    assert.match(text(signed!), /<:logi_valkyra_1a2b3c4d:200000000000000031>/)
+})

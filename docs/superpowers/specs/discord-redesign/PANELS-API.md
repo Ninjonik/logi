@@ -125,6 +125,7 @@ type PanelOverviewResponse = {
               protocol
               seenAt
               requiredProtocol
+              requiredVersion // MINIMUM_BOT_VERSION, named in the outdated warning (P1-06)
           }
     botInServer: boolean | null // the bot visited this server in the last 3 min
     counts: Record<
@@ -144,6 +145,9 @@ type PanelOverviewResponse = {
         message: { channelId; messageId } | null
     }>
     people: Record<string, string> // Discord ID -> display name for savedBy / pausedBy
+    // Installed panel signs as `<:name:id>` by key, for the editor preview (P2-B09);
+    // empty until the bot reports the emoji with their IDs
+    emoji: Partial<Record<PanelEmojiKey, string>>
 }
 type PanelOverviewItem = {
     id
@@ -184,6 +188,16 @@ type PanelOverviewItem = {
     >
     message: { channelId; messageId } | null // "Otevřít zprávu"
     messages: number
+    // WD League only: each message ("standings", "fixtures") with its own state,
+    // last update and link from its managed publication (P1-20, P1-21);
+    // actions still target the panel. Empty for other kinds.
+    parts: Array<{
+        part: "standings" | "fixtures"
+        state
+        lastUpdateAt
+        uncertain
+        message: { channelId; messageId } | null
+    }>
     style: "a" | "b" | "c"
     // W3
     lastError: { code; at; permissions?; category? } | null // kept after a later success
@@ -197,12 +211,24 @@ State chip (P1-B01): removing → `waiting`; draft → `unsent` (or `waiting`
 while its message is being withdrawn); paused → `paused`; an unconfirmed create
 or an error newer than the last success → `error`; a pending request or no
 success yet → `waiting`; otherwise `published`. Poll the overview every few
-seconds while the page is open (P1-B09).
+seconds while the page is open (P1-B09). "Zprávy a panely" (N1) reads the same
+overview for its "Panely" group.
+
+A WD League message (`panelMessageState`): a paused or unsent panel holds both
+messages; its own failed delivery → `error`; not posted yet → `waiting` (or
+`error` while the panel fails); a message confirmed after the pending request
+and after the panel's error → `published`.
 
 Bot heartbeat: written every 30 s with the bot version (`LOGI_BOT_VERSION`,
-else the package version) and `PANEL_PROTOCOL`. Silence for 3 min is
-`offline`; a protocol below `REQUIRED_PANEL_PROTOCOL` is `outdated` (P1-05,
-P1-06).
+else the version in the repository's `package.json` the bot ships in) and
+`PANEL_PROTOCOL`. Silence for 3 min is `offline`; a protocol below
+`REQUIRED_PANEL_PROTOCOL` is `outdated` (P1-05, P1-06). The warning names the
+bot's version and `MINIMUM_BOT_VERSION` (1.1.0), the first release with the
+required protocol; raise both together with the package version.
+
+Application emoji: `discordPanelGraphics:reportEmoji` also takes `installed`
+(`key`, public emoji `id`, `name`) so previews can draw the signs from Discord's
+emoji CDN; older bots omit it.
 
 Error codes and the plain sentence with its fix step for each are in the
 dashboard messages under `discordPanelStatus.errors.<code>.{title, fix}`
@@ -357,7 +383,9 @@ and links "Zpět do Discordu". It is not indexed.
    (see `docs/integrations/website/game-server-credentials.md`); without it
    passwords cannot be saved.
 3. Optionally set `LOGI_BOT_VERSION` for the bot so the heartbeat shows the
-   release; it falls back to the package version.
+   release; it falls back to the version in `package.json`. "Panely v
+   Discordu" asks for `MINIMUM_BOT_VERSION` or newer when the bot speaks an
+   older panel protocol.
 4. Give the bot View Channel, Send Messages, Embed Links, Attach Files and Read
    Message History in panel channels, and Create Private Threads, Send Messages
    in Threads and Manage Threads in the report parent channel.

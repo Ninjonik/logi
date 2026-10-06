@@ -3974,8 +3974,14 @@ export const csMessages = {
             panels: {
                 intro: "Všechny panely spravujete na stránce {link}. Tady je jen přehled.",
                 add: "Přidat panel",
-                liveDetail:
-                    "Živý server · obnovuje se každých {seconds} s · tlačítka Připojit se, Zobrazit hráče a Nahlásit hráče",
+                liveDetail: "Živý server · obnovuje se každých {seconds} s",
+                liveButtons: "tlačítka {buttons}",
+                buttonNames: {
+                    join: "Připojit se",
+                    players: "Zobrazit hráče",
+                    report: "Nahlásit hráče",
+                },
+                and: "a",
                 privateDetail:
                     "Živý server v soukromém kanálu · ukazuje i heslo serveru",
                 combinedTitle: "Naše servery",
@@ -3985,7 +3991,7 @@ export const csMessages = {
                     "Seed, Obnovit a Pozastavit · smí jen Správci Logi",
                 resultsTitle: "Výsledky {game}",
                 resultsDetail:
-                    "Po potvrzení výsledku v Logi · jen potvrzené od zapnutí panelu",
+                    "Po potvrzení výsledku v Logi · po vytvoření pošle posledních 5 potvrzených",
                 leagueTitle: "WD League",
                 leagueDetail:
                     "Dvě zprávy pod sebou: tabulka a nejbližší zápasy celé ligy · obnovují se každých 60 s",
@@ -3993,8 +3999,15 @@ export const csMessages = {
                 calendarDetail:
                     "Nadcházející akce klanu, kategorie {categories}",
                 calendarAll: "všechny",
+                competitionTitle: "Tabulka soutěže",
+                competitionDetail:
+                    "Tabulka skupin soutěže {name} · po každém potvrzeném výsledku",
+                competitionDetailAny:
+                    "Tabulka skupin soutěže · po každém potvrzeném výsledku",
+                pausedBy: "pozastavil {name}",
                 chips: {
                     error: "Chyba",
+                    waiting: "Čeká na bota",
                     unsent: "Neodesláno",
                     paused: "Pozastaveno",
                 },
@@ -6316,7 +6329,7 @@ export const csMessages = {
         botNeverSeen:
             "Bot se zatím neozval. Panely se neobnovují a nové se neodešlou, dokud bot neběží.",
         botOutdated:
-            "Bot běží starší verzi {version}. Panely v Discordu potřebují novější verzi. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
+            "Bot běží starší verzi {version}. Panely v Discordu potřebují verzi {required} nebo novější. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
         permissions: {
             view_channel: "Zobrazit kanál",
             send_messages: "Posílat zprávy",
@@ -6327,62 +6340,77 @@ export const csMessages = {
         errors: {
             bot_not_in_server: {
                 title: "Bot není na Discord serveru.",
+                past: "Bot nebyl na Discord serveru.",
                 fix: "Pozvěte bota Logi znovu na server a pak klikněte Zkusit znovu.",
             },
             channel_missing: {
                 title: "Kanál {channel} už neexistuje nebo ho bot nevidí.",
+                past: "Kanál {channel} neexistoval nebo ho bot neviděl.",
                 fix: "V editoru vyberte jiný kanál a uložte.",
             },
             channel_type: {
                 title: "Do kanálu {channel} nejde poslat zprávu.",
+                past: "Do kanálu {channel} nešlo poslat zprávu.",
                 fix: "V editoru vyberte textový kanál nebo kanál s oznámeními.",
             },
             missing_permissions: {
                 title: "Bot nemá oprávnění {permissions} v {channel}.",
+                past: "Bot neměl oprávnění {permissions} v {channel}.",
                 fix: "Na Discordu otevřete Upravit kanál → Oprávnění → Logi a zapněte {permissions}. Pak klikněte Zkusit znovu.",
             },
             delivery_uncertain: {
                 title: "Discord nepotvrdil, jestli zprávu přijal.",
+                past: "Discord nepotvrdil, jestli zprávu přijal.",
                 fix: "Bot zprávu při další obnově najde, nebo ji pošle znovu. Nic nemusíte dělat.",
             },
             discord_unavailable: {
                 title: "Discord teď neodpovídá.",
+                past: "Discord neodpověděl včas.",
                 fix: "Bot to zkusí znovu sám. Když to trvá dlouho, klikněte Zkusit znovu.",
             },
             source_missing: {
                 title: "Herní server panelu už v Logi není.",
+                past: "Herní server panelu v Logi chyběl.",
                 fix: "V editoru vyberte jiný server, nebo panel odstraňte.",
             },
             source_not_collecting: {
                 title: "Logi z herního serveru nesbírá data.",
+                past: "Logi z herního serveru nesbíralo data.",
                 fix: "Zapněte sběr dat v Herní servery a pak klikněte Zkusit znovu.",
             },
             provider_unreachable: {
                 title: "Herní server neodpovídá.",
+                past: "Herní server neodpovídal.",
                 fix: "Panel ukazuje poslední data. Zkontrolujte adresu a klíč v Herní servery.",
             },
             provider_rate_limited: {
                 title: "Poskytovatel dat teď odmítá další dotazy.",
+                past: "Poskytovatel dat odmítal další dotazy.",
                 fix: "Panel ukazuje poslední data a zkusí to znovu. Když to trvá přes hodinu, zvyšte limit klíče, nebo ho vyměňte v Herní servery.",
             },
             render_failed: {
                 title: "Panel se nepodařilo sestavit.",
+                past: "Panel se nepodařilo sestavit.",
                 fix: "Zkraťte název nebo popis panelu. Když chyba trvá, nahlaste ji podpoře Logi.",
             },
             unsupported_kind: {
                 title: "Bot tento druh panelu ještě neumí.",
+                past: "Bot tento druh panelu neuměl.",
                 fix: "Aktualizujte bota a restartujte ho.",
             },
             competition_missing: {
                 title: "Soutěž panelu už neexistuje.",
+                past: "Soutěž panelu neexistovala.",
                 fix: "V editoru vyberte jinou soutěž, nebo panel odstraňte.",
             },
             league_disabled: {
                 title: "Wardogs League je v Nastavení vypnutá, bot zprávy panelu smazal.",
+                past: "Wardogs League byla v Nastavení vypnutá.",
                 fix: "Zapněte Wardogs League v Nastavení → Wardogs League, bot pak obě zprávy pošle znovu.",
             },
             unknown: {
                 title: "Zprávu se nepodařilo odeslat.",
+                past: "Zprávu se nepodařilo odeslat.",
                 fix: "Klikněte Zkusit znovu. Když chyba trvá, nahlaste ji podpoře Logi.",
             },
         },
@@ -6412,7 +6440,7 @@ export const csMessages = {
                 "Panely se teď neobnovují a nové se neodešlou. Zkontrolujte, že bot běží; po aktualizaci ho restartujte.",
             outdatedTitle: "Bot běží starší verzi {version}.",
             outdatedBody:
-                "Panely v Discordu potřebují novější verzi bota. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
+                "Panely v Discordu potřebují verzi {required} nebo novější. Po aktualizaci bota restartujte; dokud běží stará verze, panely se neobnovují.",
             unknownTitle: "Bot se zatím neozval.",
             unknownBody:
                 "Panely se neobnovují a nové se neodešlou, dokud bot neběží. Spusťte bota; stav se tu ukáže do 30 s.",
@@ -6562,6 +6590,7 @@ export const csMessages = {
                 controlButtons: "tlačítka Seed, Obnovit a Pozastavit",
                 calendarSetting:
                     "kanál z dřívějšího nastavení, Upravit z něj udělá panel",
+                leagueBoth: "tlačítka platí pro obě zprávy ligy",
                 open: "Otevřít zprávu",
             },
             buttons: {
@@ -6714,16 +6743,22 @@ export const csMessages = {
                 connection: "Připojení",
                 address: {
                     label: "Ukázat IP:port",
-                    help: "{address} z Herní servery.",
-                    helpCombined: "U serverů HLL.",
-                    missing: "Adresa serveru zatím není uložená.",
+                    help: "Panel ukáže {address}. Adresu zadáváte tady; platí pro všechny panely tohoto serveru.",
+                    helpCombined:
+                        "U serverů HLL. Adresy zadáváte tady; každá platí pro všechny panely svého serveru.",
+                    missing:
+                        "Adresa serveru zatím není uložená. Zadejte ji tady.",
                     field: "IP:port · {server}",
                     placeholder: "203.0.113.24:7777",
+                    clear: "Smazat",
+                    clearFor: "Smazat IP:port · {server}",
                 },
                 joinCode: {
                     label: "Ukázat join kód",
                     help: "U serverů Wardogs.",
                     field: "Join kód · {server}",
+                    clear: "Smazat",
+                    clearFor: "Smazat join kód · {server}",
                 },
                 joinButton: {
                     label: "Tlačítko Připojit se (přes Logi)",
@@ -6875,6 +6910,8 @@ export const csMessages = {
                 calendarNote:
                     "Náhled z akcí v Logi; odkazy na oznámení doplní bot.",
                 competitionNote: "Tabulku skupin sestaví bot po uložení.",
+                noAttach:
+                    "Bot nemá oprávnění {permission} v {channel}, proto panel pošle jen text bez obrázků, jako tento náhled.",
             },
             joinPage: {
                 title: "Po kliknutí na Připojit se · stránka Logi",
@@ -6955,6 +6992,32 @@ export const csMessages = {
                 hint: "Po kliknutí na Odeslat do kanálu se kroky odškrtají, obvykle do 15 s. Stránka se sama obnovuje.",
                 lastError: "Poslední chyba:",
                 recovered: "Další pokus o {after} později prošel.",
+                recoveredAfter: {
+                    second: {
+                        one: "sekundu",
+                        few: "{count} sekundy",
+                        many: "{count} sekundy",
+                        other: "{count} sekund",
+                    },
+                    minute: {
+                        one: "minutu",
+                        few: "{count} minuty",
+                        many: "{count} minuty",
+                        other: "{count} minut",
+                    },
+                    hour: {
+                        one: "hodinu",
+                        few: "{count} hodiny",
+                        many: "{count} hodiny",
+                        other: "{count} hodin",
+                    },
+                    day: {
+                        one: "den",
+                        few: "{count} dny",
+                        many: "{count} dne",
+                        other: "{count} dní",
+                    },
+                },
                 stuck: {
                     title: "Když se doručení zasekne",
                     lead: "Odeslání nepotvrzené.",

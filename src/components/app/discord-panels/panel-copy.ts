@@ -11,7 +11,12 @@ export function fill(
     )
 }
 
-type PluralForms = { one: string; few: string; many: string; other: string }
+export type PluralForms = {
+    one: string
+    few: string
+    many: string
+    other: string
+}
 
 /** The reader's plural form of `forms` with `{count}` filled in. */
 export function plural(forms: PluralForms, count: number, locale: string) {
@@ -32,10 +37,12 @@ export function joinWords(items: readonly string[], and: string) {
 /**
  * The plain sentence and fix step of a panel error (P1-16, P2-32), from the
  * `discordPanelStatus.errors` copy with the channel and permission names.
+ * `past` words an error the panel already recovered from ("Discord
+ * neodpověděl včas.").
  */
 export function panelErrorText(
     error: Pick<PanelError, "code" | "permissions">,
-    input: { channel: string; dictionary: Dictionary }
+    input: { channel: string; dictionary: Dictionary; past?: boolean }
 ) {
     const status = input.dictionary.discordPanelStatus
     const copy = status.errors[error.code]
@@ -44,7 +51,10 @@ export function panelErrorText(
         input.dictionary.discordPanelsPage.list.meta.and
     )
     const values = { channel: input.channel, permissions }
-    return { title: fill(copy.title, values), fix: fill(copy.fix, values) }
+    return {
+        title: fill(input.past ? copy.past : copy.title, values),
+        fix: fill(copy.fix, values),
+    }
 }
 
 /** `#name` of a channel, or the unknown-channel word. */

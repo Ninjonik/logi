@@ -1,12 +1,14 @@
 /**
- * The "Náhled" of every message row on "Zprávy a panely" (board N1-B07):
- * one sample {@link MessageView} per message the bot sends, drawn with the
- * shared preview, so the page shows what Discord shows. Messages whose
- * builder lives in the domain (rosters, forum, DMs, team requests, errors
- * channel) use that builder with sample data; the announcement and the
- * membership and ticket cards use the board's anatomy and words until
- * their builders move into the domain (W6a, W7). Pure: copy, sample data
- * and the clan's look come in.
+ * The "Náhled" of every message row on "Zprávy a panely" (boards N1-08,
+ * N1-B07): one sample {@link MessageView} per message the bot sends, drawn
+ * with the shared preview, so the page shows what Discord shows. Every
+ * message uses the builder the bot itself calls, with sample data and,
+ * where the clan has set them, its own membership and ticket panels: the
+ * announcement (`buildAnnouncementView`), the Discord event
+ * (`buildScheduledEventContent`), rosters, forum, DMs, team requests, the
+ * recruitment and ticket panels, the application and ticket cards, their
+ * closing DMs, the player report and the errors channel. Pure: copy,
+ * sample data and the clan's look come in.
  */
 
 import {
@@ -28,6 +30,13 @@ import {
     type RosterMessageVariant,
 } from "./roster-message"
 import {
+    ticketClosedDmView,
+    ticketIntroMentions,
+    ticketIntroView,
+    ticketPanelView,
+    type TicketPanelCategory,
+} from "../discord-tickets/ticket-views"
+import {
     attendanceNoticeView,
     debriefView,
     forumInfoView,
@@ -35,19 +44,36 @@ import {
     type ForumEvent,
 } from "./match-forum"
 import {
-    escapeMarkdownText,
-    type MessageBlock,
-    type MessageView,
-} from "./message-view"
+    applicationCardView,
+    applicationDecisionDmView,
+    applicationPanelView,
+} from "../membership/application-views"
+import {
+    buildAnnouncementView,
+    matchCardFullTitle,
+    type MatchCardEvent,
+} from "./match-announcement"
+import {
+    resolveApplicationForm,
+    type ApplicationCategory,
+} from "../membership/application-form"
 import {
     teamRequestDecisionView,
     type TeamRequestDmCopy,
 } from "./team-request-dm"
+import { buildScheduledEventContent } from "../events/scheduled-event-content"
 import type { DirectMessageCopy, RosterMessageCopy } from "./match-copy"
+import { applicationWindowCount } from "../membership/application-plan"
+import type { MatchAnnouncementCopy } from "./match-announcement-copy"
+import type { ApplicationCopy } from "../membership/application-copy"
+import { escapeMarkdownText, type MessageView } from "./message-view"
 import { botErrorReportView, type BotErrorsCopy } from "./bot-errors"
+import type { ReportCopy } from "../discord-publications/panel-copy"
+import { reportThreadView } from "../player-reports/report-views"
+import type { TicketCopy } from "../discord-tickets/ticket-copy"
 import { discordWeekdayTimestamp, fillTemplate } from "./format"
 import type { MessageLayoutOptions } from "./message-layout"
-import { sidesRow } from "./match-text"
+import type { GameId } from "../games/game"
 
 /** Every row of "Co bot posílá" with a preview, in board order. */
 export const SETTINGS_PREVIEW_KINDS = [
@@ -78,8 +104,10 @@ export const SETTINGS_PREVIEW_KINDS = [
 export type SettingsPreviewKind = (typeof SETTINGS_PREVIEW_KINDS)[number]
 
 /**
- * Sample data and the words of the cards whose builders are not in the
- * domain yet, in the clan language (`clan-language/system.ts` `previews`).
+ * Sample data of the previews in the clan language
+ * (`clan-language/system.ts` `previews`). The words of the messages come
+ * from the bot's own copy; these are only the names, answers and reasons
+ * of the samples.
  */
 export type SettingsPreviewSamples = {
     clan: string
@@ -98,68 +126,71 @@ export type SettingsPreviewSamples = {
     trainingTitle: string
     rewardRole: string
     memberRole: string
+    /** The clan role every member gets ("Klan"). */
+    clanRole: string
     announcement: {
+        /** The role ping above the card. */
         mention: string
-        signUp: string
-        editSignup: string
-        decline: string
-        /** "**Přihlášeno {count}** · Pěchota 15 · Tanky 6/6 · Recon 2/2". */
-        signedUp: string
-        /** "{map} · sraz {meeting} · přihlášky do {deadline}". */
-        facts: string
+        /** Sign-up groups: name, signed up, places ("Tanky 6/6"). */
+        groups: Array<[string, number, number | null]>
     }
+    /** Sample categories while the clan has no recruitment panel: name, game, line. */
     recruitmentPanel: {
         title: string
         body: string
-        categories: string[]
-        button: string
+        categories: Array<[string, GameId, string]>
     }
     application: {
-        intro: string
-        label: string
-        title: string
-        chip: string
-        /** "Podáno {date} · Steam 76561198000000017". */
-        submitted: string
+        /** The applied category while the clan has none. */
+        category: string
         answers: Array<[string, string]>
-        footer: string
     }
-    applicationClose: {
-        label: string
-        title: string
-        body: string
-        reason: string
-        openThread: string
-    }
+    applicationClose: { reason: string }
+    /** Sample categories while the clan has no ticket panel: name, line. */
     ticketPanel: {
         title: string
         body: string
         categories: Array<[string, string]>
     }
     ticket: {
-        label: string
+        category: string
+        /** The category's card title, "{author} nahlašuje hráče". */
         title: string
-        chip: string
-        /** "Otevřeno {date}". */
-        opened: string
         answers: Array<[string, string]>
-        footer: string
     }
-    ticketClose: {
-        label: string
-        title: string
-        line: string
-        reason: string
-        openThread: string
-    }
+    ticketClose: { reason: string }
     playerReport: {
-        label: string
-        title: string
-        lines: string[]
+        player: string
+        /** The reported player's side as the server reports it. */
+        side: string
+        reporter: string
         reason: string
-        footer: string
     }
     teamRequest: { game: string; team: string; code: string }
+}
+
+/** The clan's own panels the previews use instead of the samples, when set. */
+export type SettingsPreviewClan = {
+    membership?: {
+        title: string
+        text: string
+        imageUrl?: string | null
+        accentColor?: string | null
+        categories: readonly ApplicationCategory[]
+        /** The stored application form; invalid or missing uses the default form. */
+        form?: unknown
+        /** Variant B: the web form link when it is switched on. */
+        webFormUrl?: string | null
+    } | null
+    tickets?: {
+        title: string
+        description?: string
+        imageUrl?: string
+        accentColor?: string | null
+        categories: ReadonlyArray<
+            TicketPanelCategory & { threadTitle?: string }
+        >
+    } | null
 }
 
 export type SettingsPreviewInput = {
@@ -169,6 +200,13 @@ export type SettingsPreviewInput = {
     roster: RosterMessageCopy & { locale: string }
     errors: BotErrorsCopy
     teamRequests: TeamRequestDmCopy
+    /** The bot's own copy of the announcement, applications, tickets and reports. */
+    announcement: MatchAnnouncementCopy
+    applications: ApplicationCopy
+    tickets: TicketCopy
+    reports: ReportCopy
+    /** The clan's membership and ticket panels; the samples stand in without them. */
+    clan?: SettingsPreviewClan
     /** Frame words, locale and the clan's look, as the bot lays out. */
     layout: MessageLayoutOptions
     timeZone: string
@@ -186,6 +224,9 @@ export type SettingsPreview = {
     content?: string
     /** Channel names for mention pills in the sample. */
     channels?: Record<string, string>
+    /** Member and role names for mention pills in the sample. */
+    users?: Record<string, string>
+    roles?: Record<string, string>
     /** A private reply or command answer (shows "used /…"). */
     invokedBy?: { user: string; command: string }
 }
@@ -317,103 +358,141 @@ const forumContext = (input: SettingsPreviewInput): ForumContext => ({
     timeZone: input.timeZone,
 })
 
-function answers(pairs: Array<[string, string]>): MessageBlock[] {
-    return pairs.map(([question, answer]) => ({
-        kind: "text" as const,
-        markdown: `**${escapeMarkdownText(question)}**\n${escapeMarkdownText(answer)}`,
-    }))
+/** The match of the samples as the announcement and the Discord event see it. */
+function sampleCard(input: SettingsPreviewInput): MatchCardEvent {
+    const { samples } = input
+    return {
+        kind: "match",
+        eventId: "sample",
+        guildId: "sample",
+        name: `${samples.clanCode} vs ${samples.opponentCode}`,
+        category: { label: samples.category, color: "#3ba55c" },
+        teams: [
+            { code: samples.clanCode, side: "Allies" },
+            { code: samples.opponentCode, side: "Axis" },
+        ],
+        mapLabel: escapeMarkdownText(samples.map),
+        meetingStart: MEETING,
+        gameStart: GAME_START,
+        registrationEnd: DEADLINE,
+        timeZone: input.timeZone,
+        locale: input.layout.locale,
+    }
 }
 
-/** The announcement card as the board draws it (N1-08). */
+/** The announcement as the bot posts it while sign-ups are open (N1-08). */
 function announcementPreview(input: SettingsPreviewInput): SettingsPreview {
     const { samples } = input
-    const a = samples.announcement
-    const event = sampleEvent(input)
-    const when = discordWeekdayTimestamp(
-        GAME_START,
-        input.layout.locale,
-        input.timeZone
-    )
-    const deadline = discordWeekdayTimestamp(
-        DEADLINE,
-        input.layout.locale,
-        input.timeZone
-    )
+    const groups = samples.announcement.groups.map(([name, count, max]) => ({
+        id: name,
+        name,
+        count,
+        ...(max ? { max } : {}),
+    }))
     return {
-        content: a.mention,
+        content: samples.announcement.mention,
+        view: buildAnnouncementView({
+            event: sampleCard(input),
+            state: "open",
+            counts: {
+                groups,
+                withoutGroup: 0,
+                total: groups.reduce((sum, group) => sum + group.count, 0),
+                declined: 0,
+            },
+            meetingChannelId: MEETING_CHANNEL,
+            links: { calendar: link(input.siteUrl, "/calendar") },
+            copy: input.announcement,
+        }),
+    }
+}
+
+/**
+ * The Discord scheduled event: its name and description as the bot writes
+ * them (`buildScheduledEventContent`), with the meeting time and channel.
+ */
+function scheduledEventPreview(input: SettingsPreviewInput): SettingsPreview {
+    const card = sampleCard(input)
+    const content = buildScheduledEventContent({
+        kind: "match",
+        title: matchCardFullTitle(card, input.announcement),
+        category: input.samples.category,
+        opponent: input.samples.opponentCode,
+        side: "Allies",
+        mapLabel: input.samples.map,
+        hasPassword: true,
+        meetingStart: MEETING,
+        gameStart: GAME_START,
+        announcementChannelId: ANNOUNCEMENTS,
+        locale: input.layout.locale,
+        timeZone: input.timeZone,
+        copy: input.announcement,
+    })
+    return {
         view: {
             accent: "clan",
-            header: {
-                title: event.title,
-                chips: [{ label: samples.category, tone: "success" }],
-            },
+            header: { title: content.name },
             blocks: [
                 {
                     kind: "meta",
                     lines: [
                         {
-                            line: "side",
-                            // The bot's own sides row (L1-12, L1-130).
-                            text:
-                                sidesRow({
-                                    teams: [
-                                        {
-                                            code: samples.clanCode,
-                                            side: "Allies",
-                                        },
-                                        {
-                                            code: samples.opponentCode,
-                                            side: "Axis",
-                                        },
-                                    ],
-                                    factions: input.roster.factions,
-                                }) ?? "",
-                        },
-                        {
                             line: "start",
-                            text: `**${when ?? ""}** · <t:${Date.parse(GAME_START) / 1000}:R>`,
-                        },
-                        {
-                            line: "details",
-                            text: fillTemplate(a.facts, {
-                                map: escapeMarkdownText(samples.map),
-                                meeting: `<t:${Date.parse(MEETING) / 1000}:t>`,
-                                deadline: deadline ?? "",
-                            }),
-                        },
-                        { line: "status", text: a.signedUp },
-                    ],
-                },
-                {
-                    kind: "buttons",
-                    buttons: [
-                        {
-                            kind: "action",
-                            id: "preview:signup",
-                            label: a.signUp,
-                            style: "success",
-                        },
-                        {
-                            kind: "action",
-                            id: "preview:edit",
-                            label: a.editSignup,
-                            style: "secondary",
-                        },
-                        {
-                            kind: "action",
-                            id: "preview:decline",
-                            label: a.decline,
-                            style: "danger",
+                            text: `${discordWeekdayTimestamp(MEETING, input.layout.locale, input.timeZone) ?? ""} · <#${MEETING_CHANNEL}>`,
                         },
                     ],
                 },
+                { kind: "text", markdown: content.description },
             ],
-            footer: { kind: "managed" },
         },
     }
 }
 
-/** One sample per message row; the same builders as the bot where they exist. */
+/** The clan's recruitment categories, else the samples. */
+function membershipOf(input: SettingsPreviewInput) {
+    const own = input.clan?.membership
+    if (own?.categories.length) return own
+    const p = input.samples.recruitmentPanel
+    const types = ["member", "reserve_member", "mercenary"] as const
+    return {
+        title: fillTemplate(p.title, { clan: input.samples.clan }),
+        text: p.body,
+        imageUrl: null,
+        accentColor: null,
+        categories: p.categories.map(
+            ([label, gameId, description], index): ApplicationCategory => ({
+                id: `sample-${index}`,
+                label,
+                gameId,
+                description,
+                assignmentType: types[index % types.length]!,
+            })
+        ),
+        form: undefined,
+        webFormUrl: null,
+    }
+}
+
+/** The clan's ticket categories, else the samples. */
+function ticketsOf(input: SettingsPreviewInput) {
+    const own = input.clan?.tickets
+    if (own?.categories.length) return own
+    const p = input.samples.ticketPanel
+    return {
+        title: p.title,
+        description: p.body,
+        imageUrl: undefined,
+        accentColor: null,
+        categories: p.categories.map(([label, description], index) => ({
+            id: `sample-${index}`,
+            label,
+            description,
+            ...(index === 0 ? { threadTitle: input.samples.ticket.title } : {}),
+        })),
+    }
+}
+
+/** One sample per message row; the same builders as the bot where they exist. */ /** One sample per message row; the same builders as the bot where they exist. */
 export function settingsPreview(input: SettingsPreviewInput): SettingsPreview {
     const { samples } = input
     const event = sampleEvent(input)
@@ -533,30 +612,7 @@ export function settingsPreview(input: SettingsPreviewInput): SettingsPreview {
                 }),
             }
         case "scheduledEvent":
-            // The Discord event itself is drawn by the page; this card is
-            // what members see in the event's description.
-            return {
-                channels,
-                view: {
-                    accent: "clan",
-                    header: { title: event.title },
-                    blocks: [
-                        {
-                            kind: "meta",
-                            lines: [
-                                {
-                                    line: "start",
-                                    text: `${discordWeekdayTimestamp(MEETING, input.layout.locale, input.timeZone) ?? ""} · <#${MEETING_CHANNEL}>`,
-                                },
-                                {
-                                    line: "details",
-                                    text: escapeMarkdownText(samples.map),
-                                },
-                            ],
-                        },
-                    ],
-                },
-            }
+            return { channels, ...scheduledEventPreview(input) }
         case "signupReminder":
             return {
                 channels,
@@ -691,214 +747,163 @@ export function settingsPreview(input: SettingsPreviewInput): SettingsPreview {
                 }),
             }
         case "recruitmentPanel": {
-            const p = samples.recruitmentPanel
+            const panel = membershipOf(input)
             return {
-                view: {
-                    accent: "clan",
-                    header: {
-                        title: fillTemplate(p.title, { clan: samples.clan }),
-                    },
-                    blocks: [
-                        { kind: "text", markdown: p.body },
-                        {
-                            kind: "list",
-                            marker: "none",
-                            items: p.categories.map((line) =>
-                                escapeMarkdownText(line)
-                            ),
-                        },
-                        { kind: "separator", divider: true, spacing: "small" },
-                        {
-                            kind: "buttons",
-                            buttons: [
-                                {
-                                    kind: "action",
-                                    id: "preview:apply",
-                                    label: p.button,
-                                    style: "primary",
-                                },
-                            ],
-                        },
-                    ],
-                    footer: { kind: "managed" },
-                },
+                view: applicationPanelView(input.applications, {
+                    title: panel.title,
+                    text: panel.text,
+                    imageUrl: panel.imageUrl,
+                    accentColor: panel.accentColor,
+                    categories: panel.categories,
+                    windows: applicationWindowCount(
+                        resolveApplicationForm(
+                            panel.form,
+                            panel.categories,
+                            input.applications.defaultForm
+                        ),
+                        panel.categories
+                    ),
+                    webFormUrl: panel.webFormUrl,
+                    managedUrl: input.siteUrl,
+                }),
             }
         }
         case "application": {
-            const p = samples.application
-            const date = discordWeekdayTimestamp(
-                GAME_START,
-                input.layout.locale,
-                input.timeZone
-            )
+            const category = membershipOf(input).categories[0]
+            const applicant = PLAYER_IDS[0]!
             return {
-                content: p.intro,
-                view: {
-                    accent: "clan",
-                    header: {
-                        label: p.label,
-                        title: p.title,
-                        chips: [{ label: p.chip, tone: "warning" }],
-                        status: fillTemplate(p.submitted, { date: date ?? "" }),
+                users: { [applicant]: samples.players[0] ?? "" },
+                view: applicationCardView(input.applications, {
+                    number: 42,
+                    games: [category?.gameId ?? "hell_let_loose"],
+                    applicantId: applicant,
+                    applicantName: samples.players[0] ?? "",
+                    categoryLabel:
+                        category?.label?.trim() || samples.application.category,
+                    submittedAt: new Date(input.now).toISOString(),
+                    timeZone: input.timeZone,
+                    inGameName: samples.players[0],
+                    accounts: {
+                        steam: "76561198000000017",
+                        steamVerified: false,
                     },
-                    blocks: [
-                        ...answers(p.answers),
-                        { kind: "separator", divider: true, spacing: "small" },
-                    ],
-                    footer: { kind: "managed", notes: [p.footer] },
-                },
+                    answers: samples.application.answers.map(
+                        ([label, value], index) => ({
+                            questionId: `sample-${index}`,
+                            kind: "custom" as const,
+                            label,
+                            value,
+                        })
+                    ),
+                    supportRoleIds: [],
+                    mercenaryAvailable: true,
+                }),
             }
         }
-        case "applicationClose": {
-            const p = samples.applicationClose
+        case "applicationClose":
             return {
-                view: {
-                    accent: "clan",
-                    header: {
-                        label: fillTemplate(p.label, { clan: samples.clan }),
-                        title: p.title,
-                    },
-                    blocks: [
-                        { kind: "text", markdown: p.body },
-                        {
-                            kind: "text",
-                            markdown: `> ${escapeMarkdownText(p.reason)}`,
-                        },
-                        {
-                            kind: "buttons",
-                            buttons: [
-                                {
-                                    kind: "link",
-                                    url: link(input.siteUrl, "/discord"),
-                                    label: p.openThread,
-                                },
-                            ],
-                        },
-                        { kind: "separator", divider: true, spacing: "small" },
-                    ],
-                    footer: {
-                        kind: "dm",
-                        clanName: frame.clanName,
-                        settingsUrl: frame.settingsUrl,
-                    },
-                },
+                view: applicationDecisionDmView(input.applications, {
+                    clanName: samples.clan,
+                    number: 42,
+                    outcome: "member",
+                    gameId: "hell_let_loose",
+                    reason: samples.applicationClose.reason,
+                    roleNames: [samples.clanRole, samples.memberRole],
+                    threadUrl: link(input.siteUrl, "/discord"),
+                    settingsUrl: frame.settingsUrl,
+                }),
             }
-        }
         case "ticketPanel": {
-            const p = samples.ticketPanel
+            const panel = ticketsOf(input)
             return {
-                view: {
-                    accent: "clan",
-                    header: { title: p.title },
-                    blocks: [
-                        { kind: "text", markdown: p.body },
-                        {
-                            kind: "list",
-                            marker: "none",
-                            items: p.categories.map(
-                                ([label, hint]) =>
-                                    `**${escapeMarkdownText(label)}** · ${escapeMarkdownText(hint)}`
-                            ),
-                        },
-                        { kind: "separator", divider: true, spacing: "small" },
-                        {
-                            kind: "buttons",
-                            buttons: p.categories
-                                .slice(0, 5)
-                                .map(([label], index) => ({
-                                    kind: "action" as const,
-                                    id: `preview:ticket:${index}`,
-                                    label,
-                                    style: "secondary" as const,
-                                })),
-                        },
-                    ],
-                    footer: { kind: "managed" },
-                },
+                view: ticketPanelView({
+                    title: panel.title,
+                    description: panel.description,
+                    imageUrl: panel.imageUrl,
+                    accentColor: panel.accentColor,
+                    categories: panel.categories,
+                    copy: input.tickets,
+                    managedUrl: input.siteUrl,
+                }),
             }
         }
         case "ticket": {
-            const p = samples.ticket
-            const date = discordWeekdayTimestamp(
-                GAME_START,
-                input.layout.locale,
-                input.timeZone
-            )
+            const category = ticketsOf(input).categories[0]
+            const author = PLAYER_IDS[0]!
+            const label = category?.label?.trim() || samples.ticket.category
             return {
-                view: {
-                    accent: "clan",
-                    header: {
-                        label: p.label,
-                        title: p.title,
-                        chips: [{ label: p.chip, tone: "info" }],
-                        status: fillTemplate(p.opened, { date: date ?? "" }),
-                    },
-                    blocks: [
-                        ...answers(p.answers),
-                        { kind: "separator", divider: true, spacing: "small" },
-                    ],
-                    footer: { kind: "managed", notes: [p.footer] },
-                },
+                content: ticketIntroMentions({
+                    authorId: author,
+                    supportRoleIds: [],
+                }).content,
+                users: { [author]: samples.players[0] ?? "" },
+                view: ticketIntroView({
+                    copy: input.tickets,
+                    ticketNumber: 12,
+                    category: label,
+                    titleTemplate: category?.threadTitle,
+                    authorName: samples.players[0] ?? "",
+                    openedAt: GAME_START,
+                    answers: samples.ticket.answers.map(
+                        ([question, value]) => ({
+                            label: question,
+                            value,
+                        })
+                    ),
+                    locale: input.layout.locale,
+                    timeZone: input.timeZone,
+                    accentColor: null,
+                }),
             }
         }
         case "ticketClose": {
-            const p = samples.ticketClose
+            const category = ticketsOf(input).categories[0]
             return {
-                view: {
-                    accent: "clan",
-                    header: {
-                        label: fillTemplate(p.label, { clan: samples.clan }),
-                        title: p.title,
-                    },
-                    blocks: [
-                        { kind: "text", markdown: p.line },
-                        {
-                            kind: "text",
-                            markdown: `> ${escapeMarkdownText(p.reason)}`,
-                        },
-                        {
-                            kind: "buttons",
-                            buttons: [
-                                {
-                                    kind: "link",
-                                    url: link(input.siteUrl, "/discord"),
-                                    label: p.openThread,
-                                },
-                            ],
-                        },
-                        { kind: "separator", divider: true, spacing: "small" },
-                    ],
-                    footer: {
-                        kind: "dm",
-                        clanName: frame.clanName,
-                        settingsUrl: frame.settingsUrl,
-                    },
-                },
+                view: ticketClosedDmView({
+                    copy: input.tickets,
+                    clanName: samples.clan,
+                    ticketNumber: 12,
+                    category:
+                        category?.label?.trim() || samples.ticket.category,
+                    closerName: samples.leader,
+                    reason: samples.ticketClose.reason,
+                    threadUrl: link(input.siteUrl, "/discord"),
+                    settingsUrl: frame.settingsUrl,
+                }),
             }
         }
         case "playerReport": {
-            const p = samples.playerReport
+            const report = samples.playerReport
+            const reporter = PLAYER_IDS[5]!
+            const side = report.side.trim().toLowerCase()
             return {
-                view: {
-                    accent: "clan",
-                    header: { label: p.label, title: p.title },
-                    blocks: [
-                        {
-                            kind: "meta",
-                            lines: p.lines.map((text) => ({ text })),
+                users: { [reporter]: report.reporter },
+                view: reportThreadView({
+                    copy: input.reports,
+                    number: 17,
+                    context: {
+                        gameId: "hell_let_loose",
+                        serverName: `${samples.clan} #1`,
+                        map: samples.map.split(" · ")[0] ?? samples.map,
+                        observedAt: GAME_START,
+                        player: {
+                            name: report.player,
+                            playerId: null,
+                            team: report.side,
+                            provenance: "observed",
                         },
-                        {
-                            kind: "text",
-                            markdown: escapeMarkdownText(p.reason),
-                        },
-                        { kind: "separator", divider: true, spacing: "small" },
-                    ],
-                    footer: {
-                        kind: "managed",
-                        notes: [p.footer],
-                        managed: false,
+                        reason: report.reason,
+                        incident: "",
+                        evidence: "",
                     },
-                },
+                    reporterId: reporter,
+                    sideName:
+                        side === "allies" || side === "axis"
+                            ? input.roster.factions[side]
+                            : null,
+                    observedText: null,
+                    serverTitle: `${samples.clan} #1`,
+                }),
             }
         }
         case "errors":

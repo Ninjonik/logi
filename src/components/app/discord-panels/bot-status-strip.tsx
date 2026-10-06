@@ -10,7 +10,8 @@ import { fill } from "./panel-copy"
 /**
  * "Stav bota" (P1-04..06, P1-B05): the bot heartbeat with its version and
  * last contact, and in the same place the warning when the bot is silent or
- * runs an older panel protocol.
+ * runs an older panel protocol, naming its version and the release the
+ * panels need (`MINIMUM_BOT_VERSION`).
  */
 export function BotStatusStrip({
     bot,
@@ -71,7 +72,9 @@ export function BotStatusStrip({
             <Warning
                 tone="amber"
                 title={fill(text.outdatedTitle, { version: bot.version })}
-                body={text.outdatedBody}
+                body={fill(text.outdatedBody, {
+                    required: bot.requiredVersion,
+                })}
             />
         )
     return (

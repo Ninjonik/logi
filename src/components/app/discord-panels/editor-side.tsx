@@ -30,7 +30,7 @@ import type {
     PanelOverviewResponse,
     PanelTestResult,
 } from "./panels-api"
-import { dayTime, duration, shortDay, timeAgo, timeIn } from "./panel-time"
+import { dayTime, recoveryGap, shortDay, timeAgo, timeIn } from "./panel-time"
 import { fill, panelErrorText } from "./panel-copy"
 import { GameChip } from "./panel-chips"
 
@@ -662,13 +662,18 @@ export function DeliveryCard({
         },
     ]
     const lastError = item?.lastError ?? null
-    const lastErrorText = lastError
-        ? panelErrorText(lastError, { channel, dictionary })
-        : null
     const recoveredAt =
         lastError && item?.recoveredAt && item.recoveredAt > lastError.at
             ? item.recoveredAt
             : null
+    // A recovered error is worded in the past ("Discord neodpověděl včas.").
+    const lastErrorText = lastError
+        ? panelErrorText(lastError, {
+              channel,
+              dictionary,
+              past: recoveredAt !== null,
+          })
+        : null
     return (
         <Card title={text.title}>
             <ol className="space-y-0">
@@ -721,9 +726,10 @@ export function DeliveryCard({
                     {when(lastError.at)} · {lastErrorText.title}{" "}
                     {recoveredAt
                         ? fill(text.recovered, {
-                              after: duration(
+                              after: recoveryGap(
                                   recoveredAt - lastError.at,
-                                  locale
+                                  locale,
+                                  text.recoveredAfter
                               ),
                           })
                         : lastErrorText.fix}

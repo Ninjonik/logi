@@ -492,7 +492,10 @@ A channel with a lock belongs to another page and links there (for example the
 announcements channel on **Channels and language**, the recruitment channel on
 **Membership**); a game with its own channel is shown next to the clan-wide one.
 **Preview** opens an example of the message with sample data, in the clan
-language.
+language. Every preview is drawn by the same code the bot uses to post the
+message, so it shows exactly what Discord shows; the recruitment and ticket
+previews use the clan's own panel title, text, colour and categories once they
+are set on **Membership** and **Tickets**.
 
 The switches on this page:
 
@@ -516,13 +519,21 @@ team request decisions, button and command replies, the application and ticket
 threads) are always sent when their feature is on; the row says where that is
 decided, for example the match template.
 
-**Panels** gives an overview of the live server panels, the result panels, the
-calendar and the Wardogs League panels with their channel and state (for example
-**Paused**). A panel's switch pauses or resumes it (**Save** sends the change);
-a panel not sent yet is sent from **Discord panels**. **Edit** opens the panel
-in **Discord panels** (see [Public Discord panels](/configuration/public-panels))
-and **Add panel** starts a new one there; the server control row opens **Server
-seeding**. The calendar's channel is set on **Discord panels** too.
+**Panels** lists every panel of **Discord panels**: the live server panels,
+**Our servers**, the **Server control** messages of server seeding, the results
+panels of each game, the Wardogs League panels (one row for both messages), the
+calendar and the competition tables, each with its channel. The list reads the
+same state as **Discord panels** and refreshes itself: a chip shows **Error**,
+**Waiting for the bot**, **Not sent** or **Paused**; a published panel has no
+chip. An error row says the cause in one short sentence (for example the
+missing permission and the channel); a private-channel server panel that shows
+the server password says so; the calendar names its event categories, and a
+paused panel says who paused it. A panel's switch pauses or resumes it (**Save**
+sends the change, also when nothing else changed); a panel not sent yet is sent
+from **Discord panels**. **Edit** opens the panel in **Discord panels** (see
+[Public Discord panels](/configuration/public-panels)) and **Add panel** starts a
+new one there; the server control row opens **Server seeding**. The calendar's
+channel is set on **Discord panels** too.
 
 **Bot errors** holds the **Channel for bot errors**. The bot posts there what it
 could not do and how to fix it, for managers only, with a grey bar: what
