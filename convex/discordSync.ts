@@ -418,6 +418,7 @@ export const updateEventSyncState = mutation({
         forumChannelId: v.optional(v.string()),
         forumThreadId: v.optional(v.string()),
         infoMessageId: v.optional(v.string()),
+        debriefMessageId: v.optional(v.string()),
         topicMessageIds: v.array(v.string()),
         lastEventUpdatedAt: v.optional(v.string()),
         lastRosterUpdatedAt: v.optional(v.string()),
@@ -441,6 +442,11 @@ export const updateEventSyncState = mutation({
             forumChannelId: args.forumChannelId,
             forumThreadId: args.forumThreadId,
             infoMessageId: args.infoMessageId,
+            // Only a bot that knows the Debrief writes it; an older bot
+            // leaves the stored ID alone.
+            ...(args.debriefMessageId
+                ? { debriefMessageId: args.debriefMessageId }
+                : {}),
             topicMessageIds: args.topicMessageIds,
             lastEventUpdatedAt: args.lastEventUpdatedAt,
             lastRosterUpdatedAt: args.lastRosterUpdatedAt,

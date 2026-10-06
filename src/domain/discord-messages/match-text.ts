@@ -1,14 +1,19 @@
 /**
- * Small text rules the roster, forum and DM cards share: the match title
- * from its team codes, the sides row with faction emblems, the weekday
- * dates of the boards ("ne 11. 10.", "so 10. 10. v 19:30"), player names and
- * the match forum's channel name. Pure; the copy is passed in.
+ * Small text rules the announcement, roster, forum and DM cards share: the
+ * match title from its team codes, the sides row with team code chips and
+ * faction emblems, the category chip, the weekday dates of the boards
+ * ("ne 11. 10.", "so 10. 10. v 19:30"), player names and the match forum's
+ * channel name. Pure; the copy is passed in.
  */
 
 import { panelFactionOf } from "@/domain/discord-publications/panel-presentation"
 
+import {
+    escapeMarkdownText,
+    type ChipTone,
+    type MessageChip,
+} from "./message-view"
 import { discordTimestamp, fillTemplate } from "./format"
-import { escapeMarkdownText } from "./message-view"
 import { factionEmblem } from "./faction-emblem"
 
 export type MatchTeamText = {
@@ -69,30 +74,107 @@ export function sideLabel(
 }
 
 /**
- * The sides row "**VLK** Spojenci ★  vs  **ROG** Osa ✚": every assigned team
- * with its side and faction emblem, or the clan's own side when the match
- * has no teams. No coloured squares.
+ * A team code as an inline-code chip ("`VLK`"), the board's code chip
+ * (L1-06). Backticks cannot be escaped inside one, so they are dropped.
  */
-export function matchSidesLine(input: {
-    teams?: readonly MatchTeamText[]
+export function teamCodeChip(code: string) {
+    const clean = code
+        .replace(/[`\r\n]+/g, "")
+        .trim()
+        .slice(0, 24)
+    return clean ? `\`${clean}\`` : ""
+}
+
+/**
+ * The sides row "`VLK` Spojenci ★  vs  `ROG` Osa ✚" (L1-12, L1-130, L2-07):
+ * every team as its code chip with its side and faction emblem, or the
+ * clan's own side when the match has no teams. No coloured squares. The one
+ * implementation behind the announcement, the forum post and the DMs.
+ */
+export function sidesRow(input: {
+    /** Teams in slot order with their codes ("VLK") and stored sides. */
+    teams: ReadonlyArray<{ code: string; side?: string | null }>
     side?: string | null
     factions: Record<"allies" | "axis", string>
     emoji?: Parameters<typeof factionEmblem>[1]
+    /** The word between teams, "vs". */
+    versus?: string
 }) {
-    const teams = sortedMatchTeams(input.teams)
     const part = (code: string | undefined, side: string | null | undefined) =>
         [
-            code ? `**${escapeMarkdownText(code)}**` : undefined,
+            code ? teamCodeChip(code) : undefined,
             side?.trim() ? sideLabel(side, input.factions) : undefined,
             side?.trim() ? factionEmblem(side, input.emoji) : undefined,
         ]
             .filter(Boolean)
             .join(" ")
-    if (teams.length)
-        return teams
-            .map((team) => part(teamCode(team), team.side))
-            .join("  vs  ")
+    if (input.teams.length)
+        return input.teams
+            .map((team) => part(team.code, team.side))
+            .join(`  ${input.versus ?? "vs"}  `)
     return input.side?.trim() ? part(undefined, input.side) : undefined
+}
+
+/** The sides row of a stored match: its assigned teams, else the clan's side. */
+export function matchSidesLine(input: {
+    teams?: readonly MatchTeamText[]
+    side?: string | null
+    factions: Record<"allies" | "axis", string>
+    emoji?: Parameters<typeof factionEmblem>[1]
+    versus?: string
+}) {
+    return sidesRow({
+        ...input,
+        teams: sortedMatchTeams(input.teams).map((team) => ({
+            code: teamCode(team),
+            side: team.side,
+        })),
+    })
+}
+
+const TONE_RGB: Record<ChipTone, [number, number, number]> = {
+    success: [0x3b, 0xa5, 0x5c],
+    warning: [0xf0, 0xb2, 0x32],
+    danger: [0xed, 0x42, 0x45],
+    neutral: [0x80, 0x84, 0x8e],
+    info: [0x58, 0x65, 0xf2],
+}
+
+/**
+ * The chip tone closest to a category colour: the colour appears only as the
+ * chip's dot (L1-07). A category without a colour is neutral.
+ */
+export function categoryChipTone(color: string | null | undefined): ChipTone {
+    const match = color?.trim().match(/^#?([0-9a-f]{6})$/i)
+    if (!match) return "neutral"
+    const value = Number.parseInt(match[1]!, 16)
+    const rgb = [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+    let best: ChipTone = "neutral"
+    let distance = Number.POSITIVE_INFINITY
+    for (const [tone, target] of Object.entries(TONE_RGB) as Array<
+        [ChipTone, [number, number, number]]
+    >) {
+        const next =
+            (rgb[0]! - target[0]) ** 2 +
+            (rgb[1]! - target[1]) ** 2 +
+            (rgb[2]! - target[2]) ** 2
+        if (next < distance) {
+            distance = next
+            best = tone
+        }
+    }
+    return best
+}
+
+/**
+ * The match category as a chip next to the title (L1-11, L1-130); none for
+ * an uncategorised match.
+ */
+export function categoryChip(
+    category: { label: string; color?: string | null } | null | undefined
+): MessageChip[] {
+    const label = category?.label.trim()
+    return label ? [{ label, tone: categoryChipTone(category?.color) }] : []
 }
 
 /** The weekday in the clan language and zone ("ne"), without a trailing dot. */

@@ -71,6 +71,39 @@ export function placesToSnapshot(places: RosterPlaces): RosterPlaceSnapshot[] {
     }))
 }
 
+/**
+ * The published versions a publish stores on the roster (D5-B04): the
+ * squad places it publishes, and the places of the version it replaces, the
+ * baseline of the change digest and the change DMs. The server keeps both,
+ * so no browser decides what "the last published version" was. A first
+ * publish has no baseline; a roster published before the snapshots existed
+ * counts its saved squads as the version it replaces.
+ */
+export function publishedSnapshots(input: {
+    previous:
+        | (SquadsLike & {
+              published: boolean
+              publishedPlaces?: readonly RosterPlaceSnapshot[]
+          })
+        | null
+        | undefined
+    next: SquadsLike
+}): {
+    publishedPlaces: RosterPlaceSnapshot[]
+    previousPublishedPlaces: RosterPlaceSnapshot[] | undefined
+} {
+    const { previous } = input
+    const baseline = previous?.publishedPlaces
+        ? [...previous.publishedPlaces]
+        : previous?.published
+          ? placesToSnapshot(rosterPlaces(previous))
+          : undefined
+    return {
+        publishedPlaces: placesToSnapshot(rosterPlaces(input.next)),
+        previousPublishedPlaces: baseline,
+    }
+}
+
 /** A stored snapshot back as places. */
 export function snapshotToPlaces(
     snapshot: readonly RosterPlaceSnapshot[]

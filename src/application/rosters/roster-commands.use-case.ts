@@ -2,6 +2,10 @@ import {
     acknowledgeRosterAttendance,
     setRosterAttendanceStatus,
 } from "@/domain/rosters/attendance-policy"
+import {
+    publishedSnapshots,
+    type RosterPlaceSnapshot,
+} from "@/domain/rosters/roster-update-summary"
 import { declineRosterAttendance } from "@/domain/rosters/attendance-decline"
 import type { EventWorkflowRepository } from "@/application/events/ports"
 import { normalizeEventRecord } from "@/domain/events/normalization"
@@ -40,6 +44,10 @@ export type RosterCommandRecord = {
     notAttendingPlayerIds: string[]
     streamerId?: string
     published: boolean
+    /** The squad places of the last publish (D5-B04). */
+    publishedPlaces?: RosterPlaceSnapshot[]
+    /** The squad places of the version the last publish replaced. */
+    previousPublishedPlaces?: RosterPlaceSnapshot[]
 }
 
 type EventRosterRecord = {
@@ -78,7 +86,10 @@ export interface RosterCommandRepository {
     ): Promise<void>
 }
 
-export type UpsertRosterInput = Omit<RosterCommandRecord, "id"> & {
+export type UpsertRosterInput = Omit<
+    RosterCommandRecord,
+    "id" | "publishedPlaces" | "previousPublishedPlaces"
+> & {
     rosterId?: string
 }
 
@@ -133,7 +144,22 @@ export class UpsertRosterUseCase {
                       [],
               }
 
-        const payload = buildPersistedRosterPayload(merged)
+        // A publish keeps what it shows and what it replaced, the baseline
+        // of the change digest and DMs (D5-B04), for the dashboard and the
+        // API alike. A draft save leaves the stored versions alone.
+        const snapshots = input.published
+            ? publishedSnapshots({ previous: existing, next: merged })
+            : null
+        const payload = {
+            ...buildPersistedRosterPayload(merged),
+            ...(snapshots
+                ? {
+                      publishedPlaces: snapshots.publishedPlaces,
+                      previousPublishedPlaces:
+                          snapshots.previousPublishedPlaces,
+                  }
+                : {}),
+        }
 
         if (existing) {
             await this.repository.updateRoster(existing.id, payload)

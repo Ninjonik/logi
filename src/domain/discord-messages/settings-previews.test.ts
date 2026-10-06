@@ -80,7 +80,7 @@ test("the live preview is the board's announcement (N1-08)", () => {
     assert.equal(preview.view.header?.title, "VLK vs ROG")
     assert.deepEqual(preview.view.header?.chips?.[0]?.label, "Přátelák")
     const rendered = text(preview)
-    assert.match(rendered, /\*\*VLK\*\* Spojenci ★  vs  \*\*ROG\*\* Osa ✚/)
+    assert.match(rendered, /`VLK` Spojenci ★  vs  `ROG` Osa ✚/)
     assert.match(rendered, /\*\*ne <t:\d+:d> · <t:\d+:t>\*\* · <t:\d+:R>/)
     assert.match(
         rendered,

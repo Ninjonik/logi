@@ -7,18 +7,17 @@
  */
 
 import {
-    escapeMarkdownText,
-    type ChipTone,
-    type MessageBlock,
-    type MessageChip,
-    type MessageView,
-} from "./message-view"
-import {
+    categoryChip,
     channelMention,
     matchSidesLine,
     type MatchTeamText,
     weekdayDate,
 } from "./match-text"
+import {
+    escapeMarkdownText,
+    type MessageBlock,
+    type MessageView,
+} from "./message-view"
 import { discordTimestamp, fillTemplate } from "./format"
 import { showAssignmentButton } from "./roster-message"
 import type { RosterMessageCopy } from "./match-copy"
@@ -29,37 +28,6 @@ const oneLine = (value: string) => value.replace(/[\s\p{Cc}]+/gu, " ").trim()
 
 const joinParts = (parts: Array<string | undefined>) =>
     parts.filter((part): part is string => Boolean(part)).join(" · ")
-
-/**
- * The tone whose dot is closest to a category colour, so a category chip
- * keeps its colour as the dot (L1-07) within the chip vocabulary.
- */
-export function categoryChipTone(color: string | null | undefined): ChipTone {
-    const match = color?.trim().match(/^#?([0-9a-f]{6})$/i)
-    if (!match) return "neutral"
-    const value = Number.parseInt(match[1]!, 16)
-    const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255]
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    if (max - min < 40) return "neutral"
-    let hue: number
-    if (max === r) hue = ((g - b) / (max - min)) * 60
-    else if (max === g) hue = ((b - r) / (max - min)) * 60 + 120
-    else hue = ((r - g) / (max - min)) * 60 + 240
-    hue = (hue + 360) % 360
-    if (hue < 20 || hue >= 330) return "danger"
-    if (hue < 70) return "warning"
-    if (hue < 170) return "success"
-    return "info"
-}
-
-/** The match category as a chip; none for trainings and uncategorised matches. */
-export function categoryChip(
-    category: { label: string; color?: string | null } | undefined
-): MessageChip[] {
-    const label = category?.label.trim()
-    return label ? [{ label, tone: categoryChipTone(category?.color) }] : []
-}
 
 export type ForumEvent = {
     id: string
@@ -128,6 +96,7 @@ export function forumInfoView(input: {
               { server: `**${escapeMarkdownText(oneLine(server))}**` }
           )
         : undefined
+    // The same sides row and category chip as the announcement (L1-130).
     const sides = matchSidesLine({
         teams: event.teams,
         side: event.side,

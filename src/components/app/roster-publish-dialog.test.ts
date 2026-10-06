@@ -6,7 +6,11 @@ import { deMessages } from "@/i18n/messages/de"
 import { csMessages } from "@/i18n/messages/cs"
 import type { Roster } from "@/types/domain"
 
-import { publishChanges, rosterCounters } from "./roster-publish-dialog"
+import {
+    publishChanges,
+    publishedDayTime,
+    rosterCounters,
+} from "./roster-publish-dialog"
 
 const squad = (
     name: string,
@@ -53,6 +57,22 @@ test("a first publish lists no changes", () => {
     assert.deepEqual(publishChanges({ ...saved, published: false }, saved), [])
 })
 
+test("the dialog compares with the version the server stored at the last publish (D5-B04)", () => {
+    // Since that publish a decline moved Zubr out of the squads; the stored
+    // version still has him, as the digest and the DMs will.
+    const stored: Roster = {
+        ...saved,
+        publishedPlaces: [
+            { userId: "rex", squad: "F1", role: "Squad Leader" },
+            { userId: "zubr", squad: "F1", role: "Rifleman" },
+        ],
+    }
+    const changes = publishChanges(stored, stored)
+    const byUser = new Map(changes.map((change) => [change.userId, change]))
+    assert.equal(byUser.get("zubr")?.removed, true)
+    assert.equal(byUser.has("rex"), false)
+})
+
 test("a re-publish lists the changes against the last published version", () => {
     const draft: Roster = {
         ...saved,
@@ -86,4 +106,38 @@ test("the dialog copy exists in every locale with the same keys", () => {
             keys(csMessages.reminderDelivery)
         )
     }
+})
+
+test("the published time reads today, yesterday or a date in the clan's zone (D5-13, D5-14)", () => {
+    // Tuesday 6 October 2026, 20:00 in Prague.
+    const now = Date.parse("2026-10-06T18:00:00.000Z")
+    const cs = csMessages.rosterPublish
+    const at = (
+        iso: string,
+        locale = "cs-CZ",
+        text: Parameters<typeof publishedDayTime>[4] = cs
+    ) => publishedDayTime(iso, now, locale, "Europe/Prague", text)
+    assert.equal(at("2026-10-06T16:40:00.000Z"), "dnes v 18:40")
+    assert.equal(at("2026-10-05T16:40:00.000Z"), "včera v 18:40")
+    assert.equal(at("2026-10-03T16:40:00.000Z"), "so 3. 10. v 18:40")
+    // The clan's calendar day, not UTC's: 23:30 UTC is already tomorrow.
+    assert.equal(at("2026-10-05T22:30:00.000Z"), "dnes v 00:30")
+    assert.equal(
+        cs.publishedAt.replace("{time}", at("2026-10-06T16:40:00.000Z")!),
+        "zveřejněno dnes v 18:40"
+    )
+    assert.equal(
+        cs.changesAgainst.replace("{time}", at("2026-10-06T16:40:00.000Z")!),
+        "Proti verzi zveřejněné dnes v 18:40."
+    )
+    assert.equal(
+        at("2026-10-05T16:40:00.000Z", "en-GB", enMessages.rosterPublish),
+        "yesterday at 18:40"
+    )
+    assert.equal(
+        at("2026-10-06T16:40:00.000Z", "de-DE", deMessages.rosterPublish),
+        "heute um 18:40"
+    )
+    assert.equal(at("not a date"), undefined)
+    assert.equal(at(""), undefined)
 })

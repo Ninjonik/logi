@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     ANNOUNCEMENT_LAYOUT_VERSION,
     ANNOUNCEMENT_MIGRATIONS_PER_MINUTE,
+    hasMigratableMessage,
     isAnnouncementMigrationDue,
     takeMigrationToken,
 } from "./announcement-migration"
@@ -13,7 +14,7 @@ const due = (gameEnd: string, patch = {}) =>
     isAnnouncementMigrationDue({
         gameEnd,
         now,
-        hasCard: true,
+        hasMessage: true,
         layoutVersion: null,
         version: ANNOUNCEMENT_LAYOUT_VERSION,
         ...patch,
@@ -37,7 +38,28 @@ test("a card is redrawn once: the stored layout marks it done; no card, nothing 
         due("2026-10-25T20:00:00.000Z", { layoutVersion: "old" }),
         true
     )
-    assert.equal(due("2026-10-25T20:00:00.000Z", { hasCard: false }), false)
+    assert.equal(due("2026-10-25T20:00:00.000Z", { hasMessage: false }), false)
+})
+
+test("a match whose announcement the old bot removed is redrawn through its roster card or forum post, once (L1-147, L1-B20)", () => {
+    assert.equal(hasMigratableMessage(null), false)
+    assert.equal(hasMigratableMessage({}), false)
+    assert.equal(hasMigratableMessage({ announcementMessageId: "1" }), true)
+    // The roster card in the roster channel, without an announcement.
+    assert.equal(hasMigratableMessage({ eventInfoMessageId: "2" }), true)
+    // Only the forum's "Informace o zápasu" post.
+    assert.equal(hasMigratableMessage({ infoMessageId: "3" }), true)
+    // Recorded after the redraw: never queued again.
+    assert.equal(
+        due("2026-10-25T20:00:00.000Z", {
+            migrationVersion: ANNOUNCEMENT_LAYOUT_VERSION,
+        }),
+        false
+    )
+    assert.equal(
+        due("2026-10-25T20:00:00.000Z", { migrationVersion: "old" }),
+        true
+    )
 })
 
 test("redraws are limited to a few per minute (L1-151)", () => {

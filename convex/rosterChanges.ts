@@ -1,5 +1,10 @@
 import { v } from "convex/values"
 
+import {
+    diffRosterPlaces,
+    rosterPlaces,
+    snapshotToPlaces,
+} from "../src/domain/rosters/roster-update-summary"
 import { mutation, query, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -16,10 +21,13 @@ const slot = v.object({
 /**
  * Queues the change digest and change DMs of a re-published roster (boards
  * L1-120..126, L2-35..40, D5). The Next route checks the session, the clan
- * admin right and the origin, keeps only clan members in `before` and
- * passes the admin's Discord ID; this function checks the internal secret
- * and that the published roster belongs to the match and the clan. The bot
- * sends the messages.
+ * admin right and the origin and passes the admin's Discord ID; this
+ * function checks the internal secret and that the published roster
+ * belongs to the match and the clan. The baseline is the version the
+ * roster's last publish replaced, stored on the server at that publish
+ * (D5-B04); a `before` sent by an older dashboard is ignored. One request
+ * per publish: asking again returns the queued one. The bot sends the
+ * messages.
  */
 export const request = mutation({
     args: {
@@ -28,7 +36,8 @@ export const request = mutation({
         eventId: v.string(),
         rosterId: v.string(),
         requestedBy: v.string(),
-        before: v.array(slot),
+        /** Ignored: the server's stored baseline is used (D5-B04). */
+        before: v.optional(v.array(slot)),
         notifyPlayers: v.boolean(),
         postDigest: v.boolean(),
         mentionPlayers: v.boolean(),
@@ -50,25 +59,64 @@ export const request = mutation({
         )
             return { status: "not_found" as const }
         if (!roster.published) return { status: "not_published" as const }
-        if (!args.notifyPlayers && !args.postDigest && !args.mentionPlayers)
-            return { status: "nothing" as const }
+        // A first publish (or a roster not published again since the
+        // snapshots exist) has nothing to compare with.
+        const baseline = roster.previousPublishedPlaces
+        const changes = baseline
+            ? diffRosterPlaces(
+                  snapshotToPlaces(baseline),
+                  rosterPlaces(roster),
+                  roster.reservePlayerIds
+              )
+            : []
+        const notifyPlayers = args.notifyPlayers && changes.length > 0
+        const postDigest = args.postDigest && changes.length > 0
+        if (!notifyPlayers && !postDigest && !args.mentionPlayers)
+            return {
+                status: "nothing" as const,
+                hasChanges: changes.length > 0,
+            }
+        if (roster.publishedAt) {
+            const earlier = await ctx.db
+                .query("rosterChangeRequests")
+                .withIndex("eventId_requestedAt", (q) =>
+                    q.eq("eventId", event._id)
+                )
+                .order("desc")
+                .take(50)
+            const queued = earlier.find(
+                (item) =>
+                    item.rosterId === roster._id &&
+                    !item.firstPublish &&
+                    item.rosterPublishedAt === roster.publishedAt
+            )
+            if (queued)
+                return {
+                    status: "queued" as const,
+                    requestId: String(queued._id),
+                    hasChanges: changes.length > 0,
+                }
+        }
         const id = await ctx.db.insert("rosterChangeRequests", {
             guildId: event.guildId,
             eventId: event._id,
             rosterId: roster._id,
             requestedBy: args.requestedBy,
             requestedAt: new Date().toISOString(),
-            before: args.before.slice(0, 500).map((item) => ({
-                userId: item.userId.slice(0, 32),
-                squad: item.squad.slice(0, 100),
-                ...(item.role ? { role: item.role.slice(0, 100) } : {}),
-            })),
-            notifyPlayers: args.notifyPlayers,
-            postDigest: args.postDigest,
+            before: (baseline ?? []).slice(0, 500),
+            notifyPlayers,
+            postDigest,
             mentionPlayers: args.mentionPlayers,
+            ...(roster.publishedAt
+                ? { rosterPublishedAt: roster.publishedAt }
+                : {}),
             status: "pending",
         })
-        return { status: "queued" as const, requestId: String(id) }
+        return {
+            status: "queued" as const,
+            requestId: String(id),
+            hasChanges: changes.length > 0,
+        }
     },
 })
 
@@ -176,6 +224,7 @@ export const claim = mutation({
             notifyPlayers: row.notifyPlayers,
             postDigest: row.postDigest,
             mentionPlayers: row.mentionPlayers,
+            firstPublish: row.firstPublish === true,
             memberIds: [
                 ...new Set(members.map((assignment) => assignment.userId)),
             ],

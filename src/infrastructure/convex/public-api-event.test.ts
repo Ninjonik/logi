@@ -685,6 +685,61 @@ test("roster API verifies its parent event and queues one roster webhook", async
     assert.equal(db.tables.webhookDeliveries.size, 1)
 })
 
+test("a roster published through the API keeps the published version like the dashboard (D5-B04)", async () => {
+    const db = new FakeDb()
+    db.tables.events.set("event-a", {
+        _id: "event-a",
+        guildId: "guild-a",
+        registrationEnd: "2020-01-01T00:00:00.000Z",
+        participants: [],
+    })
+    const squad = (name: string) => [
+        {
+            name,
+            group: "Pěchota",
+            order: 0,
+            color: "#000000",
+            players: [{ id: "910000000000000011", ack: false }],
+        },
+    ]
+    db.tables.rosters.set("roster-a", {
+        _id: "roster-a",
+        eventId: "event-a",
+        squads: squad("F1"),
+        reservePlayerIds: [],
+        notAttendingPlayerIds: [],
+        published: true,
+    })
+    const result = await handler(publicApi.mutateClanRoster)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            idempotencyKey: "roster-publish-key",
+            bodyHash: "",
+            methodPath: "PUT /clan/rosters/{rosterId}",
+            operation: "update",
+            rosterId: "roster-a",
+            payload: {
+                eventId: "event-a",
+                squads: squad("F2"),
+                reservePlayerIds: [],
+                notAttendingPlayerIds: [],
+                published: true,
+            },
+        }
+    )
+
+    assert.equal(result?.status, 200)
+    const saved = db.tables.rosters.get("roster-a")
+    assert.deepEqual(saved?.previousPublishedPlaces, [
+        { userId: "910000000000000011", squad: "F1" },
+    ])
+    assert.deepEqual(saved?.publishedPlaces, [
+        { userId: "910000000000000011", squad: "F2" },
+    ])
+})
+
 test("roster API rejects a roster whose parent event belongs to another guild", async () => {
     const db = new FakeDb()
     db.tables.events.set("event-other", {

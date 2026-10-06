@@ -6,10 +6,11 @@ import {
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
 import { ConvexEventWorkflowRepository } from "../src/infrastructure/convex/event-workflow-repositories"
 import { AttendanceDeclineRejected } from "../src/domain/rosters/attendance-decline"
+import { resolveGameScope, withGameOverrides } from "../src/domain/games/game"
+import { rosterCardHome } from "../src/domain/rosters/roster-update-channel"
 import { deriveEventStatus } from "../src/domain/events/status"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import { authorizeRosterManager } from "./rosterWriterAccess"
-import { resolveGameScope } from "../src/domain/games/game"
 import { systemClock } from "../src/domain/shared/clock"
 import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
@@ -104,6 +105,7 @@ export const upsert = mutation({
                 )
             }
         }
+        const wasPublished = Boolean(existing?.published)
         const useCase = new UpsertRosterUseCase(
             new ConvexRosterCommandRepository(ctx)
         )
@@ -121,11 +123,13 @@ export const upsert = mutation({
             published: args.published,
         })
         // Saving a published roster publishes it again; the bot reads the
-        // chosen look and the publish time for the roster message.
+        // chosen look and the publish time for the roster message. The use
+        // case stored what this publish shows and what it replaced (D5-B04).
         const savedId = ctx.db.normalizeId("rosters", String(rosterId))
-        if (args.published && savedId)
+        if (args.published && savedId) {
+            const publishedAt = new Date().toISOString()
             await ctx.db.patch(savedId, {
-                publishedAt: new Date().toISOString(),
+                publishedAt,
                 ...(args.discordPublish
                     ? {
                           discordMessageVariant: args.discordPublish.variant,
@@ -134,6 +138,49 @@ export const upsert = mutation({
                       }
                     : {}),
             })
+            // "Označit zařazené hráče" on a first publish without a roster
+            // channel (D5-08): the announcement doubles as the roster card
+            // and Discord never pings on its edit, so the bot mentions the
+            // players in a reply to it, once.
+            if (!wasPublished && args.discordPublish?.mentionPlayers) {
+                const config = await ctx.db
+                    .query("discordConfigs")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                    .unique()
+                const channels = config
+                    ? withGameOverrides(
+                          config,
+                          config.gameOverrides,
+                          event.gameId
+                      )
+                    : null
+                if (
+                    rosterCardHome({
+                        kind: event.kind ?? "match",
+                        eventAnnouncementChannelId: event.announcementChannelId,
+                        eventInfoChannelId: event.eventInfoChannelId,
+                        configuredAnnouncementChannelId:
+                            channels?.announcementsChannelId,
+                        configuredEventInfoChannelId:
+                            channels?.eventInfoChannelId,
+                    }) === "announcement"
+                )
+                    await ctx.db.insert("rosterChangeRequests", {
+                        guildId,
+                        eventId: event._id,
+                        rosterId: savedId,
+                        requestedBy: args.actor.subject,
+                        requestedAt: publishedAt,
+                        before: [],
+                        notifyPlayers: false,
+                        postDigest: false,
+                        mentionPlayers: true,
+                        rosterPublishedAt: publishedAt,
+                        firstPublish: true,
+                        status: "pending",
+                    })
+            }
+        }
         return rosterId
     },
 })

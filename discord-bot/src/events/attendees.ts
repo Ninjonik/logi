@@ -62,6 +62,8 @@ const ref = {
 
 export type AttendeesData = {
     config: DiscordConfig
+    /** The clan's dashboard record (Convex `guilds`), null when unknown. */
+    serverId: string | null
     event: EventRecord
     category: { label: string; color: string | null } | null
     groups: Array<{ id: string; name: string }>
@@ -125,15 +127,23 @@ function displayNames(
     return names
 }
 
-/** The match's attendance page in Logi (L1-85). */
-function attendanceUrl(data: AttendeesData) {
+/**
+ * The match's attendance page in Logi (L1-85). Dashboard URLs name the
+ * clan's Convex record, never its Discord ID; without one there is no link.
+ */
+export function attendanceUrl(
+    data: Pick<AttendeesData, "config" | "serverId" | "event">,
+    siteUrl: string = env.appSiteUrl
+) {
+    const serverId = data.serverId?.trim()
+    if (!serverId) return null
     const language = isClanLanguage(data.config.defaultLanguage)
         ? data.config.defaultLanguage
         : "en"
     const section = data.event.kind === "training" ? "trainings" : "matches"
     const url = new URL(
-        `/${language}/dashboard/servers/${encodeURIComponent(data.event.guildId)}/${section}/${encodeURIComponent(data.event.id)}`,
-        env.appSiteUrl
+        `/${language}/dashboard/servers/${encodeURIComponent(serverId)}/${section}/${encodeURIComponent(data.event.id)}`,
+        siteUrl
     )
     url.searchParams.set("tab", "attendance")
     return url.toString()
@@ -201,6 +211,7 @@ export function attendeesViewFor(
         reminderAvailable:
             data.unanswered.unavailable === null &&
             data.unanswered.userIds.length > 0,
+        reminderClosed: data.unanswered.unavailable === "signups_closed",
         webUrl: input.leadership ? attendanceUrl(data) : null,
         copy,
     }).view

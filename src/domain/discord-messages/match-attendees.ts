@@ -57,6 +57,11 @@ export type AttendeesViewInput = {
     names: ReadonlyMap<string, string>
     /** Leadership: "Připomenout bez odpovědi" can be sent now. */
     reminderAvailable?: boolean
+    /**
+     * Leadership: the reminder is off because sign-ups closed; the card says
+     * so under the button (L1-84, resolution in INDEX).
+     */
+    reminderClosed?: boolean
     /** Leadership: the match's attendance page in Logi. */
     webUrl?: string | null
     copy: MatchAnnouncementCopy
@@ -414,6 +419,11 @@ export function buildAttendeesView(input: AttendeesViewInput): {
                 : []),
         ]
         blocks.push({ kind: "buttons", buttons: actions })
+        if (!input.reminderAvailable && input.reminderClosed)
+            blocks.push({
+                kind: "text",
+                markdown: `-# ${text.remindClosedBody}`,
+            })
     }
     return {
         page,

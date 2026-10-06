@@ -97,7 +97,7 @@ test("sign-up reminder: label, match, weekday start, deadline chip, why it came 
         content,
         /-# \*\*PŘIPOMÍNKA PŘIHLÁŠKY\*\*\n### VLK vs ROG\n🟢 \*\*Přátelák\*\*/
     )
-    assert.match(content, /\*\*VLK\*\* Spojenci ★  vs  \*\*ROG\*\* Osa ✚/)
+    assert.match(content, /`VLK` Spojenci ★  vs  `ROG` Osa ✚/)
     assert.match(
         content,
         /\*\*ne <t:1791741600:d> · <t:1791741600:t>\*\* · <t:1791741600:R>/

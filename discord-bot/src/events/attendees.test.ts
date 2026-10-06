@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    attendanceUrl,
     attendeesViewFor,
     isMatchLeadership,
     type AttendeesData,
@@ -111,6 +112,8 @@ test("leadership is the Logi admin role or Administrator, read fresh at the clic
 
 const data: AttendeesData = {
     config: { ...boardConfig, dashboardAdminRoleId: "admin-role" },
+    // The clan's Convex record; the event's guildId is its Discord ID.
+    serverId: "jd7guildrecord000000000000000001",
     event: withLimits(
         boardEvent({
             status: "closed",
@@ -199,10 +202,48 @@ test("leadership sees reasons, Bez odpovědi and a link to the match's attendanc
     )
     assert.match(body, /\*\*Kos\*\* · nemoc/)
     assert.match(body, /Bez odpovědi \(1\)\*\* · .*\nSokol/)
-    // Sign-ups are closed, so there is nobody to remind now.
+    // Sign-ups are closed, so there is nobody to remind now, and the card
+    // says why (L1-84).
     assert.match(body, /\[Připomenout bez odpovědi off\]/)
     assert.match(
         body,
-        /\[Otevřít na webu https?:\/\/[^\s\]]+\/cs\/dashboard\/servers\/111111111111111111\/matches\/event-1\?tab=attendance\]/
+        /-# Připomínka přihlášky jde poslat jen do konce přihlášek\./
     )
+    // The dashboard URL names the Convex guild record, never the Discord ID.
+    assert.match(
+        body,
+        /\[Otevřít na webu https?:\/\/[^\s\]]+\/cs\/dashboard\/servers\/jd7guildrecord000000000000000001\/matches\/event-1\?tab=attendance\]/
+    )
+    assert.doesNotMatch(body, new RegExp(`servers/${data.event.guildId}/`))
+})
+
+test("Otevřít na webu links the dashboard's guild record and is left out without one (L1-85)", () => {
+    assert.equal(
+        attendanceUrl(data, "https://logi.example"),
+        "https://logi.example/cs/dashboard/servers/jd7guildrecord000000000000000001/matches/event-1?tab=attendance"
+    )
+    assert.equal(
+        attendanceUrl(
+            {
+                ...data,
+                event: { ...data.event, kind: "training" },
+            },
+            "https://logi.example"
+        ),
+        "https://logi.example/cs/dashboard/servers/jd7guildrecord000000000000000001/trainings/event-1?tab=attendance"
+    )
+    assert.equal(attendanceUrl({ ...data, serverId: null }), null)
+    const body = text(
+        attendeesViewFor(
+            { ...data, serverId: null },
+            {
+                leadership: true,
+                filter: { kind: "all" },
+                page: 1,
+                names,
+                now: new Date("2026-10-10T18:00:00.000Z"),
+            }
+        )
+    )
+    assert.doesNotMatch(body, /Otevřít na webu/)
 })

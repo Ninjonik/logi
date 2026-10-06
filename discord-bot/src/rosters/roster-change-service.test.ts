@@ -3,13 +3,13 @@ import test from "node:test"
 
 import type { ContainerBuilder } from "discord.js"
 
-import type { EventRecord, Roster, SyncPayload } from "../types"
 import {
     deliverRosterChanges,
     rosterChangesKey,
     type ClaimedRosterChanges,
     type RosterChangePorts,
 } from "./roster-change-service"
+import type { EventRecord, Roster, SyncPayload } from "../types"
 
 const id = (n: number) => `10000000000000000${n}`
 
@@ -19,8 +19,16 @@ const event = {
     kind: "match",
     name: "Liga",
     matchTeams: [
-        { slot: "a", side: "Allies", snapshot: { name: "Vlci", shortCode: "VLK" } },
-        { slot: "b", side: "Axis", snapshot: { name: "Rogue", shortCode: "ROG" } },
+        {
+            slot: "a",
+            side: "Allies",
+            snapshot: { name: "Vlci", shortCode: "VLK" },
+        },
+        {
+            slot: "b",
+            side: "Axis",
+            snapshot: { name: "Rogue", shortCode: "ROG" },
+        },
     ],
     eventInfoChannelId: "300000000000000001",
     registrationEnd: "2026-10-10T17:30:00.000Z",
@@ -116,9 +124,9 @@ function fakePorts(closed: string[] = []) {
             dms.push({
                 userId,
                 json: JSON.stringify(
-                    (message as { components: ContainerBuilder[] }).components.map(
-                        (item) => item.toJSON()
-                    )
+                    (
+                        message as { components: ContainerBuilder[] }
+                    ).components.map((item) => item.toJSON())
                 ),
             })
             return !closed.includes(userId)
@@ -203,4 +211,55 @@ test("nothing is sent when the admin turned everything off or the roster is gone
         ports,
     })
     assert.deepEqual([dms, digests, mentions], [[], [], []])
+})
+
+test("a first publish without a roster channel mentions the players in a reply to the announcement (D5-08)", async () => {
+    // No roster channel: the announcement doubles as the roster card.
+    const single = {
+        ...payload,
+        config: {
+            ...payload.config,
+            announcementsChannelId: "300000000000000009",
+        },
+        events: [{ ...event, eventInfoChannelId: undefined }],
+        syncStates: [
+            {
+                eventId: "event-1",
+                announcementMessageId: "400000000000000009",
+            },
+        ],
+    } as unknown as SyncPayload
+    const firstPublish: ClaimedRosterChanges = {
+        ...request,
+        before: [],
+        digestBaseline: [],
+        notifyPlayers: false,
+        postDigest: false,
+        mentionPlayers: true,
+        firstPublish: true,
+    }
+    const { ports, dms, digests, mentions } = fakePorts()
+    await deliverRosterChanges({
+        payload: single,
+        request: firstPublish,
+        ports,
+    })
+    assert.deepEqual(mentions, [
+        {
+            channelId: "300000000000000009",
+            messageId: "400000000000000009",
+            userIds: [id(1), id(2), id(3)],
+        },
+    ])
+    // Only the mention: no change DMs and no digest on a first publish.
+    assert.deepEqual([dms, digests], [[], []])
+
+    // With a roster channel the roster message's first post pings itself.
+    const split = fakePorts()
+    await deliverRosterChanges({
+        payload,
+        request: firstPublish,
+        ports: split.ports,
+    })
+    assert.deepEqual(split.mentions, [])
 })

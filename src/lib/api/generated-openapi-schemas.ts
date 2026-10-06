@@ -1003,6 +1003,48 @@ export const generatedOpenApiSchemas = {
             "publishedAt": {
                 "type": "string"
             },
+            "publishedPlaces": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {
+                            "type": "string"
+                        },
+                        "squad": {
+                            "type": "string"
+                        },
+                        "role": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "userId",
+                        "squad"
+                    ]
+                }
+            },
+            "previousPublishedPlaces": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {
+                            "type": "string"
+                        },
+                        "squad": {
+                            "type": "string"
+                        },
+                        "role": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "userId",
+                        "squad"
+                    ]
+                }
+            },
             "meetingAttendance": {
                 "type": "object",
                 "properties": {
@@ -1093,6 +1135,20 @@ export const generatedOpenApiSchemas = {
             "discordMessageVariant": "photo_text",
             "discordMentionPlayers": true,
             "publishedAt": "string",
+            "publishedPlaces": [
+                {
+                    "userId": "string",
+                    "squad": "string",
+                    "role": "string"
+                }
+            ],
+            "previousPublishedPlaces": [
+                {
+                    "userId": "string",
+                    "squad": "string",
+                    "role": "string"
+                }
+            ],
             "meetingAttendance": {
                 "loadedAt": "string",
                 "channelId": "string",

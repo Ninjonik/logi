@@ -5,19 +5,20 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 
 import {
+    changedRecipients,
+    countRosterPlayerChanges,
+    diffRosterPlaces,
+    rosterPlaces,
+    snapshotToPlaces,
+    type RosterPlayerChange,
+} from "@/domain/rosters/roster-update-summary"
+import {
     rosterChangesView,
     rosterMessageView,
     type RosterCardContext,
     type RosterCardEvent,
     type RosterMessageVariant,
 } from "@/domain/discord-messages/roster-message"
-import {
-    changedRecipients,
-    countRosterPlayerChanges,
-    diffRosterPlaces,
-    rosterPlaces,
-    type RosterPlayerChange,
-} from "@/domain/rosters/roster-update-summary"
 import {
     Dialog,
     DialogClose,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
+import { calendarDayOffset } from "@/domain/discord-messages/calendar-day"
 import type { AppUser, EventRecord, Group, Roster } from "@/types/domain"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
@@ -90,11 +92,18 @@ export function rosterCounters(roster: Roster) {
     }
 }
 
-/** The diff the dialog lists, against the last published version (D5-B04). */
+/**
+ * The diff the dialog lists, against the last published version (D5-B04):
+ * the places the server stored at that publish, the same baseline the
+ * digest and the DMs use; a roster published before the snapshots existed
+ * compares with its saved squads.
+ */
 export function publishChanges(saved: Roster | undefined, draft: Roster) {
     if (!saved?.published) return []
     return diffRosterPlaces(
-        rosterPlaces(saved),
+        saved.publishedPlaces
+            ? snapshotToPlaces(saved.publishedPlaces)
+            : rosterPlaces(saved),
         rosterPlaces(draft),
         draft.reservePlayerIds
     )
@@ -121,6 +130,51 @@ function formatShortDateTime(
         minute: "2-digit",
     }).format(date)
     return `${day} · ${time}`
+}
+
+/** The clan's zone when the browser knows it, else UTC. */
+function knownZone(timeZone: string) {
+    try {
+        new Intl.DateTimeFormat("en", { timeZone: timeZone || "UTC" })
+        return timeZone || "UTC"
+    } catch {
+        return "UTC"
+    }
+}
+
+/**
+ * When the shown version was published, by the clan's calendar day:
+ * "dnes v 18:40", "včera v 18:40", else "út 6. 10. v 18:40" (D5-13, D5-14).
+ */
+export function publishedDayTime(
+    value: string | undefined,
+    now: number,
+    locale: string,
+    timeZone: string,
+    text: Pick<
+        Dictionary["rosterPublish"],
+        "publishedToday" | "publishedYesterday" | "publishedOn"
+    >
+) {
+    if (!value) return undefined
+    const at = Date.parse(value)
+    if (!Number.isFinite(at)) return undefined
+    const zone = knownZone(timeZone)
+    const time = new Intl.DateTimeFormat(locale, {
+        timeZone: zone,
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(at)
+    const offset = calendarDayOffset(at, now, zone)
+    if (offset === 0) return text.publishedToday.replace("{time}", time)
+    if (offset === -1) return text.publishedYesterday.replace("{time}", time)
+    const date = new Intl.DateTimeFormat(locale, {
+        timeZone: zone,
+        weekday: "short",
+        day: "numeric",
+        month: "numeric",
+    }).format(at)
+    return text.publishedOn.replace("{date}", date).replace("{time}", time)
 }
 
 function ChangeLine({
@@ -247,10 +301,12 @@ function RosterPublishBody({
     const title = matchTitle(event)
     const when = formatShortDateTime(event.gameStart, locale, context.timeZone)
     const publishedAt = republish
-        ? formatShortDateTime(
+        ? publishedDayTime(
               saved?.publishedAt ?? saved?.updatedAt,
+              now,
               locale,
-              context.timeZone
+              context.timeZone,
+              t
           )
         : undefined
     const channel = context.rosterChannelName

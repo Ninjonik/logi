@@ -2,6 +2,7 @@ export type Timestamp = string
 
 import type { StoredCommandSettings } from "@/domain/discord-commands/command-settings"
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
+import type { RosterPlaceSnapshot } from "@/domain/rosters/roster-update-summary"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import type { ApplicationForm } from "@/domain/membership/application-form"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
@@ -691,6 +692,10 @@ export type Roster = {
     discordMentionPlayers?: boolean
     /** When the roster was last published from the dashboard. */
     publishedAt?: Timestamp
+    /** The squad places of the last publish (D5-B04). */
+    publishedPlaces?: RosterPlaceSnapshot[]
+    /** The squad places of the version the last publish replaced. */
+    previousPublishedPlaces?: RosterPlaceSnapshot[]
     /** The last time attendance was read from the meeting voice channel. */
     meetingAttendance?: {
         loadedAt: Timestamp

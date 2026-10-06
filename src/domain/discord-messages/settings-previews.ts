@@ -47,6 +47,7 @@ import type { DirectMessageCopy, RosterMessageCopy } from "./match-copy"
 import { botErrorReportView, type BotErrorsCopy } from "./bot-errors"
 import { discordWeekdayTimestamp, fillTemplate } from "./format"
 import type { MessageLayoutOptions } from "./message-layout"
+import { sidesRow } from "./match-text"
 
 /** Every row of "Co bot posílá" with a preview, in board order. */
 export const SETTINGS_PREVIEW_KINDS = [
@@ -352,7 +353,21 @@ function announcementPreview(input: SettingsPreviewInput): SettingsPreview {
                     lines: [
                         {
                             line: "side",
-                            text: `**${samples.clanCode}** ${input.roster.factions.allies} ★  vs  **${samples.opponentCode}** ${input.roster.factions.axis} ✚`,
+                            // The bot's own sides row (L1-12, L1-130).
+                            text:
+                                sidesRow({
+                                    teams: [
+                                        {
+                                            code: samples.clanCode,
+                                            side: "Allies",
+                                        },
+                                        {
+                                            code: samples.opponentCode,
+                                            side: "Axis",
+                                        },
+                                    ],
+                                    factions: input.roster.factions,
+                                }) ?? "",
                         },
                         {
                             line: "start",
