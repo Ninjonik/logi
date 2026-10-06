@@ -47,6 +47,8 @@ export const BOT_ERROR_SOURCES = [
     "ticketSupport",
     "ticketIntro",
     "ticketRename",
+    "ticketCloseCard",
+    "ticketCloseThread",
     "applicationOpen",
     "applicationRecruiters",
     "applicationIntro",
@@ -87,6 +89,7 @@ export type BotErrorFollowUp =
     | "panel"
     | "reminders"
     | "ticket"
+    | "ticketClose"
     | "application"
     | "playerReport"
 
@@ -292,6 +295,22 @@ export const BOT_ERROR_SOURCE_SPECS: Record<
         area: "tickets",
         flow: "interaction",
         followUp: "ticket",
+        links: ["tickets"],
+        permissions: ["ViewChannel", "ManageThreads"],
+    },
+    // `/close_ticket` (M3-07, M3-B02): the ticket is closed in Logi, but the
+    // close card or the thread's rename, lock and archive did not happen.
+    ticketCloseCard: {
+        area: "tickets",
+        flow: "interaction",
+        followUp: "ticketClose",
+        links: ["tickets"],
+        permissions: IN_THREAD,
+    },
+    ticketCloseThread: {
+        area: "tickets",
+        flow: "interaction",
+        followUp: "ticketClose",
         links: ["tickets"],
         permissions: ["ViewChannel", "ManageThreads"],
     },

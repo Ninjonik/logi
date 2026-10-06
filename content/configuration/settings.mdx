@@ -653,8 +653,11 @@ remain unconfirmed; they do not create a verified player link or approved match
 result. No game-server controls are provided by this screen or these API routes.
 
 Discord server managers can also use `/server-status` with a game to see a private
-summary of stored observations and their freshness. The command does not trigger
-collection; the full connection list stays in settings.
+summary of stored observations and their freshness. A server whose data is no
+longer fresh keeps its last known state for a day, marked stale with the
+observation time ("Online · stale · 25 minutes ago"); after a day it reads
+"No data". The command does not trigger collection; the full connection list
+stays in settings.
 
 ### Warcon live scoreboard and website reads
 

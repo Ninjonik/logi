@@ -118,6 +118,9 @@ export const references = {
         "players:setMatchRecapNotifications"
     ),
     findNoticeTarget: makeFunctionReference<"query">("events:findNoticeTarget"),
+    findStartedNoticeEvent: makeFunctionReference<"query">(
+        "events:findStartedNoticeEvent"
+    ),
     failMeetingAttendanceRequest: makeFunctionReference<"mutation">(
         "meetingAttendance:failMeetingAttendanceRequest"
     ),

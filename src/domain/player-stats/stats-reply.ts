@@ -360,6 +360,20 @@ function hllList(
         : [{ kind: "text", markdown: input.copy.noItems }]
 }
 
+/**
+ * When the shown statistics were collected (M2-23, M2-B03): the Warcon
+ * history's last collection or the HLL Records read. The shared card's "stav
+ * k" uses it, so it equals the private card's "data z", not the share time.
+ * Null when the source gave no time.
+ */
+export function statsDataTime(result: StatsResultData): string | null {
+    return result.kind === "wardogs"
+        ? result.fetchedAt
+        : result.kind === "hll"
+          ? result.read.fetchedAt
+          : null
+}
+
 /** Whether the read holds statistics that can be shown and shared. */
 export function statsPublishable(result: StatsResultData) {
     return result.kind === "wardogs"

@@ -429,6 +429,10 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 ticketSupport: "Support could not be added to the ticket",
                 ticketIntro: "The ticket intro was not sent",
                 ticketRename: "The ticket could not be renamed",
+                ticketCloseCard:
+                    "The closed ticket's summary was not posted in its thread",
+                ticketCloseThread:
+                    "The closed ticket's thread could not be renamed, locked or archived",
                 applicationOpen: "The application did not open",
                 applicationRecruiters:
                     "Recruiters could not be added to the application",
@@ -510,6 +514,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 panel: "The panel refreshes by itself at the next sync.",
                 reminders: "The next reminder goes out as planned.",
                 ticket: "Then tell the player to open the ticket again.",
+                ticketClose:
+                    "The ticket is closed in Logi; finish its thread in Discord by hand.",
                 application:
                     "Then tell the applicant to send the application again.",
                 playerReport: "Then tell the player to report again.",
@@ -670,6 +676,10 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 ticketSupport: "Do ticketu se nepodařilo přidat podporu",
                 ticketIntro: "Úvod ticketu se neodeslal",
                 ticketRename: "Ticket se nepodařilo přejmenovat",
+                ticketCloseCard:
+                    "Shrnutí uzavřeného ticketu se do vlákna neodeslalo",
+                ticketCloseThread:
+                    "Vlákno uzavřeného ticketu se nepodařilo přejmenovat, zamknout ani archivovat",
                 applicationOpen: "Přihláška se neotevřela",
                 applicationRecruiters:
                     "Do přihlášky se nepodařilo přidat nábor",
@@ -749,6 +759,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 panel: "Panel se obnoví sám při další synchronizaci.",
                 reminders: "Další připomínka se pošle podle plánu.",
                 ticket: "Pak hráči napiš, ať ticket otevře znovu.",
+                ticketClose:
+                    "Ticket je v Logi uzavřený, vlákno pak v Discordu dokonči ručně.",
                 application: "Pak uchazeči napiš, ať přihlášku podá znovu.",
                 playerReport: "Pak hráči napiš, ať hráče nahlásí znovu.",
             },
@@ -935,6 +947,10 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Der Support konnte nicht zum Ticket hinzugefügt werden",
                 ticketIntro: "Die Ticket-Einleitung wurde nicht gesendet",
                 ticketRename: "Das Ticket konnte nicht umbenannt werden",
+                ticketCloseCard:
+                    "Die Zusammenfassung des geschlossenen Tickets wurde nicht im Thread gepostet",
+                ticketCloseThread:
+                    "Der Thread des geschlossenen Tickets konnte nicht umbenannt, gesperrt oder archiviert werden",
                 applicationOpen: "Die Bewerbung hat sich nicht geöffnet",
                 applicationRecruiters:
                     "Das Recruiting konnte nicht zur Bewerbung hinzugefügt werden",
@@ -1022,6 +1038,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 panel: "Das Panel wird bei der nächsten Synchronisierung von selbst aktualisiert.",
                 reminders: "Die nächste Erinnerung geht wie geplant raus.",
                 ticket: "Sag dem Spieler dann, dass er das Ticket erneut öffnen soll.",
+                ticketClose:
+                    "Das Ticket ist in Logi geschlossen; schließe den Thread danach in Discord von Hand ab.",
                 application:
                     "Sag dem Bewerber dann, dass er die Bewerbung erneut abschicken soll.",
                 playerReport:

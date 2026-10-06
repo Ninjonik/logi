@@ -23,7 +23,7 @@ export type ServerStatusCopy = {
     online: string
     offline: string
     stale: string
-    /** The chip when the stored row withholds the last state once stale. */
+    /** The chip of a stale row whose provider reported no state. */
     staleOnly: string
     noData: string
     disabled: string
@@ -49,6 +49,10 @@ export type ServerStatusProvider =
 /** One stored connection as `/server-status` shows it. */
 export type ServerStatusRow = {
     displayName: string | null
+    /**
+     * The state to name: the fresh state, or for a row that is not fresh the
+     * last observed one (at most a day old), else "unknown".
+     */
     state: "online" | "offline" | "unknown"
     freshness: "fresh" | "stale" | "unavailable"
     collecting: boolean
@@ -80,33 +84,40 @@ function row(copy: ServerStatusCopy, server: ServerStatusRow): MessageField {
             chip: { label: copy.disabled, tone: "neutral" },
             text: copy.disabledHint,
         }
-    // The stored projection reports a stale row's state as unknown, so it
-    // cannot claim "Online · zastaralé" unless the last state is known.
+    // A row that is not fresh names its last known state with "zastaralé"
+    // and the observation time (M3-23); without one it is "Bez dat", or
+    // "Zastaralé" while the provider itself reported an unknown state.
+    const known = server.state === "online" || server.state === "offline"
+    const stateLabel = server.state === "offline" ? copy.offline : copy.online
     const chip =
-        server.freshness === "unavailable" ||
-        (server.state === "unknown" && server.freshness !== "stale")
-            ? { label: copy.noData, tone: "neutral" as const }
-            : server.freshness === "stale"
+        server.freshness === "fresh"
+            ? known
+                ? {
+                      label: stateLabel,
+                      tone:
+                          server.state === "offline"
+                              ? ("danger" as const)
+                              : ("success" as const),
+                  }
+                : { label: copy.noData, tone: "neutral" as const }
+            : known
               ? {
-                    label:
-                        server.state === "online"
-                            ? `${copy.online} · ${copy.stale}`
-                            : server.state === "offline"
-                              ? `${copy.offline} · ${copy.stale}`
-                              : copy.staleOnly,
+                    label: `${stateLabel} · ${copy.stale}`,
                     tone: "warning" as const,
                 }
-              : server.state === "offline"
-                ? { label: copy.offline, tone: "danger" as const }
-                : { label: copy.online, tone: "success" as const }
+              : server.freshness === "stale"
+                ? { label: copy.staleOnly, tone: "warning" as const }
+                : { label: copy.noData, tone: "neutral" as const }
+    // "Bez dat" does not repeat old players or map as if they were current.
+    const noData = chip.label === copy.noData
     const details = [
-        server.players !== null || server.capacity !== null
+        !noData && (server.players !== null || server.capacity !== null)
             ? fillTemplate(copy.players, {
                   players: String(server.players ?? "?"),
                   capacity: String(server.capacity ?? "?"),
               })
             : undefined,
-        server.map ? plain(server.map, 60) : undefined,
+        !noData && server.map ? plain(server.map, 60) : undefined,
         discordTimestamp(server.observedAt, "R"),
         // The public directory's data comes with its attribution link.
         server.provider === "wardogs_public_directory"

@@ -32,7 +32,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "76561198…",
                 invalidTitle: "Tohle nevypadá jako Steam64 ID",
                 invalidBody:
-                    "Má 17 číslic a začíná 7656119. Najdeš ho podle návodu.",
+                    "Má 17 číslic a začíná 7656119. Najdeš ho podle {guide}.",
             },
             epic: {
                 name: "Epic Games",
@@ -50,7 +50,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "32 znaků, např. 8f3c…",
                 invalidTitle: "Tohle nevypadá jako Epic Account ID",
                 invalidBody:
-                    "Má 32 znaků, jen číslice a písmena a–f. Najdeš ho podle návodu.",
+                    "Má 32 znaků, jen číslice a písmena a–f. Najdeš ho podle {guide}.",
             },
             xbox: {
                 name: "Xbox",
@@ -69,7 +69,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "Např. Hrac17CZ",
                 invalidTitle: "Tohle nevypadá jako ID profilu Xbox",
                 invalidBody:
-                    "Jmenovka začíná písmenem a má nejvýš 15 znaků. Najdeš ji podle návodu.",
+                    "Jmenovka začíná písmenem a má nejvýš 15 znaků. Najdeš ji podle {guide}.",
             },
             playstation: {
                 name: "PlayStation",
@@ -87,7 +87,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "Např. Hrac17_CZ",
                 invalidTitle: "Tohle nevypadá jako ID profilu PlayStation",
                 invalidBody:
-                    "Má 3 až 16 znaků a začíná písmenem. Najdeš ho podle návodu.",
+                    "Má 3 až 16 znaků a začíná písmenem. Najdeš ho podle {guide}.",
             },
         },
         otherPlatform: "Jiné ID",
@@ -126,6 +126,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
         },
         guide: {
             guideLink: "Návod",
+            guideInline: "návodu",
             back: "Zpět",
             continueApplication: "Zadat ID a pokračovat",
         },
@@ -173,7 +174,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "76561198…",
                 invalidTitle: "That doesn't look like a Steam64 ID",
                 invalidBody:
-                    "It has 17 digits and starts with 7656119. The guide shows where to find it.",
+                    "It has 17 digits and starts with 7656119. {guide} shows where to find it.",
             },
             epic: {
                 name: "Epic Games",
@@ -192,7 +193,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "32 characters, e.g. 8f3c…",
                 invalidTitle: "That doesn't look like an Epic Account ID",
                 invalidBody:
-                    "It has 32 characters: digits and the letters a–f only. The guide shows where to find it.",
+                    "It has 32 characters: digits and the letters a–f only. {guide} shows where to find it.",
             },
             xbox: {
                 name: "Xbox",
@@ -210,7 +211,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "e.g. Player17CZ",
                 invalidTitle: "That doesn't look like an Xbox profile ID",
                 invalidBody:
-                    "A gamertag starts with a letter and has at most 15 characters. The guide shows where to find it.",
+                    "A gamertag starts with a letter and has at most 15 characters. {guide} shows where to find it.",
             },
             playstation: {
                 name: "PlayStation",
@@ -228,7 +229,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "e.g. Player17_CZ",
                 invalidTitle: "That doesn't look like a PlayStation profile ID",
                 invalidBody:
-                    "It has 3 to 16 characters and starts with a letter. The guide shows where to find it.",
+                    "It has 3 to 16 characters and starts with a letter. {guide} shows where to find it.",
             },
         },
         otherPlatform: "Other ID",
@@ -267,6 +268,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
         },
         guide: {
             guideLink: "Guide",
+            guideInline: "The guide",
             back: "Back",
             continueApplication: "Enter ID and continue",
         },
@@ -315,7 +317,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "76561198…",
                 invalidTitle: "Das sieht nicht nach einer Steam64-ID aus",
                 invalidBody:
-                    "Sie hat 17 Ziffern und beginnt mit 7656119. Die Anleitung zeigt, wo du sie findest.",
+                    "Sie hat 17 Ziffern und beginnt mit 7656119. {guide} zeigt, wo du sie findest.",
             },
             epic: {
                 name: "Epic Games",
@@ -334,7 +336,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "32 Zeichen, z. B. 8f3c…",
                 invalidTitle: "Das sieht nicht nach einer Epic-Konto-ID aus",
                 invalidBody:
-                    "Sie hat 32 Zeichen, nur Ziffern und die Buchstaben a–f. Die Anleitung zeigt, wo du sie findest.",
+                    "Sie hat 32 Zeichen, nur Ziffern und die Buchstaben a–f. {guide} zeigt, wo du sie findest.",
             },
             xbox: {
                 name: "Xbox",
@@ -353,7 +355,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 placeholder: "z. B. Spieler17CZ",
                 invalidTitle: "Das sieht nicht nach einer Xbox-Profil-ID aus",
                 invalidBody:
-                    "Ein Gamertag beginnt mit einem Buchstaben und hat höchstens 15 Zeichen. Die Anleitung zeigt, wo du ihn findest.",
+                    "Ein Gamertag beginnt mit einem Buchstaben und hat höchstens 15 Zeichen. {guide} zeigt, wo du ihn findest.",
             },
             playstation: {
                 name: "PlayStation",
@@ -373,7 +375,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 invalidTitle:
                     "Das sieht nicht nach einer PlayStation-Profil-ID aus",
                 invalidBody:
-                    "Sie hat 3 bis 16 Zeichen und beginnt mit einem Buchstaben. Die Anleitung zeigt, wo du sie findest.",
+                    "Sie hat 3 bis 16 Zeichen und beginnt mit einem Buchstaben. {guide} zeigt, wo du sie findest.",
             },
         },
         otherPlatform: "Andere ID",
@@ -416,6 +418,7 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
         },
         guide: {
             guideLink: "Anleitung",
+            guideInline: "Die Anleitung",
             back: "Zurück",
             continueApplication: "ID eingeben und weiter",
         },

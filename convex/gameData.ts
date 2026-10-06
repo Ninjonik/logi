@@ -1,4 +1,10 @@
 import {
+    acceptsRun,
+    projectHealth,
+    projectLastState,
+    projectSnapshot,
+} from "../src/domain/game-data/policy"
+import {
     sourceFingerprint,
     type ResolvedClaim,
     type ResolvedSource,
@@ -9,11 +15,6 @@ import {
     resolveSource,
     workspaceSources,
 } from "./gameDataCatalog"
-import {
-    acceptsRun,
-    projectHealth,
-    projectSnapshot,
-} from "../src/domain/game-data/policy"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
 import { observationSchema } from "../src/domain/game-data/contracts"
@@ -162,16 +163,16 @@ export const listConnections = query({
             .query("gameDataConnections")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .collect()
+        const now = Date.now()
         const result = rows.map((row) => ({
             sourceRef: row.sourceRef,
             configured: configured.some(
                 (source) => source.ref === row.sourceRef
             ),
-            snapshot: projectSnapshot(
-                { ...row, id: String(row._id) },
-                Date.now()
-            ),
-            health: projectHealth({ ...row, id: String(row._id) }, Date.now()),
+            snapshot: projectSnapshot({ ...row, id: String(row._id) }, now),
+            health: projectHealth({ ...row, id: String(row._id) }, now),
+            // `/server-status` names the last state of a stale row (M3-23).
+            lastState: projectLastState(row, now),
         }))
         return {
             sources: configured.map(({ ref, gameId, provider }) => ({

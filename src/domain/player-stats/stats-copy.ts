@@ -218,7 +218,7 @@ const en: StatsCopy = {
         blockedBody: "Open the profile yourself. Your Steam stays saved.",
         gameDisabledTitle: "{game} statistics are switched off here",
         gameDisabledBody:
-            "A manager can switch them on in Logi → Settings → /stats command.",
+            "A manager can switch them on in Logi → Settings → Commands.",
         invalidTitle: "Choose just one player",
         invalidBody:
             "Either a server member, or a Wardogs player from the suggestions.",
@@ -373,7 +373,7 @@ const cs: StatsCopy = {
         blockedBody: "Profil si otevři sám. Tvůj Steam zůstává uložený.",
         gameDisabledTitle: "Statistiky {game} jsou tu vypnuté",
         gameDisabledBody:
-            "Zapnout je může správce v Logi → Nastavení → Příkaz /stats.",
+            "Zapnout je může správce v Logi → Nastavení → Příkazy.",
         invalidTitle: "Vyber jen jednoho hráče",
         invalidBody: "Buď člena serveru, nebo hráče Wardogs z nabídky.",
         hllOnlyTitle: "Tohle jde jen u Wardogs",
@@ -521,7 +521,7 @@ const de: StatsCopy = {
         blockedBody: "Öffne das Profil selbst. Dein Steam bleibt gespeichert.",
         gameDisabledTitle: "{game}-Statistiken sind hier ausgeschaltet",
         gameDisabledBody:
-            "Ein Verwalter kann sie in Logi → Einstellungen → Befehl /stats einschalten.",
+            "Ein Verwalter kann sie in Logi → Einstellungen → Befehle einschalten.",
         invalidTitle: "Wähle nur einen Spieler",
         invalidBody:
             "Entweder ein Servermitglied oder einen Wardogs-Spieler aus den Vorschlägen.",

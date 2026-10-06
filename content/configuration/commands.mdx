@@ -46,7 +46,9 @@ Command replies are private: only the person who used the command sees them.
   for Share** on the Commands page, else the bot asks where.
 - `/player` shares to the channel where the command was used.
 
-Shared cards name who shared them and have no buttons. Both the person and the
+Shared cards name who shared them, show the time of the data (not the time of
+sharing) and have no buttons. In `/stats`, Wardogs factions are listed by games
+played, most first. Both the person and the
 bot must be able to see the channel, send messages there (in a thread: send
 messages in threads) and embed links. If not, the private card says the channel
 cannot be used now and offers another choice.
@@ -60,14 +62,26 @@ account. Details are on [Your account](/dashboard/my-account).
 
 `/close_ticket` works only in a ticket thread: it posts the close card, DMs
 the author, renames, locks and archives the thread, and the private reply says
-whether the author got the DM. See [Tickets](/configuration/tickets).
+whether the author got the DM. If Discord refuses the card, the rename, the
+lock or the archive, the reply says what did not happen and the cause goes to
+the errors channel. See [Tickets](/configuration/tickets).
 
 `/notice` opens a short window: **Running late** with the match name, a note
 that only the match leads see it, and **When will you arrive and why?** (up to
 500 characters). After saving, the private confirmation quotes the reason and
 attendance reminders for that match stop. A later notice replaces the earlier
-one. The **Running late** button in attendance reminders opens the same window,
-also from a direct message.
+one. Naming a match you signed up for that has already started answers that it
+has started. The **Running late** button in attendance reminders keeps its own
+short form, also from a direct message, and saves the same notice.
+
+`/server-status` shows the stored state of up to five servers. A server whose
+data is no longer fresh keeps its last known state for a day, marked stale
+with the observation time ("Online · stale · 25 minutes ago"); after a day it
+reads "No data".
+
+The card of `/help` is labelled with the clan's Logi name ("LOGI COMMANDS ·
+CLAN WOLVES"), or the Discord server's name when the server has no Logi
+workspace yet.
 
 ## Configure the commands
 
@@ -105,15 +119,19 @@ also from a direct message.
    servers** with the key stored encrypted, untested and stopped; test them
    there, then remove the old connections.
 
-A bar at the bottom counts unsaved changes. After **Save** the bot registers the
-commands again by itself; Discord shows the change within a minute.
+A bar at the bottom counts unsaved changes. After every **Save** the bot
+registers the commands again by itself and the registration card's time moves;
+Discord shows a change within a minute. When the save changed nothing Discord
+shows (for example only a channel or a role), the bot records the registration
+without calling Discord again.
 
 ## When the bot registers commands
 
 The bot registers the commands for each server when it starts, when it is added
-to a server, and after the clan language or the command settings change. A
-server without Logi gets the commands in its Discord community language, and
-`/help` there explains that Logi is not set up yet.
+to a server, after the clan language changes and after every save of the
+command settings, on this page or through the API. A server without Logi gets
+the commands in its Discord community language, and `/help` there explains that
+Logi is not set up yet.
 
 <Callout type="info">
     The bot needs the `applications.commands` scope in the server. If
@@ -125,6 +143,7 @@ server without Logi gets the commands in its Discord community language, and
 
 The command settings are part of `GET/PATCH /api/v1/clan/settings` as the
 `commands` slice: per command `enabled`, `audience`, `roleIds`, `reply` and
-`channelIds`, plus the `/stats` games and sharing channel. **Register again**
+`channelIds`, plus the `/stats` games and sharing channel. Saving the slice
+registers the commands again, as a save on the page does. **Register again**
 and **Move to Game servers** are dashboard-only: one is a live Discord action,
 the other handles provider keys.

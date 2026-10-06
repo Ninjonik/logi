@@ -184,7 +184,7 @@ test("choosing Steam shows the guide, its button opens 'Propojit Steam' (L4-52, 
     assert.match(json, /"custom_id":"link-modal:l:steam"/)
 })
 
-test("an invalid Steam64 is refused with 'Zadat znovu' and the guide (L4-56, M3-11, M3-B08)", async () => {
+test("an invalid Steam64 is refused with 'Zadat znovu' and the guide linked in the text (L4-56, M3-11, M3-B08)", async () => {
     const calls: Calls = { link: [], unlink: [], continued: [] }
     const f = modal("link-modal:l:steam", { id: "Hráč 17" })
     await handleLinkIdModal(f.interaction, ports({}, calls))
@@ -192,13 +192,15 @@ test("an invalid Steam64 is refused with 'Zadat znovu' and the guide (L4-56, M3-
     assert.match(f.last(), /Tohle nevypadá jako Steam64 ID/)
     assert.match(
         f.last(),
-        /Má 17 číslic a začíná 7656119\. Najdeš ho podle návodu\./
+        /Má 17 číslic a začíná 7656119\. Najdeš ho podle \[návodu\]\(https:\/\/help\.steampowered\.com\/en\/faqs\/view\/2816-BE67-5B69-0FEC\)\./
     )
     assert.match(
         f.last(),
         /"label":"Zadat znovu","disabled":false,"style":1,"custom_id":"link:l:enter:steam"/
     )
-    assert.match(f.last(), /"label":"Návod"/)
+    // One button only, as every error card (M3-05, M3-11).
+    assert.doesNotMatch(f.last(), /"label":"Návod"/)
+    assert.equal(f.last().match(/"type":2,/g)?.length ?? 0, 1)
 })
 
 test("a valid Steam64 is stored and 'Steam je propojený' lists the accounts (M3-09, L4-B07)", async () => {

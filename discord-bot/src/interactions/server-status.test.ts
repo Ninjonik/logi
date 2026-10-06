@@ -184,17 +184,54 @@ test("rejects an unknown game before reading data", async (t) => {
     assert.match(json, /Stav serverů se teď nedá načíst/)
 })
 
-test("old values are marked stale with their original observation time", async (t) => {
+test("old values keep their last state, marked stale with their original observation time (M3-23)", async (t) => {
     const f = fixture(t)
     const row = f.seed("Stale test")
     row.observation.observedAt = "2026-09-29T11:55:00Z"
     row.observation.players = 42
     const { json } = await f.run()
-    // The stored projection withholds a stale row's last state.
-    assert.match(json, /Zastaralé/)
-    assert.doesNotMatch(json, /Online|Bez dat/)
+    assert.match(json, /Online · zastaralé/)
+    assert.doesNotMatch(json, /Bez dat/)
     assert.match(json, /42 \/ 100/)
     assert.match(json, /<t:1790682900:R>/)
+})
+
+test("data 25 minutes old still names the last state; a day later it is 'Bez dat' (M3-23)", async (t) => {
+    const f = fixture(t)
+    const recent = f.seed("Vlci #2 Trénink")
+    recent.observation.observedAt = "2026-09-29T11:35:00Z"
+    recent.observation.state = "offline"
+    recent.observation.map = "Kaluga"
+    const old = f.seed("Vlci #5")
+    old.observation.observedAt = "2026-09-28T11:59:00Z"
+    old.observation.map = "Stará mapa"
+    const unknown = f.seed("Vlci #6")
+    unknown.observation.observedAt = "2026-09-29T11:57:00Z"
+    unknown.observation.state = "unknown"
+    const { json } = await f.run()
+    assert.match(json, /Vlci #2 Trénink\*\* · 🟡 \*\*Offline · zastaralé/)
+    assert.match(json, /Kaluga/)
+    assert.match(json, /Vlci #5\*\* · ⚪ \*\*Bez dat/)
+    assert.doesNotMatch(json, /Stará mapa/)
+    assert.match(json, /Vlci #6\*\* · 🟡 \*\*Zastaralé/)
+})
+
+test("the stored projection keeps 'unknown' for other readers and adds the last state (M3-23)", async (t) => {
+    const f = fixture(t)
+    const row = f.seed("Stale test")
+    row.observation.observedAt = "2026-09-29T11:35:00Z"
+    const listed = (await invoke(listConnections, f.ctx, {
+        secret: SECRET,
+        guildId: TEST_GUILD,
+    })) as {
+        connections: Array<{
+            snapshot: { state: string; freshness: string }
+            lastState?: string | null
+        }>
+    }
+    assert.equal(listed.connections[0]!.snapshot.state, "unknown")
+    assert.equal(listed.connections[0]!.snapshot.freshness, "unavailable")
+    assert.equal(listed.connections[0]!.lastState, "online")
 })
 
 test("disabled collection, no observation and known offline stay distinct", async (t) => {

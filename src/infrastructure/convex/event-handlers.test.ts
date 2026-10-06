@@ -6,6 +6,7 @@ import {
     handleAppendAttendanceReminderLog,
     handleConcludeEvent,
     handleFindNoticeTarget,
+    handleFindStartedNoticeEvent,
     handleSetEventResult,
     handleToggleSignup,
     handleUpsertEvent,
@@ -246,4 +247,36 @@ test("handleFindNoticeTarget maps normalized event records through the notice fi
             gameStart: "2026-07-22T12:00:00.000Z",
         },
     ])
+})
+
+test("handleFindStartedNoticeEvent returns only the ID and name of the person's started event (M3-19)", () => {
+    const event = {
+        _id: "event-1",
+        name: "Match Alpha",
+        registrationEnd: "2026-07-22T09:00:00.000Z",
+        meetingStart: "2026-07-22T11:00:00.000Z",
+        gameStart: "2026-07-22T12:00:00.000Z",
+        gameEnd: "2026-07-22T13:00:00.000Z",
+        status: "starting" as const,
+        participants: [
+            {
+                userId: "user-1",
+                status: "attending" as const,
+                updatedAt: "2026-07-22T08:00:00.000Z",
+            },
+        ],
+    }
+    const find = (now: string, userId = "user-1") =>
+        handleFindStartedNoticeEvent({
+            events: [event],
+            userId,
+            query: "alpha",
+            now: new Date(now),
+        })
+    assert.deepEqual(find("2026-07-22T12:10:00.000Z"), {
+        id: "event-1",
+        name: "Match Alpha",
+    })
+    assert.equal(find("2026-07-22T11:50:00.000Z"), null, "not started")
+    assert.equal(find("2026-07-22T12:10:00.000Z", "user-2"), null)
 })

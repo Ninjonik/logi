@@ -42,6 +42,12 @@ export type GuildCommandConfig = {
     messageStyle: MessageStyle
     registration: {
         requestedAt: number | null
+        /**
+         * What asked for the pending request: "Znovu zaregistrovat"
+         * (`manual`, always calls Discord) or a save (`save`, recorded even
+         * when Discord already has these commands; M1-B01, N3-B02).
+         */
+        requestKind: "save" | "manual" | null
         registeredAt: number | null
         signature: string | null
     }
@@ -98,6 +104,12 @@ export const guildCommandConfigSchema = z.object({
     ),
     registration: z.object({
         requestedAt: z.number().nullable(),
+        // Older rows and older backends have no kind: a manual request.
+        requestKind: z
+            .enum(["save", "manual"])
+            .nullish()
+            .catch(null)
+            .transform((value) => value ?? null),
         registeredAt: z.number().nullable(),
         signature: z.string().nullable(),
     }),
@@ -158,6 +170,22 @@ type StoredConfig = {
 }
 
 /**
+ * Whether membership applications are on anywhere: the base settings or a
+ * game's own. `/close_application` works then, in the bot and as the
+ * switch on the "Příkazy" page (N3-21).
+ */
+export function membershipEnabledAnywhere(
+    config: Pick<StoredConfig, "membershipSettings" | "gameOverrides">
+): boolean {
+    return [
+        config.membershipSettings,
+        ...Object.values(config.gameOverrides ?? {}).map(
+            (override) => override?.membershipSettings
+        ),
+    ].some((settings) => Boolean(settings?.enabled))
+}
+
+/**
  * The bot's view of one server from the stored Discord configuration, its
  * registration row and its public panels. Support roles of every ticket and
  * application category (per game too) count for `/help`; the close commands
@@ -167,6 +195,7 @@ export function guildCommandConfigFromStored(input: {
     config: StoredConfig
     registration?: {
         requestedAt?: number
+        requestKind?: "save" | "manual"
         registeredAt?: number
         signature?: string
     } | null
@@ -208,9 +237,7 @@ export function guildCommandConfigFromStored(input: {
         ticketSupportRoleIds: (config.ticketSettings?.categories ?? []).flatMap(
             (category) => [...(category.supportRoleIds ?? [])]
         ),
-        membershipEnabled: membershipSettings.some((settings) =>
-            Boolean(settings.enabled)
-        ),
+        membershipEnabled: membershipEnabledAnywhere(config),
         membershipSubmitChannelId: config.membershipSettings?.submitChannelId,
         membershipSupportRoleIds: membershipSettings.flatMap((settings) =>
             (settings.categories ?? []).flatMap((category) => [
@@ -222,6 +249,10 @@ export function guildCommandConfigFromStored(input: {
         messageStyle: config.messageStyle,
         registration: {
             requestedAt: input.registration?.requestedAt ?? null,
+            requestKind:
+                input.registration?.requestedAt === undefined
+                    ? null
+                    : (input.registration.requestKind ?? "manual"),
             registeredAt: input.registration?.registeredAt ?? null,
             signature: input.registration?.signature ?? null,
         },

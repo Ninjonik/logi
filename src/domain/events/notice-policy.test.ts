@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { findEligibleNoticeTargets, upsertNotice } from "./notice-policy"
+import {
+    findEligibleNoticeTargets,
+    findStartedNoticeEvent,
+    upsertNotice,
+} from "./notice-policy"
 
 test("findEligibleNoticeTargets filters by game start, attending status, query, and caps results", () => {
     const results = findEligibleNoticeTargets({
@@ -277,4 +281,74 @@ test("upsertNotice rejects invalid time windows and non-attending users", () => 
             }),
         /Only attending players/
     )
+})
+
+test("findStartedNoticeEvent finds the person's started event so /notice can say it began (M3-19)", () => {
+    const attending = (userId: string) => [
+        {
+            userId,
+            status: "attending" as const,
+            updatedAt: "2026-10-11T08:00:00.000Z",
+        },
+    ]
+    const events = [
+        {
+            id: "old",
+            name: "VLK vs ROG",
+            gameStart: "2026-09-20T18:00:00.000Z",
+            status: "concluded" as const,
+            participants: attending("user-1"),
+        },
+        {
+            id: "started",
+            name: "VLK vs ROG",
+            gameStart: "2026-10-11T18:00:00.000Z",
+            status: "starting" as const,
+            participants: attending("user-1"),
+        },
+        {
+            id: "upcoming",
+            name: "VLK vs ROG",
+            gameStart: "2026-10-12T18:00:00.000Z",
+            status: "registration" as const,
+            participants: attending("user-1"),
+        },
+        {
+            id: "reserve",
+            name: "Trénink obrany",
+            gameStart: "2026-10-11T17:00:00.000Z",
+            status: "starting" as const,
+            participants: [],
+            reservePlayerIds: ["user-1"],
+        },
+        {
+            id: "declined",
+            name: "Liga",
+            gameStart: "2026-10-11T17:00:00.000Z",
+            status: "starting" as const,
+            participants: [
+                {
+                    userId: "user-1",
+                    status: "not_attending" as const,
+                    updatedAt: "2026-10-11T08:00:00.000Z",
+                },
+            ],
+        },
+    ]
+    const now = new Date("2026-10-11T18:05:00.000Z")
+    const find = (query: string, userId = "user-1") =>
+        findStartedNoticeEvent({ events, userId, query, now })
+    // The most recent started match of the name; never the upcoming one.
+    assert.deepEqual(find("vlk vs rog"), {
+        id: "started",
+        name: "VLK vs ROG",
+        gameStart: "2026-10-11T18:00:00.000Z",
+    })
+    // A value picked from the autocomplete before the start is the ID.
+    assert.equal(find("old")?.id, "old")
+    assert.equal(find("Trénink")?.id, "reserve")
+    assert.equal(find("Liga"), null, "not signed up")
+    assert.equal(find("VLK", "user-2"), null, "someone else's sign-up")
+    assert.equal(find("upcoming"), null, "not started yet")
+    assert.equal(find("  "), null)
 })

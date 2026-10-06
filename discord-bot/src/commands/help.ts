@@ -30,7 +30,10 @@ export function commandsGuideUrl(siteUrl: string) {
 
 export type HelpDeps = {
     configs: Pick<GuildCommandConfigs, "get">
-    workspaceOf(guildId: string): Promise<{ workspaceId: string } | null>
+    /** The Logi workspace of the server: its name labels the card (M2-05). */
+    workspaceOf(
+        guildId: string
+    ): Promise<{ workspaceId: string; name?: string } | null>
     readCaller?: typeof readFreshCaller
     siteUrl: string
 }
@@ -58,8 +61,9 @@ export async function handleHelpCommand(
         fallbackGuildLanguage(interaction.guild?.preferredLocale)
     const copy = getCommandMessages(language)
     const options = { language, style: config?.messageStyle }
+    const workspace = guildId ? await deps.workspaceOf(guildId) : null
     // A workspace without saved Discord settings still has its commands.
-    if (!config && !(guildId && (await deps.workspaceOf(guildId)))) {
+    if (!config && !workspace) {
         await replyPrivately(
             interaction,
             notConnectedCard(copy.access, deps.siteUrl),
@@ -98,7 +102,11 @@ export async function handleHelpCommand(
         interaction,
         buildHelpView({
             copy: copy.help,
-            clanName: interaction.guild?.name?.trim() || "Logi",
+            // "KLAN VLCI": the Logi workspace's name, else the server's.
+            clanName:
+                workspace?.name?.trim() ||
+                interaction.guild?.name?.trim() ||
+                "Logi",
             list: helpCommandsFor(caller, access),
             channels: {
                 recruitment: config?.membershipEnabled

@@ -52,8 +52,12 @@ export type CommandRegistrationPorts = {
     cancel?: (handle: unknown) => void
 }
 
+/**
+ * `saved`: the "Příkazy" page or the API saved the command settings; the
+ * registration is recorded even when Discord already has these commands.
+ */
 export type RegistrationReason =
-    "ready" | "guildCreate" | "settings" | "language" | "request"
+    "ready" | "guildCreate" | "settings" | "language" | "request" | "saved"
 
 /** What a server's commands are registered with. */
 export function registrationInput(
@@ -82,9 +86,12 @@ function failureOf(error: unknown): RegistrationFailure {
 /**
  * Registers Logi's commands per Discord server (M1-B01): when the bot is
  * ready (every server), when it joins one, when the clan language or the
- * command settings change, and on "Znovu zaregistrovat". Each registration
- * replaces the server's commands in one call and is recorded with its time,
- * count and definitions' signature.
+ * command settings change, after every save of the command settings and on
+ * "Znovu zaregistrovat". Each registration replaces the server's commands in
+ * one call and is recorded with its time, count and definitions' signature.
+ * After a save that leaves the commands as this process last registered
+ * them, the Discord call is skipped, but the registration is still recorded,
+ * so "Zaregistrováno …" moves after every save (N3-B02).
  */
 export function createCommandRegistration(ports: CommandRegistrationPorts) {
     const registered = new Map<
@@ -115,15 +122,25 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
         const signature = commandDefinitionsSignature(definitions)
         const handledRequestAt = config?.registration.requestedAt ?? undefined
         const at = ports.now()
+        // A save that changed nothing Discord shows: no call, still recorded.
+        const unchanged =
+            reason === "saved" &&
+            registered.get(guild.id)?.signature === signature
         try {
-            await guild.commands.set(definitions)
+            if (!unchanged) await guild.commands.set(definitions)
             registered.set(guild.id, { signature, language, handledRequestAt })
-            ports.log("info", "Registered slash commands", {
-                guildId: guild.id,
-                reason,
-                language,
-                count: definitions.length,
-            })
+            ports.log(
+                "info",
+                unchanged
+                    ? "Slash commands unchanged; registration recorded"
+                    : "Registered slash commands",
+                {
+                    guildId: guild.id,
+                    reason,
+                    language,
+                    count: definitions.length,
+                }
+            )
             if (config)
                 await ports
                     .record({
@@ -190,7 +207,9 @@ export function createCommandRegistration(ports: CommandRegistrationPorts) {
             (last?.handledRequestAt === undefined ||
                 requestedAt > last.handledRequestAt)
         )
-            return "request"
+            return config.registration.requestKind === "save"
+                ? "saved"
+                : "request"
         const { language, settings } = registrationInput(
             config,
             preferredLocale

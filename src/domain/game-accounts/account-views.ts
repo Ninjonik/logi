@@ -529,36 +529,41 @@ export function unlinkView(
 }
 
 /**
- * "Tohle nevypadá jako Steam64 ID" (L4-56, M3-11): what the ID looks like,
- * "Zadat znovu" and the platform's "Návod".
+ * "Tohle nevypadá jako Steam64 ID" (L4-56, M3-11): what the ID looks like
+ * and the one button "Zadat znovu". An error card has at most one button
+ * (M3-05), so the platform's guide is a link in the text, "Najdeš ho podle
+ * [návodu](…)", instead of L4's second "Návod" button (lead resolution).
  */
 export function invalidIdView(
     input: ViewInput & { platform: GameAccountPlatform; guideUrl?: string }
 ): MessageView {
     const platformCopy = input.copy.platforms[input.platform]
-    return card({ title: platformCopy.invalidTitle }, [
-        { kind: "text", markdown: platformCopy.invalidBody },
-        {
-            kind: "buttons",
-            buttons: [
-                {
-                    kind: "action",
-                    id: linkFlowId(input.context, "enter", input.platform),
-                    label: input.copy.errors.retry,
-                    style: "primary",
-                },
-                ...(input.guideUrl
-                    ? [
-                          {
-                              kind: "link" as const,
-                              url: input.guideUrl,
-                              label: input.copy.guide.guideLink,
-                          },
-                      ]
-                    : []),
-            ],
+    const guide = input.copy.guide.guideInline
+    const url = input.guideUrl && safeLinkUrl(input.guideUrl)
+    return errorCard({
+        title: platformCopy.invalidTitle,
+        body: fillTemplate(platformCopy.invalidBody, {
+            guide: url ? `[${escapeMarkdownText(guide)}](${url})` : guide,
+        }),
+        action: {
+            kind: "action",
+            id: linkFlowId(input.context, "enter", input.platform),
+            label: input.copy.errors.retry,
+            style: "primary",
         },
-    ])
+    })
+}
+
+/** A guide URL fit for a Markdown link: https only, nothing that ends it. */
+function safeLinkUrl(value: string) {
+    try {
+        const url = new URL(value)
+        return url.protocol === "https:" && !/[()\s<>]/.test(url.href)
+            ? url.href
+            : undefined
+    } catch {
+        return undefined
+    }
 }
 
 /** The ID belongs to another player in Logi. */

@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     commandAccessConfig,
     guildCommandConfigFromStored,
+    membershipEnabledAnywhere,
 } from "./guild-config"
 import { legacyStatsServerDrafts } from "./legacy-stats-servers"
 
@@ -85,6 +86,7 @@ test("the bot's view of a server unions every category's support roles and finds
     })
     assert.deepEqual(config.registration, {
         requestedAt: 5,
+        requestKind: "manual",
         registeredAt: 3,
         signature: "abc",
     })
@@ -93,6 +95,42 @@ test("the bot's view of a server unions every category's support roles and finds
     assert.deepEqual(access.settings["server-status"].roleIds, [
         "100000000000000009",
     ])
+})
+
+test("membership counts as on when the base or any game's settings are on (N3-21)", () => {
+    assert.equal(membershipEnabledAnywhere({}), false)
+    assert.equal(
+        membershipEnabledAnywhere({ membershipSettings: { enabled: true } }),
+        true
+    )
+    assert.equal(
+        membershipEnabledAnywhere({
+            membershipSettings: { enabled: false },
+            gameOverrides: {
+                wardogs: { membershipSettings: { enabled: true } },
+                hell_let_loose: undefined,
+            },
+        }),
+        true
+    )
+    assert.equal(
+        membershipEnabledAnywhere({
+            gameOverrides: { wardogs: { clanRoleId: "100000000000000002" } },
+        }),
+        false
+    )
+})
+
+test("a pending request carries its kind; an older row without one is manual (M1-B01)", () => {
+    const of = (registration: Record<string, unknown> | null) =>
+        guildCommandConfigFromStored({
+            config: { guildId: GUILD },
+            registration,
+        }).registration.requestKind
+    assert.equal(of({ requestedAt: 5, requestKind: "save" }), "save")
+    assert.equal(of({ requestedAt: 5 }), "manual")
+    assert.equal(of({ registeredAt: 5 }), null)
+    assert.equal(of(null), null)
 })
 
 test("unknown language and broken settings fall back safely", () => {

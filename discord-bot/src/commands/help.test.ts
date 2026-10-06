@@ -77,6 +77,20 @@ test("an admin sees the staff part; category support only its closing command (M
     assert.doesNotMatch(support.text(), /close_application|server-status/)
 })
 
+test("the label names the Logi workspace, else the Discord server (M2-05)", async () => {
+    const named = await run({
+        workspaceOf: async () => ({
+            workspaceId: "guilds:a",
+            name: "Vlčí smečka",
+        }),
+    })
+    assert.match(named.text(), /PŘÍKAZY LOGI · KLAN VLČÍ SMEČKA/)
+    const unnamed = await run({
+        workspaceOf: async () => ({ workspaceId: "guilds:a", name: " " }),
+    })
+    assert.match(unnamed.text(), /PŘÍKAZY LOGI · KLAN VLCI/)
+})
+
 test("a server without Logi gets the setup card (M2-10)", async () => {
     const f = await run({
         configs: configsOf(null),

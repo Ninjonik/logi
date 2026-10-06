@@ -117,8 +117,9 @@ export function wardogsPlayerStats(
         .slice(0, 5)
     return {
         player,
-        factions: [...factions.values()].sort((a, b) =>
-            a.name.localeCompare(b.name)
+        // The most played faction first, as the board lists them (M2-18).
+        factions: [...factions.values()].sort(
+            (a, b) => b.matches - a.matches || a.name.localeCompare(b.name)
         ),
         recent,
     }

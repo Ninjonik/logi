@@ -1,4 +1,7 @@
-import { findEligibleNoticeTargets } from "@/domain/events/notice-policy"
+import {
+    findEligibleNoticeTargets,
+    findStartedNoticeEvent,
+} from "@/domain/events/notice-policy"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import { normalizeEventRecord } from "@/domain/events/normalization"
 import type { EventLike } from "@/domain/events/types"
@@ -225,6 +228,41 @@ export function handleFindNoticeTarget(input: {
         name: event.name,
         gameStart: event.gameStart,
     }))
+}
+
+/**
+ * The person's started event that matches the typed `/notice` text, for
+ * "VLK vs ROG už začal" (M3-19); only its ID and name leave the backend.
+ */
+export function handleFindStartedNoticeEvent(input: {
+    events: Array<
+        (Record<string, unknown> & EventLike) & {
+            _id: unknown
+            name: string
+            reservePlayerIds?: string[]
+        }
+    >
+    userId: string
+    query: string
+    now: Date
+}) {
+    const found = findStartedNoticeEvent({
+        events: input.events.map((event) => {
+            const normalized = normalizeEventRecord(event, input.now)
+            return {
+                id: String(event._id),
+                name: event.name,
+                gameStart: normalized.gameStart ?? normalized.meetingStart,
+                status: normalized.status,
+                participants: normalized.participants,
+                reservePlayerIds: event.reservePlayerIds,
+            }
+        }),
+        userId: input.userId,
+        query: input.query,
+        now: input.now,
+    })
+    return found ? { id: found.id, name: found.name } : null
 }
 
 export async function handleApplyEventScore(input: {
