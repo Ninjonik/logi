@@ -1,3 +1,4 @@
+import { seedPublicationKey } from "../src/domain/discord-seed/publication-keys"
 import { makeFunctionReference } from "convex/server"
 import { v } from "convex/values"
 
@@ -29,17 +30,22 @@ import {
     resolvePanelContent,
 } from "../src/domain/discord-publications/settings"
 import {
+    buildPanelOverview,
+    type PanelOverview,
+    type StoredControlMessage,
+} from "../src/application/discord-publications/panel-overview"
+import {
     requestPanelAction,
     type PanelActionResult,
 } from "../src/application/discord-publications/panel-actions"
 import {
-    buildPanelOverview,
-    type PanelOverview,
-} from "../src/application/discord-publications/panel-overview"
-import {
     testPanelFetch,
     type PanelTestResult,
 } from "../src/application/discord-publications/test-fetch"
+import {
+    liveServerPanelView,
+    type LiveServerFacts,
+} from "../src/domain/discord-publications/live-panel"
 import {
     action,
     internalQuery,
@@ -55,17 +61,25 @@ import {
     savePanel,
     type PanelSaveResult,
 } from "../src/application/discord-publications/save-panel"
+import {
+    leagueOverviewSchema,
+    type LeagueOverview,
+} from "../src/domain/wardogs-league/panels"
 import { resolvePanelPresentation } from "../src/domain/discord-publications/panel-presentation"
-import { liveServerPanelView } from "../src/domain/discord-publications/live-panel"
+import { convexLeaguePanelSource } from "../src/infrastructure/convex/league-fixture-store"
+import { loadLeaguePanels } from "../src/application/wardogs-league/league-panels"
 import type { MessageView } from "../src/domain/discord-messages/message-view"
 import { credentialEnvelopeSchema } from "../src/domain/game-data/credentials"
 import type { WarconServed } from "../src/application/game-data/read-warcon"
 import type { HllServed } from "../src/application/game-data/read-hll-live"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { PANEL_WINDOW } from "../src/domain/wardogs-league/all-fixtures"
 import type { ServerSnapshot } from "../src/domain/game-data/contracts"
 import { getPanelMessages } from "../src/lib/clan-language/panels"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelAction } from "./discordPublicationTable"
+import { trackingConfig } from "./leagueTrackingStore"
+import { seedMessageOutbox } from "./discordSeedStore"
 import { connectionSource } from "./gameDataCatalog"
 import { getGuildByDiscordId } from "./identity"
 
@@ -95,6 +109,84 @@ async function botHeartbeats(ctx: Pick<QueryCtx, "db">, guildId: string) {
     return { bot: bot ?? null, guild: guild ?? null }
 }
 
+/**
+ * "Ovládání serveru" of every server with a control channel (P1-18): the
+ * seed plan names the channel, the seed worker's managed message its state.
+ */
+async function controlMessages(
+    ctx: Pick<QueryCtx, "db">,
+    guildId: string
+): Promise<StoredControlMessage[]> {
+    const [plans, messages, publications] = await Promise.all([
+        ctx.db
+            .query("discordSeedPlans")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .collect(),
+        ctx.db
+            .query("discordSeedMessages")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .collect(),
+        ctx.db
+            .query("discordPublications")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .collect(),
+    ])
+    return plans.map((plan) => {
+        // The outbox row counts the requests; the bot delivers the message
+        // through the managed publication `seed:control:<connectionId>`.
+        const row = messages.find(
+            (message) =>
+                message.kind === "control" && message.key === plan.connectionId
+        )
+        const key = seedPublicationKey("control", plan.connectionId)
+        const publication = publications.find((entry) => entry.key === key)
+        return {
+            connectionId: plan.connectionId,
+            channelId: plan.settings.controlChannelId,
+            message:
+                row || publication
+                    ? {
+                          channelId:
+                              publication?.channelId ?? row?.channelId ?? null,
+                          messageId:
+                              publication?.messageId ?? row?.messageId ?? null,
+                          revision: row?.revision ?? 0,
+                          deliveredRevision: row?.deliveredRevision ?? 0,
+                          lastSuccessAt:
+                              publication?.lastSuccessAt ??
+                              row?.lastSuccessAt ??
+                              null,
+                          error: publication?.error ?? row?.error ?? null,
+                          pending:
+                              Boolean(publication?.pending) ||
+                              (row?.pending ?? null) !== null,
+                      }
+                    : null,
+        }
+    })
+}
+
+/** Names of the admins who saved or paused panels ("Uloženo · Hráč 01", P1-22, P2-31). */
+async function panelPeople(
+    ctx: Pick<QueryCtx, "db">,
+    guildId: string,
+    ids: Iterable<string | null | undefined>
+) {
+    const people: Record<string, string> = {}
+    for (const id of new Set(
+        [...ids].filter((value): value is string => Boolean(value))
+    )) {
+        if (Object.keys(people).length >= 50) break
+        const user = await ctx.db
+            .query("users")
+            .withIndex("discordId", (q) => q.eq("discordId", id))
+            .first()
+        const name = user?.nicknames?.[guildId]?.trim() || user?.name?.trim()
+        if (name) people[id] = name
+    }
+    return people
+}
+
 export type PanelOverviewResponse = PanelOverview & {
     /** The bot visited this server in the last 3 minutes; null when unknown. */
     botInServer: boolean | null
@@ -105,18 +197,31 @@ export const overview = query({
     handler: async (ctx, args): Promise<PanelOverviewResponse> => {
         await authorizeDashboardAdmin(ctx, args)
         const now = Date.now()
-        const [panels, publications, statuses, beats, sources, servers] =
-            await Promise.all([
-                guildPanels(ctx, args.guildId),
-                guildPublications(ctx, args.guildId),
-                ctx.db
-                    .query("discordPanelStatus")
-                    .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-                    .collect(),
-                botHeartbeats(ctx, args.guildId),
-                sourceHealth(ctx, args.guildId, now),
-                panelServerInfos(ctx, args.guildId),
-            ])
+        const [
+            panels,
+            publications,
+            statuses,
+            beats,
+            sources,
+            servers,
+            controls,
+        ] = await Promise.all([
+            guildPanels(ctx, args.guildId),
+            guildPublications(ctx, args.guildId),
+            ctx.db
+                .query("discordPanelStatus")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .collect(),
+            botHeartbeats(ctx, args.guildId),
+            sourceHealth(ctx, args.guildId, now),
+            panelServerInfos(ctx, args.guildId),
+            controlMessages(ctx, args.guildId),
+        ])
+        const people = await panelPeople(
+            ctx,
+            args.guildId,
+            panels.flatMap((panel) => [panel.savedBy, panel.pausedBy])
+        )
         const graphics = await ctx.db
             .query("discordPanelGraphics")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
@@ -137,6 +242,8 @@ export const overview = query({
             })),
             sources,
             servers,
+            controls,
+            people,
         })
         return {
             ...view,
@@ -342,6 +449,7 @@ export const testContext = internalQuery({
             collecting: connection.enabled,
             snapshot,
             language: config?.defaultLanguage ?? "en",
+            timeZone: config?.timezone ?? "Europe/Prague",
             clanName: guild?.name ?? null,
             serverName: names.get(String(connection._id)) ?? null,
             defaultStyle: (graphics?.defaultStyle as PanelStyle) ?? "a",
@@ -363,6 +471,13 @@ export type PanelTestResponse =
           collecting: boolean
           /** The panel as the bot would draw it now, without a password. */
           preview: MessageView | null
+          /**
+           * The facts the preview is drawn from, so the editor redraws it
+           * with unsaved settings (P2-B09). Player platform IDs are removed.
+           */
+          facts: LiveServerFacts | null
+          /** The clan's time zone, for the style A image's time stamp. */
+          timeZone: string
       })
 
 /**
@@ -469,6 +584,78 @@ export const testFetch = action({
                   },
               })
             : null
-        return { ...rest, collecting: context.collecting, preview }
+        return {
+            ...rest,
+            collecting: context.collecting,
+            preview,
+            facts: facts
+                ? {
+                      ...facts,
+                      roster: facts.roster.map((player) => ({
+                          ...player,
+                          id: null,
+                      })),
+                  }
+                : null,
+            timeZone: context.timeZone,
+        }
+    },
+})
+
+/**
+ * The two WD League messages with the League's current data, for the
+ * editor preview (P2-54, P2-55). Shared League data; the clan's watched
+ * team codes mark its own team.
+ */
+export const leaguePreview = query({
+    args: { ...dashboardArgs, fixtureCount: v.number() },
+    handler: async (ctx, args): Promise<LeagueOverview> => {
+        await authorizeDashboardAdmin(ctx, args)
+        const fixtureCount = Math.min(
+            PANEL_WINDOW,
+            Math.max(1, Math.trunc(args.fixtureCount) || 1)
+        )
+        const config = await trackingConfig(ctx, args.guildId)
+        const now = Date.now()
+        const panels = await loadLeaguePanels(
+            convexLeaguePanelSource(ctx, now),
+            {
+                now,
+                ourTeamCodes: config?.teamCodes ?? [],
+                options: {
+                    table: true,
+                    fixtures: true,
+                    recentResults: true,
+                    fixtureCount,
+                },
+            }
+        )
+        return leagueOverviewSchema.parse(panels)
+    },
+})
+
+/**
+ * "Obnovit teď" on an "Ovládání serveru" row (P1-18): asks the seed worker
+ * to draw the server's control message again on its next pass.
+ */
+export const refreshControl = mutation({
+    args: { ...dashboardArgs, connectionId: v.string() },
+    handler: async (
+        ctx,
+        args
+    ): Promise<{ status: "accepted" } | { status: "not_found" }> => {
+        await authorizeDashboardAdmin(ctx, args)
+        const plan = (
+            await ctx.db
+                .query("discordSeedPlans")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .collect()
+        ).find((row) => row.connectionId === args.connectionId)
+        if (!plan?.settings.controlChannelId) return { status: "not_found" }
+        await seedMessageOutbox(ctx, () => Date.now()).controlChanged({
+            guildId: args.guildId,
+            connectionId: args.connectionId,
+        })
+        return { status: "accepted" }
     },
 })

@@ -57,8 +57,10 @@ const connectionRef = z.string().min(1).max(100)
 export const panelContentSchema = z.strictObject({
     nextMap: z.boolean().default(true),
     queue: z.boolean().default(true),
-    /** "Ukázat IP:port" (HLL) and "Ukázat join kód" (Wardogs). */
+    /** "Ukázat IP:port" (HLL servers). */
     address: z.boolean().default(true),
+    /** "Ukázat join kód" (Wardogs servers, P2-39). */
+    joinCode: z.boolean().default(true),
     /** "Tlačítko Připojit se (přes Logi)". */
     joinButton: z.boolean().default(true),
     password: z.boolean().default(false),
@@ -71,6 +73,7 @@ export const DEFAULT_PANEL_CONTENT: PanelContent = {
     nextMap: true,
     queue: true,
     address: true,
+    joinCode: true,
     joinButton: true,
     password: false,
     seedProgress: true,
@@ -80,7 +83,12 @@ export const DEFAULT_PANEL_CONTENT: PanelContent = {
 export function resolvePanelContent(
     value: Partial<PanelContent> | null | undefined
 ): PanelContent {
-    return { ...DEFAULT_PANEL_CONTENT, ...value }
+    return {
+        ...DEFAULT_PANEL_CONTENT,
+        // Rows saved before "Ukázat join kód" had one switch for both.
+        joinCode: value?.joinCode ?? value?.address ?? true,
+        ...value,
+    }
 }
 const panelText = (max: number) =>
     z

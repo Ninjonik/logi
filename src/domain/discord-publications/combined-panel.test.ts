@@ -149,3 +149,52 @@ test("each row carries its map on the right while Discord's component limit allo
         0
     )
 })
+
+test("rows show the address, the join code and a running seed; only HLL servers get a join button (P2-39, P2-43..45)", () => {
+    const wardogs = server(3, {
+        title: "Vlci WD",
+        joinCode: "VLCI-7Q2",
+    })
+    wardogs.facts = { ...wardogs.facts, game: "wardogs", hll: null }
+    const seeding = server(2, {
+        title: "Vlci #2 · Trénink a zápasy",
+        seed: { liveFrom: 40 },
+        seedBar: "▰▰▰▱▱▱▱▱▱▱",
+        address: "203.0.113.24:7787",
+    })
+    seeding.facts = { ...seeding.facts, players: 12 }
+    const view = renderedView(
+        combinedPanelView({
+            ...base,
+            show: { score: true, nextMap: false, queue: true },
+            servers: [
+                server(1, {
+                    title: "Vlci #1 · Public",
+                    address: "203.0.113.24:7777",
+                }),
+                seeding,
+                wardogs,
+            ],
+        })
+    )
+    assert.deepEqual(view.validation, { ok: true, issues: [] })
+    assert.match(view.text, /Adresa `203\.0\.113\.24:7777`/)
+    assert.match(view.text, /▰▰▰▱▱▱▱▱▱▱ \*\*12 \/ 40\*\*/)
+    assert.match(view.text, /Join kód `VLCI-7Q2`/)
+    assert.match(view.text, /Spojenci \d+ : \d+ Osa/)
+    assert.deepEqual(
+        view.buttons.map((button) => button.label),
+        ["Připojit: Vlci #1", "Připojit: Vlci #2"]
+    )
+})
+
+test("the score, next map and queue follow the panel's switches (P2-38)", () => {
+    const quiet = renderedView(
+        combinedPanelView({
+            ...base,
+            show: { score: false, nextMap: false, queue: false },
+            servers: [server(1)],
+        })
+    )
+    assert.doesNotMatch(quiet.text, /fronta|Spojenci/)
+})

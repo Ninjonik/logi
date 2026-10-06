@@ -4,7 +4,8 @@ import test from "node:test"
 import {
     panelOverviewItems,
     panelStatus,
-    panelToggleBody,
+    parseCalendarPanel,
+    panelToggleAction,
     parseSavedPanels,
 } from "./panel-overview"
 
@@ -92,12 +93,64 @@ test("the overview lists the panels in the board's order with names and games", 
     )
 })
 
-test("a switch re-saves the panel's own settings with only enabled changed", () => {
-    const [saved] = parseSavedPanels({ panels: [panel()] })
-    const body = panelToggleBody(saved!, false)
-    assert.equal(body?.enabled, false)
-    assert.equal(body?.connectionId, "c1")
-    assert.equal(body?.refreshSeconds, 60)
-    assert.equal((body as Record<string, unknown>)._id, undefined)
-    assert.equal(panelToggleBody({ ...saved!, channelId: "bad" }, true), null)
+test("a switch pauses or resumes the panel; the paused flag wins over enabled", () => {
+    assert.equal(panelToggleAction(false), "pause")
+    assert.equal(panelToggleAction(true), "resume")
+    const items = panelOverviewItems({
+        panels: parseSavedPanels({
+            panels: [
+                panel({ _id: "a", paused: true }),
+                panel({ _id: "b", enabled: false, paused: false }),
+                panel({ _id: "c", draft: true, publications: [] }),
+            ],
+        }),
+        sources: new Map(),
+        calendar: {},
+        wardogs: false,
+    }).filter((item) => item.panelId)
+    assert.deepEqual(
+        items.map((item) => [
+            item.panelId,
+            item.status,
+            item.enabled,
+            item.toggleable,
+        ]),
+        [
+            ["a", "paused", false, true],
+            ["b", undefined, true, true],
+            ["c", "unsent", false, false],
+        ]
+    )
+})
+
+test("the calendar panel of Panely v Discordu wins over the old channel setting (N1-47)", () => {
+    const list = {
+        panels: [],
+        calendarPanel: {
+            _id: "cal",
+            channelId: "7",
+            paused: true,
+            draft: false,
+            messageId: "9",
+            error: null,
+        },
+    }
+    const [calendar] = panelOverviewItems({
+        panels: [],
+        sources: new Map(),
+        calendar: { channelId: "6", messageId: "8" },
+        calendarPanel: parseCalendarPanel(list),
+        wardogs: false,
+    })
+    assert.deepEqual(
+        [
+            calendar?.channelId,
+            calendar?.panelId,
+            calendar?.status,
+            calendar?.enabled,
+            calendar?.toggleable,
+        ],
+        ["7", "cal", "paused", false, true]
+    )
+    assert.equal(parseCalendarPanel({ panels: [] }), null)
 })

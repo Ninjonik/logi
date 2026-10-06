@@ -85,6 +85,8 @@ export const panelContent = v.object({
     nextMap: v.optional(v.boolean()),
     queue: v.optional(v.boolean()),
     address: v.optional(v.boolean()),
+    /** "Ukázat join kód" (Wardogs, P2-39); absent follows `address`. */
+    joinCode: v.optional(v.boolean()),
     joinButton: v.optional(v.boolean()),
     password: v.optional(v.boolean()),
     seedProgress: v.optional(v.boolean()),
@@ -161,6 +163,22 @@ export const discordPanelStatus = defineTable({
     sentAt: nullableNumber,
     /** When the admins were told the channel turned public (P4-30). */
     passwordNotifiedAt: v.optional(nullableNumber),
+    /** The first success after `lastError` (P2-32). */
+    recoveredAt: v.optional(nullableNumber),
+    /** Whether `@everyone` cannot view the channel, as the bot last saw it. */
+    channelPrivate: v.optional(v.union(v.boolean(), v.null())),
+    /** The most recent failure, kept after a later success (P2-32). */
+    lastError: v.optional(
+        v.union(
+            v.object({
+                code: v.string(),
+                at: v.number(),
+                permissions: v.optional(v.array(v.string())),
+                category: v.optional(v.string()),
+            }),
+            v.null()
+        )
+    ),
 })
     .index("panelId", ["panelId"])
     .index("guildId", ["guildId"])

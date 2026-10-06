@@ -69,7 +69,6 @@ import {
     saveDiscordSettings,
 } from "@/components/app/settings/save-discord-settings"
 import type { SettingsPreviewKind } from "@/domain/discord-messages/settings-previews"
-import { DiscordPublicPanelsForm } from "@/components/app/discord-public-panels-form"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import { gameDataSettingsSchema } from "@/domain/game-data/contracts"
@@ -80,8 +79,11 @@ import { Button } from "@/components/ui/button"
 
 import {
     panelOverviewItems,
-    panelToggleBody,
+    panelPaused,
+    panelToggleAction,
+    parseCalendarPanel,
     parseSavedPanels,
+    type CalendarPanel,
     type PanelOverviewItem,
     type PanelSource,
     type SavedPanel,
@@ -130,6 +132,8 @@ function initialDraft(config: DiscordConfig | null): Draft {
 export type Overview = {
     status: "loading" | "ready" | "failed"
     panels: SavedPanel[]
+    /** The calendar panel of "Panely v Discordu"; null without one. */
+    calendarPanel?: CalendarPanel | null
     sources: Map<string, PanelSource>
     reportCategories: Array<{ id: string; label: string }>
     seed: {
@@ -190,6 +194,7 @@ function usePanelOverview(serverId: string, version: number): Overview {
                 version,
                 status: list ? "ready" : "failed",
                 panels: parseSavedPanels(list),
+                calendarPanel: parseCalendarPanel(list),
                 sources,
                 reportCategories: Array.isArray(
                     (list as { reportCategories?: unknown })?.reportCategories
@@ -224,7 +229,6 @@ function usePanelOverview(serverId: string, version: number): Overview {
 
 type MessagesSettingsProps = {
     serverId: string
-    gameId?: GameId
     config: DiscordConfig | null
     enabledGames: readonly GameId[]
     siteUrl: string
@@ -237,8 +241,10 @@ type MessagesSettingsProps = {
         factionSigns: string
         league: string
         accountMessages: string
-        /** "Panely v Discordu" (board P1), once that page exists. */
-        panels?: string
+        /** "Panely v Discordu" (board P1), where every panel is edited. */
+        panels: string
+        /** "Seed serverů" (board P3), where the server control message is set. */
+        seed: string
     }
     dictionary: Dictionary
 }
@@ -275,7 +281,6 @@ export function DiscordMessagesSettings(props: MessagesSettingsProps) {
  */
 export function DiscordMessagesSettingsView({
     serverId,
-    gameId,
     config,
     enabledGames,
     siteUrl,
@@ -306,7 +311,6 @@ export function DiscordMessagesSettingsView({
     const [saved, setSaved] = useState<Draft>(() => initialDraft(config))
     const [draft, setDraft] = useState<Draft>(saved)
     const [open, setOpen] = useState<string | null>(null)
-    const [editorOpen, setEditorOpen] = useState(false)
     const metadata = { status: channelsStatus }
     const language = config?.defaultLanguage ?? "en"
     const timeZone = config?.timezone || "UTC"
@@ -327,11 +331,24 @@ export function DiscordMessagesSettingsView({
     const errorsChanged =
         (draft.errorsChannelId || undefined) !==
         (saved.errorsChannelId || undefined)
-    const panelById = new Map(
-        overview.panels.map((panel) => [panel._id, panel])
-    )
+    // A switch is on while its panel runs (sent and not paused).
+    const savedEnabled = new Map<string, boolean>([
+        ...overview.panels.map((panel): [string, boolean] => [
+            panel._id,
+            !panel.draft && !panelPaused(panel),
+        ]),
+        ...(overview.calendarPanel
+            ? [
+                  [
+                      overview.calendarPanel._id,
+                      !overview.calendarPanel.draft &&
+                          !overview.calendarPanel.paused,
+                  ] as [string, boolean],
+              ]
+            : []),
+    ])
     const changedPanels = Object.entries(draft.panels).filter(
-        ([id, enabled]) => panelById.get(id)?.enabled !== enabled
+        ([id, enabled]) => savedEnabled.get(id) !== enabled
     )
     const changes =
         (accentColor ?? "") !== (normalizeAccentColor(saved.accentColor) ?? "")
@@ -396,27 +413,21 @@ export function DiscordMessagesSettingsView({
                 )
                 return
             }
-            // Panel switches re-save that panel through its own route.
+            // A panel switch is "Pozastavit" / "Spustit" of "Panely v Discordu".
             for (const [id, enabled] of changedPanels) {
-                const panel = panelById.get(id)
-                const body = panel ? panelToggleBody(panel, enabled) : null
-                const response = body
-                    ? await fetch(
-                          `/api/servers/${serverId}/discord-public-panels`,
-                          {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(body),
-                          }
-                      ).catch(() => null)
-                    : null
+                const response = await fetch(
+                    `/api/servers/${encodeURIComponent(serverId)}/discord-panels/${encodeURIComponent(id)}/actions`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: panelToggleAction(enabled),
+                        }),
+                    }
+                ).catch(() => null)
                 if (!response?.ok) {
-                    const error = (await response
-                        ?.json()
-                        .catch(() => null)) as { error?: string } | null
                     toast.error(
-                        error?.error ??
-                            dictionary.serverSettings.discordSettingsSaveError
+                        dictionary.serverSettings.discordSettingsSaveError
                     )
                     return
                 }
@@ -612,6 +623,7 @@ export function DiscordMessagesSettingsView({
             channelId: config?.calendarChannelId,
             messageId: config?.calendarMessageId,
         },
+        calendarPanel: overview.calendarPanel,
         wardogs: enabledGames.includes("wardogs"),
     })
 
@@ -949,57 +961,29 @@ export function DiscordMessagesSettingsView({
                                 />
                                 <span>
                                     {text.panels.intro.split("{link}")[0]}
-                                    {hrefs.panels ? (
-                                        <Link
-                                            href={hrefs.panels}
-                                            className="text-foreground underline underline-offset-3"
-                                        >
-                                            {text.pages.panels}
-                                        </Link>
-                                    ) : (
-                                        <a
-                                            href={`#${ids}-panel-editor`}
-                                            onClick={() => setEditorOpen(true)}
-                                            className="text-foreground underline underline-offset-3"
-                                        >
-                                            {text.pages.panels}
-                                        </a>
-                                    )}
+                                    <Link
+                                        href={hrefs.panels}
+                                        className="text-foreground underline underline-offset-3"
+                                    >
+                                        {text.pages.panels}
+                                    </Link>
                                     {text.panels.intro.split("{link}")[1]}
                                 </span>
                             </p>
-                            {hrefs.panels ? (
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="sm"
-                                    className="rounded-lg"
-                                >
-                                    <Link href={hrefs.panels}>
-                                        <Plus
-                                            className="size-3.5"
-                                            aria-hidden="true"
-                                        />
-                                        {text.panels.add}
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="rounded-lg"
-                                    aria-expanded={editorOpen}
-                                    aria-controls={`${ids}-panel-editor`}
-                                    onClick={() => setEditorOpen(true)}
-                                >
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg"
+                            >
+                                <Link href={`${hrefs.panels}/new`}>
                                     <Plus
                                         className="size-3.5"
                                         aria-hidden="true"
                                     />
                                     {text.panels.add}
-                                </Button>
-                            )}
+                                </Link>
+                            </Button>
                         </li>
                         {overview.status === "loading" ? (
                             <li
@@ -1040,40 +1024,9 @@ export function DiscordMessagesSettingsView({
                                     config?.calendarCategories ?? []
                                 }
                                 hrefs={hrefs}
-                                onEdit={() => setEditorOpen(true)}
-                                editorId={`${ids}-panel-editor`}
                                 dictionary={dictionary}
                             />
                         ))}
-                        {editorOpen && !hrefs.panels ? (
-                            <li
-                                id={`${ids}-panel-editor`}
-                                className="space-y-3 px-4 py-4 sm:px-6"
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <h3 className="text-sm font-semibold">
-                                        {text.panels.editorTitle}
-                                    </h3>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="rounded-lg"
-                                        onClick={() => {
-                                            setEditorOpen(false)
-                                            onPanelsChanged()
-                                        }}
-                                    >
-                                        {text.close}
-                                    </Button>
-                                </div>
-                                <DiscordPublicPanelsForm
-                                    serverId={serverId}
-                                    gameId={gameId}
-                                    dictionary={dictionary}
-                                />
-                            </li>
-                        ) : null}
                     </MessageGroup>
                     <MessageGroup title={text.groups.membership}>
                         {row({
@@ -1260,8 +1213,6 @@ function PanelRow({
     channelName,
     calendarCategories,
     hrefs,
-    onEdit,
-    editorId,
     dictionary,
 }: {
     item: PanelOverviewItem
@@ -1269,9 +1220,7 @@ function PanelRow({
     onToggle(enabled: boolean): void
     channelName(id: string | undefined): string | undefined
     calendarCategories: readonly string[]
-    hrefs: { panels?: string; league: string; channels: string }
-    onEdit(): void
-    editorId: string
+    hrefs: { panels: string; seed: string }
     dictionary: Dictionary
 }) {
     const text = dictionary.settingsHub.messagesPage
@@ -1326,12 +1275,15 @@ function PanelRow({
                 ? t.leagueSwitch
                 : t.switchLabel.replace("{name}", name)
     const channel = channelName(item.channelId)
+    // The calendar's channel is set on "Panely v Discordu" too (N1-47, N1-48).
     const editHref =
-        item.kind === "calendar"
-            ? hrefs.channels
-            : item.kind === "league" && !hrefs.panels
-              ? hrefs.league
-              : hrefs.panels
+        item.kind === "control"
+            ? hrefs.seed
+            : item.panelId
+              ? `${hrefs.panels}/${encodeURIComponent(item.panelId)}`
+              : item.kind === "calendar"
+                ? `${hrefs.panels}/new?type=calendar`
+                : hrefs.panels
     return (
         <MessageRow
             icon={PANEL_ICONS[item.kind]}
@@ -1390,34 +1342,17 @@ function PanelRow({
                       }
             }
             action={
-                editHref ? (
-                    <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg"
-                    >
-                        <Link href={editHref}>
-                            {text.edit}
-                            <ChevronRight
-                                className="size-3.5"
-                                aria-hidden="true"
-                            />
-                        </Link>
-                    </Button>
-                ) : item.panelId ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg"
-                        aria-controls={editorId}
-                        onClick={onEdit}
-                    >
+                <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                >
+                    <Link href={editHref}>
                         {text.edit}
                         <ChevronRight className="size-3.5" aria-hidden="true" />
-                    </Button>
-                ) : null
+                    </Link>
+                </Button>
             }
         />
     )

@@ -54,12 +54,13 @@ type Exceptions = Record<
 >
 /**
  * The errors channel moved to "Zprávy a panely" (board N1-47), where it is
- * edited next to the error messages themselves.
+ * edited next to the error messages themselves; the calendar and its channel
+ * moved to "Panely v Discordu" (N1-47, N1-48). This page never sends either,
+ * so saving it keeps them.
  */
 type Values = {
     timezone: string
     defaultLanguage: ClanLanguage
-    calendarChannelId?: string
 } & Record<GameExceptionChannelField, string | undefined>
 
 const KINDS: Record<GameExceptionChannelField, ChannelKind> = {
@@ -167,7 +168,6 @@ export function DiscordChannelSettingsForm({
         () => ({
             timezone: config?.timezone ?? "UTC",
             defaultLanguage: config?.defaultLanguage ?? "en",
-            calendarChannelId: config?.calendarChannelId,
             announcementsChannelId: config?.announcementsChannelId,
             eventInfoChannelId: config?.eventInfoChannelId,
             forumCategoryId: config?.forumCategoryId,
@@ -211,7 +211,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function picker(
-        field: GameExceptionChannelField | "calendarChannelId",
+        field: GameExceptionChannelField,
         kind: ChannelKind,
         value: string | undefined,
         onChange: (value?: string) => void,
@@ -359,25 +359,6 @@ export function DiscordChannelSettingsForm({
         )
     }
 
-    function clanWideRow(
-        field: "calendarChannelId",
-        label: string,
-        help: string
-    ) {
-        return (
-            <Row>
-                <SettingsField label={label} help={help}>
-                    {picker(field, "text", values[field], (value) =>
-                        setValue(field, value)
-                    )}
-                    {multiGame ? (
-                        <ClanWideNote label={hub.scopeLegend.clanWideShort} />
-                    ) : null}
-                </SettingsField>
-            </Row>
-        )
-    }
-
     function discard() {
         setValues(initialValues)
         setExceptions(initialExceptions)
@@ -398,7 +379,6 @@ export function DiscordChannelSettingsForm({
             defaultLanguage: values.defaultLanguage,
             announcementsChannelId: clearableId(values.announcementsChannelId),
             eventInfoChannelId: clearableId(values.eventInfoChannelId),
-            calendarChannelId: clearableId(values.calendarChannelId),
             forumCategoryId: clearableId(values.forumCategoryId),
             meetingChannelId: clearableId(values.meetingChannelId),
             squadVoiceCategoryId: clearableId(values.squadVoiceCategoryId),
@@ -538,11 +518,6 @@ export function DiscordChannelSettingsForm({
                     "eventInfoChannelId",
                     text.eventInfo,
                     text.eventInfoHelp
-                )}
-                {clanWideRow(
-                    "calendarChannelId",
-                    text.calendar,
-                    text.calendarHelp
                 )}
                 {routingRow("forumCategoryId", text.forum, text.forumHelp)}
             </Card>

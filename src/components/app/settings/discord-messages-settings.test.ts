@@ -98,6 +98,8 @@ function render(locale: "cs" | "en" | "de" = "cs") {
                         "/cs/x/panel-graphics#panel-graphics-factions",
                     league: "/cs/x/league",
                     accountMessages: "/cs/dashboard/settings/user",
+                    panels: "/cs/x/discord-panels",
+                    seed: "/cs/x/discord-seed",
                 },
                 dictionary,
                 channels,

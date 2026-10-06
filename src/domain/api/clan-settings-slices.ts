@@ -11,6 +11,7 @@ import {
 import { membershipApplicationSettingsSlice } from "./membership-application-settings-slice"
 import { panelGraphicsSettingsSlice } from "./panel-graphics-settings-slice"
 import { matchMessagesSettingsSlice } from "./match-messages-settings-slice"
+import { discordPanelsSettingsSlice } from "./discord-panels-settings-slice"
 import { messagesSettingsSlice } from "./messages-settings-slice"
 import { commandsSettingsSlice } from "./commands-settings-slice"
 import { seedSettingsSlice } from "./seed-settings-slice"
@@ -19,6 +20,7 @@ export const CLAN_SETTINGS_SLICES: readonly AnyClanSettingsSlice[] = [
     panelGraphicsSettingsSlice,
     commandsSettingsSlice as AnyClanSettingsSlice,
     matchMessagesSettingsSlice,
+    discordPanelsSettingsSlice,
     seedSettingsSlice,
     messagesSettingsSlice as AnyClanSettingsSlice,
     membershipApplicationSettingsSlice,

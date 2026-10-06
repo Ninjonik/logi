@@ -114,6 +114,17 @@ export type PanelOverviewItem = {
         dataAt: number | null
     }
     error: PanelError | null
+    /**
+     * The most recent failure even after a later success, for "Poslední
+     * chyba … Další pokus … prošel" (P2-32); null when it never failed.
+     */
+    lastError: PanelError | null
+    /** The first success after `lastError`; null while the panel still fails. */
+    recoveredAt: number | null
+    /** A message of this panel reached Discord at least once: its type is locked (P2-05). */
+    sent: boolean
+    /** `@everyone` cannot view the channel, as the bot last saw it; null before it looked. */
+    channelPrivate: boolean | null
     /** A create Discord did not confirm; "Zkusit znovu" sends it again (P2-33). */
     uncertain: boolean
     warnings: PanelWarning[]
@@ -145,12 +156,91 @@ export type PanelServerInfo = {
     hasPassword: boolean
 }
 
+/**
+ * The seed control message of one server ("Ovládání serveru", P1-18,
+ * P5-26..29): it lives in the server's private admin channel and is drawn
+ * by the seed worker, so it is listed with the panels.
+ */
+export type StoredControlMessage = {
+    connectionId: string
+    /** The plan's control channel; null when none is set. */
+    channelId: string | null
+    message: {
+        channelId: string | null
+        messageId: string | null
+        revision: number
+        deliveredRevision: number
+        lastSuccessAt: number | null
+        error: string | null
+        pending: boolean
+    } | null
+}
+
+export type PanelControlItem = {
+    connectionId: string
+    channelId: string
+    state: PanelDeliveryState
+    lastUpdateAt: number | null
+    /** The control message failed its last delivery. */
+    failed: boolean
+    message: { channelId: string; messageId: string } | null
+}
+
 export type PanelOverview = {
     bot: BotHeartbeatState
     panels: PanelOverviewItem[]
     counts: Record<PanelDeliveryState, number>
     sources: PanelSourceHealth[]
     servers: PanelServerInfo[]
+    /** "Ovládání serveru" messages, one per server with a control channel. */
+    controls: PanelControlItem[]
+    /** Display names of the admins who saved or paused a panel ("Hráč 01"). */
+    people: Record<string, string>
+}
+
+/** The state chip of a seed control message, from its managed-message row. */
+export function controlMessageState(
+    message: StoredControlMessage["message"]
+): PanelDeliveryState {
+    if (!message) return "waiting"
+    if (message.error && message.revision > message.deliveredRevision)
+        return "error"
+    if (message.pending && message.error) return "error"
+    if (message.revision > message.deliveredRevision || !message.messageId)
+        return "waiting"
+    return "published"
+}
+
+/** The editor's view of a stored panel (`panelSaveSchema` shape), also used by `/api/v1`. */
+export function panelEditorSettings(
+    panel: StoredPanel,
+    kind: PanelKind
+): PanelOverviewItem["settings"] {
+    return {
+        kind,
+        channelId: panel.channelId,
+        ...(panel.connectionId ? { connectionId: panel.connectionId } : {}),
+        ...(panel.connectionIds ? { connectionIds: panel.connectionIds } : {}),
+        ...(kind === "results" &&
+        (panel.gameId === "hell_let_loose" || panel.gameId === "wardogs")
+            ? { gameId: panel.gameId }
+            : {}),
+        ...(panel.title ? { title: panel.title } : {}),
+        ...(panel.description ? { description: panel.description } : {}),
+        showPlayers: panel.showPlayers,
+        showLeaders: panel.showLeaders ?? false,
+        ...(panel.reportCategoryId
+            ? { reportCategoryId: panel.reportCategoryId }
+            : {}),
+        artwork: panel.artwork,
+        content: resolvePanelContent(panel.content),
+        ...(panel.presentation ? { presentation: panel.presentation } : {}),
+        ...(panel.league ? { league: panel.league } : {}),
+        ...(panel.calendarCategories
+            ? { calendarCategories: panel.calendarCategories }
+            : {}),
+        ...(panel.competitionId ? { competitionId: panel.competitionId } : {}),
+    }
 }
 
 export function buildPanelOverview(input: {
@@ -164,6 +254,8 @@ export function buildPanelOverview(input: {
     }>
     sources: PanelSourceHealth[]
     servers: PanelServerInfo[]
+    controls?: StoredControlMessage[]
+    people?: Record<string, string>
 }): PanelOverview {
     const counts = Object.fromEntries(
         PANEL_DELIVERY_STATES.map((state) => [state, 0])
@@ -209,42 +301,7 @@ export function buildPanelOverview(input: {
             pausedAt: panel.pausedAt ?? null,
             pausedBy: panel.pausedBy ?? null,
             revision: panel.revision,
-            settings: {
-                kind,
-                channelId: panel.channelId,
-                ...(panel.connectionId
-                    ? { connectionId: panel.connectionId }
-                    : {}),
-                ...(panel.connectionIds
-                    ? { connectionIds: panel.connectionIds }
-                    : {}),
-                ...(kind === "results" &&
-                (panel.gameId === "hell_let_loose" ||
-                    panel.gameId === "wardogs")
-                    ? { gameId: panel.gameId }
-                    : {}),
-                ...(panel.title ? { title: panel.title } : {}),
-                ...(panel.description
-                    ? { description: panel.description }
-                    : {}),
-                showPlayers: panel.showPlayers,
-                showLeaders: panel.showLeaders ?? false,
-                ...(panel.reportCategoryId
-                    ? { reportCategoryId: panel.reportCategoryId }
-                    : {}),
-                artwork: panel.artwork,
-                content: resolvePanelContent(panel.content),
-                ...(panel.presentation
-                    ? { presentation: panel.presentation }
-                    : {}),
-                ...(panel.league ? { league: panel.league } : {}),
-                ...(panel.calendarCategories
-                    ? { calendarCategories: panel.calendarCategories }
-                    : {}),
-                ...(panel.competitionId
-                    ? { competitionId: panel.competitionId }
-                    : {}),
-            },
+            settings: panelEditorSettings(panel, kind),
             timeline: {
                 savedAt: panel.savedAt ?? panel.createdAt,
                 savedBy: panel.savedBy ?? null,
@@ -279,6 +336,14 @@ export function buildPanelOverview(input: {
                 (uncertain
                     ? { code: "delivery_uncertain", at: input.now }
                     : null),
+            lastError: status?.error ?? status?.lastError ?? null,
+            recoveredAt: status?.error ? null : (status?.recoveredAt ?? null),
+            sent:
+                Boolean(status?.sentAt) ||
+                delivered.length > 0 ||
+                // Panels saved by the old form were posted on save.
+                panel.draft === undefined,
+            channelPrivate: status?.channelPrivate ?? null,
             uncertain,
             warnings: status?.warnings ?? [],
             message: main
@@ -296,11 +361,35 @@ export function buildPanelOverview(input: {
         }
         return [item]
     })
+    const controls = (input.controls ?? []).flatMap(
+        (control): PanelControlItem[] => {
+            if (!control.channelId) return []
+            const message = control.message
+            return [
+                {
+                    connectionId: control.connectionId,
+                    channelId: control.channelId,
+                    state: controlMessageState(message),
+                    lastUpdateAt: message?.lastSuccessAt ?? null,
+                    failed: Boolean(message?.error),
+                    message:
+                        message?.channelId && message.messageId
+                            ? {
+                                  channelId: message.channelId,
+                                  messageId: message.messageId,
+                              }
+                            : null,
+                },
+            ]
+        }
+    )
     return {
         bot: botHeartbeatState(input.heartbeat, input.now),
         panels,
         counts,
         sources: input.sources,
         servers: input.servers,
+        controls,
+        people: input.people ?? {},
     }
 }

@@ -66,6 +66,11 @@ export function panelStatusRecord(
         warnings: row.warnings as PanelStatusRecord["warnings"],
         messages: row.messages,
         sentAt: row.sentAt,
+        lastError: (row.lastError ??
+            row.error ??
+            null) as PanelStatusRecord["error"],
+        channelPrivate: row.channelPrivate ?? null,
+        recoveredAt: row.recoveredAt ?? null,
     }
 }
 

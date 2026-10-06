@@ -48,6 +48,21 @@ boards L3, P4–P8) turns the panels into one model with explicit delivery:
 
 ## Configuration
 
+Panels are configured on **Settings → Discord → Panely v Discordu**
+(`settings/discord-panels`, `src/components/app/discord-panels/`). The list
+shows the bot's heartbeat and version, the data sources, every panel grouped
+(live servers, results and the WD League, calendar and competitions, seed
+control messages) with its state chip, timing line, last error with its fix and
+the live actions. **Nový panel** and a panel's **Upravit** open the editor
+(`settings/discord-panels/new`, `settings/discord-panels/<panelId>`): type,
+server(s), channel with **Ověřit**, content switches, join details and the
+encrypted password, title, description, banner, bar colour, style A/B/C and
+footer timing, with the rendered preview on the right ("Načíst data ze
+serveru" reads the provider once), the source and the delivery timeline. A new
+panel is saved not sent until **Odeslat do kanálu**. Grafika panelů and Seed
+serverů are sub-pages of Panely v Discordu. The old per-feature form on
+"Zprávy a panely" is gone.
+
 Select an existing HLL or Wardogs data connection, a feature and a destination.
 The channel picker searches names/IDs, groups by Discord category and accepts a
 pasted ID. Public panels accept guild text and announcement channels. Categories,
@@ -258,19 +273,20 @@ emoji through `discordPanelGraphics:reportEmoji` (both internal secret).
 
 ## Appearance
 
-Each panel record has an optional `presentation`, edited in the dashboard's
-**Appearance** section and validated by
+Each panel record has an optional `presentation`, edited in the panel
+editor's step **Vzhled** (banner, bar colour, style A/B/C; the default style
+comes from Grafika panelů) and validated by
 `src/domain/discord-publications/panel-presentation.ts`:
 
-| Field                                                   | Values                                                                                                                         | Rendering                                                                                                                                                                                                                  |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `layout.showMap`                                        | boolean, default `true`                                                                                                        | Map line and map thumbnail. The thumbnail still needs `artwork`; hidden maps upload no artwork.                                                                                                                            |
-| `layout.showScoreboard`                                 | boolean, default `true`                                                                                                        | Faction/team score section of live panels, including per-team leaders.                                                                                                                                                     |
-| `layout.showPlayerCount`                                | boolean, default `true`                                                                                                        | Connected players / capacity in the live header.                                                                                                                                                                           |
-| `layout.compact`                                        | boolean, default `false`                                                                                                       | Two-line header with subtext facts, inline scores, no separators; results use a condensed title.                                                                                                                           |
-| `accentColor`                                           | `#RRGGBB` or `null`                                                                                                            | Replaces the green live color and the result color. Stale and paused cards keep the amber warning. The HLL private player embed uses it too.                                                                               |
-| `bannerAssetId` / `bannerUrl`                           | image asset ID or `null`; the URL is server-resolved                                                                           | An HTTPS banner is a Components V2 media gallery above the header and replaces the map thumbnail and its upload. A non-HTTPS URL (local development) is ignored and artwork rules apply.                                   |
-| `factionEmoji.{allies,axis,valkyra,manticore,lonestar}` | one Unicode emoji (Extended_Pictographic, flag pair, skin tone, up to three ZWJ joins) or `<:name:id>` / `<a:name:id>`, max 64 | Overrides the marker before semantically matched faction names on scores, leaders and results. Wardogs falls back to the installed application emoji, then `◈`; HLL CRCON teams have no default. Provider labels keep `◈`. |
+| Field                                                   | Values                                                                                                                         | Rendering                                                                                                                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `layout.showMap`                                        | boolean, default `true`                                                                                                        | Map line and map thumbnail. The thumbnail still needs `artwork`; hidden maps upload no artwork.                                                                                                        |
+| `layout.showScoreboard`                                 | boolean, default `true`                                                                                                        | Faction/team score section of live panels, including per-team leaders.                                                                                                                                 |
+| `layout.showPlayerCount`                                | boolean, default `true`                                                                                                        | Connected players / capacity in the live header.                                                                                                                                                       |
+| `layout.compact`                                        | boolean, default `false`                                                                                                       | Two-line header with subtext facts, inline scores, no separators; results use a condensed title.                                                                                                       |
+| `accentColor`                                           | `#RRGGBB` or `null`                                                                                                            | Replaces the green live color and the result color. Stale and paused cards keep the amber warning. The HLL private player embed uses it too.                                                           |
+| `bannerAssetId` / `bannerUrl`                           | image asset ID or `null`; the URL is server-resolved                                                                           | An HTTPS banner is a Components V2 media gallery above the header and replaces the map thumbnail and its upload. A non-HTTPS URL (local development) is ignored and artwork rules apply.               |
+| `factionEmoji.{allies,axis,valkyra,manticore,lonestar}` | one Unicode emoji (Extended_Pictographic, flag pair, skin tone, up to three ZWJ joins) or `<:name:id>` / `<a:name:id>`, max 64 | **Retired (P8-B06).** The editor no longer offers it and always saves `{}`, so a stored override is cleared on the panel's next save. The redesigned renderers draw fixed faction signs and ignore it. |
 
 Records without `presentation` resolve to the defaults, and the renderers are
 byte-identical for a missing and a fully defaulted appearance. A save without
@@ -284,7 +300,8 @@ without them. Without overrides both pages are byte-identical to before.
 
 **Banner reference rule.** The client sends only `bannerAssetId`; `bannerUrl` in
 the request is ignored by the route and rejected by the Convex validator. The
-`discordPublicPanels:configure` mutation verifies the asset with
+save (`discordPanels:save`, and the older `discordPublicPanels:configure`)
+verifies the asset with
 `attachableAsset` (same workspace, kind `panel-banner`, state `ready`) and, if it
 is foreign, of another kind, being deleted or missing, returns
 `{ error: "asset_unavailable" }` without writing; the dashboard shows a localized
@@ -298,29 +315,38 @@ hours. Uploads use `POST /api/servers/{serverId}/image-assets?kind=panel-banner`
 (PNG, JPEG or WebP up to 2 MiB and 4096 × 4096 px, normalized to WebP of at most
 1920 × 1080 px); **Choose an uploaded banner** reads `GET` on the same path to
 reuse one of the workspace's banners, which the save verifies the same way.
-While an upload is in flight the form disables saving, verification and
-switching panels; the result merges only `bannerAssetId`/`bannerUrl` into the
-current draft and is dropped if the editor was remounted for another panel.
+While an upload is in flight the editor disables saving; the result merges
+only `bannerAssetId` into the current draft.
 
 ## API and activation
 
 The redesigned dashboard routes are under
 `/api/servers/{serverId}/discord-panels` (overview, save, actions, test fetch,
-channel check, server join details); see
+channel check, server join details, and for the editor the WD League preview,
+the preview image and "Obnovit teď" of a seed control message); see
 [PANELS-API.md](../../superpowers/specs/discord-redesign/PANELS-API.md). The
-older form's session API `GET/POST
-/api/servers/{serverId}/discord-public-panels` keeps working; `POST ?verify=1`
-verifies a channel without saving. Input is bounded to 4 KiB and strictly validated. Write requests
-reject cross-origin callers. The final mutation takes the server-attested actor,
-never an actor supplied in the request body.
+older session API `/api/servers/{serverId}/discord-public-panels` is now `GET`
+only (the summary "Zprávy a panely" reads); its `POST` left with the old form,
+so every save goes through the editor's rules. Write requests reject
+cross-origin callers before the body is read; bodies are bounded and strictly
+validated. The final mutation takes the server-attested actor, never an actor
+supplied in the request body.
 
-**Deliberate v1 exclusion:** existing website bearer read grants cannot configure
-Discord publication, panel appearance, banner uploads or application emoji.
-These actions, and the redesign's live actions (send, refresh, pause, retry,
-delete message, test fetch, channel check, server password), cause messages or
-provider reads for a third-party guild and require the current interactive
-administrator, including revocation checks. There is no new bearer management endpoint or broadened key
-scope. Game-data and reviewed-result read APIs remain unchanged.
+**API parity.** Panel settings are the `discordPanels` slice of
+`GET/PATCH /api/v1/clan/settings`
+(`src/domain/api/discord-panels-settings-slice.ts`; see
+[configuration coverage](configuration-coverage.md#discordpanels-panely-v-discordu)):
+the same `panelSaveSchema` the editor saves, with revisions, a dry run of every
+entry before any write, and new panels saved not sent.
+
+**Deliberate v1 exclusion:** banner uploads, application emoji and the live
+actions (send, refresh, pause, retry, delete message, remove, test fetch,
+channel check, server password, the editor's preview image and League preview,
+and "Obnovit teď" of a control message) cause messages, uploads or provider
+reads for a third-party guild and require the current interactive
+administrator, including revocation checks. There is no new bearer management
+endpoint or broadened key scope. Game-data and reviewed-result read APIs remain
+unchanged.
 
 Deploy the schema/functions to the intended backend, deploy the matching bot and
 dashboard (the bot provisions its application emoji on start), then configure

@@ -37,6 +37,20 @@ function routes(overrides: Partial<DiscordPanelsRoutePorts<Access>> = {}) {
             calls.push(["server", input])
             return { status: "saved", slug: "vlci-1", joinUrl: null }
         },
+        leaguePreview: async (_access, count) => {
+            calls.push(["league", count])
+            return { standings: null, fixtures: null }
+        },
+        refreshControl: async (_access, connectionId) => {
+            calls.push(["control", connectionId])
+            return connectionId === "hll-1"
+                ? { status: "accepted" }
+                : { status: "not_found" }
+        },
+        renderPreviewImage: async (input) => {
+            calls.push(["image", input.kind])
+            return new Uint8Array([137, 80, 78, 71])
+        },
         ...overrides,
     }
     return { handlers: discordPanelsRoutes(ports), calls }
@@ -236,4 +250,86 @@ test("backend failures are a plain 503 without internal details", async () => {
     const response = await handlers.GET(new Request("https://x"), params)
     assert.equal(response.status, 503)
     assert.deepEqual(await response.json(), { error: "unavailable" })
+})
+
+test("the League preview reads 1 to 10 fixtures for clan admins", async () => {
+    const { handlers, calls } = routes()
+    const url = (count: string) =>
+        new Request(
+            `https://logi.app/api/servers/guilds:1/discord-panels/league-preview?count=${count}`
+        )
+    assert.equal((await handlers.leaguePreview(url("6"), params)).status, 200)
+    assert.deepEqual(calls.at(-1), ["league", 6])
+    assert.equal((await handlers.leaguePreview(url("0"), params)).status, 400)
+    assert.equal((await handlers.leaguePreview(url("11"), params)).status, 400)
+    assert.equal(
+        (await handlers.leaguePreview(url("6"), { serverId: "guilds:2" }))
+            .status,
+        403
+    )
+})
+
+test("a control message refresh needs the dashboard origin and a known server", async () => {
+    const { handlers, calls } = routes()
+    const refused = await handlers.control(
+        request({ action: "refresh" }, "https://evil.example"),
+        { ...params, connectionId: "hll-1" }
+    )
+    assert.equal(refused.status, 403)
+    assert.equal(calls.length, 0)
+    const accepted = await handlers.control(request({ action: "refresh" }), {
+        ...params,
+        connectionId: "hll-1",
+    })
+    assert.equal(accepted.status, 202)
+    const unknown = await handlers.control(request({ action: "refresh" }), {
+        ...params,
+        connectionId: "hll-9",
+    })
+    assert.equal(unknown.status, 404)
+    const invalid = await handlers.control(request({ action: "pause" }), {
+        ...params,
+        connectionId: "hll-1",
+    })
+    assert.equal(invalid.status, 400)
+})
+
+test("preview images render only validated models over built-in art", async () => {
+    const { handlers, calls } = routes()
+    const model = {
+        version: 1,
+        language: "cs",
+        accentColor: "#e8a33d",
+        clanTag: "VLK",
+        clanName: "Vlci",
+        subtitle: "Vlci #1 · Public · Hell Let Loose",
+        background: {
+            kind: "builtin",
+            game: "hell_let_loose",
+            mapKey: "foy",
+        },
+    }
+    const ok = await handlers.previewImage(
+        request({ kind: "banner", model }),
+        params
+    )
+    assert.equal(ok.status, 200)
+    assert.equal(ok.headers.get("content-type"), "image/png")
+    assert.deepEqual(calls.at(-1), ["image", "banner"])
+    const asset = await handlers.previewImage(
+        request({
+            kind: "banner",
+            model: {
+                ...model,
+                background: { kind: "asset", publicId: "abc", crop: "center" },
+            },
+        }),
+        params
+    )
+    assert.equal(asset.status, 400)
+    const foreign = await handlers.previewImage(
+        request({ kind: "banner", model }, "https://evil.example"),
+        params
+    )
+    assert.equal(foreign.status, 403)
 })

@@ -76,6 +76,8 @@ export type PanelChannelCheck = {
     permissions: Record<keyof typeof PANEL_PERMISSION_BITS, boolean>
     /** P2-10, P2-37: whether `@everyone` can view; a password needs false. */
     everyoneCanView: boolean
+    /** Roles the channel lets in by name ("vidí ho jen role @Klan a správci", P2-37). */
+    viewerRoleIds: string[]
     /** The bot is timed out in this server. */
     timedOut: boolean
 }
@@ -146,6 +148,17 @@ export async function inspectPanelChannel(
             ])
         ) as PanelChannelCheck["permissions"],
         everyoneCanView: everyoneCanView(guildId, roles, overwrites),
+        viewerRoleIds: overwrites
+            .filter(
+                (entry) =>
+                    entry.type === 0 &&
+                    entry.id !== guildId &&
+                    (BigInt(entry.allow) &
+                        PANEL_PERMISSION_BITS.view_channel) ===
+                        PANEL_PERMISSION_BITS.view_channel
+            )
+            .map((entry) => entry.id)
+            .slice(0, 20),
         timedOut: Boolean(
             member.communication_disabled_until &&
             Date.parse(member.communication_disabled_until) > Date.now()

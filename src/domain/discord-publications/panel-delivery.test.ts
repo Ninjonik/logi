@@ -270,3 +270,33 @@ test("the heartbeat reads online, offline after three minutes, or outdated", () 
         false
     )
 })
+
+test("the last error stays after a success, with the first success after it (P2-32)", () => {
+    const failed = nextPanelStatus(
+        null,
+        attempt({
+            ok: false,
+            attemptAt: 1_000,
+            error: { code: "discord_unavailable", at: 1_000 },
+            channelPrivate: true,
+        })
+    )
+    assert.equal(failed.lastError?.code, "discord_unavailable")
+    assert.equal(failed.recoveredAt, null)
+    assert.equal(failed.channelPrivate, true)
+    const recovered = nextPanelStatus(failed, attempt({ attemptAt: 61_000 }))
+    assert.equal(recovered.error, null)
+    assert.equal(recovered.lastError?.code, "discord_unavailable")
+    assert.equal(recovered.recoveredAt, 61_000)
+    // A pass that did not look at the channel keeps its last known privacy.
+    assert.equal(recovered.channelPrivate, true)
+    const later = nextPanelStatus(recovered, attempt({ attemptAt: 121_000 }))
+    assert.equal(later.recoveredAt, 61_000)
+    assert.equal(
+        nextPanelStatus(
+            later,
+            attempt({ attemptAt: 181_000, channelPrivate: false })
+        ).channelPrivate,
+        false
+    )
+})
