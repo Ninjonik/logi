@@ -21,9 +21,17 @@ import {
     handleWindowModal,
 } from "./membership-application"
 import type { ApplicationState } from "./membership-application-store"
+import { applicationStateCache } from "./membership-application-cache"
 import { closeConvexClient } from "../convex"
 
 afterEach(closeConvexClient)
+afterEach(() => applicationStateCache.reset())
+
+/** Convex reads of the current test, in order. */
+const reads: string[] = []
+afterEach(() => {
+    reads.length = 0
+})
 
 const userId = "333333333333333333"
 const categories = [
@@ -100,14 +108,15 @@ function backend(
     results: Record<string, unknown> = {}
 ) {
     const writes: Array<{ name: string; args: Record<string, unknown> }> = []
-    let reads = 0
+    let stateReads = 0
     t.mock.method(
         ConvexReactClient.prototype,
         "query",
         async (reference: Parameters<typeof getFunctionName>[0]) => {
             const name = getFunctionName(reference)
+            reads.push(name)
             if (name === "membershipApplications:getApplicationState")
-                return states[Math.min(reads++, states.length - 1)]
+                return states[Math.min(stateReads++, states.length - 1)]
             return { defaultLanguage: "cs" }
         }
     )
@@ -241,6 +250,132 @@ test("Podat přihlášku opens window 1 directly (L6-14, L6-18)", async (t) => {
     ) as { custom_id: string; title: string }
     assert.equal(modal.custom_id, "application-window:new:about")
     assert.equal(modal.title, "Přihláška · 1 ze 3 · O tobě")
+})
+
+/** The clan's definition as the live subscription delivers it. */
+function cacheDefinition(patch: Partial<ApplicationState> = {}) {
+    // Only the clan's part is kept, whatever else the row carries.
+    applicationStateCache.applyDefinitions([
+        { guildId: "123456789012345678", ...state(patch) },
+    ])
+}
+
+test("with the cached form, Podat přihlášku opens window 1 before any read (Discord's 3 s)", async (t) => {
+    backend(t, [state()])
+    cacheDefinition()
+    const { value, modals } = interaction({ customId: "membership:apply" })
+    let readsBeforeModal: string[] | undefined
+    value.showModal = async (modal: unknown) => {
+        readsBeforeModal = [...reads]
+        modals.push(modal)
+    }
+    await handleApplicationStart(value as unknown as ButtonInteraction)
+    assert.deepEqual(readsBeforeModal, [])
+    const modal = JSON.parse(
+        JSON.stringify((modals[0] as { toJSON(): unknown }).toJSON())
+    ) as { custom_id: string; title: string }
+    assert.equal(modal.custom_id, "application-window:new:about")
+    assert.equal(modal.title, "Přihláška · 1 ze 3 · O tobě")
+    // The applicant's state is refreshed in the background afterwards.
+    await new Promise((resolve) => setImmediate(resolve))
+    assert.deepEqual(reads, ["membershipApplications:getApplicationState"])
+    assert.equal(
+        applicationStateCache.peek("123456789012345678", userId)?.known,
+        true
+    )
+})
+
+test("a settings change reaches the cache: switched off answers 'zavřené' without a read", async (t) => {
+    backend(t, [state()])
+    cacheDefinition({ enabled: false })
+    const { value, replies, modals } = interaction({
+        customId: "membership:apply",
+    })
+    await handleApplicationStart(value as unknown as ButtonInteraction)
+    assert.equal(modals.length, 0)
+    assert.match(texts(replies[0]), /### Přihlášky jsou teď zavřené/)
+})
+
+test("Pokračovat opens the next window from the remembered draft, before any read", async (t) => {
+    const draft = {
+        id: "draft1",
+        answers: {
+            games: ["hell_let_loose" as const],
+            categoryId: "main",
+            inGameName: "Hráč 17",
+            accounts: {},
+            answers: { source: ["source-1"] },
+            completedWindows: ["about"],
+        },
+        source: "discord" as const,
+        submissionStatus: null,
+        submissionError: null,
+    }
+    backend(t, [state({ draft })])
+    cacheDefinition()
+    applicationStateCache.remember(
+        "123456789012345678",
+        userId,
+        state({ draft })
+    )
+    const { value, modals } = interaction({
+        customId: "application:draft1:open:accounts",
+        ephemeralMessage: true,
+    })
+    await handleApplicationButton(value as unknown as ButtonInteraction)
+    assert.deepEqual(reads, [])
+    const modal = JSON.parse(
+        JSON.stringify((modals[0] as { toJSON(): unknown }).toJSON())
+    ) as { custom_id: string; title: string }
+    assert.equal(modal.custom_id, "application-window:draft1:accounts")
+    assert.equal(modal.title, "Přihláška · 2 ze 3 · Herní účty")
+})
+
+test("window 1 opened before the bot knew the applicant still stops an open application", async (t) => {
+    const writes = backend(t, [
+        state({ openApplication: { number: 41, threadId: "999" } }),
+    ])
+    const { value, replies } = interaction({
+        customId: "application-window:new:about",
+        fields: {
+            games: { values: ["hell_let_loose"] },
+            category: { values: ["main"] },
+            name: { value: "Hráč 17" },
+            "q-source": { values: ["source-1"] },
+            "q-age": { value: "24" },
+        },
+    })
+    await handleWindowModal(value as unknown as ModalSubmitInteraction)
+    assert.deepEqual(writes, [])
+    assert.match(texts(replies[0]), /### Už máš otevřenou přihlášku #41/)
+})
+
+test("an invalid window 1 is saved, so 'Upravit' reopens it filled in (L6-09)", async (t) => {
+    backend(t, [state()], {
+        "membershipApplications:saveApplicationWindow": {
+            ok: false,
+            reason: "invalid",
+            issues: [{ fieldId: "q-age", issue: "number" }],
+            draftId: "draft9",
+        },
+    })
+    const { value, replies } = interaction({
+        customId: "application-window:new:about",
+        fields: {
+            games: { values: ["hell_let_loose"] },
+            category: { values: ["main"] },
+            name: { value: "Hráč 17" },
+            "q-source": { values: ["source-1"] },
+            "q-age": { value: "dvacet" },
+        },
+    })
+    await handleWindowModal(value as unknown as ModalSubmitInteraction)
+    const json = JSON.stringify(replies[0])
+    assert.match(texts(replies[0]), /### Oprav údaje o sobě/)
+    assert.match(texts(replies[0]), /Věk: napiš číslo\./)
+    // "Upravit" and "Opravit údaje o sobě" open the saved draft, not a new one.
+    assert.match(json, /application:draft9:open:about/)
+    assert.doesNotMatch(json, /application:new:/)
 })
 
 const savedAbout: ApplicationAnswers = {

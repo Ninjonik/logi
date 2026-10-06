@@ -5,6 +5,7 @@ import {
     type AssignmentAfterDecision,
     type AssignmentStatus,
     type AssignmentType,
+    type DecisionCategory,
     type DecisionRolePolicy,
     type DecisionRoles,
 } from "../../domain/membership/application-decision"
@@ -39,6 +40,8 @@ export type DecideApplicationInput = {
     /** The membership status before the decision; null without a membership. */
     before: AssignmentStatus | null
     policy: DecisionRolePolicy
+    /** The clan's mercenary category (`mercenaryCategoryFor`); null without one. */
+    mercenaryCategory?: Pick<DecisionCategory, "id" | "gameId"> | null
 }
 
 export type DecisionDm = "sent" | "failed" | "off"
@@ -46,28 +49,31 @@ export type DecisionDm = "sent" | "failed" | "off"
 export type DecideApplicationResult =
     | { status: "decided"; roles: DecisionRoles; dm: DecisionDm }
     | { status: "closed" | "busy" | "missing" }
+    /** "Přijmout jako žoldáka" while the clan has no mercenary category. */
+    | { status: "no-mercenary-category" }
 
 export async function decideApplication(
     ports: DecideApplicationPorts,
     input: DecideApplicationInput
 ): Promise<DecideApplicationResult> {
+    if (input.outcome === "mercenary" && !input.mercenaryCategory)
+        return { status: "no-mercenary-category" }
     const claim = await ports.claim()
     if (claim !== "ok") return { status: claim }
     try {
         await ports.writeAssignment(
-            assignmentAfterDecision(input.outcome, input.categoryType)
+            assignmentAfterDecision(
+                input.outcome,
+                input.categoryType,
+                input.mercenaryCategory
+            )
         )
         await ports.close()
     } catch (error) {
         await ports.release().catch(() => undefined)
         throw error
     }
-    const roles = decisionRoles(
-        input.policy,
-        input.before,
-        input.outcome,
-        input.categoryType
-    )
+    const roles = decisionRoles(input.policy, input.before, input.outcome)
     try {
         await ports.showDecision(roles)
     } catch (error) {

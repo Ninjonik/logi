@@ -89,6 +89,31 @@ test("pending recruit active reserve and mercenary transitions preserve current 
     }
     assert.deepEqual(desiredMembershipRoles(policy, null), [])
 })
+test("an applicant waits with the recruit role only, without the clan role", () => {
+    const policy = managedRolePolicy(config, "hell_let_loose")
+    const recruit = {
+        type: "member" as const,
+        status: "recruit" as const,
+        membershipCategoryId: "members",
+    }
+    assert.deepEqual(
+        desiredMembershipRoles(policy, recruit, { applicant: true }),
+        ["recruit"]
+    )
+    assert.deepEqual(
+        desiredMembershipRoles(
+            policy,
+            { ...recruit, status: "pending" },
+            { applicant: true }
+        ),
+        []
+    )
+    // The decision ("Přijmout jako rekruta") adds the clan role.
+    assert.deepEqual(desiredMembershipRoles(policy, recruit), [
+        "clan",
+        "recruit",
+    ])
+})
 test("roles can be shared between policies and games", () => {
     assert.deepEqual(managedRolePolicy(config, "wardogs").roleIds, [
         "clan",

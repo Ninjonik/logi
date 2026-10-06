@@ -21,6 +21,12 @@ export type ApplicationCopy = {
         applyOnWeb: string
         /** "Přihláška má tři krátká okna a zabere asi 3 minuty." */
         windowsNote: { two: string; three: string }
+        /** The panel title a new clan starts with: "Přidej se ke klanu {clan}". */
+        defaultTitle: string
+        /** The same without a clan name. */
+        defaultTitleNoClan: string
+        /** The panel text a new clan starts with, by the number of windows. */
+        defaultText: { two: string; three: string }
     }
     /** "Přihláška do klanu {clan}"; the header label adds the step. */
     label: string
@@ -146,7 +152,6 @@ export type ApplicationCopy = {
         /** "{name} · {category}". */
         title: string
         pending: string
-        recruitPending: string
         /** "podáno {time}". */
         submitted: string
         /** "herní jméno {name}". */
@@ -164,6 +169,8 @@ export type ApplicationCopy = {
         accept: Record<"member" | "recruit" | "mercenary", string>
         reject: string
         undecidedButton: string
+        /** Under the buttons while the clan has no mercenary category. */
+        mercenaryUnavailable: string
         decidedTitle: Record<ApplicationOutcome, string>
         outcome: Record<ApplicationOutcome, string>
         rolesPending: string
@@ -185,6 +192,8 @@ export type ApplicationCopy = {
         unverifiable: { title: string; body: string }
         alreadyDecided: { title: string; body: string; members: string }
         notTracked: { title: string; body: string }
+        /** "Přijmout jako žoldáka" while the clan has no mercenary category. */
+        noMercenaryCategory: { title: string; body: string }
         dmFailed: string
     }
     dm: {

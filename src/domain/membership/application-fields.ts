@@ -1,4 +1,5 @@
 import { fillTemplate } from "../discord-messages/format"
+import { seenDay } from "../discord-commands/text"
 import { GAME_LABELS } from "../games/game"
 
 import {
@@ -90,23 +91,19 @@ export function linkedAccount(
         : undefined
 }
 
-/** "Steam · naposledy po 5. 10. na Vlci #1". */
+/**
+ * "Steam · naposledy so 3. 10. na Vlci #1"; an older date has no weekday:
+ * "Epic · naposledy 12. 9. na Vlci #2" (L6-29).
+ */
 export function lastSeenText(
     copy: ApplicationCopy,
     player: PreviousPlayer,
-    timeZone: string
+    timeZone: string,
+    now: number
 ) {
-    let date: string
-    try {
-        date = new Intl.DateTimeFormat(copy.locale, {
-            weekday: "short",
-            day: "numeric",
-            month: "numeric",
-            timeZone,
-        }).format(new Date(player.lastSeenAt))
-    } catch {
-        date = player.lastSeenAt.slice(0, 10)
-    }
+    const date =
+        seenDay(player.lastSeenAt, copy.locale, timeZone, now) ??
+        player.lastSeenAt.slice(0, 10)
     const platform = copy.platforms[player.platform]
     return player.serverName
         ? fillTemplate(copy.fields.previous.seen, {
@@ -262,7 +259,9 @@ export function applicationFieldModel(
     copy: ApplicationCopy,
     planned: PlannedField,
     prefill: WindowPrefill,
-    timeZone: string
+    timeZone: string,
+    /** "Now" for the last-seen dates of found players. */
+    now: number
 ): ApplicationFieldModel {
     const { answers } = prefill
     switch (planned.kind) {
@@ -352,7 +351,7 @@ export function applicationFieldModel(
                             value: player.key,
                             label: cutText(player.name, 100),
                             description: cutText(
-                                lastSeenText(copy, player, timeZone),
+                                lastSeenText(copy, player, timeZone, now),
                                 100
                             ),
                         })),
@@ -412,11 +411,19 @@ export function windowFieldModels(
         window: PlannedWindow
         prefill: WindowPrefill
         timeZone: string
+        /** "Now" for the last-seen dates of found players. */
+        now: number
     }
 ): ApplicationFieldModel[] {
     return input.window.fields
         .slice(0, APPLICATION_LIMITS.fieldsPerWindow)
         .map((planned) =>
-            applicationFieldModel(copy, planned, input.prefill, input.timeZone)
+            applicationFieldModel(
+                copy,
+                planned,
+                input.prefill,
+                input.timeZone,
+                input.now
+            )
         )
 }

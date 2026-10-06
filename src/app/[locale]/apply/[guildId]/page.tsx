@@ -96,7 +96,11 @@ export default async function WebApplicationPage({
     return (
         <PublicSiteShell locale={safeLocale}>
             <PublicPage className="max-w-3xl">
-                <WebApplicationForm data={data} t={dictionary.applicationWeb} />
+                <WebApplicationForm
+                    data={data}
+                    t={dictionary.applicationWeb}
+                    now={new Date().getTime()}
+                />
             </PublicPage>
         </PublicSiteShell>
     )

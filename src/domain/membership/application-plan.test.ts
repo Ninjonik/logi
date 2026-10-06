@@ -156,6 +156,30 @@ test("window 1 is saved; the category's game joins the chosen games", () => {
     assert.deepEqual(result.answers.completedWindows, ["about"])
 })
 
+test("an invalid window keeps its valid answers, unfinished (L6-09)", () => {
+    const result = submitWindow({
+        form,
+        categories,
+        answers: EMPTY_APPLICATION_ANSWERS,
+        windowId: "about",
+        values: {
+            games: ["hell_let_loose"],
+            category: ["main"],
+            name: ["Hráč 17"],
+            "q-source": ["source-1"],
+            "q-age": ["dvacet"],
+        },
+    })
+    assert.equal(result.ok, false)
+    if (result.ok) return
+    assert.deepEqual(result.issues, [{ fieldId: "q-age", issue: "number" }])
+    // Everything valid is kept for "Upravit"; the bad age is not.
+    assert.equal(result.partial.categoryId, "main")
+    assert.equal(result.partial.inGameName, "Hráč 17")
+    assert.deepEqual(result.partial.answers, { source: ["source-1"] })
+    assert.deepEqual(result.partial.completedWindows, [])
+})
+
 test("missing answers and a bad Steam ID come back as issues (L6-54)", () => {
     const about = submitWindow({
         form,

@@ -21,8 +21,10 @@ import type {
     MembershipApplicationThreadRecord,
     MembershipCategory,
 } from "../types"
+import { applicationStateCache } from "./membership-application-cache"
 import { env } from "../environment"
 import { convex } from "../convex"
+import { logWarn } from "../log"
 
 /**
  * The bot's Convex calls for the clan application (`convex/membershipApplications.ts`
@@ -63,6 +65,8 @@ export type SaveWindowResult =
           ok: false
           reason: "disabled" | "expired" | "busy" | "invalid"
           issues?: WindowIssue[]
+          /** The draft that kept an invalid window's valid answers (L6-09). */
+          draftId?: string
       }
 
 export type ApplicationSubmission = {
@@ -104,6 +108,14 @@ export type ApplicationThreadContext = {
         status: "pending" | "recruit" | "active"
         membershipCategoryId?: string
     } | null
+    /** The applicant's memberships in this server, one per game. */
+    assignments?: Array<{
+        id: string
+        gameId: GameId
+        type: "member" | "reserve_member" | "mercenary"
+        status: "pending" | "recruit" | "active"
+        membershipCategoryId?: string
+    }>
     category: MembershipCategory | null
     clanName: string
     guildRecordId: string | null
@@ -113,6 +125,9 @@ export type ApplicationThreadContext = {
 export const applicationRefs = {
     state: makeFunctionReference<"query">(
         "membershipApplications:getApplicationState"
+    ),
+    definitions: makeFunctionReference<"query">(
+        "membershipApplications:listApplicationDefinitions"
     ),
     saveWindow: makeFunctionReference<"mutation">(
         "membershipApplications:saveApplicationWindow"
@@ -163,12 +178,39 @@ export const applicationRefs = {
 
 const secret = () => env.internalSecret
 
+/** The applicant's state from Convex; every read also refreshes the bot's cache. */
 export async function loadApplicationState(guildId: string, userId: string) {
-    return (await convex.query(applicationRefs.state, {
+    const state = (await convex.query(applicationRefs.state, {
         secret: secret(),
         guildId,
         userId,
     })) as ApplicationState | null
+    applicationStateCache.remember(guildId, userId, state)
+    return state
+}
+
+/**
+ * Follows every clan's application definition (ClientReady), so opening a
+ * window needs no backend read; a saved setting arrives within seconds.
+ */
+export function startApplicationStateCache() {
+    applicationStateCache.start({
+        watch: (onRows) => {
+            const watch = convex.watchQuery(applicationRefs.definitions, {
+                secret: secret(),
+            })
+            return watch.onUpdate(() => {
+                try {
+                    const rows = watch.localQueryResult()
+                    if (rows !== undefined) onRows(rows)
+                } catch (error) {
+                    logWarn("interaction", "Application definitions failed", {
+                        error,
+                    })
+                }
+            })
+        },
+    })
 }
 
 export async function saveApplicationWindow(input: {

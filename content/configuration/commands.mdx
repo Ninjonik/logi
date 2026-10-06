@@ -54,7 +54,8 @@ messages in threads) and embed links. If not, the private card says the channel
 cannot be used now and offers another choice.
 
 `/link` is a private guide that links your game accounts: it can find you
-among the players of the clan's stats servers, checks each ID for its
+by name or ID among the players of the games stored from the clan's servers
+(the same search as in the clan application), checks each ID for its
 platform (a Steam64 ID has 17 digits and starts with 7656119) and lists your
 linked accounts with **Add another account** and **Unlink account**. Linking
 there is your statement, not proof; **Verify Steam on the web** opens My
@@ -112,12 +113,12 @@ workspace yet.
    example numbers.
 4. **Command descriptions in Discord**: what members see in the command menu,
    in the clan language. A command only Logi managers may use gets "(managers)".
-5. **Old stats server connections**, when the clan still has some. Only the
-   player search in `/link` and in the clan application uses them; `/stats`
-   does not. A found player shows the server's name from **Settings → Game
-   servers** when a game server there has the same address. **Move to Game servers** copies them to **Settings → Game
-   servers** with the key stored encrypted, untested and stopped; test them
-   there, then remove the old connections.
+5. **Old stats server connections**, when the clan still has some. Neither
+   `/link`, the clan application nor `/stats` uses them: the player search
+   reads the games stored from the clan's game servers. **Move to Game
+   servers** copies them to **Settings → Game servers** with the key stored
+   encrypted, untested and stopped; test them there, then remove the old
+   connections.
 
 A bar at the bottom counts unsaved changes. After every **Save** the bot
 registers the commands again by itself and the registration card's time moves;

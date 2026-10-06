@@ -55,20 +55,28 @@ import {
     RoleChips,
     type RoleOption,
 } from "@/components/app/settings/role-chips"
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "@/lib/clan-language/application"
 import type {
     DiscordConfig,
     MembershipCategory,
     MembershipSettings,
 } from "@/types/domain"
 import { membershipChangeCount } from "@/components/app/membership-form-builder/settings-changes"
+import { categoryInitials } from "@/components/app/membership-form-builder/category-initials"
 import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
+import { effectivePanelCopy } from "@/domain/membership/application-panel-copy"
+import { mercenaryCategoryFor } from "@/domain/membership/application-decision"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SegmentedControl } from "@/components/app/settings/segmented-control"
 import { normalizeAccentColor } from "@/domain/discord-messages/message-style"
 import { MemberRoleOperations } from "@/components/app/member-role-operations"
 import { SettingsSaveBar } from "@/components/app/settings/settings-save-bar"
 import { applicationWindowCount } from "@/domain/membership/application-plan"
-import { getApplicationMessages } from "@/lib/clan-language/application"
+import { skipsPendingOnApply } from "@/domain/membership/membership-options"
+import type { ApplicationCopy } from "@/domain/membership/application-copy"
 import { GAME_IDS, GAME_LABELS, type GameId } from "@/domain/games/game"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { useDiscordMetadata } from "@/hooks/use-discord-metadata"
@@ -110,13 +118,54 @@ function buildDefaultCategory(): MembershipCategory {
     }
 }
 
+/**
+ * The panel title and text in the clan language: the board's default for a
+ * new clan, and for a clan that never changed the default (also the
+ * pre-redesign one); custom text is kept (L6-12, N4-07, N4-08).
+ */
+function panelCopyFor(
+    clanCopy: ApplicationCopy,
+    clanName: string,
+    settings: Pick<
+        MembershipSettings,
+        "panelTitle" | "panelDescription" | "applicationForm" | "categories"
+    > | null
+) {
+    const categories = (settings?.categories ?? []) as ApplicationCategory[]
+    return effectivePanelCopy(
+        {
+            title: settings?.panelTitle,
+            text: settings?.panelDescription,
+            clanName,
+            windows: applicationWindowCount(
+                resolveApplicationForm(
+                    settings?.applicationForm,
+                    categories,
+                    clanCopy.defaultForm
+                ),
+                categories
+            ),
+        },
+        clanCopy.panel,
+        applicationPanelDefaults
+    )
+}
+
 function buildDefaultSettings(
-    dictionary: Dictionary,
+    clanCopy: ApplicationCopy,
+    clanName: string,
     config?: DiscordConfig | null
 ): MembershipSettings {
     if (config?.membershipSettings) {
+        const panel = panelCopyFor(
+            clanCopy,
+            clanName,
+            config.membershipSettings
+        )
         return {
             ...config.membershipSettings,
+            panelTitle: panel.title,
+            panelDescription: panel.text,
             panelImageUrl: config.membershipSettings.panelImageUrl ?? "",
             panelAccentColor: config.membershipSettings.panelAccentColor ?? "",
             applicationWelcomeMessage:
@@ -170,12 +219,13 @@ function buildDefaultSettings(
         }
     }
 
+    const panel = panelCopyFor(clanCopy, clanName, null)
     return {
         enabled: false,
         submitChannelId: "",
         applicationParentChannelId: "",
-        panelTitle: dictionary.membershipSettings.defaultPanelTitle,
-        panelDescription: dictionary.membershipSettings.defaultPanelDescription,
+        panelTitle: panel.title,
+        panelDescription: panel.text,
         panelImageUrl: "",
         panelAccentColor: "",
         applicationWelcomeMessage: "",
@@ -212,15 +262,6 @@ function buildFieldPreview(categories: MembershipCategory[]) {
         length: lines.join("\n").length,
         tooLong: lines.join("\n").length > MAX_FIELD_LENGTH,
     }
-}
-
-function categoryInitials(category: MembershipCategory) {
-    const words = (category.label ?? "").trim().split(/\s+/).filter(Boolean)
-    const initials = words
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join("")
-    return initials.toUpperCase() || "?"
 }
 
 function needsRecruitRole(category: MembershipCategory) {
@@ -306,8 +347,8 @@ export function MembershipSettingsForm({
     const timeZone = config?.timezone ?? "UTC"
     const clanCopy = getApplicationMessages(language)
     const initial = useMemo(
-        () => buildDefaultSettings(dictionary, config),
-        [dictionary, config]
+        () => buildDefaultSettings(clanCopy, clanName, config),
+        [clanCopy, clanName, config]
     )
     const initialForm = useMemo(
         () =>
@@ -636,10 +677,16 @@ export function MembershipSettingsForm({
             ? (settings.panelImageUrl ?? "")
             : (image?.url ?? "")
     const webFormUrl = `${siteUrl.replace(/\/+$/, "")}/${language}/apply/${guildId}`
+    // A default text follows the number of windows as the form changes.
+    const panelCopy = panelCopyFor(clanCopy, clanName, {
+        ...settings,
+        applicationForm: form,
+    })
     const panelView = settings.categories.length
         ? applicationPanelView(clanCopy, {
-              title: settings.panelTitle,
-              text: settings.panelDescription,
+              title: panelCopy.title,
+              text: panelCopy.text,
+              windowsNote: !panelCopy.defaultText,
               imageUrl: imageUrl || null,
               accentColor: normalizeAccentColor(settings.panelAccentColor),
               categories,
@@ -654,6 +701,14 @@ export function MembershipSettingsForm({
               (category) => category.id === applicant.category?.id
           ) ?? null)
         : null
+    // "Přijmout jako žoldáka" grants the clan's mercenary category (L6-B08).
+    const mercenaryCategory = decisionCategory
+        ? mercenaryCategoryFor(settings.categories, {
+              categoryId: decisionCategory.id,
+              gameId: decisionCategory.gameId ?? "hell_let_loose",
+              games: applicant.plan.games,
+          })
+        : null
     const decisionCard =
         decisionCategory && applicant.category
             ? applicationCardView(clanCopy, {
@@ -666,12 +721,8 @@ export function MembershipSettingsForm({
                   timeZone,
                   inGameName: a.form.sample.name,
                   ...previewCardAnswers(clanCopy, applicant),
-                  status:
-                      settings.autoAssignRecruitOnApply &&
-                      decisionCategory.recruitRoleIds.length
-                          ? "recruit"
-                          : "pending",
                   supportRoleIds: decisionCategory.supportRoleIds,
+                  mercenaryAvailable: mercenaryCategory !== null,
               })
             : null
     const panelChannel = channelName(settings.submitChannelId)
@@ -763,8 +814,8 @@ export function MembershipSettingsForm({
                             threadChannelId={
                                 settings.applicationParentChannelId
                             }
-                            title={settings.panelTitle}
-                            text={settings.panelDescription}
+                            title={panelCopy.title}
+                            text={panelCopy.text}
                             imageUrl={imageUrl}
                             accentColor={settings.panelAccentColor ?? ""}
                             panelView={panelView}
@@ -843,12 +894,22 @@ export function MembershipSettingsForm({
                         welcome={settings.applicationWelcomeMessage ?? ""}
                         decisionCard={decisionCard}
                         decisionCategory={decisionCategory}
+                        mercenaryCategory={mercenaryCategory}
+                        recruitOnApply={
+                            decisionCategory
+                                ? skipsPendingOnApply(
+                                      settings,
+                                      decisionCategory
+                                  )
+                                : false
+                        }
                         policy={
                             decisionCategory
                                 ? {
                                       clanRoleId: config?.clanRoleId ?? null,
                                       roleSync,
                                       category: decisionCategory,
+                                      mercenaryCategory,
                                   }
                                 : null
                         }
@@ -934,7 +995,7 @@ export function MembershipSettingsForm({
                                                         )
                                                             ? category.emoji
                                                             : categoryInitials(
-                                                                  category
+                                                                  category.label
                                                               )}
                                                     </span>
                                                     <span className="min-w-0 flex-1">

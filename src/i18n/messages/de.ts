@@ -2986,7 +2986,7 @@ export const deMessages = {
             "Warten überspringen und direkt als Rekrut aufnehmen",
         skipPendingCategoryHelp: "Nur für Hauptmitglieder.",
         categoryDescriptionHelp:
-            "Wird im Discord-Panel beim Namen der Kategorie angezeigt.",
+            "Im Panel steht sie nach Name und Spiel, in Fenster 1 unter dem Namen der Kategorie.",
         addRole: "Rolle",
         addRoleAria: "Rolle hinzufügen: {status}",
         removeRole: "Rolle {role} entfernen",
@@ -2999,9 +2999,9 @@ export const deMessages = {
             scores: "Punkte für Anwesenheit",
             roleChanges: "Rollenänderungen",
         },
-        categoryButtonTitle: "Button im Panel",
-        categoryText: "Text",
-        categoryDescriptionLabel: "Beschreibung unter dem Button",
+        categoryButtonTitle: "Im Panel und in Fenster 1",
+        categoryText: "Name",
+        categoryDescriptionLabel: "Beschreibung",
         resultTitle: "Nach der Aufnahme wird der Spieler",
         rolesByStatus: "Rollen nach Status",
         statusPending: "Wartet auf Entscheidung",
@@ -3072,9 +3072,6 @@ export const deMessages = {
         noQuestions:
             "Noch keine Modal-Fragen. Leer lassen, wenn die Kategorie den Thread sofort nach dem Precheck öffnen soll.",
         noCategories: "Noch keine Bewerbungskategorien.",
-        defaultPanelTitle: "Bewirb dich beim Clan",
-        defaultPanelDescription:
-            "Wähle die Bewerbungsart, die zu dir passt. Wenn uns deine Plattform-ID noch fehlt, führen wir dich zuerst hindurch.",
         embedFieldUsage: "Embed-Feldnutzung: {length} / {max}",
         embedFieldTooLong:
             "(zu lang, kürze Kategoriebeschreibungen vor dem Speichern)",
@@ -3774,7 +3771,7 @@ export const deMessages = {
             },
             legacy: {
                 title: "Alte Stats-Server-Verbindungen · {count}",
-                help: "Nur die Spielersuche in /link und in der Clan-Bewerbung nutzt sie, /stats nicht. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
+                help: "Weder /link noch die Clan-Bewerbung oder /stats nutzt sie: Die Spielersuche liest die gespeicherten Spiele der Clan-Server. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
                 convert: "Zu Spielservern übertragen",
                 show: "Verbindungen anzeigen",
                 hide: "Verbindungen ausblenden",
@@ -7776,6 +7773,11 @@ export const deMessages = {
                 pending: "Notiz auf der Karte, keine DM",
             },
             noRoleChange: "keine Änderung",
+            mercenaryMissing: "Keine Söldner-Kategorie",
+            mercenaryMissingNote:
+                "Der Button Als Söldner aufnehmen bleibt in Discord deaktiviert, bis der Clan eine Söldner-Kategorie hat. Leg eine Kategorie mit dem Ergebnis Söldner an.",
+            mercenaryCategoryNote:
+                "Als Söldner aufnehmen vergibt die Rollen der Kategorie {category}, nicht die der Kategorie, die der Bewerber gewählt hat.",
             roleSyncOff:
                 "Die Rollen-Synchronisierung ist aus, deshalb ändert Logi keine Rollen.",
             decisionNote:

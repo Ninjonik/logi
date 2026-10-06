@@ -21,19 +21,19 @@ import {
     fakeInteraction,
     testGuildConfig,
 } from "../commands/fake-interaction"
+import type { PreviousPlayer } from "../../../src/domain/membership/previous-players"
 import { createInteractionRegistry } from "./registry"
-import type { StatsSearchHit } from "./link-search"
 
 const STEAM = "76561198000000017"
-const steamUrl = "https://crcon.vlci.example/api/get_players_history"
 
 type Calls = { link: string[]; unlink: string[]; continued: string[] }
 
 function ports(
     input: {
         accounts?: string[]
-        stats?: boolean
-        hits?: StatsSearchHit[] | "unavailable"
+        /** The clan's servers retained games ("Hrál jsi u nás?"). */
+        history?: boolean
+        hits?: PreviousPlayer[] | "unavailable"
         taken?: boolean
         disabled?: boolean
         application?: { answers: Array<{ value: string }> } | null
@@ -63,16 +63,18 @@ function ports(
             return accounts
         },
         context: async () => ({
-            serverNames: [
-                { origin: "https://crcon.vlci.example", name: "Vlci #1" },
-            ],
             application: input.application ?? null,
         }),
-        statsServers: async () =>
-            input.stats ? [{ url: steamUrl, token: "fixture-key" }] : [],
-        search: async (servers) => {
-            assert.equal(servers[0]?.name, "Vlci #1")
-            return input.hits ?? []
+        playerHistory: async (_guildId, query) => {
+            if (input.hits === "unavailable" && query)
+                throw new Error("Convex unavailable")
+            return {
+                known: input.history ?? false,
+                players:
+                    query && input.hits !== "unavailable"
+                        ? (input.hits ?? [])
+                        : [],
+            }
         },
         emoji: async () => ({}),
         siteUrl: "https://logi.example",
@@ -132,9 +134,9 @@ test("/link with nothing linked: the platforms, the declaration and 'Ověřit St
     assert.doesNotMatch(f.text(), /Platform ID|platform ID|DM odkaz/)
 })
 
-test("with stats servers /link asks 'Hrál jsi u nás?' first (L4-49, L4-B08)", async () => {
+test("with retained games /link asks 'Hrál jsi u nás?' first (L4-49, L4-B08)", async () => {
     const f = component<ChatInputCommandInteraction>({ commandName: "link" })
-    await handleLinkCommand(f.interaction, ports({ stats: true }))
+    await handleLinkCommand(f.interaction, ports({ history: true }))
     assert.match(f.last(), /Hrál jsi už na serverech klanu\?/)
     assert.match(f.last(), /Ano, najděte mě/)
     assert.match(f.last(), /Ne, zadám ID/)
@@ -229,42 +231,62 @@ test("'Ano, najděte mě' opens the search; results show last game and server (L
         customId: "link:l:played",
         values: ["yes"],
     })
-    await handleLinkComponent(yes.interaction, ports({ stats: true }))
+    await handleLinkComponent(yes.interaction, ports({ history: true }))
     assert.match(yes.modals(), /"title":"Najít mě ve hře"/)
     assert.match(yes.modals(), /"label":"Jméno ve hře nebo ID"/)
     assert.match(yes.modals(), /"placeholder":"Napiš aspoň 3 znaky"/)
     assert.match(yes.modals(), /"min_length":3/)
 
     const f = modal("link-search:l", { query: "Hráč" })
+    const day = 24 * 60 * 60 * 1000
     await handleLinkSearchModal(
         f.interaction,
         ports({
-            stats: true,
+            history: true,
+            // The same rows the application's "Našli jsme tě…" reads.
             hits: [
                 {
-                    playerId: STEAM,
-                    playerName: "Hráč 17",
+                    key: `steam:${STEAM}`,
+                    name: "Hráč 17",
                     platform: "steam",
-                    lastSeenAt: Date.parse("2026-10-03T18:00:00Z"),
-                    server: "Vlci #1",
+                    platformId: STEAM,
+                    lastSeenAt: new Date(Date.now() - 2 * day).toISOString(),
+                    serverName: "Vlci #1",
+                },
+                {
+                    key: "epic:2f1e0d9c8b7a69584736251403f2e1d0",
+                    name: "Hrac17_CZ",
+                    platform: "epic",
+                    platformId: "2f1e0d9c8b7a69584736251403f2e1d0",
+                    lastSeenAt: new Date(Date.now() - 24 * day).toISOString(),
+                    serverName: "Vlci #2",
                 },
             ],
         })
     )
     assert.match(f.last(), /Vyber se ze seznamu/)
-    assert.match(f.last(), /Steam · naposledy so 3\. 10\. na Vlci #1/)
+    // The weekday only for the recent date (L4-51).
+    assert.match(
+        f.last(),
+        /"description":"Steam · naposledy [a-zčřšžýáíéůú]{2} \d{1,2}\. \d{1,2}\. na Vlci #1"/
+    )
+    assert.match(
+        f.last(),
+        /"description":"Epic Games · naposledy \d{1,2}\. \d{1,2}\. na Vlci #2"/
+    )
+    assert.match(f.last(), new RegExp(`"value":"steam:${STEAM}"`))
     assert.match(f.last(), /Hráči, kteří hráli na serverech klanu\./)
     assert.match(f.last(), /Hledat znovu/)
     assert.match(f.last(), /Zadat ID ručně/)
 
     const none = modal("link-search:l", { query: "Nikdo" })
-    await handleLinkSearchModal(none.interaction, ports({ stats: true }))
+    await handleLinkSearchModal(none.interaction, ports({ history: true }))
     assert.match(none.last(), /Na serverech klanu jsme tě nenašli/)
 
     const down = modal("link-search:l", { query: "Hráč" })
     await handleLinkSearchModal(
         down.interaction,
-        ports({ stats: true, hits: "unavailable" })
+        ports({ history: true, hits: "unavailable" })
     )
     assert.match(down.last(), /Hledání teď nejde/)
 })
@@ -273,7 +295,7 @@ test("picking yourself links the found ID", async () => {
     const calls: Calls = { link: [], unlink: [], continued: [] }
     const f = component<StringSelectMenuInteraction>({
         customId: "link:l:pick",
-        values: [STEAM],
+        values: [`steam:${STEAM}`],
     })
     await handleLinkComponent(f.interaction, ports({}, calls))
     assert.deepEqual(calls.link, [`steam:${STEAM}`])

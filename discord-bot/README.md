@@ -213,11 +213,16 @@ attempt instead of continuing with stale Discord permissions.
   `membership-panel.ts` publishes the application panel;
   `membership-web-submissions.ts` turns web-form submissions (Variant B) into
   the same thread and card; `membership-steam-watch.ts` updates the progress
-  message when the applicant verifies Steam on the website
+  message when the applicant verifies Steam on the website;
+  `membership-application-cache.ts` keeps every clan's application definition
+  live from a Convex subscription (started on ClientReady) and each
+  applicant's last state, so a window opens without a backend read within
+  Discord's three seconds
 - `src/interactions/tickets.ts` opens tickets from the panel (button, select,
   category window) and `tickets-panel.ts` builds the panel card;
-  `close-ticket.ts` handles `/close_ticket`; `link.ts` and `link-search.ts`
-  handle `/link` and its search on the clan's stats servers. All are routed
+  `close-ticket.ts` handles `/close_ticket`; `link.ts` handles `/link` and
+  its "Hrál jsi u nás?" search, which reads the clan's retained games through
+  `convex/clanPlayerHistory.ts`, the same source as the application. All are routed
   through the interaction registry (`src/interactions/features.ts`)
 - `src/forum.ts` manages forum channels and posts
 - `src/scheduled-events.ts` manages Discord scheduled events

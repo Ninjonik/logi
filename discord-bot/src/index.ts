@@ -156,6 +156,7 @@ function startFallbackWorker() {
 }
 
 import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
+import { startApplicationStateCache } from "./interactions/membership-application-store"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
 import { startAnnouncementMigration } from "./events/announcement-migration"
@@ -166,6 +167,8 @@ import { startSeedWorker } from "./seed/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
     startApplicationWebSubmissionWorker(client)
+    // Clan application windows open without a backend read (3 s rule).
+    startApplicationStateCache()
     startLeagueWorker(client)
     // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
     startPublicPanelWorker(client, {

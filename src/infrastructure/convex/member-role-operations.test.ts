@@ -798,6 +798,24 @@ test("aliases of one linked account share the desired version and Discord lock",
     assert.equal(ctx.db.tables.memberRoleLocks.length, 1)
 })
 
+test("a submitted application queues the recruit role without the clan role (N4-40)", async () => {
+    const ctx = fixture()
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        roleActor: { userId: save.userId, kind: "application" },
+    })
+    const [applied] = ctx.db.tables.memberRoleOperations
+    assert.deepEqual(applied.desiredRoleIds, ["recruit"])
+    // Accepting as a recruit gives the clan role too.
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        assignmentId: ctx.db.tables.userAssignments[0]._id,
+        roleActor: { userId: "333333333333333333", kind: "recruitment" },
+    })
+    const latest = ctx.db.tables.memberRoleOperations.at(-1)
+    assert.deepEqual(latest?.desiredRoleIds, ["clan", "recruit"])
+})
+
 test("self application and leave/rejoin checks resolve a stable player to the linked Discord subject", async () => {
     const ctx = fixture()
     ctx.db.tables.users[0].id = "imported-player"

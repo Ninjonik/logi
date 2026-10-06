@@ -1,9 +1,13 @@
 import type { Client } from "discord.js"
 
+import {
+    applicationPanelDefaults,
+    getApplicationMessages,
+} from "../../../src/lib/clan-language/application"
+import { effectivePanelCopy } from "../../../src/domain/membership/application-panel-copy"
 import { applicationWindowCount } from "../../../src/domain/membership/application-plan"
 import { resolveApplicationForm } from "../../../src/domain/membership/application-form"
 import { applicationPanelView } from "../../../src/domain/membership/application-views"
-import { getApplicationMessages } from "../../../src/lib/clan-language/application"
 
 import { publishManagedMessage } from "../sync/publication"
 import type { DiscordConfig, SyncPayload } from "../types"
@@ -38,18 +42,37 @@ export function panelWindowCount(config: DiscordConfig): 2 | 3 {
     )
 }
 
-export function buildMembershipPanelPayload(config: DiscordConfig) {
+/**
+ * The panel as posted. A title or text the clan never changed shows the
+ * current default in the clan language ("Přidej se ke klanu {clan}").
+ */
+export function buildMembershipPanelPayload(
+    config: DiscordConfig,
+    clanName: string
+) {
     const settings = config.membershipSettings
     if (!settings?.categories.length) return null
     const copy = getApplicationMessages(config.defaultLanguage)
-    return messagePayload(
-        applicationPanelView(copy, {
+    const windows = panelWindowCount(config)
+    const panel = effectivePanelCopy(
+        {
             title: settings.panelTitle,
             text: settings.panelDescription,
+            clanName,
+            windows,
+        },
+        copy.panel,
+        applicationPanelDefaults
+    )
+    return messagePayload(
+        applicationPanelView(copy, {
+            title: panel.title,
+            text: panel.text,
+            windowsNote: !panel.defaultText,
             imageUrl: settings.panelImageUrl,
             accentColor: settings.panelAccentColor,
             categories: settings.categories,
-            windows: panelWindowCount(config),
+            windows,
             webFormUrl: settings.webFormEnabled
                 ? webApplicationUrl(config.defaultLanguage, config.guildId)
                 : null,
@@ -65,7 +88,7 @@ export async function syncMembershipPanel(
 ) {
     const config = payload.config
     const settings = config.membershipSettings
-    const message = buildMembershipPanelPayload(config)
+    const message = buildMembershipPanelPayload(config, payload.guild.name)
     if (
         !settings?.enabled ||
         !settings.submitChannelId ||

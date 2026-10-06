@@ -2897,7 +2897,7 @@ export const enMessages = {
         skipPendingCategoryTitle: "Skip waiting and add straight as a recruit",
         skipPendingCategoryHelp: "Main members only.",
         categoryDescriptionHelp:
-            "Shown in the Discord panel next to the category name.",
+            "In the panel it follows the name and the game; in window 1 it sits under the category name.",
         addRole: "role",
         addRoleAria: "Add a role: {status}",
         removeRole: "Remove role {role}",
@@ -2910,9 +2910,9 @@ export const enMessages = {
             scores: "Attendance points",
             roleChanges: "Role changes",
         },
-        categoryButtonTitle: "Button in the panel",
-        categoryText: "Text",
-        categoryDescriptionLabel: "Description under the button",
+        categoryButtonTitle: "In the panel and window 1",
+        categoryText: "Name",
+        categoryDescriptionLabel: "Description",
         resultTitle: "After approval the player becomes",
         rolesByStatus: "Roles by status",
         statusPending: "Waiting for a decision",
@@ -2982,9 +2982,6 @@ export const enMessages = {
         noQuestions:
             "No modal questions yet. Leave this empty if the category should open the thread immediately after the precheck.",
         noCategories: "No application categories yet.",
-        defaultPanelTitle: "Apply to the clan",
-        defaultPanelDescription:
-            "Pick the application type that matches you. If we still need your platform ID, we will guide you through it first.",
         embedFieldUsage: "Embed field usage: {length} / {max}",
         embedFieldTooLong:
             "(too long, trim category descriptions before saving)",
@@ -3667,7 +3664,7 @@ export const enMessages = {
             },
             legacy: {
                 title: "Old stats server connections · {count}",
-                help: "Only the player search in /link and in the clan application uses them, /stats does not. After moving them to Game servers the key is stored encrypted and can be tested.",
+                help: "Neither /link, the clan application nor /stats uses them: the player search reads the games stored from the clan's servers. After moving them to Game servers the key is stored encrypted and can be tested.",
                 convert: "Move to Game servers",
                 show: "Show connections",
                 hide: "Hide connections",
@@ -7575,6 +7572,11 @@ export const enMessages = {
                 pending: "A note on the card, no DM",
             },
             noRoleChange: "no change",
+            mercenaryMissing: "No mercenary category",
+            mercenaryMissingNote:
+                "The Accept as mercenary button stays disabled in Discord until the clan has a mercenary category. Add a category with the result Mercenary.",
+            mercenaryCategoryNote:
+                "Accept as mercenary gives the roles of the {category} category, not of the category the applicant chose.",
             roleSyncOff:
                 "Role synchronization is off, so Logi does not change roles.",
             decisionNote:
