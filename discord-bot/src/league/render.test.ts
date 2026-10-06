@@ -270,6 +270,37 @@ test("a paused panel keeps its content and link with 'Pozastaveno · správce za
     assert.match(table, /Pozastaveno\*\* · správce zastavil obnovování/)
 })
 
+test("a paused full fixtures message with installed emoji is still posted, not refused (L3-54, P6-B05)", () => {
+    const installed = {
+        valkyra: "<:logi_valkyra_b7775e08:1300000000000000008>",
+        manticore: "<:logi_manticore_1e9e0bd4:1300000000000000009>",
+        lonestar: "<:logi_lonestar_4d040007:1300000000000000010>",
+    }
+    const chipIcons = {
+        success: "<:logi_live_006a48ed:1300000000000000012>",
+        warning: "<:logi_seeding_a5888993:1300000000000000013>",
+        neutral: "<:logi_empty_c2d52697:1300000000000000014>",
+        danger: "<:logi_offline_acd5f92f:1300000000000000015>",
+    }
+    // Before the fix the kit refused this one: text-too-long (4018 characters).
+    const rendered = fixturesPayload(
+        fixtures(),
+        context({
+            emoji: installed,
+            chipIcons,
+            paused: { since: now - 3600_000 },
+        }),
+        { fixtures: true }
+    )
+    const all = texts(json(rendered.payload))
+    assert.ok(all.join("").length <= 4000, String(all.join("").length))
+    assert.match(
+        all.join("\n"),
+        /<:logi_empty_c2d52697:1300000000000000014> \*\*Pozastaveno\*\* · správce zastavil obnovování/
+    )
+    assert.match(all.join("\n"), /… a další 2 zápasy na webu ligy/)
+})
+
 test("a League site that stopped answering shows a chip with the last data time", () => {
     const view = { ...fixtures(), stale: true }
     const all = texts(

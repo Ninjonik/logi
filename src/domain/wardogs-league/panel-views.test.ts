@@ -8,6 +8,11 @@ import {
     type LeaguePanelLook,
 } from "./panel-views"
 import {
+    layoutMessageView,
+    layoutTextLength,
+    type MessageLayoutOptions,
+} from "../discord-messages/message-layout"
+import {
     boardLeagueFixtures,
     boardLeagueResults,
 } from "../../infrastructure/testing/league-fixtures"
@@ -16,8 +21,10 @@ import {
     buildStandingsView,
     DEFAULT_LEAGUE_PANEL_OPTIONS,
 } from "./panels"
+import { validateMessageView } from "../discord-messages/message-validation"
 import { getIntlLocaleForClanLanguage } from "../../lib/clan-language/core"
 import { renderedView } from "../../infrastructure/testing/message-views"
+import type { MessageView } from "../discord-messages/message-view"
 import { getSystemMessages } from "../../lib/clan-language/system"
 import { getLeagueMessages } from "../../lib/clan-language/league"
 import assert from "node:assert/strict"
@@ -198,4 +205,139 @@ test("Czech counts use the right plural forms", () => {
         copy.standings.rule([3, 2, 1]),
         "body: 1. místo 3 · 2. místo 2 · 3. místo 1"
     )
+})
+
+/** Installed application emoji, as the bot passes them (res. 79). */
+const installedFactions = {
+    valkyra: "<:logi_valkyra_b7775e08:1300000000000000008>",
+    manticore: "<:logi_manticore_1e9e0bd4:1300000000000000009>",
+    lonestar: "<:logi_lonestar_4d040007:1300000000000000010>",
+}
+const installedChips = {
+    success: "<:logi_live_006a48ed:1300000000000000012>",
+    warning: "<:logi_seeding_a5888993:1300000000000000013>",
+    neutral: "<:logi_empty_c2d52697:1300000000000000014>",
+    danger: "<:logi_offline_acd5f92f:1300000000000000015>",
+}
+const installedLook = (
+    language: string,
+    paused: LeaguePanelLook["paused"]
+): LeaguePanelLook => {
+    const base = look(language)
+    return {
+        ...base,
+        layout: { ...base.layout, chipIcons: installedChips },
+        emoji: installedFactions,
+        chipIcons: installedChips,
+        paused,
+    }
+}
+/** What Discord counts, and whether the kit would accept the message. */
+const posted = (view: MessageView, layout: MessageLayoutOptions) => {
+    const laid = layoutMessageView(view, layout)
+    const fields = view.blocks.find((block) => block.kind === "fields")
+    return {
+        length: layoutTextLength(laid),
+        validation: validateMessageView(view, layout),
+        shown: fields?.kind === "fields" ? fields.items.length : 0,
+        text: laid.nodes
+            .flatMap((node) =>
+                node.type === "text"
+                    ? [node.content]
+                    : node.type === "section"
+                      ? node.texts
+                      : []
+            )
+            .join("\n"),
+    }
+}
+const pausedSince = { since: now - 3600_000 }
+
+test("a paused fixtures message filled to the limit with installed emoji is measured with its chip (L3-54, P6-B05)", () => {
+    for (const language of ["cs", "en", "de"]) {
+        const live = installedLook(language, null)
+        const paused = installedLook(language, pausedSince)
+        const running = posted(
+            leagueFixturesMessage(fixtures, live, { fixtures: true }),
+            live.layout
+        )
+        const stopped = posted(
+            leagueFixturesMessage(fixtures, paused, { fixtures: true }),
+            paused.layout
+        )
+        assert.deepEqual(stopped.validation, { ok: true, issues: [] })
+        assert.ok(stopped.length <= 4000, `${language} ${stopped.length}`)
+        assert.ok(stopped.shown <= running.shown)
+        assert.ok(stopped.text.includes(installedChips.neutral))
+        assert.ok(stopped.text.includes(paused.copy.pausedReason))
+    }
+    // The board fixtures with installed emoji: the live message shows five of
+    // six; the paused chip and its detail leave room for four (was 4018).
+    const cs = installedLook("cs", pausedSince)
+    const board = posted(
+        leagueFixturesMessage(fixtures, cs, { fixtures: true }),
+        cs.layout
+    )
+    assert.equal(board.shown, 4)
+    assert.match(board.text, /\*\*Pozastaveno\*\* · správce zastavil/)
+    assert.match(board.text, /… a další 2 zápasy na webu ligy/)
+    // Longer team names move the fit across the whole paused overhead.
+    let tight = 0
+    for (let pad = 0; pad <= 120; pad += 4) {
+        const view = {
+            ...fixtures,
+            fixtures: fixtures.fixtures.map((fixture) => ({
+                ...fixture,
+                teams: fixture.teams.map((team) => ({
+                    ...team,
+                    name: `${team.name ?? team.code} ${"x".repeat(pad)}`,
+                })),
+            })),
+        }
+        const live = installedLook("cs", null)
+        const running = posted(
+            leagueFixturesMessage(view, live, { fixtures: true }),
+            live.layout
+        )
+        const stopped = posted(
+            leagueFixturesMessage(view, cs, { fixtures: true }),
+            cs.layout
+        )
+        assert.deepEqual(
+            stopped.validation,
+            { ok: true, issues: [] },
+            `pad ${pad}`
+        )
+        assert.ok(stopped.length <= 4000, `pad ${pad}: ${stopped.length}`)
+        if (stopped.shown < running.shown) tight++
+    }
+    assert.ok(tight > 0, "some list sits within the paused overhead")
+})
+
+test("a paused table filled to the limit is measured with its chip (L3-54, P6-B05)", () => {
+    const last = standings.rows[standings.rows.length - 1]
+    const rows = Array.from({ length: 160 }, (_, index) => ({
+        ...last,
+        rank: index + 1,
+        teamCode: `T${String(index).padStart(3, "0")}`,
+        teamName: `Team ${index}`,
+        ours: index === 1,
+    }))
+    for (const count of [140, 141, 142, 143, 144, 145, 150, 160]) {
+        const view = { ...standings, rows: rows.slice(0, count) }
+        for (const language of ["cs", "en", "de"]) {
+            const paused = installedLook(language, pausedSince)
+            const stopped = posted(
+                leagueStandingsMessage(view, paused),
+                paused.layout
+            )
+            assert.deepEqual(
+                stopped.validation,
+                { ok: true, issues: [] },
+                `${language} ${count}`
+            )
+            assert.ok(stopped.length <= 4000, `${language} ${count}`)
+            assert.ok(stopped.text.includes(paused.copy.pausedReason))
+        }
+    }
 })
