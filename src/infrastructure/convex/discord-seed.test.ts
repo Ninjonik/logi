@@ -687,3 +687,58 @@ test("Discord buttons work only for Logi admins of the clan", async (t) => {
         /Invalid interaction/
     )
 })
+
+test("the seed's periodic reads never load the HLL live cache; only a running seed's tick reads it for distinct seeders", async (t) => {
+    const { ctx } = setup(t)
+    const tables: string[] = []
+    const original = ctx.db.query.bind(ctx.db)
+    t.mock.method(ctx.db, "query", (table: string) => {
+        tables.push(table)
+        return original(table)
+    })
+    const readsLiveCache = async (run: () => Promise<unknown>) => {
+        tables.length = 0
+        await run()
+        return tables.includes("hllLiveCache")
+    }
+    // A plan with no run and no armed trigger: the worker's delivery state
+    // (every 20 s per clan), the panels' seed states and the minute tick
+    // take the player count from the collected observation, a small row,
+    // never from the live document the server panel caches.
+    await invoke(dashboard.savePlan, ctx, {
+        ...actorArgs,
+        connectionId: CONNECTION,
+        expectedRevision: null,
+        settings: {
+            ...settings,
+            schedule: { enabled: false, slots: [] },
+            auto: { ...settings.auto, enabled: false },
+        },
+    })
+    const planId = ctx.db.tables.discordSeedPlans[0]._id
+    const state = () =>
+        invoke(bot.deliveryState, ctx, { secret, guildId: GUILD })
+    const panels = () =>
+        invoke(bot.panelStates, ctx, { secret, guildId: GUILD })
+    assert.equal(await readsLiveCache(state), false)
+    assert.equal(await readsLiveCache(panels), false)
+    assert.equal(
+        await readsLiveCache(() => invoke(tick.evaluatePlan, ctx, { planId })),
+        false
+    )
+    assert.equal(ctx.db.tables.discordSeedRuns?.length ?? 0, 0)
+    // A running seed is the one exception: its tick names the distinct
+    // seeders from the live read (P5-B04). The bot's reads still do not.
+    await invoke(dashboard.startNow, ctx, {
+        ...actorArgs,
+        connectionId: CONNECTION,
+        requestKey: "request-0001",
+    })
+    assert.equal(ctx.db.tables.discordSeedRuns.length, 1)
+    assert.equal(
+        await readsLiveCache(() => invoke(tick.evaluatePlan, ctx, { planId })),
+        true
+    )
+    assert.equal(await readsLiveCache(state), false)
+    assert.equal(await readsLiveCache(panels), false)
+})
