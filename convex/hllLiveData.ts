@@ -6,8 +6,8 @@ import {
 } from "../src/application/game-data/read-hll-live"
 import { createProviderHttp } from "../src/infrastructure/game-data/provider-http"
 import { readHllLive } from "../src/infrastructure/game-data/hll-live"
+import { runCredential } from "./gameDataRunCredential"
 import { makeFunctionReference } from "convex/server"
-import { runCredential } from "./gameDataCollector"
 import { hllLiveAccess } from "./hllLiveReads"
 import { action } from "./_generated/server"
 
