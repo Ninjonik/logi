@@ -41,6 +41,7 @@ import {
 import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-message-preview"
 import { SettingsSectionHeader } from "@/components/app/settings/settings-section-header"
 import { saveDiscordSettings } from "@/components/app/settings/save-discord-settings"
+import { membershipEnabledAnywhere } from "@/domain/discord-commands/guild-config"
 import { UnsavedChangesBar } from "@/components/app/settings/unsaved-changes-bar"
 import { DiscordChannelSelect } from "@/components/app/discord-channel-select"
 import { describeCommand } from "@/domain/discord-commands/descriptions"
@@ -177,31 +178,26 @@ export function CommandsSettingsForm({
     async function save() {
         setSaving(true)
         try {
-            const commandsChanged =
-                changedCommands(draft.settings, saved.settings).length > 0 ||
-                !same(draft.stats, saved.stats)
-            if (commandsChanged) {
-                const response = await fetch(
-                    `/api/servers/${serverId}/discord-commands`,
-                    {
-                        method: "POST",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({
-                            action: "save",
-                            commandSettings: storeCommandSettings(
-                                draft.settings
-                            ),
-                            statsSettings: {
-                                ...draft.stats,
-                                enabled: draft.settings.stats.enabled,
-                            },
-                        }),
-                    }
-                )
-                if (!response.ok) {
-                    toast.error(page.saveError)
-                    return
+            // Every save asks the bot to register the commands again, so the
+            // bar's note and the card's time hold (M1-B01, N3-B02).
+            const response = await fetch(
+                `/api/servers/${serverId}/discord-commands`,
+                {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        action: "save",
+                        commandSettings: storeCommandSettings(draft.settings),
+                        statsSettings: {
+                            ...draft.stats,
+                            enabled: draft.settings.stats.enabled,
+                        },
+                    }),
                 }
+            )
+            if (!response.ok) {
+                toast.error(page.saveError)
+                return
             }
             if (
                 !same(draft.servers, saved.servers) ||
@@ -448,7 +444,9 @@ export function CommandsSettingsForm({
                     />
                     <CloseCommandRow
                         command="close_application"
-                        enabled={Boolean(config?.membershipSettings?.enabled)}
+                        enabled={Boolean(
+                            config && membershipEnabledAnywhere(config)
+                        )}
                         description={describe("close_application")}
                         href={hrefs.membership}
                         dictionary={dictionary}

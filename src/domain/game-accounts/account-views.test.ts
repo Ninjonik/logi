@@ -276,14 +276,42 @@ test("errors: invalid Steam64, taken ID and a stale offer (L4-56, L4-58, M3-11, 
     })
     const text = viewText(invalid)
     assert.match(text, /### Tohle nevypadá jako Steam64 ID/)
+    // One button (M3-05, M3-11); the guide is a link in the text instead.
     assert.match(
         text,
-        /Má 17 číslic a začíná 7656119\. Najdeš ho podle návodu\./
+        /Má 17 číslic a začíná 7656119\. Najdeš ho podle \[návodu\]\(https:\/\/help\.steampowered\.com\/faq\)\./
     )
     assert.deepEqual(viewButtons(invalid), [
         { label: "Zadat znovu", style: "primary", id: "link:l:enter:steam" },
-        { label: "Návod", link: "https://help.steampowered.com/faq" },
     ])
+    // Without a guide URL the sentence reads as on the board, unlinked.
+    assert.match(
+        viewText(invalidIdView({ copy: cs, context: link, platform: "xbox" })),
+        /Najdeš ji podle návodu\./
+    )
+    assert.match(
+        viewText(
+            invalidIdView({
+                copy: getGameAccountMessages("en"),
+                context: link,
+                platform: "epic",
+                guideUrl: "https://www.epicgames.com/help",
+            })
+        ),
+        /\[The guide\]\(https:\/\/www\.epicgames\.com\/help\) shows where to find it\./
+    )
+    // A URL that would end the Markdown link early is not linked.
+    assert.doesNotMatch(
+        viewText(
+            invalidIdView({
+                copy: cs,
+                context: link,
+                platform: "steam",
+                guideUrl: "javascript:alert(1)",
+            })
+        ),
+        /\]\(/
+    )
     assert.match(
         viewText(takenIdView({ copy: cs, context: link, platform: "steam" })),
         /Tohle ID už má propojené jiný hráč/

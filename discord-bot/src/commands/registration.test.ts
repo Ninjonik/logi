@@ -16,7 +16,11 @@ const OTHER = "200000000000000000"
 function row(
     guildId: string,
     stored: Record<string, unknown> = {},
-    registration: { requestedAt?: number; signature?: string } = {}
+    registration: {
+        requestedAt?: number
+        requestKind?: "save" | "manual"
+        signature?: string
+    } = {}
 ) {
     return guildCommandConfigFromStored({
         config: { guildId, defaultLanguage: "cs", ...stored },
@@ -170,6 +174,76 @@ test("Znovu zaregistrovat registers immediately and is answered once (N3-B03)", 
     ])
     await f.runScheduled()
     assert.equal(f.sets.length, 2, "the same request is not answered twice")
+})
+
+test("every save is recorded; Discord is called only when the commands changed (M1-B01, N3-B02)", async () => {
+    const f = setup()
+    await f.registration.registerAll([f.guilds.get(GUILD)!])
+    f.start()
+    const recorded = f.records.length
+    // A save that only moves a channel: Discord's commands stay the same.
+    f.push([
+        row(
+            GUILD,
+            {
+                commandSettings: {
+                    stats: { channelIds: ["300000000000000001"] },
+                },
+            },
+            { requestedAt: 5_000, requestKind: "save" }
+        ),
+    ])
+    await f.runScheduled()
+    assert.equal(f.sets.length, 1, "no needless Discord call")
+    assert.equal(f.records.length, recorded + 1, "but the time is recorded")
+    const record = f.records.at(-1)!
+    assert.equal(record.handledRequestAt, 5_000)
+    assert.ok(record.result.ok && record.result.commandCount === 8)
+    assert.ok(record.at > f.records[0]!.at, "the card's time moves")
+    // The same request is not answered twice.
+    f.push([
+        row(
+            GUILD,
+            {
+                commandSettings: {
+                    stats: { channelIds: ["300000000000000001"] },
+                },
+                announcementsChannelId: "300000000000000002",
+            },
+            { requestedAt: 5_000, requestKind: "save" }
+        ),
+    ])
+    await f.runScheduled()
+    assert.equal(f.records.length, recorded + 1)
+    // A save that changes a description reaches Discord.
+    f.push([
+        row(
+            GUILD,
+            { commandSettings: { player: { audience: "logiAdmins" } } },
+            { requestedAt: 6_000, requestKind: "save" }
+        ),
+    ])
+    await f.runScheduled()
+    assert.equal(f.sets.length, 2)
+    assert.equal(f.records.at(-1)!.handledRequestAt, 6_000)
+})
+
+test("Znovu zaregistrovat always calls Discord, even with the same commands", async () => {
+    const f = setup()
+    await f.registration.registerAll([f.guilds.get(GUILD)!])
+    f.start()
+    f.push([row(GUILD, {}, { requestedAt: 5_000, requestKind: "manual" })])
+    await f.runScheduled()
+    assert.equal(f.sets.length, 2)
+})
+
+test("a save before this process ever registered the server calls Discord", async () => {
+    const f = setup()
+    f.start()
+    f.push([row(GUILD, {}, { requestedAt: 5_000, requestKind: "save" })])
+    await f.runScheduled()
+    assert.equal(f.sets.length, 1)
+    assert.equal(f.records.at(-1)!.handledRequestAt, 5_000)
 })
 
 test("after a restart the stored signature avoids a needless registration", async () => {

@@ -65,6 +65,25 @@ export type TicketCopy = {
         dmFailedBody: string
         /** The clan switched the ticket-closed DM off (N1-42). */
         dmOffBody: string
+        /**
+         * When a Discord step failed (M3-07): the summary sentence by
+         * whether the close card was posted and how the DM went, without a
+         * word about the thread.
+         */
+        summary: {
+            posted: { sent: string; failed: string; off: string }
+            notPosted: { sent: string; failed: string; off: string }
+        }
+        /** "Vlákno je zamčené a archivované." */
+        threadDone: string
+        /** "Vlákno se nepodařilo {steps}." */
+        threadFailed: string
+        /** The failed steps: "přejmenovat", "zamknout", "archivovat". */
+        threadSteps: { rename: string; lock: string; archive: string }
+        /** The joiner of the last failed step: " ani ". */
+        threadStepsOr: string
+        /** "Správci dostali upozornění." */
+        adminNotified: string
         notAllowedTitle: string
         /** "Ticket z kategorie {category} zavírá {roles} nebo správci Logi. …" */
         notAllowedBody: string

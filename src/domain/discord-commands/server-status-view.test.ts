@@ -101,11 +101,12 @@ test("offline, unknown and hostile names stay readable and harmless", () => {
             rows: [
                 row({ state: "offline", displayName: "\u202e\n " }),
                 row({
-                    freshness: "unavailable",
+                    freshness: "stale",
                     map: "@everyone [x](https://evil.test)",
                     players: null,
                     capacity: null,
                 }),
+                row({ state: "unknown", freshness: "unavailable" }),
                 row({ provider: "wardogs_public_directory" }),
             ],
         })
@@ -115,6 +116,78 @@ test("offline, unknown and hostile names stay readable and harmless", () => {
     assert.doesNotMatch(text, /(^|[^\u200b])@everyone/)
     assert.doesNotMatch(text, /\[x\]\(https:\/\/evil/)
     assert.match(text, /\[Wardog Servers\]\(https:\/\/wardogservers\.com\)/)
+})
+
+test("a row that is not fresh names its last state with 'zastaralé'; without one it is 'Bez dat' (M3-23)", () => {
+    const text = viewText(
+        buildServerStatusView({
+            copy: cs.serverStatus,
+            language: "cs",
+            locale: "cs-CZ",
+            gameLabel: "Wardogs",
+            rows: [
+                // 25 minutes old: past the 15-minute "unavailable" mark,
+                // still inside the day the last state is kept.
+                row({
+                    displayName: "Vlci #2 Trénink",
+                    freshness: "unavailable",
+                    players: 12,
+                    capacity: 64,
+                    map: "Kaluga",
+                    provider: "wardogs_rcon",
+                }),
+                row({
+                    displayName: "Vlci #3",
+                    state: "offline",
+                    freshness: "stale",
+                }),
+                row({
+                    displayName: "Vlci #4",
+                    state: "unknown",
+                    freshness: "stale",
+                }),
+                // Older than a day: no last state any more.
+                row({
+                    displayName: "Vlci #5",
+                    state: "unknown",
+                    freshness: "unavailable",
+                    players: 40,
+                    map: "Stará mapa",
+                }),
+            ],
+        })
+    )
+    assert.match(
+        text,
+        /\*\*Vlci #2 Trénink\*\* · 🟡 \*\*Online · zastaralé\*\*\n12 \/ 64 hráčů · Kaluga · <t:\d+:R> · RCON/
+    )
+    assert.match(text, /\*\*Vlci #3\*\* · 🟡 \*\*Offline · zastaralé\*\*/)
+    assert.match(text, /\*\*Vlci #4\*\* · 🟡 \*\*Zastaralé\*\*/)
+    assert.match(
+        text,
+        /\*\*Vlci #5\*\* · ⚪ \*\*Bez dat\*\*\n<t:\d+:R> · Warcon/
+    )
+    assert.doesNotMatch(text, /40 \/ 98|Stará mapa/)
+    for (const [language, online, offline] of [
+        ["en", /Online · stale/, /Offline · stale/],
+        ["de", /Online · veraltet/, /Offline · veraltet/],
+    ] as const) {
+        const copy = getCommandMessages(language).serverStatus
+        const other = viewText(
+            buildServerStatusView({
+                copy,
+                language,
+                locale: language,
+                gameLabel: "Wardogs",
+                rows: [
+                    row({ freshness: "unavailable" }),
+                    row({ state: "offline", freshness: "stale" }),
+                ],
+            })
+        )
+        assert.match(other, online)
+        assert.match(other, offline)
+    }
 })
 
 test("not allowed names who may and where the live score is (M3-25)", () => {

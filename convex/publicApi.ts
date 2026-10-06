@@ -67,6 +67,7 @@ import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
 import { currentEventStatus } from "../src/domain/events/status"
+import { requestRegistrationAfterSave } from "./discordCommands"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
@@ -1977,6 +1978,10 @@ export const mutateClanSettings = mutation({
                     ...discordPatch,
                     updatedAt: now,
                 })
+            // A saved `commands` slice registers the commands again, as a
+            // save on the "Příkazy" page does (M1-B01, N3-B02).
+            if (!response && config && args.slices?.commands !== undefined)
+                await requestRegistrationAfterSave(ctx, key.guildId)
             if (!response && external?.ok)
                 await external.commit(`api:${String(key._id)}`)
             if (!response!) {

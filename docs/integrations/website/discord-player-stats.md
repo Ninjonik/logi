@@ -20,7 +20,8 @@ filters. No nickname-based account linking is performed. Other platforms are not
 silently interpreted as Steam.
 
 The overview shows kills, deaths, K/D, wins, cash delta and playtime where the
-source provides them. Wardogs includes recent games and faction breakdowns; HLL
+source provides them. Wardogs includes recent games and faction breakdowns
+(most played faction first); HLL
 includes recent games, maps, weapons, team kills and infantry ELO. Existing map
 artwork supplies a compact map thumbnail. Controls and descriptions support CS/EN/DE.
 
@@ -69,8 +70,9 @@ settings keep both games enabled. The requester and bot must currently be able
 to view, send messages (in threads: send messages in threads) and embed links
 there. Cross-guild destinations, private threads, voice channels and missing
 permissions are rejected with "Do #kanál teď sdílet nejde" and a button to pick
-another channel. Shared cards have no controls, name who shared them and
-suppress mentions. HLL's explicit public profile link contains its Steam ID;
+another channel. Shared cards have no controls, name who shared them, show the
+data's time ("as of", the same time as the private card's "data from", not the
+share time) and suppress mentions. HLL's explicit public profile link contains its Steam ID;
 Wardogs cards do not print raw IDs. The card carries no map artwork.
 
 These are on-demand snapshots, not scheduled public panels. The private view

@@ -88,6 +88,13 @@ The private reply says whether the author got the DM ("The author can't
 receive DMs; they'll find the summary in the thread"); a failed DM never
 stops the ticket from closing and is not posted to the errors channel.
 
+If Discord refuses the close card, the rename, the lock or the archive, the
+ticket is still closed in Logi. The reply then says what did not happen, for
+example "The thread couldn't be locked or archived. The admins have been
+notified.", and the cause goes to the errors channel (usually a missing
+**Manage Threads** or **Send Messages in Threads** permission for the bot).
+Finish the thread by hand once it is fixed.
+
 Before closing, the bot reloads the server, its role definitions and the
 member, the same check as `/close_application`. If Discord cannot confirm
 them, it leaves the ticket open ("Your roles can't be checked right now");

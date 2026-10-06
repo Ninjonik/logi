@@ -27,7 +27,10 @@ export type GameAccountPlatformCopy = {
     placeholder: string
     /** "Tohle nevypadá jako Steam64 ID". */
     invalidTitle: string
-    /** "Má 17 číslic a začíná 7656119. Najdeš ho podle návodu." */
+    /**
+     * "Má 17 číslic a začíná 7656119. Najdeš ho podle {guide}." `{guide}` is
+     * `guide.guideInline` ("návodu"), a link to the platform's guide (M3-11).
+     */
     invalidBody: string
 }
 
@@ -74,6 +77,8 @@ export type GameAccountCopy = {
     }
     guide: {
         guideLink: string
+        /** The guide as a word in a sentence: "návodu", "The guide". */
+        guideInline: string
         back: string
         /** Inside the application the guide's button (L4-60). */
         continueApplication: string

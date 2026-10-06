@@ -29,6 +29,7 @@ function context(
             defaultLanguage: "cs",
             calendarCategories: [],
             dashboardAdminRoleId: "666666666666666666",
+            messageStyle: { accentColor: "#3366CC" },
             updatedAt: "2026-10-01T00:00:00Z",
         },
         ticket: {
@@ -56,9 +57,14 @@ function context(
     }
 }
 
+/** A clan colour other than the default amber (#E8A33D). */
+const CLAN_ACCENT = "#3366CC"
+const CLAN_ACCENT_INT = 0x3366cc
+
 function ports(input: {
     thread?: TicketThreadContext | null
     closes?: unknown[]
+    reports?: unknown[]
 }): CloseTicketPorts {
     return {
         thread: async () =>
@@ -67,7 +73,13 @@ function ports(input: {
             input.closes?.push(value)
         },
         settingsUrl: () => "https://logi.example/cs/dashboard/settings/user",
-        language: async () => "cs",
+        kit: async () => ({
+            language: "cs",
+            style: { accentColor: CLAN_ACCENT },
+        }),
+        reporter: async (value) => {
+            input.reports?.push(value)
+        },
         now: () => Date.parse("2026-10-11T19:12:00Z"),
     }
 }
@@ -79,6 +91,8 @@ function command(input: {
     roles?: string[]
     rolesFail?: boolean
     dmFails?: boolean
+    cardFails?: boolean
+    fail?: Array<"rename" | "lock" | "archive">
     reason?: string | null
 }) {
     const sent: Sent[] = []
@@ -126,14 +140,26 @@ function command(input: {
         member: { displayName: "Hráč 02", permissions: { has: () => true } },
         channel: {
             isThread: () => input.inThread ?? true,
-            send: record("thread"),
+            send: async (value: unknown) => {
+                if (input.cardFails)
+                    throw Object.assign(new Error("Missing Permissions"), {
+                        code: 50013,
+                    })
+                sent.push({ to: "thread", value })
+            },
             setName: async (name: string) => {
+                if (input.fail?.includes("rename"))
+                    throw new Error("Missing Permissions")
                 calls.push(`name:${name}`)
             },
             setLocked: async () => {
+                if (input.fail?.includes("lock"))
+                    throw new Error("Missing Permissions")
                 calls.push("locked")
             },
             setArchived: async () => {
+                if (input.fail?.includes("archive"))
+                    throw new Error("Missing Permissions")
                 calls.push("archived")
             },
         },
@@ -243,6 +269,110 @@ test("with the ticket-closed DM switched off the author gets no DM and the reply
     assert.ok(fake.calls.includes("archived"))
 })
 
+test("a refused lock and archive go to the errors channel and the reply says they did not happen (M3-07, M3-B02)", async () => {
+    const reports: unknown[] = []
+    const closes: unknown[] = []
+    const fake = command({ roles: [SUPPORT], fail: ["lock", "archive"] })
+    await handleCloseTicketCommand(fake.interaction, ports({ reports, closes }))
+    assert.equal(closes.length, 1, "the ticket is still closed in Logi")
+    const reply = fake.text("reply")
+    assert.match(reply, /Ticket #12 je uzavřený/)
+    assert.match(
+        reply,
+        /Shrnutí je ve vlákně a autor ho dostal do DM\. Vlákno se nepodařilo zamknout ani archivovat\. Správci dostali upozornění\./
+    )
+    assert.doesNotMatch(reply, /Vlákno je zamčené a archivované/)
+    assert.equal(reports.length, 1, "one entry for the thread")
+    const entry = reports[0] as Record<string, unknown>
+    assert.equal(entry.source, "ticketCloseThread")
+    assert.equal(entry.guildId, GUILD)
+    assert.equal(entry.channelId, "111111111111111111")
+    assert.equal(entry.number, 12)
+    assert.equal(entry.categoryLabel, "Nahlásit hráče")
+    assert.equal(entry.userId, CLOSER)
+    assert.match(String((entry.error as Error).message), /Missing Permissions/)
+})
+
+test("a close card Discord refused is reported and the reply does not claim the summary is in the thread (M3-07)", async () => {
+    const reports: unknown[] = []
+    const fake = command({ roles: [SUPPORT], cardFails: true, dmFails: true })
+    await handleCloseTicketCommand(fake.interaction, ports({ reports }))
+    assert.equal(fake.text("thread"), "[]")
+    const reply = fake.text("reply")
+    assert.match(
+        reply,
+        /Shrnutí se do vlákna nepodařilo poslat a autorovi nejde poslat DM\. Vlákno je zamčené a archivované\. Správci dostali upozornění\./
+    )
+    assert.deepEqual(
+        reports.map((entry) => (entry as { source: string }).source),
+        ["ticketCloseCard"]
+    )
+    // A closed DM is the author's choice, never an admin's to fix (L2-63).
+    assert.ok(fake.calls.includes("archived"))
+})
+
+test("a failed rename alone is named on its own; everything failing names every step", async () => {
+    const renameReports: unknown[] = []
+    const rename = command({ roles: [SUPPORT], fail: ["rename"] })
+    await handleCloseTicketCommand(
+        rename.interaction,
+        ports({ reports: renameReports })
+    )
+    assert.match(rename.text("reply"), /Vlákno se nepodařilo přejmenovat\./)
+    assert.deepEqual(rename.calls.slice(3), ["locked", "archived"])
+    assert.equal(renameReports.length, 1)
+
+    const allReports: unknown[] = []
+    const all = command({
+        roles: [SUPPORT],
+        cardFails: true,
+        fail: ["rename", "lock", "archive"],
+    })
+    await handleCloseTicketCommand(
+        all.interaction,
+        ports({ reports: allReports })
+    )
+    assert.match(
+        all.text("reply"),
+        /Shrnutí se do vlákna nepodařilo poslat, autor ho dostal do DM\. Vlákno se nepodařilo přejmenovat, zamknout ani archivovat\./
+    )
+    assert.deepEqual(
+        allReports.map((entry) => (entry as { source: string }).source),
+        ["ticketCloseCard", "ticketCloseThread"]
+    )
+})
+
+test("the honest reply exists in English and German too", async () => {
+    for (const [language, expected] of [
+        [
+            "en",
+            /The summary is in the thread and the author got it by DM\. The thread couldn't be locked or archived\. The admins have been notified\./,
+        ],
+        [
+            "de",
+            /Der Thread konnte nicht gesperrt oder archiviert werden\. Die Admins wurden benachrichtigt\./,
+        ],
+    ] as const) {
+        const base = context()
+        const fake = command({ roles: [SUPPORT], fail: ["lock", "archive"] })
+        await handleCloseTicketCommand(fake.interaction, {
+            ...ports({}),
+            thread: async () => ({
+                ...base,
+                config: { ...base.config, defaultLanguage: language },
+            }),
+        })
+        assert.match(fake.text("reply"), expected)
+    }
+})
+
+test("everything done reports nothing", async () => {
+    const reports: unknown[] = []
+    const fake = command({ roles: [SUPPORT] })
+    await handleCloseTicketCommand(fake.interaction, ports({ reports }))
+    assert.deepEqual(reports, [])
+})
+
 test("without a reason the close card has no quote and no 'Nebyl uveden důvod' (L4-34)", async () => {
     const fake = command({ roles: [SUPPORT], reason: null })
     await handleCloseTicketCommand(fake.interaction, ports({}))
@@ -303,7 +433,11 @@ test("refusals: not allowed names the support roles, roles unverifiable, outside
                 ? true
                 : (flags & MessageFlags.Ephemeral) !== 0
         )
-        assert.match(JSON.stringify(reply.value), /"accent_color":15246141/)
+        // The clan's own colour, also before the ticket is known (M3-06).
+        assert.match(
+            JSON.stringify(reply.value),
+            new RegExp(`"accent_color":${CLAN_ACCENT_INT}`)
+        )
     }
 })
 

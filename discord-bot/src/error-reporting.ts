@@ -228,6 +228,8 @@ export function actionChannelId(
         case "ticketSupport":
         case "ticketIntro":
         case "ticketRename":
+        case "ticketCloseCard":
+        case "ticketCloseThread":
         case "playerReport":
             return idOf(channels.ticketThreads)
         case "applicationOpen":

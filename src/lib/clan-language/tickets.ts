@@ -64,6 +64,27 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             dmFailedBody: "Autorovi nejde poslat DM, shrnutí najde ve vlákně.",
             dmOffBody:
                 "Shrnutí je ve vlákně. DM o uzavření ticketu má klan vypnutou. Vlákno je zamčené a archivované.",
+            summary: {
+                posted: {
+                    sent: "Shrnutí je ve vlákně a autor ho dostal do DM.",
+                    failed: "Autorovi nejde poslat DM, shrnutí najde ve vlákně.",
+                    off: "Shrnutí je ve vlákně. DM o uzavření ticketu má klan vypnutou.",
+                },
+                notPosted: {
+                    sent: "Shrnutí se do vlákna nepodařilo poslat, autor ho dostal do DM.",
+                    failed: "Shrnutí se do vlákna nepodařilo poslat a autorovi nejde poslat DM.",
+                    off: "Shrnutí se do vlákna nepodařilo poslat. DM o uzavření ticketu má klan vypnutou.",
+                },
+            },
+            threadDone: "Vlákno je zamčené a archivované.",
+            threadFailed: "Vlákno se nepodařilo {steps}.",
+            threadSteps: {
+                rename: "přejmenovat",
+                lock: "zamknout",
+                archive: "archivovat",
+            },
+            threadStepsOr: " ani ",
+            adminNotified: "Správci dostali upozornění.",
             notAllowedTitle: "Tento ticket můžou zavřít jen podpora a správci",
             notAllowedBody:
                 "Ticket z kategorie {category} zavírá {roles} nebo správci Logi. Když je vyřešený, napiš to sem do vlákna.",
@@ -134,6 +155,27 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "The author can't receive DMs; they'll find the summary in the thread.",
             dmOffBody:
                 "The summary is in the thread. The clan has switched off the ticket-closed DM. The thread is locked and archived.",
+            summary: {
+                posted: {
+                    sent: "The summary is in the thread and the author got it by DM.",
+                    failed: "The author can't receive DMs; they'll find the summary in the thread.",
+                    off: "The summary is in the thread. The clan has switched off the ticket-closed DM.",
+                },
+                notPosted: {
+                    sent: "The summary couldn't be posted in the thread; the author got it by DM.",
+                    failed: "The summary couldn't be posted in the thread, and the author can't receive DMs.",
+                    off: "The summary couldn't be posted in the thread. The clan has switched off the ticket-closed DM.",
+                },
+            },
+            threadDone: "The thread is locked and archived.",
+            threadFailed: "The thread couldn't be {steps}.",
+            threadSteps: {
+                rename: "renamed",
+                lock: "locked",
+                archive: "archived",
+            },
+            threadStepsOr: " or ",
+            adminNotified: "The admins have been notified.",
             notAllowedTitle: "Only support and admins can close this ticket",
             notAllowedBody:
                 "Tickets in the {category} category are closed by {roles} or Logi's admins. If it's resolved, say so here in the thread.",
@@ -204,6 +246,27 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
                 "Dem Autor kann keine DM geschickt werden; die Zusammenfassung findet er im Thread.",
             dmOffBody:
                 "Die Zusammenfassung steht im Thread. Der Clan hat die DM zum geschlossenen Ticket ausgeschaltet. Der Thread ist gesperrt und archiviert.",
+            summary: {
+                posted: {
+                    sent: "Die Zusammenfassung steht im Thread und der Autor hat sie per DM bekommen.",
+                    failed: "Dem Autor kann keine DM geschickt werden; die Zusammenfassung findet er im Thread.",
+                    off: "Die Zusammenfassung steht im Thread. Der Clan hat die DM zum geschlossenen Ticket ausgeschaltet.",
+                },
+                notPosted: {
+                    sent: "Die Zusammenfassung ließ sich nicht im Thread posten; der Autor hat sie per DM bekommen.",
+                    failed: "Die Zusammenfassung ließ sich nicht im Thread posten, und dem Autor kann keine DM geschickt werden.",
+                    off: "Die Zusammenfassung ließ sich nicht im Thread posten. Der Clan hat die DM zum geschlossenen Ticket ausgeschaltet.",
+                },
+            },
+            threadDone: "Der Thread ist gesperrt und archiviert.",
+            threadFailed: "Der Thread konnte nicht {steps} werden.",
+            threadSteps: {
+                rename: "umbenannt",
+                lock: "gesperrt",
+                archive: "archiviert",
+            },
+            threadStepsOr: " oder ",
+            adminNotified: "Die Admins wurden benachrichtigt.",
             notAllowedTitle:
                 "Dieses Ticket können nur der Support und die Admins schließen",
             notAllowedBody:

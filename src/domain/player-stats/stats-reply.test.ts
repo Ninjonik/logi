@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     buildStatsView,
     statsCoverageLines,
+    statsDataTime,
     statsErrorCard,
     statsSharePromptView,
     type StatsViewInput,
@@ -337,8 +338,73 @@ test("source errors and switched-off games are short cards (M2-30..32)", () => {
     ])
     assert.match(
         viewText(statsErrorCard(cs, "game_disabled", { gameLabel: "Wardogs" })),
-        /Statistiky Wardogs jsou tu vypnuté\nZapnout je může správce v Logi → Nastavení → Příkaz \/stats\./
+        /Statistiky Wardogs jsou tu vypnuté\nZapnout je může správce v Logi → Nastavení → Příkazy\./
     )
+    // The page is "Příkazy" since the redesign (N3-01), in every language.
+    for (const [language, page] of [
+        ["en", /Logi → Settings → Commands\./],
+        ["de", /Logi → Einstellungen → Befehle einschalten\./],
+    ] as const)
+        assert.match(
+            viewText(
+                statsErrorCard(statsCopy(language), "game_disabled", {
+                    gameLabel: "Wardogs",
+                })
+            ),
+            page
+        )
+})
+
+test("the shared card's time is the data's time: Warcon collection or the HLL read (M2-23)", () => {
+    assert.equal(
+        statsDataTime({
+            kind: "wardogs",
+            steamId: STEAM,
+            name: null,
+            stats: wardogs(),
+            fetchedAt,
+        }),
+        fetchedAt
+    )
+    assert.equal(
+        statsDataTime({
+            kind: "hll",
+            steamId: STEAM,
+            name: null,
+            read: {
+                status: "stale",
+                profile: null,
+                fetchedAt: "2026-10-10T08:00:00Z",
+                reason: null,
+            },
+        }),
+        "2026-10-10T08:00:00Z"
+    )
+    assert.equal(
+        statsDataTime({ kind: "missing_link", account: { name: null } }),
+        null
+    )
+    const shared = viewText(
+        buildStatsView({
+            copy: cs,
+            locale: "cs-CZ",
+            timeZone: "Europe/Prague",
+            game: "wardogs",
+            period: "30d",
+            result: {
+                kind: "wardogs",
+                steamId: STEAM,
+                name: null,
+                stats: wardogs(),
+                fetchedAt,
+            },
+            view: "overview",
+            self: true,
+            shared: { userId: "222222222222222222", at: fetchedAt },
+        })
+    )
+    const at = Date.parse(fetchedAt) / 1000
+    assert.match(shared, new RegExp(`stav k \\S+ <t:${at}:d> · <t:${at}:t>`))
 })
 
 test("the share prompt and an invalid Steam ID offer one next step", () => {

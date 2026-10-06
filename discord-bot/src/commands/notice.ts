@@ -58,6 +58,15 @@ export type NoticePorts = {
         userId: string,
         query: string
     ): Promise<NoticeTarget[]>
+    /**
+     * The person's signed-up event matching `query` that already started
+     * (`events:findStartedNoticeEvent`), for "VLK vs ROG už začal" (M3-19).
+     */
+    started?(
+        guildId: string,
+        userId: string,
+        query: string
+    ): Promise<{ id: string; name: string } | null>
     event(eventId: string): Promise<NoticeEventContext | null>
     /** Saves the notice; throws the domain rule's error when refused. */
     save(eventId: string, userId: string, reason: string): Promise<void>
@@ -73,9 +82,11 @@ export type NoticePorts = {
 }
 
 /**
- * The "Přijdu později" window (M3-16, also L2-30): "Přijdu později · VLK vs
+ * The "Přijdu později" window of `/notice` (M3-16): "Přijdu později · VLK vs
  * ROG", the note that only the match leads see it, and "Kdy dorazíš a
- * proč?". The same window opens from `/notice` and from the reminder button.
+ * proč?". The reminder's "Přijdu později" button keeps the DM flow's own
+ * form from board L2-30 (`buildLateNoticeModal`), the more specific board
+ * for that flow (lead resolution); both store the same notice.
  */
 export function buildNoticeModal(input: {
     eventId: string
@@ -186,14 +197,23 @@ export async function handleNoticeCommand(
         )
         return
     }
+    // Nothing upcoming matches: a signed-up event that already started
+    // gets "VLK vs ROG už začal", not "not signed up" (M3-19).
+    const started = targets.length
+        ? null
+        : await ports
+              .started?.(interaction.guildId, interaction.user.id, selection)
+              .catch(() => null)
     await replyError(
         interaction,
         targets.length
             ? noticeMultipleCard(copy)
-            : noticeNotSignedUpCard(
-                  copy,
-                  access.config?.announcementsChannelId
-              ),
+            : started
+              ? noticeStartedCard(copy, started.name)
+              : noticeNotSignedUpCard(
+                    copy,
+                    access.config?.announcementsChannelId
+                ),
         options
     )
 }

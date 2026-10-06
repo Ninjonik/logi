@@ -33,12 +33,16 @@ export const commandSettingsValidator = v.object({
 /**
  * The bot's last slash-command registration per Discord server (N3-03): when
  * it registered, how many commands, in which language and with which
- * definitions (a signature), plus a pending "Znovu zaregistrovat" request.
- * Failures keep a category, never Discord's message.
+ * definitions (a signature), plus a pending request: "Znovu zaregistrovat"
+ * (`manual`, always calls Discord) or a save of the "Příkazy" page (`save`,
+ * recorded even when Discord already has the same commands). Failures keep
+ * a category, never Discord's message.
  */
 export const discordCommandRegistrations = defineTable({
     guildId: v.string(),
     requestedAt: v.optional(v.number()),
+    /** What asked for the pending request; missing means `manual`. */
+    requestKind: v.optional(v.union(v.literal("save"), v.literal("manual"))),
     registeredAt: v.optional(v.number()),
     commandCount: v.optional(v.number()),
     language: v.optional(v.string()),

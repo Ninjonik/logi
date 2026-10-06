@@ -17,6 +17,7 @@ import {
 } from "discord.js"
 import {
     buildStatsView,
+    statsDataTime,
     statsErrorCard,
     statsPublishable,
     statsSharePromptView,
@@ -164,8 +165,13 @@ export function createStatsController(ports: StatsPorts) {
                           !s.shared &&
                           statsPublishable(result),
                   },
+            // "stav k" is the data's time, as "data z" on the private card
+            // (M2-23); the share time only when the source gave none.
             shared: shared
-                ? { userId: s.request.requesterId, at: now() }
+                ? {
+                      userId: s.request.requesterId,
+                      at: statsDataTime(result) ?? now(),
+                  }
                 : undefined,
             factionEmoji:
                 (await ports.factionEmoji?.().catch(() => ({}))) ?? {},
@@ -206,10 +212,11 @@ export function createStatsController(ports: StatsPorts) {
                 ? null
                 : await ports.access.configs.get(i.guildId).catch(() => null)
             const language = s?.language ?? config?.language
+            // The clan colour too, not only its language (M3-06).
             await replyPrivately(
                 i,
                 statsErrorCard(statsCopy(language), "expired"),
-                { language }
+                { language, style: s?.style ?? config?.messageStyle }
             )
             return null
         }

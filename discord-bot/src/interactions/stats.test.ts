@@ -133,6 +133,8 @@ function setup(stored: Partial<Settings> = {}) {
         },
         responses
     )
+    // The share happens a day after the data was collected.
+    ports.now = () => Date.parse("2026-10-04T12:00:00.000Z")
     const controller = createStatsController(ports)
     return {
         controller,
@@ -256,7 +258,7 @@ test("concurrent share clicks publish only once, even while Discord acknowledgem
 })
 
 test("expired controls after a restart never publish or link accounts", async () => {
-    const f = setup()
+    const f = setup({ messageStyle: { accentColor: "#3366CC" } })
     f.setLinked()
     await f.controller.command(f.command)
     const customId = control(f.responses.at(-1), "share"),
@@ -264,6 +266,8 @@ test("expired controls after a restart never publish or link accounts", async ()
     const log: unknown[] = []
     await restarted.button(interaction<ButtonInteraction>({ customId }, log))
     assert.match(text(log.at(-1)), /Spusť \/stats znovu/)
+    // The expired card keeps the clan colour, not only its language (M3-06).
+    assert.match(text(log.at(-1)), new RegExp(`"accent_color":${0x3366cc}`))
     assert.equal(f.counts().shares, 0)
 })
 
@@ -334,6 +338,18 @@ test("the default room shares directly and the shared card names the sharer (M2-
         ["444444444444444444"]
     )
     assert.match(f.shares[0]!.payload, /Sdílel <@222222222222222222>/)
+    // "stav k" is the data time (collected 3. 10. 12:00), not the share
+    // time a day later, as "data z" on the private card (M2-23, M2-B03).
+    const collected = Date.parse("2026-10-03T12:00:00.000Z") / 1000
+    assert.match(
+        f.shares[0]!.payload,
+        new RegExp(`stav k so <t:${collected}:d> · <t:${collected}:t>`)
+    )
+    assert.match(text(f.responses.at(-1)), new RegExp(`<t:${collected}:t>`))
+    assert.doesNotMatch(
+        f.shares[0]!.payload,
+        new RegExp(`<t:${Date.parse("2026-10-04T12:00:00.000Z") / 1000}:`)
+    )
     assert.doesNotMatch(f.shares[0]!.payload, /custom_id/)
     assert.match(text(log.at(-1)), /Sdíleno do <#444444444444444444>/)
     assert.match(text(log.at(-1)), /Zobrazit zprávu/)

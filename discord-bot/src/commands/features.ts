@@ -68,6 +68,13 @@ export const noticeFeature: InteractionFeature = noticeInteractions(
                 userId,
                 query,
             })) as NoticeTarget[],
+        started: async (guildId, userId, query) =>
+            (await convex.query(references.findStartedNoticeEvent, {
+                secret: secret(),
+                guildId,
+                userId,
+                query,
+            })) as { id: string; name: string } | null,
         event: async (eventId) => {
             const found = (await convex.query(
                 references.getEventInteractionContext,

@@ -4,11 +4,16 @@ import {
     storedCommandSettingsSchema,
     type StoredCommandSettings,
 } from "../src/domain/discord-commands/command-settings"
+import {
+    mutation,
+    query,
+    type MutationCtx,
+    type QueryCtx,
+} from "./_generated/server"
 import { guildCommandConfigFromStored } from "../src/domain/discord-commands/guild-config"
 import { statsCommandSettingsSchema } from "../src/domain/player-stats/command-settings"
 import { assertInternalSecret, statsSettingsValidator } from "./discord_shared"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
-import { mutation, query, type QueryCtx } from "./_generated/server"
 import { commandSettingsValidator } from "./discordCommandTable"
 import { getGuildByDiscordId } from "./identity"
 
@@ -125,7 +130,9 @@ export const recordRegistration = mutation({
             : { failedAt: args.at, failure: args.result.failure }
         const patch = {
             ...fields,
-            ...(requestHandled ? { requestedAt: undefined } : {}),
+            ...(requestHandled
+                ? { requestedAt: undefined, requestKind: undefined }
+                : {}),
             updatedAt: Date.now(),
         }
         if (existing) await ctx.db.patch(existing._id, patch)
@@ -170,30 +177,63 @@ export const requestRegistration = mutation({
         await authorizeDashboardAdmin(ctx, args)
         const now = Date.now()
         const existing = await registrationOf(ctx, args.guildId)
+        // A pending save request is upgraded: this one must reach Discord.
         if (
             existing?.requestedAt !== undefined &&
+            existing.requestKind !== "save" &&
             now - existing.requestedAt < REQUEST_DEBOUNCE_MS
         )
             return { requestedAt: existing.requestedAt }
-        if (existing)
-            await ctx.db.patch(existing._id, {
-                requestedAt: now,
-                updatedAt: now,
-            })
-        else
-            await ctx.db.insert("discordCommandRegistrations", {
-                guildId: args.guildId,
-                requestedAt: now,
-                updatedAt: now,
-            })
+        await writeRequest(ctx, args.guildId, now, "manual")
         return { requestedAt: now }
     },
 })
 
+async function writeRequest(
+    ctx: MutationCtx,
+    guildId: string,
+    now: number,
+    requestKind: "save" | "manual"
+) {
+    const existing = await registrationOf(ctx, guildId)
+    if (existing)
+        await ctx.db.patch(existing._id, {
+            requestedAt: now,
+            requestKind,
+            updatedAt: now,
+        })
+    else
+        await ctx.db.insert("discordCommandRegistrations", {
+            guildId,
+            requestedAt: now,
+            requestKind,
+            updatedAt: now,
+        })
+}
+
+/**
+ * After a save of the command settings, from the "Příkazy" page or the
+ * `commands` slice of `/api/v1` (M1-B01, N3-B02): the bot registers again
+ * and records the time and result, so "Zaregistrováno …" moves after every
+ * save. Discord is only called when the commands differ; a pending
+ * "Znovu zaregistrovat" keeps its stronger kind.
+ */
+export async function requestRegistrationAfterSave(
+    ctx: MutationCtx,
+    guildId: string,
+    now = Date.now()
+) {
+    const existing = await registrationOf(ctx, guildId)
+    const manualPending =
+        existing?.requestedAt !== undefined && existing.requestKind !== "save"
+    await writeRequest(ctx, guildId, now, manualPending ? "manual" : "save")
+}
+
 /**
  * Saves the "Příkazy" page (N3-B01): the per-command settings and `/stats`'s
- * switch, games and share channel. The bot sees the change through its live
- * query and registers the commands again (N3-B02).
+ * switch, games and share channel. Every save asks for a registration, so
+ * the bot registers the commands again and records it, even when Discord
+ * already has the same commands (M1-B01, N3-B02).
  */
 export const saveSettings = mutation({
     args: {
@@ -213,24 +253,24 @@ export const saveSettings = mutation({
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .unique()
-        if (existing) {
+        if (existing)
             await ctx.db.patch(existing._id, {
                 commandSettings,
                 statsSettings,
                 updatedAt: now,
             })
-            return { ok: true }
-        }
-        await ctx.db.insert("discordConfigs", {
-            guildId: args.guildId,
-            timezone: "UTC",
-            defaultLanguage: "en",
-            calendarCategories: [],
-            commandSettings,
-            statsSettings,
-            createdAt: now,
-            updatedAt: now,
-        })
+        else
+            await ctx.db.insert("discordConfigs", {
+                guildId: args.guildId,
+                timezone: "UTC",
+                defaultLanguage: "en",
+                calendarCategories: [],
+                commandSettings,
+                statsSettings,
+                createdAt: now,
+                updatedAt: now,
+            })
+        await requestRegistrationAfterSave(ctx, args.guildId)
         return { ok: true }
     },
 })

@@ -29,7 +29,11 @@ const gameNames: Record<Game, string> = {
     wardogs: "Wardogs",
 }
 
-/** The stored connections of one game in this server, as the reply rows. */
+/**
+ * The stored connections of one game in this server, as the reply rows. A
+ * row that is not fresh shows the last observed state, at most a day old
+ * ("Online · zastaralé"); without it the row reads "Bez dat" (M3-23).
+ */
 export function serverStatusRows(
     guildId: string,
     game: Game,
@@ -40,9 +44,12 @@ export function serverStatusRows(
             ({ snapshot }) =>
                 snapshot.guildId === guildId && snapshot.gameId === game
         )
-        .map(({ snapshot, health }) => ({
+        .map(({ snapshot, health, lastState }) => ({
             displayName: snapshot.displayName,
-            state: snapshot.state,
+            state:
+                snapshot.freshness === "fresh"
+                    ? snapshot.state
+                    : (lastState ?? "unknown"),
             freshness: snapshot.freshness,
             collecting: health.enabled,
             players: snapshot.players,

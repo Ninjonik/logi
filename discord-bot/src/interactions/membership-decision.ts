@@ -49,18 +49,16 @@ import {
     type ApplicationThreadContext,
 } from "./membership-application-store"
 import {
-    interactionLanguage,
-    replyPrivately,
-    reportToErrorsChannel,
-} from "../ui/replies"
-import {
     editPayload,
     interactionReplyPayload,
     messagePayload,
+    type MessageKitOptions,
 } from "../ui/message-kit"
 import { checkCloseAuthority, type CloseAuthority } from "./close-authority"
+import { replyPrivately, reportToErrorsChannel } from "../ui/replies"
 import { threadUrl } from "./membership-application-create"
 import type { InteractionFeature } from "./registry"
+import { clanReplyKit } from "../runtime/clan-kit"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
 import { convex } from "../convex"
@@ -326,7 +324,7 @@ type Gate =
           thread: ThreadChannel
           guild: Guild
       }
-    | { ok: false; view: MessageView; language?: string }
+    | { ok: false; view: MessageView; kit: MessageKitOptions }
 
 /** The thread, its application and a fresh role check (L6-51, M3-B05). */
 async function decisionGate(
@@ -336,8 +334,9 @@ async function decisionGate(
         | ChatInputCommandInteraction,
     command: boolean
 ): Promise<Gate> {
-    const language = await interactionLanguage(interaction.guildId)
-    const fallback = getApplicationMessages(language)
+    // Before the application is known: the clan's language and colour (M3-06).
+    const early = await clanReplyKit(interaction.guildId)
+    const fallback = getApplicationMessages(early.language)
     const channel = interaction.channel
     if (!interaction.guild || !channel?.isThread())
         return {
@@ -345,7 +344,7 @@ async function decisionGate(
             view: command
                 ? decisionErrors.wrongPlace(fallback)
                 : decisionErrors.notTracked(fallback),
-            language,
+            kit: early,
         }
     const context = await loadApplicationThreadContext(channel.id)
     if (!context)
@@ -354,7 +353,7 @@ async function decisionGate(
             view: command
                 ? decisionErrors.wrongPlace(fallback)
                 : decisionErrors.notTracked(fallback),
-            language,
+            kit: early,
         }
     const copy = getApplicationMessages(context.config.defaultLanguage)
     const application = context.application
@@ -372,7 +371,7 @@ async function decisionGate(
                 membersUrl: membersUrl(context),
                 command,
             }),
-            language: context.config.defaultLanguage,
+            kit: kitOf(context),
         }
     const authority: CloseAuthority = await checkCloseAuthority(
         interaction.guild,
@@ -396,7 +395,7 @@ async function decisionGate(
                               : undefined,
                       })
                     : decisionErrors.unverifiable(copy),
-            language: context.config.defaultLanguage,
+            kit: kitOf(context),
         }
     return { ok: true, context, thread: channel, guild: interaction.guild }
 }
@@ -461,7 +460,7 @@ async function replyGate(
         | ChatInputCommandInteraction,
     gate: Extract<Gate, { ok: false }>
 ) {
-    await replyPrivately(interaction, gate.view, { language: gate.language })
+    await replyPrivately(interaction, gate.view, gate.kit)
 }
 
 /** The five buttons on the card (L6-45). */

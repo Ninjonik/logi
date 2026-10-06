@@ -9,6 +9,8 @@ import {
     handleCloseApplicationCommand,
     handleDecisionButton,
 } from "./membership-decision"
+import { guildCommandConfigFromStored } from "../../../src/domain/discord-commands/guild-config"
+import { guildCommandConfigs } from "../commands/runtime"
 import { closeConvexClient } from "../convex"
 
 afterEach(closeConvexClient)
@@ -44,6 +46,8 @@ function backend(
         transcriptMessageId?: string
         /** "DM po rozhodnutí o přihlášce" (N1-39); missing is on. */
         decisionDm?: boolean
+        /** The clan colour from "Vzhled zpráv"; missing is Logi amber. */
+        accentColor?: string
     }
 ) {
     const writes: Array<{ name: string; args: Record<string, unknown> }> = []
@@ -66,6 +70,13 @@ function backend(
                         dashboardAdminRoleId: "logi-admin",
                         clanRoleId: "clan",
                         membershipSettings: { enabled: true },
+                        ...(input.accentColor
+                            ? {
+                                  messageStyle: {
+                                      accentColor: input.accentColor,
+                                  },
+                              }
+                            : {}),
                         ...(input.decisionDm === false
                             ? { applicationCloseDmEnabled: false }
                             : {}),
@@ -248,6 +259,44 @@ test("/close_application outside an application thread says where it works (M3-4
         texts(replies[0]),
         /### \/close\\_application funguje jen ve vlákně přihlášky\nOtevři vlákno přihlášky a spusť příkaz tam\./
     )
+})
+
+const accentOf = (payload: unknown) =>
+    (
+        payload as { components?: { toJSON(): { accent_color?: number } }[] }
+    ).components?.[0]?.toJSON().accent_color
+
+test("the /close_application checks answer in the clan colour, also before the application is known (M3-06)", async (t) => {
+    const guildId = newGuildId()
+    backend(t, { guildId, accentColor: "#3366CC" })
+    guildCommandConfigs.apply([
+        guildCommandConfigFromStored({
+            config: {
+                guildId,
+                defaultLanguage: "cs",
+                messageStyle: { accentColor: "#3366CC" },
+            },
+        }),
+    ])
+    t.after(() => guildCommandConfigs.apply([]))
+    const outside = discord({ guildId, roles: [], inThread: false })
+    await handleCloseApplicationCommand({
+        ...outside.base,
+        options: { getString: () => "member" },
+    } as unknown as ChatInputCommandInteraction)
+    assert.match(
+        texts(outside.replies[0]),
+        /\/close\\_application funguje jen ve vlákně přihlášky/
+    )
+    assert.equal(accentOf(outside.replies[0]), 0x3366cc)
+
+    const denied = discord({ guildId, roles: ["someone"] })
+    await handleCloseApplicationCommand({
+        ...denied.base,
+        options: { getString: () => "member" },
+    } as unknown as ChatInputCommandInteraction)
+    assert.match(texts(denied.replies[0]), /O této přihlášce rozhoduje nábor/)
+    assert.equal(accentOf(denied.replies[0]), 0x3366cc)
 })
 
 test("/close_application checks roles freshly and says who decides (M3-41, M3-B05)", async (t) => {

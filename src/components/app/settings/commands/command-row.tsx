@@ -79,11 +79,14 @@ function RowHeader({
     description: string
     switchControl: ReactNode
 }) {
+    // On a phone a long name and "zapíná se s Členstvím" do not fit on one
+    // line: the switch wraps below, right-aligned, instead of overlapping
+    // the name (N3-25).
     return (
         <div className="space-y-1">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <div className="flex min-w-0 items-center gap-2">
-                    <code className="font-mono text-base font-semibold">
+                    <code className="font-mono text-base font-semibold break-all">
                         /{command}
                     </code>
                     {badge ? (
@@ -95,7 +98,7 @@ function RowHeader({
                         </Badge>
                     ) : null}
                 </div>
-                {switchControl}
+                <div className="ml-auto shrink-0">{switchControl}</div>
             </div>
             <p className="text-muted-foreground text-sm">{description}</p>
         </div>

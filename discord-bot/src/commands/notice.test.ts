@@ -143,6 +143,50 @@ test("several matches and no sign-up are the shared private cards (M3-18, M3-20)
     assert.match(none.text(), /Přihlásíš se v <#300000000000000003>\./)
 })
 
+test("/notice for a signed-up event that already started answers 'už začal' at command time (M3-19)", async () => {
+    const queries: string[] = []
+    const late = commandInteraction("VLK vs ROG")
+    await handleNoticeCommand(
+        late.interaction,
+        ports({
+            targets: async () => [],
+            started: async (guildId, userId, query) => {
+                queries.push(`${guildId}:${userId}:${query}`)
+                return { id: EVENT_ID, name: "VLK vs ROG" }
+            },
+        }).ports
+    )
+    assert.equal(late.modals.length, 0)
+    assert.deepEqual(queries, [`${TEST_GUILD}:${TEST_USER}:VLK vs ROG`])
+    assert.match(late.text(), /VLK vs ROG už začal/)
+    assert.doesNotMatch(late.text(), /Nejsi přihlášený/)
+    assert.match(late.text(), /"flags":32832/)
+
+    // An upcoming match never asks for started ones; a failed read falls
+    // back to the not-signed-up card.
+    const upcoming = commandInteraction(EVENT_ID)
+    await handleNoticeCommand(
+        upcoming.interaction,
+        ports({
+            started: async () => {
+                throw new Error("must not be read")
+            },
+        }).ports
+    )
+    assert.equal(upcoming.modals.length, 1)
+    const failed = commandInteraction("VLK vs ROG")
+    await handleNoticeCommand(
+        failed.interaction,
+        ports({
+            targets: async () => [],
+            started: async () => {
+                throw new Error("unavailable")
+            },
+        }).ports
+    )
+    assert.match(failed.text(), /Nejsi přihlášený na žádnou nadcházející akci/)
+})
+
 test("saving quotes the reason privately and refreshes the match (M3-17, M3-B03)", async () => {
     const fake = ports()
     const f = submit("Kolem 20:30, končím v práci.")

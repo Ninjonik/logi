@@ -440,17 +440,57 @@ export function ticketClosedDmView(input: {
     }
 }
 
+/** A Discord step of closing the ticket's thread. */
+export type TicketThreadStep = "rename" | "lock" | "archive"
+
 /**
  * The private reply of `/close_ticket` (M3-30, M3-31): closed, and whether
- * the author got the DM (M3-B06).
+ * the author got the DM (M3-B06). When the close card could not be posted or
+ * the thread could not be renamed, locked or archived, the reply says what
+ * did not happen and that the admins were told (M3-07, M3-B02) instead of
+ * claiming "Vlákno je zamčené a archivované".
  */
 export function ticketClosedReplyView(input: {
     copy: TicketCopy
     ticketNumber: number
     /** `"off"`: the clan switched the ticket-closed DM off (N1-42). */
     dmDelivered: boolean | "off"
+    /** False when the close card did not reach the thread. */
+    cardPosted?: boolean
+    /** The thread steps that failed, in order. */
+    threadFailed?: readonly TicketThreadStep[]
 }): MessageView {
     const { copy } = input
+    const cardPosted = input.cardPosted ?? true
+    const threadFailed = input.threadFailed ?? []
+    const dm =
+        input.dmDelivered === "off"
+            ? "off"
+            : input.dmDelivered
+              ? "sent"
+              : "failed"
+    const body =
+        cardPosted && !threadFailed.length
+            ? // Everything happened: the board's sentences (M3-30, M3-31).
+              dm === "off"
+                ? copy.close.dmOffBody
+                : dm === "sent"
+                  ? copy.close.successBody
+                  : copy.close.dmFailedBody
+            : [
+                  copy.close.summary[cardPosted ? "posted" : "notPosted"][dm],
+                  threadFailed.length
+                      ? fillTemplate(copy.close.threadFailed, {
+                            steps: joinNatural(
+                                threadFailed.map(
+                                    (step) => copy.close.threadSteps[step]
+                                ),
+                                copy.close.threadStepsOr
+                            ),
+                        })
+                      : copy.close.threadDone,
+                  copy.close.adminNotified,
+              ].join(" ")
     return {
         accent: "clan",
         ephemeral: true,
@@ -459,17 +499,7 @@ export function ticketClosedReplyView(input: {
                 number: String(input.ticketNumber),
             }),
         },
-        blocks: [
-            {
-                kind: "text",
-                markdown:
-                    input.dmDelivered === "off"
-                        ? copy.close.dmOffBody
-                        : input.dmDelivered
-                          ? copy.close.successBody
-                          : copy.close.dmFailedBody,
-            },
-        ],
+        blocks: [{ kind: "text", markdown: body }],
     }
 }
 

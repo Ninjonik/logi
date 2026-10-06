@@ -65,6 +65,32 @@ export function projectSnapshot(value: StoredConnection, now: number) {
     })
 }
 
+/**
+ * How long a reader of the stored status may still name the last observed
+ * state, marked stale (board M3-23): a day. Older data reads "Bez dat".
+ */
+export const LAST_STATE_MAX_AGE_MS = 86_400_000
+
+/**
+ * The server state last observed, for readers of the stored status such as
+ * `/server-status` (M3-23, M3-B04). {@link projectSnapshot} reports every
+ * row that is not fresh as "unknown" and stays so for its other consumers;
+ * this keeps what was last seen, online or offline, for at most
+ * {@link LAST_STATE_MAX_AGE_MS}, so the reader can say "Online · zastaralé"
+ * with the observation time instead of guessing. Null when collection is
+ * off, nothing usable was observed, or the observation is too old.
+ */
+export function projectLastState(
+    value: Pick<StoredConnection, "enabled" | "observation">,
+    now: number
+): "online" | "offline" | null {
+    if (!value.enabled) return null
+    const parsed = observationSchema.safeParse(value.observation)
+    if (!parsed.success || parsed.data.state === "unknown") return null
+    const age = now - Date.parse(parsed.data.observedAt)
+    return age >= 0 && age < LAST_STATE_MAX_AGE_MS ? parsed.data.state : null
+}
+
 export function projectHealth(value: StoredConnection, now: number) {
     const snapshot = projectSnapshot(value, now)
     return integrationHealthSchema.parse({
