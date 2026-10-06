@@ -3,7 +3,10 @@ import {
     type HllProfile,
     type StatsPeriod,
 } from "../../domain/player-stats/player-stats"
-import { load } from "cheerio"
+// `cheerio/slim` parses with htmlparser2 only; the full entry would bundle
+// parse5, undici and the encoding sniffer into every Convex module that
+// imports this parser (ARCHITECTURE.md, "Convex hot paths").
+import { load } from "cheerio/slim"
 
 /** Reads visible semantic HTML only; no RSC parsing or downloaded script execution. */
 export function parseHllProfile(
