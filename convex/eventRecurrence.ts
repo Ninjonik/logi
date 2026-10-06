@@ -4,7 +4,7 @@ import {
     recurringOccurrenceInput,
     weeklyOccurrenceStarts,
 } from "../src/domain/events/recurrence"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { buildCreateEventRecord } from "../src/domain/events/upsert-policy"
 import { assertInternalSecret } from "./discord_shared"

@@ -11,7 +11,7 @@ import {
     serverSnapshotSchema,
     integrationHealthSchema,
 } from "../game-data/contracts"
-import { membershipObservationSchema } from "../membership/observation"
+import { membershipObservationSchema } from "../membership/observation.schema"
 import { clanResultSummarySchema } from "../api/result-summaries"
 import { leagueFixtureSchema } from "../wardogs-league/fixture"
 import { historyRecordSchema } from "../game-data/history"

@@ -9,8 +9,6 @@ import {
     isValidTimeZone,
     minutesLeft,
     panelImageInputHash,
-    panelMapGameSchema,
-    panelMapKeySchema,
 } from "./panel-graphics"
 import {
     HLL_NATION_SIDE,
@@ -19,6 +17,7 @@ import {
     WARDOGS_FACTIONS,
     type HllNation,
 } from "./panel-emblems"
+import { panelMapGameSchema, panelMapKeySchema } from "./panel-graphics.schema"
 import { PANEL_IMAGE_LANGUAGES, panelImageCopy } from "./panel-image-copy"
 
 /**

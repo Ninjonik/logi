@@ -34,11 +34,11 @@ import {
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     buildDefaultStratmapState,
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"

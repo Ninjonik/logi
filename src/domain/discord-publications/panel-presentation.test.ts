@@ -8,13 +8,15 @@ import {
     isPanelFactionEmojiDraft,
     isPanelFactionGame,
     panelAccentColor,
-    panelPresentationFromDraft,
     panelFactionIcons,
     panelFactionOf,
-    panelPresentationInputSchema,
-    panelPresentationSchema,
     resolvePanelPresentation,
 } from "./panel-presentation"
+import {
+    panelPresentationFromDraft,
+    panelPresentationInputSchema,
+    panelPresentationSchema,
+} from "./panel-presentation.schema"
 import {
     publicPanelSaveResultSchema,
     publicPanelSettingsInput,

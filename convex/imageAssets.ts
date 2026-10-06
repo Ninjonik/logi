@@ -5,8 +5,6 @@ import {
     IMAGE_UNATTACHED_TTL_MS,
     IMAGE_UPLOAD_LIMIT,
     imageAssetFileName,
-    imagePublicIdSchema,
-    projectImageAsset,
     type ImageAssetKind,
 } from "../src/domain/assets/image-asset"
 import {
@@ -35,6 +33,10 @@ import {
     dashboardActor,
     type DashboardActor,
 } from "./dashboardActor"
+import {
+    imagePublicIdSchema,
+    projectImageAsset,
+} from "../src/domain/assets/image-asset.schema"
 import { authorizePlatformAdmin, PLATFORM_SCOPE } from "./platformAdmin"
 import { imageAssetKind, imageContentType } from "./teamValidators"
 import { assertSessionGateway } from "./dashboardSessionStore"

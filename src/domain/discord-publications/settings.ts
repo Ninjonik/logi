@@ -1,9 +1,9 @@
 import {
     panelPresentationInputSchema,
     panelPresentationSchema,
-    type PanelPresentationInput,
-} from "./panel-presentation"
+} from "./panel-presentation.schema"
 import { leaguePanelOptionsSchema } from "../wardogs-league/panels"
+import type { PanelPresentationInput } from "./panel-presentation"
 import { z } from "zod"
 
 /**

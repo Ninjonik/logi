@@ -33,6 +33,7 @@ import { appendIntegrationChange } from "../../../convex/integrationChangeLog"
 import type { MutationCtx, QueryCtx } from "../../../convex/_generated/server"
 import { allowsApiKeyRead, isApiKeyReadAccess } from "@/domain/api/key-access"
 import type { Doc, Id } from "../../../convex/_generated/dataModel"
+import { syncEventAssetReferences } from "./event-asset-references"
 import { PLATFORM_SCOPE } from "../../../convex/platformAdmin"
 
 type Db = Pick<QueryCtx, "db">
@@ -592,25 +593,6 @@ export class ConvexTeamRequestLogoPort implements TeamRequestLogoPort {
 }
 
 /** Keeps snapshot logos alive for as long as the event references them. */
-export async function syncEventAssetReferences(
-    ctx: MutationCtx,
-    event: Pick<Doc<"events">, "_id" | "guildId" | "matchTeams">
-) {
-    const assetIds: Id<"imageAssets">[] = []
-    for (const assignment of event.matchTeams ?? []) {
-        const id = assignment.snapshot.logoAssetId
-            ? ctx.db.normalizeId("imageAssets", assignment.snapshot.logoAssetId)
-            : null
-        if (id && !assetIds.includes(id)) assetIds.push(id)
-    }
-    await syncAssetReferences(ctx, {
-        guildId: event.guildId,
-        owner: "event",
-        ownerId: String(event._id),
-        assetIds,
-    })
-}
-
 /** Event persistence for an explicit snapshot refresh, inside the caller's transaction. */
 export class ConvexMatchTeamSnapshotPorts implements MatchTeamSnapshotPorts {
     constructor(private readonly ctx: MutationCtx) {}

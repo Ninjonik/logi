@@ -20,8 +20,8 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import {
     getGuildById,
     getGuildByDiscordId,

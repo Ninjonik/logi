@@ -1,4 +1,4 @@
-import { z } from "zod"
+import type { ImageAssetState } from "./image-asset.schema"
 
 /** Who may own an uploaded image and what it is normalized into. */
 export const IMAGE_ASSET_KINDS = [
@@ -8,7 +8,6 @@ export const IMAGE_ASSET_KINDS = [
     "panel-map",
 ] as const
 export type ImageAssetKind = (typeof IMAGE_ASSET_KINDS)[number]
-export const imageAssetKindSchema = z.enum(IMAGE_ASSET_KINDS)
 export const IMAGE_INPUT_TYPES = [
     "image/png",
     "image/jpeg",
@@ -41,9 +40,11 @@ export const IMAGE_UPLOAD_LIMIT = {
 /** Unattached uploads survive this long before the sweep claims them. */
 export const IMAGE_UNATTACHED_TTL_MS = 24 * 60 * 60_000
 export const IMAGE_CLEANUP_BATCH = 50
-export const imagePublicIdSchema = z.string().regex(/^[a-f0-9]{32}$/)
-export const imageAssetStateSchema = z.enum(["ready", "deleting"])
-export type ImageAssetState = z.infer<typeof imageAssetStateSchema>
+// The Zod schemas (`imageAssetKindSchema`, `imagePublicIdSchema`,
+// `imageAssetStateSchema`, `imageAssetDtoSchema`) and `projectImageAsset` live
+// in `image-asset.schema.ts`, so modules that only attach or resolve an asset
+// stay free of Zod.
+export type { ImageAssetDto, ImageAssetState } from "./image-asset.schema"
 
 export type ImageValidationError =
     | "unsupported_type"
@@ -188,30 +189,6 @@ export function cleanupDue(
         asset.state === "ready" &&
         Date.parse(asset.createdAt) <= now - IMAGE_UNATTACHED_TTL_MS
     )
-}
-
-export const imageAssetDtoSchema = z.strictObject({
-    id: z.string(),
-    kind: imageAssetKindSchema,
-    contentType: z.enum(IMAGE_INPUT_TYPES),
-    width: z.number().int().min(1),
-    height: z.number().int().min(1),
-    bytes: z.number().int().min(1),
-    url: z.string(),
-    createdAt: z.string(),
-})
-export type ImageAssetDto = z.infer<typeof imageAssetDtoSchema>
-export function projectImageAsset(asset: ImageAssetEntity): ImageAssetDto {
-    return imageAssetDtoSchema.parse({
-        id: asset.id,
-        kind: asset.kind,
-        contentType: asset.contentType,
-        width: asset.width,
-        height: asset.height,
-        bytes: asset.bytes,
-        url: asset.publicUrl,
-        createdAt: asset.createdAt,
-    })
 }
 
 /** Immutable public path; the file name extension matches the normalized format. */

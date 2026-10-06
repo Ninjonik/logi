@@ -22,7 +22,7 @@ import {
     peopleReadPaths,
     peopleResponseSchemas,
 } from "@/lib/api/people-openapi"
-import { membershipObservationSchema } from "@/domain/membership/observation"
+import { membershipObservationSchema } from "@/domain/membership/observation.schema"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"

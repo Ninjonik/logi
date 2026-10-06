@@ -3,9 +3,9 @@ import {
     platformImageAccess,
     type PlatformImageAccess,
 } from "@/lib/api/platform-image-access"
+import { imageAssetDtoSchema } from "@/domain/assets/image-asset.schema"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs"
-import { imageAssetDtoSchema } from "@/domain/assets/image-asset"
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { imageAssetHandlers } from "@/lib/api/image-upload"
 import { readBoundedBytes } from "@/lib/api/request-bytes"
