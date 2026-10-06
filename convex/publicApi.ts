@@ -70,7 +70,6 @@ import { currentEventStatus } from "../src/domain/events/status"
 import { requestRegistrationAfterSave } from "./discordCommands"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
-import { keyUseDue } from "../src/domain/api/key-usage"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { internalAuthSecret } from "./discord_shared"
 import { resolveEventMatchTeams } from "./matchTeams"
@@ -1564,55 +1563,8 @@ export const mutateClanCalendarItem = mutation({
     },
 })
 
-/**
- * Authenticates a hash only; callers never receive a bearer key or its hash.
- * A read-only query: the request path must not write, because a write to the
- * key document on every request made parallel requests from one website
- * conflict and retry inside Convex until the backend degraded.
- */
-export const authenticateKey = query({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const guild = await getGuildByDiscordId(ctx, key.guildId)
-        if (!guild) return null
-        return {
-            guildId: key.guildId,
-            lastUsedAt: key.lastUsedAt ?? null,
-            ...(key.readAccess !== undefined
-                ? { readAccess: key.readAccess }
-                : {}),
-        }
-    },
-})
-
-/**
- * Usage telemetry, off the request path: the gateway calls this at most once
- * per `KEY_USAGE_INTERVAL_MS` per key, and the mutation checks the stored
- * time again so concurrent calls write once. Never alters authorization.
- */
-export const recordKeyUse = mutation({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return false
-        const now = Date.now()
-        if (!keyUseDue(key.lastUsedAt, now)) return false
-        await ctx.db.patch(key._id, {
-            lastUsedAt: new Date(now).toISOString(),
-        })
-        return true
-    },
-})
+// API key authentication lives in `apiKeyAuth.ts`: it runs on every request
+// and must not pay for this module's graph.
 
 /** A deliberately small, authenticated sync marker and count projection. */
 export const getClanMeta = query({

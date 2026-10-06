@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as apiKeyAuth from "../apiKeyAuth.js";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
@@ -162,6 +163,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  apiKeyAuth: typeof apiKeyAuth;
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
   calendarFeed: typeof calendarFeed;

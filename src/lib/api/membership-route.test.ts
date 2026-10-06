@@ -27,7 +27,7 @@ test("exact membership HTTP lookup is bounded, no-store and reauthorizes after D
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: guild,
                     readAccess: {

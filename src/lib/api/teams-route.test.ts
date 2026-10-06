@@ -214,7 +214,7 @@ test("team HTTP routes map Convex grant, record and failure outcomes to generic 
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: "910000000000000001",
                     ...(legacy

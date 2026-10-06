@@ -18,10 +18,10 @@ const revokeKeyReference = makeFunctionReference<"mutation">(
     "publicApi:revokeKey"
 )
 const authenticateKeyReference = makeFunctionReference<"query">(
-    "publicApi:authenticateKey"
+    "apiKeyAuth:authenticateKey"
 )
 const recordKeyUseReference = makeFunctionReference<"mutation">(
-    "publicApi:recordKeyUse"
+    "apiKeyAuth:recordKeyUse"
 )
 const clanResourcePageReference = makeFunctionReference<"query">(
     "publicApi:getClanResourcePage"
