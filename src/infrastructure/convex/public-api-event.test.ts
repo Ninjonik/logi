@@ -7,25 +7,34 @@ import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
 
+type IndexOp = "eq" | "gt" | "gte" | "lt" | "lte"
+type IndexBuilder = Record<
+    IndexOp,
+    (field: string, value: unknown) => IndexBuilder
+>
+const compare: Record<IndexOp, (left: unknown, right: unknown) => boolean> = {
+    eq: (left, right) => left === right,
+    gt: (left, right) => (left as number) > (right as number),
+    gte: (left, right) => (left as number) >= (right as number),
+    lt: (left, right) => (left as number) < (right as number),
+    lte: (left, right) => (left as number) <= (right as number),
+}
+
+/** Equality and range steps of an index read, as Convex chains them. */
 class FakeQuery {
-    private field?: string
-    private value?: unknown
+    private readonly tests: Array<(document: Document) => boolean> = []
 
     constructor(private readonly documents: Document[]) {}
 
-    withIndex(
-        _index: string,
-        callback: (query: {
-            eq: (field: string, value: unknown) => unknown
-        }) => unknown
-    ) {
-        const query = {
-            eq: (field: string, value: unknown) => {
-                this.field = field
-                this.value = value
+    withIndex(_index: string, callback: (query: IndexBuilder) => unknown) {
+        const query = {} as IndexBuilder
+        for (const op of Object.keys(compare) as IndexOp[])
+            query[op] = (field, value) => {
+                this.tests.push((document) =>
+                    compare[op](document[field], value)
+                )
                 return query
-            },
-        }
+            }
         callback(query)
         return this
     }
@@ -43,8 +52,8 @@ class FakeQuery {
     }
 
     private matching() {
-        return this.documents.filter(
-            (document) => !this.field || document[this.field] === this.value
+        return this.documents.filter((document) =>
+            this.tests.every((test) => test(document))
         )
     }
 }
