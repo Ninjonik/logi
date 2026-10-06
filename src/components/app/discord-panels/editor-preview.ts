@@ -156,6 +156,9 @@ export function previewScoreModel(
         showQueue: draft.content.queue,
         showNextMap: draft.content.nextMap,
         joinCode: server?.joinCode ?? null,
+        showScore: draft.layout.showScoreboard,
+        showLeaders: draft.showLeaders,
+        seedTarget: seed && draft.content.seedProgress ? seed.liveFrom : null,
     })
 }
 

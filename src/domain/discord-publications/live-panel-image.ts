@@ -17,6 +17,12 @@ import { PANEL_IMAGE_LANGUAGES } from "./panel-image-copy"
  * the text under it. Paused panels draw no image; a model the renderer
  * would refuse (an unknown map key, a missing name) gives none either, and
  * the panel falls back to its full text card.
+ *
+ * The panel's switches decide what is drawn (L3-33, L3-36): the score and the
+ * round time only with "Skóre" on and the server live, the top players only
+ * with "Nejlepší hráči" on as well. An empty server shows its empty state
+ * and a running seed its progress toward the threshold (P4-16, P4-18). What
+ * is not drawn is left out of the model, so it never changes the image.
  */
 export function liveScoreImageModel(input: {
     facts: LiveServerFacts
@@ -32,9 +38,18 @@ export function liveScoreImageModel(input: {
     showQueue: boolean
     showNextMap: boolean
     joinCode: string | null
+    /** The panel's "Skóre" switch; off is the server-status look. */
+    showScore: boolean
+    /** The panel's "Nejlepší hráči" switch. */
+    showLeaders: boolean
+    /** The running seed's live threshold, or null without a seed. */
+    seedTarget: number | null
 }): PanelScoreImage | null {
     const { facts } = input
     if (input.state === "paused") return null
+    const scored =
+        input.showScore && (input.state === "live" || input.state === "stale")
+    const ranked = scored && input.showLeaders && facts.rosterFresh
     const serverName = panelImageText(input.serverName, 64)
     if (!serverName) return null
     const language = (PANEL_IMAGE_LANGUAGES as readonly string[]).includes(
@@ -67,6 +82,14 @@ export function liveScoreImageModel(input: {
                       queue: input.showQueue ? facts.queue : null,
                   }
                 : null,
+        scoreboard: input.showScore,
+        seedTarget:
+            input.state === "seeding" &&
+            input.seedTarget !== null &&
+            Number.isInteger(input.seedTarget) &&
+            input.seedTarget >= 1
+                ? input.seedTarget
+                : null,
     }
     const name = (value: string) => panelImageText(value, 32)
     const model =
@@ -74,7 +97,7 @@ export function liveScoreImageModel(input: {
             ? {
                   ...base,
                   game: "hell_let_loose" as const,
-                  leaders: (facts.rosterFresh
+                  leaders: (ranked
                       ? liveLeaders(facts.roster, "kills")
                       : []
                   ).flatMap((player) => {
@@ -96,6 +119,7 @@ export function liveScoreImageModel(input: {
                   mode: facts.mode,
                   lighting: facts.lighting,
                   timeLeftSeconds:
+                      scored &&
                       facts.timeLeftSeconds !== null &&
                       facts.timeLeftSeconds <= 86_400
                           ? facts.timeLeftSeconds
@@ -111,17 +135,17 @@ export function liveScoreImageModel(input: {
                           : null,
                   allies: {
                       nation: facts.hll?.nations.allies ?? "allies",
-                      score: facts.hll?.allies ?? null,
+                      score: scored ? (facts.hll?.allies ?? null) : null,
                   },
                   axis: {
                       nation: facts.hll?.nations.axis ?? "axis",
-                      score: facts.hll?.axis ?? null,
+                      score: scored ? (facts.hll?.axis ?? null) : null,
                   },
               }
             : {
                   ...base,
                   game: "wardogs" as const,
-                  leaders: (facts.rosterFresh
+                  leaders: (ranked
                       ? liveLeaders(facts.roster, "kills")
                       : []
                   ).flatMap((player) => {
@@ -144,7 +168,7 @@ export function liveScoreImageModel(input: {
                       /^[A-Za-z0-9-]{1,24}$/.test(input.joinCode)
                           ? input.joinCode
                           : null,
-                  factions: (facts.wardogs?.factions ?? [])
+                  factions: (scored ? (facts.wardogs?.factions ?? []) : [])
                       .filter(
                           (
                               faction
@@ -164,7 +188,7 @@ export function liveScoreImageModel(input: {
                           points: faction.points,
                       })),
                   topCash: (() => {
-                      const top = facts.rosterFresh
+                      const top = ranked
                           ? liveLeaders(facts.roster, "cash")[0]
                           : undefined
                       const label = top ? name(top.name) : null

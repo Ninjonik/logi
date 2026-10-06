@@ -177,6 +177,47 @@ test("public panels can read only their enabled guild/source live view, includin
         })
 })
 
+test("Naše servery reads the live view of its own servers only (P4-38)", async (t) => {
+    const { ctx, input, id } = await fixture(t)
+    const { keyHash: _key, ...publicInput } = input
+    assert.equal(_key, "hash")
+    const combined = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:other", id],
+        enabled: true,
+        kind: "servers",
+    })
+    assert.equal(
+        (
+            await handler<{ kind: string }>(reads.reserve)(ctx, {
+                ...publicInput,
+                panelId: combined,
+            })
+        ).kind,
+        "claimed"
+    )
+    const elsewhere = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:other"],
+        enabled: true,
+        kind: "servers",
+    })
+    const results = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionId: id,
+        enabled: true,
+        kind: "results",
+    })
+    for (const panelId of [elsewhere, results])
+        assert.deepEqual(
+            await handler<unknown>(reads.reserve)(ctx, {
+                ...publicInput,
+                panelId,
+            }),
+            { kind: "denied" }
+        )
+})
+
 test("dashboard Warcon reads recheck current actor rights and session before returning provider data", async (t) => {
     for (const mode of ["rights", "session", "global"]) {
         const { ctx, input, envelope } = await fixture(t)

@@ -489,7 +489,10 @@ function playersDetail(
     } else if (state === "live") {
         if (panel.content.queue && facts.queue)
             parts.push(copy.queue(count(facts.queue)))
-        const minutes = minutesLeft(facts.timeLeftSeconds)
+        // A server-status panel shows no round time (L3-43).
+        const minutes = panel.layout.showScoreboard
+            ? minutesLeft(facts.timeLeftSeconds)
+            : null
         if (minutes !== null) parts.push(copy.timeLeft(String(minutes)))
     }
     return parts.join(" · ")
@@ -622,6 +625,98 @@ function gaugeLine(input: LiveServerPanelInput) {
     })}`
 }
 
+/** The running Logi match with its category chip, in a private channel (P4-23). */
+function matchBlock(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock | null {
+    const { match } = input
+    if (
+        !input.privateChannel ||
+        !match ||
+        state === "empty" ||
+        state === "paused"
+    )
+        return null
+    return {
+        kind: "fields",
+        items: [
+            {
+                title: match.title,
+                ...(match.category
+                    ? {
+                          chip: {
+                              label: match.category,
+                              tone: "info" as const,
+                          },
+                      }
+                    : {}),
+                text: input.copy.matchRunning(at(match.startedAt, "t")),
+            },
+        ],
+    }
+}
+
+/** "▰▰▰▱▱▱▱▱▱▱ 12 / 40" and the seed sentences while a seed runs (P4-18, P5-15). */
+function seedBlocks(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock[] {
+    const { copy, seed } = input
+    if (state !== "seeding" || !seed) return []
+    const locale = panelImageCopy(input.language).locale
+    const channel = seed.channelId ? `<#${seed.channelId}>` : null
+    return [
+        {
+            kind: "text",
+            markdown: `${seed.bar} **${formatNumber(input.facts.players ?? 0, locale)} / ${formatNumber(seed.liveFrom, locale)}**`,
+        },
+        {
+            kind: "text",
+            markdown: [
+                copy.seedJoin,
+                `${copy.seedRunning(at(seed.startedAt, "t"))}${channel ? ` ${copy.seedCallIn(channel)}` : ""}`,
+            ].join("\n"),
+        },
+    ]
+}
+
+/** "Na serveru teď nikdo nehraje." with the seed channel hint (P4-16). */
+function emptyBlock(input: LiveServerPanelInput): MessageBlock {
+    return {
+        kind: "text",
+        markdown: [
+            input.copy.emptyText,
+            input.seedChannelId
+                ? input.copy.emptySeedHint(`<#${input.seedChannelId}>`)
+                : null,
+        ]
+            .filter(Boolean)
+            .join(" "),
+    }
+}
+
+/** "Z KLANU HRAJE · 14" and the names, in a private channel (P4-25). */
+function clanPlayersBlock(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock | null {
+    if (
+        !input.privateChannel ||
+        !input.clanPlayers?.length ||
+        state === "empty" ||
+        state === "paused"
+    )
+        return null
+    return {
+        kind: "text",
+        markdown: `**${input.copy.clanPlaying(String(input.clanPlayers.length))}**\n${input.clanPlayers
+            .slice(0, 40)
+            .map((player) => name(player, 32))
+            .join(" · ")}`,
+    }
+}
+
 /**
  * The live server panel. Style A puts the generated score image on top with
  * a short text summary under it; style B adds the banner and the player
@@ -637,7 +732,6 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
         seedActive,
         liveFrom: input.seed?.liveFrom ?? input.liveFrom,
     })
-    const words = panelImageCopy(input.language)
     const label = `${
         input.privateChannel
             ? copy.labelClan
@@ -684,70 +778,31 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
         const gauge = gaugeLine(input)
         if (gauge) content.push({ kind: "text", markdown: gauge })
     } else if (style === "a" && input.images.score) {
-        // P7-08: the image carries the leaders; the text stays readable.
+        // P7-08: the image carries the score and the leaders; the text keeps
+        // what the full card says for this state (P4-16, P4-18, P4-23, P4-25).
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        content.push(...seedBlocks(input, state))
+        const scored = !statusMode && state !== "empty" && state !== "seeding"
         const summary = [
-            panel.layout.showMap ? mapLine : null,
-            nextMap ? copy.nextMapInline(nextMap) : null,
-            statusMode ? null : hllScoreLine(input)?.replace(/\*\*/g, ""),
+            panel.layout.showMap && !mapInHeader ? mapLine : null,
+            nextMap && state !== "empty" ? copy.nextMapInline(nextMap) : null,
+            scored ? hllScoreLine(input)?.replace(/\*\*/g, "") : null,
         ]
             .filter(Boolean)
             .join(" · ")
         if (summary) content.push({ kind: "text", markdown: summary })
+        if (state === "empty") content.push(emptyBlock(input))
+        const clan = clanPlayersBlock(input, state)
+        if (clan) content.push(clan)
     } else {
-        if (
-            input.privateChannel &&
-            input.match &&
-            state !== "empty" &&
-            state !== "paused"
-        )
-            content.push({
-                kind: "fields",
-                items: [
-                    {
-                        title: input.match.title,
-                        ...(input.match.category
-                            ? {
-                                  chip: {
-                                      label: input.match.category,
-                                      tone: "info" as const,
-                                  },
-                              }
-                            : {}),
-                        text: copy.matchRunning(at(input.match.startedAt, "t")),
-                    },
-                ],
-            })
-        if (state === "seeding" && input.seed) {
-            const locale = words.locale
-            content.push({
-                kind: "text",
-                markdown: `${input.seed.bar} **${formatNumber(players, locale)} / ${formatNumber(input.seed.liveFrom, locale)}**`,
-            })
-            const channel = input.seed.channelId
-                ? `<#${input.seed.channelId}>`
-                : null
-            content.push({
-                kind: "text",
-                markdown: [
-                    copy.seedJoin,
-                    `${copy.seedRunning(at(input.seed.startedAt, "t"))}${channel ? ` ${copy.seedCallIn(channel)}` : ""}`,
-                ].join("\n"),
-            })
-        }
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        content.push(...seedBlocks(input, state))
         if (state === "empty") {
             if (panel.layout.showMap && mapLine && !mapInHeader)
                 content.push({ kind: "text", markdown: mapLine })
-            content.push({
-                kind: "text",
-                markdown: [
-                    copy.emptyText,
-                    input.seedChannelId
-                        ? copy.emptySeedHint(`<#${input.seedChannelId}>`)
-                        : null,
-                ]
-                    .filter(Boolean)
-                    .join(" "),
-            })
+            content.push(emptyBlock(input))
         } else {
             const privateNext =
                 input.privateChannel && nextMap
@@ -765,18 +820,8 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
                         : wardogsFactionLines(input).join("\n")
                 if (score) content.push({ kind: "text", markdown: score })
             }
-            if (
-                input.privateChannel &&
-                input.clanPlayers?.length &&
-                state !== "paused"
-            )
-                content.push({
-                    kind: "text",
-                    markdown: `**${copy.clanPlaying(String(input.clanPlayers.length))}**\n${input.clanPlayers
-                        .slice(0, 40)
-                        .map((player) => name(player, 32))
-                        .join(" · ")}`,
-                })
+            const clan = clanPlayersBlock(input, state)
+            if (clan) content.push(clan)
             if (!statusMode && state !== "seeding")
                 content.push(...leaderBlocks(input))
             if (nextMap && !input.privateChannel && state !== "seeding")

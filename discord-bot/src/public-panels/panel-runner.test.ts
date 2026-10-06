@@ -11,6 +11,7 @@ import {
     type PanelRunPorts,
     type PublicationBinding,
 } from "./panel-runner"
+import type { PanelScoreImage } from "../../../src/domain/discord-publications/panel-image-model"
 import type { ResultEvent } from "../../../src/application/discord-publications/results"
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import { hllLiveFixture } from "../../../src/infrastructure/testing/hll-live"
@@ -635,4 +636,145 @@ test("legacy scoreboard rows run as live server panels", async () => {
     )
     assert.equal(outcome?.attempt.ok, true)
     assert.equal(fake.published.length, 1)
+})
+
+test("style A passes the score and leader switches and the seed target into the image (L3-33, L3-36, P4-18)", async () => {
+    const models: PanelScoreImage[] = []
+    const fake = fakes({
+        scoreImage: async (_key, model) => {
+            models.push(model)
+            return {
+                name: "skore-vlci1-2041-abc.png",
+                bytes: new Uint8Array([1]),
+                description: "Skóre",
+                hash: "abc",
+                fresh: true,
+            }
+        },
+    })
+    const styleA: GuildPass = {
+        ...pass,
+        graphics: { ...pass.graphics, defaultStyle: "a" },
+    }
+    await runPanel(
+        panel({
+            showLeaders: false,
+            presentation: {
+                layout: {
+                    showMap: true,
+                    showScoreboard: false,
+                    showPlayerCount: true,
+                    compact: false,
+                },
+            },
+        }),
+        styleA,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    const status = models[0]
+    assert.ok(status && status.game === "hell_let_loose")
+    assert.equal(status.scoreboard, false)
+    assert.deepEqual(status.leaders, [])
+    assert.equal(status.allies.score, null)
+    assert.equal(status.timeLeftSeconds, null)
+
+    await runPanel(
+        panel({ showLeaders: false }),
+        styleA,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    const noLeaders = models[1]
+    assert.ok(noLeaders && noLeaders.game === "hell_let_loose")
+    assert.equal(noLeaders.scoreboard, true)
+    assert.deepEqual(noLeaders.leaders, [])
+
+    // P5-16: the run's latest count, the number the call shows, wins over the live read.
+    await runPanel(
+        panel(),
+        {
+            ...styleA,
+            seeds: [
+                {
+                    connectionId: "hll-1",
+                    runId: "run-1",
+                    startedAt: now - 300_000,
+                    liveFrom: 40,
+                    players: 12,
+                    call: {
+                        channelId: "523456789012345678",
+                        messageId: "623456789012345678",
+                    },
+                },
+            ],
+        },
+        fake.ports,
+        createPanelRunMemory()
+    )
+    const seeding = models[2]
+    assert.ok(seeding)
+    assert.equal(seeding.state, "seeding")
+    assert.equal(seeding.seedTarget, 40)
+    assert.equal(seeding.players?.count, 12)
+    const sent = fake.published[2]
+    assert.ok(sent)
+    const { text, buttons } = render(sent.message)
+    assert.match(text, /12 \/ 100 hráčů · živý od 40/)
+    assert.match(text, /▰▰▰▱▱▱▱▱▱▱ \*\*12 \/ 40\*\*/)
+    assert.match(
+        text,
+        /Seed běží od <t:\d+:t>\. Výzva je v <#523456789012345678>\./
+    )
+    assert.deepEqual(
+        buttons.map((button) => button.label),
+        ["Připojit se", "Otevřít výzvu"]
+    )
+})
+
+test("Naše servery shows the queue and next map from the live read (P4-38)", async () => {
+    const live = hllLiveFixture()
+    live.status!.queueCount = 3
+    live.status!.nextMap = {
+        name: "Carentan",
+        layerId: "carentan_warfare_night",
+        mode: "warfare",
+        environment: "night",
+    }
+    const asked: string[] = []
+    const fake = fakes({
+        hllLive: async (combined, connectionId): Promise<HllServed> => {
+            asked.push(`${combined._id}|${connectionId}`)
+            return {
+                kind: "ready",
+                envelope: {
+                    connectionId: "hll-1",
+                    gameId: "hell_let_loose",
+                    provider: "hll_crcon",
+                    data: live,
+                },
+            }
+        },
+    })
+    const base = panel()
+    await runPanel(
+        panel({
+            _id: "discordPublicPanels:combined",
+            kind: "servers",
+            connectionId: undefined,
+            connectionIds: ["hll-1"],
+            content: { nextMap: true, queue: true },
+            servers: base.servers,
+        }),
+        pass,
+        fake.ports,
+        createPanelRunMemory()
+    )
+    assert.deepEqual(asked, ["discordPublicPanels:combined|hll-1"])
+    const sent = fake.published[0]
+    assert.ok(sent)
+    const { text } = render(sent.message)
+    assert.match(text, /fronta 3/)
+    assert.match(text, /další mapa Carentan/)
+    assert.doesNotMatch(text, /Synthetic Allied/)
 })

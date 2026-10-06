@@ -80,6 +80,62 @@ test("HLL read uses one durable cache/lease and rechecks scope on cached reads",
     await ctx.db.patch("apiKeys:key", { revokedAt: hllLiveTime })
     assert.equal((await invoke(reads.reserve, ctx, args)).kind, "denied")
 })
+test("Naše servery reads the HLL live data of its own servers only (P4-38)", async (t) => {
+    const { ctx, args } = fixture(t)
+    ctx.db.seed("discordPublicPanels", {
+        _id: "discordPublicPanels:combined",
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:two", "gameDataConnections:one"],
+        enabled: true,
+        kind: "servers",
+        revision: 4,
+    })
+    ctx.db.seed("discordPublicPanels", {
+        _id: "discordPublicPanels:elsewhere",
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:two"],
+        enabled: true,
+        kind: "servers",
+        revision: 1,
+    })
+    const panel = (panelId: string, panelRevision: number) => ({
+        ...args,
+        keyHash: undefined,
+        panelId,
+        panelRevision,
+    })
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:combined", 4)
+            )
+        ).kind,
+        "claimed"
+    )
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:elsewhere", 1)
+            )
+        ).kind,
+        "denied"
+    )
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:combined", 3)
+            )
+        ).kind,
+        "denied",
+        "an old revision of the panel"
+    )
+})
 for (const change of ["key", "source", "generation", "panel"]) {
     test(`HLL rejects an in-flight response after ${change} changes`, async (t) => {
         const { ctx, args } = fixture(t)

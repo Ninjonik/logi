@@ -94,8 +94,15 @@ function rowText(server: CombinedServer, input: CombinedPanelInput) {
         parts.push(
             `${copy.allies} ${number(facts.hll.allies)} : ${number(facts.hll.axis)} ${copy.axis}`
         )
+    // The round time belongs to the score (P2-43); without it the row is the
+    // board's "Foy · 78 / 100 · fronta 3" (P4-38, L3-43).
     const minutes = minutesLeft(facts.timeLeftSeconds)
-    if (minutes !== null && !server.seed && (facts.players ?? 0) > 0)
+    if (
+        show.score &&
+        minutes !== null &&
+        !server.seed &&
+        (facts.players ?? 0) > 0
+    )
         parts.push(copy.timeLeft(String(minutes)))
     if (facts.freshness === "stale" && facts.dataAt)
         parts.push(copy.lastData(`<t:${Math.floor(facts.dataAt / 1000)}:R>`))

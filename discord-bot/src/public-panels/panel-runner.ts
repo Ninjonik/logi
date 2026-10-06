@@ -58,6 +58,10 @@ import {
     synchronizeResults,
     type ResultEvent,
 } from "../../../src/application/discord-publications/results"
+import {
+    seedPanelPlayers,
+    type SeedPanelState,
+} from "../../../src/application/discord-seed/panel-state"
 import type { PanelGraphicsForBot } from "../../../src/domain/discord-publications/panel-graphics-settings"
 import type {
     ChipTone,
@@ -66,7 +70,6 @@ import type {
 import { liveScoreImageModel } from "../../../src/domain/discord-publications/live-panel-image"
 import { combinedPanelView } from "../../../src/domain/discord-publications/combined-panel"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
-import type { SeedPanelState } from "../../../src/application/discord-seed/panel-state"
 import { resultCardView } from "../../../src/domain/discord-publications/result-panel"
 import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
 import { factionEmblem } from "../../../src/domain/discord-messages/faction-emblem"
@@ -393,7 +396,8 @@ async function runLive(
     const channel = await ports.channelAccess(panel.channelId)
     if (!channel) throw new PanelPassError("channel_missing")
     const warnings: PanelWarning[] = []
-    const { facts, busyMs } = await serverFacts(panel, server, ports, warnings)
+    const read = await serverFacts(panel, server, ports, warnings)
+    const { busyMs } = read
     // Keep the current card while another reader holds the HLL lease.
     if (busyMs !== null && panel.status?.sentAt)
         return {
@@ -412,6 +416,15 @@ async function runLive(
     const seedState =
         pass.seeds.find((seed) => seed.connectionId === server.connectionId) ??
         null
+    // P5-16: while a seed runs, the panel counts players from the run's
+    // latest reading, the number the call shows.
+    const facts: LiveServerFacts =
+        seedState && content.seedProgress
+            ? {
+                  ...read.facts,
+                  players: seedPanelPlayers(seedState, read.facts.players),
+              }
+            : read.facts
     const liveFrom = seedState?.liveFrom ?? server.seedPlan?.liveFrom ?? 40
     const seed =
         seedState && content.seedProgress
@@ -530,6 +543,9 @@ async function runLive(
             showQueue: content.queue,
             showNextMap: content.nextMap,
             joinCode: server.join?.joinCode ?? null,
+            showScore: look.layout.showScoreboard,
+            showLeaders: panel.showLeaders ?? false,
+            seedTarget: seed?.liveFrom ?? null,
         })
         score = model
             ? await ports.scoreImage(keyOf(panel), model).catch(() => null)
@@ -712,71 +728,56 @@ async function runCombined(
     const warnings: PanelWarning[] = []
     if (!channel.canAttach) warnings.push("attach_files_missing")
     const thumbFiles: PanelFile[] = []
-    // Public data only: snapshots, no live roster, no password, no match (P4-B08).
-    const rows = panel.servers.map((server) => {
-        const facts = server.snapshot
-            ? snapshotLiveFacts(server.snapshot)
-            : {
-                  ...snapshotLiveFacts({
-                      id: server.connectionId,
-                      guildId: panel.guildId,
-                      gameId:
-                          server.gameId === "wardogs"
-                              ? ("wardogs" as const)
-                              : ("hell_let_loose" as const),
-                      provider: "hll_crcon" as const,
-                      displayName: server.name,
-                      state: "unknown" as const,
-                      map: null,
-                      players: null,
-                      capacity: null,
-                      providerInstanceId: null,
-                      scores: [],
-                      capabilities: [],
-                      observedAt: null,
-                      lastSuccessAt: null,
-                      providerUpdatedAt: null,
-                      freshness: "unavailable" as const,
-                      attribution: null,
-                  }),
-              }
-        const seed = pass.seeds.find(
-            (entry) => entry.connectionId === server.connectionId
-        )
-        return {
-            connectionId: server.connectionId,
-            title: server.name ?? facts.serverName ?? "—",
-            facts,
-            paused: false,
-            seed:
+    // P4-38: each row reads the same live data as the server's own panel, so
+    // the queue and the next map show when the provider reports them. Public
+    // data only: no roster, no password, no match (P4-B08).
+    const rows = await Promise.all(
+        panel.servers.map(async (server) => {
+            const read = (await serverFacts(panel, server, ports, warnings))
+                .facts
+            const seed = pass.seeds.find(
+                (entry) => entry.connectionId === server.connectionId
+            )
+            // P5-16: a seeding server counts players from the run's reading.
+            const facts: LiveServerFacts =
                 seed && content.seedProgress
-                    ? { liveFrom: seed.liveFrom }
-                    : null,
-            liveFrom: server.seedPlan?.liveFrom ?? 40,
-            joinUrl:
-                content.joinButton && server.join
-                    ? serverJoinUrl(pass.siteUrl, server.join.slug)
-                    : null,
-            joinable: Boolean(
-                server.gameId === "wardogs"
-                    ? server.join?.joinCode
-                    : server.join?.address
-            ),
-            // P2-43..45: the address or join code under the row, when shown.
-            address:
-                content.address && server.gameId !== "wardogs"
-                    ? (server.join?.address ?? null)
-                    : null,
-            joinCode:
-                content.joinCode && server.gameId === "wardogs"
-                    ? (server.join?.joinCode ?? null)
-                    : null,
-            seedBar:
-                seed && content.seedProgress
-                    ? seedProgress(facts.players, seed.liveFrom).bar
-                    : null,
-        }
-    })
+                    ? { ...read, players: seedPanelPlayers(seed, read.players) }
+                    : read
+            return {
+                connectionId: server.connectionId,
+                title: server.name ?? facts.serverName ?? "—",
+                facts,
+                paused: false,
+                seed:
+                    seed && content.seedProgress
+                        ? { liveFrom: seed.liveFrom }
+                        : null,
+                liveFrom: server.seedPlan?.liveFrom ?? 40,
+                joinUrl:
+                    content.joinButton && server.join
+                        ? serverJoinUrl(pass.siteUrl, server.join.slug)
+                        : null,
+                joinable: Boolean(
+                    server.gameId === "wardogs"
+                        ? server.join?.joinCode
+                        : server.join?.address
+                ),
+                // P2-43..45: the address or join code under the row, when shown.
+                address:
+                    content.address && server.gameId !== "wardogs"
+                        ? (server.join?.address ?? null)
+                        : null,
+                joinCode:
+                    content.joinCode && server.gameId === "wardogs"
+                        ? (server.join?.joinCode ?? null)
+                        : null,
+                seedBar:
+                    seed && content.seedProgress
+                        ? seedProgress(facts.players, seed.liveFrom).bar
+                        : null,
+            }
+        })
+    )
     // Each row carries its current map on the right (P7-B09).
     const servers = await Promise.all(
         rows.map(async (row) => {
@@ -873,7 +874,7 @@ async function runCombined(
         attempt: attempt(pass, {
             handledRequestAt,
             dataAt: dataAt || null,
-            warnings,
+            warnings: [...new Set(warnings)],
             messages: 1,
             nextAt: isPanelPaused(panel) ? null : pass.now + REFRESH_MS,
             channelPrivate: !channel.everyoneCanView,

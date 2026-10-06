@@ -198,3 +198,25 @@ test("the score, next map and queue follow the panel's switches (P2-38)", () => 
     )
     assert.doesNotMatch(quiet.text, /fronta|Spojenci/)
 })
+
+test("the round time shows only with the score; the board's row is map, players and queue (P4-38)", () => {
+    const row = server(1)
+    row.facts = { ...row.facts, timeLeftSeconds: 47 * 60 }
+    const board = renderedView(
+        combinedPanelView({
+            ...base,
+            show: { score: false, nextMap: false, queue: true },
+            servers: [row],
+        })
+    )
+    assert.match(board.text, /Hell Let Loose · .* · 78 \/ 100 · fronta 3/)
+    assert.doesNotMatch(board.text, /zbývá/)
+    const scored = renderedView(
+        combinedPanelView({
+            ...base,
+            show: { score: true, nextMap: false, queue: true },
+            servers: [row],
+        })
+    )
+    assert.match(scored.text, /zbývá 47 min/)
+})

@@ -81,6 +81,14 @@ const base = {
             queue: count.nullable(),
         })
         .nullable(),
+    /**
+     * The panel's "Skóre" switch. Off is the server-status look (L3-33,
+     * L3-43): no score, no leaders, the player count in their place. A
+     * request without it (an older bot) draws the score as before.
+     */
+    scoreboard: z.boolean().default(true),
+    /** A running seed's live threshold: the image shows the progress toward it (P4-18). */
+    seedTarget: count.min(1).max(1000).nullable().default(null),
 }
 const leader = <S extends z.ZodTypeAny>(side: S) =>
     z.strictObject({ name: text(32), value: count, side })
@@ -189,6 +197,37 @@ export function hllScoreLayout(model: HllScoreImage) {
         axis: model.axis.score,
     })
 }
+/** The seed threshold the image draws progress toward, only while seeding. */
+export function panelImageSeedTarget(
+    model: Pick<PanelScoreImage, "state" | "seedTarget">
+): number | null {
+    return model.state === "seeding" ? (model.seedTarget ?? null) : null
+}
+
+/**
+ * What the right half of the score image shows (P4-16, P4-18, L3-33): the
+ * seed progress while a seed runs, the empty sentence on an empty server,
+ * the player count in server-status mode, else the score.
+ */
+export type PanelImageFocus = "score" | "status" | "seed" | "empty"
+export function panelImageFocus(
+    model: Pick<PanelScoreImage, "state" | "seedTarget" | "scoreboard">
+): PanelImageFocus {
+    if (panelImageSeedTarget(model) !== null) return "seed"
+    if (model.state === "empty") return "empty"
+    return model.scoreboard ? "score" : "status"
+}
+
+/** The state chip's word: "Online" for a server-status panel that is up (L3-43). */
+export function panelImageStateWord(
+    model: Pick<PanelScoreImage, "state" | "scoreboard" | "language">
+): string {
+    const copy = panelImageCopy(model.language)
+    return model.state === "live" && !model.scoreboard
+        ? copy.online
+        : copy.state[model.state]
+}
+
 /** Grouped digits in the clan language ("3 655"). */
 export function formatPanelNumber(value: number, language: string) {
     return new Intl.NumberFormat(panelImageCopy(language).locale, {
@@ -208,7 +247,7 @@ export function panelScoreImageAlt(model: PanelScoreImage): string {
         if (model.mode) parts.push(copy.mode[model.mode])
         if (model.lighting) parts.push(copy.lighting[model.lighting])
     }
-    parts.push(copy.state[model.state].toLowerCase())
+    parts.push(panelImageStateWord(model).toLowerCase())
     if (model.game === "hell_let_loose") {
         const minutes = minutesLeft(model.timeLeftSeconds)
         if (minutes != null) parts.push(copy.alt.minutes(minutes))
@@ -224,12 +263,17 @@ export function panelScoreImageAlt(model: PanelScoreImage): string {
                 : players
         )
     }
+    const target = panelImageSeedTarget(model)
+    if (target !== null) parts.push(copy.seedTo(target))
+    if (model.state === "empty")
+        parts.push(copy.emptyTitle.replace(/[.!]$/, ""))
+    const scored = panelImageFocus(model) === "score"
     if (model.game === "hell_let_loose") {
-        if (model.allies.score != null && model.axis.score != null)
+        if (scored && model.allies.score != null && model.axis.score != null)
             parts.push(
                 `${copy.allies} ${model.allies.score} : ${model.axis.score} ${copy.axis}`
             )
-    } else if (model.factions.length) {
+    } else if (scored && model.factions.length) {
         const factions = model.factions.map(
             (f) =>
                 `${copy.wardogs[f.faction]} ${formatPanelNumber(f.points, model.language)}`
@@ -238,7 +282,7 @@ export function panelScoreImageAlt(model: PanelScoreImage): string {
         parts.push(...factions, copy.alt.points(last))
     }
     // The Wardogs image text names factions; its leaders stay in the message text.
-    if (model.game === "hell_let_loose" && model.leaders.length)
+    if (scored && model.game === "hell_let_loose" && model.leaders.length)
         parts.push(
             copy.alt.topKills(
                 model.leaders.map((p) => `${p.name} ${p.value}`).join(", ")

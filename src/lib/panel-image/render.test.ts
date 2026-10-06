@@ -31,6 +31,35 @@ test("style A renders real 1200 × 400 PNGs for Hell Let Loose and Wardogs", asy
     assert.deepEqual(requested, [])
 })
 
+test("the status, empty and seed looks render for both games (L3-33, P4-16, P4-18)", async () => {
+    const renderer = createPanelImageRenderer({
+        publicDir,
+        loadAsset: async () => null,
+    })
+    const looks = [
+        { scoreboard: false },
+        {
+            state: "empty" as const,
+            players: { count: 0, capacity: 100, queue: null },
+        },
+        {
+            state: "seeding" as const,
+            seedTarget: 40,
+            players: { count: 12, capacity: 100, queue: null },
+        },
+    ]
+    for (const look of looks)
+        for (const sample of [hllSample, wardogsSample]) {
+            const png = await renderer.render({
+                kind: "score",
+                model: { ...sample, ...look, leaders: [] },
+            })
+            const meta = await sharp(png).metadata()
+            assert.equal(meta.width, 1200)
+            assert.equal(meta.height, 400)
+        }
+})
+
 test("a banner background comes from the asset port; a missing asset still renders", async () => {
     const banner = await sharp({
         create: {

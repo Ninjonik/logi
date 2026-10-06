@@ -313,6 +313,9 @@ test("server status mode: score off reads Stav serveru and Online", () => {
     assert.match(view.text, /STAV SERVERU · HELL LET LOOSE/)
     assert.match(view.text, /Online/)
     assert.doesNotMatch(view.text, /3 : 2|NEJVÍC ZABITÍ/)
+    // The board's status detail is the map and the players only (L3-43).
+    assert.match(view.text, /Utah Beach · 78 \/ 100 hráčů · fronta 3/)
+    assert.doesNotMatch(view.text, /zbývá/)
     assert.deepEqual(
         view.buttons.map((button) => button.label),
         ["Připojit se"]
@@ -338,6 +341,120 @@ test("style A puts the score image first and keeps a short text; without it the 
         liveServerPanelView(input({ panel: { style: "a" } }))
     )
     assert.match(fallback.text, /NEJVÍC ZABITÍ/)
+})
+
+const SCORE_IMAGE = {
+    url: "attachment://skore-panel-1-abc.png",
+    description: "Skóre",
+}
+const styleA = (overrides: Parameters<typeof input>[0] = {}) =>
+    renderedView(
+        liveServerPanelView(
+            input({
+                ...overrides,
+                panel: { style: "a", ...overrides.panel },
+                images: { score: SCORE_IMAGE, banner: null, thumbnail: null },
+            })
+        )
+    )
+
+test("style A on an empty server keeps the empty sentence and shows no score (P4-16, P4-17)", () => {
+    const view = styleA({
+        facts: { ...hll(0), roster: [] },
+        seedChannelId: "123456789012345678",
+    })
+    assert.equal(view.media[0], SCORE_IMAGE.url)
+    assert.match(view.text, /Prázdný/)
+    assert.match(
+        view.text,
+        /Na serveru teď nikdo nehraje\. Když ho správci rozjedou, výzva přijde do <#123456789012345678>\./
+    )
+    assert.doesNotMatch(view.text, /3 : 2|zbývá/)
+    assert.deepEqual(
+        view.buttons.map((button) => button.label),
+        ["Připojit se"]
+    )
+})
+
+test("style A while seeding keeps the seed bar and the seed lines (P4-18, P5-15, P5-17)", () => {
+    const view = styleA({
+        facts: hll(12),
+        seed: {
+            startedAt: now - 300_000,
+            liveFrom: 40,
+            bar: "▰▰▰▱▱▱▱▱▱▱",
+            callUrl: "https://discord.com/channels/1/2/3",
+            channelId: "223456789012345678",
+        },
+    })
+    assert.match(view.text, /Seedujeme/)
+    assert.match(view.text, /12 \/ 100 hráčů · živý od 40/)
+    assert.match(view.text, /▰▰▰▱▱▱▱▱▱▱ \*\*12 \/ 40\*\*/)
+    assert.match(view.text, /Připoj se a pomoz server nastartovat\./)
+    assert.match(
+        view.text,
+        /Seed běží od <t:\d+:t>\. Výzva je v <#223456789012345678>\./
+    )
+    assert.doesNotMatch(view.text, /3 : 2/)
+    assert.deepEqual(
+        view.buttons.map((button) => button.label),
+        ["Připojit se", "Otevřít výzvu"]
+    )
+})
+
+test("style A in a clan channel keeps the running match with its chip and Z KLANU HRAJE (P4-23, P4-25, P4-B07)", () => {
+    const panel = styleA({
+        privateChannel: true,
+        match: {
+            title: "VLK vs ROG",
+            category: "Přátelák",
+            startedAt: now - 600_000,
+            allies: "VLK",
+            axis: "ROG",
+        },
+        clanPlayers: ["Rex_CZ", "Bizon"],
+    })
+    assert.match(panel.text, /VLK vs ROG/)
+    assert.match(panel.text, /probíhá od <t:\d+:t>/)
+    assert.match(panel.text, /Přátelák/, "the match's category chip")
+    assert.match(panel.text, /Z KLANU HRAJE · 2/)
+    assert.match(panel.text, /Rex\\_CZ · Bizon/)
+    assert.match(panel.text, /VLK Spojenci ★  3 : 2  ✚ Osa ROG/)
+})
+
+test("style A for Wardogs names the map once, in the header (P7-16)", () => {
+    const fixture = warconLive()
+    const view = styleA({
+        facts: wardogsLiveFacts({
+            ...fixture,
+            freshness: "fresh" as const,
+            playersFreshness: "fresh" as const,
+        }),
+        server: {
+            address: null,
+            joinCode: "WD-7F3K",
+            password: null,
+            joinUrl: "https://logi.app/join/vlci-wd",
+        },
+    })
+    assert.equal(view.text.match(/Bakurani/g)?.length, 1, view.text)
+    assert.match(view.text, /Join kód `WD-7F3K`/)
+})
+
+test("style A in server-status mode shows no score and no round time (L3-43, L3-44)", () => {
+    const view = styleA({
+        panel: {
+            layout: {
+                showMap: true,
+                showScoreboard: false,
+                showPlayerCount: true,
+                compact: false,
+            },
+        },
+    })
+    assert.match(view.text, /STAV SERVERU · HELL LET LOOSE/)
+    assert.match(view.text, /Online/)
+    assert.doesNotMatch(view.text, /3 : 2|zbývá|NEJVÍC ZABITÍ/)
 })
 
 test("style C is compact, without images and without a refresh footer", () => {
