@@ -107,7 +107,10 @@ export async function storeMemberObservation(
         // Same state, roles and epoch: newer evidence only. The guild
         // revision, the subject's revision and the change feed stay as they
         // are; a reconciliation of an unchanged clan writes nothing else.
-        await ctx.db.patch(previous._id, evidence)
+        // A member who is still absent or still unknown gains no evidence
+        // from being seen absent again, so nothing is written at all.
+        if (value.state === "present")
+            await ctx.db.patch(previous._id, evidence)
         return
     }
     const revision = nextRevision(guild.revision)

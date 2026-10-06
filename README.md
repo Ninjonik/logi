@@ -131,6 +131,8 @@ Two settings matter for a production install, because Logi’s bot and panels wr
 - If the `integrationChanges` table (the website change feed) has grown to hundreds of thousands of rows, stop the Discord bot first (its five-minute membership reconciliation was the largest writer before `storeMemberObservation` learned to skip unchanged observations) and run `npx convex run integrationChanges:resetFeed` with the self-hosted URL and admin key in the environment: it raises every clan's feed floor so website consumers bootstrap again, then empties the log in batches of 500 and reschedules itself until done. Without the deployed fix the fastest purge is `npx convex import --table integrationChanges --format jsonLines --replace -y empty.jsonl` with an empty file (an atomic table swap; measured 2.4 s for 150,000 rows), followed by setting each `integrationHeads.floor` to its `revision`. Retained versions of the removed rows are released after `DOCUMENT_RETENTION_DELAY`; the SQLite file shrinks only after a `VACUUM` with the backend stopped.
 - Use Postgres (`POSTGRES_URL`) instead of the default SQLite file for production. SQLite serialises writes and slows down as the retained versions accumulate; Postgres keeps the dashboard responsive under the bot’s steady write load.
 
+The compose file publishes the backend on `3210`/`3211` on every interface. A production host that keeps the backend behind a reverse proxy sets `PORT` and `SITE_PROXY_PORT` in the compose `.env` (and binds them to `127.0.0.1` in its own override); never copy this file over a customised one without diffing the ports first.
+
 ### Memory of a self-hosted backend
 
 The backend's resident memory is not one thing, and only one of its parts is a leak if it never comes back down:

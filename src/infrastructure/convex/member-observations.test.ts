@@ -717,3 +717,92 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
     assert.notEqual(observation().revision, written.revision)
     assert.notEqual(guild().revision, written.guildRevision)
 })
+
+test("a reconciliation sweep leaves departed members untouched and departs only the unseen present ones", async () => {
+    const ctx = fixture(),
+        epoch = await invoke(members.ensureGuild, ctx, {
+            secret,
+            guildId: "guild-a",
+        })
+    const old = new Date(Date.now() - 600_000).toISOString()
+    for (const [discordUserId, state] of [
+        ["gone-long-ago", "left"],
+        ["still-here", "present"],
+        ["vanished", "present"],
+    ] as const)
+        ctx.db.seed("memberObservations", {
+            _id: `memberObservations:${discordUserId}`,
+            guildId: "guild-a",
+            discordUserId,
+            state,
+            roleIds: state === "present" ? ["allowed"] : [],
+            observedAt: old,
+            receivedAt: old,
+            epoch,
+            // At the guild's own revision, so the run does not treat the rows as
+            // newer than its start.
+            revision: "0",
+            unavailable: false,
+            refreshFence: 0,
+            refreshUntil: 0,
+            nextRefreshAt: 0,
+        })
+    const row = (id: string) =>
+        ctx.db.tables.memberObservations.find(
+            (candidate) => candidate.discordUserId === id
+        )!
+    const run = await invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch,
+    })
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: 1,
+        members: [{ discordUserId: "still-here", roleIds: ["allowed"] }],
+    })
+    let done = false,
+        calls = 0
+    while (!done && calls++ < 10)
+        done = (
+            await invoke(members.finishReconciliation, ctx, {
+                secret,
+                runId: run.id,
+            })
+        ).isDone
+    assert.equal(done, true)
+    assert.equal(
+        row("gone-long-ago").receivedAt,
+        old,
+        "a departed member is not rewritten"
+    )
+    assert.equal(row("gone-long-ago").revision, "0")
+    assert.equal(
+        row("vanished").state,
+        "left",
+        "an unseen present member departs"
+    )
+    assert.notEqual(row("vanished").revision, "0")
+    assert.equal(row("still-here").state, "present")
+    assert.equal(
+        row("still-here").revision,
+        "0",
+        "an unchanged member keeps its revision"
+    )
+    assert.notEqual(
+        row("still-here").observedAt,
+        old,
+        "but its evidence is refreshed"
+    )
+    assert.deepEqual(
+        [
+            ...new Set(
+                ctx.db.tables.integrationChanges.map((change) => change.id)
+            ),
+        ],
+        ["vanished"],
+        "only the departure reaches the feed"
+    )
+})
