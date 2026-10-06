@@ -1,11 +1,11 @@
 import {
+    integrationChangeSchema,
+    syncRecordSchema,
+} from "@/domain/integrations/change.schema"
+import {
     matchTeamSummarySchema,
     validateMatchTeamInputs,
 } from "@/domain/teams/match-teams"
-import {
-    integrationChangeSchema,
-    syncRecordSchema,
-} from "@/domain/integrations/change"
 import {
     TEAM_LINKS_MAX,
     teamDtoSchema,
