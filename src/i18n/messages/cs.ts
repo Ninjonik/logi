@@ -3655,7 +3655,7 @@ export const csMessages = {
             },
             legacy: {
                 title: "Stará připojení ke stats serverům · {count}",
-                help: "Používá je jen hledání hráče v /link a v přihlášce do klanu, /stats ne. Po převodu do Herních serverů se klíč uloží šifrovaně a dá se otestovat.",
+                help: "Nepoužívá je /link, přihláška do klanu ani /stats: hráče hledají v uložených hrách serverů klanu. Po převodu do Herních serverů se klíč uloží šifrovaně a dá se otestovat.",
                 convert: "Převést do Herních serverů",
                 show: "Zobrazit připojení",
                 hide: "Skrýt připojení",

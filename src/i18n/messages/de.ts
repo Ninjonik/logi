@@ -3771,7 +3771,7 @@ export const deMessages = {
             },
             legacy: {
                 title: "Alte Stats-Server-Verbindungen · {count}",
-                help: "Nur die Spielersuche in /link und in der Clan-Bewerbung nutzt sie, /stats nicht. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
+                help: "Weder /link noch die Clan-Bewerbung oder /stats nutzt sie: Die Spielersuche liest die gespeicherten Spiele der Clan-Server. Nach dem Übertragen zu den Spielservern wird der Schlüssel verschlüsselt gespeichert und kann getestet werden.",
                 convert: "Zu Spielservern übertragen",
                 show: "Verbindungen anzeigen",
                 hide: "Verbindungen ausblenden",

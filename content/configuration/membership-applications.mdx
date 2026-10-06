@@ -31,7 +31,12 @@ itself. **Discard** drops every unsaved change.
   messages in them and manage them.
 - **Title**, **Text** and an optional **Image** above the title. Upload a PNG,
   JPEG or WebP image of up to 2 MiB or choose one the clan already uploaded.
-  The categories are listed under the text automatically.
+  The categories are listed under the text automatically. A new clan starts
+  with "Join the {clan} clan" and "Choose how you want to play with us. The
+  application has three short windows and takes a few minutes." in the clan
+  language (two windows when no category has clan questions). A clan that
+  never changed the title or text, including the older default, gets this
+  text in the clan language too; text the clan wrote stays as it is.
 - **Panel colour**: the bar of the panel card; empty uses the clan colour.
 - The preview beside the fields shows the panel as Discord will show it, in
   the clan language.
@@ -64,12 +69,15 @@ a Discord window and the review message the applicant sees before sending.
 
 ### Categories
 
-The table lists what the applicant chooses from in window 1: the game, the
-roles after acceptance (recruit → final), who sees the thread and the switch
-**Ask for specialization**. The specialization question is asked only in Hell
+The table lists what the applicant chooses from in window 1, each with a
+two-letter badge (for example "HČ" for Hlavní člen, "ZA" for Záloha): the
+game, the roles after acceptance (recruit → final), who sees the thread and
+the switch **Ask for specialization**. The specialization question is asked only in Hell
 Let Loose categories that have the switch on; it is disabled for Wardogs
 categories. **Edit** opens the category on the **Categories** tab, where its
-button text, description, roles and support roles are edited. The clan role
+name and description (shown in the panel after the name and the game, and
+under the name in the category select of window 1), roles and support roles
+are edited. The clan role
 everyone accepted receives is set in **Roles and access**.
 
 ### After sending
@@ -80,17 +88,32 @@ everyone accepted receives is set in **Roles and access**.
 - **Mention the category's support roles in the thread** and **Add support
   role members individually** decide how support staff get into the thread.
 - **Give the Recruit role right after sending** applies to categories that
-  have a recruit role.
+  have a recruit role. The applicant then waits with the recruit role only;
+  the clan role comes with acceptance, so a rejection takes away just the
+  recruit role.
 - **Send the applicant a confirmation DM** sends the thread link.
 - An unfinished application is kept for 24 hours, then deleted.
 
 The decision preview shows the card in the thread with its buttons:
 **Accept as member**, **Accept as recruit**, **Accept as mercenary**,
 **Reject…** (asks for a reason) and **Not decided yet** (leaves a note on the
-card without a DM). The table under it shows which roles each button adds or
-removes for the previewed category. Category support and Logi admins may
-decide; Logi reloads the decider's roles from Discord when the button is
-pressed. `/close_application` keeps working with the same check.
+card without a DM). The card shows **Waiting for a decision** until someone
+decides, also when the applicant already has the recruit role. The table under
+it shows the roles each button gives (+) and takes away (−) for the previewed
+category, for example "− @Recruit" for **Reject…** when the recruit role is
+given right after sending. Category support and Logi admins may decide; Logi
+reloads the decider's roles from Discord when the button is pressed.
+`/close_application` keeps working with the same check.
+
+**Accept as mercenary** gives the roles of the clan's **mercenary category**
+(a category whose result is Mercenary), not those of the category the
+applicant chose: the applicant's own category when it is a mercenary one,
+else the mercenary category of the same game, then of another game the
+applicant chose, then any. The membership moves to that category and its
+game. Without a mercenary category the button is disabled in Discord with a
+short reason, `/close_application` with the mercenary outcome answers that the
+category is missing, and the settings page says that a mercenary category has
+to be set up first.
 
 ### Variant B · filling in on the web
 
@@ -107,7 +130,14 @@ same card and roles. While the switch is off, the page does not exist.
 
 The player presses **Apply** in the panel. A private message shows the steps;
 **Continue** opens the next window, because Discord cannot open a window
-directly from a window. Each window is saved when it is sent. Before the
+directly from a window. Each window is saved when it is sent; a window with a
+mistake keeps its correct answers, so **Edit** reopens it filled in. The bot
+keeps the clan's form ready and updates it as soon as the settings are saved,
+so a window opens at once, within Discord's three-second limit. In the
+game-accounts window, **Have we seen you on the clan's servers?** offers the
+players with the in-game name from window 1 found in the games stored from the
+clan's servers, the same search `/link` uses; a date within the last week
+shows the weekday ("Sat 3/10"), an older one only the date. Before the
 game-accounts window, **Find my account ID** runs the same guide as `/link`
 inside the application; once the account is linked, the private message
 returns to the application and the window opens with the account filled in.

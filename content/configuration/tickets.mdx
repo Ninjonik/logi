@@ -68,8 +68,9 @@ card follows the clan language and has no "Automatic updates" button.
 3. The thread opens with a card: "TICKET #12 · REPORT A PLAYER", the
    category's **thread card title** (for example
    `{author} is reporting a player`; empty reads "Player 17 · Report a
-   player"), the **Open** chip with the time, the questions with their answers and "Support closes the ticket
-   with /close_ticket". Above the card the bot mentions only the author and
+   player"), the **Open** chip with "Opened …" as a small grey line under it,
+   the questions with their answers and "Support closes the ticket with
+   /close_ticket". Above the card the bot mentions only the author and
    the category's support roles; nobody else is pinged.
 4. The member gets a private "Ticket #12 is open" with **Open thread**. When
    tickets are switched off they read "Tickets are switched off right now".
@@ -80,8 +81,8 @@ card follows the clan language and has no "Automatic updates" button.
 
 Staff close the tracked thread with `/close_ticket`, optionally with a reason.
 Logi records who closed it and when, posts the close card in the thread
-("Resolved", the **Closed** chip, who closed it and when, the reason as a
-quote), DMs the author a card with the category, who closed it, the quoted
+("Resolved", the **Closed** chip, "Closed by … · …" as a small grey line,
+the reason as a quote), DMs the author a card with the category, who closed it, the quoted
 reason and **Open thread**, renames the thread to **closed · Report a player
 #12**, then locks and archives it. Without a reason the quote is left out.
 The private reply says whether the author got the DM ("The author can't

@@ -400,8 +400,8 @@ export function AfterSubmitSection({
             : []
     const changes = (add: readonly string[], remove: readonly string[]) => {
         const parts = [
-            ...add.map((roleId) => `+ @${roleName(roleId)}`),
-            ...remove.map((roleId) => `− @${roleName(roleId)}`),
+            ...add.map((roleId) => `+\u00a0@${roleName(roleId)}`),
+            ...remove.map((roleId) => `−\u00a0@${roleName(roleId)}`),
         ]
         return parts.length ? parts.join(", ") : t.noRoleChange
     }
@@ -558,9 +558,11 @@ export function AfterSubmitSection({
                                                 )}
                                             </td>
                                             <td className="px-3 py-2">
-                                                {row.outcome === "denied"
-                                                    ? t.gets.reason
-                                                    : t.gets.result}
+                                                {row.unavailable
+                                                    ? "—"
+                                                    : row.outcome === "denied"
+                                                      ? t.gets.reason
+                                                      : t.gets.result}
                                             </td>
                                         </tr>
                                     ))}

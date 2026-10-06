@@ -3664,7 +3664,7 @@ export const enMessages = {
             },
             legacy: {
                 title: "Old stats server connections · {count}",
-                help: "Only the player search in /link and in the clan application uses them, /stats does not. After moving them to Game servers the key is stored encrypted and can be tested.",
+                help: "Neither /link, the clan application nor /stats uses them: the player search reads the games stored from the clan's servers. After moving them to Game servers the key is stored encrypted and can be tested.",
                 convert: "Move to Game servers",
                 show: "Show connections",
                 hide: "Hide connections",
