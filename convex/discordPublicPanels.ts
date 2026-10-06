@@ -1,20 +1,20 @@
 import {
-    isPanelPaused,
-    publicPanelSettingsSchema,
-    type PublicPanelSaveResult,
-} from "../src/domain/discord-publications/settings"
-import {
     guildPanels,
     panelPublications,
     panelServerRow,
     serverNames,
 } from "./discordPanelStore"
 import {
+    isPanelPaused,
+    type PublicPanelSaveResult,
+} from "../src/domain/discord-publications/settings"
+import {
     mutation,
     query,
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
+import { publicPanelSettingsSchema } from "../src/domain/discord-publications/settings.schema"
 import { buildResultCardFacts } from "../src/domain/discord-publications/result-card"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"

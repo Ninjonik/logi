@@ -19,9 +19,9 @@ import {
 } from "./panel-presentation.schema"
 import {
     publicPanelSaveResultSchema,
-    publicPanelSettingsInput,
     publicPanelSettingsSchema,
-} from "./settings"
+} from "./settings.schema"
+import { publicPanelSettingsInput } from "./settings"
 import assert from "node:assert/strict"
 import test from "node:test"
 

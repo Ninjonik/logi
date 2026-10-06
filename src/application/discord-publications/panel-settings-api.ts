@@ -3,7 +3,6 @@ import {
     PANEL_REFRESH_SECONDS,
     isPanelPaused,
     normalizePanelKind,
-    panelSaveSchema,
 } from "@/domain/discord-publications/settings"
 import type {
     DiscordPanelApiItem,
@@ -11,6 +10,7 @@ import type {
     DiscordPanelsPatch,
 } from "@/domain/api/discord-panels-settings-slice"
 import { resolvePanelPresentation } from "@/domain/discord-publications/panel-presentation"
+import { panelSaveSchema } from "@/domain/discord-publications/settings.schema"
 
 import {
     savePanel,

@@ -11,8 +11,8 @@ import {
 } from "@/domain/discord-publications/panel-image-model"
 import type { PanelActionResult } from "@/application/discord-publications/panel-actions"
 import type { PanelSaveResult } from "@/application/discord-publications/save-panel"
+import { panelSaveSchema } from "@/domain/discord-publications/settings.schema"
 import { PANEL_ACTIONS } from "@/domain/discord-publications/panel-delivery"
-import { panelSaveSchema } from "@/domain/discord-publications/settings"
 import { PANEL_WINDOW } from "@/domain/wardogs-league/all-fixtures"
 import { readBoundedJson } from "@/lib/api/request-json"
 

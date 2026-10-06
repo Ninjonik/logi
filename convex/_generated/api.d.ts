@@ -21,6 +21,7 @@ import type * as clanPlayerHistory from "../clanPlayerHistory.js";
 import type * as clanPublicPage from "../clanPublicPage.js";
 import type * as clanSettingsReads from "../clanSettingsReads.js";
 import type * as clanSettingsStores from "../clanSettingsStores.js";
+import type * as clanTeamStore from "../clanTeamStore.js";
 import type * as clanTeams from "../clanTeams.js";
 import type * as clientGrants from "../clientGrants.js";
 import type * as competitionMigrations from "../competitionMigrations.js";
@@ -185,6 +186,7 @@ declare const fullApi: ApiFromModules<{
   clanPublicPage: typeof clanPublicPage;
   clanSettingsReads: typeof clanSettingsReads;
   clanSettingsStores: typeof clanSettingsStores;
+  clanTeamStore: typeof clanTeamStore;
   clanTeams: typeof clanTeams;
   clientGrants: typeof clientGrants;
   competitionMigrations: typeof competitionMigrations;

@@ -18,7 +18,8 @@ import {
     takenPanelKinds,
     toggleServer,
 } from "./panel-editor"
-import { DEFAULT_PANEL_CONTENT, panelSaveSchema } from "./settings"
+import { panelSaveSchema } from "./settings.schema"
+import { DEFAULT_PANEL_CONTENT } from "./settings"
 
 const channelId = "123456789012345678"
 

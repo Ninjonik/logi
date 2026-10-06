@@ -29,7 +29,7 @@ import { stored, storedOf } from "./discordPanelGraphicsStore"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
-import { clanShortCode } from "./clanTeams"
+import { clanShortCode } from "./clanTeamStore"
 import { v } from "convex/values"
 
 /**
