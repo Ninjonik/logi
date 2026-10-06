@@ -32,6 +32,7 @@ import {
     type PanelContent,
     type PanelGame,
 } from "./settings"
+import { DEFAULT_CHIP_ICONS } from "../discord-messages/message-layout"
 import type { WarconRead } from "../game-data/warcon-contracts"
 import type { ServerSnapshot } from "../game-data/contracts"
 import type { PanelLayout } from "./panel-presentation"
@@ -444,12 +445,13 @@ export function liveMapLine(
 }
 function nextMapText(
     next: NonNullable<LiveServerFacts["nextMap"]>,
-    language: string
+    language: string,
+    withMode = true
 ) {
     const words = panelImageCopy(language)
     return [
         next.name,
-        next.mode ? words.mode[next.mode] : null,
+        withMode && next.mode ? words.mode[next.mode] : null,
         next.lighting ? words.lighting[next.lighting] : null,
     ]
         .filter((part): part is string => Boolean(part))
@@ -489,7 +491,10 @@ function playersDetail(
     } else if (state === "live") {
         if (panel.content.queue && facts.queue)
             parts.push(copy.queue(count(facts.queue)))
-        const minutes = minutesLeft(facts.timeLeftSeconds)
+        // A server-status panel shows no round time (L3-43).
+        const minutes = panel.layout.showScoreboard
+            ? minutesLeft(facts.timeLeftSeconds)
+            : null
         if (minutes !== null) parts.push(copy.timeLeft(String(minutes)))
     }
     return parts.join(" · ")
@@ -510,20 +515,61 @@ function hllScoreLine(input: LiveServerPanelInput) {
     ].join("  ")
 }
 
-function wardogsFactionLines(input: LiveServerPanelInput) {
+/** "★ Spojenci **3 : 2** Osa ✚" of styles B and C (P7-11, P7-13). */
+function signedScoreLine(input: LiveServerPanelInput) {
+    const { facts, copy, emoji } = input
+    const hll = facts.hll
+    if (!hll || hll.allies === null || hll.axis === null) return null
+    const match = input.match
+    return [
+        match?.allies ? `**${name(match.allies, 12)}**` : null,
+        hllSideSign("allies", hll.nations, emoji),
+        copy.allies,
+        `**${hll.allies} : ${hll.axis}**`,
+        copy.axis,
+        hllSideSign("axis", hll.nations, emoji),
+        match?.axis ? `**${name(match.axis, 12)}**` : null,
+    ]
+        .filter(Boolean)
+        .join(" ")
+}
+
+/** "Spojenci 3 : 2 Osa" without signs, for the style A summary (P7-08). */
+function plainScoreText(input: LiveServerPanelInput) {
+    const { facts, copy } = input
+    const hll = facts.hll
+    if (!hll || hll.allies === null || hll.axis === null) return null
+    const match = input.match
+    return [
+        match?.allies ? name(match.allies, 12) : null,
+        copy.allies,
+        `${hll.allies} : ${hll.axis}`,
+        copy.axis,
+        match?.axis ? name(match.axis, 12) : null,
+    ]
+        .filter(Boolean)
+        .join(" ")
+}
+
+/**
+ * The Wardogs factions with their signs: one per line with "b." on the full
+ * card (P4-33), or "◈ Valkyra **23**" side by side in styles B and C (P7-18).
+ */
+function wardogsFactionLines(input: LiveServerPanelInput, compact = false) {
     const factions = input.facts.wardogs?.factions ?? []
     return factions.map(
         (faction) =>
-            `${wardogsSign(faction.key, input.emoji)} ${name(faction.name, 24)} **${faction.points}** ${input.copy.points}`
+            `${wardogsSign(faction.key, input.emoji)} ${name(faction.name, 24)} **${faction.points}**${compact ? "" : ` ${input.copy.points}`}`
     )
 }
 
+/** HLL leaders carry their side's sign; Wardogs leaders none (P4-34, P7-18). */
 function sideSignOf(input: LiveServerPanelInput, side: string | null) {
     if (input.facts.game === "hell_let_loose")
         return side === "allies" || side === "axis"
             ? hllSideSign(side, input.facts.hll?.nations ?? null, input.emoji)
             : ""
-    return wardogsSign(wardogsFactionKey(side), input.emoji)
+    return ""
 }
 
 /** Top three players by a metric, ties by name (never reorder between passes). */
@@ -572,6 +618,17 @@ function leaderBlocks(input: LiveServerPanelInput): MessageBlock[] {
     return blocks
 }
 
+/** "Heslo `…`", only ever for a private channel (P4-B06). */
+function passwordLine(input: LiveServerPanelInput) {
+    const { server, copy, panel, facts } = input
+    return input.privateChannel &&
+        panel.content.password &&
+        server.password &&
+        facts.game === "hell_let_loose"
+        ? `${copy.password} ${code(server.password)}`
+        : null
+}
+
 function connectionLines(input: LiveServerPanelInput) {
     const { server, copy, panel, facts } = input
     const lines: string[] = []
@@ -583,15 +640,79 @@ function connectionLines(input: LiveServerPanelInput) {
         lines.push(`${copy.address} ${code(server.address)}`)
     if (panel.content.joinCode && facts.game === "wardogs" && server.joinCode)
         lines.push(`${copy.joinCode} ${code(server.joinCode)}`)
-    // The password reaches the view only for a private channel (P4-B06).
-    if (
-        input.privateChannel &&
-        panel.content.password &&
-        server.password &&
-        facts.game === "hell_let_loose"
-    )
-        lines.push(`${copy.password} ${code(server.password)}`)
+    const password = passwordLine(input)
+    if (password) lines.push(password)
     return lines
+}
+
+/** The state icon: the installed status emoji, else the chip's circle (P7-26). */
+const TONE_EMOJI: Partial<Record<MessageChip["tone"], PanelEmojiKey>> = {
+    success: "live",
+    warning: "seeding",
+    neutral: "empty",
+    danger: "offline",
+}
+function stateIcon(tone: MessageChip["tone"], emoji: PanelEmojiMarkup) {
+    const key = TONE_EMOJI[tone]
+    return (key ? emoji[key] : undefined) ?? DEFAULT_CHIP_ICONS[tone]
+}
+
+/**
+ * The first line of style C (P7-11): "◉ **Vlci #1 · Public** Hell Let Loose ·
+ * Foy · Warfare · Den". A server that is not simply up names its state.
+ */
+function compactHead(
+    input: LiveServerPanelInput,
+    state: LivePanelState,
+    title: string,
+    chip: MessageChip,
+    extra: string
+) {
+    const { copy, facts, panel } = input
+    const parts = [
+        state === "live" ? null : `**${escapeMarkdownText(chip.label)}**`,
+        copy.game[facts.game],
+        panel.layout.showMap && state !== "offline"
+            ? liveMapLine(facts, input.language) || null
+            : null,
+        input.newMap && state !== "offline" ? copy.newMap : null,
+        extra || null,
+    ].filter(Boolean)
+    return `${stateIcon(chip.tone, input.emoji)} **${escapeMarkdownText(title)}** ${parts.join(" · ")}`
+}
+
+/**
+ * The state line of style B (P7-13, P7-18): "Foy · Warfare · Den · zbývá 47
+ * min" or "Zestafona"; the gauge under the score shows the players.
+ */
+function styleBDetail(
+    input: LiveServerPanelInput,
+    state: LivePanelState,
+    mapLine: string,
+    statusMode: boolean
+) {
+    if (state === "offline" || state === "paused" || state === "stale")
+        return playersDetail(input, state, true)
+    const { copy, facts, panel } = input
+    const locale = panelImageCopy(input.language).locale
+    const parts: string[] = []
+    if (panel.layout.showMap && facts.map)
+        parts.push(
+            facts.game === "wardogs"
+                ? escapeMarkdownText(facts.map.name)
+                : mapLine
+        )
+    if (state === "seeding")
+        parts.push(
+            copy.liveFrom(
+                formatNumber(input.seed?.liveFrom ?? input.liveFrom, locale)
+            )
+        )
+    if (state === "live" && !statusMode) {
+        const minutes = minutesLeft(facts.timeLeftSeconds)
+        if (minutes !== null) parts.push(copy.timeLeft(String(minutes)))
+    }
+    return parts.filter(Boolean).join(" · ")
 }
 
 function joinButton(input: LiveServerPanelInput): MessageButton | null {
@@ -603,30 +724,140 @@ function joinButton(input: LiveServerPanelInput): MessageButton | null {
         : null
 }
 
-function gaugeLine(input: LiveServerPanelInput) {
-    const { facts } = input
+/** "🟩🟩🟩⬛ 🟨 78 / 100 · fronta 3": the coloured player gauge (P7-27). */
+export function liveGaugeLine(
+    facts: Pick<LiveServerFacts, "players" | "capacity" | "queue">,
+    options: { queue: boolean; emoji: PanelEmojiMarkup; language: string }
+) {
     if (facts.players === null || facts.capacity === null) return null
+    const queue = options.queue ? facts.queue : null
     const gauge = playerGauge({
         players: facts.players,
         capacity: facts.capacity,
-        queue: input.panel.content.queue ? facts.queue : null,
+        queue,
     })
     if (!gauge) return null
-    const words = panelImageCopy(input.language)
+    const words = panelImageCopy(options.language)
     return `${playerGaugeEmoji(gauge, {
-        players: input.emoji.gauge_players,
-        queue: input.emoji.gauge_queue,
-        free: input.emoji.gauge_free,
-    })} ${words.gauge(facts.players, facts.capacity, {
-        queue: input.panel.content.queue ? facts.queue : null,
-    })}`
+        players: options.emoji.gauge_players,
+        queue: options.emoji.gauge_queue,
+        free: options.emoji.gauge_free,
+    })} ${words.gauge(facts.players, facts.capacity, { queue })}`
+}
+function gaugeLine(input: LiveServerPanelInput) {
+    return liveGaugeLine(input.facts, {
+        queue: input.panel.content.queue,
+        emoji: input.emoji,
+        language: input.language,
+    })
+}
+
+/** The running Logi match with its category chip, in a private channel (P4-23). */
+function matchBlock(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock | null {
+    const { match } = input
+    if (
+        !input.privateChannel ||
+        !match ||
+        state === "empty" ||
+        state === "paused"
+    )
+        return null
+    return {
+        kind: "fields",
+        items: [
+            {
+                title: match.title,
+                ...(match.category
+                    ? {
+                          chip: {
+                              label: match.category,
+                              tone: "info" as const,
+                          },
+                      }
+                    : {}),
+                text: input.copy.matchRunning(at(match.startedAt, "t")),
+            },
+        ],
+    }
+}
+
+/** "▰▰▰▱▱▱▱▱▱▱ 12 / 40" and the seed sentences while a seed runs (P4-18, P5-15). */
+function seedBlocks(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock[] {
+    const { copy, seed } = input
+    if (state !== "seeding" || !seed) return []
+    const locale = panelImageCopy(input.language).locale
+    const channel = seed.channelId ? `<#${seed.channelId}>` : null
+    return [
+        {
+            kind: "text",
+            markdown: `${seed.bar} **${formatNumber(input.facts.players ?? 0, locale)} / ${formatNumber(seed.liveFrom, locale)}**`,
+        },
+        {
+            kind: "text",
+            markdown: [
+                copy.seedJoin,
+                `${copy.seedRunning(at(seed.startedAt, "t"))}${channel ? ` ${copy.seedCallIn(channel)}` : ""}`,
+            ].join("\n"),
+        },
+    ]
+}
+
+/** "Na serveru teď nikdo nehraje." with the seed channel hint (P4-16). */
+function emptyBlock(input: LiveServerPanelInput): MessageBlock {
+    return {
+        kind: "text",
+        markdown: [
+            input.copy.emptyText,
+            input.seedChannelId
+                ? input.copy.emptySeedHint(`<#${input.seedChannelId}>`)
+                : null,
+        ]
+            .filter(Boolean)
+            .join(" "),
+    }
+}
+
+/** "Z KLANU HRAJE · 14" and the names, in a private channel (P4-25). */
+function clanPlayersBlock(
+    input: LiveServerPanelInput,
+    state: LivePanelState
+): MessageBlock | null {
+    if (
+        !input.privateChannel ||
+        !input.clanPlayers?.length ||
+        state === "empty" ||
+        state === "paused"
+    )
+        return null
+    return {
+        kind: "text",
+        markdown: `**${input.copy.clanPlaying(String(input.clanPlayers.length))}**\n${input.clanPlayers
+            .slice(0, 40)
+            .map((player) => name(player, 32))
+            .join(" · ")}`,
+    }
 }
 
 /**
- * The live server panel. Style A puts the generated score image on top with
- * a short text summary under it; style B adds the banner and the player
- * gauge; style C is the compact text. Without the score image style A falls
- * back to the full text card, so the panel is never empty.
+ * The live server panel in the three styles of board P7, plus the full text
+ * card of board P4 that style A falls back to without its image:
+ *
+ * - style A (P7-07, P7-08): the score image at the top, then the state chip
+ *   with the players, a one-line summary "Foy · Warfare · Den · další mapa
+ *   Carentan · Noc · Spojenci 3 : 2 Osa" and the address. The text keeps
+ *   what the full card says for the state (P4-16, P4-18, P4-23, P4-25).
+ * - style B (P7-13, P7-18): the banner at the top, then the header with the
+ *   map thumbnail, the score with signs, the player gauge, the leaders and
+ *   "Adresa … · další mapa …".
+ * - style C (P7-11): the compact text: one line "◉ **Vlci #1 · Public** Hell
+ *   Let Loose · Foy · Warfare · Den", the score with the time left, the
+ *   gauge, "Připojit se" and "Zobrazit hráče".
  */
 export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
     const { copy, facts, panel } = input
@@ -637,7 +868,6 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
         seedActive,
         liveFrom: input.seed?.liveFrom ?? input.liveFrom,
     })
-    const words = panelImageCopy(input.language)
     const label = `${
         input.privateChannel
             ? copy.labelClan
@@ -650,7 +880,6 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
     const style: PanelStyle | "fallback" =
         panel.style === "a" && !input.images.score ? "fallback" : panel.style
     const mapInHeader = facts.game === "wardogs" || statusMode
-    const detail = playersDetail(input, state, mapInHeader)
     const content: MessageBlock[] = []
     const description = panel.description?.trim()
     const showLive = state !== "offline"
@@ -660,94 +889,123 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
         panel.content.nextMap && facts.nextMap
             ? nextMapText(facts.nextMap, input.language)
             : null
+    // P7-08, P7-13: "další mapa Carentan · Noc", the name and the light only.
+    const nextMapShort =
+        panel.content.nextMap && facts.nextMap
+            ? nextMapText(facts.nextMap, input.language, false)
+            : null
+    const scored =
+        !statusMode && (state === "live" || state === "stale") && showLive
+    const chip = liveStateChip(state, copy, statusMode)
+    let detail =
+        style === "b"
+            ? styleBDetail(input, state, mapLine, statusMode)
+            : playersDetail(input, state, mapInHeader)
 
-    if (style === "a" && input.images.score)
-        content.push({ kind: "gallery", items: [input.images.score] })
-    if (style === "b" && input.images.banner)
-        content.push({ kind: "gallery", items: [input.images.banner] })
-    if (description && showLive)
+    if (description && showLive && style !== "c")
         content.push({ kind: "text", markdown: description })
 
     if (state === "offline") {
+        if (style === "c")
+            content.push({
+                kind: "text",
+                markdown: compactHead(input, state, title, chip, detail),
+            })
         content.push({ kind: "text", markdown: copy.offlineText })
     } else if (style === "c") {
-        const score = hllScoreLine(input)
-        const line = [
-            panel.layout.showMap ? mapLine : null,
-            statusMode
-                ? null
-                : (score ?? wardogsFactionLines(input).join("  ")),
-        ]
-            .filter(Boolean)
-            .join(" · ")
-        if (line) content.push({ kind: "text", markdown: line })
-        const gauge = gaugeLine(input)
-        if (gauge) content.push({ kind: "text", markdown: gauge })
-    } else if (style === "a" && input.images.score) {
-        // P7-08: the image carries the leaders; the text stays readable.
-        const summary = [
-            panel.layout.showMap ? mapLine : null,
-            nextMap ? copy.nextMapInline(nextMap) : null,
-            statusMode ? null : hllScoreLine(input)?.replace(/\*\*/g, ""),
-        ]
-            .filter(Boolean)
-            .join(" · ")
-        if (summary) content.push({ kind: "text", markdown: summary })
-    } else {
-        if (
-            input.privateChannel &&
-            input.match &&
-            state !== "empty" &&
-            state !== "paused"
-        )
-            content.push({
-                kind: "fields",
-                items: [
-                    {
-                        title: input.match.title,
-                        ...(input.match.category
-                            ? {
-                                  chip: {
-                                      label: input.match.category,
-                                      tone: "info" as const,
-                                  },
-                              }
-                            : {}),
-                        text: copy.matchRunning(at(input.match.startedAt, "t")),
-                    },
-                ],
-            })
-        if (state === "seeding" && input.seed) {
-            const locale = words.locale
-            content.push({
-                kind: "text",
-                markdown: `${input.seed.bar} **${formatNumber(players, locale)} / ${formatNumber(input.seed.liveFrom, locale)}**`,
-            })
-            const channel = input.seed.channelId
-                ? `<#${input.seed.channelId}>`
+        content.push({
+            kind: "text",
+            markdown: compactHead(
+                input,
+                state,
+                title,
+                chip,
+                state === "paused" || state === "stale" ? detail : ""
+            ),
+        })
+        if (description) content.push({ kind: "text", markdown: description })
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        // The compact style shows the seed bar alone.
+        const [seedBar] = seedBlocks(input, state)
+        if (seedBar) content.push(seedBar)
+        if (state === "empty") content.push(emptyBlock(input))
+        const score = scored
+            ? facts.game === "hell_let_loose"
+                ? signedScoreLine(input)
+                : wardogsFactionLines(input, true).join("  ")
+            : null
+        const minutes =
+            scored && facts.game === "hell_let_loose"
+                ? minutesLeft(facts.timeLeftSeconds)
                 : null
+        if (score)
             content.push({
                 kind: "text",
-                markdown: [
-                    copy.seedJoin,
-                    `${copy.seedRunning(at(input.seed.startedAt, "t"))}${channel ? ` ${copy.seedCallIn(channel)}` : ""}`,
-                ].join("\n"),
+                markdown:
+                    minutes !== null
+                        ? `${score} · ${copy.timeLeft(String(minutes))}`
+                        : score,
             })
+        if (state !== "seeding") {
+            const gauge = gaugeLine(input)
+            if (gauge) content.push({ kind: "text", markdown: gauge })
         }
+        // P7-11: no address line; the password still reaches a clan channel.
+        const password = passwordLine(input)
+        if (password) content.push({ kind: "text", markdown: password })
+    } else if (style === "a" && input.images.score) {
+        // P7-08: under the image the chip line, then the board's summary;
+        // the text keeps what the full card says for this state (P4-16,
+        // P4-18, P4-23, P4-25).
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        content.push(...seedBlocks(input, state))
+        const summary = [
+            panel.layout.showMap && !mapInHeader ? mapLine : null,
+            nextMapShort && state !== "empty"
+                ? copy.nextMapInline(nextMapShort)
+                : null,
+            scored ? plainScoreText(input) : null,
+        ]
+            .filter(Boolean)
+            .join(" · ")
+        if (summary)
+            content.push({
+                kind: "text",
+                markdown:
+                    summary.charAt(0).toLocaleUpperCase() + summary.slice(1),
+            })
+        if (state === "empty") content.push(emptyBlock(input))
+        const clan = clanPlayersBlock(input, state)
+        if (clan) content.push(clan)
+    } else if (style === "b") {
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        content.push(...seedBlocks(input, state))
+        if (state === "empty") content.push(emptyBlock(input))
+        if (scored) {
+            const score =
+                facts.game === "hell_let_loose"
+                    ? signedScoreLine(input)
+                    : wardogsFactionLines(input, true).join("  ")
+            if (score) content.push({ kind: "text", markdown: score })
+        }
+        if (state !== "seeding") {
+            const gauge = gaugeLine(input)
+            if (gauge) content.push({ kind: "text", markdown: gauge })
+        }
+        const clan = clanPlayersBlock(input, state)
+        if (clan) content.push(clan)
+        if (scored) content.push(...leaderBlocks(input))
+    } else {
+        const match = matchBlock(input, state)
+        if (match) content.push(match)
+        content.push(...seedBlocks(input, state))
         if (state === "empty") {
             if (panel.layout.showMap && mapLine && !mapInHeader)
                 content.push({ kind: "text", markdown: mapLine })
-            content.push({
-                kind: "text",
-                markdown: [
-                    copy.emptyText,
-                    input.seedChannelId
-                        ? copy.emptySeedHint(`<#${input.seedChannelId}>`)
-                        : null,
-                ]
-                    .filter(Boolean)
-                    .join(" "),
-            })
+            content.push(emptyBlock(input))
         } else {
             const privateNext =
                 input.privateChannel && nextMap
@@ -765,30 +1023,27 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
                         : wardogsFactionLines(input).join("\n")
                 if (score) content.push({ kind: "text", markdown: score })
             }
-            if (
-                input.privateChannel &&
-                input.clanPlayers?.length &&
-                state !== "paused"
-            )
-                content.push({
-                    kind: "text",
-                    markdown: `**${copy.clanPlaying(String(input.clanPlayers.length))}**\n${input.clanPlayers
-                        .slice(0, 40)
-                        .map((player) => name(player, 32))
-                        .join(" · ")}`,
-                })
+            const clan = clanPlayersBlock(input, state)
+            if (clan) content.push(clan)
             if (!statusMode && state !== "seeding")
                 content.push(...leaderBlocks(input))
             if (nextMap && !input.privateChannel && state !== "seeding")
                 content.push({ kind: "text", markdown: copy.nextMap(nextMap) })
         }
-        if (style === "b") {
-            const gauge = gaugeLine(input)
-            if (gauge) content.push({ kind: "text", markdown: gauge })
-        }
     }
-    if (showLive) {
+    if (showLive && style !== "c") {
         const lines = connectionLines(input)
+        // P7-13: "Adresa `203.0.113.24:7777` · další mapa Carentan · Noc".
+        if (
+            style === "b" &&
+            nextMapShort &&
+            state !== "empty" &&
+            state !== "seeding"
+        ) {
+            const next = copy.nextMapInline(nextMapShort)
+            if (lines.length) lines[0] = `${lines[0]} · ${next}`
+            else lines.push(next.charAt(0).toLocaleUpperCase() + next.slice(1))
+        }
         if (lines.length)
             content.push({ kind: "text", markdown: lines.join("\n") })
     }
@@ -811,11 +1066,13 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
                 label: copy.buttons.players,
                 style: "secondary",
             })
+        // P7-11: the compact style keeps "Připojit se" and "Zobrazit hráče".
         if (
             interactive &&
             panel.reportEnabled &&
             !input.privateChannel &&
-            !statusMode
+            !statusMode &&
+            style !== "c"
         )
             buttons.push({
                 kind: "action",
@@ -831,7 +1088,8 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
             })
     }
 
-    // Style C is the shortest message, without images (P7-12).
+    // Style C is the shortest message, without images (P7-12); style A shows
+    // the map in its image.
     const thumbnail =
         panel.layout.showMap &&
         style !== "c" &&
@@ -844,14 +1102,12 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
         state !== "offline" &&
         state !== "paused" &&
         style !== "c"
+    if (style === "c") detail = ""
     const view = panelFrame({
         accentColor: panel.accentColor,
         label,
         title,
-        state: {
-            chip: liveStateChip(state, copy, statusMode),
-            detail: detail || undefined,
-        },
+        state: { chip, detail: detail || undefined },
         image: thumbnail,
         content,
         actions: buttons.length ? [buttons] : [],
@@ -860,7 +1116,22 @@ export function liveServerPanelView(input: LiveServerPanelInput): MessageView {
             : "",
         refreshSeconds: refreshing ? PANEL_REFRESH_SECONDS : undefined,
     })
-    if (input.newMap && state !== "offline" && view.header)
+    const newMap = input.newMap && state !== "offline"
+    if (style === "c") {
+        // P7-11: no header; the first line names the server.
+        view.header = undefined
+        return view
+    }
+    if (style === "a" && input.images.score && view.header) {
+        // P7-07: the image is the top of the card and carries the name.
+        view.lead = input.images.score
+        view.header = {
+            chips: view.header.chips,
+            status: view.header.status,
+        }
+    }
+    if (style === "b" && input.images.banner) view.lead = input.images.banner
+    if (newMap && view.header)
         view.header.chips = [
             ...(view.header.chips ?? []),
             { label: copy.newMap, tone: "info" },

@@ -8,7 +8,11 @@ import {
     seedReading,
 } from "@/infrastructure/testing/in-memory-seed"
 
-import { seedPanelProgress, toSeedPanelState } from "./panel-state"
+import {
+    seedPanelPlayers,
+    seedPanelProgress,
+    toSeedPanelState,
+} from "./panel-state"
 import { startResultView, stopResultView } from "./action-result"
 import { startSeedManually } from "./start-seed"
 
@@ -94,6 +98,7 @@ test("the panel's seed mode links the call once posted and shares the progress",
         runId: run.id,
         startedAt: NOW.getTime(),
         liveFrom: 40,
+        players: run.players.latest,
         call: null,
     })
     assert.deepEqual(toSeedPanelState(run, "message-1")?.call, {
@@ -105,8 +110,19 @@ test("the panel's seed mode links the call once posted and shares the progress",
         null
     )
     assert.equal(
-        seedPanelProgress({ liveFrom: 40 }, 12).bar,
+        seedPanelProgress({ liveFrom: 40, players: 12 }, 15).bar,
         "▰▰▰▱▱▱▱▱▱▱",
         "P5-15 shows the call's bar"
     )
+})
+
+test("the panel counts players from the run's reading, as the call does (P5-16)", () => {
+    assert.equal(seedPanelPlayers({ players: 12 }, 15), 12)
+    assert.equal(seedPanelPlayers({ players: 0 }, 3), 0)
+    assert.equal(
+        seedPanelPlayers({ players: null }, 15),
+        15,
+        "the panel's own count until the run has a reading"
+    )
+    assert.equal(seedPanelProgress({ liveFrom: 40, players: 31 }, 12).filled, 8)
 })

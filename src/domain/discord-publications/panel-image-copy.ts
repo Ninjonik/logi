@@ -13,6 +13,8 @@ export type PanelImageCopy = {
     locale: string
     game: { hell_let_loose: string; wardogs: string }
     state: Record<PanelServerState, string>
+    /** The state word of a server-status panel that is up (L3-43). */
+    online: string
     newMap: string
     players(count: number, capacity: number): string
     queue(count: number): string
@@ -23,6 +25,14 @@ export type PanelImageCopy = {
         extra?: { queue?: number | null; seedTarget?: number | null }
     ): string
     timeLeft(minutes: number): string
+    /** "seed do 40" after the player count while a seed runs (P8-27). */
+    seedTo(target: number): string
+    /** Under the seed progress: "živý od 40 hráčů" (P4-18). */
+    seedCaption(target: number): string
+    /** The empty state's sentence (P4-16). */
+    emptyTitle: string
+    /** Under the big player count of a server-status image (L3-43). */
+    statusPlayers: string
     joinCode(code: string): string
     topKills: string
     allies: string
@@ -95,12 +105,17 @@ const cs: PanelImageCopy = {
         empty: "Prázdný",
         offline: "Nedostupný",
     },
+    online: "Online",
     newMap: "Nová mapa",
     players: (count, capacity) => `${count} / ${capacity} hráčů`,
     queue: (count) => `fronta ${count}`,
     gauge: (count, capacity, extra) =>
         gauge(count, capacity, extra, "fronta", "seed do"),
     timeLeft: (minutes) => `zbývá ${minutes} min`,
+    seedTo: (target) => `seed do ${target}`,
+    seedCaption: (target) => `živý od ${target} hráčů`,
+    emptyTitle: "Na serveru teď nikdo nehraje.",
+    statusPlayers: "hráčů na serveru",
     joinCode: (code) => `join kód ${code}`,
     topKills: "Nejvíc zabití",
     allies: "Spojenci",
@@ -168,12 +183,17 @@ const en: PanelImageCopy = {
         empty: "Empty",
         offline: "Offline",
     },
+    online: "Online",
     newMap: "New map",
     players: (count, capacity) => `${count} / ${capacity} players`,
     queue: (count) => `queue ${count}`,
     gauge: (count, capacity, extra) =>
         gauge(count, capacity, extra, "queue", "seed to"),
     timeLeft: (minutes) => `${minutes} min left`,
+    seedTo: (target) => `seed to ${target}`,
+    seedCaption: (target) => `live from ${target} players`,
+    emptyTitle: "Nobody is playing on the server right now.",
+    statusPlayers: "players on the server",
     joinCode: (code) => `join code ${code}`,
     topKills: "Most kills",
     allies: "Allies",
@@ -240,12 +260,17 @@ const de: PanelImageCopy = {
         empty: "Leer",
         offline: "Nicht erreichbar",
     },
+    online: "Online",
     newMap: "Neue Karte",
     players: (count, capacity) => `${count} / ${capacity} Spieler`,
     queue: (count) => `Warteschlange ${count}`,
     gauge: (count, capacity, extra) =>
         gauge(count, capacity, extra, "Warteschlange", "Seed bis"),
     timeLeft: (minutes) => `noch ${minutes} Min.`,
+    seedTo: (target) => `Seed bis ${target}`,
+    seedCaption: (target) => `live ab ${target} Spielern`,
+    emptyTitle: "Gerade spielt niemand auf dem Server.",
+    statusPlayers: "Spieler auf dem Server",
     joinCode: (code) => `Join-Code ${code}`,
     topKills: "Meiste Kills",
     allies: "Alliierte",

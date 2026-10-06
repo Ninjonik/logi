@@ -221,3 +221,31 @@ test("Naše servery keeps the drag order (P2-36)", () => {
     assert.deepEqual(toggleServer(["a", "b"], "c", true), ["a", "b", "c"])
     assert.deepEqual(toggleServer(["a", "b", "c"], "b", false), ["a", "c"])
 })
+
+test("the results panel's compact look is saved from the editor and loads back (L3-31, L3-B05)", () => {
+    const draft = {
+        ...newPanelDraft({ kind: "results" }),
+        channelId,
+        gameId: "hell_let_loose" as const,
+    }
+    draft.layout = { ...draft.layout, compact: true }
+    const settings = draftToSettings(draft)
+    assert.equal(settings.presentation.layout.compact, true)
+    assert.equal(panelSaveSchema.safeParse(settings).success, true)
+    assert.equal(
+        draftFromSettings(panelSaveSchema.parse(settings)).layout.compact,
+        true
+    )
+})
+
+test("Naše servery keeps its own style (P7-19)", () => {
+    const draft = {
+        ...newPanelDraft({ kind: "servers" }),
+        channelId,
+        connectionIds: ["hll-1"],
+        style: "b" as const,
+    }
+    const settings = draftToSettings(draft)
+    assert.equal(settings.presentation.style, "b")
+    assert.equal(panelSaveSchema.safeParse(settings).success, true)
+})

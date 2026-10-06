@@ -387,3 +387,17 @@ test("listing is admin-only, kind-scoped and reports outages", async () => {
         503
     )
 })
+
+test("the uploaded file's own name is kept for display, cleaned (P8-08)", async () => {
+    const { calls, handlers } = fakePorts()
+    const request = new Request(
+        `${route("panel-banner")}&name=${encodeURIComponent("C:\\fotky\\vlci-public.png")}`,
+        {
+            method: "POST",
+            headers: { "content-type": "image/png", origin },
+            body: await pngBytes(),
+        }
+    )
+    assert.equal((await handlers.POST(request, "server-1")).status, 200)
+    assert.equal(calls.stored[0]?.asset.fileName, "vlci-public.png")
+})

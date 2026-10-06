@@ -140,6 +140,20 @@ export const discordSeedRuns = defineTable({
         v.null()
     ),
     failure: v.union(seedFailure, v.null()),
+    /**
+     * Distinct joiners (P5-B04) when a live read named the players; the IDs
+     * are cleared when the run ends and only the count stays.
+     */
+    joins: v.optional(
+        v.union(
+            v.object({
+                present: v.array(v.string()),
+                joined: v.array(v.string()),
+                count: nullableNumber,
+            }),
+            v.null()
+        )
+    ),
     updatedAt: v.number(),
 })
     .index("guild_connection_startedAt", [

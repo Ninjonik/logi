@@ -158,3 +158,42 @@ export function passwordWithheldNotice(input: {
         !input.alreadyNotified
     )
 }
+
+/** A live read older than this is not "now" on the join page. */
+export const JOIN_PAGE_LIVE_MAX_AGE_MS = 3 * 60_000
+
+/**
+ * What the join page says about the server now (P4-44): "78 / 100 hráčů ·
+ * fronta 3". It reads the same live data as the server's panel when that
+ * read is recent and fresh, else the collected snapshot, which has no queue.
+ */
+export function joinPagePlayers(input: {
+    snapshot: { players: number | null; capacity: number | null } | null
+    live: {
+        fresh: boolean
+        at: number | null
+        players: number | null
+        capacity: number | null
+        queue: number | null
+    } | null
+    now: number
+}): { players: number | null; capacity: number | null; queue: number | null } {
+    const live = input.live
+    if (
+        live?.fresh &&
+        live.at !== null &&
+        input.now - live.at <= JOIN_PAGE_LIVE_MAX_AGE_MS &&
+        live.players !== null &&
+        live.capacity !== null
+    )
+        return {
+            players: live.players,
+            capacity: live.capacity,
+            queue: live.queue && live.queue > 0 ? live.queue : null,
+        }
+    return {
+        players: input.snapshot?.players ?? null,
+        capacity: input.snapshot?.capacity ?? null,
+        queue: null,
+    }
+}

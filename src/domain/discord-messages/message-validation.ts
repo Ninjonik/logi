@@ -118,8 +118,9 @@ export function validateMessageView(
         !parseDiscordColor(view.accent.custom)
     )
         issues.push({ code: "accent-invalid", detail: view.accent.custom })
-    if (!view.header?.title?.trim() && !view.blocks.length)
+    if (!view.header?.title?.trim() && !view.blocks.length && !view.lead)
         issues.push({ code: "empty", detail: "no title and no content" })
+    if (view.lead) checkMedia(view.lead, issues)
     if (view.header?.thumbnail) checkMedia(view.header.thumbnail, issues)
 
     const ids = new Set<string>()

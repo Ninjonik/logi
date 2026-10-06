@@ -6462,10 +6462,9 @@ export const deMessages = {
         metaDescription: "Tritt dem Spielserver {name} bei.",
         opening: "Öffne {game}…",
         players: "{players} / {capacity} Spieler",
-        map: "Karte {map}",
+        queue: "Warteschlange {queue}",
         steamPrompt:
             "Steam fragt, ob der Link geöffnet werden soll. Bestätige Öffnen.",
-        openAgain: "Erneut öffnen",
         manualTitle: "Manuell beitreten",
         addressLabel: "Serveradresse",
         copy: "Kopieren",
@@ -6895,6 +6894,10 @@ export const deMessages = {
             },
             content: {
                 show: "Was angezeigt wird",
+                compact: {
+                    label: "Kompakte Ansicht",
+                    help: "Eine kürzere Ergebniskarte: der Spielstand ohne die Zeile mit den Seiten; eine Korrektur sagt nur, wann und was vorher stand.",
+                },
                 score: {
                     label: "Punktestand",
                     help: "Alliierte : Achse nach Sektoren.",
@@ -7337,6 +7340,17 @@ export const deMessages = {
             seedChannelOkNoRole: "Der Bot kann in den Kanal schreiben.",
             role: "Rolle, die der Aufruf markiert",
             rolePlaceholder: "Keine Rollenmarkierung",
+            createRole: "Rolle Seed erstellen",
+            createRoleBusy: "Rolle wird erstellt…",
+            createRoleHint:
+                "Logi erstellt in Discord eine markierbare Rolle Seed und wählt sie aus. Sie können auch eine vorhandene Rolle wählen.",
+            roleCreated: "Die Rolle @Seed wurde erstellt und ausgewählt.",
+            roleReused:
+                "Der Server hat bereits eine Rolle @Seed; sie ist jetzt ausgewählt.",
+            rolePermission:
+                "Die Rolle konnte nicht erstellt werden. Geben Sie der Logi-Rolle in Discord die Berechtigung Rollen verwalten.",
+            roleUnavailable:
+                "Discord antwortet gerade nicht. Versuchen Sie es gleich noch einmal.",
             roleMembers: {
                 one: "{count} Mitglied",
                 few: "{count} Mitglieder",

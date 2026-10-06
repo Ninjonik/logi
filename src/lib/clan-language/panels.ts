@@ -96,6 +96,9 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "pts",
             newMap: "New map",
             combinedTitle: "Where we play",
+            seedingProgress: (count, target) => `seeding ${count} / ${target}`,
+            combinedBanner: (games) =>
+                `Our servers · ${games.length > 1 ? `${games.slice(0, -1).join(", ")} and ${games.at(-1)}` : games.join("")}`,
             buttons: {
                 join: "Join",
                 players: "Show players",
@@ -152,6 +155,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "No upcoming events are scheduled right now.",
             training: "Training",
             match: "Match",
+            withRound: (type, round) => `${type}, round ${round}`,
         },
         competition: {
             title: "Standings",
@@ -279,6 +283,10 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "b.",
             newMap: "Nová mapa",
             combinedTitle: "Kde se hraje",
+            seedingProgress: (count, target) =>
+                `seedujeme ${count} / ${target}`,
+            combinedBanner: (games) =>
+                `Naše servery · ${games.length > 1 ? `${games.slice(0, -1).join(", ")} a ${games.at(-1)}` : games.join("")}`,
             buttons: {
                 join: "Připojit se",
                 players: "Zobrazit hráče",
@@ -335,6 +343,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "Momentálně nejsou naplánované žádné nadcházející akce.",
             training: "Trénink",
             match: "Zápas",
+            withRound: (type, round) => `${type}, ${round}. kolo`,
         },
         competition: {
             title: "Tabulka",
@@ -459,6 +468,9 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             points: "Pkt.",
             newMap: "Neue Karte",
             combinedTitle: "Wo gespielt wird",
+            seedingProgress: (count, target) => `Seeding ${count} / ${target}`,
+            combinedBanner: (games) =>
+                `Unsere Server · ${games.length > 1 ? `${games.slice(0, -1).join(", ")} und ${games.at(-1)}` : games.join("")}`,
             buttons: {
                 join: "Beitreten",
                 players: "Spieler anzeigen",
@@ -518,6 +530,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "Derzeit sind keine kommenden Events geplant.",
             training: "Training",
             match: "Match",
+            withRound: (type, round) => `${type}, Runde ${round}`,
         },
         competition: {
             title: "Tabelle",

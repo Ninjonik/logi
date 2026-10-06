@@ -4,6 +4,9 @@ import type { CSSProperties, ReactElement } from "react"
 import {
     formatPanelNumber,
     hllLeaderNation,
+    panelImageFocus,
+    panelImageSeedTarget,
+    panelImageStateWord,
     type HllScoreImage,
     type PanelBannerImage,
     type PanelScoreImage,
@@ -23,6 +26,10 @@ import {
     SCORE_IMAGE_HEIGHT,
     SCORE_IMAGE_WIDTH,
 } from "@/domain/discord-publications/panel-graphics"
+import {
+    SEED_PROGRESS_SEGMENTS,
+    seedProgress,
+} from "@/domain/discord-seed/progress"
 import { panelImageCopy } from "@/domain/discord-publications/panel-image-copy"
 
 /**
@@ -161,10 +168,13 @@ function LeftColumn(props: {
     header: string[]
     detail: string | null
     columnWidth: number
+    /** False when the right half shows the player count large (server status). */
+    showPlayers: boolean
 }) {
     const { model } = props
     const copy = panelImageCopy(model.language)
-    const players = model.players
+    const players = props.showPlayers ? model.players : null
+    const seedTarget = panelImageSeedTarget(model)
     const share = (value: number) =>
         players ? Math.max(0, Math.min(1, value / players.capacity)) : 0
     // Satori resolves percentages unreliably inside flex items; widths are pixels.
@@ -214,7 +224,7 @@ function LeftColumn(props: {
                     }}
                 >
                     <Chip
-                        label={copy.state[model.state]}
+                        label={panelImageStateWord(model)}
                         color={PANEL_STATE_COLORS[model.state]}
                         fill={STATE_FILL[model.state]}
                     />
@@ -247,6 +257,11 @@ function LeftColumn(props: {
                         {players.queue ? (
                             <span style={{ color: "#f0b232", marginLeft: 6 }}>
                                 {`· ${copy.queue(players.queue)}`}
+                            </span>
+                        ) : null}
+                        {seedTarget !== null ? (
+                            <span style={{ color: "#f0b232", marginLeft: 6 }}>
+                                {`· ${copy.seedTo(seedTarget)}`}
                             </span>
                         ) : null}
                     </div>
@@ -283,6 +298,22 @@ function LeftColumn(props: {
                                         px(share(players.queue))
                                     ),
                                     background: "#f0b232",
+                                }}
+                            />
+                        ) : null}
+                        {seedTarget !== null &&
+                        seedTarget < players.capacity ? (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    height: 14,
+                                    left: Math.max(
+                                        0,
+                                        px(share(seedTarget)) - 2
+                                    ),
+                                    width: 4,
+                                    background: "#ffffff",
                                 }}
                             />
                         ) : null}
@@ -375,6 +406,129 @@ function Stamp(props: { model: PanelScoreImage }) {
         </div>
     )
 }
+/** The right half when it shows no score (P4-16, P4-18, L3-33). */
+function FocusColumn(props: { model: PanelScoreImage; width: number }) {
+    const { model } = props
+    const copy = panelImageCopy(model.language)
+    const focus = panelImageFocus(model)
+    const players = model.players
+    const target = panelImageSeedTarget(model)
+    const next =
+        model.game === "hell_let_loose" && model.nextMap
+            ? [
+                  copy.nextMap(model.nextMap.name),
+                  ...(model.nextMap.lighting
+                      ? [copy.lighting[model.nextMap.lighting]]
+                      : []),
+              ].join(" · ")
+            : null
+    const caption = (parts: Array<string | null>) => {
+        const line = parts.filter(Boolean).join(" · ")
+        return line ? (
+            <div
+                style={{
+                    display: "flex",
+                    fontSize: 16,
+                    color: muted,
+                    ...nowrap,
+                }}
+            >
+                {cut(line, 64)}
+            </div>
+        ) : (
+            <div style={{ display: "flex" }} />
+        )
+    }
+    const big = (text: string) => (
+        <div
+            style={{
+                display: "flex",
+                fontSize: 88,
+                lineHeight: 1,
+                fontWeight: 800,
+            }}
+        >
+            {text}
+        </div>
+    )
+    const column: CSSProperties = {
+        display: "flex",
+        width: props.width,
+        flexShrink: 0,
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+    }
+    if (focus === "seed" && target !== null) {
+        const progress = seedProgress(players?.count ?? null, target)
+        return (
+            <div style={column}>
+                {big(
+                    `${players ? formatPanelNumber(players.count, model.language) : "–"} / ${formatPanelNumber(target, model.language)}`
+                )}
+                <div style={{ display: "flex", gap: 6 }}>
+                    {Array.from({ length: SEED_PROGRESS_SEGMENTS }, (_, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                width: 34,
+                                height: 12,
+                                borderRadius: 3,
+                                background:
+                                    i < progress.filled
+                                        ? "#f0b232"
+                                        : "rgba(255,255,255,0.18)",
+                            }}
+                        />
+                    ))}
+                </div>
+                {caption([copy.seedCaption(target), next])}
+            </div>
+        )
+    }
+    if (focus === "empty")
+        return (
+            <div style={column}>
+                <div
+                    style={{
+                        display: "flex",
+                        width: props.width,
+                        justifyContent: "center",
+                        textAlign: "center",
+                        fontSize: 34,
+                        lineHeight: 1.2,
+                        fontWeight: 700,
+                        color: "#e3e5e8",
+                    }}
+                >
+                    {copy.emptyTitle}
+                </div>
+                {caption([next])}
+            </div>
+        )
+    return (
+        <div style={column}>
+            {big(
+                players
+                    ? `${formatPanelNumber(players.count, model.language)} / ${formatPanelNumber(players.capacity, model.language)}`
+                    : "–"
+            )}
+            <div
+                style={{
+                    display: "flex",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                }}
+            >
+                {copy.statusPlayers.toUpperCase()}
+            </div>
+            {caption([players?.queue ? copy.queue(players.queue) : null, next])}
+        </div>
+    )
+}
+
 const SCORE_OVERLAY =
     "linear-gradient(90deg, rgba(9,11,15,0.94) 0%, rgba(9,11,15,0.78) 46%, rgba(9,11,15,0.4) 100%)"
 // Board geometry at 1200 × 400: 44 px side padding and a 36 px column gap.
@@ -399,6 +553,7 @@ const content: CSSProperties = {
 
 function hllScore(model: HllScoreImage, art: PanelImageArt) {
     const copy = panelImageCopy(model.language)
+    const focus = panelImageFocus(model)
     const kind = hllScoreKind({
         mode: model.mode,
         allies: model.allies.score,
@@ -455,65 +610,74 @@ function hllScore(model: HllScoreImage, art: PanelImageArt) {
                     ]}
                     detail={minutes != null ? copy.timeLeft(minutes) : null}
                     columnWidth={HLL_LEFT}
+                    showPlayers={focus !== "status"}
                 />
-                <div
-                    style={{
-                        display: "flex",
-                        width: HLL_RIGHT,
-                        flexShrink: 0,
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 14,
-                    }}
-                >
+                {focus !== "score" ? (
+                    <FocusColumn model={model} width={HLL_RIGHT} />
+                ) : (
                     <div
                         style={{
                             display: "flex",
+                            width: HLL_RIGHT,
+                            flexShrink: 0,
+                            flexDirection: "column",
                             alignItems: "center",
-                            gap: 22,
+                            justifyContent: "center",
+                            gap: 14,
                         }}
                     >
-                        {side(model.allies.nation, copy.allies)}
                         <div
                             style={{
                                 display: "flex",
-                                fontSize: 92,
-                                lineHeight: 1,
-                                fontWeight: 800,
+                                alignItems: "center",
+                                gap: 22,
                             }}
                         >
-                            {score}
+                            {side(model.allies.nation, copy.allies)}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    fontSize: 92,
+                                    lineHeight: 1,
+                                    fontWeight: 800,
+                                }}
+                            >
+                                {score}
+                            </div>
+                            {side(model.axis.nation, copy.axis)}
                         </div>
-                        {side(model.axis.nation, copy.axis)}
-                    </div>
-                    {kind === "sectors" ? (
-                        <div style={{ display: "flex", gap: 6 }}>
-                            {Array.from({ length: 5 }, (_, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        width: 46,
-                                        height: 12,
-                                        borderRadius: 3,
-                                        background:
-                                            i < (model.allies.score ?? 0)
-                                                ? HLL_SIDE_COLORS.allies
-                                                : HLL_SIDE_COLORS.axis,
-                                    }}
-                                />
-                            ))}
+                        {kind === "sectors" ? (
+                            <div style={{ display: "flex", gap: 6 }}>
+                                {Array.from({ length: 5 }, (_, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            width: 46,
+                                            height: 12,
+                                            borderRadius: 3,
+                                            background:
+                                                i < (model.allies.score ?? 0)
+                                                    ? HLL_SIDE_COLORS.allies
+                                                    : HLL_SIDE_COLORS.axis,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : null}
+                        <div
+                            style={{
+                                display: "flex",
+                                fontSize: 14,
+                                color: muted,
+                            }}
+                        >
+                            {[
+                                kind === "sectors" ? copy.sectors : copy.score,
+                                ...(next ? [next] : []),
+                            ].join(" · ")}
                         </div>
-                    ) : null}
-                    <div
-                        style={{ display: "flex", fontSize: 14, color: muted }}
-                    >
-                        {[
-                            kind === "sectors" ? copy.sectors : copy.score,
-                            ...(next ? [next] : []),
-                        ].join(" · ")}
                     </div>
-                </div>
+                )}
                 <Stamp model={model} />
             </div>
         </Frame>
@@ -522,6 +686,7 @@ function hllScore(model: HllScoreImage, art: PanelImageArt) {
 
 function wardogsScore(model: WardogsScoreImage, art: PanelImageArt) {
     const copy = panelImageCopy(model.language)
+    const focus = panelImageFocus(model)
     const bars = factionBars(model.factions)
     const cash = model.topCash
         ? copy.topCashNow(
@@ -543,83 +708,99 @@ function wardogsScore(model: WardogsScoreImage, art: PanelImageArt) {
                         model.joinCode ? copy.joinCode(model.joinCode) : null
                     }
                     columnWidth={WARDOGS_LEFT}
+                    showPlayers={focus !== "status"}
                 />
-                <div
-                    style={{
-                        display: "flex",
-                        width: WARDOGS_RIGHT,
-                        flexShrink: 0,
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        gap: 18,
-                    }}
-                >
-                    {bars.map((bar) => (
-                        <div
-                            key={bar.faction}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 14,
-                            }}
-                        >
-                            <Emblem src={art.factions[bar.faction]} size={54} />
+                {focus !== "score" ? (
+                    <FocusColumn model={model} width={WARDOGS_RIGHT} />
+                ) : (
+                    <div
+                        style={{
+                            display: "flex",
+                            width: WARDOGS_RIGHT,
+                            flexShrink: 0,
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            gap: 18,
+                        }}
+                    >
+                        {bars.map((bar) => (
                             <div
+                                key={bar.faction}
                                 style={{
                                     display: "flex",
-                                    width: 170,
-                                    flexShrink: 0,
-                                    fontSize: 24,
-                                    fontWeight: 700,
+                                    alignItems: "center",
+                                    gap: 14,
                                 }}
                             >
-                                {copy.wardogs[bar.faction]}
-                            </div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    width: FACTION_BAR,
-                                    flexShrink: 0,
-                                    height: 16,
-                                    borderRadius: 999,
-                                    background: "rgba(255,255,255,0.14)",
-                                    overflow: "hidden",
-                                }}
-                            >
+                                <Emblem
+                                    src={art.factions[bar.faction]}
+                                    size={54}
+                                />
                                 <div
                                     style={{
-                                        width: Math.round(
-                                            (bar.percent / 100) * FACTION_BAR
-                                        ),
-                                        height: 16,
-                                        background: bar.leading
-                                            ? model.accentColor
-                                            : "#c9ccd1",
+                                        display: "flex",
+                                        width: 170,
+                                        flexShrink: 0,
+                                        fontSize: 24,
+                                        fontWeight: 700,
                                     }}
-                                />
+                                >
+                                    {copy.wardogs[bar.faction]}
+                                </div>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        width: FACTION_BAR,
+                                        flexShrink: 0,
+                                        height: 16,
+                                        borderRadius: 999,
+                                        background: "rgba(255,255,255,0.14)",
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: Math.round(
+                                                (bar.percent / 100) *
+                                                    FACTION_BAR
+                                            ),
+                                            height: 16,
+                                            background: bar.leading
+                                                ? model.accentColor
+                                                : "#c9ccd1",
+                                        }}
+                                    />
+                                </div>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        width: 70,
+                                        flexShrink: 0,
+                                        justifyContent: "flex-end",
+                                        fontSize: 30,
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {formatPanelNumber(
+                                        bar.points,
+                                        model.language
+                                    )}
+                                </div>
                             </div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    width: 70,
-                                    flexShrink: 0,
-                                    justifyContent: "flex-end",
-                                    fontSize: 30,
-                                    fontWeight: 800,
-                                }}
-                            >
-                                {formatPanelNumber(bar.points, model.language)}
-                            </div>
+                        ))}
+                        <div
+                            style={{
+                                display: "flex",
+                                fontSize: 14,
+                                color: muted,
+                            }}
+                        >
+                            {[copy.factionPoints, ...(cash ? [cash] : [])].join(
+                                " · "
+                            )}
                         </div>
-                    ))}
-                    <div
-                        style={{ display: "flex", fontSize: 14, color: muted }}
-                    >
-                        {[copy.factionPoints, ...(cash ? [cash] : [])].join(
-                            " · "
-                        )}
                     </div>
-                </div>
+                )}
                 <Stamp model={model} />
             </div>
         </Frame>

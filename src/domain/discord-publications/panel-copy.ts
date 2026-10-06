@@ -53,7 +53,10 @@ export type LivePanelCopy = {
     points: string
     newMap: string
     combinedTitle: string
-    /** The errors-channel notice when a channel turned public (P4-30). */
+    /** P7-19: "seedujeme 9 / 40" in a row of "Naše servery". */
+    seedingProgress: (count: string, target: string) => string
+    /** P7-19: the banner subtitle "Naše servery · Hell Let Loose a Wardogs". */
+    combinedBanner: (games: string[]) => string
     buttons: {
         join: string
         players: string
@@ -108,6 +111,8 @@ export type CalendarPanelCopy = {
     empty: string
     training: string
     match: string
+    /** L3-14: a competition match's type word with its round, "ECL, 3. kolo". */
+    withRound: (type: string, round: string) => string
 }
 
 export type CompetitionPanelCopy = {

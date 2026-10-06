@@ -67,7 +67,12 @@ const view = panelFrame({
 
 - **Accent:** `"clan"` (clan colour, default `#E8A33D`), `"system"` (grey
   `#80848E`, error log and service status only) or `{ custom: "#RRGGBB" }`.
-  State never changes the bar; use chips.
+  State never changes the bar; use chips. A paused view (`paused`) keeps its
+  bar and shows the grey (`neutral`) "Pozastaveno" chip (L3-54).
+- **Lead image:** `view.lead` (a `MessageMedia`) is a full-width image drawn
+  above the header: the style A score image or the style B banner of a server
+  panel and of "Naše servery" (P7). It counts as content and is checked like
+  any other media. `header` is optional: the compact style C has none.
 - **Chips:** tones `success`, `warning`, `danger`, `neutral`, `info`. The bot
   writes them as a tone emoji and the bold label (`🟢 **Živě**`); pass
   installed application emoji with `chipIcons` (W2). The preview draws pills.
@@ -214,9 +219,9 @@ import { DiscordMessagePreview } from "@/components/app/discord-preview/discord-
 />
 ```
 
-It renders the accent bar, header, chips, thumbnail, blocks, buttons (Discord
-colours, link arrow), select, footer and, for `ephemeral` views, "Tuto zprávu
-vidíte jen vy · Zavřít zprávu". Markdown is parsed, never injected as HTML.
+It renders the accent bar, lead image, header, chips, thumbnail, blocks,
+buttons (Discord colours, link arrow), select, footer and, for `ephemeral`
+views, "Tuto zprávu vidíte jen vy · Zavřít zprávu". Markdown is parsed, never injected as HTML.
 It works at 390 px; no hooks, so it renders on the server too.
 
 ## 7. Interaction registry

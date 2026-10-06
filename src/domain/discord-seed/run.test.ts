@@ -285,3 +285,96 @@ test("seeders are the growth from the start to the peak", () => {
         "P5-13 díky 18 seederům"
     )
 })
+
+const roster = (ids: string[], minutes: number) => ({
+    ids,
+    observedAt: START + minutes * MINUTE,
+})
+
+test("with a named roster, seeders are the distinct players who joined, and only the count stays (P5-B04)", () => {
+    let run = seeding({ joins: null })
+    run = startSeedRun({
+        trigger: {
+            kind: "manual",
+            actor: admin,
+            via: "discord",
+            channelId: null,
+        },
+        now: START,
+        plan: { liveFrom: 40, maxDurationMinutes: 120, endAction: "edit" },
+        ping: { kind: "role", roleId: "333333333333333333" },
+        observation: seen(2, -0.5),
+        roster: roster(["a", "b"], -0.5),
+    })
+    assert.deepEqual(run.joins, {
+        present: ["a", "b"],
+        joined: [],
+        count: null,
+    })
+    // c and d join; b leaves; c leaves and comes back: still counted once.
+    run = applySeedRunEvent(run, {
+        kind: "observe",
+        at: START + MINUTE,
+        observation: seen(4, 1),
+        roster: roster(["a", "b", "c", "d"], 1),
+    }).run
+    run = applySeedRunEvent(run, {
+        kind: "observe",
+        at: START + 2 * MINUTE,
+        observation: seen(3, 2),
+        roster: roster(["a", "d", "e"], 2),
+    }).run
+    run = applySeedRunEvent(run, {
+        kind: "observe",
+        at: START + 3 * MINUTE,
+        observation: seen(4, 3),
+        roster: roster(["a", "c", "d", "e"], 3),
+    }).run
+    assert.deepEqual(run.joins?.joined, ["c", "d", "e"])
+    assert.equal(seedRunSeeders(run), 3)
+    const ended = applySeedRunEvent(posted(run), {
+        kind: "observe",
+        at: START + 4 * MINUTE,
+        observation: seen(41, 4),
+        roster: roster(["a", "c", "d", "e", "f"], 4),
+    })
+    assert.equal(ended.run.status, "live")
+    assert.deepEqual(ended.run.joins, { present: [], joined: [], count: 4 })
+    assert.equal(seedRunSeeders(ended.run), 4)
+    // Peak minus start would say 39; the named roster says 4 joined.
+    assert.equal(
+        seedRunSeeders({ players: ended.run.players, joins: null }),
+        39
+    )
+})
+
+test("a roster read soon after the start becomes the baseline; an old one never counts (P5-B04)", () => {
+    let run = seeding()
+    assert.equal(run.joins, null, "no roster at the start")
+    run = applySeedRunEvent(run, {
+        kind: "observe",
+        at: START + MINUTE,
+        observation: seen(13, 1),
+        roster: roster(["a", "b"], 1),
+    }).run
+    assert.deepEqual(run.joins?.present, ["a", "b"])
+    run = applySeedRunEvent(run, {
+        kind: "observe",
+        at: START + 2 * MINUTE,
+        observation: seen(14, 2),
+        roster: roster(["a", "b", "c"], -10),
+    }).run
+    assert.deepEqual(run.joins?.joined, [], "a read from before the seed")
+    const late = applySeedRunEvent(seeding(), {
+        kind: "observe",
+        at: START + 30 * MINUTE,
+        observation: seen(20, 30),
+        roster: roster(["a"], 30),
+    }).run
+    assert.equal(
+        late.joins,
+        null,
+        "too late to know who was there at the start"
+    )
+    assert.equal(seedRunSeeders(late), 8, "the growth stands in")
+})

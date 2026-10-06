@@ -20,6 +20,8 @@ const file = z
         width: z.number(),
         height: z.number(),
         bytes: z.number(),
+        /** The uploaded file's own name (P8-08); absent for older uploads. */
+        fileName: z.string().nullable().optional(),
     })
     .nullable()
 const emojiGroup = z.object({

@@ -45,11 +45,13 @@ import {
     publicationComponentId,
 } from "./sync/publication-marker"
 import { deliverPlayerReport } from "../../src/application/player-reports/deliver-report"
+import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
+import { listReportMembers } from "./interactions/tickets-report-members"
 import { interactionLanguage, reportToErrorsChannel } from "./ui/replies"
 import { getSystemMessages } from "../../src/lib/clan-language/system"
 import { getPanelMessages } from "../../src/lib/clan-language/panels"
-import { listReportMembers } from "./interactions/tickets-report-members"
 import { readReportObservation } from "./public-panels/worker"
+import { clanStyleForGuild } from "./runtime/clan-language"
 import type * as reports from "../../convex/playerReports"
 import { env } from "./environment"
 import { convex } from "./convex"
@@ -189,7 +191,9 @@ export function buildReportPicker(
     id: string,
     observation: ReportObservation,
     requestedPage = 0,
-    language?: string
+    language?: string,
+    /** The clan's colour and icon density (L3-58). */
+    style: MessageStyle | null = null
 ) {
     return editPayload(
         reportPickerView({
@@ -200,7 +204,7 @@ export function buildReportPicker(
             page: requestedPage,
             sideName: sideNameFor(language),
         }),
-        { language }
+        { language, style }
     )
 }
 
@@ -517,6 +521,9 @@ export async function handlePlayerReport(
 ) {
     if (!interaction.customId.startsWith("report:")) return false
     const language = await interactionLanguage(interaction.guildId)
+    // L3-58: private replies carry the clan's own colour, as its panels do.
+    const style = await clanStyleForGuild(interaction.guildId)
+    const kit = { language, style }
     const copy = getPanelMessages(language).report
     const fail = async (failure: ReportFailure, error?: unknown) => {
         const view = reportFailureView(
@@ -525,9 +532,8 @@ export async function handlePlayerReport(
             getSystemMessages(language).errors.adminNotified
         )
         if (interaction.deferred || interaction.replied)
-            await interaction.editReply(editPayload(view, { language }))
-        else
-            await interaction.reply(interactionReplyPayload(view, { language }))
+            await interaction.editReply(editPayload(view, kit))
+        else await interaction.reply(interactionReplyPayload(view, kit))
         if (failure === "admin" && interaction.guildId)
             await reportToErrorsChannel({
                 client: interaction.client,
@@ -606,7 +612,7 @@ export async function handlePlayerReport(
                     observationJson: JSON.stringify(observation),
                 })
                 await interaction.editReply(
-                    buildReportPicker(id, observation, 0, language)
+                    buildReportPicker(id, observation, 0, language, style)
                 )
             } else if (page) {
                 const data = await query<Draft | null>("draft", {
@@ -621,7 +627,8 @@ export async function handlePlayerReport(
                         page[1]!,
                         data.observation,
                         Number(page[2]),
-                        language
+                        language,
+                        style
                     )
                 )
             } else throw new ReportFailureError("expired")
@@ -672,12 +679,12 @@ export async function handlePlayerReport(
                                     : copy.threadName("…", ""),
                             threadUrl: `https://discord.com/channels/${scope.guildId}/${result.threadId}`,
                         }),
-                        { language }
+                        kit
                     )
                 )
             } else
                 await interaction.editReply(
-                    editPayload(reportSavedView(copy), { language })
+                    editPayload(reportSavedView(copy), kit)
                 )
         }
     } catch (error) {

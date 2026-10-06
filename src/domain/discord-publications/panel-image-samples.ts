@@ -19,6 +19,8 @@ export const hllSample: HllScoreImage = {
     map: { name: "Foy", key: "foy" },
     background: { kind: "builtin", game: "hell_let_loose", mapKey: "foy" },
     players: { count: 78, capacity: 100, queue: 3 },
+    scoreboard: true,
+    seedTarget: null,
     leaders: [
         { name: "Rex_CZ", value: 31, side: "allies" },
         { name: "Hans_88", value: 28, side: "axis" },
@@ -45,6 +47,8 @@ export const wardogsSample: WardogsScoreImage = {
     map: { name: "Zestafona", key: "zestafona" },
     background: { kind: "builtin", game: "wardogs", mapKey: "zestafona" },
     players: { count: 17, capacity: 98, queue: null },
+    scoreboard: true,
+    seedTarget: null,
     leaders: [
         { name: "Hráč 17", value: 48, side: null },
         { name: "Hráč 16", value: 45, side: null },

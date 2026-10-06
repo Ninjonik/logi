@@ -14,6 +14,12 @@ export type SeedPanelState = {
     runId: string
     startedAt: number
     liveFrom: number
+    /**
+     * The run's latest player count, the number the call shows. The panel's
+     * seed bar and count read it too, so both show one number (P5-16); null
+     * before the run has a reading.
+     */
+    players: number | null
     /** The call to link to; null until the bot has posted it. */
     call: { channelId: string; messageId: string } | null
 }
@@ -33,6 +39,7 @@ export function toSeedPanelState(
         runId: run.id,
         startedAt: run.startedAt,
         liveFrom: run.liveFrom,
+        players: run.players.latest,
         call: callMessageId
             ? { channelId: run.channelId, messageId: callMessageId }
             : null,
@@ -40,12 +47,21 @@ export function toSeedPanelState(
 }
 
 /**
- * The panel's progress from its own fresh player count. The call reads the
- * same collected snapshot, so both show the same number (P5-16).
+ * The player count a server panel shows while its server seeds: the run's
+ * latest reading, which the call shows too (P5-16). The panel's own live
+ * count stands in only until the run has its first reading.
  */
+export function seedPanelPlayers(
+    state: Pick<SeedPanelState, "players">,
+    own: number | null
+): number | null {
+    return state.players ?? own
+}
+
+/** The panel's seed bar, from the same count as the call (P5-16). */
 export function seedPanelProgress(
-    state: Pick<SeedPanelState, "liveFrom">,
-    players: number | null
+    state: Pick<SeedPanelState, "liveFrom" | "players">,
+    own: number | null
 ): SeedProgress {
-    return seedProgress(players, state.liveFrom)
+    return seedProgress(seedPanelPlayers(state, own), state.liveFrom)
 }

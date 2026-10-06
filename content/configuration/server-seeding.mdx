@@ -47,7 +47,7 @@ channels and the role in Discord.
 | **Rozvrh**                                | Weekdays and a time, for example Po–Pá 17:00 (up to seven times). The seed starts only when the server is below the start threshold at that moment.                             |
 | **Automaticky**                           | Starts a seed when the server drops below the given number of players between two times of day.                                                                                 |
 | **Kanál pro výzvu**                       | Where the call goes. Logi checks that the bot can write there and mention the role.                                                                                             |
-| **Role, kterou výzva označí**             | The role the call pings, usually **@Seed**. Without a role the call goes out without a ping.                                                                                    |
+| **Role, kterou výzva označí**             | The role the call pings, usually **@Seed**. Without a role the call goes out without a ping. **Vytvořit roli Seed** creates it (see below), or pick an existing role.           |
 | **Hráči si roli zapínají sami tlačítkem** | Players turn the role on and off with **Zvát mě na seed**. The bot needs Manage Roles and a role above the Seed role.                                                           |
 | **Nejvýš 1 označení role za** (4 h)       | Ping protection: at most one ping of the role in this time, counted over every server that pings the same role. A seed inside this time still runs, its call just pings nobody. |
 | **Mezi seedy aspoň** (2 h)                | The shortest time between two seeds of one server. **Seed teď** and the plan both wait for it.                                                                                  |
@@ -57,13 +57,27 @@ channels and the role in Discord.
 
 Times are in the clan's time zone (**Profil klanu**).
 
+**Vytvořit roli Seed** next to the role creates a mentionable role named
+**Seed** in the Discord server and selects it. When a role of that name already
+exists, Logi selects it instead of making a second one. The bot needs the
+**Manage Roles** permission; without it the page says so and you can still pick
+an existing role. The new role still has to be saved with **Uložit**.
+
 ## In Discord
 
 **The call** in the seed channel has the title "Seedujeme _server_", a
 ten-piece progress bar ("▰▰▰▱▱▱▱▱▱▱ 12 / 40"), who or what started it,
 **Připojit se ↗** (the server's join page) and, when players toggle the role
 themselves, **Zvát mě na seed**. The bot updates it every 60 seconds. The
-role is pinged only when the call is posted; updates ping nobody.
+role is pinged only when the call is posted; updates ping nobody. The server's
+public panel shows the same player count as the call while the seed runs.
+
+At the live threshold the call thanks the seeders ("díky 31 seederům"). Logi
+counts the different players who joined during the seed when the Hell Let
+Loose server reports player names through its live connection, and keeps only
+the number once the seed ends. When the server reports only a count (Wardogs,
+or a Hell Let Loose server without a live connection), it is the growth from
+the start to the highest count.
 
 **The pinned intro** in the seed channel explains the role and offers **Zvát mě
 na seed**. A second click removes the role. Both answers are private.
@@ -101,4 +115,5 @@ the ping protection held it back). Older seeds stay stored.
     The website API (`GET/PATCH /api/v1/clan/settings`, slice `seed`) reads and
     changes the plan of each server. Starting and ending a seed are live Discord
     actions and are available only on this page and in the control message.
+    Creating the Seed role is a live Discord action available only on this page.
 </Callout>

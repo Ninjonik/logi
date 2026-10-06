@@ -370,3 +370,45 @@ These resolve the questions above for implementation. The owner can override any
     - "CHYBA BOTA · SEED / Ovládání serverů se neodeslalo / Kanál #spravci", with "Nastav … jako soukromý, nebo v Logi → Seed serverů vyber jiný kanál pro ovládání." and the button "Seed serverů v Logi".
 52. **Scheduled reminders that did not arrive (L2-64).** Failed sign-up and attendance reminder DMs are recorded per run: the sign-up day, or the attendance offset. A later try that reaches the player removes them from the list. The match page shows the newest reminder outcome, manual or scheduled; a scheduled one reads "automaticky podle plánu" instead of "poslal …". Like the manual reminder, the notice is excluded from `/api/v1` (`docs/integrations/website/event-commands.md`).
 53. **Attendance post in the match thread (L5-43).** It reads "start 20:00" without "ve", from its own `notice.startAt` key, because other cards keep "start ve 20:00". It has no divider, as drawn.
+54. **Style A loses nothing (P4 and P7 together).** Style A is the default. The score image sits on top of the message (the kit's `lead` image), and the text under it keeps every line the P4 board gives the state:
+    - the empty sentence, without a score;
+    - the seed bar "▰▰▰▱▱▱▱▱▱▱ 12 / 40" with the call link;
+    - the running Logi match with its chip;
+    - "Z KLANU HRAJE".
+
+    The image follows the panel's switches. **Skóre** off draws a status: "Online", the player count large, no score, time or top three. **Nejlepší hráči** off draws no top three. An empty server draws "Na serveru teď nikdo nehraje.", and a seed draws the progress toward the plan's threshold ("12 / 40 · seed do 40").
+55. **Status mode (L3-43).** With **Skóre** off, no "zbývá N min" appears anywhere. On "Naše servery" a row shows the round time only next to a score.
+56. **Card order (P7).**
+    - Style A: the image first, then the text summary. The next-map part has no mode and no side sign, and a Wardogs map name is not repeated.
+    - Style B: the banner on top, then the board's order.
+    - Style C is one compact block. It has no separate label line and no extra address line, and it keeps the board's **Připojit** and **Zobrazit hráče** buttons.
+57. **Map picture switch.** "Použít obrázek mapy, když banner chybí" is honoured by the bot. With the switch off and no banner, a style B panel has no picture on top.
+58. **Clan badge.** One shared domain function (`clanBadgeTag`) makes the badge for the dashboard previews and for the bot. It uses the short code of the clan's team in the global catalogue ("VLK"). Without a team, it uses the initials of the clan name.
+59. **Images as attachments.** The bot attaches the clan's map overrides and a panel's own banner as resized files with versioned names (a content digest in the name). It does not link the upload URL, so Discord shows the new image after a change.
+60. **Banner file name.** The upload stores the original file name (an optional `fileName` on the image asset). The P8 banner card shows it: "Nahráno vlci-public.png · 1200 × 400 · 380 kB". The API references the asset by ID and URL only.
+61. **"Naše servery" (P4-38, P7-19, P2-44).**
+    - Each row reads the same live data as that server's own panel, so the queue and the next map appear when the server reports them.
+    - Rows show the player gauge and the faction or nation signs next to the score.
+    - A seeding row shows "seedujeme 9 / 40" and its seed bar.
+    - The panel follows the style: style B puts a banner with the clan badge on top, and style C has no map pictures.
+    - Every joinable server gets a "Připojit: name" button (P7-20, resolution 9).
+62. **Wardogs join button.** "Připojit: Vlci WD" opens `/join/<server>`, and that page shows the join code. Discord buttons can only open links.
+63. **Join page (P4-44).**
+    - The page is a bare centred card like the board, without the site header.
+    - It shows the server name, the players, "fronta N" and the address or join code.
+    - The queue comes from the panel's latest live read, and only while that read is at most 3 minutes old.
+64. **Compact results (L3-31, L3-B05).** The results panel's **Obsah** step has a "Kompaktní vzhled" switch. It is stored as the panel's `layout.compact`, which the `discordPanels` slice of `/api/v1` already carries.
+65. **Private replies in the clan colour (L3-39, L3-58).** The bot's private replies use the clan's accent colour and icon density. This covers the player list, the report picker and the report answers.
+66. **Competition round in the calendar (L3-14).** A competition match names its round: "ECL, 3. kolo" (en "ECL, round 3", de "ECL, Runde 3"). The round comes from the competition fixture linked to the event.
+67. **Paused panels (L3-54).** The "Pozastaveno" chip is grey (neutral) on every paused panel, and the panel keeps its colour.
+68. **One seed count (P5-16).** While a seed is shown, the server panel takes its player count and seed bar from the seed run's latest reading. The seed call uses the same reading, so the two never disagree.
+69. **Seed role (P5-22).** The P3 seed page adds "Vytvořit roli Seed".
+    - Logi creates a mentionable role "Seed" through the existing Discord REST gateway, or reuses an existing role with that name.
+    - Only a clan admin can use it, and only from the same site.
+    - It selects the role in the unsaved plan. Picking an existing role is still possible.
+    - It is a live Discord action, so it has no `/api/v1` operation. The exclusion is recorded in `configuration-coverage.md`.
+70. **Seeders (P5-B04).** The call's "díky N seederům" counts the distinct players who joined during the seed, when the live CRCON read names the players. Players present in the first 2 minutes count as already there. Only the number is kept when the seed ends. Without named players (Wardogs, or HLL without a fresh live read), the count stays the growth from the start to the highest count.
+71. **Kept deviations.** These platform deviations stay as they are:
+    - No team logos in Discord text (L3-20, L3-26). Text cannot inline images, so teams use their short codes.
+    - The "Naše servery" join row follows P7-20 and P2-39 (P4-39, P4-B08): one "Připojit: name" button per server.
+    - Discord timestamps (`<t:…>`) render in each reader's own format and time zone, not the board's fixed strings (L3-23, P4-20).

@@ -28,6 +28,7 @@ import { projectSnapshot } from "../src/domain/game-data/policy"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
+import { clanShortCode } from "./clanTeams"
 import { v } from "convex/values"
 
 /**
@@ -171,6 +172,8 @@ export const get = query({
                       width: asset.width,
                       height: asset.height,
                       bytes: asset.bytes,
+                      // P8-08: "Nahráno vlci-public.png · 1200 × 400 · 380 kB".
+                      fileName: asset.fileName ?? null,
                   }
                 : null
         }
@@ -180,7 +183,10 @@ export const get = query({
             clanAccent:
                 config?.messageStyle?.accentColor ?? DEFAULT_CLAN_ACCENT,
             clanName: guild?.name ?? null,
-            clanTag: clanBadgeTag(guild?.name ?? ""),
+            clanTag: clanBadgeTag(
+                guild?.name ?? "",
+                await clanShortCode(ctx, args.guildId)
+            ),
             servers: servers.map((server) => {
                 const saved = row?.servers.find(
                     (s) => s.connectionId === server.id

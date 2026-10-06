@@ -105,3 +105,65 @@ export async function verifySeedChannels(
     }
     return { ...report, problems: [...problems] }
 }
+
+/** The name of the role Logi creates for seed pings (P5-22). */
+export const SEED_ROLE_NAME = "Seed"
+
+/** Discord refused because the bot may not manage roles. */
+export class SeedRolePermissionError extends Error {
+    constructor() {
+        super("The bot cannot create roles.")
+    }
+}
+
+/**
+ * "Vytvořit roli Seed" (P5-22): a mentionable role named "Seed" without
+ * permissions, made by the bot. A role of that name the bot can use already
+ * is reused, so a second click never makes a second role. Discord refusing
+ * for missing "Spravovat role" throws {@link SeedRolePermissionError}; any
+ * other failure throws, and the route answers that Discord is unavailable.
+ */
+export async function createSeedRole(
+    guildId: string
+): Promise<{ id: string; name: string; created: boolean }> {
+    id.parse(guildId)
+    const token = getDiscordBotToken()
+    if (!token) throw new Error("Discord bot token is not configured.")
+    const call = (path: string, init: RequestInit = {}) =>
+        fetch(`https://discord.com/api/v10${path}`, {
+            ...init,
+            headers: {
+                Authorization: `Bot ${token}`,
+                "Content-Type": "application/json",
+                "X-Audit-Log-Reason": "Logi: role Seed",
+            },
+            cache: "no-store",
+            signal: AbortSignal.timeout(8000),
+            redirect: "error",
+        })
+    const listed = await call(`/guilds/${guildId}/roles`)
+    if (!listed.ok) throw new Error("Discord roles unavailable.")
+    const named = z
+        .array(roleSchema.extend({ name: z.string() }))
+        .parse(await listed.json())
+        .find(
+            (role) =>
+                !role.managed &&
+                role.name.trim().toLocaleLowerCase("en") ===
+                    SEED_ROLE_NAME.toLocaleLowerCase("en")
+        )
+    if (named) return { id: named.id, name: named.name, created: false }
+    const response = await call(`/guilds/${guildId}/roles`, {
+        method: "POST",
+        body: JSON.stringify({
+            name: SEED_ROLE_NAME,
+            permissions: "0",
+            mentionable: true,
+            hoist: false,
+        }),
+    })
+    if (response.status === 403) throw new SeedRolePermissionError()
+    if (!response.ok) throw new Error("Discord role creation unavailable.")
+    const role = z.object({ id, name: z.string() }).parse(await response.json())
+    return { id: role.id, name: role.name, created: true }
+}

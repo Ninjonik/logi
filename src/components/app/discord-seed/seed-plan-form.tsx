@@ -140,6 +140,7 @@ export function SeedPlanForm({
     locale,
     text,
     onChange,
+    roleCreator,
 }: {
     serverName: string
     draft: SeedPlanDraft
@@ -154,6 +155,13 @@ export function SeedPlanForm({
     locale: string
     text: Text
     onChange(patch: Partial<SeedPlanDraft>): void
+    /** "Vytvořit roli Seed" (P5-22); absent hides the button. */
+    roleCreator?: {
+        busy: boolean
+        /** The last outcome, e.g. "Role @Seed je vytvořená a vybraná." */
+        message: { text: string; error: boolean } | null
+        onCreate(): void
+    }
 }) {
     const id = useId()
     const t = text.plan
@@ -557,6 +565,31 @@ export function SeedPlanForm({
                         ))}
                     </SelectContent>
                 </Select>
+                {roleCreator ? (
+                    <div className="space-y-1.5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={roleCreator.busy || pickers.unavailable}
+                            onClick={roleCreator.onCreate}
+                        >
+                            <Plus aria-hidden="true" />
+                            {roleCreator.busy ? t.createRoleBusy : t.createRole}
+                        </Button>
+                        <p
+                            aria-live="polite"
+                            className={cn(
+                                "text-xs",
+                                roleCreator.message?.error
+                                    ? "text-destructive"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            {roleCreator.message?.text ?? t.createRoleHint}
+                        </p>
+                    </div>
+                ) : null}
                 <label className="flex items-start gap-3">
                     <Switch
                         className="mt-0.5"

@@ -255,7 +255,7 @@ test("a paused panel keeps its content and link with 'Pozastaveno · správce za
     const all = texts(payload).join("\n")
     assert.match(
         all,
-        /🟡 \*\*Pozastaveno\*\* · správce zastavil obnovování · poslední data <t:\d+:f>/
+        /⚪ \*\*Pozastaveno\*\* · správce zastavil obnovování · poslední data <t:\d+:f>/
     )
     assert.match(
         all,

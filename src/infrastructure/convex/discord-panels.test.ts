@@ -8,6 +8,7 @@ import * as panelBot from "../../../convex/discordPanelBot"
 import { invoke, testContext } from "./testing/database"
 import * as panels from "../../../convex/discordPanels"
 import * as reads from "../../../convex/hllLiveReads"
+import { hllLiveFixture } from "../testing/hll-live"
 
 const secret = "synthetic-panels-secret"
 const guildId = "100000000000000099"
@@ -373,9 +374,9 @@ test("server join details: validated, a unique global link, the password only as
         "capacity",
         "gameId",
         "joinCode",
-        "map",
         "name",
         "players",
+        "queue",
     ])
     assert.doesNotMatch(JSON.stringify(page), /BBBBBBBB|key-1/)
     assert.equal(
@@ -650,4 +651,51 @@ test("the bot reads each panel with its servers, join details and status, never 
     await assert.rejects(
         invoke(publicPanels.forGuild, ctx, { secret: "wrong", guildId })
     )
+})
+
+test("the join page shows the queue from the server panel's live read (P4-44)", async (t) => {
+    const { ctx, dashboard, advance } = fixture(t)
+    await invoke(panels.setServer, ctx, {
+        ...dashboard,
+        connectionId: "gameDataConnections:hll",
+        address: "203.0.113.24:7777",
+    })
+    const live = hllLiveFixture()
+    const at = new Date(now - 20_000).toISOString()
+    live.fetchedAt = at
+    live.statusAt = at
+    live.status!.playerCount = 78
+    live.status!.maxPlayers = 100
+    live.status!.queueCount = 3
+    ctx.db.seed("hllLiveCache", {
+        _id: "hllLiveCache:hll",
+        connectionId: "gameDataConnections:hll",
+        generation: 1,
+        fence: 1,
+        leaseUntil: 0,
+        nextAt: now,
+        retainUntil: now + 3_600_000,
+        dataJson: JSON.stringify(live),
+    })
+    const page = await invoke(panelBot.joinPage, ctx, {
+        secret,
+        slug: "vlci-1",
+    })
+    assert.equal(page.players, 78)
+    assert.equal(page.capacity, 100)
+    assert.equal(page.queue, 3)
+    // An old read, or one of another source generation, is not "now".
+    advance(10 * 60_000)
+    const later = await invoke(panelBot.joinPage, ctx, {
+        secret,
+        slug: "vlci-1",
+    })
+    assert.equal(later.queue, null)
+    advance(-10 * 60_000)
+    await ctx.db.patch("hllLiveCache:hll", { generation: 2 })
+    const other = await invoke(panelBot.joinPage, ctx, {
+        secret,
+        slug: "vlci-1",
+    })
+    assert.equal(other.queue, null)
 })

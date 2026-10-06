@@ -38,6 +38,25 @@ export function normalizePanelKind(kind: string): PanelKind | null {
 export function isServerPanelKind(kind: PanelKind) {
     return kind === "server" || kind === "servers"
 }
+/**
+ * Whether a panel reads a game server live: its own server, or any server of
+ * "Naše servery" (P4-38). The bot's live reads are authorized by panel with
+ * it, so a combined panel shows the same live data as the server's own panel.
+ */
+export function panelReadsConnection(
+    panel: {
+        kind: string
+        connectionId?: string | null
+        connectionIds?: readonly string[] | null
+    },
+    connectionId: string
+): boolean {
+    const kind = normalizePanelKind(panel.kind)
+    if (kind === "server") return panel.connectionId === connectionId
+    if (kind === "servers")
+        return (panel.connectionIds ?? []).includes(connectionId)
+    return false
+}
 /** Every live panel refreshes every 60 s (L3-B04, P4-B02, P1-B06). */
 export const PANEL_REFRESH_SECONDS = 60
 export const PANEL_GAMES = ["hell_let_loose", "wardogs"] as const

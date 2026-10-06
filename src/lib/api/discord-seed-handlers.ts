@@ -5,7 +5,11 @@ import {
     startDiscordSeed,
     stopDiscordSeed,
 } from "@/lib/gateways/discord-seed"
-import { verifySeedChannels } from "@/lib/gateways/discord-seed-channels"
+import {
+    createSeedRole,
+    SeedRolePermissionError,
+    verifySeedChannels,
+} from "@/lib/gateways/discord-seed-channels"
 import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { discordSeedRoutes } from "@/lib/api/discord-seed-route"
 
@@ -19,4 +23,13 @@ export const discordSeedHandlers = discordSeedRoutes({
         verifySeedChannels(access.guildId, settings),
     start: startDiscordSeed,
     stop: stopDiscordSeed,
+    createRole: async (access) => {
+        try {
+            return await createSeedRole(access.guildId)
+        } catch (error) {
+            throw error instanceof SeedRolePermissionError
+                ? new Error("missing_permission")
+                : error
+        }
+    },
 })

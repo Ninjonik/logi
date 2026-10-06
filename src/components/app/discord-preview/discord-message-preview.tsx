@@ -692,6 +692,12 @@ export function DiscordMessagePreview({
                         className="flex min-w-0 flex-col gap-2.5 rounded-md border-l-4 bg-[#2b2d31] px-3.5 pt-3 pb-3.5 [overflow-wrap:anywhere]"
                         style={{ borderLeftColor: accent }}
                     >
+                        {view.lead && (
+                            <Media
+                                media={view.lead}
+                                className="w-full rounded-md"
+                            />
+                        )}
                         {hasHeader && header && (
                             <header className="flex min-w-0 items-start justify-between gap-3">
                                 <div className="flex min-w-0 flex-col gap-1">

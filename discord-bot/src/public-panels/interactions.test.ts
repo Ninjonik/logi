@@ -61,6 +61,7 @@ function ports(
         readFacts: async () => hllLiveFacts(hllLiveFixture()),
         canView: async () => true,
         language: async () => "cs",
+        style: async () => null,
         emoji: async () => ({}),
         ...overrides,
     }
@@ -136,4 +137,23 @@ test("a failed live read gets the unavailable card instead of a spinner", async 
     )
     assert.match(text(thrown.replies[0]!), /Seznam hráčů teď není k dispozici/)
     assert.doesNotMatch(text(thrown.replies[0]!), /diagnostic/)
+})
+
+test("the private player list carries the clan's own colour (L3-39)", async () => {
+    const { interaction, replies } = press("logi:players:panel1:7:0:open")
+    await handlePlayersButton(
+        interaction,
+        ports({
+            style: async () => ({
+                accentColor: "#4F9DE0",
+                iconDensity: "rich",
+            }),
+        })
+    )
+    const container = (replies[0]!.components ?? []).map((component) =>
+        "toJSON" in component
+            ? (component as { toJSON(): { accent_color?: number } }).toJSON()
+            : (component as { accent_color?: number })
+    )[0]
+    assert.equal(container?.accent_color, 0x4f9de0)
 })

@@ -19,7 +19,10 @@ import {
     PANEL_PROTOCOL,
     type PanelAttempt,
 } from "../../../src/domain/discord-publications/panel-delivery"
-import type { PanelGraphicsForBot } from "../../../src/domain/discord-publications/panel-graphics-settings"
+import {
+    clanBadgeTag,
+    type PanelGraphicsForBot,
+} from "../../../src/domain/discord-publications/panel-graphics-settings"
 import type { CompetitionDivisionTable } from "../../../src/domain/discord-publications/competition-panel"
 import type { RunningMatch } from "../../../src/domain/discord-publications/running-match"
 import type { ResultEvent } from "../../../src/application/discord-publications/results"
@@ -33,9 +36,9 @@ import { everyoneCanView } from "../../../src/domain/discord-seed/channels"
 import { runLeaguePanels, type LeaguePanelData } from "../league/panels"
 import { applicationEmoji } from "../runtime/application-emoji"
 import { publishManagedMessage } from "../sync/publication"
+import { panelMapImage, uploadedImageFile } from "./assets"
 import { reportToErrorsChannel } from "../ui/replies"
 import { logWarn as writeWarning } from "../log"
-import { builtInMapImage } from "./assets"
 import { env } from "../environment"
 import { convex } from "../convex"
 
@@ -215,6 +218,8 @@ type GuildContext = {
     language: string
     timeZone: string
     clanName: string | null
+    /** The round badge of banners, the same rule as the P8 page (P8-07). */
+    clanTag?: string
     messageStyle: MessageStyle | null
 }
 
@@ -289,7 +294,21 @@ export function startPublicPanelWorker(
         bannerImage: (key, model, serverName, timeZone) =>
             images.banner(key, model, serverName, timeZone),
         mapImage: (game, mapKey, look) =>
-            builtInMapImage(game, mapKey, look, pass.language),
+            panelMapImage(
+                game,
+                mapKey,
+                look,
+                pass.language,
+                pass.graphics.mapOverrides
+            ),
+        assetImage: async ({ url, description }) => {
+            const file = await uploadedImageFile({
+                url,
+                look: "banner",
+                base: "banner",
+            })
+            return file ? { ...file, description } : null
+        },
         resultsPage: (panelId, cursor) =>
             query<{ cursor: string | null; events: ResultEvent[] } | null>(
                 "discordPublicPanels:resultsPage",
@@ -401,6 +420,8 @@ export function startPublicPanelWorker(
             language: context.language,
             timeZone: context.timeZone,
             clanName: context.clanName ?? guild.name,
+            clanTag:
+                context.clanTag ?? clanBadgeTag(context.clanName ?? guild.name),
             siteUrl: env.appSiteUrl,
             style: context.messageStyle,
             graphics,

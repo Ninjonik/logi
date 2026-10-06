@@ -8,6 +8,8 @@ import {
     applicationEmojiAssets,
     builtInMapImage,
     factionAssets,
+    panelMapImage,
+    uploadedImageFile,
 } from "./assets"
 
 test("the bot uploads 19 fixed signs as small square application emoji", async () => {
@@ -83,4 +85,86 @@ test("built-in map art is attached as a small, versioned copy with alt text", as
         null
     )
     assert.equal(await builtInMapImage("wardogs", "foy", "thumb"), null)
+})
+
+test("a clan's own map image and panel banner are attached as resized, versioned files (P8-30)", async (t) => {
+    const png = await sharp({
+        create: {
+            width: 640,
+            height: 640,
+            channels: 3,
+            background: { r: 20, g: 120, b: 40 },
+        },
+    })
+        .png()
+        .toBuffer()
+    const asked: string[] = []
+    t.mock.method(globalThis, "fetch", async (url: string | URL) => {
+        asked.push(String(url))
+        return String(url).includes("broken")
+            ? new Response("no", { status: 404 })
+            : new Response(new Uint8Array(png), {
+                  headers: { "content-type": "image/png" },
+              })
+    })
+    const overrides = [
+        {
+            game: "hell_let_loose" as const,
+            mapKey: "foy",
+            publicId: "a".repeat(32),
+            url: "https://logi.app/api/image-assets/aaaa.png",
+        },
+    ]
+    const thumb = await panelMapImage(
+        "hell_let_loose",
+        "foy",
+        "thumb",
+        "cs",
+        overrides
+    )
+    assert.ok(thumb)
+    assert.match(thumb.name, /^mapa-foy-thumb-[0-9a-f]{6}\.webp$/)
+    assert.equal(thumb.description, "Mapa Foy")
+    assert.deepEqual(
+        [
+            (await sharp(thumb.bytes).metadata()).width,
+            (await sharp(thumb.bytes).metadata()).height,
+        ],
+        [320, 320]
+    )
+    assert.deepEqual(asked, ["https://logi.app/api/image-assets/aaaa.png"])
+    // Read once per version.
+    await panelMapImage("hell_let_loose", "foy", "thumb", "cs", overrides)
+    assert.equal(asked.length, 1)
+    // Without an override, the built-in art.
+    const builtIn = await panelMapImage(
+        "hell_let_loose",
+        "kursk",
+        "thumb",
+        "cs",
+        overrides
+    )
+    assert.match(builtIn?.name ?? "", /^mapa-kursk-thumb-/)
+    const banner = await uploadedImageFile({
+        url: "https://logi.app/api/image-assets/bbbb.png",
+        look: "banner",
+        base: "banner",
+    })
+    assert.match(banner?.name ?? "", /^banner-[0-9a-f]{6}\.webp$/)
+    assert.equal(
+        await uploadedImageFile({
+            url: "https://logi.app/broken.png",
+            look: "banner",
+            base: "banner",
+        }),
+        null
+    )
+    assert.equal(
+        await uploadedImageFile({
+            url: "ftp://example.invalid/banner.png",
+            look: "banner",
+            base: "banner",
+        }),
+        null
+    )
 })

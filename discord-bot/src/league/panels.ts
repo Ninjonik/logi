@@ -108,12 +108,8 @@ async function fixtureThumbnails(
             mapKey,
             overrides: pass.graphics.mapOverrides,
         })
-        if (image?.kind === "override")
-            thumbnails.set(fixture.matchId, {
-                url: image.url,
-                description: copy.mapAlt(fixture.map.name),
-            })
-        else if (image && canAttach) {
+        // P8-30: the clan's own map image is attached like Logi's art.
+        if (image && canAttach) {
             const file = await ports
                 .mapImage("wardogs", mapKey, "thumb")
                 .catch(() => null)

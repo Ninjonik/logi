@@ -17,9 +17,11 @@ import {
     type WorkerPanel,
 } from "./worker"
 import { playerListUnavailableView } from "../../../src/domain/discord-publications/player-list"
+import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
 import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import type { InteractionFeature } from "../interactions/registry"
 import { applicationEmoji } from "../runtime/application-emoji"
+import { clanStyleForGuild } from "../runtime/clan-language"
 import { completePrivatePlayerReply } from "./private-reply"
 import { handlePlayerReport } from "../player-reports"
 import { loadPlayerDetails } from "./player-details"
@@ -42,6 +44,8 @@ export type PlayersButtonPorts = {
         panel: WorkerPanel
     ): Promise<boolean>
     language(guildId: string | null): Promise<string | undefined>
+    /** The clan's colour and icon density for the private list (L3-39). */
+    style(guildId: string | null): Promise<MessageStyle | null>
     emoji(interaction: ButtonInteraction): Promise<PanelEmojiMarkup>
 }
 
@@ -89,6 +93,7 @@ export const defaultPlayersPorts: PlayersButtonPorts = {
         )
     },
     language: (guildId) => interactionLanguage(guildId),
+    style: (guildId) => clanStyleForGuild(guildId).catch(() => null),
     emoji: (interaction) =>
         applicationEmoji(interaction.client)
             .emoji()
@@ -104,6 +109,7 @@ export async function handlePlayersButton(
         await interaction.deferUpdate()
     else await interaction.deferReply({ flags: MessageFlags.Ephemeral })
     const language = await ports.language(interaction.guildId)
+    const style = await ports.style(interaction.guildId)
     const copy = getPanelMessages(language)
     await completePrivatePlayerReply(
         (reply) => interaction.editReply(reply),
@@ -133,10 +139,13 @@ export async function handlePlayersButton(
                           language,
                           emoji: await ports.emoji(interaction),
                       })
-            return editPayload(view, { language })
+            return editPayload(view, { language, style })
         },
         12_000,
-        editPayload(playerListUnavailableView(copy.players), { language })
+        editPayload(playerListUnavailableView(copy.players), {
+            language,
+            style,
+        })
     )
 }
 

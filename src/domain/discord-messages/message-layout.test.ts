@@ -157,7 +157,7 @@ test("a paused panel shows the paused chip with its time and keeps the bar", () 
     assert.equal(layout.accentColor, 0x112233)
     assert.match(
         JSON.stringify(layout.nodes[0]),
-        /🟡 \*\*Pozastaveno\*\* · server neodpovídá · poslední data <t:1791745320:f>/
+        /⚪ \*\*Pozastaveno\*\* · server neodpovídá · poslední data <t:1791745320:f>/
     )
     assert.doesNotMatch(JSON.stringify(layout), /Živě/)
 })

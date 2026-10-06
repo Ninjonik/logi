@@ -1,10 +1,15 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import {
+    panelImageFocus,
+    panelImageStateWord,
+    panelScoreImageAlt,
+    panelScoreImageSchema,
+} from "./panel-image-model"
 import { hllLiveFixture } from "../../infrastructure/testing/hll-live"
 import { warconLive } from "../../infrastructure/testing/warcon"
 import { hllLiveFacts, wardogsLiveFacts } from "./live-panel"
-import { panelScoreImageSchema } from "./panel-image-model"
 import { liveScoreImageModel } from "./live-panel-image"
 
 const base = {
@@ -18,6 +23,9 @@ const base = {
     showQueue: true,
     showNextMap: true,
     joinCode: null,
+    showScore: true,
+    showLeaders: true,
+    seedTarget: null,
 }
 
 test("the HLL score image carries the same facts as the text and validates", () => {
@@ -89,4 +97,97 @@ test("Wardogs: factions with points, the join code and the richest player", () =
         joinCode: "not a code",
     })
     assert.equal(bad && bad.game === "wardogs" ? bad.joinCode : "x", null)
+})
+
+test("server-status mode draws no score, no leaders and no round time (L3-33, L3-43)", () => {
+    const facts = hllLiveFacts(hllLiveFixture())
+    const model = liveScoreImageModel({
+        ...base,
+        facts,
+        state: "live",
+        showScore: false,
+    })
+    assert.ok(model && model.game === "hell_let_loose")
+    assert.equal(model.scoreboard, false)
+    assert.equal(panelImageFocus(model), "status")
+    assert.equal(panelImageStateWord(model), "Online")
+    assert.equal(model.allies.score, null)
+    assert.equal(model.axis.score, null)
+    assert.equal(model.timeLeftSeconds, null)
+    assert.deepEqual(model.leaders, [])
+    assert.ok(model.players, "the player count stays")
+    assert.doesNotMatch(panelScoreImageAlt(model), /Spojenci 3 : 2/)
+})
+
+test("the leaders switch off leaves the top three and the richest player out (L3-36)", () => {
+    const hll = liveScoreImageModel({
+        ...base,
+        facts: hllLiveFacts(hllLiveFixture()),
+        state: "live",
+        showLeaders: false,
+    })
+    assert.ok(hll && hll.game === "hell_let_loose")
+    assert.deepEqual(hll.leaders, [])
+    assert.equal(hll.allies.score, 3, "the score stays")
+    assert.equal(panelImageFocus(hll), "score")
+    const fixture = warconLive()
+    const wardogs = liveScoreImageModel({
+        ...base,
+        facts: wardogsLiveFacts({
+            ...fixture,
+            freshness: "fresh" as const,
+            playersFreshness: "fresh" as const,
+        }),
+        state: "live",
+        showLeaders: false,
+    })
+    assert.ok(wardogs && wardogs.game === "wardogs")
+    assert.deepEqual(wardogs.leaders, [])
+    assert.equal(wardogs.topCash, null)
+})
+
+test("an empty server shows its empty state, without score or round time (P4-16, P4-17)", () => {
+    const live = hllLiveFixture()
+    live.status!.playerCount = 0
+    live.players = []
+    const model = liveScoreImageModel({
+        ...base,
+        facts: hllLiveFacts(live),
+        state: "empty",
+    })
+    assert.ok(model && model.game === "hell_let_loose")
+    assert.equal(panelImageFocus(model), "empty")
+    assert.equal(model.allies.score, null)
+    assert.equal(model.timeLeftSeconds, null)
+    assert.deepEqual(model.leaders, [])
+    assert.match(panelScoreImageAlt(model), /Na serveru teď nikdo nehraje/)
+})
+
+test("a running seed shows its progress toward the threshold (P4-18, P5-15)", () => {
+    const live = hllLiveFixture()
+    live.status!.playerCount = 12
+    const model = liveScoreImageModel({
+        ...base,
+        facts: hllLiveFacts(live),
+        state: "seeding",
+        seedTarget: 40,
+    })
+    assert.ok(model && model.game === "hell_let_loose")
+    assert.equal(model.seedTarget, 40)
+    assert.equal(panelImageFocus(model), "seed")
+    assert.equal(model.players?.count, 12)
+    assert.equal(model.allies.score, null)
+    assert.deepEqual(model.leaders, [])
+    assert.match(panelScoreImageAlt(model), /seed do 40/)
+    const live2 = liveScoreImageModel({
+        ...base,
+        facts: hllLiveFacts(live),
+        state: "live",
+        seedTarget: 40,
+    })
+    assert.equal(
+        live2?.seedTarget,
+        null,
+        "only a seeding server shows the seed"
+    )
 })

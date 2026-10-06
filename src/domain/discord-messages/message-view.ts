@@ -132,7 +132,7 @@ export type MessageBlock =
     | { kind: "buttons"; buttons: MessageButton[] }
     | { kind: "select"; select: MessageSelect }
 
-/** Data failed: the paused chip says since when; the bar keeps its colour. */
+/** Paused: the grey "Pozastaveno" chip says since when; the bar keeps its colour. */
 export type MessagePaused = { reason?: string; since?: TimestampInput }
 
 export type MessageHeader = {
@@ -184,6 +184,12 @@ export type MessageFooter = ManagedFooter | DirectMessageFooter
 
 export type MessageView = {
     accent: MessageAccent
+    /**
+     * A full-width image above the header: the style A score image or the
+     * style B banner, which the boards draw at the top of the card (P7-03,
+     * P7-07). Most views have none.
+     */
+    lead?: MessageMedia
     header?: MessageHeader
     blocks: MessageBlock[]
     footer?: MessageFooter

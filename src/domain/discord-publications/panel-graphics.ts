@@ -296,6 +296,28 @@ export function resolvePanelBanner(input: {
 export type ScoreImageBackground =
     | { kind: "asset"; publicId: string; crop: BannerCrop }
     | { kind: "builtin"; game: PanelMapGame; mapKey: string }
+/** The background the style B banner is drawn on: the server banner or the map (P7-25). */
+export function panelBannerBackground(
+    source: PanelBannerSource
+): ScoreImageBackground | null {
+    if (source.kind === "banner")
+        return source.publicId
+            ? { kind: "asset", publicId: source.publicId, crop: source.crop }
+            : null
+    if (source.image.kind === "override")
+        return {
+            kind: "asset",
+            publicId: source.image.publicId,
+            crop: "center",
+        }
+    return source.image.kind === "builtin"
+        ? {
+              kind: "builtin",
+              game: source.image.game,
+              mapKey: source.image.mapKey,
+          }
+        : null
+}
 /** Score image background: the server banner, else the map image, else plain dark (P8-06, P8-14). */
 export function resolveScoreImageBackground(input: {
     server: ServerBannerSettings | null

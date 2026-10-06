@@ -27,14 +27,19 @@ import {
     type QueryCtx,
 } from "./_generated/server"
 import { requestPanelAction } from "../src/application/discord-publications/panel-actions"
+import { clanBadgeTag } from "../src/domain/discord-publications/panel-graphics-settings"
+import { joinPagePlayers } from "../src/domain/discord-publications/server-join"
 import { normalizePanelKind } from "../src/domain/discord-publications/settings"
 import { deriveDivisionStandings } from "../src/domain/competitions/standings"
+import { hllLiveFacts } from "../src/domain/discord-publications/live-panel"
+import { hllLiveSchema } from "../src/domain/game-data/hll-live"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import { panelAction } from "./discordPublicationTable"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { connectionSource } from "./gameDataCatalog"
 import { getGuildByDiscordId } from "./identity"
+import { clanShortCode } from "./clanTeams"
 
 /**
  * The bot's side of "Panely v Discordu": the heartbeat, the result of each
@@ -459,10 +464,30 @@ export const competition = query({
     },
 })
 
+/** The HLL server's latest live read, as the server panel last read it. */
+async function latestHllLive(
+    ctx: QueryCtx,
+    connection: Doc<"gameDataConnections">
+) {
+    if (connection.gameId !== "hell_let_loose") return null
+    const cache = await ctx.db
+        .query("hllLiveCache")
+        .withIndex("connectionId", (q) => q.eq("connectionId", connection._id))
+        .unique()
+    if (cache?.generation !== connection.generation || !cache.dataJson)
+        return null
+    try {
+        const parsed = hllLiveSchema.safeParse(JSON.parse(cache.dataJson))
+        return parsed.success ? hllLiveFacts(parsed.data) : null
+    } catch {
+        return null
+    }
+}
+
 /**
  * The public join page (`/join/<slug>`, P4-44..46, P4-B10): the server's
- * Logi name, game, address or join code and current players. Nothing else,
- * and never a password.
+ * Logi name, game, address or join code, current players and the queue
+ * from the panel's live read. Nothing else, and never a password.
  */
 export const joinPage = query({
     args: { secret: v.string(), slug: v.string() },
@@ -486,6 +511,23 @@ export const joinPage = query({
               )
             : null
         const fresh = snapshot && snapshot.freshness !== "unavailable"
+        const live = connection.enabled
+            ? await latestHllLive(ctx, connection)
+            : null
+        const now = Date.now()
+        const counts = joinPagePlayers({
+            snapshot: fresh ? snapshot : null,
+            live: live
+                ? {
+                      fresh: live.freshness === "fresh",
+                      at: live.dataAt,
+                      players: live.players,
+                      capacity: live.capacity,
+                      queue: live.queue,
+                  }
+                : null,
+            now,
+        })
         return {
             gameId: connection.gameId as "hell_let_loose" | "wardogs",
             name:
@@ -495,9 +537,9 @@ export const joinPage = query({
             address:
                 connection.gameId === "hell_let_loose" ? row.address : null,
             joinCode: connection.gameId === "wardogs" ? row.joinCode : null,
-            players: fresh ? snapshot.players : null,
-            capacity: fresh ? snapshot.capacity : null,
-            map: fresh ? snapshot.map : null,
+            players: counts.players,
+            capacity: counts.capacity,
+            queue: counts.queue,
         }
     },
 })
@@ -550,6 +592,11 @@ export const guildContext = query({
             language: config?.defaultLanguage ?? "en",
             timeZone: config?.timezone ?? "Europe/Prague",
             clanName: guild?.name ?? null,
+            // P7-13, P8-07: the same badge as the P8 preview.
+            clanTag: clanBadgeTag(
+                guild?.name ?? "",
+                await clanShortCode(ctx, args.guildId)
+            ),
             messageStyle: config?.messageStyle ?? null,
             eventCategories: (guild?.eventCategories ?? []).map(
                 (category: { id: string; label: string }) => ({

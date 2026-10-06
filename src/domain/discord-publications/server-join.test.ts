@@ -3,6 +3,8 @@ import test from "node:test"
 
 import {
     isServerAddress,
+    JOIN_PAGE_LIVE_MAX_AGE_MS,
+    joinPagePlayers,
     joinCodeSchema,
     passwordShown,
     passwordWithheldNotice,
@@ -104,4 +106,41 @@ test("admins are told once when the channel turns public", () => {
         passwordWithheldNotice({ ...base, everyoneCanView: false }),
         false
     )
+})
+
+test("the join page counts players and the queue from a recent live read, else the snapshot (P4-44)", () => {
+    const now = Date.parse("2026-10-05T10:00:00.000Z")
+    const live = {
+        fresh: true,
+        at: now - 30_000,
+        players: 78,
+        capacity: 100,
+        queue: 3,
+    }
+    const snapshot = { players: 70, capacity: 100 }
+    assert.deepEqual(joinPagePlayers({ snapshot, live, now }), {
+        players: 78,
+        capacity: 100,
+        queue: 3,
+    })
+    for (const stale of [
+        { ...live, fresh: false },
+        { ...live, at: now - JOIN_PAGE_LIVE_MAX_AGE_MS - 1 },
+        { ...live, at: null },
+        { ...live, players: null },
+    ])
+        assert.deepEqual(joinPagePlayers({ snapshot, live: stale, now }), {
+            players: 70,
+            capacity: 100,
+            queue: null,
+        })
+    assert.equal(
+        joinPagePlayers({ snapshot, live: { ...live, queue: 0 }, now }).queue,
+        null
+    )
+    assert.deepEqual(joinPagePlayers({ snapshot: null, live: null, now }), {
+        players: null,
+        capacity: null,
+        queue: null,
+    })
 })

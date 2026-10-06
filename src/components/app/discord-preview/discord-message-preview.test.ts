@@ -137,7 +137,7 @@ test("the clan language drives the bot's words; Discord's chrome follows the das
     assert.match(html, /Only you can see this/)
 })
 
-test("paused panels show the paused chip with its time; the bar keeps the clan colour", () => {
+test("paused panels show the grey paused chip with its time; the bar keeps the clan colour (L3-54)", () => {
     const html = render({
         view: panelFrame({
             label: "Živé skóre · Hell Let Loose",
@@ -151,7 +151,7 @@ test("paused panels show the paused chip with its time; the bar keeps the clan c
         style: { accentColor: "#4F9DE0" },
     })
     assert.match(html, /border-left-color:#4f9de0/)
-    assert.match(html, /background:#f0b232[^>]*><\/span>Pozastaveno/)
+    assert.match(html, /background:#80848e[^>]*><\/span>Pozastaveno/)
     assert.match(
         textOf(html),
         /server neodpovídá · poslední data 11\. října 2026 v 21:02/

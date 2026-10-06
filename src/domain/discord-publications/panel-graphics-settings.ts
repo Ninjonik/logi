@@ -289,8 +289,24 @@ export function panelGraphicsPatchFrom(
     })
 }
 
-/** Initials for the round clan badge on banners: "Vlci" → "VLC", "Váš klan" → "VK". */
-export function clanBadgeTag(name: string): string {
+/**
+ * The round clan badge on banners (P7-13, P7-18, P8-07): the clan's team
+ * short code from the team catalogue ("VLK") when it has one, else initials
+ * of the clan name ("Vlci" → "VLC", "Váš klan" → "VK"). The P8 page, the
+ * panel editor and the bot all use this one rule, so the preview is what
+ * Discord shows.
+ */
+export function clanBadgeTag(name: string, shortCode?: string | null): string {
+    const code = Array.from(
+        (shortCode ?? "")
+            .normalize("NFKD")
+            .replace(/\p{M}/gu, "")
+            .toUpperCase()
+            .replace(/[^\p{L}\p{N}]/gu, "")
+    )
+        .slice(0, 5)
+        .join("")
+    if (code) return code
     const words = name
         .normalize("NFKD")
         .replace(/\p{M}/gu, "")

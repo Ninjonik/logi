@@ -6,8 +6,9 @@ import { getInternalAuthSecret } from "@/lib/env"
 
 /**
  * The public join page of one server (`/join/<slug>`, P4-44..46): its Logi
- * name, game, address (HLL) or join code (Wardogs) and current players.
- * A narrow read that exposes nothing else and never a password.
+ * name, game, address (HLL) or join code (Wardogs), current players and the
+ * queue from the server panel's live read. A narrow read that exposes
+ * nothing else and never a password.
  */
 export type ServerJoinPage = {
     gameId: "hell_let_loose" | "wardogs"
@@ -16,7 +17,7 @@ export type ServerJoinPage = {
     joinCode: string | null
     players: number | null
     capacity: number | null
-    map: string | null
+    queue: number | null
 }
 
 const joinPageReference = makeFunctionReference<

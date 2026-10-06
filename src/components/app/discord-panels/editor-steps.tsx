@@ -1249,6 +1249,41 @@ function ReportCategory({ ctx }: { ctx: EditorContext }) {
     )
 }
 
+/**
+ * "Obsah" of the results panel (L3-31, L3-B05): the compact look, which
+ * shows each result and its correction as a shorter card.
+ */
+export function ResultsContentStep({
+    ctx,
+    number,
+}: {
+    ctx: EditorContext
+    number: number
+}) {
+    const text = ctx.dictionary.discordPanelsPage.editor
+    const c = text.content
+    const { draft } = ctx
+    return (
+        <SettingsStep
+            id="panel-content"
+            number={number}
+            title={text.steps.content}
+        >
+            <StepSection title={c.show}>
+                <SwitchRow
+                    label={c.compact.label}
+                    help={c.compact.help}
+                    checked={draft.layout.compact}
+                    disabled={ctx.disabled}
+                    onChange={(compact) =>
+                        ctx.update({ layout: { ...draft.layout, compact } })
+                    }
+                />
+            </StepSection>
+        </SettingsStep>
+    )
+}
+
 export function ServersContentStep({
     ctx,
     number,
@@ -1510,7 +1545,8 @@ export function LookStep({
     const id = useId()
     const accentName = useId()
     const styleName = useId()
-    const hasStyle = draft.kind === "server"
+    // P7-19: "Naše servery" has the three styles as well.
+    const hasStyle = draft.kind === "server" || draft.kind === "servers"
     const summary = [
         draft.title.trim()
             ? fill(look.summary.title, { title: draft.title.trim() })
@@ -1518,7 +1554,7 @@ export function LookStep({
         draft.description.trim()
             ? look.summary.description
             : look.summary.noDescription,
-        ...(draft.kind === "server"
+        ...(hasStyle
             ? [
                   draft.bannerAssetId
                       ? look.summary.banner
@@ -1593,7 +1629,7 @@ export function LookStep({
                             }
                         />
                     </Field>
-                    {draft.kind === "server" ? (
+                    {hasStyle ? (
                         <BannerField
                             serverId={ctx.serverId}
                             value={{

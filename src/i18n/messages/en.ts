@@ -6304,9 +6304,8 @@ export const enMessages = {
         metaDescription: "Join the game server {name}.",
         opening: "Opening {game}…",
         players: "{players} / {capacity} players",
-        map: "map {map}",
+        queue: "queue {queue}",
         steamPrompt: "Steam asks whether to open the link. Confirm Open.",
-        openAgain: "Open again",
         manualTitle: "Join manually",
         addressLabel: "Server address",
         copy: "Copy",
@@ -6728,6 +6727,10 @@ export const enMessages = {
             },
             content: {
                 show: "What to show",
+                compact: {
+                    label: "Compact look",
+                    help: "A shorter result card: the score without the sides line; a correction only says when and what it was before.",
+                },
                 score: { label: "Score", help: "Allies : Axis by sectors." },
                 leaders: {
                     label: "Top players",
@@ -7150,6 +7153,17 @@ export const enMessages = {
             seedChannelOkNoRole: "The bot can post in the channel.",
             role: "Role the call pings",
             rolePlaceholder: "No role ping",
+            createRole: "Create Seed role",
+            createRoleBusy: "Creating the role…",
+            createRoleHint:
+                "Logi creates a mentionable Seed role in Discord and selects it. You can also pick a role you already have.",
+            roleCreated: "The @Seed role was created and selected.",
+            roleReused:
+                "The server already has a @Seed role; it is now selected.",
+            rolePermission:
+                "The role could not be created. Give the Logi role the Manage Roles permission in Discord.",
+            roleUnavailable:
+                "Discord is not answering right now. Try creating the role again in a moment.",
             roleMembers: {
                 one: "{count} member",
                 few: "{count} members",

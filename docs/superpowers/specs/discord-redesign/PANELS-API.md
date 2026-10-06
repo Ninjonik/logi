@@ -291,7 +291,13 @@ Convex functions for the bot (internal secret):
 `channelPrivate` (all optional, additive) so the list can say "Poslední chyba
 … Další pokus … prošel" and whether a password can be shown. "Naše servery"
 rows carry the address (HLL), the join code (Wardogs) and the seed bar, and
-the panel's switches decide the score, next map and queue lines.
+the panel's switches decide the score, next map and queue lines. The rows read
+the same live data as each server's own panel (`hllLiveData:read`,
+`warconData:read`); both reads authorize a panel through
+`panelReadsConnection`, which accepts a server panel's own connection and every
+connection of a "Naše servery" panel. While a seed is shown, a panel's player
+count and seed bar come from the seed run's latest reading
+(`discordSeedBot:panelStates`, `players`), the same number as the call.
 
 **Password (P4-B06).** Shown only on a server's own panel, only with the switch
 on, only while `@everyone` cannot view the channel, checked on every refresh.
@@ -333,11 +339,15 @@ clan-only panels. All are registered through the interaction feature
 
 `/<locale>/join/<slug>` (and `/join/<slug>`, which redirects to a locale) is
 public and needs no login. The narrow read `discordPanelBot:joinPage` returns
-only `{ gameId, name, address (HLL), joinCode (Wardogs), players, capacity, map }`
-and never a password. The page opens `steam://connect/<ip:port>` at once (Discord
-link buttons allow only http/https), keeps the address with "Kopírovat" and the
-Steam instructions when the browser blocks the link, shows the join code for
-Wardogs and links "Zpět do Discordu". It is not indexed.
+only `{ gameId, name, address (HLL), joinCode (Wardogs), players, capacity, queue }`
+and never a password. Players, capacity and queue come from the panel's latest
+live read (`hllLiveCache`, same generation, at most 3 minutes old,
+`joinPagePlayers` in `src/domain/discord-publications/server-join.ts`), else
+from the collected snapshot without a queue. The page is a bare centred card
+(P4-44): it opens `steam://connect/<ip:port>` at once (Discord link buttons
+allow only http/https), keeps the address with "Kopírovat" and the Steam
+instructions when the browser blocks the link, shows the join code for Wardogs
+and links "Zpět do Discordu". It is not indexed.
 
 ## 7. Owner activation
 

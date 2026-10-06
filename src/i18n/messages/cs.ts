@@ -6280,9 +6280,8 @@ export const csMessages = {
         metaDescription: "Připoj se na herní server {name}.",
         opening: "Otevírám {game}…",
         players: "{players} / {capacity} hráčů",
-        map: "mapa {map}",
+        queue: "fronta {queue}",
         steamPrompt: "Steam se zeptá, jestli odkaz otevřít. Potvrď Otevřít.",
-        openAgain: "Otevřít znovu",
         manualTitle: "Připojit ručně",
         addressLabel: "Adresa serveru",
         copy: "Kopírovat",
@@ -6698,6 +6697,10 @@ export const csMessages = {
             },
             content: {
                 show: "Co ukázat",
+                compact: {
+                    label: "Kompaktní vzhled",
+                    help: "Kratší karta výsledku: skóre bez řádku se stranami; oprava řekne jen kdy a co bylo předtím.",
+                },
                 score: {
                     label: "Skóre",
                     help: "Spojenci : Osa podle sektorů.",
@@ -7109,6 +7112,16 @@ export const csMessages = {
             seedChannelOkNoRole: "Bot může do kanálu psát.",
             role: "Role, kterou výzva označí",
             rolePlaceholder: "Bez označení role",
+            createRole: "Vytvořit roli Seed",
+            createRoleBusy: "Vytvářím roli…",
+            createRoleHint:
+                "Logi vytvoří v Discordu roli Seed, kterou jde označit, a hned ji vybere. Můžete vybrat i roli, kterou už máte.",
+            roleCreated: "Role @Seed je vytvořená a vybraná.",
+            roleReused: "Role @Seed už na serveru je, vybrali jsme ji.",
+            rolePermission:
+                "Roli se nepodařilo vytvořit. Dejte roli Logi v Discordu oprávnění Spravovat role.",
+            roleUnavailable:
+                "Discord teď neodpovídá. Zkuste roli vytvořit za chvíli znovu.",
             roleMembers: {
                 one: "{count} člen",
                 few: "{count} členové",

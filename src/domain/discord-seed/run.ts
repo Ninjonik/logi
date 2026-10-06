@@ -51,6 +51,29 @@ export type SeedObservation = {
     observedAt: number
 }
 
+/**
+ * The players on the server by their provider IDs, from a live read that
+ * names them (HLL through CRCON). Only counted, never shown or kept.
+ */
+export type SeedRoster = { ids: readonly string[]; observedAt: number }
+
+/**
+ * Who joined during the seed (P5-B04): the players on the server at the
+ * start and those first seen later. The IDs are dropped when the run ends;
+ * only the count stays.
+ */
+export type SeedRunJoins = {
+    present: string[]
+    joined: string[]
+    /** Set when the run ends; the lists are empty from then on. */
+    count: number | null
+}
+
+/** A read this close to the start counts as the start's roster. */
+export const SEED_ROSTER_BASELINE_MS = 2 * 60 * 1000
+/** Upper bound of tracked joiners; a seed never comes near it. */
+const SEED_ROSTER_LIMIT = 1000
+
 export type SeedRunPlayers = {
     start: number | null
     latest: number | null
@@ -77,7 +100,15 @@ export type SeedRun = {
     pingedMembers: number | null
     endedBy: (SeedActor & { via: SeedActionSource }) | null
     failure: SeedFailure | null
+    /**
+     * Distinct joiners when a live read named the players at the start;
+     * null (or missing on older runs) when Logi only had player counts.
+     */
+    joins?: SeedRunJoins | null
 }
+
+const unique = (ids: readonly string[]) =>
+    [...new Set(ids.filter((id) => id.trim()))].slice(0, SEED_ROSTER_LIMIT)
 
 export function isSeedRunActive(run: Pick<SeedRun, "status">) {
     return run.status === "seeding"
@@ -92,8 +123,16 @@ export function startSeedRun(input: {
     >
     ping: SeedPing
     observation: SeedObservation | null
+    /** The named players at the start, when the live read has them. */
+    roster?: SeedRoster | null
 }): SeedRun {
     const players = input.observation?.players ?? null
+    const roster = input.roster
+    const baseline =
+        roster &&
+        Math.abs(roster.observedAt - input.now) <= SEED_ROSTER_BASELINE_MS
+            ? roster
+            : null
     return {
         status: "seeding",
         trigger: input.trigger,
@@ -116,12 +155,21 @@ export function startSeedRun(input: {
         pingedMembers: null,
         endedBy: null,
         failure: null,
+        joins: baseline
+            ? { present: unique(baseline.ids), joined: [], count: null }
+            : null,
     }
 }
 
 export type SeedRunEvent =
     /** A tick: the latest fresh reading (or none) at time `at`. */
-    | { kind: "observe"; at: number; observation: SeedObservation | null }
+    | {
+          kind: "observe"
+          at: number
+          observation: SeedObservation | null
+          /** The named players now, when the live read has them (P5-B04). */
+          roster?: SeedRoster | null
+      }
     | { kind: "call_posted"; at: number; pingedMembers: number | null }
     | {
           kind: "stop"
@@ -158,6 +206,14 @@ function end(
             status,
             endedAt,
             players: { ...run.players, end: run.players.latest },
+            // Only the number of joiners is kept, never who they were.
+            joins: run.joins
+                ? {
+                      present: [],
+                      joined: [],
+                      count: run.joins.count ?? run.joins.joined.length,
+                  }
+                : (run.joins ?? null),
         },
         changed: true,
         ended: true,
@@ -192,6 +248,40 @@ export function applySeedRunEvent(
 
     let next = run
     let changed = false
+    // P5-B04: everyone named after the start who was not there at the start.
+    const roster = event.roster
+    if (
+        roster &&
+        roster.observedAt >= run.startedAt - SEED_ROSTER_BASELINE_MS
+    ) {
+        const joins = run.joins
+        if (
+            !joins &&
+            roster.observedAt <= run.startedAt + SEED_ROSTER_BASELINE_MS
+        ) {
+            next = {
+                ...next,
+                joins: { present: unique(roster.ids), joined: [], count: null },
+            }
+            changed = true
+        } else if (joins && joins.count === null) {
+            const known = new Set([...joins.present, ...joins.joined])
+            const fresh = unique(roster.ids).filter((id) => !known.has(id))
+            if (fresh.length) {
+                next = {
+                    ...next,
+                    joins: {
+                        ...joins,
+                        joined: [...joins.joined, ...fresh].slice(
+                            0,
+                            SEED_ROSTER_LIMIT
+                        ),
+                    },
+                }
+                changed = true
+            }
+        }
+    }
     const seen = event.observation
     // Only readings taken after the start count for progress and the live
     // threshold; an older reading may predate the seed.
@@ -201,11 +291,11 @@ export function applySeedRunEvent(
         seen.observedAt > (run.players.observedAt ?? -Infinity)
     ) {
         next = {
-            ...run,
+            ...next,
             players: {
-                ...run.players,
+                ...next.players,
                 latest: seen.players,
-                peak: Math.max(run.players.peak ?? 0, seen.players),
+                peak: Math.max(next.players.peak ?? 0, seen.players),
                 capacity: seen.capacity,
                 map: seen.map,
                 observedAt: seen.observedAt,
@@ -228,10 +318,15 @@ export function applySeedRunEvent(
 }
 
 /**
- * Seeders are the players who joined during the seed (P5-B04). Logi reads
- * player counts, so this is the growth from the start to the peak.
+ * Seeders are the players who joined during the seed (P5-B04): the distinct
+ * players first seen after the start, when a live read named the players
+ * from the start. With player counts only, the growth from the start to the
+ * peak stands in.
  */
-export function seedRunSeeders(run: Pick<SeedRun, "players">): number | null {
+export function seedRunSeeders(
+    run: Pick<SeedRun, "players" | "joins">
+): number | null {
+    if (run.joins) return run.joins.count ?? run.joins.joined.length
     const { start, peak } = run.players
     return start === null || peak === null ? null : Math.max(0, peak - start)
 }
