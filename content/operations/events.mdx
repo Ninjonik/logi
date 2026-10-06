@@ -215,7 +215,7 @@ their own time zone.
   name", with the meeting and the server (never its password), **Signed up 8** ·
   Not coming 1, and no teams, map or forum.
 - **Sign-up replies** (visible only to the player who clicks; in a DM they
-  arrive as a normal message): **Sign up** opens "Where do you want to play?"
+  arrive as a normal message, in the clan's language too): **Sign up** opens "Where do you want to play?"
   with each group, its count and, for a full group, "you'll go to the
   reserves". Choosing a group saves the sign-up and the same card turns into
   "Sign-up saved: Infantry" with **Change group** and **Can't make it**; **Edit
@@ -232,7 +232,8 @@ their own time zone.
   click) also sees why players are not coming, the members who neither signed
   up nor declined (**No response**, also a filter), **Remind non-responders**
   (the sign-up reminder DM, at most once an hour per match, while sign-ups are
-  open) and **Open on the web** (the match's attendance page).
+  open; after they close the button is greyed out and the card says why) and
+  **Open on the web** (the match's **Sign-ups and attendance** tab in Logi).
 - **Add to calendar** opens a Google Calendar event from the meeting to the
   end, titled like the card, at "Discord · clan · channel Meeting", with the
   meeting and start times, the map and a link back to the announcement channel.
@@ -243,9 +244,10 @@ their own time zone.
 - **My assignment** (visible only to the player who presses it): squad and role,
   the squad leader when the roster marks one (Officer, Squad Leader, SL, Tank
   Commander, Spotter or Commander roles), the leader's note, the meeting time
-  and channel, and the server with its password. From the day before the
-  meeting it offers **Confirm attendance**; until the game starts **Running
-  late**.
+  and channel, and the server with its password. From the meeting start it
+  offers **Confirm attendance**, like the announcement; until the game starts
+  **Running late**. The attendance reminder DM, sent the day before, can
+  already confirm.
 - **Attendance reminder DM:** "You're playing Name tomorrow" (or today, in the
   clan's time zone), start, meeting time and the player's squad and role, with
   **Confirm attendance**, **Running late** and **Can't make it**. Both late and
@@ -342,11 +344,14 @@ was concluded before its meeting time is treated as cancelled for scoring.
 
 ## Older Discord messages after the redesign
 
-After the update the bot redraws, once, the announcements of upcoming matches
-and trainings and of those that ended in the last 14 days, a few messages per
-minute: the same message in the same place, so links keep working, sign-ups
-and rosters stay as they were and nobody is pinged again. The per-group buttons
-of old announcements (the group is now chosen after **Sign up**) and the grey
-**Automatic updates** button disappear. Matches that ended longer ago and DMs
-already sent stay as they are. Logi records each redrawn announcement, so a
-restart never redraws it twice.
+After the update the bot redraws, once, the messages of upcoming matches and
+trainings and of those that ended in the last 14 days, a few matches per
+minute: the announcement, the published roster in the roster channel and the
+match forum's posts. That includes matches whose announcement the old bot had
+already removed when sign-ups closed: their roster message and forum posts are
+redrawn without posting a new announcement. It is the same message in the same
+place, so links keep working, sign-ups and rosters stay as they were and nobody
+is pinged again. The per-group buttons of old announcements (the group is now
+chosen after **Sign up**) and the grey **Automatic updates** button disappear.
+Matches that ended longer ago and DMs already sent stay as they are. Logi
+records each redrawn match, so a restart never redraws it twice.
