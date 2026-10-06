@@ -2,7 +2,10 @@ import type { IndexTab } from "../../domain/wardogs-league/all-fixtures"
 import { LeagueError } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
 import { indexUrl } from "../../domain/wardogs-league/discovery"
-import { load } from "cheerio"
+// `cheerio/slim` parses with htmlparser2 only; the full entry would bundle
+// parse5, undici and the encoding sniffer into every Convex module that
+// imports this parser (ARCHITECTURE.md, "Convex hot paths").
+import { load } from "cheerio/slim"
 /**
  * One public index tab. `fixtures` lists upcoming matches and `results`
  * finished ones; the League-wide collector uses the tab as a phase hint

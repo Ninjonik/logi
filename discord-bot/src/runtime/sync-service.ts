@@ -454,9 +454,14 @@ export class DiscordSyncService {
             attendanceReminderDue ? new Set([eventId]) : new Set()
         )
         if (signupReminderDue) {
+            // The recipients come from the clan's assignments, read once per
+            // due reminder rather than kept in the guild cache subscription.
+            const assignments = await this.loadGuildAssignments(
+                context.event.guildId
+            )
             await processSignupReminders(
                 this.client,
-                payload,
+                { ...payload, assignments },
                 new Set([eventId])
             )
         }
@@ -474,6 +479,13 @@ export class DiscordSyncService {
             secret: env.internalSecret,
             eventId: eventId as never,
         })) as EventSyncContext | null
+    }
+
+    private async loadGuildAssignments(guildId: string) {
+        return (await convex.query(references.listGuildAssignments, {
+            secret: env.internalSecret,
+            guildId,
+        })) as SyncPayload["assignments"]
     }
 
     private async syncGuildCalendar(guildId: string, requested = false) {

@@ -613,6 +613,14 @@ export default defineSchema({
         reconciliationRun: v.optional(v.string()),
         reconciliationCursor: v.optional(v.union(v.string(), v.null())),
         reconciliationLeaseUntil: v.optional(v.number()),
+        // The watermarks of `peopleSummaries:reconcileResultLinks`: when the
+        // current run started and whether it walks every event, when the
+        // last complete run started (the next incremental run walks the
+        // events updated since) and when the last complete full walk started.
+        reconciliationStartedAt: v.optional(v.string()),
+        reconciliationFull: v.optional(v.boolean()),
+        reconciliationSince: v.optional(v.string()),
+        reconciliationFullWalkAt: v.optional(v.string()),
     }).index("key", ["key"]),
     peopleResultLinks: defineTable({
         eventId: v.id("events"),
@@ -990,7 +998,14 @@ export default defineSchema({
             "recurrenceSeriesId",
             "gameStart",
         ])
-        .index("gameEnd", ["gameEnd"]),
+        .index("gameEnd", ["gameEnd"])
+        // The bot's subscriptions read the events it acts on: every status
+        // but `concluded` (a legacy row without a status is `undefined`),
+        // and the concluded ones that ended after a cutoff.
+        .index("status_gameEnd", ["status", "gameEnd"])
+        // The people reconciliation walks the events changed since its last
+        // complete run; rows without `updatedAt` wait for the daily full walk.
+        .index("updatedAt", ["updatedAt"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"]),

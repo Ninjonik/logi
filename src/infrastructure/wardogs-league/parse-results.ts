@@ -2,7 +2,8 @@ import type {
     LeagueMatch,
     LeagueResults,
 } from "../../domain/wardogs-league/contracts"
-import type { CheerioAPI } from "cheerio"
+// Type-only; the runtime parsers load through `cheerio/slim` (htmlparser2).
+import type { CheerioAPI } from "cheerio/slim"
 
 /**
  * Identifies what this file can read. The League-wide collector stores it

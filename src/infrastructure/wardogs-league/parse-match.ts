@@ -6,7 +6,10 @@ import {
 } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
 import { parseLeagueResults } from "./parse-results"
-import { load } from "cheerio"
+// `cheerio/slim` parses with htmlparser2 only; the full entry would bundle
+// parse5, undici and the encoding sniffer into every Convex module that
+// imports this parser (ARCHITECTURE.md, "Convex hot paths").
+import { load } from "cheerio/slim"
 import { z } from "zod"
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim()

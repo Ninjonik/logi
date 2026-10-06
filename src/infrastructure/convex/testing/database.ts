@@ -196,3 +196,25 @@ export async function invoke(
         throw error
     }
 }
+/**
+ * Records the table and index of every `ctx.db.query` a handler makes, so a
+ * test can assert that a timed or subscribed read never walks a whole table
+ * (ARCHITECTURE.md, "Convex hot paths"). `index` stays `null` for a read
+ * without `withIndex`.
+ */
+export function spyReads(ctx: { db: TestDatabase }) {
+    const calls: Array<{ table: string; index: string | null }> = []
+    const original = ctx.db.query.bind(ctx.db)
+    ctx.db.query = (table: string) => {
+        const query = original(table)
+        const call = { table, index: null as string | null }
+        calls.push(call)
+        const withIndex = query.withIndex
+        query.withIndex = (name: string, fn?: (q: any) => unknown) => {
+            call.index = name
+            return withIndex(name, fn)
+        }
+        return query
+    }
+    return calls
+}

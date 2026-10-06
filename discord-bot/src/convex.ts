@@ -164,6 +164,9 @@ export const references = {
     listSyncPayloads: makeFunctionReference<"query">(
         "discordSync:listSyncPayloads"
     ),
+    listGuildAssignments: makeFunctionReference<"query">(
+        "discordSync:listGuildAssignments"
+    ),
     reconcileStatuses: makeFunctionReference<"mutation">(
         "events:reconcileStatuses"
     ),

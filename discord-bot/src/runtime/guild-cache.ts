@@ -5,13 +5,17 @@ import type {
     GuildCacheSnapshot,
     GuildRecord,
     SquadPreset,
-    SyncPayload,
     TopicPreset,
 } from "../types"
 import { convex, references } from "../convex"
 import { logError, logInfo } from "../log"
 import { env } from "../environment"
 
+/**
+ * One clan's configuration as the bot keeps it between syncs. Member
+ * assignments are not cached: the sign-up reminder reads them when it is
+ * due, so the cache subscription does not re-run on every assignment write.
+ */
 export type GuildRuntimeData = {
     guild: GuildRecord
     config?: DiscordConfig
@@ -19,7 +23,6 @@ export type GuildRuntimeData = {
     calendarItems: CalendarItem[]
     squadPresets: SquadPreset[]
     topicPresets: TopicPreset[]
-    assignments: SyncPayload["assignments"]
 }
 
 type GuildChangeHandler = (guildIds: string[]) => void
@@ -104,16 +107,6 @@ export class GuildCache {
                 topicPresets: snapshot.topicPresets.filter(
                     (preset) => preset.guildId === guild.discordId
                 ),
-                // The assignment collection was added after this cache query was
-                // introduced. Treat it as empty while a bot deploy temporarily
-                // overlaps an older Convex deployment that does not return it.
-                assignments: (snapshot.assignments ?? [])
-                    .filter(
-                        (assignment) => assignment.serverId === guild.discordId
-                    )
-                    .map(
-                        ({ serverId: _serverId, ...assignment }) => assignment
-                    ),
             })
         }
 
