@@ -19,6 +19,22 @@ export const ANNOUNCEMENT_MIGRATION_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
 /** "A few messages per minute" (L1-151). */
 export const ANNOUNCEMENT_MIGRATIONS_PER_MINUTE = 6
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * The earliest `gameEnd` a bounded read of the matches must return so that
+ * {@link isAnnouncementMigrationDue} sees every match that may still be due:
+ * the window's start, as an ISO instant, with a day of slack. Every writer
+ * stores `toISOString()` output, which sorts chronologically; the slack
+ * covers an end that a client wrote with a UTC offset, which sorts by its
+ * local time. The rule decides exactly, this only bounds the read.
+ */
+export function announcementMigrationScanStart(now: Date): string {
+    return new Date(
+        now.getTime() - ANNOUNCEMENT_MIGRATION_WINDOW_MS - DAY_MS
+    ).toISOString()
+}
+
 /**
  * Whether a match still has a message drawn by the old bot to redraw: the
  * announcement card, the roster card in the roster channel, or the forum's

@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     ANNOUNCEMENT_LAYOUT_VERSION,
     ANNOUNCEMENT_MIGRATIONS_PER_MINUTE,
+    announcementMigrationScanStart,
     hasMigratableMessage,
     isAnnouncementMigrationDue,
     takeMigrationToken,
@@ -82,4 +83,28 @@ test("redraws are limited to a few per minute (L1-151)", () => {
     }
     assert.ok(again >= ANNOUNCEMENT_MIGRATIONS_PER_MINUTE - 1)
     assert.ok(again <= ANNOUNCEMENT_MIGRATIONS_PER_MINUTE)
+})
+
+test("a bounded read starts a day before the window, so the rule still sees every due match", () => {
+    const start = announcementMigrationScanStart(now)
+    assert.equal(start, "2026-10-05T12:00:00.000Z")
+    // Every match the rule may accept sorts after the scan start, including
+    // an end written with a UTC offset, whose text sorts by its local time:
+    // 02:30 at -10:00 is 12:30 UTC, inside the window, yet its text sorts
+    // before the window's own start.
+    for (const gameEnd of [
+        "2026-10-06T12:00:00.000Z",
+        "2026-10-06T12:00:00Z",
+        "2026-10-06T02:30:00-10:00",
+        "2026-10-07T01:00:00+12:00",
+        "2026-10-25T20:00:00.000Z",
+    ]) {
+        assert.ok(gameEnd >= start, gameEnd)
+        assert.ok(due(gameEnd), gameEnd)
+    }
+    // A match the rule rejects for its age may still be read: the bound is
+    // a superset, never a substitute for the rule.
+    assert.ok("2026-10-06T11:00:00.000Z" >= start)
+    assert.equal(due("2026-10-06T11:00:00.000Z"), false)
+    assert.ok("2026-10-05T11:00:00.000Z" < start)
 })

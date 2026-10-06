@@ -1,15 +1,16 @@
 import { v } from "convex/values"
 
 import {
+    announcementMigrationScanStart,
+    hasMigratableMessage,
+    isAnnouncementMigrationDue,
+} from "../src/domain/events/announcement-migration"
+import {
     assertInternalSecret,
     normalizeConfigDoc,
     normalizeDoc,
     normalizeEventDoc,
 } from "./discord_shared"
-import {
-    hasMigratableMessage,
-    isAnnouncementMigrationDue,
-} from "../src/domain/events/announcement-migration"
 import {
     matchesGameScope,
     resolveGameScope,
@@ -173,6 +174,10 @@ export const record = mutation({
  * already removed. Drafts and matches without such a message are left out;
  * the bot redraws the rest, a few a minute, and the record above marks each
  * one done, so a restart never redraws a match twice.
+ *
+ * The bot asks every minute, so the read is bounded by the `gameEnd` index
+ * to the matches that end after the window's start (ARCHITECTURE.md,
+ * "Convex hot paths"); the rule then decides exactly.
  */
 export const listMigrationDue = query({
     args: {
@@ -186,7 +191,13 @@ export const listMigrationDue = query({
         const now = new Date(args.now)
         const limit = Math.max(1, Math.min(args.limit ?? 25, 100))
         const due: Array<{ eventId: string; guildId: string }> = []
-        for (const event of await ctx.db.query("events").collect()) {
+        const candidates = await ctx.db
+            .query("events")
+            .withIndex("gameEnd", (q) =>
+                q.gte("gameEnd", announcementMigrationScanStart(now))
+            )
+            .collect()
+        for (const event of candidates) {
             if (due.length >= limit) break
             if (isDraftEvent(event)) continue
             if (

@@ -989,7 +989,8 @@ export default defineSchema({
         .index("recurrenceSeriesId_gameStart", [
             "recurrenceSeriesId",
             "gameStart",
-        ]),
+        ])
+        .index("gameEnd", ["gameEnd"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"]),

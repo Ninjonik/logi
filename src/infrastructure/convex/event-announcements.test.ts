@@ -98,6 +98,51 @@ test("each match is redrawn once: the card's layout or the migration marker take
     assert.equal(row?.pingedAt, undefined)
 })
 
+test("the list reads the matches through the gameEnd index from the window's start, never the whole table", async (t) => {
+    const ctx = fixture()
+    const ranges: Array<{ index: string; lowerBound: string | null }> = []
+    const original = ctx.db.query.bind(ctx.db)
+    t.mock.method(ctx.db, "query", (table: string) => {
+        const query = original(table)
+        if (table !== "events") return query
+        const withIndex = query.withIndex
+        query.withIndex = (
+            name: string,
+            fn?: (q: Record<string, unknown>) => unknown
+        ) => {
+            const range = { index: name, lowerBound: null as string | null }
+            ranges.push(range)
+            return withIndex(name, (q: Record<string, unknown>) =>
+                fn?.(
+                    new Proxy(q, {
+                        get: (target, op) =>
+                            op === "gte"
+                                ? (field: string, value: string) => {
+                                      range.lowerBound = `${field}>=${value}`
+                                      return (
+                                          target.gte as (
+                                              field: string,
+                                              value: string
+                                          ) => unknown
+                                      )(field, value)
+                                  }
+                                : Reflect.get(target, op),
+                    })
+                )
+            )
+        }
+        return query
+    })
+    assert.deepEqual(await listDue(ctx), [
+        "events:card",
+        "events:roster-card",
+        "events:forum-only",
+    ])
+    assert.deepEqual(ranges, [
+        { index: "gameEnd", lowerBound: "gameEnd>=2026-10-05T12:00:00.000Z" },
+    ])
+})
+
 test("the list and the records need the internal secret", async () => {
     const ctx = fixture()
     await assert.rejects(
