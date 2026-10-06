@@ -8,6 +8,12 @@ import {
     gameDataSession,
 } from "./gameDataValidators"
 import {
+    applicationAccountsValidator,
+    applicationAnswerKindValidator,
+    applicationDraftFields,
+    applicationFormValidator,
+} from "./membershipApplicationValidators"
+import {
     discordBotHeartbeats,
     discordPanelServers,
     discordPanelStatus,
@@ -34,14 +40,14 @@ import {
     leagueCollectionState,
 } from "./leagueDiscoveryFixtureTable"
 import {
-    commandSettingsValidator,
-    discordCommandRegistrations,
-} from "./discordCommandTable"
-import {
     discordSeedMessages,
     discordSeedPlans,
     discordSeedRuns,
 } from "./discordSeedTable"
+import {
+    commandSettingsValidator,
+    discordCommandRegistrations,
+} from "./discordCommandTable"
 import {
     discordApplicationEmoji,
     discordPanelGraphics,
@@ -245,6 +251,8 @@ const membershipCategory = v.object({
         v.literal("mercenary")
     ),
     autoAssignRecruitOnApply: v.optional(v.boolean()),
+    // Ask "Specializace" in this category (N4-B05); missing is yes for HLL.
+    askSpecialization: v.optional(v.boolean()),
 })
 
 const eventCategory = v.object({
@@ -299,6 +307,8 @@ const membershipSettings = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    // The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10).
+    panelAccentColor: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
@@ -306,6 +316,14 @@ const membershipSettings = v.object({
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(rosterScoreSettings),
     categories: v.array(membershipCategory),
+    // The application form in Discord windows (N4); missing uses the default.
+    applicationForm: v.optional(applicationFormValidator),
+    // Variant B: the same form on the Logi web; off unless switched on (N4-42).
+    webFormEnabled: v.optional(v.boolean()),
+    // Mention the category's support roles in the thread intro (N4-34).
+    mentionSupportRoles: v.optional(v.boolean()),
+    // DM the applicant a confirmation with the thread link (N4-36).
+    sendConfirmationDm: v.optional(v.boolean()),
 })
 
 const statsSettings = v.object({
@@ -1409,10 +1427,23 @@ export default defineSchema({
                 questionId: v.string(),
                 label: v.string(),
                 value: v.string(),
+                kind: v.optional(applicationAnswerKindValidator),
             })
         ),
         status: v.union(v.literal("open"), v.literal("closed")),
         openedAt: v.string(),
+        // The application in Discord windows (L6) and on the web (Variant B).
+        source: v.optional(v.union(v.literal("discord"), v.literal("web"))),
+        applicantName: v.optional(v.string()),
+        games: v.optional(v.array(gameId)),
+        inGameName: v.optional(v.string()),
+        accounts: v.optional(applicationAccountsValidator),
+        // "Ještě nerozhodnuto" records only who and when (L6-B08).
+        undecidedByUserId: v.optional(v.string()),
+        undecidedByName: v.optional(v.string()),
+        undecidedAt: v.optional(v.string()),
+        // One decision at a time across the buttons and /close_application.
+        decisionLeaseUntil: v.optional(v.number()),
         closedAt: v.optional(v.string()),
         closedByUserId: v.optional(v.string()),
         closeReason: v.optional(v.string()),
@@ -1459,6 +1490,10 @@ export default defineSchema({
         updatedAt: v.string(),
     })
         .index("guildId_creatorId", ["guildId", "creatorId"])
+        .index("expiresAt", ["expiresAt"]),
+    membershipApplicationFormDrafts: defineTable(applicationDraftFields)
+        .index("guildId_creatorId", ["guildId", "creatorId"])
+        .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),
     platformIdLinkTokens: defineTable({
         token: v.string(),

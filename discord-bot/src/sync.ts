@@ -1,16 +1,13 @@
 import type { Client } from "discord.js"
 
 import {
-    syncCalendarPanel,
-    syncMembershipPanel,
-    syncTicketPanel,
-} from "./sync/panels"
-import {
     syncDashboardAdminRoles,
     syncGuildMemberAccess,
 } from "./sync/member-access"
 import { processAttendanceReminders } from "./sync/attendance-reminders"
+import { syncMembershipPanel } from "./interactions/membership-panel"
 import { syncManagedMemberRoles } from "./sync/managed-member-roles"
+import { syncCalendarPanel, syncTicketPanel } from "./sync/panels"
 import { reportClanDiscordError } from "./error-reporting"
 import { syncPayloadEvents } from "./sync/events"
 import type { SyncPayload } from "./types"

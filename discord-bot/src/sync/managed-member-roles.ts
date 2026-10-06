@@ -8,6 +8,8 @@ import {
     type RoleEvidence,
     type RoleSnapshot,
 } from "../../../src/infrastructure/discord/managed-roles"
+import { createRoleFailureReporter } from "./role-failure-reports"
+import { reportClanDiscordError } from "../error-reporting"
 import { makeFunctionReference } from "convex/server"
 import type { Client } from "discord.js"
 import { env } from "../environment"
@@ -100,6 +102,26 @@ const finishReference = makeFunctionReference<"mutation">(
     "memberRoleOperations:finish"
 )
 const activeGuilds = new Set<string>()
+let roleFailures: ReturnType<typeof createRoleFailureReporter> | null = null
+
+/** One grouped errors-channel report per clan for role changes an admin must fix (L5-14). */
+function roleFailureReporter(client: Client) {
+    roleFailures ??= createRoleFailureReporter({
+        report: (report) =>
+            reportClanDiscordError({
+                client,
+                guildId: report.guildId,
+                source: "memberRoles",
+                memberIds: report.memberIds,
+                error: new Error(report.reasons.join(", ")),
+            }),
+        schedule: (run, delayMs) => {
+            setTimeout(run, delayMs).unref()
+        },
+    })
+    return roleFailures
+}
+
 /** One bounded operation per guild polling pass; durable leases also protect multiple bot processes. */
 export async function syncManagedMemberRoles(client: Client, guildId: string) {
     if (!client.user || activeGuilds.has(guildId)) return
@@ -110,25 +132,41 @@ export async function syncManagedMemberRoles(client: Client, guildId: string) {
             guildId,
         })) as Omit<Claim, "guildId"> | null
         if (!claim) return
+        let memberId: string | undefined
         await processManagedRoleOperation(
             { ...claim, guildId },
             {
                 now: Date.now,
-                prepare: (work, evidence) =>
-                    convex.query(prepareReference, {
+                prepare: async (work, evidence) => {
+                    const prepared = (await convex.query(prepareReference, {
                         secret: env.internalSecret,
                         operationId: work.operationId,
                         fence: work.fence,
                         evidence,
-                    }),
+                    })) as Work
+                    memberId = prepared.discordUserId ?? memberId
+                    return prepared
+                },
                 discord: (work) =>
                     createManagedRoleDiscord({
                         ...work,
                         botUserId: client.user!.id,
                         token: env.botToken,
                     }),
-                finish: (work, outcome, reason, retryAfterMs, evidence) =>
-                    convex.mutation(finishReference, {
+                finish: async (
+                    work,
+                    outcome,
+                    reason,
+                    retryAfterMs,
+                    evidence
+                ) => {
+                    if (outcome === "denied" && memberId)
+                        roleFailureReporter(client).add({
+                            guildId,
+                            memberId,
+                            reason,
+                        })
+                    return (await convex.mutation(finishReference, {
                         secret: env.internalSecret,
                         operationId: work.operationId,
                         fence: work.fence,
@@ -136,7 +174,8 @@ export async function syncManagedMemberRoles(client: Client, guildId: string) {
                         reason,
                         retryAfterMs,
                         evidence,
-                    }),
+                    })) as boolean
+                },
             }
         )
     } finally {

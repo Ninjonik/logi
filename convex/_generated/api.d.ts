@@ -105,6 +105,8 @@ import type * as matchTemplates from "../matchTemplates.js";
 import type * as meetingAttendance from "../meetingAttendance.js";
 import type * as memberObservations from "../memberObservations.js";
 import type * as memberRoleOperations from "../memberRoleOperations.js";
+import type * as membershipApplicationValidators from "../membershipApplicationValidators.js";
+import type * as membershipApplications from "../membershipApplications.js";
 import type * as membershipSubject from "../membershipSubject.js";
 import type * as membership_shared from "../membership_shared.js";
 import type * as migrations from "../migrations.js";
@@ -258,6 +260,8 @@ declare const fullApi: ApiFromModules<{
   meetingAttendance: typeof meetingAttendance;
   memberObservations: typeof memberObservations;
   memberRoleOperations: typeof memberRoleOperations;
+  membershipApplicationValidators: typeof membershipApplicationValidators;
+  membershipApplications: typeof membershipApplications;
   membershipSubject: typeof membershipSubject;
   membership_shared: typeof membership_shared;
   migrations: typeof migrations;

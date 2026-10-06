@@ -63,6 +63,15 @@ function node(item: LayoutNode): Record<string, unknown> {
                         : {}),
                 },
             }
+        case "section-button":
+            return {
+                type: 9,
+                components: item.texts.map((content) => ({
+                    type: 10,
+                    content,
+                })),
+                accessory: button(item.button),
+            }
         case "separator":
             return {
                 type: 14,

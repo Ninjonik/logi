@@ -78,18 +78,6 @@ export const references = {
     createMembershipApplicationThread: makeFunctionReference<"mutation">(
         "discordMembership:createMembershipApplicationThread"
     ),
-    createMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:createMembershipApplicationDraft"
-    ),
-    updateMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:updateMembershipApplicationDraft"
-    ),
-    getMembershipApplicationDraft: makeFunctionReference<"query">(
-        "discordMembership:getMembershipApplicationDraft"
-    ),
-    discardMembershipApplicationDraft: makeFunctionReference<"mutation">(
-        "discordMembership:discardMembershipApplicationDraft"
-    ),
     createTicketThread: makeFunctionReference<"mutation">(
         "discordMembership:createTicketThread"
     ),
@@ -140,14 +128,8 @@ export const references = {
     getConfigByDiscordGuildId: makeFunctionReference<"query">(
         "discordConfig:getConfigByDiscordGuildId"
     ),
-    getMembershipApplicationPrereq: makeFunctionReference<"query">(
-        "discordMembership:getMembershipApplicationPrereq"
-    ),
     getMembershipApplicationThreadContext: makeFunctionReference<"query">(
         "discordMembership:getMembershipApplicationThreadContext"
-    ),
-    getMembershipCategoryContext: makeFunctionReference<"query">(
-        "discordMembership:getMembershipCategoryContext"
     ),
     getTicketThreadContext: makeFunctionReference<"query">(
         "discordMembership:getTicketThreadContext"

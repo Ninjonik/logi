@@ -1,8 +1,10 @@
+import { membershipApplicationInteractions } from "./membership-application"
 import { matchAnnouncementInteractions } from "../events/interactions"
+import { membershipDecisionInteractions } from "./membership-decision"
 import { attendanceReplyInteractions } from "./attendance-replies"
+import { panelInteractions } from "../public-panels/interactions"
 import { matchRecapInteractions } from "./match-recap-preference"
 import { rosterInteractions } from "./roster-assignment"
-import { panelInteractions } from "../public-panels/interactions"
 import { seedInteractions } from "../seed/interactions"
 import { commandFeatures } from "../commands/features"
 import type { InteractionFeature } from "./registry"
@@ -25,6 +27,9 @@ export const interactionFeatures: readonly InteractionFeature[] = [
     attendanceReplyInteractions,
     matchRecapInteractions,
     panelInteractions,
+    // The clan application, its decisions and /close_application (W7a).
+    membershipApplicationInteractions,
+    membershipDecisionInteractions,
     // Tickets, /close_ticket and /link (membership workstream, W7b).
     ticketsFeature,
     closeTicketFeature,

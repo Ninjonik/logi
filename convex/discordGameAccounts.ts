@@ -48,8 +48,32 @@ export const getLinkContext = query({
                               value: answer.value,
                           }))
                       ),
+                      // The game accounts given in the application windows (L4-B09).
+                      accounts: applications.flatMap((application) =>
+                          storedApplicationAccounts(application.accounts)
+                      ),
                   }
                 : null,
         }
     },
 })
+
+/** An application's accounts as stored IDs (`steam:7656…`, `xbox:Hrac17`). */
+function storedApplicationAccounts(
+    accounts:
+        | {
+              steam?: string
+              epic?: string
+              xbox?: string
+              playstation?: string
+          }
+        | undefined
+) {
+    if (!accounts) return []
+    return (["steam", "epic", "xbox", "playstation"] as const).flatMap(
+        (platform) =>
+            accounts[platform]?.trim()
+                ? [`${platform}:${accounts[platform]!.trim()}`]
+                : []
+    )
+}

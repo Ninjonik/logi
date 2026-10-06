@@ -88,4 +88,24 @@ test("an open application uses the accounts it names, else every linked one (L4-
         [...accountsUsedByApplication(linked, { answers: [{ value: "10" }] })],
         linked
     )
+    // An application in windows names its accounts: only those are used,
+    // and none when it gave other accounts than the linked ones.
+    assert.deepEqual(
+        [
+            ...accountsUsedByApplication(linked, {
+                answers: [{ value: "10" }],
+                accounts: ["steam:76561198000000017"],
+            }),
+        ],
+        ["steam:76561198000000017"]
+    )
+    assert.deepEqual(
+        [
+            ...accountsUsedByApplication(linked, {
+                answers: [],
+                accounts: ["xbox:SomeoneElse"],
+            }),
+        ],
+        []
+    )
 })

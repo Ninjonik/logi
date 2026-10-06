@@ -140,18 +140,29 @@ function accountKey(stored: string) {
 }
 
 /**
- * The linked accounts an open application relies on (L4-B09): the ones its
- * answers name, or, when it names none, every linked account, because an
- * application is only accepted with a linked account. No open application
- * uses none.
+ * The linked accounts an open application relies on (L4-B09). An
+ * application in windows stores the game accounts the applicant gave
+ * (`accounts`, as stored IDs such as `steam:7656…`): exactly those are
+ * used. An older application only has answers: the accounts its answers
+ * name, or, when it names none, every linked account, because it was only
+ * accepted with a linked account. No open application uses none.
  */
 export function accountsUsedByApplication(
     linked: readonly string[],
     application: {
         answers: ReadonlyArray<{ value: string }>
+        accounts?: readonly string[]
     } | null
 ): Set<string> {
     if (!application) return new Set()
+    if (application.accounts?.length)
+        return new Set(
+            linked.filter((stored) =>
+                application.accounts!.some((account) =>
+                    sameGameAccount(stored, account)
+                )
+            )
+        )
     const answers = application.answers.map((answer) =>
         answer.value.replace(/\s+/g, "").toLowerCase()
     )

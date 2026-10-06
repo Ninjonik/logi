@@ -392,9 +392,14 @@ export default async function ServerSettingsSectionPage({
             content = (
                 <MembershipSettingsForm
                     serverId={serverId}
+                    guildId={server.discordId}
                     config={discordConfig}
                     dictionary={dictionary}
                     rolesHref={settingsHref(locale, serverId, "roles", gameId)}
+                    clanName={server.name}
+                    siteUrl={getSiteUrl()}
+                    now={new Date().getTime()}
+                    locale={locale}
                 />
             )
             break
@@ -520,12 +525,23 @@ export default async function ServerSettingsSectionPage({
                 section === "game-servers" ||
                 section === "commands" ||
                 section === "discord-seed" ||
-                section === "messages"
+                section === "messages" ||
+                section === "membership"
             }
             mobileBreadcrumb={
                 section === "discord-panels" ||
                 section === "panel-graphics" ||
                 section === "discord-seed"
+            }
+            breadcrumbParent={
+                section === "membership"
+                    ? dictionary.membershipApplication.breadcrumbParent
+                    : undefined
+            }
+            breadcrumbCurrent={
+                section === "membership"
+                    ? dictionary.membershipApplication.title
+                    : undefined
             }
         >
             {content}

@@ -66,6 +66,7 @@ import {
 } from "../../../src/lib/clan-language/core"
 import { getGameAccountMessages } from "../../../src/lib/clan-language/game-accounts"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
+import { continueApplicationAfterLink } from "./membership-application"
 import { editPayload, type MessageKitOptions } from "../ui/message-kit"
 import { shortDay } from "../../../src/domain/discord-commands/text"
 import type { GuildCommandConfigs } from "../commands/guild-configs"
@@ -105,7 +106,11 @@ const LEGACY_MODAL_PREFIXES = ["plink-modal:l:", "plink-search:l:"]
 /** `discordGameAccounts:getLinkContext`. */
 export type LinkContextRow = {
     serverNames: Array<{ origin: string; name: string }>
-    application: { answers: Array<{ value: string }> } | null
+    /** `accounts`: the stored IDs an application in windows gave. */
+    application: {
+        answers: Array<{ value: string }>
+        accounts?: string[]
+    } | null
 }
 
 /** What `/link` reads and writes; Convex and Discord in production, fakes in tests. */
@@ -723,4 +728,6 @@ export const linkFeature = linkInteractions(() => ({
         )?.playerStatsServers ?? [],
     emoji: () => installedPlatformEmoji(client),
     siteUrl: env.appSiteUrl,
+    // The account step of the clan application (W7a, L4-60).
+    continueApplication: continueApplicationAfterLink,
 }))

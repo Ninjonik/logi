@@ -46,6 +46,8 @@ export function SettingsSectionFrame({
     ownHeader = false,
     crumb,
     mobileBreadcrumb = false,
+    breadcrumbParent,
+    breadcrumbCurrent,
     children,
 }: {
     locale: string
@@ -71,6 +73,14 @@ export function SettingsSectionFrame({
      * ("Discord › Panely v Discordu", board P1-23) instead of the way back.
      */
     mobileBreadcrumb?: boolean
+    /**
+     * A parent named in the breadcrumb that is not a settings section of its
+     * own ("Členství"); a sub-page section gets its parent from
+     * `settingsSectionParent` with a link.
+     */
+    breadcrumbParent?: string
+    /** The page's own name in the breadcrumb when it differs from the menu entry. */
+    breadcrumbCurrent?: string
     children: ReactNode
 }) {
     const hub = dictionary.settingsHub
@@ -80,6 +90,7 @@ export function SettingsSectionFrame({
     // A sub-page ("Grafika panelů") sits under its parent in the breadcrumb
     // and marks the parent in the menu.
     const parent = settingsSectionParent(section)
+    const title = breadcrumbCurrent ?? text.title
     const trail: Array<{ label: string; href?: string }> = [
         ...(parent
             ? [
@@ -88,16 +99,18 @@ export function SettingsSectionFrame({
                       href: settingsHref(locale, serverId, parent, gameId),
                   },
               ]
-            : []),
+            : breadcrumbParent
+              ? [{ label: breadcrumbParent }]
+              : []),
         ...(crumb
             ? [
                   {
-                      label: text.title,
+                      label: title,
                       href: settingsHref(locale, serverId, section, gameId),
                   },
                   { label: crumb },
               ]
-            : [{ label: text.title }]),
+            : [{ label: title }]),
     ]
     const navProps = {
         locale,

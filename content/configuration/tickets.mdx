@@ -17,12 +17,9 @@ panel (channel, thread channel, heading, text, optional image and the panel's
 own colour) beside a preview of the exact Discord card the bot posts, and the
 categories as a table: who answers and how many questions each has. **Edit**
 opens a category's button text, emoji, description, the title of its thread
-card, support roles and form questions. **Settings → Membership** has
-the join-request switch at the top and tabs for **Categories**, **Panel and
-threads**, **Attendance points** and **Role changes**; the categories tab lists
-the categories on the left (a category missing a role is flagged) and edits the
-selected one: its button, what the player becomes after approval, the roles for
-each status next to the clan role, who handles requests and the form questions.
+card, support roles and form questions. **Settings → Membership** is the
+[clan application](/wiki/configuration/membership-applications): one form in
+several Discord windows, the decision buttons and the optional web form.
 Both pages save with the bar at the bottom, which only saves that page;
 **Discard** drops unsaved changes.
 
@@ -32,10 +29,10 @@ Both workflows require the bot to be running and the selected submit channel to
 be a normal Discord text channel. An incomplete configuration is simply
 skipped: no panel is posted and no partial fallback panel is created.
 
-| Workflow                | Required settings                                                              | What each category adds                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, thread card title, support roles, up to five questions |
-| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles, and up to five modal questions       |
+| Workflow                | Required settings                                                              | What each category adds                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, thread card title, support roles, up to five questions                                                     |
+| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles; the questions are in the [application form](/wiki/configuration/membership-applications) |
 
 The bot posts or updates one panel message in each configured submit channel.
 If its saved panel message is deleted, the next successful sync creates a new
@@ -120,29 +117,11 @@ private reports. See the [implementation and operational limits](https://github.
 
 ### Membership application flow
 
-1. The person completes a private, ephemeral Discord wizard in one updating
-   message: game, category, platform account, category questions, and a final
-   review. The wizard keeps a
-   short-lived draft, so cancelling it creates neither an assignment nor an
-   application thread.
-2. The person must not already have a workspace assignment or another open
-   application, and must have at least one linked platform ID. If no platform
-   ID exists, platform selection and ID entry remain inside that wizard.
-3. After **Agree and submit**, the bot creates a private application thread and an assignment. It starts as
-   pending unless **Skip waiting and add straight as a recruit** is on for
-   that category (main members only), in which case it starts as recruit and
-   the configured recruit roles are queued for the bot. A category without its
-   own choice follows the clan-wide setting saved before the switch moved to
-   categories. The category decides whether its assignment is member, reserve
-   member, or mercenary.
-4. Eligible staff close it with `/close_application` and choose **denied**,
-   **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
-   updates the assignment, except denied, which removes the assignment created
-   for the application.
-5. The bot records the closing outcome, posts the result in the thread, renames
-   it and attempts to DM the applicant. The assignment transaction separately
-   queues the configured membership roles for the status transition; inspect
-   the operation status before assuming that Discord has applied them.
+The application is one form in several Discord windows, sent once after a
+review; the private thread is created only then, and recruiters decide with
+buttons on the card or with `/close_application`. See
+[Clan applications](/wiki/configuration/membership-applications) for the form
+builder, the decision buttons, the DMs and the web form.
 
 ### Membership role and score settings
 
@@ -190,14 +169,10 @@ An application, an open application thread, and an existing membership block
 only the matching game. For example, an existing Hell Let Loose membership
 does not prevent a Wardogs application in the same workspace.
 
-The Discord panel has one application button. It opens a single updating
-membership wizard that first asks the player to choose a game, then shows only
-the membership categories configured for that game, and only then asks them to
-link a platform account if needed.
-If the Discord-linked Logi profile already has platform IDs, the player can
-reuse one for the application or choose to link another ID instead.
-This lookup is player-wide rather than game-specific: a platform ID linked
-through a different game is detected and offered for reuse as well.
+The Discord panel's **Apply** button opens the application windows described
+on [Clan applications](/wiki/configuration/membership-applications). Accounts
+already linked to the player's Logi profile are prefilled in the window for
+game accounts, whichever game they were linked through.
 
 In the dashboard, each category groups its display label, emoji, target game,
 and application result before the category description.
