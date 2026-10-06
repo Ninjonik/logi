@@ -78,3 +78,29 @@ export function readCommandResult(
         test: value.test?.outcome ?? value.outcome ?? null,
     }
 }
+
+/**
+ * A signal that aborts after `ms`, or as soon as `parent` aborts. A fetch
+ * without a deadline keeps the page's pending state forever when the backend
+ * stops answering; every request of the game-server page carries one.
+ */
+export function abortAfter(ms: number, parent?: AbortSignal): AbortSignal {
+    const controller = new AbortController()
+    const timer = setTimeout(
+        () => controller.abort(new DOMException("Timed out", "TimeoutError")),
+        ms
+    )
+    controller.signal.addEventListener("abort", () => clearTimeout(timer), {
+        once: true,
+    })
+    if (parent?.aborted) controller.abort(parent.reason)
+    else
+        parent?.addEventListener(
+            "abort",
+            () => controller.abort(parent.reason),
+            {
+                once: true,
+            }
+        )
+    return controller.signal
+}

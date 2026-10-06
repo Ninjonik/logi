@@ -40,3 +40,34 @@ export function isFreshObservation(
     const age = now - Date.parse(value.observedAt)
     return Number.isFinite(age) && age >= 0 && age <= maxAgeMs
 }
+
+/**
+ * Whether a new provider observation changes what the membership projections
+ * serve: state, the role set and the epoch. A reconciliation observes every
+ * member every few minutes; one that sees the same roles again is fresher
+ * evidence (`observedAt`), not a change, so it must not allocate a revision
+ * or a change-feed entry (ARCHITECTURE.md, "Convex hot paths").
+ */
+export function observationChanged(
+    previous: {
+        state: ProviderObservation["state"]
+        roleIds: string[]
+        epoch: string
+        unavailable?: boolean
+    } | null,
+    next: {
+        state: ProviderObservation["state"]
+        roleIds: string[]
+        epoch: string
+        unavailable: boolean
+    }
+): boolean {
+    return (
+        !previous ||
+        previous.state !== next.state ||
+        previous.epoch !== next.epoch ||
+        (previous.unavailable ?? false) !== next.unavailable ||
+        previous.roleIds.length !== next.roleIds.length ||
+        previous.roleIds.some((roleId, index) => roleId !== next.roleIds[index])
+    )
+}

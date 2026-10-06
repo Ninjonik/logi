@@ -37,16 +37,16 @@ Every response is `Cache-Control: no-store`.
 
 Success is `{ data: MembershipObservation }`:
 
-| Field                                | Meaning                                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `guildId`, `discordUserId`, `gameId` | Exact source subject; retain your configured `sourceInstanceId` separately                       |
-| `state`                              | `present`, `left` or `unknown`                                                                   |
-| `roleIds`                            | Unique sorted intersection with the key's per-game allowlist, only when presence is fresh        |
-| `assignment`                         | Nullable Logi `{ type, status }`, independent of Discord presence; never website-admin authority |
-| `observedAt`                         | Nullable time of provider evidence; failed refresh does not advance it                           |
-| `receivedAt`                         | Nullable Logi ingestion time; does not confer freshness                                          |
-| `epoch`, `revision`                  | Canonical decimal strings, compare as integers, never JavaScript floating-point numbers          |
-| `completeness`                       | `verified_member`, `verified_absent` or `unavailable`                                            |
+| Field                                | Meaning                                                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `guildId`, `discordUserId`, `gameId` | Exact source subject; retain your configured `sourceInstanceId` separately                                                                              |
+| `state`                              | `present`, `left` or `unknown`                                                                                                                          |
+| `roleIds`                            | Unique sorted intersection with the key's per-game allowlist, only when presence is fresh                                                               |
+| `assignment`                         | Nullable Logi `{ type, status }`, independent of Discord presence; never website-admin authority                                                        |
+| `observedAt`                         | Nullable time of provider evidence; failed refresh does not advance it; it advances without a revision change when state, roles and epoch are unchanged |
+| `receivedAt`                         | Nullable Logi ingestion time; does not confer freshness                                                                                                 |
+| `epoch`, `revision`                  | Canonical decimal strings, compare as integers, never JavaScript floating-point numbers                                                                 |
+| `completeness`                       | `verified_member`, `verified_absent` or `unavailable`                                                                                                   |
 
 Stale, failed or invalidated evidence returns `unknown`, `unavailable` and no
 roles. An old assignment may still be returned beside a departure; it must not

@@ -215,13 +215,18 @@ character stepped up)` on the same index (`publicationKeyRange`).
   rewritten. The tracked-mutation wrappers compare the fields the website
   projections serve and leave bookkeeping out of the comparison: a
   collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
-  `updatedAt`, a session's `fetchedAt`. A history walk commits once a second
-  and rewrote its connection and session rows each time; that appended three
-  `integrationChanges` rows and a head, record and payload version per
-  second until the log held 666,000 rows and the backend's reads took
-  seconds. A commit now patches a session only when its content changed and
-  records a visit (`fetchedAt`, `historyLastSuccessAt`) at most once a
-  minute (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
+  `updatedAt`, a session's `fetchedAt`, a member observation's `observedAt`
+  and `receivedAt`. Two writers flooded the log to 666,000 rows: the bot's
+  membership reconciliation, which observes every member of a clan every
+  five minutes and stored each observation with a new revision and three
+  `membership-summaries` rows (one per game) whether or not anything
+  changed, and a history walk that commits once a second and rewrote its
+  connection and session rows each time. `storeMemberObservation` now
+  refreshes only the evidence fields when state, roles and epoch are the
+  same (`observationChanged`); a history commit patches a session only when
+  its content changed and records a visit (`fetchedAt`,
+  `historyLastSuccessAt`) at most once a minute
+  (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
   each guild head once per batch, and `integrationChanges:resetFeed` is the
   operator's way out of a flooded log: it raises every floor to its head so
   consumers bootstrap again, then empties the log in batches.

@@ -652,3 +652,67 @@ test("policy writes bind current key/game and the projection returns only its co
     await invoke(members.configurePolicy, ctx, { ...base, enabled: false })
     assert.equal(await invoke(members.prepareLookup, ctx, lookup), null)
 })
+
+test("an observation with the same state, roles and epoch refreshes evidence without a revision or feed entry", async () => {
+    const ctx = fixture(),
+        epoch = await invoke(members.ensureGuild, ctx, {
+            secret,
+            guildId: "guild-a",
+        })
+    const observe = (roleIds: string[], observedAt: string) =>
+        invoke(members.applyGateway, ctx, {
+            secret,
+            guildId: "guild-a",
+            discordUserId: "member-a",
+            epoch,
+            state: "present",
+            roleIds,
+            observedAt,
+        })
+    const feedRows = () => ctx.db.tables.integrationChanges?.length ?? 0
+    const observation = () => ctx.db.tables.memberObservations[0]
+    const guild = () => ctx.db.tables.membershipGuilds[0]
+    const first = new Date(Date.now() - 20_000).toISOString(),
+        second = new Date(Date.now() - 10_000).toISOString(),
+        third = new Date().toISOString()
+    await observe(["allowed", "other"], first)
+    const written = {
+        feed: feedRows(),
+        revision: observation().revision,
+        guildRevision: guild().revision,
+    }
+    assert.ok(written.feed > 0, "a first observation is a change")
+    // The reconciliation path: same roles in a different order, newer evidence.
+    await observe(["other", "allowed"], second)
+    assert.equal(feedRows(), written.feed, "no feed entry for unchanged roles")
+    assert.equal(observation().revision, written.revision)
+    assert.equal(guild().revision, written.guildRevision)
+    assert.equal(observation().observedAt, second, "evidence is refreshed")
+    const run = await invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch,
+    })
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: 1,
+        members: [{ discordUserId: "member-a", roleIds: ["allowed", "other"] }],
+    })
+    assert.equal(
+        feedRows(),
+        written.feed,
+        "a reconciliation of an unchanged member writes no feed entry"
+    )
+    assert.equal(
+        observation().seenRunId,
+        run.id,
+        "the run still marks the member as seen"
+    )
+    assert.equal(observation().revision, written.revision)
+    await observe(["allowed"], third)
+    assert.ok(feedRows() > written.feed, "a role change is a change")
+    assert.notEqual(observation().revision, written.revision)
+    assert.notEqual(guild().revision, written.guildRevision)
+})
