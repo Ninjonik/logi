@@ -125,6 +125,17 @@ function addNode(container: ContainerBuilder, node: LayoutNode) {
             )
             return
         }
+        case "section-button":
+            container.addSectionComponents(
+                new SectionBuilder()
+                    .addTextDisplayComponents(
+                        node.texts.map((text) =>
+                            new TextDisplayBuilder().setContent(text)
+                        )
+                    )
+                    .setButtonAccessory(buildButton(node.button))
+            )
+            return
         case "separator":
             container.addSeparatorComponents(
                 new SeparatorBuilder()

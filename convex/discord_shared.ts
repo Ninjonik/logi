@@ -1,3 +1,4 @@
+import { applicationFormValidator } from "./membershipApplicationValidators"
 import { v } from "convex/values"
 
 import {
@@ -91,6 +92,7 @@ export const membershipCategoryValidator = v.object({
         v.literal("mercenary")
     ),
     autoAssignRecruitOnApply: v.optional(v.boolean()),
+    askSpecialization: v.optional(v.boolean()),
 })
 
 export const ticketSettingsValidator = v.object({
@@ -111,6 +113,8 @@ export const membershipSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    // The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10).
+    panelAccentColor: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
@@ -128,6 +132,10 @@ export const membershipSettingsValidator = v.object({
         })
     ),
     categories: v.array(membershipCategoryValidator),
+    applicationForm: v.optional(applicationFormValidator),
+    webFormEnabled: v.optional(v.boolean()),
+    mentionSupportRoles: v.optional(v.boolean()),
+    sendConfirmationDm: v.optional(v.boolean()),
 })
 
 export const calendarCategoriesValidator = v.array(v.string())

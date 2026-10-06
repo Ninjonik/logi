@@ -197,13 +197,23 @@ attempt instead of continuing with stale Discord permissions.
 
 - `src/index.ts` boots the bot and wires events
 - `src/sync.ts` runs the polling loop and guild/event sync
-- `src/interactions.ts` handles signup and attendance button actions
-- `src/message-builders.ts` builds embeds, buttons, and reminder components
+- `src/interactions.ts` routes every interaction through the registry
+  (`src/interactions/features.ts`) and keeps the remaining sign-up, attendance
+  and recap buttons; Discord messages are built from the shared message model
+  through `src/ui/message-kit.ts`
 - `src/manual-reminders.ts` watches the reminders managers ask for from the
   match page (`eventReminders:listPending`), claims one at a time and sends the
   sign-up or attendance reminder DM through `src/sync/manual-reminders.ts`;
   players who answered or confirmed in the meantime are skipped
 - `src/interactions/attendance-decline.ts` handles **Can't make it** from reminder DMs
+- `src/interactions/membership-application*.ts` run the clan application in
+  Discord windows (panel button, progress message, windows, review, submit and
+  thread creation); `membership-decision.ts` handles the decision buttons on
+  the thread card, the rejection reason window and `/close_application`;
+  `membership-panel.ts` publishes the application panel;
+  `membership-web-submissions.ts` turns web-form submissions (Variant B) into
+  the same thread and card; `membership-steam-watch.ts` updates the progress
+  message when the applicant verifies Steam on the website
 - `src/interactions/tickets.ts` opens tickets from the panel (button, select,
   category window) and `tickets-panel.ts` builds the panel card;
   `close-ticket.ts` handles `/close_ticket`; `link.ts` and `link-search.ts`

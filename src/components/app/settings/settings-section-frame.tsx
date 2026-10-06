@@ -43,6 +43,7 @@ export function SettingsSectionFrame({
     legend,
     ownHeader = false,
     breadcrumbParent,
+    breadcrumbCurrent,
     children,
 }: {
     locale: string
@@ -60,6 +61,8 @@ export function SettingsSectionFrame({
     ownHeader?: boolean
     /** A page that belongs under another one adds that page to the breadcrumb. */
     breadcrumbParent?: string
+    /** The page's own name in the breadcrumb when it differs from the menu entry. */
+    breadcrumbCurrent?: string
     children: ReactNode
 }) {
     const hub = dictionary.settingsHub
@@ -107,7 +110,7 @@ export function SettingsSectionFrame({
                     </>
                 ) : null}
                 <span aria-current="page" className="text-foreground">
-                    {text.title}
+                    {breadcrumbCurrent ?? text.title}
                 </span>
             </nav>
             <div className="mt-4 grid gap-8 lg:mt-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]">

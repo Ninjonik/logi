@@ -155,15 +155,17 @@ function startFallbackWorker() {
     return fallbackWorker
 }
 
+import { startApplicationWebSubmissionWorker } from "./interactions/membership-web-submissions"
 import { startApplicationEmojiProvisioning } from "./runtime/application-emoji"
 import { startTeamRequestNotificationWorker } from "./sync/team-request-worker"
-import { startPublicPanelWorker } from "./public-panels/worker"
 import { startAnnouncementMigration } from "./events/announcement-migration"
+import { startPublicPanelWorker } from "./public-panels/worker"
 import { startReportRecovery } from "./player-reports"
 import { startLeagueWorker } from "./league/worker"
 import { startSeedWorker } from "./seed/worker"
 client.once(Events.ClientReady, async (readyClient) => {
     startReportRecovery(client)
+    startApplicationWebSubmissionWorker(client)
     startLeagueWorker(client)
     // A calendar request ("Obnovit teď", "Odeslat do kanálu") redraws it now.
     startPublicPanelWorker(client, {

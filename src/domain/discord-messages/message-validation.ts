@@ -146,6 +146,18 @@ export function validateMessageView(
                     primary += 1
                 checkButton(button, ids, issues)
             }
+        } else if (block.kind === "fields") {
+            for (const field of block.items) {
+                if (field.thumbnail) checkMedia(field.thumbnail, issues)
+                if (!field.action) continue
+                if (
+                    field.action.kind === "action" &&
+                    (field.action.style === "primary" ||
+                        field.action.style === "success")
+                )
+                    primary += 1
+                checkButton(field.action, ids, issues)
+            }
         } else if (block.kind === "select") {
             const { select } = block
             checkCustomId(select.id, ids, issues)
@@ -181,9 +193,6 @@ export function validateMessageView(
                     code: "select-values",
                     detail: `${min}..${max} of ${select.options.length}`,
                 })
-        } else if (block.kind === "fields") {
-            for (const item of block.items)
-                if (item.thumbnail) checkMedia(item.thumbnail, issues)
         } else if (block.kind === "gallery") {
             if (!block.items.length || block.items.length > LIMITS.galleryItems)
                 issues.push({

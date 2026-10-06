@@ -71,6 +71,8 @@ export const DEFAULT_CHIP_ICONS: Record<ChipTone, string> = {
 export type LayoutNode =
     | { type: "text"; content: string }
     | { type: "section"; texts: string[]; thumbnail: MessageMedia }
+    /** A field row with its button on the right (a section with a button accessory). */
+    | { type: "section-button"; texts: string[]; button: MessageButton }
     | { type: "separator"; divider: boolean; spacing: "small" | "large" }
     | { type: "gallery"; items: MessageMedia[] }
     | { type: "buttons"; buttons: MessageButton[] }
@@ -266,16 +268,22 @@ function blockNodes(
                           },
                       ]
                     : []),
-                field.thumbnail
+                field.action
                     ? {
-                          type: "section" as const,
+                          type: "section-button" as const,
                           texts: [fieldText(field, options.chipIcons)],
-                          thumbnail: field.thumbnail,
+                          button: field.action,
                       }
-                    : {
-                          type: "text" as const,
-                          content: fieldText(field, options.chipIcons),
-                      },
+                    : field.thumbnail
+                      ? {
+                            type: "section" as const,
+                            texts: [fieldText(field, options.chipIcons)],
+                            thumbnail: field.thumbnail,
+                        }
+                      : {
+                            type: "text" as const,
+                            content: fieldText(field, options.chipIcons),
+                        },
             ])
         case "separator":
             return [
@@ -334,7 +342,8 @@ export function countLayoutComponents(layout: MessageLayout) {
     return layout.nodes.reduce((total, node) => {
         switch (node.type) {
             case "section":
-                // The section, its text displays and the thumbnail.
+            case "section-button":
+                // The section, its text displays and the thumbnail or button.
                 return total + 1 + node.texts.length + 1
             case "buttons":
                 return total + 1 + node.buttons.length
@@ -353,7 +362,7 @@ export function layoutTextLength(layout: MessageLayout) {
             total +
             (node.type === "text"
                 ? node.content.length
-                : node.type === "section"
+                : node.type === "section" || node.type === "section-button"
                   ? node.texts.reduce((sum, text) => sum + text.length, 0)
                   : 0),
         0

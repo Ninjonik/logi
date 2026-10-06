@@ -40,6 +40,12 @@ export type ClanSettingsSlice<Value = unknown, Patch = unknown> = {
     /** Validated PATCH value → Discord configuration fields to write. */
     toPatch(patch: Patch, source: ClanSettingsSource): DiscordConfigPatch
     /**
+     * Checks that need the stored configuration (e.g. limits that depend on
+     * the clan's categories), run by Convex before `toPatch`. Returns an
+     * error message, or null when the patch can be applied.
+     */
+    verify?(patch: Patch, source: ClanSettingsSource): string | null
+    /**
      * The slice lives in its own table, not in the Discord configuration:
      * `read` takes `source.external[key]`, `toPatch` returns no fields and
      * Convex verifies and writes the patch through the slice's store in
@@ -229,6 +235,10 @@ export function applyClanSettingsSlicePatches(
         return { ok: true, patch: {}, changed: false }
     const parsed = parseClanSettingsSlicePatches(raw, slices)
     if (!parsed.ok) return parsed
+    for (const [key, value] of Object.entries(parsed.value)) {
+        const error = sliceByKey(slices, key)?.verify?.(value, source)
+        if (error) return { ok: false, error: `${key}: ${error}` }
+    }
     return {
         ok: true,
         patch: clanSettingsSlicesPatch(parsed.value, source, slices),

@@ -10,7 +10,7 @@ import {
     resolveClanLanguage,
     supportedClanLanguages,
 } from "./core"
-import { getMembershipMessages } from "./membership"
+import { getApplicationMessages } from "./application"
 import { getCommandMessages } from "./commands"
 import { getSystemMessages } from "./system"
 import { getPanelMessages } from "./panels"
@@ -50,7 +50,7 @@ test("every feature module has the same sections in every language", () => {
     for (const getter of [
         getEventMessages,
         getPanelMessages,
-        getMembershipMessages,
+        getApplicationMessages,
         getCommandMessages,
         getSystemMessages,
     ]) {

@@ -3,6 +3,7 @@ export type Timestamp = string
 import type { StoredCommandSettings } from "@/domain/discord-commands/command-settings"
 import type { StatsCommandSettings } from "@/domain/player-stats/command-settings"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
+import type { ApplicationForm } from "@/domain/membership/application-form"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import type { MatchTemplate } from "@/domain/events/match-templates"
 import type { GameId } from "@/domain/games/game"
@@ -168,6 +169,8 @@ export type MembershipCategory = {
     assignmentType: "member" | "reserve_member" | "mercenary"
     /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
     autoAssignRecruitOnApply?: boolean
+    /** Ask "Specializace" in this category (N4-B05); missing is yes for Hell Let Loose. */
+    askSpecialization?: boolean
 }
 
 export type TicketSettings = {
@@ -189,6 +192,8 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10). */
+    panelAccentColor?: string
     /** Optional first message posted in each application thread. */
     applicationWelcomeMessage?: string
     /** Ask infantry/tank preference for supported games during application. */
@@ -208,6 +213,14 @@ export type MembershipSettings = {
         excusedAbsence: number
     }
     categories: MembershipCategory[]
+    /** The application form in Discord windows (N4); missing uses the default form. */
+    applicationForm?: ApplicationForm
+    /** Variant B: the same form on the Logi web (N4-42); off by default. */
+    webFormEnabled?: boolean
+    /** Mention the category's support roles in the thread intro (N4-34); default on. */
+    mentionSupportRoles?: boolean
+    /** DM the applicant a confirmation with the thread link (N4-36); default on. */
+    sendConfirmationDm?: boolean
 }
 
 export type PlayerStatsServer = {

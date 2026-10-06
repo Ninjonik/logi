@@ -11,7 +11,7 @@ command reply or Discord preview. Never hand-roll a container.
 src/domain/discord-messages/message-view.ts        MessageView types, standard cards, panel frame, paging
 src/domain/discord-messages/message-layout.ts      view + clan copy -> Components V2 tree (shared text helpers)
 src/domain/discord-messages/message-validation.ts  board rules + Discord limits
-src/lib/clan-language/{core,events,panels,membership,commands,system}.ts   copy in cs/en/de
+src/lib/clan-language/{core,events,panels,application,commands,system}.ts  copy in cs/en/de
 discord-bot/src/ui/message-kit.ts                  layout -> discord.js builders and payloads
 discord-bot/src/ui/replies.ts                      private replies, error path, errors-channel hook
 discord-bot/src/interactions/registry.ts           interaction routing per feature
@@ -184,14 +184,14 @@ invisible component `id` (`discord-bot/src/sync/publication-marker.ts`).
 `src/lib/clan-language/` replaced `clan-language.ts`. Each module exports its
 typed copy and one getter; the getter adds `locale`.
 
-| Module          | Getter                                                                                                | Owner                                                                                  |
-| --------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `events.ts`     | `getEventMessages`                                                                                    | W6 (announcements, rosters, reminders, DMs)                                            |
-| `panels.ts`     | `getPanelMessages`                                                                                    | W1 (calendar panel)                                                                    |
-| `membership.ts` | `getMembershipMessages`                                                                               | W7 (tickets, applications, /link flow)                                                 |
-| `commands.ts`   | `getCommandMessages`                                                                                  | W8 (commands, stats, /server-status)                                                   |
-| `system.ts`     | `getSystemMessages`                                                                                   | W0 kit (`kit`, `paging`, `errors`, `publication`), W9 (team requests, system messages) |
-| `core.ts`       | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` | W0                                                                                     |
+| Module           | Getter                                                                                                | Owner                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `events.ts`      | `getEventMessages`                                                                                    | W6 (announcements, rosters, reminders, DMs)                                            |
+| `panels.ts`      | `getPanelMessages`                                                                                    | W1 (calendar panel)                                                                    |
+| `application.ts` | `getApplicationMessages`                                                                              | W7a (clan application, decisions, `/close_application`)                                |
+| `commands.ts`    | `getCommandMessages`                                                                                  | W8 (commands, stats, /server-status)                                                   |
+| `system.ts`      | `getSystemMessages`                                                                                   | W0 kit (`kit`, `paging`, `errors`, `publication`), W9 (team requests, system messages) |
+| `core.ts`        | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` | W0                                                                                     |
 
 Edit only your module; keep cs (board verbatim), en and de in step; bot copy
 says "ty"/"du". There is no barrel: import the module you need.

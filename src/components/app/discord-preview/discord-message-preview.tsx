@@ -405,6 +405,29 @@ function Field({
     field: MessageField
     context: RenderContext
 }) {
+    // One accessory per row, as in Discord: the button wins over an image.
+    if (field.action)
+        return (
+            <div className="flex min-w-0 items-start justify-between gap-3">
+                <Field
+                    field={{
+                        ...field,
+                        action: undefined,
+                        thumbnail: undefined,
+                    }}
+                    context={context}
+                />
+                <ul
+                    aria-label={context.labels.buttons}
+                    className="m-0 flex flex-none list-none p-0"
+                >
+                    <PreviewButton
+                        button={field.action}
+                        labels={context.labels}
+                    />
+                </ul>
+            </div>
+        )
     const body = (
         <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
