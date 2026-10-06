@@ -54,6 +54,8 @@ export const BOT_ERROR_SOURCES = [
     "applicationIntro",
     "applicationRename",
     "playerReport",
+    "panelPassword",
+    "seedControl",
     "general",
 ] as const
 
@@ -71,12 +73,16 @@ export type BotErrorArea =
     | "tickets"
     | "applications"
     | "playerReports"
+    | "seed"
 
 /**
  * `sync`: the bot retries at its next synchronisation; `interaction`: a
- * person clicked and got a short private answer, so the bot does not retry.
+ * person clicked and got a short private answer, so the bot does not retry;
+ * `background`: a later step of something that already worked (the ticket
+ * is open, the decision is saved), so nobody was told to retry and the bot
+ * does not try again.
  */
-export type BotErrorFlow = "sync" | "interaction"
+export type BotErrorFlow = "sync" | "interaction" | "background"
 
 /** The sentence after "Co udělat" that says what happens once fixed. */
 export type BotErrorFollowUp =
@@ -92,10 +98,24 @@ export type BotErrorFollowUp =
     | "ticketClose"
     | "application"
     | "playerReport"
+    | "ticketSupport"
+    | "ticketIntro"
+    | "ticketRename"
+    | "applicationRecruiters"
+    | "applicationIntro"
+    | "applicationRename"
+    | "panelPassword"
+    | "seedControl"
 
 /** Logi pages an entry can link to (L5-11..14). */
 export type BotErrorLink =
-    "match" | "channels" | "tickets" | "roles" | "membership"
+    | "match"
+    | "channels"
+    | "tickets"
+    | "roles"
+    | "membership"
+    | "panels"
+    | "seed"
 
 /**
  * Discord permissions the bot needs, by their discord.js flag name. The
@@ -127,6 +147,11 @@ export type BotErrorSourceSpec = {
     links: readonly BotErrorLink[]
     /** What the action needs; checked in the channel, else on the server. */
     permissions: readonly BotPermission[]
+    /**
+     * A notice that is not a Discord answer (the panel password was hidden,
+     * the seed control channel is public) always has this class.
+     */
+    failure?: BotFailureClass
 }
 
 const MESSAGE: readonly BotPermission[] = [
@@ -279,22 +304,22 @@ export const BOT_ERROR_SOURCE_SPECS: Record<
     },
     ticketSupport: {
         area: "tickets",
-        flow: "interaction",
-        followUp: "ticket",
+        flow: "background",
+        followUp: "ticketSupport",
         links: ["tickets"],
         permissions: ["ViewChannel", "SendMessagesInThreads"],
     },
     ticketIntro: {
         area: "tickets",
-        flow: "interaction",
-        followUp: "ticket",
+        flow: "background",
+        followUp: "ticketIntro",
         links: ["tickets"],
         permissions: IN_THREAD,
     },
     ticketRename: {
         area: "tickets",
-        flow: "interaction",
-        followUp: "ticket",
+        flow: "background",
+        followUp: "ticketRename",
         links: ["tickets"],
         permissions: ["ViewChannel", "ManageThreads"],
     },
@@ -323,22 +348,22 @@ export const BOT_ERROR_SOURCE_SPECS: Record<
     },
     applicationRecruiters: {
         area: "applications",
-        flow: "interaction",
-        followUp: "application",
+        flow: "background",
+        followUp: "applicationRecruiters",
         links: ["membership"],
         permissions: ["ViewChannel", "SendMessagesInThreads"],
     },
     applicationIntro: {
         area: "applications",
-        flow: "interaction",
-        followUp: "application",
+        flow: "background",
+        followUp: "applicationIntro",
         links: ["membership"],
         permissions: IN_THREAD,
     },
     applicationRename: {
         area: "applications",
-        flow: "interaction",
-        followUp: "application",
+        flow: "background",
+        followUp: "applicationRename",
         links: ["membership"],
         permissions: ["ViewChannel", "ManageThreads"],
     },
@@ -348,6 +373,22 @@ export const BOT_ERROR_SOURCE_SPECS: Record<
         followUp: "playerReport",
         links: ["tickets"],
         permissions: PRIVATE_THREAD,
+    },
+    panelPassword: {
+        area: "panels",
+        flow: "sync",
+        followUp: "panelPassword",
+        links: ["panels"],
+        permissions: [],
+        failure: "channelPublic",
+    },
+    seedControl: {
+        area: "seed",
+        flow: "sync",
+        followUp: "seedControl",
+        links: ["seed"],
+        permissions: [],
+        failure: "channelPublic",
     },
     general: { flow: "sync", links: [], permissions: [] },
 }
@@ -376,6 +417,8 @@ export const BOT_FAILURE_CLASSES = [
     "roleAbove",
     "fullCategory",
     "fullServer",
+    "wrongChannelType",
+    "channelPublic",
     "timeout",
     "other",
 ] as const
@@ -431,21 +474,31 @@ const FIXABLE: ReadonlySet<BotFailureClass> = new Set([
     "roleAbove",
     "fullCategory",
     "fullServer",
+    "wrongChannelType",
+    "channelPublic",
 ])
 
-export type BotErrorRetry = "afterFix" | "byItself" | "playerTold"
+/** Whether an admin must fix the failure in Discord or Logi. */
+export function isAdminFixableFailure(failure: BotFailureClass) {
+    return FIXABLE.has(failure)
+}
+
+export type BotErrorRetry =
+    "afterFix" | "byItself" | "playerTold" | "notRetried"
 
 /**
- * The retry chip (L5-B03): a person who clicked was told to try later; the
- * bot retries a sync after a fix, or by itself when Discord only failed to
+ * The retry chip (L5-B03): a person who clicked was told to try later; a
+ * later step of something that already worked is not tried again; the bot
+ * retries a sync after a fix, or by itself when Discord only failed to
  * answer.
  */
 export function botErrorRetry(
     source: BotErrorSource,
     failure: BotFailureClass
 ): BotErrorRetry {
-    if (BOT_ERROR_SOURCE_SPECS[source].flow === "interaction")
-        return "playerTold"
+    const flow = BOT_ERROR_SOURCE_SPECS[source].flow
+    if (flow === "interaction") return "playerTold"
+    if (flow === "background") return "notRetried"
     return FIXABLE.has(failure) ? "afterFix" : "byItself"
 }
 
@@ -475,6 +528,11 @@ export type BotErrorsCopy = {
         roleAbove: string
         fullCategory: string
         fullServer: string
+        wrongChannelType: string
+        /** The panel password was hidden: the channel is public (P4-30). */
+        panelPasswordPublic: string
+        /** The seed controls were not posted: the channel is public. */
+        seedControlPublic: string
         timeout: string
         other: string
     }
@@ -491,9 +549,16 @@ export type BotErrorsCopy = {
         fullCategoryForum: string
         fullCategory: string
         fullServer: string
+        wrongChannelType: string
+        panelPasswordPublic: string
+        seedControlPublic: string
         timeoutSync: string
         timeoutInteraction: string
+        /** A later step: Discord did not answer; said after the follow-up. */
+        timeoutBackground: string
         other: string
+        /** A later step Discord refused; said after the follow-up. */
+        otherBackground: string
     }
     followUps: Record<BotErrorFollowUp, string>
     context: {
@@ -502,7 +567,11 @@ export type BotErrorsCopy = {
         role: string
         meetingChannel: string
         tried: string
+        /** The ticket's author on an entry about a later step. */
+        author: string
         applicant: string
+        /** "Panel {panel}". */
+        panel: string
         ticketNumber: string
         applicationNumber: string
         moreMembers: string
@@ -554,6 +623,8 @@ export type BotErrorContext = {
     number?: number
     /** Players a reminder was for. */
     players?: number
+    /** The Discord panel's name (plain; escaped here). */
+    panel?: string
 }
 
 export type BotErrorLinks = Partial<Record<BotErrorLink, string>> & {
@@ -666,7 +737,9 @@ export function botErrorContextLine(
                 fillTemplate(
                     area === "applications"
                         ? copy.context.applicant
-                        : copy.context.tried,
+                        : BOT_ERROR_SOURCE_SPECS[source].flow === "background"
+                          ? copy.context.author
+                          : copy.context.tried,
                     { user: context.user }
                 )
             )
@@ -685,8 +758,14 @@ export function botErrorContextLine(
     }
     if (area === "reminders" && typeof context.players === "number")
         parts.push(formatCount(locale, context.players, copy.context.players))
+    if (area === "panels" && context.panel?.trim())
+        parts.push(
+            fillTemplate(copy.context.panel, {
+                panel: escapeMarkdownText(context.panel.trim().slice(0, 100)),
+            })
+        )
     if (
-        (area === "panels" || source === "general") &&
+        (area === "panels" || area === "seed" || source === "general") &&
         context.channel &&
         !event
     )
@@ -695,6 +774,9 @@ export function botErrorContextLine(
         )
     return parts.join(" · ")
 }
+
+const joinSentences = (...sentences: string[]) =>
+    sentences.filter((sentence) => sentence.trim()).join(" ")
 
 /** "Proč" and "Co udělat" for the failure (L5-26..32, L5-B02). */
 export function botErrorExplanation(
@@ -745,9 +827,9 @@ export function botErrorExplanation(
             // Without the channel's name the board's general sentence (L5-26).
             const fix = !facts.channel
                 ? copy.fixes.missingPermissionGeneric
-                : spec.flow === "interaction"
-                  ? copy.fixes.missingPermissionInteraction
-                  : copy.fixes.missingPermissionSync
+                : spec.flow === "sync"
+                  ? copy.fixes.missingPermissionSync
+                  : copy.fixes.missingPermissionInteraction
             return {
                 reason,
                 fix: withFollowUp(fillTemplate(fix, values)),
@@ -786,16 +868,50 @@ export function botErrorExplanation(
                 reason: copy.reasons.fullServer,
                 fix: copy.fixes.fullServer,
             }
+        case "wrongChannelType":
+            return {
+                reason: fillTemplate(copy.reasons.wrongChannelType, {
+                    channel,
+                }),
+                fix: withFollowUp(copy.fixes.wrongChannelType),
+            }
+        case "channelPublic": {
+            const seed = source === "seedControl"
+            return {
+                reason: fillTemplate(
+                    seed
+                        ? copy.reasons.seedControlPublic
+                        : copy.reasons.panelPasswordPublic,
+                    { channel }
+                ),
+                fix: withFollowUp(
+                    fillTemplate(
+                        seed
+                            ? copy.fixes.seedControlPublic
+                            : copy.fixes.panelPasswordPublic,
+                        { channel }
+                    )
+                ),
+            }
+        }
         case "timeout":
             return {
                 reason: copy.reasons.timeout,
                 fix:
-                    spec.flow === "interaction"
-                        ? copy.fixes.timeoutInteraction
-                        : copy.fixes.timeoutSync,
+                    spec.flow === "background"
+                        ? joinSentences(followUp, copy.fixes.timeoutBackground)
+                        : spec.flow === "interaction"
+                          ? copy.fixes.timeoutInteraction
+                          : copy.fixes.timeoutSync,
             }
         case "other":
-            return { reason: copy.reasons.other, fix: copy.fixes.other }
+            return {
+                reason: copy.reasons.other,
+                fix:
+                    spec.flow === "background"
+                        ? joinSentences(followUp, copy.fixes.otherBackground)
+                        : copy.fixes.other,
+            }
     }
 }
 
@@ -803,6 +919,7 @@ const RETRY_TONES: Record<BotErrorRetry, MessageChip["tone"]> = {
     afterFix: "warning",
     byItself: "warning",
     playerTold: "neutral",
+    notRetried: "neutral",
 }
 
 /**
@@ -844,7 +961,8 @@ export function botErrorReportView(input: BotErrorReportInput): MessageView {
         header: {
             label: botErrorLabel(copy, source),
             title: botErrorTitle(copy, locale, source, context),
-            subtitle: contextLine || undefined,
+            // The board draws what it concerns as a muted line (L5-08).
+            subtitle: contextLine ? `-# ${contextLine}` : undefined,
             chips: [{ label: copy.retry[retry], tone: RETRY_TONES[retry] }],
         },
         blocks: [

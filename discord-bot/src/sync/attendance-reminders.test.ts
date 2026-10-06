@@ -1,13 +1,15 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type { ContainerBuilder } from "discord.js"
+import type { Client, ContainerBuilder } from "discord.js"
 
 import {
     buildAttendanceReminderDm,
     playersWithAbsenceNotice,
+    processAttendanceReminders,
     rosterPlaces,
 } from "./attendance-reminders"
+import type { AutomaticReminderOutcome } from "./reminder-outcomes"
 import type { EventRecord, Roster, SyncPayload } from "../types"
 
 const payload = {
@@ -123,4 +125,66 @@ test("players who declined or sent a notice get no further reminders", () => {
         ["player-1"]
     )
     assert.equal(playersWithAbsenceNotice({}).size, 0)
+})
+
+test("players a scheduled reminder did not reach are recorded for the match page (L2-64)", async () => {
+    const recorded: AutomaticReminderOutcome[] = []
+    const meetingStart = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    const due = {
+        ...event,
+        status: "starting",
+        meetingStart,
+        gameStart: meetingStart,
+        attendanceReminderLog: [],
+        absenceNotices: [],
+    } as unknown as EventRecord
+    const client = {
+        guilds: {
+            fetch: async () => ({
+                name: "Vlci",
+                members: { fetch: async () => new Map() },
+            }),
+        },
+        users: {
+            // reserve-1 cannot be fetched; the medic has closed DMs.
+            fetch: async (id: string) =>
+                id === "medic"
+                    ? {
+                          send: async () => {
+                              throw Object.assign(
+                                  new Error(
+                                      "Cannot send messages to this user"
+                                  ),
+                                  { code: 50007 }
+                              )
+                          },
+                      }
+                    : null,
+        },
+    } as unknown as Client
+    await processAttendanceReminders(
+        client,
+        new Set(),
+        {
+            ...payload,
+            events: [due],
+            rosters: [roster],
+            userDisplayNames: {},
+        } as unknown as SyncPayload,
+        new Set([due.id]),
+        async (outcome) => {
+            recorded.push(outcome)
+        }
+    )
+    // All four offsets are due an hour before the meeting; the nearest runs.
+    assert.deepEqual(recorded, [
+        {
+            guildId: "guild-1",
+            eventId: "event-1",
+            kind: "attendance",
+            runKey: "6h",
+            sentUserIds: [],
+            failedUserIds: ["medic", "reserve-1"],
+        },
+    ])
 })

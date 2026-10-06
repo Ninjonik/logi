@@ -270,10 +270,15 @@ sign-up activity.
 When a reminder does not reach everyone, the match **Overview** tells
 managers for a week: "The reminder reached 9 of 12 players" with the names of
 the players whose Discord direct messages from server members are off,
-**Copy names** and a link to Discord's help on allowing server messages. The
-line under it says which reminder it was, when it was sent and who sent it. If
-the bot could not send the reminder at all, the notice says so instead. These
-failures are not posted to the Discord errors channel.
+**Copy names** and a link to Discord's help on allowing server messages. This
+covers the reminders managers send and the scheduled ones: the daily sign-up
+reminder and the attendance reminders before the meeting. The notice is about
+the newest reminder that went out. The line under it says which reminder it
+was, when it was sent and who sent it, or "automatically, as scheduled" for a
+scheduled one. A player the bot reaches on a later try of the same reminder is
+no longer listed. If the bot could not send a manual reminder at all, the
+notice says so instead. These failures are not posted to the Discord errors
+channel.
 
 Attendance can change until the match is closed. **Close match and award
 points** first shows how many players each rule

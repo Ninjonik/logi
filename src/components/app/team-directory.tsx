@@ -59,12 +59,15 @@ export function TeamDirectory({
     dictionary,
     sections,
     settingsHref,
+    initialSearch = "",
 }: {
     serverId: string
     locale: string
     dictionary: Dictionary
     sections: readonly TeamCatalogueSection[]
     settingsHref: string
+    /** Pre-fills the search, e.g. from a team request DM's link (L5-39). */
+    initialSearch?: string
 }) {
     const [dialog, setDialog] = useState<DialogState | null>(null)
     // Bumped by each submission so the request list reloads and confirms it.
@@ -85,6 +88,7 @@ export function TeamDirectory({
                     enabled={section.enabled}
                     settingsHref={settingsHref}
                     showHeading={sections.length > 1}
+                    initialSearch={initialSearch}
                     onRequest={openRequest}
                 />
             ))}
@@ -121,6 +125,7 @@ function GameCatalogue({
     enabled,
     settingsHref,
     showHeading,
+    initialSearch,
     onRequest,
 }: {
     serverId: string
@@ -129,11 +134,12 @@ function GameCatalogue({
     enabled: boolean
     settingsHref: string
     showHeading: boolean
+    initialSearch: string
     onRequest(target: TeamRequestTarget): void
 }) {
     const t = dictionary.teams,
         id = useId()
-    const [search, setSearch] = useState("")
+    const [search, setSearch] = useState(initialSearch)
     const term = useDebouncedValue(search.trim(), 300)
     const [items, setItems] = useState<TeamRecord[]>([])
     const [nextCursor, setNextCursor] = useState<string | null>(null)

@@ -21,8 +21,8 @@ function fill(template: string, values: Record<string, string | number>) {
 
 /**
  * "Připomínka došla 9 z 12 hráčů" on the match overview (board L2-60..62,
- * L2-B14): which players a manual reminder did not reach because their DMs
- * are closed, a button that copies their names and a link to Discord's help.
+ * L2-64, L2-B14): which players a manual or scheduled reminder did not
+ * reach because their DMs are closed, a button that copies their names and a link to Discord's help.
  * When the send failed as a whole it says so instead. Admins only.
  */
 export function ReminderDeliveryNotice({
@@ -42,7 +42,8 @@ export function ReminderDeliveryNotice({
 }) {
     const names = notice.failedNames.map((name) => name ?? copy.unknownPlayer)
     const sentAt = formatListDate(notice.sentAt, locale, timeZone)
-    const meta = fill(copy.meta, {
+    // A scheduled reminder has no sender (L2-64).
+    const meta = fill(notice.automatic ? copy.metaAutomatic : copy.meta, {
         kind:
             notice.audience === "unconfirmed"
                 ? copy.kindUnconfirmed

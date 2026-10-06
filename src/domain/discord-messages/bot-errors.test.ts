@@ -61,6 +61,68 @@ test("the retry chip follows the flow and the class (L5-B03)", () => {
     assert.equal(botErrorRetry("calendarPanel", "other"), "byItself")
     assert.equal(botErrorRetry("ticketOpen", "missingPermission"), "playerTold")
     assert.equal(botErrorRetry("playerReport", "timeout"), "playerTold")
+    // Later steps of something that already worked: nobody was told, and
+    // the bot does not try again.
+    for (const source of [
+        "ticketSupport",
+        "ticketIntro",
+        "ticketRename",
+        "applicationRecruiters",
+        "applicationIntro",
+        "applicationRename",
+    ] as const) {
+        assert.equal(botErrorRetry(source, "missingPermission"), "notRetried")
+        assert.equal(botErrorRetry(source, "timeout"), "notRetried")
+    }
+    // Notices an admin fixes, and wrong channels, retry after the fix.
+    assert.equal(botErrorRetry("panelPassword", "channelPublic"), "afterFix")
+    assert.equal(botErrorRetry("seedControl", "channelPublic"), "afterFix")
+    assert.equal(botErrorRetry("calendarPanel", "wrongChannelType"), "afterFix")
+    assert.equal(BOT_ERROR_SOURCE_SPECS.panelPassword.failure, "channelPublic")
+    assert.equal(BOT_ERROR_SOURCE_SPECS.seedControl.failure, "channelPublic")
+})
+
+test("notices and later steps read their own sentences in every language", () => {
+    for (const language of ["cs", "en", "de"]) {
+        const errors = getSystemMessages(language).errorsChannel
+        for (const source of ["panelPassword", "seedControl"] as const) {
+            const { reason, fix } = botErrorExplanation(
+                errors,
+                locale,
+                source,
+                { failure: "channelPublic", channel: "<#1>" }
+            )
+            assert.match(reason, /<#1>.*@everyone|@everyone.*<#1>/)
+            assert.match(fix, /<#1>/)
+            assert.doesNotMatch(`${reason} ${fix}`, /\{\w+\}/)
+        }
+        const intro = botErrorExplanation(errors, locale, "ticketIntro", {
+            failure: "other",
+        })
+        assert.equal(
+            intro.fix,
+            `${errors.followUps.ticketIntro} ${errors.fixes.otherBackground}`
+        )
+        assert.ok(errors.retry.notRetried)
+        assert.ok(errors.context.author.includes("{user}"))
+        assert.ok(errors.context.panel.includes("{panel}"))
+        assert.ok(errors.links.panels && errors.links.seed)
+    }
+    assert.equal(
+        botErrorContextLine(copy, locale, zone, "panelPassword", {
+            panel: "Vlci_#2",
+            channel: "<#7>",
+        }),
+        "Panel Vlci\\_#2 · Kanál <#7>"
+    )
+    assert.equal(
+        botErrorContextLine(copy, locale, zone, "ticketRename", {
+            category: "Jiné",
+            number: 12,
+            user: "<@17>",
+        }),
+        "Kategorie Jiné · ticket #12 · autor <@17>"
+    )
 })
 
 test("the missing permission example matches the board (L5-08..11)", () => {
@@ -94,7 +156,7 @@ test("the missing permission example matches the board (L5-08..11)", () => {
     assert.equal(view.header?.title, "Ohlášení zápasu se neodeslalo")
     assert.equal(
         view.header?.subtitle,
-        `VLK vs ROG · Přátelák · ne <t:${unix}:d> · <t:${unix}:t>`
+        `-# VLK vs ROG · Přátelák · ne <t:${unix}:d> · <t:${unix}:t>`
     )
     assert.deepEqual(view.header?.chips, [
         { label: "Zkusí se znovu po opravě", tone: "warning" },
@@ -141,7 +203,7 @@ test("the ticket example names private threads and tells the player (L5-12)", ()
     assert.equal(view.header?.title, "Ticket se neotevřel")
     assert.equal(
         view.header?.subtitle,
-        "Kategorie Nahlásit hráče · zkoušel <@100000000000000017>"
+        "-# Kategorie Nahlásit hráče · zkoušel <@100000000000000017>"
     )
     assert.equal(
         view.header?.chips?.[0]?.label,
@@ -182,7 +244,7 @@ test("the forum, member role and timeout examples match the board (L5-13..15)", 
     assert.equal(roles.header?.title, "Role se 3 členům nepodařilo upravit")
     assert.equal(
         roles.header?.subtitle,
-        "Role <@&300> · Hráč 17, Hráč 21, Hráč 23"
+        "-# Role <@&300> · Hráč 17, Hráč 21, Hráč 23"
     )
     assert.match(
         textOf(roles),
@@ -198,7 +260,7 @@ test("the forum, member role and timeout examples match the board (L5-13..15)", 
         links: { channels: "https://logi.example/channels" },
     })
     assert.equal(calendar.header?.title, "Kalendář se neaktualizoval")
-    assert.equal(calendar.header?.subtitle, "Kanál <#400>")
+    assert.equal(calendar.header?.subtitle, "-# Kanál <#400>")
     assert.equal(calendar.header?.chips?.[0]?.label, "Zkusí se znovu sám")
     assert.match(
         textOf(calendar),
@@ -279,6 +341,8 @@ test("cards carry no raw error text, codes or internal step names (L5-16, L5-B04
             "roleAbove",
             "fullCategory",
             "fullServer",
+            "wrongChannelType",
+            "channelPublic",
             "timeout",
             "other",
         ] as const) {

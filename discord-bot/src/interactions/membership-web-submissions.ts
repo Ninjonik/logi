@@ -13,6 +13,7 @@ import {
     threadUrl,
 } from "./membership-application-create"
 import { applicationStateCache } from "./membership-application-cache"
+import { dmSettingsUrl } from "../events/match-context"
 import { logError, logInfo, logWarn } from "../log"
 import { messagePayload } from "../ui/message-kit"
 import { env } from "../environment"
@@ -92,7 +93,7 @@ async function processSubmission(client: Client, item: Queued) {
                         clanName: claim.submission.clanName || guild.name,
                         number: result.number,
                         threadUrl: threadUrl(guild.id, result.threadId),
-                        settingsUrl: `${env.appSiteUrl}/${config.defaultLanguage}/dashboard/settings/user`,
+                        settingsUrl: dmSettingsUrl(config.defaultLanguage),
                     }
                 ),
                 { language: config.defaultLanguage, style: config.messageStyle }

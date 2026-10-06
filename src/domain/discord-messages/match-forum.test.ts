@@ -229,9 +229,15 @@ test("the attendance post in the match thread never shows the reason", () => {
     )
     assert.match(
         content,
-        /ne <t:1791741600:d> · start ve <t:1791741600:t> · Able · Medic/
+        /ne <t:1791741600:d> · start <t:1791741600:t> · Able · Medic/
     )
     assert.match(content, /Důvod vidí jen velení na webu\./)
+    // The board's card: "start 20:00" without "ve", and no divider (L5-43).
+    assert.doesNotMatch(content, /start ve/)
+    assert.deepEqual(
+        view.blocks.map((block) => block.kind),
+        ["meta", "text", "buttons"]
+    )
     const absent = attendanceNoticeView({
         kind: "absent",
         name: "Kos",

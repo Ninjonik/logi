@@ -301,20 +301,29 @@ export function attendanceReminderView(input: {
 
 // --- Replies in the same DM (L2-28..34) ----------------------------------
 
+/** The divider the board draws above a DM's footer (L2-28..34, L2-52). */
+const FOOTER_DIVIDER: MessageBlock = {
+    kind: "separator",
+    divider: true,
+    spacing: "small",
+}
+
 /**
- * A reply card. In a DM it is a normal message with the DM footer; in the
- * server it is private (Discord adds "Tuto zprávu vidíte jen vy").
+ * A reply card. In a DM it is a normal message with a divider and the DM
+ * footer; in the server it is private (Discord adds "Tuto zprávu vidíte
+ * jen vy").
  */
 function reply(
     input: { title: string; blocks: MessageBlock[] },
     where: { dm: boolean; frame?: DmFrame }
 ): MessageView {
+    const frame = where.dm ? where.frame : undefined
     return {
         accent: "clan",
         ...(where.dm ? {} : { ephemeral: true }),
         header: { title: input.title },
-        blocks: input.blocks,
-        ...(where.dm && where.frame ? { footer: dmFooter(where.frame) } : {}),
+        blocks: frame ? [...input.blocks, FOOTER_DIVIDER] : input.blocks,
+        ...(frame ? { footer: dmFooter(frame) } : {}),
     }
 }
 
@@ -797,6 +806,7 @@ export function trainingResultView(input: {
             ...(input.passed
                 ? []
                 : [{ kind: "text" as const, markdown: t.nextDate }]),
+            FOOTER_DIVIDER,
         ],
         footer: dmFooter(frame),
     }

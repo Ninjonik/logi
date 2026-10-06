@@ -1106,6 +1106,21 @@ export default defineSchema({
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
         .index("status", ["status"]),
+    // Who the scheduled sign-up and attendance reminders did not reach (board
+    // L2-64): one row per match, kind and run (the attendance offset or the
+    // sign-up day), updated when a later pass retries. The match page shows
+    // the newest next to the manual reminders' outcome.
+    automaticReminderOutcomes: defineTable({
+        guildId: v.string(),
+        eventId: v.id("events"),
+        kind: v.union(v.literal("signup"), v.literal("attendance")),
+        runKey: v.string(),
+        sentAt: v.string(),
+        recipientIds: v.array(v.string()),
+        failedUserIds: v.array(v.string()),
+    })
+        .index("eventId_sentAt", ["eventId", "sentAt"])
+        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"]),
     // A re-published roster's change digest and change DMs, requested by the
     // dashboard and sent by the bot (board L1-120..126, L2-35..40). `before`
     // is the published version the dashboard replaced; the bot compares it

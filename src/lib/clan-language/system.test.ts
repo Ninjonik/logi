@@ -97,6 +97,8 @@ test("the system message copy in Czech is the board's wording (L5)", () => {
         afterFix: "Zkusí se znovu po opravě",
         byItself: "Zkusí se znovu sám",
         playerTold: "Hráč dostal zprávu, ať to zkusí později",
+        // A later step of something that already worked (INDEX resolution 15).
+        notRetried: "Bot to znovu nezkusí",
     })
     assert.equal(cs.serviceStatus.threadName, "Změny stavu")
     assert.equal(cs.serviceStatus.allRunning, "Všechno běží")

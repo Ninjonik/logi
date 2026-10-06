@@ -152,7 +152,10 @@ The server password is stored encrypted. It appears only on a server's own
 panel, only with **Show password** switched on, and only while `@everyone`
 cannot view the channel. The bot checks this on every refresh. If the channel
 becomes public, the bot removes the password from the panel and tells the
-admins once in the errors channel. The password never appears on **Our
+admins once in the errors channel: **The server password was removed from the
+panel**, with the panel and the channel, why, and how to deny `@everyone`
+**View Channel**. The password comes back at the next refresh once the channel
+is private again. The password never appears on **Our
 servers**, on the join page or in any API response.
 
 ### Join a server

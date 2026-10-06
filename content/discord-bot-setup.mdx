@@ -230,15 +230,31 @@ When the bot cannot do something for the clan, it posts a report to the
 panels**. Reports are written in the clan language with a grey bar, never the
 clan colour, and contain no error codes, stack traces or IDs. Each report has:
 
-- what failed, for example "The match announcement was not sent", with the match,
-  ticket or application it concerns and the channel or role involved;
-- **Why**: in plain words, for example the bot lacks the **Send Messages**
-  permission in `#oznameni`, the role is above the bot's role, the channel was
-  deleted, or Discord did not answer in time;
-- **What to do**: the step that fixes it and whether the bot tries again by
-  itself, after the fix or not at all, and whether the player was told;
+- what failed, for example "The match announcement was not sent" or "The roster
+  was not published", with a muted line saying what it concerns: the match and
+  its start, the ticket's category, number and author, the application and the
+  applicant, the panel, the role and up to five member names;
+- a chip saying whether the bot tries again: **Retries after the fix** when an
+  admin must change something in Discord or Logi, **Retries by itself** only
+  when Discord did not answer, **The player was told to try later** when a
+  player's click failed, and **Won't be retried** for a later step of something
+  that already worked, such as adding support to an open ticket, its intro or
+  its name;
+- **Why**: in plain words, for example the bot lacks the **Embed Links**
+  permission in `#oznameni` (the permissions the bot checked are named), the
+  role `@Member` is above the Logi role, the channel was deleted or is not a
+  text channel, or Discord did not answer in time;
+- **What to do**: the step that fixes it and what happens next, for example
+  that the announcement goes out at the next sync;
 - buttons to the match or the settings page that fixes it (for example
-  **Channels and language**, **Roles and access**, **Tickets**).
+  **Channels and language**, **Roles and access**, **Tickets**, **Panels**,
+  **Server seeding**).
+
+Two entries are notices rather than failures: **The server password was
+removed from the panel** names the panel and the channel `@everyone` can now
+see and says how to make it private again, after which the password comes back
+at the next refresh; **The server controls were not posted** names the public
+control channel of server seeding and how to fix it.
 
 Pick a channel only managers can read and give the bot **View Channel**,
 **Send Messages** and **Embed Links** there. Without a channel the reports stay

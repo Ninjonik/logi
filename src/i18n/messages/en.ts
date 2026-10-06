@@ -6277,6 +6277,7 @@ export const enMessages = {
         copied: "Names copied",
         howTo: "How to allow messages from a server",
         meta: "{kind} · sent {time} · by {name}",
+        metaAutomatic: "{kind} · sent {time} · automatically, as scheduled",
         kindUnanswered: "Sign-up reminder",
         kindUnconfirmed: "Attendance reminder",
         unknownSender: "an admin",

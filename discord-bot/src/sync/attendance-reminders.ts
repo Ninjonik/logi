@@ -1,6 +1,11 @@
 import type { Client, Guild } from "discord.js"
 
 import {
+    attendanceReminderRunKey,
+    recordAutomaticReminderOutcome,
+    type RecordAutomaticReminderOutcome,
+} from "./reminder-outcomes"
+import {
     attendanceReminderView,
     type DmPlace,
 } from "../../../src/domain/discord-messages/direct-message-views"
@@ -112,11 +117,17 @@ export function playersWithAbsenceNotice(event: {
     return new Set((event.absenceNotices ?? []).map((notice) => notice.userId))
 }
 
+/**
+ * Sends the due attendance reminders. Who Discord refused (closed DMs) is
+ * recorded per reminder offset so the match page names them (L2-64); they
+ * are tried again at the next due pass.
+ */
 export async function processAttendanceReminders(
     client: Client,
     queuedEventIds: Set<string>,
     payload: SyncPayload,
-    dueEventIds: ReadonlySet<string>
+    dueEventIds: ReadonlySet<string>,
+    record: RecordAutomaticReminderOutcome = recordAutomaticReminderOutcome
 ) {
     const guild = await client.guilds
         .fetch(payload.config.guildId)
@@ -196,6 +207,7 @@ export async function processAttendanceReminders(
                 offsetHours: number
                 sentAt: string
             }> = []
+            const failedByOffset = new Map<number, string[]>()
             for (const userId of unacknowledgedUserIds) {
                 // Only the offsets the match chose (all four on older events).
                 const dueOffsets = resolveAttendanceReminderHours(
@@ -219,7 +231,13 @@ export async function processAttendanceReminders(
                 if (offsetHours === undefined) continue
 
                 const user = await client.users.fetch(userId).catch(() => null)
-                if (!user) continue
+                if (!user) {
+                    failedByOffset.set(offsetHours, [
+                        ...(failedByOffset.get(offsetHours) ?? []),
+                        userId,
+                    ])
+                    continue
+                }
 
                 const sentAt = new Date().toISOString()
                 try {
@@ -242,11 +260,32 @@ export async function processAttendanceReminders(
                         }
                     )
                 } catch {
+                    // Closed DMs: never the errors channel (L2-63), the
+                    // match page instead (L2-64).
+                    failedByOffset.set(offsetHours, [
+                        ...(failedByOffset.get(offsetHours) ?? []),
+                        userId,
+                    ])
                     continue
                 }
 
                 remindersToLog.push({ userId, offsetHours, sentAt })
             }
+
+            for (const offsetHours of new Set([
+                ...remindersToLog.map((entry) => entry.offsetHours),
+                ...failedByOffset.keys(),
+            ]))
+                await record({
+                    guildId: payload.config.guildId,
+                    eventId: event.id,
+                    kind: "attendance",
+                    runKey: attendanceReminderRunKey(offsetHours),
+                    sentUserIds: remindersToLog
+                        .filter((entry) => entry.offsetHours === offsetHours)
+                        .map((entry) => entry.userId),
+                    failedUserIds: failedByOffset.get(offsetHours) ?? [],
+                })
 
             if (remindersToLog.length) {
                 await convex.mutation(references.appendAttendanceReminderLog, {

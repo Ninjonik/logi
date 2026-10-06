@@ -1,5 +1,10 @@
 import type { Client } from "discord.js"
 
+import {
+    recordAutomaticReminderOutcome,
+    signupReminderRunKey,
+    type RecordAutomaticReminderOutcome,
+} from "./reminder-outcomes"
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { signupReminderView } from "../../../src/domain/discord-messages/direct-message-views"
@@ -100,11 +105,20 @@ export function buildSignupReminderMessage(
     )
 }
 
+/**
+ * Sends the due sign-up reminders. Who Discord refused (closed DMs) is
+ * recorded so the match page names them, as for manual reminders (L2-64).
+ */
 export async function processSignupReminders(
-    client: Client,
+    client: Pick<Client, "users">,
     payload: SyncPayload,
-    dueEventIds: ReadonlySet<string>
+    dueEventIds: ReadonlySet<string>,
+    ports: {
+        record?: RecordAutomaticReminderOutcome
+        now?: () => number
+    } = {}
 ) {
+    const record = ports.record ?? recordAutomaticReminderOutcome
     for (const event of payload.events) {
         if (
             !dueEventIds.has(event.id) ||
@@ -133,21 +147,36 @@ export async function processSignupReminders(
                 respondedUserIds,
             })
         )
+        const sentUserIds: string[] = []
+        const failedUserIds: string[] = []
         for (const recipient of recipients) {
             const user = await client.users
                 .fetch(recipient.userId)
                 .catch(() => null)
-            if (!user) continue
-            await user
-                .send(message)
-                .then(() =>
-                    logInfo("signup-reminders", "Sent signup reminder", {
-                        eventId: event.id,
-                        guildId: payload.config.guildId,
-                        userId: recipient.userId,
-                    })
-                )
-                .catch(() => undefined)
+            const sent = user
+                ? await user
+                      .send(message)
+                      .then(() => true)
+                      .catch(() => false)
+                : false
+            if (!sent) {
+                failedUserIds.push(recipient.userId)
+                continue
+            }
+            sentUserIds.push(recipient.userId)
+            logInfo("signup-reminders", "Sent signup reminder", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                userId: recipient.userId,
+            })
         }
+        await record({
+            guildId: payload.config.guildId,
+            eventId: event.id,
+            kind: "signup",
+            runKey: signupReminderRunKey((ports.now ?? Date.now)()),
+            sentUserIds,
+            failedUserIds,
+        })
     }
 }

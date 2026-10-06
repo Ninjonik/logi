@@ -58,6 +58,7 @@ import {
 import { checkCloseAuthority, type CloseAuthority } from "./close-authority"
 import { replyPrivately, reportToErrorsChannel } from "../ui/replies"
 import { threadUrl } from "./membership-application-create"
+import { dmSettingsUrl } from "../events/match-context"
 import type { InteractionFeature } from "./registry"
 import { clanReplyKit } from "../runtime/clan-kit"
 import { revalidateAppData } from "../cache"
@@ -294,7 +295,9 @@ async function runDecision(
                             roleNames: roleNames(guild, roles.after),
                             threadUrl: threadUrl(guild.id, thread.id),
                             ticketChannelName: ticketChannel?.name ?? null,
-                            settingsUrl: `${env.appSiteUrl}/${context.config.defaultLanguage}/dashboard/settings/user`,
+                            settingsUrl: dmSettingsUrl(
+                                context.config.defaultLanguage
+                            ),
                         }),
                         options
                     )
@@ -331,6 +334,7 @@ async function runDecision(
                             ? "applicationIntro"
                             : "applicationRename",
                     channelId: thread.parentId ?? undefined,
+                    userId: application.creatorId,
                     categoryLabel: application.categoryLabel,
                     number: application.applicationNumber,
                 })

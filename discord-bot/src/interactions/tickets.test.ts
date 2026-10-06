@@ -83,7 +83,14 @@ function config(overrides: Partial<DiscordConfig> = {}): DiscordConfig {
     }
 }
 
-type Reported = { action: string | undefined }
+type Reported = {
+    source: string | undefined
+    userId: string | undefined
+    categoryLabel: string | undefined
+    number: number | undefined
+    channelId: string | undefined
+    error: unknown
+}
 
 function fakePorts(input: {
     config?: DiscordConfig | null
@@ -110,7 +117,14 @@ function fakePorts(input: {
         },
         storeIntroMessage: async () => {},
         reporter: async (value) => {
-            input.reports?.push({ action: value.action })
+            input.reports?.push({
+                source: value.source,
+                userId: value.userId,
+                categoryLabel: value.categoryLabel,
+                number: value.number,
+                channelId: value.channelId,
+                error: value.error,
+            })
         },
         now: () => Date.parse("2026-10-11T18:31:00Z"),
     }
@@ -119,24 +133,33 @@ function fakePorts(input: {
 function fakeGuild(input: {
     parentType?: ChannelType
     threadFails?: boolean
+    /** Later steps Discord refuses: adding support, the intro, the name. */
+    refuse?: ReadonlyArray<"add" | "send" | "name">
     calls: string[]
     sent: unknown[]
 }) {
+    const refused = () =>
+        Object.assign(new Error("Missing Permissions"), { code: 50013 })
     const thread = {
         id: THREAD,
         name: "Nahlásit hráče",
+        parentId: PARENT,
+        guildId: GUILD,
         client: {},
         members: {
             add: async (id: string) => {
                 input.calls.push(`add:${id}`)
+                if (input.refuse?.includes("add")) throw refused()
             },
         },
         send: async (value: unknown) => {
+            if (input.refuse?.includes("send")) throw refused()
             input.sent.push(value)
             return { id: "500000000000000001" }
         },
         setName: async (name: string) => {
             input.calls.push(`name:${name}`)
+            if (input.refuse?.includes("name")) throw refused()
         },
         delete: async () => {
             input.calls.push("delete")
@@ -395,9 +418,9 @@ test("the select of a large panel opens the chosen category", async () => {
 
 test("failures an admin must fix: the person reads one card, the errors channel gets the cause (L4-40, L4-B06)", async () => {
     for (const scenario of [
-        { parentType: ChannelType.GuildVoice, action: "Open a ticket" },
-        { threadFails: true, action: "Create a ticket thread" },
-        { recordFails: true, action: "Store a new ticket" },
+        { parentType: ChannelType.GuildVoice, failure: "channel_type" },
+        { threadFails: true, failure: "Missing Permissions" },
+        { recordFails: true, failure: "Convex down" },
     ]) {
         const calls: string[] = []
         const reports: Reported[] = []
@@ -423,7 +446,69 @@ test("failures an admin must fix: the person reads one card, the errors channel 
             /Nic se neuložilo\. Správci dostali upozornění; zkus to prosím za chvíli znovu\./
         )
         assert.doesNotMatch(text, /oprávnění bota|Missing Permissions/)
-        assert.deepEqual(reports, [{ action: scenario.action }])
+        // The entry names the category and who tried (L5-12).
+        assert.equal(reports.length, 1)
+        assert.deepEqual(
+            {
+                ...reports[0],
+                error: undefined,
+            },
+            {
+                source: "ticketOpen",
+                userId: AUTHOR,
+                categoryLabel: "Jiné",
+                number: undefined,
+                channelId: PARENT,
+                error: undefined,
+            }
+        )
+        const error = reports[0]!.error as { reason?: string; message: string }
+        assert.equal(error.reason ?? error.message, scenario.failure)
         if (scenario.recordFails) assert.ok(calls.includes("delete"))
     }
+})
+
+test("later steps of an open ticket are reported with the ticket, its author and no retry promise (L5-24)", async () => {
+    const calls: string[] = []
+    const reports: Reported[] = []
+    const { interaction: button, replies } = interaction<ButtonInteraction>({
+        customId: "ticket:other",
+        guild: fakeGuild({
+            calls,
+            sent: [],
+            refuse: ["add", "send", "name"],
+        }),
+    })
+    await handleTicketButton(button, fakePorts({ reports }))
+    // The author still reads that the ticket is open.
+    assert.match(JSON.stringify(replies.at(-1)), /Ticket #12 je otevřený/)
+    assert.deepEqual(
+        reports.map((report) => ({ ...report, error: undefined })),
+        [
+            {
+                source: "ticketSupport",
+                userId: AUTHOR,
+                categoryLabel: "Jiné",
+                number: undefined,
+                channelId: PARENT,
+                error: undefined,
+            },
+            {
+                source: "ticketIntro",
+                userId: AUTHOR,
+                categoryLabel: "Jiné",
+                number: 12,
+                channelId: PARENT,
+                error: undefined,
+            },
+            {
+                source: "ticketRename",
+                userId: AUTHOR,
+                categoryLabel: "Jiné",
+                number: 12,
+                channelId: PARENT,
+                error: undefined,
+            },
+        ]
+    )
 })

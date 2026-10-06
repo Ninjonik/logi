@@ -268,6 +268,11 @@ test("the DM to the author: label, title, category and closer by name, quote, li
         { label: "Otevřít vlákno", link: "https://discord.com/channels/1/2" },
     ])
     assert.equal(view.ephemeral, undefined)
+    // The divider sits between the quoted reason and the button (L2-56).
+    assert.deepEqual(
+        view.blocks.map((block) => block.kind),
+        ["text", "text", "separator", "buttons"]
+    )
 })
 
 test("/close_ticket replies: closed with or without the DM, and every refusal (M3-30..36)", () => {

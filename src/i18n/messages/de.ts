@@ -6435,6 +6435,7 @@ export const deMessages = {
         copied: "Namen kopiert",
         howTo: "Nachrichten von einem Server erlauben",
         meta: "{kind} · gesendet {time} · von {name}",
+        metaAutomatic: "{kind} · gesendet {time} · automatisch nach Plan",
         kindUnanswered: "Anmeldeerinnerung",
         kindUnconfirmed: "Anwesenheitserinnerung",
         unknownSender: "einem Admin",

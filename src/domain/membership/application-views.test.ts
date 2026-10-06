@@ -503,6 +503,11 @@ test("decision DMs: clan language, quoted reason, roles without mentions (L2-54,
         buttons(accepted).map((button) => button.label),
         ["Otevřít vlákno"]
     )
+    // The board's divider sits between the quote and the button (L2-54).
+    assert.deepEqual(
+        accepted.blocks.slice(-3).map((block) => block.kind),
+        ["text", "separator", "buttons"]
+    )
     const rejected = text(
         applicationDecisionDmView(cs, {
             clanName: "Vlci",

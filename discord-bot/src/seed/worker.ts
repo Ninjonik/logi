@@ -22,8 +22,6 @@ import { deliverSeedCall } from "../../../src/application/discord-seed/delivery"
 import { resolveClanTimeZone } from "../../../src/domain/discord-seed/clock"
 import type { SeedFailure } from "../../../src/domain/discord-seed/run"
 import type { SeedDeliveryState } from "../../../convex/discordSeedBot"
-import { getSeedMessages } from "../../../src/lib/clan-language/seed"
-import { clanLanguageForGuild } from "../runtime/clan-language"
 import { channelAccess } from "../public-panels/worker"
 import { reportToErrorsChannel } from "../ui/replies"
 import { seedMessagePayload } from "./payload"
@@ -393,18 +391,15 @@ export function seedWorkerPorts(client: Client): SeedWorkerPorts {
             const message = await channel.messages.fetch(messageId)
             if (!message.pinned) await message.pin()
         },
+        // P3-22: the errors channel says why the controls were not posted
+        // and how to fix it (L5-16).
         controlChannelPublic: async (guildId, channelId) => {
-            const copy = getSeedMessages(await clanLanguageForGuild(guildId))
             await reportToErrorsChannel({
                 client,
                 guildId,
-                error: new Error(
-                    copy.errors.controlChannelPublic(`<#${channelId}>`)
-                ),
-                action: copy.errors.controlAction,
-                location: "Server seeding",
-                scope: "seed-control",
-                target: `<#${channelId}>`,
+                error: undefined,
+                source: "seedControl",
+                channelId,
             })
         },
         now: Date.now,

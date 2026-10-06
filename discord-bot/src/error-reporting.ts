@@ -10,6 +10,7 @@ import {
 
 import {
     BOT_ERROR_SOURCE_SPECS,
+    BOT_PERMISSIONS,
     classifyDiscordFailure,
     botErrorReportView,
     isBotErrorSource,
@@ -22,6 +23,7 @@ import {
 } from "../../src/domain/discord-messages/bot-errors"
 import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
 import { escapeMarkdownText } from "../../src/domain/discord-messages/message-view"
+import type { PublicationChannelError } from "./sync/publication-errors"
 import { getSystemMessages } from "../../src/lib/clan-language/system"
 import { resolveClanLanguage } from "../../src/lib/clan-language/core"
 import { makeFunctionReference } from "convex/server"
@@ -60,6 +62,8 @@ export type ClanErrorReportInput = {
     number?: number
     /** Players a reminder was for. */
     players?: number
+    /** The Discord panel's name (the password notice, P4-30). */
+    panel?: string
     /** @deprecated Free text of older call sites; only read to find the source. */
     action?: string
     /** @deprecated See `action`. */
@@ -160,8 +164,31 @@ export function inferErrorSource(
     return "general"
 }
 
-/** The parts of a thrown Discord, REST or network error the classification reads. */
-export function discordFailureOf(error: unknown): DiscordFailure {
+/**
+ * The error and what it wraps, outermost first: a publication's
+ * `deliveryCause` (the stored cause), then the standard `cause`. Bounded,
+ * and safe against cycles.
+ */
+export function errorChain(error: unknown): unknown[] {
+    const chain: unknown[] = []
+    const queue: unknown[] = [error]
+    while (queue.length && chain.length < 8) {
+        const current = queue.shift()
+        if (current === undefined || current === null) continue
+        if (chain.includes(current)) continue
+        chain.push(current)
+        if (typeof current === "object") {
+            const wrapped = current as {
+                deliveryCause?: unknown
+                cause?: unknown
+            }
+            queue.push(wrapped.deliveryCause, wrapped.cause)
+        }
+    }
+    return chain
+}
+
+function readDiscordFailure(error: unknown): DiscordFailure {
     if (typeof error === "string") return { message: error }
     if (!error || typeof error !== "object") return {}
     const value = error as {
@@ -180,6 +207,124 @@ export function discordFailureOf(error: unknown): DiscordFailure {
         status: typeof value.status === "number" ? value.status : undefined,
         name: typeof value.name === "string" ? value.name : undefined,
         message: typeof value.message === "string" ? value.message : undefined,
+    }
+}
+
+/**
+ * The parts of a thrown Discord, REST or network error the classification
+ * reads. A wrapped answer counts (a publication's `PublicationNotSent`
+ * carries Discord's 403 as its cause, L5-08): the first error in the chain
+ * that tells something wins, else the first with a code or status.
+ */
+export function discordFailureOf(error: unknown): DiscordFailure {
+    const failures = errorChain(error).map(readDiscordFailure)
+    return (
+        failures.find(
+            (failure) => classifyDiscordFailure(failure) !== "other"
+        ) ??
+        failures.find(
+            (failure) =>
+                failure.code !== undefined || failure.status !== undefined
+        ) ??
+        failures[0] ??
+        {}
+    )
+}
+
+const isBotPermission = (value: string): value is BotPermission =>
+    (BOT_PERMISSIONS as readonly string[]).includes(value)
+
+/**
+ * The facts a thrown error carries by itself (L5-09, L5-26, L5-44): the
+ * permissions a publication's channel pre-check found missing and that
+ * channel, a deleted or wrong channel, or the class of Discord's answer.
+ * The channel is plain "#name"; the errors channel mentions it by
+ * `channelId`.
+ */
+export function errorFacts(error: unknown): {
+    facts: BotErrorFacts
+    channelId?: string
+} {
+    for (const item of errorChain(error)) {
+        const permission = publicationPermissionFailure(item)
+        if (permission)
+            return {
+                facts: {
+                    failure: "missingPermission",
+                    missingPermissions: permission.missing,
+                    channel: permission.channelName
+                        ? `#${escapeMarkdownText(permission.channelName)}`
+                        : undefined,
+                },
+                channelId: permission.channelId,
+            }
+        const channel = publicationChannelFailure(item)
+        if (channel)
+            return {
+                facts:
+                    channel.reason === "channel_missing"
+                        ? { failure: "unknownChannel" }
+                        : channel.reason === "channel_type"
+                          ? { failure: "wrongChannelType" }
+                          : {
+                                failure: "missingPermission",
+                                missingPermissions: channel.permissions,
+                            },
+            }
+    }
+    return {
+        facts: { failure: classifyDiscordFailure(discordFailureOf(error)) },
+    }
+}
+
+const CHANNEL_REASONS: ReadonlySet<unknown> = new Set<
+    PublicationChannelError["reason"]
+>(["channel_missing", "channel_type", "missing_permissions"])
+
+const isChannelReason = (
+    value: unknown
+): value is PublicationChannelError["reason"] => CHANNEL_REASONS.has(value)
+
+/**
+ * A publication channel failure (P1-16), by its class's shape, so an error
+ * that crossed a module boundary or a serialisation is still recognised.
+ */
+function publicationChannelFailure(item: unknown) {
+    if (!item || typeof item !== "object") return null
+    const value = item as { reason?: unknown; permissions?: unknown }
+    if (!isChannelReason(value.reason)) return null
+    return {
+        reason: value.reason,
+        permissions: Array.isArray(value.permissions)
+            ? value.permissions.filter(
+                  (name): name is BotPermission =>
+                      typeof name === "string" && isBotPermission(name)
+              )
+            : [],
+    }
+}
+
+/**
+ * The channel pre-check's missing permissions and the channel (L5-09), by
+ * the shape of `PublicationPermissionError`.
+ */
+function publicationPermissionFailure(item: unknown) {
+    if (!item || typeof item !== "object") return null
+    const value = item as {
+        missing?: unknown
+        channelName?: unknown
+        channelId?: unknown
+    }
+    if (!Array.isArray(value.missing) || typeof value.channelName !== "string")
+        return null
+    return {
+        missing: value.missing.filter(
+            (name): name is BotPermission =>
+                typeof name === "string" && isBotPermission(name)
+        ),
+        channelName: value.channelName.trim(),
+        channelId:
+            typeof value.channelId === "string" ? value.channelId : undefined,
     }
 }
 
@@ -259,9 +404,10 @@ type DiscordLookups = {
 }
 
 /**
- * The facts of the card: the error class, refined with the role positions
- * and the bot's actual permissions, and the channel, category and role as
- * Discord shows them.
+ * The facts of the card: the error class (fixed for a notice such as the
+ * hidden panel password, else read from the error and what it wraps),
+ * refined with the role positions and the bot's actual permissions, and the
+ * channel, category and role as Discord shows them.
  */
 export async function failureFacts(
     source: BotErrorSource,
@@ -269,13 +415,19 @@ export async function failureFacts(
     context: ErrorReportContext,
     discord: DiscordLookups
 ): Promise<{ facts: BotErrorFacts; channelMention?: string }> {
-    let failure = classifyDiscordFailure(discordFailureOf(input.error))
-    const channelId = actionChannelId(source, input, context)
+    const spec = BOT_ERROR_SOURCE_SPECS[source]
+    const found: { facts: BotErrorFacts; channelId?: string } = spec.failure
+        ? { facts: { failure: spec.failure } }
+        : errorFacts(input.error)
+    let failure = found.facts.failure
+    // The publication's own channel is the exact one that failed.
+    const channelId =
+        idOf(found.channelId) ?? actionChannelId(source, input, context)
     const channel = await discord.channel(channelId)
     const categoryId =
         idOf(input.categoryId) ??
         idOf(input.details?.forumCategoryId) ??
-        (BOT_ERROR_SOURCE_SPECS[source].area === "forum"
+        (spec.area === "forum"
             ? idOf(context.channels.forumCategory)
             : undefined)
     const category = await discord.channel(categoryId)
@@ -293,12 +445,24 @@ export async function failureFacts(
     }
     const facts: BotErrorFacts = {
         failure,
-        channel: channel ? `<#${channel.id}>` : undefined,
+        // A channel Discord no longer knows is never named after another one.
+        channel:
+            failure === "unknownChannel"
+                ? undefined
+                : channel
+                  ? `<#${channel.id}>`
+                  : found.facts.channel,
         category: category?.name,
         role: roleId ? `<@&${roleId}>` : undefined,
     }
-    if (failure === "missingPermission" && discord.me) {
-        const required = BOT_ERROR_SOURCE_SPECS[source].permissions
+    if (
+        failure === "missingPermission" &&
+        found.facts.missingPermissions?.length
+    )
+        // The channel pre-check already named what is missing (L5-09).
+        facts.missingPermissions = found.facts.missingPermissions
+    else if (failure === "missingPermission" && discord.me) {
+        const required = spec.permissions
         const target = channel ?? category
         const inChannel = target
             ? required.filter(
@@ -364,6 +528,8 @@ export function errorReportLinks(
         tickets: page("/settings/tickets"),
         roles: page("/settings/roles"),
         membership: page("/settings/membership"),
+        panels: page("/settings/discord-panels"),
+        seed: page("/settings/discord-seed"),
         managed: page("/settings/messages"),
     }
 }
@@ -405,6 +571,7 @@ export async function buildErrorReport(
         channel:
             area === "scheduledEvent" ||
             area === "panels" ||
+            area === "seed" ||
             source === "general"
                 ? facts.channel
                 : undefined,
@@ -414,6 +581,7 @@ export async function buildErrorReport(
         user,
         number: input.number,
         players: input.players,
+        panel: input.panel?.trim() || undefined,
     }
     return messagePayload(
         botErrorReportView({

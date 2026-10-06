@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    PublicationChannelError,
     PublicationPermissionError,
     publicationDeliveryError,
     publicationSource,
@@ -45,7 +46,47 @@ test("a failed delivery uses the errors channel's words, never the English inter
     }
 })
 
+test("a create Discord refused and a deleted channel use the same sentences as the errors channel (L5-44)", () => {
+    // Only `cause`, as the create path wraps Discord's 403.
+    assert.equal(
+        publicationDeliveryError(
+            "cs",
+            Object.assign(
+                new PublicationNotSent("Discord rejected the create request."),
+                {
+                    cause: Object.assign(new Error("Missing Access"), {
+                        code: 50001,
+                        status: 403,
+                    }),
+                }
+            ),
+            "calendar"
+        ),
+        "Kalendář se neaktualizoval. Proč: Bot do kanálu z nastavení Logi nevidí. Co udělat: Přidej roli Logi do kanálu, nebo vyber jiný kanál v Logi."
+    )
+    assert.equal(
+        publicationDeliveryError(
+            "cs",
+            Object.assign(new PublicationNotSent("x"), {
+                cause: new PublicationChannelError("channel_missing"),
+                deliveryCause: new PublicationChannelError("channel_missing"),
+            }),
+            "ticket"
+        ),
+        "Panel ticketů se neaktualizoval. Proč: Kanál z nastavení Logi už na serveru není. Co udělat: Vyber nový kanál v Logi → Kanály a jazyk."
+    )
+    assert.doesNotMatch(
+        publicationDeliveryError(
+            "cs",
+            new PublicationPermissionError(["EmbedLinks"], "info", "1"),
+            "event:e1:info"
+        ),
+        /Discord akci odmítl/
+    )
+})
+
 test("managed messages are named by their key", () => {
+    assert.equal(publicationSource("event:e1:info"), "roster")
     assert.equal(publicationSource("event:e1:announcement"), "announcement")
     assert.equal(publicationSource("event:e1:roster"), "roster")
     assert.equal(publicationSource("event:e1:roster-changes"), "roster")
