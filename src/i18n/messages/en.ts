@@ -6726,6 +6726,10 @@ export const enMessages = {
             },
             content: {
                 show: "What to show",
+                compact: {
+                    label: "Compact look",
+                    help: "A shorter result card: the score without the sides line; a correction only says when and what it was before.",
+                },
                 score: { label: "Score", help: "Allies : Axis by sectors." },
                 leaders: {
                     label: "Top players",

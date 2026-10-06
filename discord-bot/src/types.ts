@@ -333,6 +333,8 @@ export type EventRecord = {
     gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     kind: "match" | "training"
     matchType?: string
+    /** The round of the competition fixture this match plays (L3-14). */
+    competitionRound?: number
     name: string
     description?: string
     thumbnailUrl?: string

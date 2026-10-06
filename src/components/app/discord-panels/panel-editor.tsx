@@ -54,6 +54,7 @@ import {
     CompetitionStep,
     GameStep,
     LeagueContentStep,
+    ResultsContentStep,
     LookStep,
     RefreshStep,
     ServerContentStep,
@@ -965,6 +966,9 @@ export function PanelEditor(props: PanelEditorProps) {
             ) : null}
             {draft.kind === "servers" ? (
                 <ServersContentStep ctx={ctx} number={next()} />
+            ) : null}
+            {draft.kind === "results" ? (
+                <ResultsContentStep ctx={ctx} number={next()} />
             ) : null}
             {draft.kind === "league" ? (
                 <LeagueContentStep

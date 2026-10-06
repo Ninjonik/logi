@@ -113,7 +113,8 @@ export function pausedState(header: MessageHeader, copy: MessageKitCopy) {
             : fillTemplate(copy.lastData, { time: `<t:${since}:f>` }),
     ].filter((part): part is string => Boolean(part))
     return {
-        chip: { label: copy.paused, tone: "warning" } satisfies MessageChip,
+        // Grey: a pause is a state an admin chose, not a warning (P4-21, L3-54).
+        chip: { label: copy.paused, tone: "neutral" } satisfies MessageChip,
         detail: detail.join(" · ") || undefined,
     }
 }

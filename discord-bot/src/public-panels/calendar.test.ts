@@ -110,3 +110,51 @@ test("the category filter keeps only the chosen kinds of events", () => {
     assert.doesNotMatch(view.text, /Vlci vs Rogue/)
     assert.match(view.text, /Trénink/)
 })
+
+test("a competition match names its round: ECL, 3. kolo (L3-14)", () => {
+    const withRound = {
+        ...payload,
+        guild: {
+            ...payload.guild,
+            eventCategories: [{ id: "ecl", label: "ECL" }],
+        },
+        events: [
+            {
+                id: "events:9",
+                name: "VLK vs MNT",
+                kind: "match",
+                matchType: "ecl",
+                competitionRound: 3,
+                gameStart: hours(30),
+                gameEnd: hours(32),
+                status: "planned",
+                isDraft: false,
+                updatedAt: hours(-1),
+            },
+            {
+                id: "events:10",
+                name: "VLK vs ROG",
+                kind: "match",
+                matchType: "ecl",
+                gameStart: hours(40),
+                gameEnd: hours(42),
+                status: "planned",
+                isDraft: false,
+                updatedAt: hours(-1),
+            },
+        ],
+    } as unknown as Parameters<typeof buildCalendarPanelView>[0]
+    const entries = calendarEntriesFromPayload(withRound, now)
+    assert.deepEqual(
+        entries.map((entry) => entry.typeWord),
+        ["ECL, 3. kolo", "ECL"]
+    )
+    const en = calendarEntriesFromPayload(
+        {
+            ...withRound,
+            config: { ...withRound.config, defaultLanguage: "en" },
+        } as unknown as Parameters<typeof buildCalendarPanelView>[0],
+        now
+    )
+    assert.equal(en[0]?.typeWord, "ECL, round 3")
+})

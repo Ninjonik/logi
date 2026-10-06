@@ -6893,6 +6893,10 @@ export const deMessages = {
             },
             content: {
                 show: "Was angezeigt wird",
+                compact: {
+                    label: "Kompakte Ansicht",
+                    help: "Eine kürzere Ergebniskarte: der Spielstand ohne die Zeile mit den Seiten; eine Korrektur sagt nur, wann und was vorher stand.",
+                },
                 score: {
                     label: "Punktestand",
                     help: "Alliierte : Achse nach Sektoren.",

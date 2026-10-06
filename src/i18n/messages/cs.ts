@@ -6696,6 +6696,10 @@ export const csMessages = {
             },
             content: {
                 show: "Co ukázat",
+                compact: {
+                    label: "Kompaktní vzhled",
+                    help: "Kratší karta výsledku: skóre bez řádku se stranami; oprava řekne jen kdy a co bylo předtím.",
+                },
                 score: {
                     label: "Skóre",
                     help: "Spojenci : Osa podle sektorů.",

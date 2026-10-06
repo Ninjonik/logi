@@ -132,7 +132,7 @@ export type MessageBlock =
     | { kind: "buttons"; buttons: MessageButton[] }
     | { kind: "select"; select: MessageSelect }
 
-/** Data failed: the paused chip says since when; the bar keeps its colour. */
+/** Paused: the grey "Pozastaveno" chip says since when; the bar keeps its colour. */
 export type MessagePaused = { reason?: string; since?: TimestampInput }
 
 export type MessageHeader = {

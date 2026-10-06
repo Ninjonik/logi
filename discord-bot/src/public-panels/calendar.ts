@@ -52,10 +52,21 @@ export function calendarEntriesFromPayload(
                       )?.label ??
                       event.matchType?.trim() ??
                       copy.match)
+            // L3-14: "ECL, 3. kolo" for a competition fixture with a round.
+            const round =
+                event.kind !== "training" &&
+                typeof event.competitionRound === "number" &&
+                Number.isInteger(event.competitionRound) &&
+                event.competitionRound > 0
+                    ? event.competitionRound
+                    : null
             return {
                 id: event.id,
                 title: event.name,
-                typeWord: label,
+                typeWord:
+                    round !== null
+                        ? copy.withRound(label, String(round))
+                        : label,
                 startAt: event.gameStart,
                 endAt: event.gameEnd,
                 allDay: false,

@@ -154,6 +154,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "No upcoming events are scheduled right now.",
             training: "Training",
             match: "Match",
+            withRound: (type, round) => `${type}, round ${round}`,
         },
         competition: {
             title: "Standings",
@@ -340,6 +341,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "Momentálně nejsou naplánované žádné nadcházející akce.",
             training: "Trénink",
             match: "Zápas",
+            withRound: (type, round) => `${type}, ${round}. kolo`,
         },
         competition: {
             title: "Tabulka",
@@ -525,6 +527,7 @@ const panelsMessages: Record<ClanLanguage, PanelMessages> = {
             empty: "Derzeit sind keine kommenden Events geplant.",
             training: "Training",
             match: "Match",
+            withRound: (type, round) => `${type}, Runde ${round}`,
         },
         competition: {
             title: "Tabelle",

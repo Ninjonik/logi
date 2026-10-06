@@ -209,3 +209,17 @@ test("each report failure maps to its own sentence key", () => {
     assert.equal(reportFailureOf(invalid.error), "reason")
     assert.equal(reportFailureOf(new Error("internal detail")), "unavailable")
 })
+
+test("the picker carries the clan's own colour (L3-58)", () => {
+    const payload = json(
+        buildReportPicker(
+            "draft",
+            { map: null, serverName: "Vlci #1", observedAt: null, players: [] },
+            0,
+            "cs",
+            { accentColor: "#4F9DE0" }
+        )
+    )
+    const [container] = payload.components as Json[]
+    assert.equal(container?.accent_color, 0x4f9de0)
+})

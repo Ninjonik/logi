@@ -109,6 +109,8 @@ export type CalendarPanelCopy = {
     empty: string
     training: string
     match: string
+    /** L3-14: a competition match's type word with its round, "ECL, 3. kolo". */
+    withRound: (type: string, round: string) => string
 }
 
 export type CompetitionPanelCopy = {

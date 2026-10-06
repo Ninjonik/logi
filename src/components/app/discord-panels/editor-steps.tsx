@@ -1249,6 +1249,41 @@ function ReportCategory({ ctx }: { ctx: EditorContext }) {
     )
 }
 
+/**
+ * "Obsah" of the results panel (L3-31, L3-B05): the compact look, which
+ * shows each result and its correction as a shorter card.
+ */
+export function ResultsContentStep({
+    ctx,
+    number,
+}: {
+    ctx: EditorContext
+    number: number
+}) {
+    const text = ctx.dictionary.discordPanelsPage.editor
+    const c = text.content
+    const { draft } = ctx
+    return (
+        <SettingsStep
+            id="panel-content"
+            number={number}
+            title={text.steps.content}
+        >
+            <StepSection title={c.show}>
+                <SwitchRow
+                    label={c.compact.label}
+                    help={c.compact.help}
+                    checked={draft.layout.compact}
+                    disabled={ctx.disabled}
+                    onChange={(compact) =>
+                        ctx.update({ layout: { ...draft.layout, compact } })
+                    }
+                />
+            </StepSection>
+        </SettingsStep>
+    )
+}
+
 export function ServersContentStep({
     ctx,
     number,
