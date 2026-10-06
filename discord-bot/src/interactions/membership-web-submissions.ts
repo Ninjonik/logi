@@ -12,6 +12,7 @@ import {
     createApplicationThread,
     threadUrl,
 } from "./membership-application-create"
+import { applicationStateCache } from "./membership-application-cache"
 import { logError, logInfo, logWarn } from "../log"
 import { messagePayload } from "../ui/message-kit"
 import { env } from "../environment"
@@ -74,6 +75,11 @@ async function processSubmission(client: Client, item: Queued) {
     logInfo("membership", "Created a web application thread", {
         guildId: guild.id,
         threadId: result.threadId,
+    })
+    // The applicant's draft is gone and the application is open now.
+    applicationStateCache.update(guild.id, item.creatorId, {
+        draft: null,
+        openApplication: { number: result.number, threadId: result.threadId },
     })
     const config = claim.submission.config
     if (config.membershipSettings?.sendConfirmationDm === false) return

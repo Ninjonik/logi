@@ -303,13 +303,14 @@ export function ticketIntroView(input: {
             chips: [{ label: copy.thread.openChip, tone: "success" }],
         },
         blocks: [
+            // The muted line under the chip, as on the board (L4-42).
             ...(opened
                 ? [
                       {
                           kind: "text" as const,
-                          markdown: fillTemplate(copy.thread.openedAt, {
+                          markdown: `-# ${fillTemplate(copy.thread.openedAt, {
                               time: opened,
-                          }),
+                          })}`,
                       },
                   ]
                 : []),
@@ -375,7 +376,8 @@ export function ticketClosedView(input: {
             chips: [{ label: copy.closed.chip, tone: "neutral" }],
         },
         blocks: [
-            { kind: "text", markdown: closedBy },
+            // The muted line under the chip, as on the board (L4-43).
+            { kind: "text", markdown: `-# ${closedBy}` },
             ...(reason ? [{ kind: "text" as const, markdown: reason }] : []),
             { kind: "separator", divider: true, spacing: "small" },
         ],

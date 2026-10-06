@@ -239,7 +239,16 @@ export type WindowIssue = {
 
 export type WindowSubmission =
     | { ok: true; answers: ApplicationAnswers }
-    | { ok: false; issues: WindowIssue[] }
+    | {
+          ok: false
+          issues: WindowIssue[]
+          /**
+           * The answers with every valid field of the window applied and the
+           * window still unfinished, so an invalid window can be saved and
+           * "Upravit" reopens it filled in (L6-09).
+           */
+          partial: ApplicationAnswers
+      }
 
 /** Values per field ID as the modal or the web form sent them. */
 export type WindowValues = Readonly<Record<string, readonly string[]>>
@@ -262,7 +271,11 @@ export function submitWindow(
     const plan = planApplication(input)
     const window = plan.windows.find((item) => item.id === input.windowId)
     if (!window)
-        return { ok: false, issues: [{ fieldId: "", issue: "unknown" }] }
+        return {
+            ok: false,
+            issues: [{ fieldId: "", issue: "unknown" }],
+            partial: input.answers,
+        }
     const next: ApplicationAnswers = {
         games: [...input.answers.games],
         categoryId: input.answers.categoryId,
@@ -354,7 +367,7 @@ export function submitWindow(
         if (!hasAnyAccount(next, input.verifiedSteamId))
             issues.push({ fieldId: "accounts", issue: "account-missing" })
     }
-    if (issues.length) return { ok: false, issues }
+    if (issues.length) return { ok: false, issues, partial: next }
     if (!next.completedWindows.includes(window.id))
         next.completedWindows.push(window.id)
     return { ok: true, answers: next }

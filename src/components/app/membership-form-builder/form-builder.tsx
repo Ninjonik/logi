@@ -177,6 +177,7 @@ export function ApplicationFormBuilder({
                   answers: previewWindowPrefill(applicant, plannedWindow),
               },
               timeZone: preview.timeZone,
+              now: preview.now,
           })
         : []
     const previewGame = applicant.category

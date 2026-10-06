@@ -53,6 +53,7 @@ import {
     buildWindowModal,
     readWindowValues,
 } from "./membership-application-modals"
+import { applicationStateCache } from "./membership-application-cache"
 import { watchVerifiedSteam } from "./membership-steam-watch"
 import type { InteractionFeature } from "./registry"
 import { interactionLanguage } from "../ui/replies"
@@ -202,6 +203,11 @@ function watchSteamFor(
         guildId: interaction.guildId,
         userId: interaction.user.id,
         onVerified: async (fresh) => {
+            applicationStateCache.remember(
+                interaction.guildId ?? "",
+                interaction.user.id,
+                fresh
+            )
             const draft = fresh.draft
             if (!draft || draft.id !== draftId) return
             await interaction.editReply(
@@ -217,9 +223,71 @@ function watchSteamFor(
     })
 }
 
+/** Window 1 of a new application, prefilled from what the bot knows. */
+function firstWindow(state: ApplicationState) {
+    const copy = getApplicationMessages(state.language)
+    const plan = planFor(state, EMPTY_APPLICATION_ANSWERS)
+    return buildWindowModal(copy, {
+        draftId: "new",
+        plan,
+        window: plan.windows[0]!,
+        prefill: {
+            answers: EMPTY_APPLICATION_ANSWERS,
+            verifiedSteamId: state.verifiedSteamId,
+            linkedPlatformIds: state.linkedPlatformIds,
+        },
+        timeZone: state.timeZone,
+        now: Date.now(),
+    })
+}
+
+/** Refreshes the applicant's remembered state after the answer went out. */
+function refreshInBackground(guildId: string, userId: string) {
+    void loadApplicationState(guildId, userId).catch((error) =>
+        logWarn("interaction", "Could not refresh an application state", {
+            guildId,
+            error,
+        })
+    )
+}
+
+/**
+ * "Podat přihlášku" from the bot's cache (lead decision 7): no backend read
+ * before Discord's three seconds run out. False without a cached definition.
+ * An applicant this bot has not seen yet gets window 1 at once; the save
+ * then checks an open application or a full membership (`handleWindowModal`).
+ */
+async function startFromCache(interaction: ButtonInteraction) {
+    const guildId = interaction.guildId
+    if (!guildId) return false
+    const cached = applicationStateCache.peek(guildId, interaction.user.id)
+    if (!cached) return false
+    const { state } = cached
+    const gate = gateCard(state, interaction.guild)
+    if (gate) {
+        await interaction.reply(interactionReplyPayload(gate, kit(state)))
+    } else if (state.draft) {
+        // A saved application continues where it stopped (L6-53).
+        await interaction.reply(
+            interactionReplyPayload(
+                {
+                    ...progressView(state, state.draft.id, state.draft.answers),
+                    ephemeral: true,
+                },
+                kit(state)
+            )
+        )
+        watchSteamFor(interaction, state, state.draft.id, state.draft.answers)
+    } else await interaction.showModal(firstWindow(state))
+    refreshInBackground(guildId, interaction.user.id)
+    return true
+}
+
 /** "Podat přihlášku" on the panel (L6-14): window 1, or the saved progress. */
 export async function handleApplicationStart(interaction: ButtonInteraction) {
     if (!interaction.guildId) return
+    if (await startFromCache(interaction)) return
+    // Before the first definitions arrived: one read, then the window.
     const state = await loadApplicationState(
         interaction.guildId,
         interaction.user.id
@@ -236,7 +304,6 @@ export async function handleApplicationStart(interaction: ButtonInteraction) {
         await interaction.reply(interactionReplyPayload(gate!, options))
         return
     }
-    const copy = getApplicationMessages(state.language)
     if (state.draft) {
         // A saved application continues where it stopped (L6-53).
         await interaction.reply(
@@ -251,20 +318,7 @@ export async function handleApplicationStart(interaction: ButtonInteraction) {
         watchSteamFor(interaction, state, state.draft.id, state.draft.answers)
         return
     }
-    const plan = planFor(state, EMPTY_APPLICATION_ANSWERS)
-    await interaction.showModal(
-        buildWindowModal(copy, {
-            draftId: "new",
-            plan,
-            window: plan.windows[0]!,
-            prefill: {
-                answers: EMPTY_APPLICATION_ANSWERS,
-                verifiedSteamId: state.verifiedSteamId,
-                linkedPlatformIds: state.linkedPlatformIds,
-            },
-            timeZone: state.timeZone,
-        })
-    )
+    await interaction.showModal(firstWindow(state))
 }
 
 /** One window submitted: saved, then the progress message (L6-07, L6-08). */
@@ -300,6 +354,14 @@ export async function handleWindowModal(interaction: ModalSubmitInteraction) {
         )
         return
     }
+    // Window 1 may have opened from the cache before the bot knew the
+    // applicant: an open application or a full membership still stops here.
+    const gate =
+        parsed.draftId === "new" ? gateCard(state, interaction.guild) : null
+    if (gate) {
+        await show(interaction, gate, options)
+        return
+    }
     const answers = draft?.answers ?? EMPTY_APPLICATION_ANSWERS
     const plan = planFor(state, answers)
     const window = plan.windows.find((item) => item.id === parsed.windowId)
@@ -331,25 +393,14 @@ export async function handleWindowModal(interaction: ModalSubmitInteraction) {
         values: readWindowValues(interaction, window),
     })
     if (!result.ok) {
-        if (result.reason === "invalid" && draft)
+        if (result.reason === "invalid")
+            // The window's valid answers are saved (also a first window 1),
+            // so "Upravit" reopens it filled in (L6-09).
             await show(
                 interaction,
                 applicationFixView(copy, {
                     clanName: state.clanName,
-                    draftId: draft.id,
-                    plan,
-                    window,
-                    issues: result.issues ?? [],
-                }),
-                options
-            )
-        else if (result.reason === "invalid")
-            // Window 1 without a draft yet: the issues are the reason itself.
-            await show(
-                interaction,
-                applicationFixView(copy, {
-                    clanName: state.clanName,
-                    draftId: "new",
+                    draftId: result.draftId ?? draft?.id ?? "new",
                     plan,
                     window,
                     issues: result.issues ?? [],
@@ -411,10 +462,54 @@ async function sendConfirmationDm(
         .catch(() => null)
 }
 
+/**
+ * "Pokračovat" or "Upravit" from the bot's cache (lead decision 7): the
+ * window opens with the remembered draft, without a backend read. False when
+ * the bot does not know this draft; the caller then reads it once.
+ */
+async function openFromCache(
+    interaction: ButtonInteraction,
+    parsed: { draftId: string; windowId: string }
+) {
+    const guildId = interaction.guildId
+    if (!guildId) return false
+    const cached = applicationStateCache.peek(guildId, interaction.user.id)
+    if (!cached?.known || !cached.state.enabled) return false
+    const { state } = cached
+    if (parsed.draftId === "new" && !state.draft) {
+        await startFromCache(interaction)
+        return true
+    }
+    const draft = state.draft
+    if (!draft || draft.id !== parsed.draftId) return false
+    const plan = planFor(state, draft.answers)
+    const window =
+        plan.windows.find((item) => item.id === parsed.windowId) ??
+        nextWindow(plan, draft.answers, state.verifiedSteamId)
+    if (!window) return false
+    await interaction.showModal(
+        buildWindowModal(getApplicationMessages(state.language), {
+            draftId: draft.id,
+            plan,
+            window,
+            prefill: {
+                answers: draft.answers,
+                verifiedSteamId: state.verifiedSteamId,
+                linkedPlatformIds: state.linkedPlatformIds,
+            },
+            timeZone: state.timeZone,
+            now: Date.now(),
+        })
+    )
+    return true
+}
+
 /** "Pokračovat", "Upravit", "Odeslat přihlášku" and "Zrušit" on the progress message. */
 export async function handleApplicationButton(interaction: ButtonInteraction) {
     const parsed = parseApplicationButton(interaction.customId)
     if (!parsed || !interaction.guildId || !interaction.guild) return
+    if (parsed.action === "open" && (await openFromCache(interaction, parsed)))
+        return
     const state = await loadApplicationState(
         interaction.guildId,
         interaction.user.id
@@ -461,6 +556,9 @@ export async function handleApplicationButton(interaction: ButtonInteraction) {
             userId: interaction.user.id,
             draftId: draft.id,
         })
+        applicationStateCache.update(interaction.guildId, interaction.user.id, {
+            draft: null,
+        })
         await show(
             interaction,
             applicationErrors.cancelled(copy, state.panelChannelId),
@@ -492,6 +590,7 @@ export async function handleApplicationButton(interaction: ButtonInteraction) {
                     linkedPlatformIds: state.linkedPlatformIds,
                 },
                 timeZone: state.timeZone,
+                now: Date.now(),
             })
         )
         return
@@ -577,6 +676,10 @@ export async function handleApplicationButton(interaction: ButtonInteraction) {
         return
     }
     const url = threadUrl(interaction.guildId, result.threadId)
+    applicationStateCache.update(interaction.guildId, interaction.user.id, {
+        draft: null,
+        openApplication: { number: result.number, threadId: result.threadId },
+    })
     await show(
         interaction,
         applicationSentView(copy, {

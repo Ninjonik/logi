@@ -1,8 +1,10 @@
 /**
  * `/link` (boards L4 1.5 and M3 1.2): a private guide, one message updated
  * in place, that links the person's Steam, Epic Games, Xbox or PlayStation
- * account. With the clan's stats servers it first asks "Hrál jsi u nás?" and
- * can find the person by name (L4-B08). IDs are checked per platform before
+ * account. When the clan's servers retained games it first asks "Hrál jsi u
+ * nás?" and can find the person by name or ID (L4-B08), from the same
+ * source and rule as the application's "Našli jsme tě na serverech klanu?"
+ * (`convex/clanPlayerHistory.ts`). IDs are checked per platform before
  * they are stored (M3-B08); a declared ID is a claim, and "Ověřit Steam na
  * webu" leads to the verified Steam flow in Logi → Můj účet. Unlinking says
  * when the person's open application uses the account (L4-B09). The old
@@ -55,26 +57,23 @@ import {
     type GameAccountPlatform,
 } from "../../../src/domain/game-accounts/platform-id"
 import {
-    clanStatsServers,
-    searchStatsServers,
-    type StatsSearchHit,
-    type StatsServer,
-} from "./link-search"
-import {
     getIntlLocaleForClanLanguage,
     resolveClanLanguage,
 } from "../../../src/lib/clan-language/core"
+import type { PreviousPlayer } from "../../../src/domain/membership/previous-players"
 import { getGameAccountMessages } from "../../../src/lib/clan-language/game-accounts"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import { continueApplicationAfterLink } from "./membership-application"
 import { editPayload, type MessageKitOptions } from "../ui/message-kit"
-import { shortDay } from "../../../src/domain/discord-commands/text"
 import type { GuildCommandConfigs } from "../commands/guild-configs"
+import { seenDay } from "../../../src/domain/discord-commands/text"
 import { fallbackGuildLanguage } from "../commands/definitions"
 import { replyError, replyPrivately } from "../ui/replies"
 import { guildCommandConfigs } from "../commands/runtime"
 import { checkCommandAccess } from "../commands/access"
+import { makeFunctionReference } from "convex/server"
 import type { InteractionFeature } from "./registry"
+
 import { convex, references } from "../convex"
 import { client } from "../discord-client"
 import { env } from "../environment"
@@ -105,7 +104,6 @@ const LEGACY_MODAL_PREFIXES = ["plink-modal:l:", "plink-search:l:"]
 
 /** `discordGameAccounts:getLinkContext`. */
 export type LinkContextRow = {
-    serverNames: Array<{ origin: string; name: string }>
     /** `accounts`: the stored IDs an application in windows gave. */
     application: {
         answers: Array<{ value: string }>
@@ -128,14 +126,16 @@ export type LinkPorts = {
     /** Unlinks one account and returns the remaining ones. */
     unlink(userId: string, stored: string): Promise<string[]>
     context(guildId: string, userId: string): Promise<LinkContextRow>
-    /** The clan's stats server connections (address and key). */
-    statsServers(
-        guildId: string
-    ): Promise<ReadonlyArray<{ url?: string; token?: string }>>
-    search?: (
-        servers: readonly StatsServer[],
-        query: string
-    ) => Promise<StatsSearchHit[] | "unavailable">
+    /**
+     * "Hrál jsi u nás?" (L4-49..L4-51): the clan's retained games, the same
+     * source and rule as the application's "Našli jsme tě…" (L6-B06).
+     * `known` is false when the clan's servers retained no game yet;
+     * `players` answer a name or ID.
+     */
+    playerHistory(
+        guildId: string,
+        query?: string
+    ): Promise<{ known: boolean; players: PreviousPlayer[] }>
     /** Installed application emoji of the platforms. */
     emoji(): Promise<PlatformEmoji>
     siteUrl: string
@@ -197,17 +197,17 @@ async function base(
     }
 }
 
-/** The first card of the guide: "Hrál jsi u nás?" with stats servers, else the platforms. */
+/** The first card of the guide: "Hrál jsi u nás?" with retained games, else the platforms. */
 async function startView(
     guildId: string | null,
     clan: Clan,
     input: Base,
     ports: LinkPorts
 ): Promise<MessageView> {
-    const servers = guildId
-        ? clanStatsServers(await ports.statsServers(guildId).catch(() => []))
-        : []
-    return servers.length
+    const history = guildId
+        ? await ports.playerHistory(guildId).catch(() => null)
+        : null
+    return history?.known
         ? playedBeforeView(input)
         : linkStartView({
               ...input,
@@ -580,32 +580,37 @@ export async function handleLinkSearchModal(
         ports
     )
     const input = await base(clan, context, ports)
-    const [connections, row] = await Promise.all([
-        ports.statsServers(interaction.guildId).catch(() => []),
-        ports
-            .context(interaction.guildId, interaction.user.id)
-            .catch(() => null),
-    ])
-    const servers = clanStatsServers(connections, row?.serverNames)
-    const hits = await (ports.search ?? searchStatsServers)(
-        servers,
-        interaction.fields.getTextInputValue("query")
-    )
+    const result = await ports
+        .playerHistory(
+            interaction.guildId,
+            interaction.fields.getTextInputValue("query")
+        )
+        .catch(() => "unavailable" as const)
     const locale = getIntlLocaleForClanLanguage(clan.language)
+    const now = Date.now()
     const players: FoundPlayer[] =
-        hits === "unavailable"
+        result === "unavailable"
             ? []
-            : hits.map((hit) => ({
-                  playerId: hit.playerId,
-                  name: hit.playerName,
-                  platform: hit.platform,
-                  lastSeen: hit.lastSeenAt
-                      ? shortDay(hit.lastSeenAt, locale, clan.timeZone)
-                      : undefined,
-                  server: hit.server,
+            : result.players.map((player) => ({
+                  // Stored as `steam:7656…`, `epic:…`, `xbox:…`; an unknown
+                  // platform keeps its bare ID.
+                  playerId:
+                      player.platform === "other"
+                          ? player.platformId
+                          : player.key,
+                  name: player.name,
+                  platform: player.platform,
+                  // The weekday only within the last 7 days (L4-51).
+                  lastSeen: seenDay(
+                      player.lastSeenAt,
+                      locale,
+                      clan.timeZone,
+                      now
+                  ),
+                  server: player.serverName ?? undefined,
               }))
     const view =
-        hits === "unavailable"
+        result === "unavailable"
             ? searchUnavailableView(input)
             : players.length
               ? searchResultsView({ ...input, players })
@@ -677,6 +682,10 @@ async function installedPlatformEmoji(discord: Client): Promise<PlatformEmoji> {
 
 const TAKEN = /already linked to another player/i
 
+const searchClanPlayers = makeFunctionReference<"query">(
+    "clanPlayerHistory:searchClanPlayers"
+)
+
 /** `/link` wired to Convex and Discord. */
 export const linkFeature = linkInteractions(() => ({
     configs: guildCommandConfigs,
@@ -717,15 +726,12 @@ export const linkFeature = linkInteractions(() => ({
             guildId,
             userId,
         })) as LinkContextRow,
-    statsServers: async (guildId) =>
-        (
-            (await convex.query(references.getConfigByDiscordGuildId, {
-                secret: env.internalSecret,
-                guildId,
-            })) as {
-                playerStatsServers?: Array<{ url?: string; token?: string }>
-            } | null
-        )?.playerStatsServers ?? [],
+    playerHistory: async (guildId, query) =>
+        (await convex.query(searchClanPlayers, {
+            secret: env.internalSecret,
+            guildId,
+            ...(query?.trim() ? { query: query.trim() } : {}),
+        })) as { known: boolean; players: PreviousPlayer[] },
     emoji: () => installedPlatformEmoji(client),
     siteUrl: env.appSiteUrl,
     // The account step of the clan application (W7a, L4-60).

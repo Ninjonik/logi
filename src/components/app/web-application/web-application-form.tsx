@@ -86,9 +86,12 @@ function initialValues(fields: readonly ApplicationFieldModel[]) {
 export function WebApplicationForm({
     data,
     t,
+    now,
 }: {
     data: WebApplicationData
     t: Dictionary["applicationWeb"]
+    /** "Now" from the server, for the last-seen dates of found players. */
+    now: number
 }) {
     const id = useId()
     const copy = getApplicationMessages(data.language)
@@ -120,9 +123,10 @@ export function WebApplicationForm({
                           linkedPlatformIds: data.linkedPlatformIds,
                       },
                       timeZone: data.timeZone,
+                      now,
                   })
                 : [],
-        [copy, window, answers, data]
+        [copy, window, answers, data, now]
     )
     const [values, setValues] = useState<Record<string, string[]>>(() =>
         initialValues(fields)

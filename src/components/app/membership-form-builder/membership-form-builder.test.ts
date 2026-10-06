@@ -53,6 +53,7 @@ test("the sample applicant is a Hell Let Loose member who sees window 3 (N4-25)"
     assert.equal(applicant.answers.accounts.steam, PREVIEW_STEAM_ID)
     const window = applicant.plan.windows.find((item) => item.id === "q1")!
     const fields = windowFieldModels(cs, {
+        now: Date.parse("2026-10-06T10:00:00.000Z"),
         window,
         prefill: { answers: previewWindowPrefill(applicant, window) },
         timeZone: "Europe/Prague",

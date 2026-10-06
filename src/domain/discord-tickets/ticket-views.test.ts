@@ -153,7 +153,8 @@ test("the thread card: label, author title, chip, time, Q&A and the close hint (
     assert.match(text, /-# \*\*TICKET #12 · NAHLÁSIT HRÁČE\*\*/)
     assert.match(text, /### Hráč 17 nahlašuje hráče/)
     assert.match(text, /🟢 \*\*Otevřený\*\*/)
-    assert.match(text, /Otevřeno ne <t:1791743460:d> · <t:1791743460:t>/)
+    // Muted subtext under the chip (L4-42).
+    assert.match(text, /-# Otevřeno ne <t:1791743460:d> · <t:1791743460:t>/)
     assert.match(
         text,
         /\*\*Kdo\? Jméno ve hře\*\*\nxX\\_Sniper\\_Xx\n\*\*Kde a kdy\?\*\*/
@@ -223,7 +224,7 @@ test("the close card: label, 'Vyřešeno', chip, closer, quoted reason, footer (
     assert.match(
         text,
         new RegExp(
-            `Zavřel <@${CLOSER}> · ne <t:1791745920:d> · <t:1791745920:t>`
+            `-# Zavřel <@${CLOSER}> · ne <t:1791745920:d> · <t:1791745920:t>`
         )
     )
     assert.match(text, /> Hráč dostal ban na 7 dní\. Díky za nahlášení\./)

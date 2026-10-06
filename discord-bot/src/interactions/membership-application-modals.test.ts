@@ -50,6 +50,14 @@ function modalJson(answers: ApplicationAnswers, windowIndex: number) {
                 lastSeenAt: "2026-10-03T18:00:00.000Z",
                 serverName: "Vlci #1",
             },
+            {
+                key: "epic:2f1e0d9c8b7a69584736251403f2e1d0",
+                name: "Hrac17_CZ",
+                platform: "epic",
+                platformId: "2f1e0d9c8b7a69584736251403f2e1d0",
+                lastSeenAt: "2026-09-12T18:00:00.000Z",
+                serverName: "Vlci #2",
+            },
         ],
     })
     return JSON.parse(
@@ -63,6 +71,7 @@ function modalJson(answers: ApplicationAnswers, windowIndex: number) {
                     linkedPlatformIds: ["xbox:Hrac17CZ"],
                 },
                 timeZone: "Europe/Prague",
+                now: Date.parse("2026-10-06T10:00:00.000Z"),
             }).toJSON()
         )
     ) as { custom_id: string; title: string; components: Json[] }
@@ -133,12 +142,17 @@ test("window 2: found players, Steam help and accounts prefilled from Logi (L6-2
     )
     const options = (previous.component as Json).options as Json[]
     assert.equal(options[0]!.label, "Hráč 17")
-    assert.match(
+    // The weekday only for a date of the last 7 days, as on the board (L6-29).
+    assert.equal(
         String(options[0]!.description),
-        /^Steam · naposledy .* na Vlci #1$/
+        "Steam · naposledy so 3. 10. na Vlci #1"
+    )
+    assert.equal(
+        String(options[1]!.description),
+        "Epic · naposledy 12. 9. na Vlci #2"
     )
     assert.deepEqual(
-        [options[1]!.label, options[1]!.description],
+        [options[2]!.label, options[2]!.description],
         ["Nic z toho", "Účet zadám níž"]
     )
     assert.equal((modal.components[3]!.component as Json).value, "Hrac17CZ")

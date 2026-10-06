@@ -60,6 +60,18 @@ test("candidates: exact match first, last seen on the latest server (L6-29)", ()
     assert.equal(found[0]!.key, "steam:76561198000000017")
 })
 
+test("/link finds a player by the exact platform ID too (L4-50)", () => {
+    const found = findPreviousPlayers(games, "76561198000000099", 25)
+    assert.deepEqual(
+        found.map((player) => [player.name, player.key]),
+        [["Someone else", "steam:76561198000000099"]]
+    )
+    assert.equal(
+        findPreviousPlayers(games, "0123456789ABCDEF0123456789ABCDEF")[0]?.name,
+        "Hrac17_CZ"
+    )
+})
+
 test("short or empty names do not match loosely", () => {
     assert.deepEqual(findPreviousPlayers(games, "  "), [])
     assert.deepEqual(findPreviousPlayers(games, "17"), [])

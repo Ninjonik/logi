@@ -81,6 +81,26 @@ export function shortDay(
     )
 }
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * When a player was last seen, as the boards write it (L4-51, L6-29): with
+ * the weekday within the last 7 days ("so 3. 10."), without it before that
+ * ("12. 9."). `now` is passed in so the rule stays deterministic.
+ */
+export function seenDay(
+    value: string | number | Date | null | undefined,
+    locale: string,
+    timeZone: string | undefined,
+    now: number
+) {
+    const ms = toMs(value)
+    if (!Number.isFinite(ms)) return undefined
+    return now - ms < WEEK_MS
+        ? shortDay(ms, locale, timeZone)
+        : dayMonth(ms, locale, timeZone)
+}
+
 /** "2. 6." (day and month) in the clan's language and zone. */
 export function dayMonth(
     value: string | number | Date | null | undefined,

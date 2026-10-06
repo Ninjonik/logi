@@ -47,6 +47,7 @@ function fields(answers: ApplicationAnswers, windowId: string) {
             verifiedSteamId: null,
         },
         timeZone: "Europe/Prague",
+        now: Date.parse("2026-10-06T10:00:00.000Z"),
     })
 }
 
@@ -169,7 +170,8 @@ test("a window never holds more than five fields, in Discord or on the web", () 
     assert.equal(window.fields.length, 5)
     const prefill = { answers: EMPTY_APPLICATION_ANSWERS }
     assert.equal(
-        windowFieldModels(cs, { window, prefill, timeZone: "UTC" }).length,
+        windowFieldModels(cs, { window, prefill, timeZone: "UTC", now: 0 })
+            .length,
         5
     )
 })

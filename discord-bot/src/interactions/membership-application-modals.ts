@@ -101,6 +101,8 @@ export function buildWindowModal(
         window: PlannedWindow
         prefill: WindowPrefill
         timeZone: string
+        /** "Now" for the last-seen dates of found players. */
+        now: number
     }
 ) {
     return new ModalBuilder()
@@ -111,6 +113,7 @@ export function buildWindowModal(
                 window: input.window,
                 prefill: input.prefill,
                 timeZone: input.timeZone,
+                now: input.now,
             }).map(fieldLabel)
         )
 }

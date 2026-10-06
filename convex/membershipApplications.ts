@@ -27,7 +27,6 @@ import {
     assertSessionGateway,
 } from "./dashboardSessionStore"
 import { skipsPendingOnApply } from "../src/domain/membership/membership-options"
-import { findPreviousPlayers } from "../src/domain/membership/previous-players"
 import { getApplicationMessages } from "../src/lib/clan-language/application"
 import { formatAnswer } from "../src/domain/membership/application-answers"
 import { assertInternalSecret, normalizeConfigDoc } from "./discord_shared"
@@ -35,6 +34,7 @@ import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { matchesGameScope, type GameId } from "../src/domain/games/game"
 import { attachableAsset, syncAssetReferences } from "./imageAssets"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
+import { clanPlayersMatching } from "./clanPlayerHistory"
 import type { Doc, Id } from "./_generated/dataModel"
 
 /**
@@ -74,7 +74,10 @@ async function configOf(ctx: Ctx, guildId: string) {
 
 /** The clan's form, categories and copy, or null without membership settings. */
 async function applicationSetup(ctx: Ctx, guildId: string) {
-    const config = await configOf(ctx, guildId)
+    return setupOf(await configOf(ctx, guildId))
+}
+
+function setupOf(config: Doc<"discordConfigs"> | null) {
     const settings = config?.membershipSettings
     if (!config || !settings) return null
     const categories = settings.categories as ApplicationCategory[]
@@ -180,22 +183,12 @@ async function verifiedSteam(ctx: Ctx, discordUserId: string) {
     )
 }
 
-/** "Našli jsme tě na serverech klanu?" from the clan's retained history (L6-B06). */
+/**
+ * "Našli jsme tě na serverech klanu?" (L6-B06): the same source and rule as
+ * `/link`'s "Hrál jsi u nás?" (`clanPlayerHistory.ts`), three candidates.
+ */
 async function previousPlayersFor(ctx: Ctx, guildId: string, name?: string) {
-    if (!name?.trim()) return []
-    const games = await ctx.db
-        .query("serverGameHistory")
-        .withIndex("guildId_endedAt", (q) => q.eq("guildId", guildId))
-        .order("desc")
-        .take(60)
-    return findPreviousPlayers(
-        games.map((game) => ({
-            endedAt: game.endedAt,
-            serverName: game.serverName,
-            players: game.session.players,
-        })),
-        name
-    )
+    return clanPlayersMatching(ctx, guildId, name, 3)
 }
 
 async function openApplicationOf(ctx: Ctx, guildId: string, userId: string) {
@@ -224,6 +217,33 @@ async function assignedGamesOf(ctx: Ctx, guildId: string, userId: string) {
     )
 }
 
+/**
+ * The clan's application as every applicant sees it: switches, channels,
+ * the form and the categories. The bot keeps it live (`listApplicationDefinitions`)
+ * so opening a window never waits on a backend read (Discord's 3 seconds).
+ */
+function definitionOf(
+    setup: NonNullable<ReturnType<typeof setupOf>>,
+    guild: Doc<"guilds"> | null
+) {
+    return {
+        enabled: setup.settings.enabled,
+        webFormEnabled: setup.settings.webFormEnabled === true,
+        language: setup.config.defaultLanguage ?? "en",
+        timeZone: setup.config.timezone ?? "UTC",
+        clanName: guild?.name ?? "",
+        guildRecordId: guild ? String(guild._id) : null,
+        panelChannelId: setup.settings.submitChannelId ?? null,
+        parentChannelId: setup.settings.applicationParentChannelId ?? null,
+        ticketChannelId: setup.config.ticketSettings?.enabled
+            ? (setup.config.ticketSettings.submitChannelId ?? null)
+            : null,
+        form: setup.form,
+        categories: setup.categories,
+        messageStyle: setup.config.messageStyle ?? null,
+    }
+}
+
 /** Everything the bot and the web need to show the applicant's form. */
 async function applicationState(ctx: Ctx, guildId: string, userId: string) {
     const setup = await applicationSetup(ctx, guildId)
@@ -245,19 +265,7 @@ async function applicationState(ctx: Ctx, guildId: string, userId: string) {
     ])
     const answers = draft ? draftAnswers(draft) : EMPTY_APPLICATION_ANSWERS
     return {
-        enabled: setup.settings.enabled,
-        webFormEnabled: setup.settings.webFormEnabled === true,
-        language: setup.config.defaultLanguage ?? "en",
-        timeZone: setup.config.timezone ?? "UTC",
-        clanName: guild?.name ?? "",
-        guildRecordId: guild ? String(guild._id) : null,
-        panelChannelId: setup.settings.submitChannelId ?? null,
-        parentChannelId: setup.settings.applicationParentChannelId ?? null,
-        ticketChannelId: setup.config.ticketSettings?.enabled
-            ? (setup.config.ticketSettings.submitChannelId ?? null)
-            : null,
-        form: setup.form,
-        categories: setup.categories,
+        ...definitionOf(setup, guild),
         openApplication,
         assignedGames,
         draft: draft
@@ -276,13 +284,35 @@ async function applicationState(ctx: Ctx, guildId: string, userId: string) {
             answers.inGameName
         ),
         linkedPlatformIds: user?.platformIds ?? [],
-        messageStyle: setup.config.messageStyle ?? null,
     }
 }
 
 export type ApplicationState = NonNullable<
     Awaited<ReturnType<typeof applicationState>>
 >
+
+/**
+ * Every clan's application definition for the bot's live cache (lead
+ * decision: no backend read before a window opens). Internal secret only.
+ */
+export const listApplicationDefinitions = query({
+    args: { secret: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        const configs = await ctx.db.query("discordConfigs").collect()
+        const definitions = []
+        for (const config of configs) {
+            const setup = setupOf(config)
+            if (!setup) continue
+            const guild = await getGuildByDiscordId(ctx, config.guildId)
+            definitions.push({
+                guildId: config.guildId,
+                ...definitionOf(setup, guild),
+            })
+        }
+        return definitions
+    },
+})
 
 /** The applicant's form state for the bot (internal secret). */
 export const getApplicationState = query({
@@ -299,6 +329,8 @@ type SaveResult =
           ok: false
           reason: "disabled" | "expired" | "busy" | "invalid"
           issues?: { fieldId: string; issue: string }[]
+          /** An invalid first try of a window is still saved (L6-09). */
+          draftId?: string
       }
 
 async function saveWindow(
@@ -339,15 +371,16 @@ async function saveWindow(
         values: input.values,
         verifiedSteamId,
     })
-    if (!result.ok)
-        return {
-            ok: false,
-            reason: "invalid",
-            issues: result.issues.map((issue) => ({ ...issue })),
-        }
+    const issues = result.ok ? [] : result.issues.map((issue) => ({ ...issue }))
+    // An invalid window filled in for the first time keeps its valid
+    // answers, so "Upravit" reopens it filled in (L6-09); a window the
+    // applicant had already finished keeps its last valid answers.
+    if (!result.ok && answers.completedWindows.includes(input.windowId))
+        return { ok: false, reason: "invalid", issues }
+    const saved = result.ok ? result.answers : result.partial
     const now = new Date()
     const fields = {
-        ...draftPatch(result.answers),
+        ...draftPatch(saved),
         expiresAt: now.getTime() + APPLICATION_DRAFT_TTL_MS,
         updatedAt: now.toISOString(),
     }
@@ -359,7 +392,14 @@ async function saveWindow(
             submissionError: undefined,
             claimedUntil: undefined,
         })
-        return { ok: true, draftId: String(draft._id), answers: result.answers }
+        return result.ok
+            ? { ok: true, draftId: String(draft._id), answers: result.answers }
+            : {
+                  ok: false,
+                  reason: "invalid",
+                  issues,
+                  draftId: String(draft._id),
+              }
     }
     const id = await ctx.db.insert("membershipApplicationFormDrafts", {
         guildId: input.guildId,
@@ -368,7 +408,9 @@ async function saveWindow(
         createdAt: now.toISOString(),
         ...fields,
     })
-    return { ok: true, draftId: String(id), answers: result.answers }
+    return result.ok
+        ? { ok: true, draftId: String(id), answers: result.answers }
+        : { ok: false, reason: "invalid", issues, draftId: String(id) }
 }
 
 /** Saves one Discord window after its modal is submitted (L6-08). */
