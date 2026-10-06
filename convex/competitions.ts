@@ -47,8 +47,8 @@ import { resolveGameScope } from "../src/domain/games/game"
 import { authorizePlatformAdmin } from "./platformAdmin"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
+import { assetPublicUrl } from "./imageAssetStore"
 import { mutation } from "./integrationMutation"
-import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
 /** Global-administrator access: superadmin attestation checked in the same transaction. */

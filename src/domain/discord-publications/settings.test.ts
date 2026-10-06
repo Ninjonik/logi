@@ -5,9 +5,9 @@ import {
     DEFAULT_PANEL_CONTENT,
     isPanelPaused,
     normalizePanelKind,
-    panelSaveSchema,
     resolvePanelContent,
 } from "./settings"
+import { panelSaveSchema } from "./settings.schema"
 
 const channelId = "123456789012345678"
 

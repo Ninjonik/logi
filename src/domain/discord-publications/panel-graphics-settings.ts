@@ -6,8 +6,6 @@ import {
     PANEL_HEX_COLOR,
     PANEL_MAPS,
     panelMapDefinition,
-    panelMapGameSchema,
-    panelStyleSchema,
     type MapImageOverride,
     type PanelMapGame,
     type PanelStyle,
@@ -19,6 +17,7 @@ import {
     type PanelEmojiGroup,
     type PanelEmojiKey,
 } from "./panel-emblems"
+import { panelMapGameSchema, panelStyleSchema } from "./panel-graphics.schema"
 
 /**
  * Clan-wide panel graphics (P8 "Grafika panelů"): the default style, one

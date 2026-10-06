@@ -7,10 +7,8 @@ import {
     type PanelSaveStore,
     type SavedPanelSummary,
 } from "./save-panel"
-import {
-    MAX_PANELS_PER_GUILD,
-    panelSaveSchema,
-} from "@/domain/discord-publications/settings"
+import { panelSaveSchema } from "@/domain/discord-publications/settings.schema"
+import { MAX_PANELS_PER_GUILD } from "@/domain/discord-publications/settings"
 
 const channelId = "123456789012345678"
 

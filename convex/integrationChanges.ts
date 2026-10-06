@@ -18,7 +18,7 @@ import {
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
 import { query, internalMutation, type QueryCtx } from "./_generated/server"
-import { projectIntegrationRow } from "./integrationMutation"
+import { projectIntegrationRow } from "./integrationProjection"
 import { integrationRecord } from "./integrationChangeLog"
 import { readPeopleProjection } from "./peopleProjection"
 import { readLeagueFixture } from "./leagueFixtureReads"

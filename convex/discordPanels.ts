@@ -28,16 +28,15 @@ import {
     uniqueServerJoinSlug,
 } from "../src/domain/discord-publications/server-join"
 import {
-    DEFAULT_PANEL_CONTENT,
-    isPanelPaused,
-    panelSaveSchema,
-    resolvePanelContent,
-} from "../src/domain/discord-publications/settings"
-import {
     buildPanelOverview,
     type PanelOverview,
     type StoredControlMessage,
 } from "../src/application/discord-publications/panel-overview"
+import {
+    DEFAULT_PANEL_CONTENT,
+    isPanelPaused,
+    resolvePanelContent,
+} from "../src/domain/discord-publications/settings"
 import {
     requestPanelAction,
     type PanelActionResult,
@@ -71,6 +70,7 @@ import {
 } from "../src/domain/wardogs-league/panels"
 import { resolvePanelPresentation } from "../src/domain/discord-publications/panel-presentation"
 import { convexLeaguePanelSource } from "../src/infrastructure/convex/league-fixture-store"
+import { panelSaveSchema } from "../src/domain/discord-publications/settings.schema"
 import { loadLeaguePanels } from "../src/application/wardogs-league/league-panels"
 import type { MessageView } from "../src/domain/discord-messages/message-view"
 import { credentialEnvelopeSchema } from "../src/domain/game-data/credentials"

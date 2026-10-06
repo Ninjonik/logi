@@ -1,7 +1,7 @@
 import { warconMatchDetail, warconServerId } from "../testing/warcon"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import * as history from "../../../convex/gameDataHistory"
 import { readWarconSession } from "../game-data/warcon"
-import * as publicApi from "../../../convex/publicApi"
 import * as gameData from "../../../convex/gameData"
 import test, { type TestContext } from "node:test"
 import assert from "node:assert/strict"
@@ -318,13 +318,16 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
         cursor: null,
         limit: 25,
     }
-    const page = (await handler(publicApi.getClanResourcePage)(ctx, input)) as {
+    const page = (await handler(publicApiReads.getClanResourcePage)(
+        ctx,
+        input
+    )) as {
         items: Array<Record<string, unknown>>
     }
     assert.equal(page.items.length, 1)
     assert.equal(page.items[0].players, null)
     ctx.db.tables.gameDataConnections[0].updatedAt = "2030-01-01T00:00:00.000Z"
-    const tied = (await handler(publicApi.getClanResourcePage)(ctx, {
+    const tied = (await handler(publicApiReads.getClanResourcePage)(ctx, {
         ...input,
         updatedSince: "2030-01-01T00:00:00Z",
     })) as { items: unknown[] }
@@ -334,7 +337,7 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
         "inclusive timestamp ties compare instants, not ISO formatting"
     )
     assert.equal(
-        await handler(publicApi.getClanResourcePage)(ctx, {
+        await handler(publicApiReads.getClanResourcePage)(ctx, {
             ...input,
             game: "hell_let_loose",
         }),
@@ -345,7 +348,7 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
         gameIds: ["wardogs"],
     }
     assert.equal(
-        await handler(publicApi.getClanResource)(ctx, {
+        await handler(publicApiReads.getClanResource)(ctx, {
             secret: input.secret,
             keyHash: "hash",
             resource: "server-snapshots",
@@ -355,7 +358,7 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
     )
     ctx.db.tables.apiKeys[0].guildId = "guild-b"
     assert.equal(
-        await handler(publicApi.getClanResource)(ctx, {
+        await handler(publicApiReads.getClanResource)(ctx, {
             secret: input.secret,
             keyHash: "hash",
             resource: "integration-health",
@@ -365,7 +368,7 @@ test("snapshot and health reads enforce key resource, game, tenant and revocatio
     )
     ctx.db.tables.apiKeys[0].revokedAt = "2030-01-01T00:00:00Z"
     assert.equal(
-        await handler(publicApi.getClanResourcePage)(ctx, {
+        await handler(publicApiReads.getClanResourcePage)(ctx, {
             ...input,
             resource: "integration-health",
         }),

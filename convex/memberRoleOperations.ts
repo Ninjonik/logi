@@ -18,7 +18,7 @@ import {
     resolveGameScope,
     type GameId,
 } from "../src/domain/games/game"
-import { assertMembershipSecret, memberObservation } from "./membership_shared"
+import { assertMembershipSecret, memberObservation } from "./membershipAccess"
 import { getGuildByDiscordId, getUserByIdentifier } from "./identity"
 import type { Doc } from "./_generated/dataModel"
 import { v } from "convex/values"

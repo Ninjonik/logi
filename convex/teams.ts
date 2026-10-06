@@ -37,7 +37,7 @@ import {
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { authorizePlatformAdmin } from "./platformAdmin"
 import type { Doc, Id } from "./_generated/dataModel"
-import { assetPublicUrl } from "./imageAssets"
+import { assetPublicUrl } from "./imageAssetStore"
 import { v } from "convex/values"
 
 /** Workspace-administrator reads: the catalogue is global but read in a workspace's dashboard. */

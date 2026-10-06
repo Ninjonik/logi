@@ -17,10 +17,7 @@ import {
     ConvexEventScoreRepository,
     DelegatingEventScorePort,
 } from "../src/infrastructure/convex/event-command-repositories"
-import {
-    ConvexMatchTeamSnapshotPorts,
-    syncEventAssetReferences,
-} from "../src/infrastructure/convex/team-directory-repositories"
+import { ConvexMatchTeamSnapshotPorts } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     mutation,
     query,
@@ -32,6 +29,7 @@ import {
     assertSessionGateway,
     activeDashboardSession,
 } from "./dashboardSessionStore"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { executeWebsiteEventCommand } from "../src/application/events/website-event-command"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
@@ -40,7 +38,7 @@ import { CancelEventUseCase } from "../src/application/events/cancel-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { projectEventMatchTeams } from "../src/domain/api/event-summaries"
-import { memberObservation, membershipGuild } from "./membership_shared"
+import { memberObservation, membershipGuild } from "./membershipAccess"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
 import { currentEventStatus } from "../src/domain/events/status"

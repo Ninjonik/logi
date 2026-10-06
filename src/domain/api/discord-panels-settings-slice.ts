@@ -4,8 +4,8 @@ import {
     MAX_PANELS_PER_GUILD,
     PANEL_KINDS,
     PANEL_REFRESH_SECONDS,
-    panelSaveSchema,
 } from "../discord-publications/settings"
+import { panelSaveSchema } from "../discord-publications/settings.schema"
 
 import { defineClanSettingsSlice } from "./settings-slices"
 

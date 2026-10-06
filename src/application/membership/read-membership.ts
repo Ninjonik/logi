@@ -1,9 +1,9 @@
-import {
-    membershipObservationSchema,
-    type MembershipObservation,
-    type MembershipSubject,
-    type ProviderObservation,
+import type {
+    MembershipObservation,
+    MembershipSubject,
+    ProviderObservation,
 } from "@/domain/membership/observation"
+import { membershipObservationSchema } from "@/domain/membership/observation.schema"
 
 export type ObservationFence = {
     epoch: string

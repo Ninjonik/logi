@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import { seedDashboardActor, actorFixture } from "./testing/dashboard-actor"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import * as apiKeyAuth from "../../../convex/apiKeyAuth"
 import * as publicApi from "../../../convex/publicApi"
 
@@ -185,7 +186,7 @@ test("summary-only credentials can be provisioned without granting raw records o
     )
     for (const resource of ["events", "matches", "users", "assignments"]) {
         assert.equal(
-            await invoke(publicApi.getClanResourcePage, db, {
+            await invoke(publicApiReads.getClanResourcePage, db, {
                 resource,
                 game: "wardogs",
                 limit: 25,
@@ -215,13 +216,13 @@ test("each summary resource requires its own grant, independent of raw resource 
             gameIds: ["wardogs"],
         }
         for (const resource of ["event-summaries", "match-summaries"]) {
-            const page = await invoke(publicApi.getClanResourcePage, db, {
+            const page = await invoke(publicApiReads.getClanResourcePage, db, {
                 resource,
                 game: "wardogs",
                 limit: 25,
                 cursor: null,
             })
-            const detail = await invoke(publicApi.getClanResource, db, {
+            const detail = await invoke(publicApiReads.getClanResource, db, {
                 resource,
                 id: "wardogs",
             })
@@ -244,12 +245,16 @@ test("event summary pages preserve empty cursors and return only allowlisted fie
         limit: 1,
         cursor: null,
     }
-    const first = (await invoke(publicApi.getClanResourcePage, db, args)) as {
+    const first = (await invoke(
+        publicApiReads.getClanResourcePage,
+        db,
+        args
+    )) as {
         items: unknown[]
         nextCursor: string
     }
     assert.deepEqual(first, { items: [], nextCursor: "1", limit: 1 })
-    const second = await invoke(publicApi.getClanResourcePage, db, {
+    const second = await invoke(publicApiReads.getClanResourcePage, db, {
         ...args,
         cursor: first.nextCursor,
     })
@@ -277,14 +282,14 @@ test("summary detail checks tenant, game, document type and current revocation",
     const db = summaryDatabase()
     for (const id of ["hll", "other", "roster", "match", "missing"]) {
         assert.equal(
-            await invoke(publicApi.getClanResource, db, {
+            await invoke(publicApiReads.getClanResource, db, {
                 resource: "event-summaries",
                 id,
             }),
             null
         )
     }
-    const result = (await invoke(publicApi.getClanResource, db, {
+    const result = (await invoke(publicApiReads.getClanResource, db, {
         resource: "event-summaries",
         id: "wardogs",
     })) as Record<string, unknown>
@@ -294,7 +299,7 @@ test("summary detail checks tenant, game, document type and current revocation",
     assert.ok(await invoke(apiKeyAuth.authenticateKey, db))
     await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
     assert.equal(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "event-summaries",
             id: "wardogs",
         }),
@@ -312,7 +317,11 @@ test("summary incremental pages include timestamp ties and retain tenant/game fi
         limit: 1,
         cursor: null,
     }
-    const first = (await invoke(publicApi.getClanResourcePage, db, args)) as {
+    const first = (await invoke(
+        publicApiReads.getClanResourcePage,
+        db,
+        args
+    )) as {
         items: Array<{ id: string }>
         nextCursor: string
     }
@@ -321,7 +330,7 @@ test("summary incremental pages include timestamp ties and retain tenant/game fi
         first.items.map((item) => item.id),
         ["wardogs"]
     )
-    const second = (await invoke(publicApi.getClanResourcePage, db, {
+    const second = (await invoke(publicApiReads.getClanResourcePage, db, {
         ...args,
         cursor: first.nextCursor,
     })) as { items: Array<{ id: string }>; nextCursor: null }
@@ -335,7 +344,7 @@ test("summary incremental pages include timestamp ties and retain tenant/game fi
 test("match summaries preserve unknown results despite raw telemetry and concluded status", async () => {
     const db = summaryDatabase()
     assert.deepEqual(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "match-summaries",
             id: "wardogs",
         }),
@@ -367,7 +376,7 @@ test("match summaries expose imported scores as provisional without source URLs 
         privateFutureResult: "not for the API",
     }
     assert.deepEqual(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "match-summaries",
             id: "wardogs",
         }),
@@ -406,13 +415,13 @@ test("match summary pages skip training events without losing continuation", asy
         kind: "match",
     })
     assert.equal(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "match-summaries",
             id: "wardogs",
         }),
         null
     )
-    const page = (await invoke(publicApi.getClanResourcePage, db, {
+    const page = (await invoke(publicApiReads.getClanResourcePage, db, {
         resource: "match-summaries",
         game: "wardogs",
         limit: 2,
@@ -421,7 +430,7 @@ test("match summary pages skip training events without losing continuation", asy
     assert.ok(page, "a filtered match summary page must retain its cursor")
     assert.deepEqual(page.items, [])
     assert.equal(page.nextCursor, "2")
-    const next = (await invoke(publicApi.getClanResourcePage, db, {
+    const next = (await invoke(publicApiReads.getClanResourcePage, db, {
         resource: "match-summaries",
         game: "wardogs",
         limit: 2,
@@ -440,7 +449,7 @@ function invoke(
 ) {
     const management = [
         publicApi.createKey,
-        publicApi.listKeys,
+        publicApiReads.listKeys,
         publicApi.revokeKey,
     ].includes(value as never)
     if (management && !db.tables.dashboardSessions) seedDashboardActor(db)
@@ -471,7 +480,7 @@ test("key creation persists read access and listing/authentication expose policy
         readAccess,
     })
     assert.deepEqual(db.tables.apiKeys.at(-1)?.readAccess, readAccess)
-    const keys = (await invoke(publicApi.listKeys, db, {
+    const keys = (await invoke(publicApiReads.listKeys, db, {
         guildId: "guild-a",
     })) as Array<Record<string, unknown>>
     assert.deepEqual(keys[0].readAccess, readAccess)
@@ -515,7 +524,7 @@ test("legacy keys retain cross-game reads and completed write replay", async () 
         guildId: "guild-a",
         lastUsedAt: null,
     })
-    const page = (await invoke(publicApi.getClanResourcePage, db, {
+    const page = (await invoke(publicApiReads.getClanResourcePage, db, {
         resource: "events",
         game: "all",
         limit: 25,
@@ -540,7 +549,7 @@ test("present malformed policies fail closed and legacy HLL records require an H
     for (const policy of [null, {}, { resources: ["events"], gameIds: [] }]) {
         db.tables.apiKeys[0].readAccess = policy
         assert.equal(
-            await invoke(publicApi.getClanResource, db, {
+            await invoke(publicApiReads.getClanResource, db, {
                 resource: "events",
                 id: "hll",
             }),
@@ -557,13 +566,13 @@ test("present malformed policies fail closed and legacy HLL records require an H
         resources: ["events"],
         gameIds: ["hell_let_loose"],
     }
-    const result = (await invoke(publicApi.getClanResource, db, {
+    const result = (await invoke(publicApiReads.getClanResource, db, {
         resource: "events",
         id: "hll",
     })) as { gameId: string }
     assert.equal(result.gameId, "hell_let_loose")
     assert.equal(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "events",
             id: "wardogs",
         }),
@@ -571,7 +580,7 @@ test("present malformed policies fail closed and legacy HLL records require an H
     )
     db.tables.events[0].gameId = null
     assert.equal(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "events",
             id: "hll",
         }),
@@ -611,7 +620,7 @@ test("resource and game scopes are enforced by direct backend page calls", async
         ["events", ["wardogs", "hell_let_loose"]],
     ]) {
         assert.equal(
-            await invoke(publicApi.getClanResourcePage, new Database(), {
+            await invoke(publicApiReads.getClanResourcePage, new Database(), {
                 resource,
                 game,
                 limit: 25,
@@ -625,13 +634,17 @@ test("resource and game scopes are enforced by direct backend page calls", async
 test("explicit Wardogs pages continue across empty HLL pages and isolate tenants", async () => {
     const db = new Database()
     const page = { resource: "events", game: "wardogs", limit: 1, cursor: null }
-    const first = (await invoke(publicApi.getClanResourcePage, db, page)) as {
+    const first = (await invoke(
+        publicApiReads.getClanResourcePage,
+        db,
+        page
+    )) as {
         items: unknown[]
         nextCursor: string
     }
     assert.deepEqual(first.items, [])
     assert.equal(first.nextCursor, "1")
-    const second = (await invoke(publicApi.getClanResourcePage, db, {
+    const second = (await invoke(publicApiReads.getClanResourcePage, db, {
         ...page,
         cursor: first.nextCursor,
     })) as { items: Array<{ id: string }>; nextCursor: string | null }
@@ -650,11 +663,11 @@ test("detail lookups deny another game, tenant and ungranted resources", async (
         ["groups", "wardogs"],
     ]) {
         assert.equal(
-            await invoke(publicApi.getClanResource, db, { resource, id }),
+            await invoke(publicApiReads.getClanResource, db, { resource, id }),
             null
         )
     }
-    const result = (await invoke(publicApi.getClanResource, db, {
+    const result = (await invoke(publicApiReads.getClanResource, db, {
         resource: "events",
         id: "wardogs",
     })) as { id: string }
@@ -663,7 +676,7 @@ test("detail lookups deny another game, tenant and ungranted resources", async (
 
 test("roster detail scope is derived from its parent even with a direct guild field", async () => {
     const db = new Database()
-    const result = (await invoke(publicApi.getClanResource, db, {
+    const result = (await invoke(publicApiReads.getClanResource, db, {
         resource: "rosters",
         id: "roster",
     })) as { gameId: string }
@@ -671,7 +684,7 @@ test("roster detail scope is derived from its parent even with a direct guild fi
     db.tables.events.find((event) => event._id === "wardogs")!.gameId =
         "hell_let_loose"
     assert.equal(
-        await invoke(publicApi.getClanResource, db, {
+        await invoke(publicApiReads.getClanResource, db, {
             resource: "rosters",
             id: "roster",
         }),
@@ -682,27 +695,33 @@ test("roster detail scope is derived from its parent even with a direct guild fi
 test("match lookups check both event and match ownership/game", async () => {
     const db = new Database()
     assert.ok(
-        await invoke(publicApi.getClanMatchByEvent, db, { eventId: "wardogs" })
+        await invoke(publicApiReads.getClanMatchByEvent, db, {
+            eventId: "wardogs",
+        })
     )
     db.tables.matchStats[0].guildId = "guild-b"
     assert.equal(
-        await invoke(publicApi.getClanMatchByEvent, db, { eventId: "wardogs" }),
+        await invoke(publicApiReads.getClanMatchByEvent, db, {
+            eventId: "wardogs",
+        }),
         null
     )
     db.tables.matchStats[0].guildId = "guild-a"
     db.tables.matchStats[0].gameId = "hell_let_loose"
     assert.equal(
-        await invoke(publicApi.getClanMatchByEvent, db, { eventId: "wardogs" }),
+        await invoke(publicApiReads.getClanMatchByEvent, db, {
+            eventId: "wardogs",
+        }),
         null
     )
 })
 
 test("scoped readers cannot use guild-wide metadata, settings, users or performance routes", async () => {
     for (const query of [
-        publicApi.getClanMeta,
-        publicApi.getClanSettings,
-        publicApi.getClanUser,
-        publicApi.getClanPerformanceHistory,
+        publicApiReads.getClanMeta,
+        publicApiReads.getClanSettings,
+        publicApiReads.getClanUser,
+        publicApiReads.getClanPerformanceHistory,
     ]) {
         assert.equal(
             await invoke(query, new Database(), {
@@ -730,7 +749,7 @@ test("revocation is tenant-bound and blocks a resource read after prior authenti
     await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
     assert.equal(await invoke(apiKeyAuth.authenticateKey, db), null)
     assert.equal(
-        await invoke(publicApi.getClanResourcePage, db, {
+        await invoke(publicApiReads.getClanResourcePage, db, {
             resource: "events",
             game: "wardogs",
             limit: 25,

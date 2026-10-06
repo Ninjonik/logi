@@ -3,8 +3,8 @@ import { z } from "zod"
 import {
     BANNER_CROPS,
     PANEL_STYLES,
-    panelMapGameSchema,
 } from "@/domain/discord-publications/panel-graphics"
+import { panelMapGameSchema } from "@/domain/discord-publications/panel-graphics.schema"
 import { panelMapTiles } from "@/domain/discord-publications/panel-graphics-settings"
 
 /**

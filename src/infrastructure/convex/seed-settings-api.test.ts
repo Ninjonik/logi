@@ -3,6 +3,7 @@ import test from "node:test"
 
 import { clanSettingsOpenApiSchemas } from "../../lib/api/settings-openapi"
 import { parseClanSettingsPatch } from "../../domain/api/settings-patch"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import { boardSeedSettings } from "../testing/in-memory-seed"
 import { invoke, testContext } from "./testing/database"
 import * as publicApi from "../../../convex/publicApi"
@@ -81,7 +82,7 @@ const settings = boardSeedSettings({ cooldownMinutes: 90 })
 
 test("GET lists every game server with its plan or the defaults", async () => {
     const ctx = setup()
-    const read = await invoke(publicApi.getClanSettings, ctx, {
+    const read = await invoke(publicApiReads.getClanSettings, ctx, {
         secret,
         keyHash: "key",
     })

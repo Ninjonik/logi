@@ -1,11 +1,11 @@
 import { withIntegrationChanges } from "../../../convex/integrationMutation"
 import { recordImportedResult } from "../../../convex/eventResultStore"
 import type { MutationCtx } from "../../../convex/_generated/server"
+import * as publicApiReads from "../../../convex/publicApiReads"
 import * as links from "../../../convex/platformIdentityLinks"
 import * as feed from "../../../convex/integrationChanges"
 import { invoke, testContext } from "./testing/database"
 import * as results from "../../../convex/eventResults"
-import * as api from "../../../convex/publicApi"
 import assert from "node:assert/strict"
 import test from "node:test"
 const secret = (process.env.INTERNAL_AUTH_SECRET = "dev-internal-auth-secret")
@@ -218,7 +218,7 @@ test("new scoped result summaries enforce guild/game grants and exclude private 
         resource: "result-summaries",
         id: "events:a",
     }
-    const summary = await invoke(api.getClanResource, ctx, read)
+    const summary = await invoke(publicApiReads.getClanResource, ctx, read)
     assert.equal(summary.resultState, "confirmed")
     assert.equal(JSON.stringify(summary).includes("stable-player"), false)
     assert.equal(JSON.stringify(summary).includes("76561198000000001"), false)
@@ -228,11 +228,11 @@ test("new scoped result summaries enforce guild/game grants and exclude private 
             gameIds: ["hell_let_loose"],
         },
     })
-    assert.equal(await invoke(api.getClanResource, ctx, read), null)
+    assert.equal(await invoke(publicApiReads.getClanResource, ctx, read), null)
     await ctx.db.patch("apiKeys:a", {
         readAccess: { resources: ["result-summaries"], gameIds: ["wardogs"] },
     })
-    assert.equal(await invoke(api.getClanResource, ctx, read), null)
+    assert.equal(await invoke(publicApiReads.getClanResource, ctx, read), null)
 })
 
 test("reviewed result participates in transactional changes, refetch and deletion tombstones", async () => {
@@ -250,7 +250,7 @@ test("reviewed result participates in transactional changes, refetch and deletio
     assert.equal(refetch.data.resultState, "confirmed")
     assert.equal(refetch.operation, "upsert")
     assert.ok(BigInt(refetch.revision) > BigInt(0))
-    const page = await invoke(api.getClanResourcePage, ctx, {
+    const page = await invoke(publicApiReads.getClanResourcePage, ctx, {
         secret,
         keyHash: "key",
         resource: "result-summaries",
@@ -281,7 +281,7 @@ test("generic event reads cannot bypass the reviewed-result grant or game bounda
             readAccess: { resources: ["events"], gameIds: [gameId] },
         })
         assert.equal(
-            await invoke(api.getClanResource, ctx, {
+            await invoke(publicApiReads.getClanResource, ctx, {
                 secret,
                 keyHash: "key",
                 resource: "result-summaries",
@@ -289,13 +289,13 @@ test("generic event reads cannot bypass the reviewed-result grant or game bounda
             }),
             null
         )
-        const detail = await invoke(api.getClanResource, ctx, {
+        const detail = await invoke(publicApiReads.getClanResource, ctx, {
             secret,
             keyHash: "key",
             resource: "events",
             id: "events:a",
         })
-        const page = await invoke(api.getClanResourcePage, ctx, {
+        const page = await invoke(publicApiReads.getClanResourcePage, ctx, {
             secret,
             keyHash: "key",
             resource: "events",
@@ -315,7 +315,7 @@ test("generic event reads cannot bypass the reviewed-result grant or game bounda
     })
     assert.equal(
         (
-            await invoke(api.getClanResource, ctx, {
+            await invoke(publicApiReads.getClanResource, ctx, {
                 secret,
                 keyHash: "key",
                 resource: "result-summaries",

@@ -3,7 +3,7 @@ import {
     type EventDraftRepository,
     type EventDraftWrite,
 } from "../src/application/events/event-drafts.use-case"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
