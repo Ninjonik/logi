@@ -35,9 +35,9 @@ Until the parser exists, the panels show waiting texts.
 
    They found 0 missing items and about 170 deviations or partial items. All of them went to fixers.
 3. **Round 2 re-audit.** Three re-auditors checked every round-1 non-DONE ID again, and ran a regression pass over the DONE items of each board. They found 7 remaining items and no regressions. Of those 7, 4 were fixed and 3 recorded as resolutions.
-4. **Round 3.** An independent verifier checked the last fixes.
+4. **Round 3.** An independent verifier checked the seven IDs fixed after round 2 (L1-B19, L2-B01, L3-54, P6-B05, L3-65, P2-B09, N1-B07) through the real dispatcher, the real panel runner and side-by-side renders. All seven are DONE ([`audit/round-3/round3.md`](audit/round-3/round3.md)).
 
-The audit files are in [`audit/round-1/`](audit/round-1/) and [`audit/round-2/`](audit/round-2/). They refer to screenshots and harness scripts kept in the session workspace, which are not in the repository.
+The audit files are in [`audit/round-1/`](audit/round-1/), [`audit/round-2/`](audit/round-2/) and [`audit/round-3/`](audit/round-3/). They refer to screenshots and harness scripts kept in the session workspace, which are not in the repository.
 
 ## Accepted deviations
 
