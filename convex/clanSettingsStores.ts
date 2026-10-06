@@ -1,41 +1,27 @@
 import {
-    discordPanelsApiView,
     dryRunPanelStore,
     prepareDiscordPanelsPatch,
 } from "../src/application/discord-publications/panel-settings-api"
-import {
-    guildPanels,
-    panelOwnsKey,
-    panelPublications,
-    panelSaveStore,
-    storedPanel,
-} from "./discordPanelStore"
-import {
-    panelGraphicsApiView,
-    PANEL_GRAPHICS_API_ERRORS,
-} from "../src/domain/api/panel-graphics-settings-slice"
 import {
     externalClanSettingsSlicePatches,
     type AnyClanSettingsSlice,
 } from "../src/domain/api/settings-slices"
 import { panelGraphicsPatchSchema } from "../src/domain/discord-publications/panel-graphics-settings"
-import {
-    preparePanelGraphicsChange,
-    readStoredPanelGraphics,
-} from "./discordPanelGraphics"
-import {
-    prepareSeedSettingsChange,
-    readSeedSettingsApi,
-} from "./discordSeedApiStore"
+import { PANEL_GRAPHICS_API_ERRORS } from "../src/domain/api/panel-graphics-settings-slice"
 import { discordPanelsPatchSchema } from "../src/domain/api/discord-panels-settings-slice"
+import { CLAN_SETTINGS_READS, type ClanSettingsRead } from "./clanSettingsReads"
 import { seedSettingsPatchSchema } from "../src/domain/api/seed-settings-slice"
-import type { MutationCtx, QueryCtx } from "./_generated/server"
-import { attachableAsset } from "./imageAssets"
+import { preparePanelGraphicsChange } from "./discordPanelGraphics"
+import { prepareSeedSettingsChange } from "./discordSeedApiStore"
+import type { MutationCtx } from "./_generated/server"
+import { panelSaveStore } from "./discordPanelStore"
+import { attachableAsset } from "./imageAssetStore"
 
 /**
  * Stores of the `/api/v1` settings slices that live in their own table
  * (`external` slices in `src/domain/api/settings-slices.ts`). `read` gives
- * the slice its value; `prepare` validates a patch against the database
+ * the slice its value (`clanSettingsReads.ts`, which `getClanSettings`
+ * uses on its own); `prepare` validates a patch against the database
  * without writing and `commit` stores it, so a refused request never
  * writes half of a settings change.
  */
@@ -45,7 +31,7 @@ export type ClanSettingsStoreError = {
     message: string
 }
 export type ClanSettingsStore = {
-    read(ctx: Pick<QueryCtx, "db">, guildId: string): Promise<unknown>
+    read: ClanSettingsRead
     prepare(
         ctx: MutationCtx,
         guildId: string,
@@ -56,38 +42,10 @@ export type ClanSettingsStore = {
     >
 }
 
-/** "Panely v Discordu" for `/api/v1`: every panel with whether it was ever sent. */
-async function readDiscordPanels(ctx: Pick<QueryCtx, "db">, guildId: string) {
-    const [rows, publications, statuses] = await Promise.all([
-        guildPanels(ctx, guildId),
-        panelPublications(ctx, guildId),
-        ctx.db
-            .query("discordPanelStatus")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect(),
-    ])
-    return discordPanelsApiView(
-        rows.map((row) => ({
-            ...storedPanel(row),
-            sent:
-                Boolean(
-                    statuses.find((entry) => entry.panelId === String(row._id))
-                        ?.sentAt
-                ) ||
-                publications.some(
-                    (publication) =>
-                        panelOwnsKey(row, publication.key) &&
-                        publication.messageId !== null
-                ) ||
-                row.draft === undefined,
-        }))
-    )
-}
-
 export const CLAN_SETTINGS_STORES: Readonly<Record<string, ClanSettingsStore>> =
     {
         discordPanels: {
-            read: readDiscordPanels,
+            read: CLAN_SETTINGS_READS.discordPanels,
             prepare: async (ctx, guildId, patch) => {
                 const real = panelSaveStore(ctx)
                 return await prepareDiscordPanelsPatch(
@@ -112,10 +70,7 @@ export const CLAN_SETTINGS_STORES: Readonly<Record<string, ClanSettingsStore>> =
             },
         },
         panelGraphics: {
-            read: async (ctx, guildId) =>
-                panelGraphicsApiView(
-                    await readStoredPanelGraphics(ctx, guildId)
-                ),
+            read: CLAN_SETTINGS_READS.panelGraphics,
             prepare: async (ctx, guildId, patch) => {
                 const change = await preparePanelGraphicsChange(
                     ctx,
@@ -136,7 +91,7 @@ export const CLAN_SETTINGS_STORES: Readonly<Record<string, ClanSettingsStore>> =
             },
         },
         seed: {
-            read: readSeedSettingsApi,
+            read: CLAN_SETTINGS_READS.seed,
             prepare: (ctx, guildId, patch) =>
                 prepareSeedSettingsChange(
                     ctx,
@@ -150,19 +105,6 @@ function storeOf(slice: AnyClanSettingsSlice) {
     const store = CLAN_SETTINGS_STORES[slice.key]
     if (!store) throw new Error(`Settings slice "${slice.key}" has no store.`)
     return store
-}
-
-/** `source.external` for every external slice. */
-export async function readExternalClanSettings(
-    ctx: Pick<QueryCtx, "db">,
-    guildId: string,
-    slices: readonly AnyClanSettingsSlice[]
-): Promise<Record<string, unknown>> {
-    const external: Record<string, unknown> = {}
-    for (const slice of slices)
-        if (slice.external)
-            external[slice.key] = await storeOf(slice).read(ctx, guildId)
-    return external
 }
 
 /**

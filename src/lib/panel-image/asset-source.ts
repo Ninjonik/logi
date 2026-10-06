@@ -1,8 +1,8 @@
 import {
     IMAGE_MAX_INPUT_BYTES,
-    imagePublicIdSchema,
     type ImageInputType,
 } from "@/domain/assets/image-asset"
+import { imagePublicIdSchema } from "@/domain/assets/image-asset.schema"
 
 export type PanelAssetPorts = {
     /** Live asset by public ID (storage URL and recorded type), or null. */

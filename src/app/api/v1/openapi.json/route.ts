@@ -1,12 +1,11 @@
 import {
-    integrationChangeSchema,
-    syncRecordSchema,
-    SYNC_RESOURCES,
-} from "@/domain/integrations/change"
-import {
     DEFAULT_LEAGUE_PANEL_OPTIONS,
     leagueOverviewSchema,
 } from "@/domain/wardogs-league/panels"
+import {
+    integrationChangeSchema,
+    syncRecordSchema,
+} from "@/domain/integrations/change.schema"
 import {
     clanEventSummarySchema,
     clanMatchSummarySchema,
@@ -23,7 +22,7 @@ import {
     peopleReadPaths,
     peopleResponseSchemas,
 } from "@/lib/api/people-openapi"
-import { membershipObservationSchema } from "@/domain/membership/observation"
+import { membershipObservationSchema } from "@/domain/membership/observation.schema"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
@@ -33,6 +32,7 @@ import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
+import { SYNC_RESOURCES } from "@/domain/integrations/change"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 

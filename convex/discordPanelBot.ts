@@ -39,7 +39,7 @@ import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { connectionSource } from "./gameDataCatalog"
 import { getGuildByDiscordId } from "./identity"
-import { clanShortCode } from "./clanTeams"
+import { clanShortCode } from "./clanTeamStore"
 
 /**
  * The bot's side of "Panely v Discordu": the heartbeat, the result of each

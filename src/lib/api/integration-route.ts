@@ -1,10 +1,10 @@
 import {
     integrationChangeSchema,
-    revisionOrder,
     syncRecordSchema,
-} from "@/domain/integrations/change"
+} from "@/domain/integrations/change.schema"
 import type { AuthenticatedClanRequest } from "./authenticated-clan-route"
 import { createHash, createHmac, timingSafeEqual } from "node:crypto"
+import { revisionOrder } from "@/domain/integrations/change"
 import { parseIntegrationQuery } from "./integration-query"
 import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "@/lib/env"

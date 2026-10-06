@@ -1,5 +1,3 @@
-import { z } from "zod"
-
 import {
     HLL_NATION_SIDE,
     type HllNation,
@@ -19,7 +17,8 @@ import {
 /** A: generated score image · B: banner + map thumbnail · C: compact text. */
 export const PANEL_STYLES = ["a", "b", "c"] as const
 export type PanelStyle = (typeof PANEL_STYLES)[number]
-export const panelStyleSchema = z.enum(PANEL_STYLES)
+// `panelStyleSchema`, `panelMapGameSchema` and `panelMapKeySchema` live in
+// `panel-graphics.schema.ts`, so this projection module stays free of Zod.
 /** The owner chose the generated image for Hell Let Loose and Wardogs. */
 export const DEFAULT_PANEL_STYLE: PanelStyle = "a"
 /** The panel's own style wins; otherwise the clan default; otherwise style A. */
@@ -34,7 +33,6 @@ export function resolvePanelStyle(
 
 export const PANEL_MAP_GAMES = ["hell_let_loose", "wardogs"] as const
 export type PanelMapGame = (typeof PANEL_MAP_GAMES)[number]
-export const panelMapGameSchema = z.enum(PANEL_MAP_GAMES)
 export type PanelMapDefinition = {
     game: PanelMapGame
     key: string
@@ -115,10 +113,6 @@ export const PANEL_MAPS: readonly PanelMapDefinition[] = [
     wardogs("ozeti", "Ozeti"),
     wardogs("zestafona", "Zestafona"),
 ]
-export const panelMapKeySchema = z
-    .string()
-    .regex(/^[a-z0-9-]{2,40}$/)
-    .refine((key) => PANEL_MAPS.some((map) => map.key === key))
 export function panelMapDefinition(
     game: string,
     key: string | null | undefined

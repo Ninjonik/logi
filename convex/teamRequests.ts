@@ -33,9 +33,9 @@ import {
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { normalizeTeamName } from "../src/domain/teams/team"
 import { authorizePlatformAdmin } from "./platformAdmin"
+import { assetPublicUrl } from "./imageAssetStore"
 import type { Doc } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
-import { assetPublicUrl } from "./imageAssets"
 import { v } from "convex/values"
 
 /** The bot's internal secret; without one configured, nothing is accepted. */

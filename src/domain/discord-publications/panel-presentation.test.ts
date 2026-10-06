@@ -8,18 +8,20 @@ import {
     isPanelFactionEmojiDraft,
     isPanelFactionGame,
     panelAccentColor,
-    panelPresentationFromDraft,
     panelFactionIcons,
     panelFactionOf,
-    panelPresentationInputSchema,
-    panelPresentationSchema,
     resolvePanelPresentation,
 } from "./panel-presentation"
 import {
+    panelPresentationFromDraft,
+    panelPresentationInputSchema,
+    panelPresentationSchema,
+} from "./panel-presentation.schema"
+import {
     publicPanelSaveResultSchema,
-    publicPanelSettingsInput,
     publicPanelSettingsSchema,
-} from "./settings"
+} from "./settings.schema"
+import { publicPanelSettingsInput } from "./settings"
 import assert from "node:assert/strict"
 import test from "node:test"
 

@@ -65,7 +65,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
                         },
                     }
                     break
-                case "publicApi:getClanResourcePage":
+                case "publicApiReads:getClanResourcePage":
                     assert.deepEqual(
                         {
                             resource: request.args[0].resource,
@@ -88,7 +88,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
                         limit: 1,
                     }
                     break
-                case "publicApi:getClanResource":
+                case "publicApiReads:getClanResource":
                     assert.equal(request.args[0].resource, "match-summaries")
                     assert.equal(request.args[0].id, "fixture-event")
                     value = matchSummary
@@ -174,7 +174,7 @@ test("reviewed result HTTP reads need their own grant; bearer keys cannot confir
                         gameIds: ["wardogs"],
                     },
                 }
-            else if (request.path === "publicApi:getClanResourcePage") {
+            else if (request.path === "publicApiReads:getClanResourcePage") {
                 reads++
                 assert.equal(request.args[0].resource, "result-summaries")
                 assert.equal(request.args[0].game, "wardogs")
@@ -315,7 +315,7 @@ test("stored game data reaches the real HTTP route with scoped filters and nulla
                           }
                         : undefined,
                 }
-            else if (request.path === "publicApi:getClanResourcePage") {
+            else if (request.path === "publicApiReads:getClanResourcePage") {
                 assert.equal(request.args[0].game, "wardogs")
                 const resource = request.args[0].resource as keyof typeof values
                 assert.ok(resource in values)
@@ -325,7 +325,7 @@ test("stored game data reaches the real HTTP route with scoped filters and nulla
                     nextCursor: null,
                     limit: 25,
                 }
-            } else if (request.path === "publicApi:getClanResource") {
+            } else if (request.path === "publicApiReads:getClanResource") {
                 assert.equal(request.args[0].id, "connection")
                 value = values[request.args[0].resource as keyof typeof values]
             } else assert.fail(`Unexpected external call: ${request.path}`)

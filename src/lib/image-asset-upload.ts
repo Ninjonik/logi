@@ -1,10 +1,12 @@
 import {
     IMAGE_INPUT_TYPES,
     IMAGE_MAX_INPUT_BYTES,
-    imageAssetDtoSchema,
-    type ImageAssetDto,
     type ImageAssetKind,
 } from "@/domain/assets/image-asset"
+import {
+    imageAssetDtoSchema,
+    type ImageAssetDto,
+} from "@/domain/assets/image-asset.schema"
 import { z } from "zod"
 
 /** Every error code of `POST /api/servers/{serverId}/image-assets`. */

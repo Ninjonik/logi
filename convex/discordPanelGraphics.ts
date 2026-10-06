@@ -10,7 +10,6 @@ import {
     panelGraphicsSettingsSchema,
     type PanelGraphicsPatch,
     type PanelGraphicsSettings,
-    type StoredPanelGraphics,
 } from "../src/domain/discord-publications/panel-graphics-settings"
 import {
     DEFAULT_CLAN_ACCENT,
@@ -24,12 +23,13 @@ import {
     type QueryCtx,
 } from "./_generated/server"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
-import { attachableAsset, syncAssetReferences } from "./imageAssets"
+import { attachableAsset, syncAssetReferences } from "./imageAssetStore"
 import { projectSnapshot } from "../src/domain/game-data/policy"
+import { stored, storedOf } from "./discordPanelGraphicsStore"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { getGuildByDiscordId } from "./identity"
-import { clanShortCode } from "./clanTeams"
+import { clanShortCode } from "./clanTeamStore"
 import { v } from "convex/values"
 
 /**
@@ -46,12 +46,6 @@ const access = {
     actor: dashboardActor,
 }
 
-async function stored(ctx: Db, guildId: string) {
-    return await ctx.db
-        .query("discordPanelGraphics")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .unique()
-}
 function settingsOf(
     row: Doc<"discordPanelGraphics"> | null
 ): PanelGraphicsSettings {
@@ -74,34 +68,6 @@ function settingsOf(
               })),
           }
         : DEFAULT_PANEL_GRAPHICS
-}
-function storedOf(
-    row: Doc<"discordPanelGraphics"> | null
-): StoredPanelGraphics | null {
-    return row
-        ? {
-              defaultStyle: row.defaultStyle,
-              revision: row.revision,
-              servers: row.servers.map((server) => ({
-                  connectionId: server.connectionId,
-                  bannerAssetId: server.bannerAssetId
-                      ? String(server.bannerAssetId)
-                      : null,
-                  bannerPublicId: server.bannerPublicId,
-                  bannerUrl: server.bannerUrl,
-                  crop: server.crop,
-                  useMapImage: server.useMapImage,
-                  barColor: server.barColor,
-              })),
-              maps: row.maps.map((map) => ({
-                  game: map.game,
-                  mapKey: map.mapKey,
-                  assetId: String(map.assetId),
-                  publicId: map.publicId,
-                  url: map.url,
-              })),
-          }
-        : null
 }
 async function emojiReport(ctx: Db) {
     return await ctx.db
@@ -137,11 +103,6 @@ async function connections(ctx: Db, guildId: string) {
                 : null,
         }
     })
-}
-
-/** The stored graphics of a workspace, as the bot and the API read them. */
-export async function readStoredPanelGraphics(ctx: Db, guildId: string) {
-    return storedOf(await stored(ctx, guildId))
 }
 
 /** Dashboard view of "Grafika panelů". */

@@ -13,7 +13,9 @@ import { getInternalAuthSecret } from "@/lib/env"
 const createKeyReference = makeFunctionReference<"mutation">(
     "publicApi:createKey"
 )
-const listKeysReference = makeFunctionReference<"query">("publicApi:listKeys")
+const listKeysReference = makeFunctionReference<"query">(
+    "publicApiReads:listKeys"
+)
 const revokeKeyReference = makeFunctionReference<"mutation">(
     "publicApi:revokeKey"
 )
@@ -24,10 +26,10 @@ const recordKeyUseReference = makeFunctionReference<"mutation">(
     "apiKeyAuth:recordKeyUse"
 )
 const clanResourcePageReference = makeFunctionReference<"query">(
-    "publicApi:getClanResourcePage"
+    "publicApiReads:getClanResourcePage"
 )
 const clanResourceReference = makeFunctionReference<"query">(
-    "publicApi:getClanResource"
+    "publicApiReads:getClanResource"
 )
 const mutateArticleReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanArticle"
@@ -54,22 +56,22 @@ const mutateAssignmentReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanAssignment"
 )
 const clanMetaReference = makeFunctionReference<"query">(
-    "publicApi:getClanMeta"
+    "publicApiReads:getClanMeta"
 )
 const clanSettingsReference = makeFunctionReference<"query">(
-    "publicApi:getClanSettings"
+    "publicApiReads:getClanSettings"
 )
 const mutateClanSettingsReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanSettings"
 )
 const clanPerformanceHistoryReference = makeFunctionReference<"query">(
-    "publicApi:getClanPerformanceHistory"
+    "publicApiReads:getClanPerformanceHistory"
 )
 const clanMatchByEventReference = makeFunctionReference<"query">(
-    "publicApi:getClanMatchByEvent"
+    "publicApiReads:getClanMatchByEvent"
 )
 const clanUserReference = makeFunctionReference<"query">(
-    "publicApi:getClanUser"
+    "publicApiReads:getClanUser"
 )
 
 export const clanApiResources = [

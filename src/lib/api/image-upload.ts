@@ -1,14 +1,16 @@
 import {
     IMAGE_MAX_INPUT_BYTES,
-    imageAssetKindSchema,
     imageAssetPath,
     imageAssetFileName,
     sniffImageType,
     validateImageSource,
-    type ImageAssetDto,
     type ImageAssetKind,
     type ImageInputType,
 } from "@/domain/assets/image-asset"
+import {
+    imageAssetKindSchema,
+    type ImageAssetDto,
+} from "@/domain/assets/image-asset.schema"
 import { inspectImage, normalizeImage } from "./image-normalization"
 
 export type ReserveUploadResult =

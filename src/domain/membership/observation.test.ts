@@ -1,8 +1,5 @@
-import {
-    isFreshObservation,
-    projectMembership,
-    type StoredObservation,
-} from "./observation"
+import { isFreshObservation, type StoredObservation } from "./observation"
+import { projectMembership } from "./observation.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 

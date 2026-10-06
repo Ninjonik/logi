@@ -12,7 +12,7 @@ import {
     verifiedPlatformLinkSchema,
 } from "../src/domain/identity/platform-link"
 import { activeDashboardSession } from "./dashboardSessionStore"
-import { assertMembershipSecret } from "./membership_shared"
+import { assertMembershipSecret } from "./membershipAccess"
 import { mutation } from "./integrationMutation"
 import { getUserStableId } from "./identity"
 import { query } from "./_generated/server"
