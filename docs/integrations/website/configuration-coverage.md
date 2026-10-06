@@ -172,11 +172,17 @@ and in [Discord public panels](discord-public-panels.md#api-and-activation).
   `publishedAt`) and as the change request of
   `POST /api/servers/{serverId}/rosters/{rosterId}/update-notifications`, which
   queues `rosterChangeRequests` for the bot (status read back through `GET`
-  with `?requestId=`). There is deliberately no `/api/v1` operation for them:
+  with `?requestId=`). The request carries only these choices: every publish
+  stores the published squad places (`publishedPlaces`) and those of the
+  version it replaced (`previousPublishedPlaces`) on the roster, and Convex
+  compares the saved roster with that stored version (D5-B04; a `previousRoster`
+  sent by an older dashboard is ignored). A first publish with mentions and no
+  roster channel queues one mention-only request itself (D5-08). There is deliberately no `/api/v1` operation for them:
   `/api/v1` roster writes publish with the clan defaults (the `matchMessages`
   slice below), without mentions, change DMs or a digest. The defaults
   themselves are in the API, and `/api/v1` roster reads return the stored
-  `discordMessageVariant`, `discordMentionPlayers` and `publishedAt`.
+  `discordMessageVariant`, `discordMentionPlayers`, `publishedAt`,
+  `publishedPlaces` and `previousPublishedPlaces`.
 
 These gaps are recorded for the next implementation decision; they are not
 silently counted as completed settings. Operational credentials/intents still

@@ -1,11 +1,6 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
-import {
-    diffRosterPlaces,
-    placesToSnapshot,
-    rosterPlaces,
-} from "@/domain/rosters/roster-update-summary"
 import { rosterUpdateNotificationsHandler } from "@/lib/api/roster-update-notifications-route"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
@@ -21,8 +16,8 @@ const statusReference = makeFunctionReference<"query">("rosterChanges:status")
 /**
  * The roster change digest and the change DMs are sent by the bot in the
  * shared card (boards L1-120..126, L2-35..40). This route only asks for
- * them: it queues the previous published version and the admin's choices;
- * the bot compares it with the saved roster.
+ * them with the admin's choices; Convex compares the saved roster with the
+ * version its previous publish replaced, stored on the server (D5-B04).
  */
 const handler = rosterUpdateNotificationsHandler({
     origin: new URL(getSiteUrl()).origin,
@@ -38,33 +33,25 @@ const handler = rosterUpdateNotificationsHandler({
             roster,
             guildId: context.server.discordId,
             actorId: actor.subject,
-            memberIds: new Set(
-                context.assignments.map((assignment) => assignment.userId)
-            ),
         }
     },
     notify: async (input) => {
-        const before = rosterPlaces(input.previousRoster)
-        const changes = diffRosterPlaces(before, rosterPlaces(input.roster))
-        if (!changes.length && !input.mentionPlayers)
-            return { ok: true, hasChanges: false }
         const queued = (await fetchMutation(requestReference, {
             secret: getInternalAuthSecret(),
             guildId: input.guildId,
             eventId: input.roster.eventId,
             rosterId: input.roster.id,
             requestedBy: input.actorId,
-            before: placesToSnapshot(before),
-            notifyPlayers: input.notifyPlayers && changes.length > 0,
-            postDigest: input.postAnnouncement && changes.length > 0,
+            notifyPlayers: input.notifyPlayers,
+            postDigest: input.postAnnouncement,
             mentionPlayers: input.mentionPlayers,
-        })) as { status: string; requestId?: string }
+        })) as { status: string; requestId?: string; hasChanges?: boolean }
         if (queued.status !== "queued" && queued.status !== "nothing")
             throw new Error("Roster change request was refused.")
         return {
             ok: true,
-            hasChanges: changes.length > 0,
-            requestId: queued.requestId,
+            hasChanges: queued.hasChanges === true,
+            ...(queued.requestId ? { requestId: queued.requestId } : {}),
         }
     },
     status: async (guildId, requestId) =>

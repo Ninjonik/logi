@@ -1,11 +1,14 @@
 /**
- * The one-time redraw of match announcements posted before the redesign
- * (board L1 1.15, L1-147..152, L1-B20). After the first sync the worker asks
- * Convex which posted cards of upcoming matches, and of matches that ended in
- * the last 14 days, still have an older layout, and queues a few of them a
- * minute for a normal event sync. The sync redraws the card in place without
- * a ping and records the new layout in Convex, so a restart never redraws a
- * card twice. The worker stops once nothing is left.
+ * The one-time redraw of match messages posted before the redesign (board
+ * L1 1.15, L1-147..152, L1-B20). After the first sync the worker asks Convex
+ * which upcoming matches, and matches that ended in the last 14 days, still
+ * have messages of the old bot: an announcement card of an older layout, or
+ * the roster card and forum post of a match whose announcement the old bot
+ * had already removed. It queues a few of them a minute for a normal event
+ * sync, which redraws every message in place without a ping. The card's
+ * redraw records its layout; a match without a card records the migration
+ * version once its sync finished. Either way a restart never redraws a match
+ * twice, and the worker stops once nothing is left.
  */
 
 import {
@@ -24,6 +27,51 @@ const INTERVAL_MS = 60_000
 const MAX_ATTEMPTS = 3
 
 type Due = { eventId: string; guildId: string }
+
+/** Matches queued by this worker whose sync has not finished yet. */
+const queuedMigrations = new Set<string>()
+
+/**
+ * Called when an event sync finished: a match this worker queued that has
+ * no announcement card is marked done in Convex, because its roster card
+ * and forum post were just redrawn. A match with a card is marked by the
+ * card's own redraw, which may still wait for the rate limit.
+ */
+export async function finishAnnouncementMigration(
+    input: { eventId: string; guildId: string; hasCard: boolean },
+    record: (input: {
+        eventId: string
+        guildId: string
+        migrationVersion: string
+    }) => Promise<unknown> = (args) =>
+        convex.mutation(announcementReferences.record, {
+            secret: env.internalSecret,
+            eventId: args.eventId as never,
+            guildId: args.guildId,
+            migrationVersion: args.migrationVersion,
+        })
+) {
+    if (!queuedMigrations.delete(input.eventId) || input.hasCard) return false
+    try {
+        await record({
+            eventId: input.eventId,
+            guildId: input.guildId,
+            migrationVersion: ANNOUNCEMENT_LAYOUT_VERSION,
+        })
+        logInfo("announcement-migration", "Redrew a match without a card", {
+            eventId: input.eventId,
+            guildId: input.guildId,
+        })
+        return true
+    } catch (error) {
+        // The next pass queues it once more; the redraw itself is idempotent.
+        logWarn("announcement-migration", "Could not record the redraw", {
+            eventId: input.eventId,
+            error,
+        })
+        return false
+    }
+}
 
 export type AnnouncementMigrationDeps = {
     listDue: (now: Date) => Promise<Due[]>
@@ -47,6 +95,7 @@ export async function runAnnouncementMigrationPass(
     const batch = open.slice(0, ANNOUNCEMENT_MIGRATIONS_PER_MINUTE)
     for (const item of batch) {
         attempts.set(item.eventId, (attempts.get(item.eventId) ?? 0) + 1)
+        queuedMigrations.add(item.eventId)
         deps.queueEventSync(item.eventId)
     }
     if (batch.length) deps.triggerSoon()

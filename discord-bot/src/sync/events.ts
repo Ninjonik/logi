@@ -27,6 +27,7 @@ import {
 } from "../utils"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
+import { finishAnnouncementMigration } from "../events/announcement-migration"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
 import { syncAnnouncement } from "../events/announcement-sync"
@@ -361,6 +362,7 @@ async function syncEvent(
     let forumChannelId = state?.forumChannelId
     const forumThreadId = state?.forumThreadId
     let infoMessageId = state?.infoMessageId
+    let debriefMessageId = state?.debriefMessageId
     let topicMessageIds = state?.topicMessageIds ?? []
     let squadVoiceChannelIds = state?.squadVoiceChannelIds ?? []
     squadVoiceChannelIds = await syncSquadVoiceChannels({
@@ -395,6 +397,9 @@ async function syncEvent(
                 forumChannelId,
                 guild,
                 existingTopicMessageIds: topicMessageIds,
+                // Stored posts are found again even when archived (L1-137).
+                infoMessageId,
+                debriefMessageId,
                 topicPreset,
                 attendeeRoleId: eventRoles.attendeeRoleId,
                 reserveRoleId: eventRoles.reserveRoleId,
@@ -403,6 +408,7 @@ async function syncEvent(
 
             forumChannelId = forumSyncResult.forumChannelId
             infoMessageId = forumSyncResult.infoMessageId
+            debriefMessageId = forumSyncResult.debriefMessageId
             if (
                 !topicMessageIds.length &&
                 forumSyncResult.topicMessageIds.length
@@ -428,6 +434,7 @@ async function syncEvent(
                     forumChannelId,
                     forumThreadId,
                     infoMessageId,
+                    debriefMessageId,
                     topicMessageIds,
                     lastEventUpdatedAt: event.updatedAt,
                     lastRosterUpdatedAt: roster?.updatedAt,
@@ -722,6 +729,7 @@ async function syncEvent(
         forumChannelId,
         forumThreadId,
         infoMessageId,
+        debriefMessageId,
         topicMessageIds,
         lastEventUpdatedAt: event.updatedAt,
         lastRosterUpdatedAt: roster?.updatedAt,
@@ -739,5 +747,12 @@ async function syncEvent(
         forumChannelId,
         infoMessageId,
         topicMessageCount: topicMessageIds.length,
+    })
+    // The one-time redraw (L1-147): a match without a card is done now that
+    // its roster card and forum post were redrawn above.
+    await finishAnnouncementMigration({
+        eventId: event.id,
+        guildId: payload.config.guildId,
+        hasCard: Boolean(announcementMessageId),
     })
 }

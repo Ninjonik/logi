@@ -16,6 +16,7 @@ import {
     type MessageView,
 } from "./message-view"
 import {
+    categoryChip,
     channelMention,
     matchSidesLine,
     type MatchTeamText,
@@ -28,7 +29,6 @@ import type { RosterPlayerChange } from "../rosters/roster-update-summary"
 import type { DirectMessageCopy, RosterMessageCopy } from "./match-copy"
 import { discordTimestamp, fillTemplate } from "./format"
 import { calendarDayOffset } from "./calendar-day"
-import { categoryChip } from "./match-forum"
 import { chipText } from "./message-layout"
 
 type DmCopy = DirectMessageCopy & { locale: string }

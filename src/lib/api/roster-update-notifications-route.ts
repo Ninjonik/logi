@@ -12,32 +12,15 @@ const json = (value: unknown, status = 200) =>
 const MAX_BODY_BYTES = 256 * 1024
 
 /**
- * The roster as the dashboard had it before saving. Only what the change
- * summary reads is kept; the saved roster always comes from the server.
+ * Dashboard request body after a published roster was saved again: only
+ * the admin's choices. The baseline of the change digest and DMs is the
+ * version the server stored at the previous publish (D5-B04), so nothing
+ * the browser sends can change who is named or messaged.
  */
-const previousRosterSchema = z.object({
-    eventId: z.string().min(1).max(64),
-    squads: z
-        .array(
-            z.object({
-                name: z.string().max(100),
-                players: z
-                    .array(
-                        z.object({
-                            id: z.string().max(32).nullish(),
-                            roleName: z.string().max(100).nullish(),
-                        })
-                    )
-                    .max(100),
-            })
-        )
-        .max(100),
-})
-
-/** Dashboard request body after a published roster was saved again. */
 export const rosterUpdateNotificationSchema = z.strictObject({
-    previousRoster: previousRosterSchema,
-    // Older dashboards also send the roster they saved; it is ignored.
+    // Older dashboards send the roster before and after saving; both are
+    // ignored.
+    previousRoster: z.unknown().optional(),
     nextRoster: z.unknown().optional(),
     postAnnouncement: z.boolean().optional(),
     notifyPlayers: z.boolean().optional(),
@@ -58,8 +41,6 @@ export type RosterUpdateNotificationAccess = {
     guildId: string
     /** The admin's Discord ID, recorded with the request. */
     actorId: string
-    /** Discord IDs of the clan's members; nobody else gets a message. */
-    memberIds: ReadonlySet<string>
 }
 
 export type RosterUpdateNotificationPorts = {
@@ -69,14 +50,15 @@ export type RosterUpdateNotificationPorts = {
         serverId: string,
         rosterId: string
     ): Promise<RosterUpdateNotificationAccess | "not_found" | null>
-    /** Queues the bot's digest and DMs; returns the request's ID. */
+    /**
+     * Queues the bot's digest and DMs against the server's stored baseline;
+     * returns the request's ID.
+     */
     notify(input: {
         serverId: string
         guildId: string
         actorId: string
-        previousRoster: Roster
         roster: Roster
-        memberIds: ReadonlySet<string>
         postAnnouncement: boolean
         notifyPlayers: boolean
         mentionPlayers: boolean
@@ -86,34 +68,6 @@ export type RosterUpdateNotificationPorts = {
         guildId: string,
         requestId: string
     ): Promise<Record<string, unknown> | null>
-}
-
-/**
- * The previous roster shaped like the saved one, keeping only slots of clan
- * members so a request can never name an outsider as added or removed.
- */
-export function previousRosterForSummary(
-    saved: Roster,
-    previous: z.infer<typeof previousRosterSchema>,
-    memberIds: ReadonlySet<string>
-): Roster {
-    return {
-        ...saved,
-        squads: previous.squads.map((squad, index) => ({
-            name: squad.name,
-            group: "",
-            order: index,
-            color: "",
-            players: squad.players.map((player) => ({
-                id:
-                    player.id && memberIds.has(player.id)
-                        ? player.id
-                        : undefined,
-                ack: false,
-                roleName: player.roleName ?? undefined,
-            })),
-        })),
-    }
 }
 
 /**
@@ -151,9 +105,7 @@ export function rosterUpdateNotificationsHandler(
                 await readBoundedJson(request, MAX_BODY_BYTES)
             )
             if (!input.success) return json({ error: "invalid_request" }, 400)
-            const { roster, memberIds } = access
-            if (input.data.previousRoster.eventId !== roster.eventId)
-                return json({ error: "invalid_request" }, 400)
+            const { roster } = access
             if (!roster.published) return json({ error: "not_published" }, 409)
             try {
                 return json(
@@ -161,13 +113,7 @@ export function rosterUpdateNotificationsHandler(
                         serverId: params.serverId,
                         guildId: access.guildId,
                         actorId: access.actorId,
-                        previousRoster: previousRosterForSummary(
-                            roster,
-                            input.data.previousRoster,
-                            memberIds
-                        ),
                         roster,
-                        memberIds,
                         postAnnouncement: input.data.postAnnouncement ?? false,
                         notifyPlayers: input.data.notifyPlayers ?? true,
                         mentionPlayers: input.data.mentionPlayers ?? false,

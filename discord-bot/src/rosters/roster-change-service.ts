@@ -19,19 +19,6 @@ import {
 } from "discord.js"
 
 import {
-    rosterChangeDmView,
-} from "../../../src/domain/discord-messages/direct-message-views"
-import { findSquadLeader } from "../../../src/domain/discord-messages/format"
-import {
-    matchTitle,
-    playerName,
-} from "../../../src/domain/discord-messages/match-text"
-import {
-    rosterChangesView,
-    rosterMentionIds,
-} from "../../../src/domain/discord-messages/roster-message"
-import { resolveRosterUpdateChannelIds } from "../../../src/domain/rosters/roster-update-channel"
-import {
     changedRecipients,
     diffRosterPlaces,
     rosterPlaces,
@@ -39,20 +26,31 @@ import {
     type RosterPlaceSnapshot,
     type RosterPlayerChange,
 } from "../../../src/domain/rosters/roster-update-summary"
-import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
-import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
-import type { EventRecord, Roster, SyncPayload } from "../types"
 import {
     dmFrame,
     memberNames,
     rosterCardContext,
     rosterCardEvent,
 } from "../events/match-context"
-import { messagePayload } from "../ui/message-kit"
+import {
+    rosterChangesView,
+    rosterMentionIds,
+} from "../../../src/domain/discord-messages/roster-message"
+import { resolveRosterUpdateChannelIds } from "../../../src/domain/rosters/roster-update-channel"
+import {
+    matchTitle,
+    playerName,
+} from "../../../src/domain/discord-messages/match-text"
+import { rosterChangeDmView } from "../../../src/domain/discord-messages/direct-message-views"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { findSquadLeader } from "../../../src/domain/discord-messages/format"
+import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
+import type { EventRecord, Roster, SyncPayload } from "../types"
 import { publishManagedMessage } from "../sync/publication"
+import { logError, logInfo, logWarn } from "../log"
+import { messagePayload } from "../ui/message-kit"
 import { buildPublicRosterUrl } from "../utils"
 import { convex, references } from "../convex"
-import { logError, logInfo, logWarn } from "../log"
 import { env } from "../environment"
 
 export type ClaimedRosterChanges = {
@@ -65,6 +63,11 @@ export type ClaimedRosterChanges = {
     notifyPlayers: boolean
     postDigest: boolean
     mentionPlayers: boolean
+    /**
+     * The mentions of a first publish whose roster card is the announcement
+     * (D5-08): Discord never pings on the edited card, so they go out here.
+     */
+    firstPublish?: boolean
     memberIds: string[]
 }
 
@@ -220,9 +223,10 @@ export async function deliverRosterChanges(input: {
         outcome.digestPosted = true
     }
 
-    if (request.mentionPlayers) {
+    const inInfo = Boolean(syncState?.eventInfoMessageId)
+    // A first publish in the roster channel pings with its own first post.
+    if (request.mentionPlayers && !(request.firstPublish && inInfo)) {
         const userIds = rosterMentionIds(roster).slice(0, 100)
-        const inInfo = Boolean(syncState?.eventInfoMessageId)
         const channelId = inInfo
             ? channels.eventInfoChannelId
             : channels.announcementChannelId

@@ -6,6 +6,7 @@ import {
     countRosterPlayerChanges,
     diffRosterPlaces,
     placesToSnapshot,
+    publishedSnapshots,
     rosterPlaces,
     snapshotToPlaces,
 } from "./roster-update-summary"
@@ -110,4 +111,47 @@ test("a stored snapshot round-trips and the first slot of a duplicate wins", () 
     })
     assert.deepEqual(places, { a: { squad: "F1", role: "Medic" } })
     assert.deepEqual(snapshotToPlaces(placesToSnapshot(places)), places)
+})
+
+test("a publish keeps what it shows and what it replaced (D5-B04)", () => {
+    const squads = (squad: string) => [
+        { name: squad, players: [{ id: "rex", roleName: "Medic" }] },
+    ]
+    // First publish: nothing to compare with.
+    assert.deepEqual(
+        publishedSnapshots({ previous: null, next: { squads: squads("F1") } }),
+        {
+            publishedPlaces: [{ userId: "rex", squad: "F1", role: "Medic" }],
+            previousPublishedPlaces: undefined,
+        }
+    )
+    // A stored version is the baseline, not the saved squads (they may have
+    // changed since, e.g. by a decline).
+    assert.deepEqual(
+        publishedSnapshots({
+            previous: {
+                published: true,
+                squads: squads("F3"),
+                publishedPlaces: [{ userId: "rex", squad: "F2" }],
+            },
+            next: { squads: squads("F1") },
+        }).previousPublishedPlaces,
+        [{ userId: "rex", squad: "F2" }]
+    )
+    // A roster published before the snapshots existed: its saved squads.
+    assert.deepEqual(
+        publishedSnapshots({
+            previous: { published: true, squads: squads("F3") },
+            next: { squads: squads("F1") },
+        }).previousPublishedPlaces,
+        [{ userId: "rex", squad: "F3", role: "Medic" }]
+    )
+    // A draft that was never published has no baseline.
+    assert.equal(
+        publishedSnapshots({
+            previous: { published: false, squads: squads("F3") },
+            next: { squads: squads("F1") },
+        }).previousPublishedPlaces,
+        undefined
+    )
 })

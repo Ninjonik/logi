@@ -97,9 +97,30 @@ async function resolveInteractionMember(
         : null
 }
 
-/** "The match is gone" in the clan language when it can be told, else English. */
-async function replyUnavailable(interaction: SignupInteraction) {
-    const language = await interactionLanguage(interaction.guildId)
+/**
+ * The clan whose language a reply uses: the server the click came from, or,
+ * for a button in a DM (sign-up reminders), the server named in the
+ * button's custom ID (L1-B19).
+ */
+export function replyGuildId(
+    interactionGuildId: string | null | undefined,
+    customIdGuildId: string | null | undefined
+) {
+    if (interactionGuildId) return interactionGuildId
+    const fromCustomId = customIdGuildId?.trim()
+    return fromCustomId && /^\d{17,20}$/.test(fromCustomId)
+        ? fromCustomId
+        : undefined
+}
+
+/** "The match is gone" in the clan language, also in a DM (L1-B19). */
+async function replyUnavailable(
+    interaction: SignupInteraction,
+    customIdGuildId?: string
+) {
+    const language = await interactionLanguage(
+        replyGuildId(interaction.guildId, customIdGuildId)
+    )
     await replyToClicker(
         interaction,
         matchUnavailableView(getAnnouncementMessages(language)),
@@ -249,7 +270,7 @@ export async function handleEventSignupPickerInteraction(
         customIdGuildId
     )
     if (!context) {
-        await replyUnavailable(interaction)
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
     const guild = await eventGuild(interaction, context.event.guildId)
@@ -311,7 +332,7 @@ export async function handleCheckSignupInteraction(
         customIdGuildId
     )
     if (!context) {
-        await replyUnavailable(interaction)
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
     const reply = replyContext(context)
@@ -423,7 +444,9 @@ export async function handleEventButtonInteraction(
         )) as EventInteractionContext | null
 
         if (!context) {
-            const language = await interactionLanguage(interaction.guildId)
+            const language = await interactionLanguage(
+                replyGuildId(interaction.guildId, customIdGuildId)
+            )
             await replyToClicker(
                 interaction,
                 matchUnavailableView(getAnnouncementMessages(language)),
@@ -448,7 +471,7 @@ export async function handleEventButtonInteraction(
         customIdGuildId
     )
     if (!context) {
-        await replyUnavailable(interaction)
+        await replyUnavailable(interaction, customIdGuildId)
         return
     }
 

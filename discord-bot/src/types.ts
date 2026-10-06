@@ -460,6 +460,8 @@ export type SyncState = {
     forumChannelId?: string
     forumThreadId?: string
     infoMessageId?: string
+    /** The match forum's Debrief post (its starter message ID). */
+    debriefMessageId?: string
     topicMessageIds: string[]
     lastSyncedAt?: string
     lastEventUpdatedAt?: string

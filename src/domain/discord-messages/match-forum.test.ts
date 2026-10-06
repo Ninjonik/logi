@@ -1,18 +1,13 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { getAnnouncementMessages } from "@/lib/clan-language/announcements"
 import { getRosterMessages } from "@/lib/clan-language/rosters"
 import { getSystemMessages } from "@/lib/clan-language/system"
 
 import {
-    attendanceNoticeView,
+    categoryChip,
     categoryChipTone,
-    debriefView,
-    forumInfoView,
-    forumTopicView,
-    type ForumEvent,
-} from "./match-forum"
-import {
     matchForumChannelName,
     matchSidesLine,
     matchTitle,
@@ -20,6 +15,17 @@ import {
     playerName,
     weekdayDate,
 } from "./match-text"
+import {
+    attendanceNoticeView,
+    debriefView,
+    forumInfoView,
+    forumTopicView,
+    type ForumEvent,
+} from "./match-forum"
+import {
+    buildAnnouncementView,
+    matchSidesLine as announcementSidesLine,
+} from "./match-announcement"
 import { layoutMessageView, type MessageLayoutOptions } from "./message-layout"
 import { clanResultSummary, resultProviderName } from "./clan-result"
 import { validateMessageView } from "./message-validation"
@@ -71,7 +77,7 @@ test("match title, sides, weekday date, names, forum name and arrival time", () 
     assert.equal(matchTitle({ name: "Trénink obrany" }), "Trénink obrany")
     assert.equal(
         matchSidesLine({ teams, factions: copy.factions }),
-        "**VLK** Spojenci ★  vs  **ROG** Osa ✚"
+        "`VLK` Spojenci ★  vs  `ROG` Osa ✚"
     )
     assert.equal(
         matchSidesLine({ side: "Allies", factions: copy.factions }),
@@ -125,7 +131,8 @@ test("Informace o zápasu: chip, sides, start, meeting, server without the passw
         content,
         /-# \*\*INFORMACE O ZÁPASU\*\*\n### VLK vs ROG\n🟢 \*\*Přátelák\*\*/
     )
-    assert.match(content, /\*\*VLK\*\* Spojenci ★  vs  \*\*ROG\*\* Osa ✚/)
+    // The same code chips and emblems as the announcement (L1-130).
+    assert.match(content, /`VLK` Spojenci ★  vs  `ROG` Osa ✚/)
     assert.match(
         content,
         /\*\*ne <t:1791741600:d> · <t:1791741600:t>\*\* · <t:1791741600:R>/
@@ -241,6 +248,11 @@ test("category chips keep the category colour as their dot", () => {
     assert.equal(categoryChipTone("#3b82f6"), "info")
     assert.equal(categoryChipTone("#808080"), "neutral")
     assert.equal(categoryChipTone(undefined), "neutral")
+    assert.deepEqual(categoryChip({ label: " Přátelák ", color: "#3BA55C" }), [
+        { label: "Přátelák", tone: "success" },
+    ])
+    assert.deepEqual(categoryChip({ label: " " }), [])
+    assert.deepEqual(categoryChip(null), [])
 })
 
 test("a confirmed result reads with the clan's score first; provisional ones are not shown", () => {
@@ -265,4 +277,41 @@ test("a confirmed result reads with the clan's score first; provisional ones are
     )
     assert.equal(clanResultSummary({ result, clanSide: null }), null)
     assert.equal(resultProviderName(result), "CRCON")
+})
+
+test("the forum post draws the announcement's sides row and category chip (L1-130)", () => {
+    const announcementCopy = getAnnouncementMessages("cs")
+    const card = {
+        kind: "match" as const,
+        eventId: "event-1",
+        guildId: "111111111111111111",
+        name: "Liga 4",
+        category: event.category,
+        teams: [
+            { code: "VLK", side: "Allies" },
+            { code: "ROG", side: "Axis" },
+        ],
+        meetingStart: event.meetingStart,
+        gameStart: event.gameStart,
+        registrationEnd: "2026-10-10T17:30:00.000Z",
+        timeZone: "Europe/Prague",
+        locale: "cs-CZ",
+    }
+    const forum = forumInfoView({ event, stratmaps: [], context })
+    const sides = forum.blocks.find((block) => block.kind === "text")
+    assert.equal(
+        sides?.kind === "text" ? sides.markdown : undefined,
+        announcementSidesLine(card, announcementCopy)
+    )
+    assert.deepEqual(forum.header?.chips, categoryChip(event.category))
+    assert.deepEqual(
+        forum.header?.chips,
+        buildAnnouncementView({
+            event: card,
+            state: "open",
+            counts: { groups: [], withoutGroup: 0, total: 0, declined: 0 },
+            links: { calendar: "https://calendar.example" },
+            copy: announcementCopy,
+        }).header?.chips
+    )
 })

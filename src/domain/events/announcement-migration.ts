@@ -1,9 +1,13 @@
 /**
- * The one-time redraw of match announcements posted before the redesign
- * (board L1 1.15, L1-B20): cards of upcoming matches and of matches that
- * ended in the last 14 days are redrawn once into the new card, in place, a
- * few per minute and without pinging anyone. The marker is the card layout
- * stored in Convex per match, never anything in the message.
+ * The one-time redraw of match messages posted before the redesign (board
+ * L1 1.15, L1-147, L1-B20): the announcement, the roster card in the roster
+ * channel and the forum post of upcoming matches and of matches that ended
+ * in the last 14 days are redrawn once into the new cards, in place, a few
+ * per minute and without pinging anyone. The marker is stored in Convex per
+ * match, never anything in the message: the layout of the redrawn
+ * announcement, or, for a match whose announcement the old bot had already
+ * removed, the migration version recorded once its other messages were
+ * redrawn.
  */
 
 /** Bump when every posted announcement must be redrawn once. */
@@ -16,18 +20,51 @@ export const ANNOUNCEMENT_MIGRATION_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
 export const ANNOUNCEMENT_MIGRATIONS_PER_MINUTE = 6
 
 /**
- * Whether a match's card still needs the one-time redraw: it was posted, it
- * was drawn with another layout, and the match is upcoming or ended inside
- * the window.
+ * Whether a match still has a message drawn by the old bot to redraw: the
+ * announcement card, the roster card in the roster channel, or the forum's
+ * "Informace o zápasu" post. The old bot removed the announcement once
+ * sign-ups closed in split mode, so the roster card and the forum post
+ * count on their own (L1-147).
+ */
+export function hasMigratableMessage(
+    sync:
+        | {
+              announcementMessageId?: string | null
+              eventInfoMessageId?: string | null
+              infoMessageId?: string | null
+          }
+        | null
+        | undefined
+) {
+    return Boolean(
+        sync?.announcementMessageId ||
+        sync?.eventInfoMessageId ||
+        sync?.infoMessageId
+    )
+}
+
+/**
+ * Whether a match's messages still need the one-time redraw: one was
+ * posted, neither marker says it was redrawn, and the match is upcoming or
+ * ended inside the window.
  */
 export function isAnnouncementMigrationDue(input: {
     gameEnd: string
     now: Date
-    hasCard: boolean
+    /** {@link hasMigratableMessage} of the match's sync state. */
+    hasMessage: boolean
+    /** The layout the announcement card was last drawn with. */
     layoutVersion: string | null | undefined
+    /** Recorded once a match without a card had its other messages redrawn. */
+    migrationVersion?: string | null
     version: string
 }) {
-    if (!input.hasCard || input.layoutVersion === input.version) return false
+    if (
+        !input.hasMessage ||
+        input.layoutVersion === input.version ||
+        input.migrationVersion === input.version
+    )
+        return false
     const gameEnd = Date.parse(input.gameEnd)
     return (
         Number.isFinite(gameEnd) &&

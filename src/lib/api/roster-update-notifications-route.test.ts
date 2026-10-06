@@ -4,7 +4,6 @@ import test from "node:test"
 import type { Roster } from "@/types/domain"
 
 import {
-    previousRosterForSummary,
     rosterUpdateNotificationsHandler,
     type RosterUpdateNotificationPorts,
 } from "./roster-update-notifications-route"
@@ -31,13 +30,10 @@ const saved: Roster = {
     ],
 }
 
-const memberIds = new Set(["member-1", "member-2"])
-
 const grant = {
     roster: saved,
     guildId: "123456789012345678",
     actorId: "223456789012345678",
-    memberIds,
 }
 
 function setup(
@@ -110,7 +106,7 @@ test("a foreign origin or a missing clan admin is refused before anything is sen
     assert.equal(outsider.calls.length, 0)
 })
 
-test("an unknown roster, an invalid body or another match's roster is refused", async () => {
+test("an unknown roster or an invalid body is refused", async () => {
     const missing = setup("not_found")
     assert.equal(
         (await missing.handler(request({ previousRoster: previous }), params))
@@ -125,17 +121,46 @@ test("an unknown roster, an invalid body or another match's roster is refused", 
         400
     )
     assert.equal(
+        (await handler(request({ notifyPlayers: "yes" }), params)).status,
+        400
+    )
+    assert.equal(calls.length, 0)
+})
+
+test("the baseline is the server's: a roster the browser sends is ignored (D5-B04)", async () => {
+    const { handler, calls } = setup()
+    // A current dashboard sends only the choices.
+    assert.equal(
+        (await handler(request({ notifyPlayers: true }), params)).status,
+        200
+    )
+    // An older dashboard's previous roster, even of another match or naming
+    // a stranger, never reaches the request.
+    assert.equal(
         (
             await handler(
                 request({
-                    previousRoster: { ...previous, eventId: "event-2" },
+                    previousRoster: {
+                        eventId: "event-2",
+                        squads: [
+                            {
+                                name: "Able",
+                                players: [{ id: "stranger", roleName: "x" }],
+                            },
+                        ],
+                    },
                 }),
                 params
             )
         ).status,
-        400
+        200
     )
-    assert.equal(calls.length, 0)
+    assert.equal(calls.length, 2)
+    for (const call of calls) {
+        assert.equal(call.roster, saved)
+        assert.ok(!("previousRoster" in call))
+        assert.doesNotMatch(JSON.stringify(call), /stranger|event-2/)
+    }
 })
 
 test("only a published roster sends notifications", async () => {
@@ -219,30 +244,4 @@ test("the publish dialog reads how the change DMs went, for its own clan only", 
             .status,
         403
     )
-})
-
-test("players who are not clan members are dropped from the previous roster", () => {
-    const shaped = previousRosterForSummary(
-        saved,
-        {
-            eventId: "event-1",
-            squads: [
-                {
-                    name: "Able",
-                    players: [
-                        { id: "member-2", roleName: "Medic" },
-                        { id: "stranger", roleName: "Officer" },
-                        { id: null },
-                    ],
-                },
-            ],
-        },
-        memberIds
-    )
-    assert.deepEqual(
-        shaped.squads[0].players.map((player) => player.id),
-        ["member-2", undefined, undefined]
-    )
-    assert.equal(shaped.id, saved.id)
-    assert.equal(shaped.eventId, saved.eventId)
 })

@@ -1420,28 +1420,16 @@ export function RosterBoard({
                     }),
                 }).catch(() => null)
 
-                if (republishing && previousRoster) {
+                if (republishing) {
                     const notificationResponse = await fetch(
                         `/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`,
                         {
                             method: "POST",
                             headers: { "content-type": "application/json" },
-                            // The server reads the saved roster itself.
+                            // Only the choices: the server compares the saved
+                            // roster with the version it stored at the last
+                            // publish (D5-B04).
                             body: JSON.stringify({
-                                previousRoster: {
-                                    eventId: previousRoster.eventId,
-                                    squads: previousRoster.squads.map(
-                                        (squad) => ({
-                                            name: squad.name,
-                                            players: squad.players.map(
-                                                (player) => ({
-                                                    id: player.id,
-                                                    roleName: player.roleName,
-                                                })
-                                            ),
-                                        })
-                                    ),
-                                },
                                 postAnnouncement: choice?.postChanges ?? false,
                                 notifyPlayers: choice?.notifyPlayers ?? true,
                                 mentionPlayers: choice?.mentionPlayers ?? false,

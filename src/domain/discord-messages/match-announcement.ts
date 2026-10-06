@@ -13,10 +13,7 @@ import {
     type AnnouncementAction,
     type AnnouncementState,
 } from "@/domain/events/announcement-state"
-import {
-    panelFactionOf,
-    type PanelFactionEmoji,
-} from "@/domain/discord-publications/panel-presentation"
+import type { PanelFactionEmoji } from "@/domain/discord-publications/panel-presentation"
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "@/domain/events/types"
 import { resolveClanOutcome, type ClanOutcome } from "./match-result"
 
@@ -39,8 +36,10 @@ import {
 import { formatGroupCount, type SignupGroupCount } from "./signup-counts"
 import { attendanceButtonIds, rosterButtonIds } from "./roster-message"
 import type { MatchAnnouncementCopy } from "./match-announcement-copy"
-import { factionEmblem } from "./faction-emblem"
+import { categoryChip, sidesRow } from "./match-text"
 import { chipText } from "./message-layout"
+
+export { categoryChipTone } from "./match-text"
 
 /** The facts every match card (announcement, replies, sign-up list) names. */
 export type MatchCardEvent = {
@@ -117,40 +116,6 @@ export type AnnouncementViewInput = {
     copy: MatchAnnouncementCopy
 }
 
-const TONE_RGB: Record<ChipTone, [number, number, number]> = {
-    success: [0x3b, 0xa5, 0x5c],
-    warning: [0xf0, 0xb2, 0x32],
-    danger: [0xed, 0x42, 0x45],
-    neutral: [0x80, 0x84, 0x8e],
-    info: [0x58, 0x65, 0xf2],
-}
-
-/**
- * The chip tone closest to a category colour: the colour appears only as the
- * chip's dot (L1-07). A category without a colour is neutral.
- */
-export function categoryChipTone(color: string | null | undefined): ChipTone {
-    const match = color?.trim().match(/^#?([0-9a-f]{6})$/i)
-    if (!match) return "neutral"
-    const value = Number.parseInt(match[1]!, 16)
-    const rgb = [(value >> 16) & 255, (value >> 8) & 255, value & 255]
-    let best: ChipTone = "neutral"
-    let distance = Number.POSITIVE_INFINITY
-    for (const [tone, target] of Object.entries(TONE_RGB) as Array<
-        [ChipTone, [number, number, number]]
-    >) {
-        const next =
-            (rgb[0]! - target[0]) ** 2 +
-            (rgb[1]! - target[1]) ** 2 +
-            (rgb[2]! - target[2]) ** 2
-        if (next < distance) {
-            distance = next
-            best = tone
-        }
-    }
-    return best
-}
-
 /** The state chip and its dot colour (L1-09). */
 export function announcementStateChip(
     state: AnnouncementState,
@@ -166,23 +131,6 @@ export function announcementStateChip(
         cancelled: "danger",
     }
     return { label: copy.states[state], tone: tones[state] }
-}
-
-/** A team code as an inline-code chip ("`VLK`"); backticks cannot be escaped. */
-function teamChip(code: string) {
-    const clean = code
-        .replace(/[`\r\n]+/g, "")
-        .trim()
-        .slice(0, 24)
-    return clean ? `\`${clean}\`` : ""
-}
-
-/** "Spojenci"/"Osa" for Hell Let Loose sides; other sides as stored. */
-export function sideLabel(side: string, copy: MatchAnnouncementCopy) {
-    const faction = panelFactionOf(side)
-    return faction === "allies" || faction === "axis"
-        ? copy.card.factions[faction]
-        : escapeMarkdownText(side.trim())
 }
 
 /**
@@ -225,32 +173,21 @@ export function matchCardFullTitle(
 
 /**
  * The sides row (L1-12): "`VLK` Spojenci ★  vs  `ROG` Osa ✚". Without teams
- * the clan's own side.
+ * the clan's own side. The forum post and the DMs draw the same row through
+ * the same function (L1-130).
  */
 export function matchSidesLine(
     event: MatchCardEvent,
     copy: MatchAnnouncementCopy
 ) {
     if (event.kind !== "match") return undefined
-    const side = (value: string | null | undefined) => {
-        const trimmed = value?.trim()
-        if (!trimmed) return []
-        return [
-            sideLabel(trimmed, copy),
-            factionEmblem(trimmed, event.factionEmoji),
-        ].filter((part): part is string => Boolean(part))
-    }
-    if (event.teams.length) {
-        return event.teams
-            .map((team) =>
-                [teamChip(team.code), ...side(team.side)]
-                    .filter(Boolean)
-                    .join(" ")
-            )
-            .join(`  ${copy.card.versus}  `)
-    }
-    const own = side(event.side)
-    return own.length ? own.join(" ") : undefined
+    return sidesRow({
+        teams: event.teams,
+        side: event.side,
+        factions: copy.card.factions,
+        emoji: event.factionEmoji,
+        versus: copy.card.versus,
+    })
 }
 
 /** "ne 11. 10. · 20:00" with Discord timestamps (L1-05). */
@@ -734,15 +671,7 @@ export function buildAnnouncementView(
         accent: "clan",
         header: {
             title: matchCardTitle(event, copy),
-            chips:
-                event.kind === "match" && event.category?.label.trim()
-                    ? [
-                          {
-                              label: event.category.label.trim(),
-                              tone: categoryChipTone(event.category.color),
-                          },
-                      ]
-                    : [],
+            chips: event.kind === "match" ? categoryChip(event.category) : [],
             ...(input.thumbnail && event.kind === "match"
                 ? { thumbnail: input.thumbnail }
                 : {}),

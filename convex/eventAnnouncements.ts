@@ -7,6 +7,10 @@ import {
     normalizeEventDoc,
 } from "./discord_shared"
 import {
+    hasMigratableMessage,
+    isAnnouncementMigrationDue,
+} from "../src/domain/events/announcement-migration"
+import {
     matchesGameScope,
     resolveGameScope,
     withGameOverrides,
@@ -16,7 +20,6 @@ import {
     signupTimesFromActivities,
 } from "../src/domain/events/signup-list"
 import { toAnnouncementResult } from "../src/domain/discord-messages/match-announcement"
-import { isAnnouncementMigrationDue } from "../src/domain/events/announcement-migration"
 import { describeManualReminderAudience } from "../src/domain/events/manual-reminders"
 import { mutation, query, type QueryCtx } from "./_generated/server"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
@@ -117,7 +120,10 @@ export const getContext = query({
     },
 })
 
-/** Records the first ping and the layout of a delivered card. */
+/**
+ * Records the first ping and the layout of a delivered card, or that a
+ * match without a card had its other messages redrawn (L1-147).
+ */
 export const record = mutation({
     args: {
         secret: v.string(),
@@ -125,6 +131,7 @@ export const record = mutation({
         guildId: v.string(),
         pinged: v.optional(v.boolean()),
         layoutVersion: v.optional(v.string()),
+        migrationVersion: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -139,6 +146,9 @@ export const record = mutation({
             ...(args.pinged && !row?.pingedAt ? { pingedAt: now } : {}),
             ...(args.layoutVersion
                 ? { layoutVersion: args.layoutVersion }
+                : {}),
+            ...(args.migrationVersion
+                ? { migrationVersion: args.migrationVersion }
                 : {}),
             updatedAt: now,
         }
@@ -157,10 +167,12 @@ export const record = mutation({
 })
 
 /**
- * Matches whose posted card still has an older layout and that are upcoming
- * or ended in the migration window (L1-147, L1-148). Drafts and matches
- * without a posted card are left out; the bot redraws the rest, a few a
- * minute, and the record above marks each one done.
+ * Matches with messages of the old bot that are upcoming or ended in the
+ * migration window (L1-147, L1-148): a posted card of an older layout, or a
+ * roster card or forum post of a match whose announcement the old bot had
+ * already removed. Drafts and matches without such a message are left out;
+ * the bot redraws the rest, a few a minute, and the record above marks each
+ * one done, so a restart never redraws a match twice.
  */
 export const listMigrationDue = query({
     args: {
@@ -181,7 +193,7 @@ export const listMigrationDue = query({
                 !isAnnouncementMigrationDue({
                     gameEnd: event.gameEnd,
                     now,
-                    hasCard: true,
+                    hasMessage: true,
                     layoutVersion: null,
                     version: args.version,
                 })
@@ -201,8 +213,9 @@ export const listMigrationDue = query({
                 isAnnouncementMigrationDue({
                     gameEnd: event.gameEnd,
                     now,
-                    hasCard: Boolean(sync?.announcementMessageId),
+                    hasMessage: hasMigratableMessage(sync),
                     layoutVersion: row?.layoutVersion ?? null,
+                    migrationVersion: row?.migrationVersion ?? null,
                     version: args.version,
                 })
             )
@@ -305,6 +318,9 @@ export const getAttendees = query({
             config: normalizeConfigDoc(
                 withGameOverrides(config, config.gameOverrides, event.gameId)
             ),
+            // The clan's dashboard record, for "Otevřít na webu" (L1-85):
+            // dashboard URLs name the Convex guild, never the Discord ID.
+            serverId: guild ? String(guild._id) : null,
             event: normalized,
             category: category
                 ? { label: category.label, color: category.color ?? null }

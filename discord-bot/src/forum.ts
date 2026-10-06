@@ -8,6 +8,7 @@ import {
     MediaGalleryItemBuilder,
     MessageFlags,
     TextDisplayBuilder,
+    type AnyThreadChannel,
     type Client,
 } from "discord.js"
 
@@ -300,6 +301,81 @@ const debriefPostNames = () => [
     ),
 ]
 
+/** A forum post as the lookup needs it (a discord.js thread, or a fake). */
+export type ForumPostCandidate = {
+    id: string
+    name: string
+    parentId: string | null
+    archived: boolean | null
+}
+
+/** The forum's thread manager as the lookup needs it. */
+export type ForumPostThreads<T extends ForumPostCandidate> = {
+    fetch(id: string): Promise<T | null>
+    fetchActive(): Promise<{ threads: ReadonlyMap<string, T> }>
+    fetchArchived(options: {
+        type: "public"
+        limit: number
+    }): Promise<{ threads: ReadonlyMap<string, T> }>
+}
+
+/**
+ * Finds a post of a match forum before anything creates one (L1-137): by
+ * its stored post or starter-message ID first (a forum post's thread has the
+ * ID of its starter message), archived posts included, then by name among
+ * the active and the archived posts. Discord archives quiet posts on its
+ * own, so an active-only lookup would create a second "Informace o zápasu"
+ * or "Debrief". Returns the active posts too, for pinning.
+ */
+export async function findForumPost<T extends ForumPostCandidate>(
+    forumId: string,
+    threads: ForumPostThreads<T>,
+    input: {
+        ids: ReadonlyArray<string | null | undefined>
+        names: readonly string[]
+    }
+): Promise<{ post: T | null; active: T[] }> {
+    const ours = (post: T | null | undefined): post is T =>
+        Boolean(post && post.parentId === forumId)
+    const active = await threads
+        .fetchActive()
+        .then((result) => [...result.threads.values()].filter(ours))
+        .catch(() => [] as T[])
+    for (const id of new Set(input.ids)) {
+        if (!id?.trim()) continue
+        const known = active.find((post) => post.id === id)
+        if (known) return { post: known, active }
+        const fetched = await threads.fetch(id).catch(() => null)
+        if (ours(fetched)) return { post: fetched, active }
+    }
+    const byName = (posts: readonly T[]) =>
+        posts.find((post) => input.names.includes(post.name))
+    const activeMatch = byName(active)
+    if (activeMatch) return { post: activeMatch, active }
+    const archived = await threads
+        .fetchArchived({ type: "public", limit: 100 })
+        .then((result) => [...result.threads.values()].filter(ours))
+        .catch(() => [] as T[])
+    return { post: byName(archived) ?? null, active }
+}
+
+/**
+ * Opens an archived post again so its starter message can be edited and
+ * the post pinned; Discord refuses both on an archived thread.
+ */
+async function reopenForumPost(
+    post: { archived: boolean | null; setArchived(value: boolean): unknown },
+    context: { eventId: string; threadId: string }
+) {
+    if (!post.archived) return
+    await Promise.resolve(post.setArchived(false)).catch((error: unknown) =>
+        logWarn("forum", "Failed to reopen an archived forum post", {
+            ...context,
+            error,
+        })
+    )
+}
+
 export async function syncForumChannel(input: {
     config: DiscordConfig
     event: EventRecord
@@ -307,6 +383,10 @@ export async function syncForumChannel(input: {
     forumChannelId?: string
     guild: import("discord.js").Guild
     existingTopicMessageIds?: string[]
+    /** The stored "Informace o zápasu" post (its starter message ID). */
+    infoMessageId?: string
+    /** The stored Debrief post (its starter message ID). */
+    debriefMessageId?: string
     topicPreset?: TopicPreset
     attendeeRoleId?: string
     reserveRoleId?: string
@@ -354,6 +434,7 @@ export async function syncForumChannel(input: {
 
     let channelId = forumChannelId
     let infoMessageId: string | undefined
+    let debriefMessageId = input.debriefMessageId
     let topicMessageIds: string[] = existingTopicMessageIds ?? []
     let stateChanged = false
 
@@ -442,6 +523,7 @@ export async function syncForumChannel(input: {
             return {
                 forumChannelId,
                 infoMessageId,
+                debriefMessageId,
                 stateChanged,
                 topicMessageIds,
             }
@@ -453,6 +535,7 @@ export async function syncForumChannel(input: {
         return {
             forumChannelId: channelId,
             infoMessageId,
+            debriefMessageId,
             stateChanged,
             topicMessageIds,
         }
@@ -485,14 +568,13 @@ export async function syncForumChannel(input: {
             })
     }
 
-    const activePosts = await forumChannel.threads
-        .fetchActive()
-        .catch(() => null)
-    const existingPosts = activePosts?.threads
-        ? [...activePosts.threads.values()]
-        : []
-    const infoNames = infoPostNames()
-    const infoPost = existingPosts.find((post) => infoNames.includes(post.name))
+    // The stored post first, archived ones included: never a second
+    // "Informace o zápasu" (L1-137).
+    const { post: infoPost } = await findForumPost<AnyThreadChannel>(
+        forumChannel.id,
+        forumChannel.threads,
+        { ids: [input.infoMessageId], names: infoPostNames() }
+    )
     const forumContext = await loadForumContext(event.id)
     const stratmaps = (event.stratmapIds ?? []).map((stratmapId) => ({
         title: forumContext?.stratmaps.find((map) => map.id === stratmapId)
@@ -510,6 +592,10 @@ export async function syncForumChannel(input: {
     })
 
     if (infoPost) {
+        await reopenForumPost(infoPost, {
+            eventId: event.id,
+            threadId: infoPost.id,
+        })
         const starter = await infoPost.fetchStarterMessage().catch(() => null)
         if (starter) {
             await starter
@@ -574,6 +660,7 @@ export async function syncForumChannel(input: {
             return {
                 forumChannelId: channelId,
                 infoMessageId,
+                debriefMessageId,
                 stateChanged,
                 topicMessageIds,
             }
@@ -597,15 +684,26 @@ export async function syncForumChannel(input: {
     topicMessageIds = syncedTopicMessageIds
 
     if (event.status === "concluded") {
-        await finalizeForumAfterConclusion(forumChannel, event, config, {
-            categories: input.categories,
-            forumContext,
-        })
+        const debrief = await finalizeForumAfterConclusion(
+            forumChannel,
+            event,
+            config,
+            {
+                categories: input.categories,
+                forumContext,
+                debriefMessageId,
+            }
+        )
+        if (debrief && debrief !== debriefMessageId) {
+            debriefMessageId = debrief
+            stateChanged = true
+        }
     }
 
     return {
         forumChannelId: channelId,
         infoMessageId,
+        debriefMessageId,
         stateChanged,
         topicMessageIds,
     }
@@ -744,7 +842,10 @@ export async function ensureForumTopicPosts(
 /**
  * After the match: the Debrief post, pinned so it stays on top, as the clan
  * card. Every later sync edits it, so the confirmed result and the match
- * link appear once the leaders confirm the result (L1-137).
+ * link appear once the leaders confirm the result (L1-137). The post is
+ * found by its stored ID first, archived or not, so a result confirmed after
+ * Discord archived the quiet Debrief edits it instead of creating a second
+ * one. Returns the Debrief's ID for the sync state.
  */
 export async function finalizeForumAfterConclusion(
     forumChannel: ForumChannel,
@@ -753,18 +854,19 @@ export async function finalizeForumAfterConclusion(
     extra: {
         categories?: readonly EventCategory[]
         forumContext?: MatchForumContext | null
+        /** The stored Debrief post (its starter message ID). */
+        debriefMessageId?: string
     } = {}
-) {
+): Promise<string | undefined> {
     // "Debrief ve fóru" is a clan switch on "Zprávy a panely" (N1-14).
-    if (!isMessageEnabled(config, "debriefPost")) return
+    if (!isMessageEnabled(config, "debriefPost")) return extra.debriefMessageId
     const copy = getRosterMessages(config.defaultLanguage)
-    const activePosts = await forumChannel.threads
-        .fetchActive()
-        .catch(() => null)
-    const existingPosts = activePosts?.threads
-        ? [...activePosts.threads.values()]
-        : []
-    const names = debriefPostNames()
+    const { post: found, active: existingPosts } =
+        await findForumPost<AnyThreadChannel>(
+            forumChannel.id,
+            forumChannel.threads,
+            { ids: [extra.debriefMessageId], names: debriefPostNames() }
+        )
     const forumContext =
         extra.forumContext === undefined
             ? await loadForumContext(event.id)
@@ -783,8 +885,12 @@ export async function finalizeForumAfterConclusion(
     })
     const options = kitOptions(config)
 
-    let debriefPost = existingPosts.find((post) => names.includes(post.name))
+    let debriefPost = found
     if (debriefPost) {
+        await reopenForumPost(debriefPost, {
+            eventId: event.id,
+            threadId: debriefPost.id,
+        })
         const starter = await debriefPost
             .fetchStarterMessage()
             .catch(() => null)
@@ -803,6 +909,7 @@ export async function finalizeForumAfterConclusion(
     }
 
     await pinForumPost(existingPosts, debriefPost, event.id)
+    return debriefPost.id
 }
 
 type PinnablePost = {

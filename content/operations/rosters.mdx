@@ -160,13 +160,18 @@ shows the message as it will look in the roster channel.
   shown read-only. Without a separate channel the match announcement carries
   the roster image instead.
 - **Mention rostered players:** on the first publish the message mentions
-  everyone in a squad slot. Off by default when publishing again, because the
-  change DMs already reach the people concerned.
+  everyone in a squad slot. Without a separate roster channel the announcement
+  carries the roster, and Discord never pings on an edited message, so the bot
+  mentions the players once in a reply to the announcement. Off by default
+  when publishing again, because the change DMs already reach the people
+  concerned.
 - **Counters:** players in the roster, reserves and not attending.
 
 Publishing again edits the same Discord message; no new one is posted. The
-dialog lists the **changes since the last version** (who is new, who left or
-went to the reserves, who moved squad or changed role) and offers:
+dialog's subtitle says when the shown version was published ("published today
+at 18:40", "yesterday at …" or the date, in the clan's time zone). It lists the
+**changes since the last version** (who is new, who left or went to the
+reserves, who moved squad or changed role) and offers:
 
 - **Tell players about changes by DM:** only players whose place changed get a
   DM in the clan language with their new squad and role.
@@ -174,8 +179,12 @@ went to the reserves, who moved squad or changed role) and offers:
   roster. There is one summary per match; each later publish edits it and adds
   the new changes.
 
-Both default to the choice in **Messages and panels → Roster**. The bot sends
-the DMs and the summary a few seconds after the save. If some players have
+Both default to the choice in **Messages and panels → Roster**. Logi keeps
+every published version on the server and compares the saved roster with the
+version the last publish replaced, so the DMs and the summary always describe
+what was actually published, even when another manager published from another
+tab in the meantime. The bot sends the DMs and the summary a few seconds after
+the save. If some players have
 closed DMs, Logi says so after publishing ("The DM did not reach 2 players:
 Mrak, Ježek."); the roster is saved either way.
 
@@ -197,9 +206,9 @@ image with **Show full roster**. The footer says when it was published.
 Buttons:
 
 - **My assignment** (private): your squad, role, squad leader, the leader's
-  note, the meeting, and the server with its password. From the day before the
-  meeting it offers **Confirm attendance**; until the game starts **Running
-  late**.
+  note, the meeting, and the server with its password. From the meeting start
+  it offers **Confirm attendance**; until the game starts **Running late**.
+  The attendance reminder DM, sent the day before, can already confirm.
   Reserves see their reserve card; people not on the roster are told so.
 - **Show roster** (private): one squad at a time with every role, player and
   whether they confirmed, are pending or are coming late; a menu switches to
@@ -208,11 +217,15 @@ Buttons:
 
 ### Match forum
 
-When the match has a forum, the bot keeps a **Match information** post (sides,
-start, map, meeting channel, the server name without its password, notes and
-named stratmap links, **My assignment**), one post per topic of the topic
-preset, and a pinned **Debrief** post. Once the result is confirmed, Debrief
-shows it with **View match**. If **Messages and panels** turns on attendance
+When the match has a forum, the bot keeps a **Match information** post (the
+announcement's category chip and sides row with the team code chips and
+faction emblems, start, map, meeting channel, the server name without its
+password, notes and named stratmap links, **My assignment**), one post per
+topic of the topic preset, and a pinned **Debrief** post. Once the result is
+confirmed, Debrief shows it with **View match**. Discord archives quiet forum
+posts; the bot finds its posts again by their stored IDs, archived ones
+included, and reopens them to edit them, so a result confirmed days later
+updates the same Debrief instead of posting a second one. If **Messages and panels** turns on attendance
 notices, a running-late or can't-make-it notice is posted in the match
 information thread with the player's name and arrival time; the reason stays in
 Logi for the organisers.

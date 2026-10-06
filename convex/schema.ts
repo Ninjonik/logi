@@ -554,6 +554,13 @@ const rosterSquad = v.object({
     players: v.array(rosterPlayer),
 })
 
+/** A player's squad place in a published roster version (D5-B04). */
+const rosterPlaceSlot = v.object({
+    userId: v.string(),
+    squad: v.string(),
+    role: v.optional(v.string()),
+})
+
 const userAssignments = defineTable({
     userId: v.string(),
     serverId: v.string(),
@@ -1120,6 +1127,12 @@ export default defineSchema({
         notifyPlayers: v.boolean(),
         postDigest: v.boolean(),
         mentionPlayers: v.boolean(),
+        // The roster's publish this request belongs to: one change request
+        // per publish (D5-B04).
+        rosterPublishedAt: v.optional(v.string()),
+        // Mentions of a first publish when the announcement doubles as the
+        // roster card (D5-08); Discord never pings on the edited card.
+        firstPublish: v.optional(v.boolean()),
         status: v.union(
             v.literal("pending"),
             v.literal("processing"),
@@ -1193,6 +1206,11 @@ export default defineSchema({
         discordMentionPlayers: v.optional(v.boolean()),
         // When the roster was last published from the dashboard.
         publishedAt: v.optional(v.string()),
+        // The squad places of the last publish and of the version it
+        // replaced (D5-B04): the server's baseline for the change digest
+        // and the change DMs; the browser never sends one.
+        publishedPlaces: v.optional(v.array(rosterPlaceSlot)),
+        previousPublishedPlaces: v.optional(v.array(rosterPlaceSlot)),
         // The last time attendance was read from the meeting voice channel.
         meetingAttendance: v.optional(
             v.object({
@@ -1243,6 +1261,11 @@ export default defineSchema({
         guildId: v.string(),
         pingedAt: v.optional(v.string()),
         layoutVersion: v.optional(v.string()),
+        // The one-time redraw of a match whose announcement the old bot had
+        // already removed: set once its roster card and forum post were
+        // redrawn (L1-147). Never read as a card layout, so it never makes
+        // the bot post a new announcement.
+        migrationVersion: v.optional(v.string()),
         updatedAt: v.string(),
     }).index("eventId", ["eventId"]),
     discordEventSyncs: defineTable({
@@ -1266,6 +1289,9 @@ export default defineSchema({
         forumChannelId: v.optional(v.string()),
         forumThreadId: v.optional(v.string()),
         infoMessageId: v.optional(v.string()),
+        // The match forum's Debrief post, found again by ID even after
+        // Discord archived it, so it is edited and never posted twice.
+        debriefMessageId: v.optional(v.string()),
         topicMessageIds: v.array(v.string()),
         topicMessageState: v.optional(
             v.array(
