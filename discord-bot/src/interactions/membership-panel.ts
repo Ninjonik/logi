@@ -4,7 +4,7 @@ import {
     applicationPanelDefaults,
     getApplicationMessages,
 } from "../../../src/lib/clan-language/application"
-import { effectivePanelCopy } from "../../../src/domain/membership/application-panel-copy"
+import { membershipPanelCopy } from "../../../src/domain/membership/application-panel-copy"
 import { applicationWindowCount } from "../../../src/domain/membership/application-plan"
 import { resolveApplicationForm } from "../../../src/domain/membership/application-form"
 import { applicationPanelView } from "../../../src/domain/membership/application-views"
@@ -53,26 +53,26 @@ export function buildMembershipPanelPayload(
     const settings = config.membershipSettings
     if (!settings?.categories.length) return null
     const copy = getApplicationMessages(config.defaultLanguage)
-    const windows = panelWindowCount(config)
-    const panel = effectivePanelCopy(
+    const panel = membershipPanelCopy(
         {
             title: settings.panelTitle,
             text: settings.panelDescription,
             clanName,
-            windows,
+            form: settings.applicationForm,
+            categories: settings.categories,
         },
-        copy.panel,
+        copy,
         applicationPanelDefaults
     )
     return messagePayload(
         applicationPanelView(copy, {
             title: panel.title,
             text: panel.text,
-            windowsNote: !panel.defaultText,
+            windowsNote: panel.windowsNote,
             imageUrl: settings.panelImageUrl,
             accentColor: settings.panelAccentColor,
             categories: settings.categories,
-            windows,
+            windows: panel.windows,
             webFormUrl: settings.webFormEnabled
                 ? webApplicationUrl(config.defaultLanguage, config.guildId)
                 : null,

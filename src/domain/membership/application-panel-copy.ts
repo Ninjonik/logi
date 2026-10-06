@@ -1,5 +1,10 @@
 import { fillTemplate } from "../discord-messages/format"
 
+import {
+    resolveApplicationForm,
+    type ApplicationCategory,
+} from "./application-form"
+import { applicationWindowCount } from "./application-plan"
 import type { ApplicationCopy } from "./application-copy"
 
 /**
@@ -104,5 +109,46 @@ export function effectivePanelCopy(
             ? defaultPanelText(copy, input.windows)
             : (input.text ?? ""),
         defaultText,
+    }
+}
+
+/**
+ * The recruitment panel's words as the bot posts them (res. 23): the number
+ * of windows of the clan's form, the effective title and text, and the
+ * separate windows note only under the clan's own text (the default text
+ * already names the windows). The bot's panel and the "Panel náboru"
+ * preview on "Zprávy a panely" both use it (N1-B07).
+ */
+export function membershipPanelCopy(
+    input: {
+        title?: string | null
+        text?: string | null
+        clanName: string
+        /** The stored application form; invalid or missing is the default form. */
+        form: unknown
+        categories: readonly ApplicationCategory[]
+    },
+    copy: Pick<ApplicationCopy, "panel" | "defaultForm">,
+    known: readonly PanelDefaultCopy[]
+) {
+    const windows = applicationWindowCount(
+        resolveApplicationForm(input.form, input.categories, copy.defaultForm),
+        input.categories
+    )
+    const panel = effectivePanelCopy(
+        {
+            title: input.title,
+            text: input.text,
+            clanName: input.clanName,
+            windows,
+        },
+        copy.panel,
+        known
+    )
+    return {
+        title: panel.title,
+        text: panel.text,
+        windowsNote: !panel.defaultText,
+        windows,
     }
 }
