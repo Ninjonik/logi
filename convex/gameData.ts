@@ -17,7 +17,6 @@ import {
 } from "./gameDataCatalog"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
-import { observationSchema } from "../src/domain/game-data/contracts"
 import { mutation, internalMutation } from "./integrationMutation"
 import type { MutationCtx } from "./_generated/server"
 import { resetHistory } from "./gameDataHistory"
@@ -249,12 +248,15 @@ export const finishSnapshot = internalMutation({
         const now = Date.now()
         if (!row || !acceptsRun(row, args, now)) return false
         if (!(await connectionSource(ctx, row))) return false
-        const observation =
-            args.result.observation === undefined
-                ? undefined
-                : observationSchema.parse(args.result.observation)
-        if (observation && Date.parse(observation.observedAt) > now)
-            throw new Error("Invalid observation time.")
+        // The validator checked the shape and the collector action parsed
+        // the provider's reply with the observation schema; only the time
+        // is checked again here (ARCHITECTURE.md, "Convex hot paths").
+        const observation = args.result.observation
+        if (observation) {
+            const observedAt = Date.parse(observation.observedAt)
+            if (Number.isNaN(observedAt) || observedAt > now)
+                throw new Error("Invalid observation time.")
+        }
         await ctx.db.patch(row._id, {
             ...args.result,
             ...(observation ? { observation } : {}),

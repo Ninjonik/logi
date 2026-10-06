@@ -1,6 +1,5 @@
 import {
     credentialAad,
-    providerKeySchema,
     type CredentialEnvelope,
     type CredentialFailure,
     type ResolvedSource,
@@ -10,6 +9,7 @@ import {
     decryptCredential,
     parseKeyring,
 } from "./credential-cipher"
+import { providerKeySchema } from "../../domain/game-data/credentials.schema"
 import { ProviderError } from "../../domain/game-data/contracts"
 
 export type CredentialPorts = {

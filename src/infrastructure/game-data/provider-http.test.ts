@@ -1,5 +1,5 @@
 import { createProviderHttp, isAllowedAddress } from "./provider-http"
-import { parseSources } from "../../domain/game-data/policy"
+import { parseSources } from "../../domain/game-data/policy.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 

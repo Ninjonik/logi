@@ -1,5 +1,5 @@
+import { parseSources } from "../../domain/game-data/policy.schema"
 import { readHllSessionPage, readHllSession } from "./hll-sessions"
-import { parseSources } from "../../domain/game-data/policy"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"

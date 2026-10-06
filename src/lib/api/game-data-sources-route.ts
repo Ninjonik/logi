@@ -1,17 +1,19 @@
 import {
     credentialRequirement,
-    displayNameSchema,
-    draftSource,
-    gameServerSourceListSchema,
-    providerKeySchema,
-    sourceCommandErrorSchema,
-    sourceDraftSchema,
     type ConnectionTestOutcome,
     type CredentialBinding,
     type CredentialEnvelope,
     type DataProvider,
     type SourceCommandError,
 } from "@/domain/game-data/credentials"
+import {
+    displayNameSchema,
+    draftSource,
+    gameServerSourceListSchema,
+    providerKeySchema,
+    sourceCommandErrorSchema,
+    sourceDraftSchema,
+} from "@/domain/game-data/credentials.schema"
 import type { ConnectionTestResult } from "@/infrastructure/game-data/connection-test"
 import type { DataSource } from "@/domain/game-data/contracts"
 import { readBoundedJson } from "./request-json"

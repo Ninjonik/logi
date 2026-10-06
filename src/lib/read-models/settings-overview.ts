@@ -3,7 +3,7 @@ import { fetchQuery } from "convex/nextjs"
 import { z } from "zod"
 
 import type { SettingsOverviewFacts } from "@/domain/workspaces/settings-overview"
-import { gameServerSourceListSchema } from "@/domain/game-data/credentials"
+import { gameServerSourceListSchema } from "@/domain/game-data/credentials.schema"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { getInternalAuthSecret } from "@/lib/env"
 import type { Guild } from "@/types/domain"

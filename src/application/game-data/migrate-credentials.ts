@@ -1,10 +1,10 @@
 import {
     credentialAad,
-    providerKeySchema,
     type CredentialBinding,
     type CredentialEnvelope,
     type DataProvider,
 } from "../../domain/game-data/credentials"
+import { providerKeySchema } from "../../domain/game-data/credentials.schema"
 
 export type LegacyCandidate = {
     kind: "operator" | "workspace"

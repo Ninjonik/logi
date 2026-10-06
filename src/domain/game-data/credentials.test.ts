@@ -2,14 +2,13 @@ import {
     credentialAad,
     credentialRequirement,
     displayNameKey,
-    draftSource,
-    providerKeySchema,
     resolveCredentialMode,
     sameSourceIdentity,
     sourceFingerprint,
 } from "./credentials"
+import { draftSource, providerKeySchema } from "./credentials.schema"
+import { parseSources } from "./policy.schema"
 import assert from "node:assert/strict"
-import { parseSources } from "./policy"
 import test from "node:test"
 
 const scope = {

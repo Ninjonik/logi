@@ -3,11 +3,8 @@ import {
     sourceFingerprint,
     type ResolvedSource,
 } from "../src/domain/game-data/credentials"
-import {
-    sourceSchema,
-    type DataSource,
-} from "../src/domain/game-data/contracts"
-import { parseSources } from "../src/domain/game-data/policy"
+import { readOperatorSources } from "../src/domain/game-data/operator-sources"
+import type { DataSource } from "../src/domain/game-data/contracts"
 import type { QueryCtx } from "./_generated/server"
 import type { Doc } from "./_generated/dataModel"
 
@@ -24,19 +21,25 @@ export type CatalogEntry = {
     reason: ReturnType<typeof resolveCredentialMode>["reason"]
 }
 
+/**
+ * The operator catalogue, read through the hand-written guard: this runs on
+ * every panel refresh and live read, so it must not load Zod
+ * (ARCHITECTURE.md, "Convex hot paths").
+ */
 export function operatorSources(): DataSource[] {
-    return parseSources(process.env.LOGI_GAME_DATA_SOURCES)
+    return readOperatorSources(process.env.LOGI_GAME_DATA_SOURCES)
 }
 
 /**
  * A registration shaped like an operator entry. A workspace never uses a
  * network exception; a legacy registration keeps its variable name only so the
- * operator migration can find it.
+ * operator migration can find it. The row is schema-validated and was checked
+ * against `sourceSchema` when it was registered, so it is read as stored.
  */
 export function registeredSource(row: Doc<"gameDataSources">): DataSource {
     const legacy =
         row.credentialMode === undefined || row.credentialMode === "legacy_env"
-    return sourceSchema.parse({
+    return {
         ref: row.ref,
         guildId: row.guildId,
         gameId: row.gameId,
@@ -45,7 +48,7 @@ export function registeredSource(row: Doc<"gameDataSources">): DataSource {
         origin: row.origin,
         secretRef: legacy ? row.secretRef : null,
         allowedAddresses: [],
-    })
+    }
 }
 
 export async function credentialRow(
@@ -90,14 +93,13 @@ async function workspaceEntry(
     ctx: Db,
     row: Doc<"gameDataSources">
 ): Promise<CatalogEntry | null> {
-    const parsed = sourceSchema.safeParse(registeredSource(row))
-    if (!parsed.success) return null
+    const source = registeredSource(row)
     const credential =
         row.credentialMode === "encrypted"
             ? await credentialRow(ctx, row.guildId, row.ref)
             : null
     const mode = resolveCredentialMode({
-        provider: parsed.data.provider,
+        provider: source.provider,
         managed: "workspace",
         storedMode: row.credentialMode,
         secretRef: row.secretRef,
@@ -105,7 +107,7 @@ async function workspaceEntry(
     })
     return {
         source: {
-            ...parsed.data,
+            ...source,
             credentialMode: mode.mode,
             managed: "workspace",
             usable: mode.usable,

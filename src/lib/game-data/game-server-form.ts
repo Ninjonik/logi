@@ -1,11 +1,13 @@
 import {
-    connectionTestOutcomeSchema,
     credentialRequirement,
-    sourceCommandErrorSchema,
     type ConnectionTestOutcome,
     type DataProvider,
     type SourceCommandError,
 } from "@/domain/game-data/credentials"
+import {
+    connectionTestOutcomeSchema,
+    sourceCommandErrorSchema,
+} from "@/domain/game-data/credentials.schema"
 import { z } from "zod"
 
 export type GameId = "hell_let_loose" | "wardogs"

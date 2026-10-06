@@ -1,11 +1,14 @@
 import {
+    isHistoryProgress,
+    isProviderSessionWithinLimits,
+} from "../src/domain/game-data/history-rules"
+import {
     gameDataError,
     gameDataSession,
     gameDataHistoryProgress,
 } from "./gameDataValidators"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
 import type { ResolvedSource } from "../src/domain/game-data/credentials"
-import { providerSessionSchema } from "../src/domain/game-data/contracts"
 import { archiveWarconHistory } from "./gameHistoryStore"
 import { internalMutation } from "./integrationMutation"
 import { type MutationCtx } from "./_generated/server"
@@ -13,7 +16,6 @@ import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
-import { z } from "zod"
 
 export async function resetHistory(
     ctx: MutationCtx,
@@ -151,11 +153,6 @@ async function currentRun(
     if (!(await connectionSource(ctx, connection))) return null
     return { row, connection }
 }
-const progressSchema = z.strictObject({
-    page: z.number().int().min(1).max(1_000_000),
-    pendingIds: z.array(z.string().regex(/^\d{1,20}$/)).max(50),
-    nextPage: z.number().int().min(1).max(1_000_000).nullable(),
-})
 export const commit = internalMutation({
     args: {
         ...runArgs,
@@ -170,12 +167,19 @@ export const commit = internalMutation({
         const current = await currentRun(ctx, args)
         if (!current) return false
         const { row, connection } = current
-        const progress = progressSchema.parse(args.result.progress)
+        // The validators checked the shapes and the collector action parsed
+        // the provider's pages with the session schema; the ranges are
+        // checked here without Zod (ARCHITECTURE.md, "Convex hot paths").
+        const progress = args.result.progress
+        if (!isHistoryProgress(progress))
+            throw new Error("Invalid history progress.")
         const now = Date.now()
         const updatedAt = new Date(now).toISOString()
         let count = connection.historyCount ?? 0
         if (args.result.session) {
-            const session = providerSessionSchema.parse(args.result.session)
+            const session = args.result.session
+            if (!isProviderSessionWithinLimits(session))
+                throw new Error("Invalid session.")
             await archiveWarconHistory(ctx, connection, session)
             const existing = await ctx.db
                 .query("gameSessions")
