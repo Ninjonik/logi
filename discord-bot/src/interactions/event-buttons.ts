@@ -29,6 +29,10 @@ import {
     TRAINING_ATTEND,
 } from "../constants"
 import {
+    parseEventButtonId,
+    rosterButtonIds,
+} from "../../../src/domain/discord-messages/roster-message"
+import {
     buildEventSignupActions,
     resolveEventSignupSelection,
 } from "../../../src/lib/event-signup"
@@ -371,7 +375,10 @@ export async function handleCheckSignupInteraction(
 export async function handleRosterAssignmentInteraction(
     interaction: ButtonInteraction
 ) {
-    const eventId = interaction.customId.replace("roster-assignment:", "")
+    const { eventId } = parseEventButtonId(
+        interaction.customId,
+        rosterButtonIds.assignment("")
+    )
     const context = (await convex.query(references.getEventInteractionContext, {
         secret: env.internalSecret,
         eventId: eventId as never,

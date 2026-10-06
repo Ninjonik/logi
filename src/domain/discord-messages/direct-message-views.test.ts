@@ -262,6 +262,51 @@ test("the late and cannot-come forms name the match", () => {
     })
 })
 
+test("DM buttons name the clan's server so a click after the match is gone keeps the clan language", () => {
+    // L1-B19, L2-B01: a DM click has no server of its own.
+    const guildId = "900000000000000001"
+    const reminder = attendanceReminderView({
+        event: { ...event, guildId },
+        now: Date.parse("2026-10-10T18:00:00.000Z"),
+        copy,
+        frame,
+    })
+    assert.deepEqual(
+        buttons(reminder).map((button) =>
+            button.kind === "action" ? button.id : "link"
+        ),
+        [
+            `attendance-confirm:event-1:${guildId}`,
+            `attendance-late:event-1:${guildId}`,
+            `attendance-decline:event-1:${guildId}`,
+        ]
+    )
+    const change = rosterChangeDmView({
+        event: { ...event, guildId },
+        change: {
+            userId: "u",
+            after: { squad: "F1", role: "Rifleman" },
+            added: true,
+            removed: false,
+            toReserves: false,
+            moved: false,
+            roleChanged: false,
+        },
+        rosterUrl: "https://logi.example/cs/rosters/event-1",
+        copy,
+        rosterCopy,
+        frame,
+    })
+    assert.deepEqual(
+        buttons(change).map((button) =>
+            button.kind === "action" ? [button.label, button.id] : "link"
+        ),
+        [["Zobrazit zařazení", `roster-assignment:event-1:${guildId}`]]
+    )
+    for (const view of [reminder, change])
+        assert.deepEqual(validateMessageView(view, layout).issues, [])
+})
+
 test("roster change DMs: added, removed, moved, new role and both together", () => {
     const base = {
         event,

@@ -120,7 +120,11 @@ test("my assignment is a private card with squad, role, leader, note, server and
         buttons.map((button) =>
             "custom_id" in button ? button.custom_id : ""
         ),
-        ["attendance-confirm:event-1", "attendance-late:event-1"]
+        // The reply can arrive in a DM, so its buttons name the server.
+        [
+            "attendance-confirm:event-1:guild-1",
+            "attendance-late:event-1:guild-1",
+        ]
     )
 })
 
@@ -132,7 +136,7 @@ test("the squad leader sees no leader line and an acknowledged player gets no co
         buttons.map((button) =>
             "custom_id" in button ? button.custom_id : ""
         ),
-        ["attendance-late:event-1"]
+        ["attendance-late:event-1:guild-1"]
     )
 })
 

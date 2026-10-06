@@ -25,10 +25,14 @@ import {
     type DmFrame,
 } from "../../../src/domain/discord-messages/direct-message-views"
 import {
+    attendanceButtonIds,
+    eventCustomId,
+    parseEventButtonId,
+} from "../../../src/domain/discord-messages/roster-message"
+import {
     attendanceAnswerWindow,
     isOnRoster,
 } from "../../../src/domain/rosters/attendance-window"
-import { attendanceButtonIds } from "../../../src/domain/discord-messages/roster-message"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
 import { dmFrame, eventGuild, meetingChannelOf } from "../events/match-context"
@@ -37,6 +41,7 @@ import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
 import type { MessageKitOptions } from "../ui/message-kit"
 import type { EventInteractionContext } from "../types"
+import { matchReplyKit } from "../runtime/clan-kit"
 import { replyUnknownError } from "../ui/replies"
 import { replyCard } from "./roster-assignment"
 import { postAttendanceNotice } from "../forum"
@@ -81,25 +86,45 @@ function kitOptions(context: EventInteractionContext): MessageKitOptions {
 }
 
 /**
+ * "Zápas už není k dispozici" when the match is gone or belongs to another
+ * server, in the clan language also in a DM (L1-B19, L2-B01).
+ */
+async function replyUnavailable(
+    interaction: Answerable,
+    context: EventInteractionContext | null,
+    customIdGuildId: string | undefined
+) {
+    const kit = await matchReplyKit({
+        context,
+        guildId: interaction.guildId,
+        customIdGuildId,
+    })
+    const copy = getDirectMessages(kit.language).replies
+    await replyCard(
+        interaction,
+        simpleReply({
+            title: copy.unavailableTitle,
+            body: copy.unavailableBody,
+            dm: !interaction.guildId,
+        }),
+        kit
+    )
+}
+
+/**
  * The context of an attendance button, or a reply card that says why the
  * player cannot answer (match gone, roster not published, not on it).
  */
-async function answerContext(interaction: Answerable, eventId: string) {
-    const context = await loadContext(eventId)
+async function answerContext(
+    interaction: Answerable,
+    button: { eventId: string; guildId?: string }
+) {
+    const context = await loadContext(button.eventId)
     if (
         !context ||
         (interaction.guildId && interaction.guildId !== context.event.guildId)
     ) {
-        const copy = getDirectMessages(context?.config.defaultLanguage).replies
-        await replyCard(
-            interaction,
-            simpleReply({
-                title: copy.unavailableTitle,
-                body: copy.unavailableBody,
-                dm: !interaction.guildId,
-            }),
-            { language: context?.config.defaultLanguage }
-        )
+        await replyUnavailable(interaction, context, button.guildId)
         return null
     }
     const copy = getDirectMessages(context.config.defaultLanguage)
@@ -135,8 +160,10 @@ async function handleConfirm(
     interaction: ButtonInteraction,
     feature: InteractionFeatureContext
 ) {
-    const eventId = interaction.customId.slice(CONFIRM_PREFIX.length)
-    const loaded = await answerContext(interaction, eventId)
+    const loaded = await answerContext(
+        interaction,
+        parseEventButtonId(interaction.customId, CONFIRM_PREFIX)
+    )
     if (!loaded) return
     const { context, copy, frame, dm } = loaded
     const window = attendanceAnswerWindow(context.event, Date.now())
@@ -205,8 +232,15 @@ export function buildLateNoticeModal(
         matchTitle(context.event),
         getDirectMessages(context.config.defaultLanguage)
     )
+    // The form names the server like the DM button that opens it.
     return new ModalBuilder()
-        .setCustomId(`${LATE_MODAL_PREFIX}${context.event.id}`)
+        .setCustomId(
+            eventCustomId(
+                LATE_MODAL_PREFIX,
+                context.event.id,
+                context.event.guildId
+            )
+        )
         .setTitle(copy.title.slice(0, 45))
         .addComponents(
             new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -223,22 +257,13 @@ export function buildLateNoticeModal(
 
 /** "Přijdu později": opens the form until the game starts. */
 async function handleLate(interaction: ButtonInteraction) {
-    const eventId = interaction.customId.slice(LATE_PREFIX.length)
-    const context = await loadContext(eventId)
+    const button = parseEventButtonId(interaction.customId, LATE_PREFIX)
+    const context = await loadContext(button.eventId)
     if (
         !context ||
         (interaction.guildId && interaction.guildId !== context.event.guildId)
     ) {
-        const copy = getDirectMessages(context?.config.defaultLanguage).replies
-        await replyCard(
-            interaction,
-            simpleReply({
-                title: copy.unavailableTitle,
-                body: copy.unavailableBody,
-                dm: !interaction.guildId,
-            }),
-            { language: context?.config.defaultLanguage }
-        )
+        await replyUnavailable(interaction, context, button.guildId)
         return
     }
     if (attendanceAnswerWindow(context.event, Date.now()) === "started") {
@@ -264,15 +289,20 @@ async function handleLateModal(
     await interaction.deferReply(
         interaction.guildId ? { flags: MessageFlags.Ephemeral } : {}
     )
-    const eventId = interaction.customId.slice(LATE_MODAL_PREFIX.length)
-    const context = await loadContext(eventId)
+    const form = parseEventButtonId(interaction.customId, LATE_MODAL_PREFIX)
+    const context = await loadContext(form.eventId)
     if (
         !context ||
         (interaction.guildId && interaction.guildId !== context.event.guildId)
     ) {
-        await replyUnknownError(interaction, {
-            language: context?.config.defaultLanguage,
-        })
+        await replyUnknownError(
+            interaction,
+            await matchReplyKit({
+                context,
+                guildId: interaction.guildId,
+                customIdGuildId: form.guildId,
+            })
+        )
         return
     }
     const copy = getDirectMessages(context.config.defaultLanguage)

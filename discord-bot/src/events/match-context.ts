@@ -79,6 +79,7 @@ export function rosterCardEvent(
             userId: notice.userId,
             reason: notice.reason,
         })),
+        guildId: event.guildId,
     }
 }
 

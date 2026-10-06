@@ -171,6 +171,7 @@ export async function deliverRosterChanges(input: {
                 title: matchTitle(event),
                 meetingStart: event.meetingStart,
                 gameStart: event.gameStart,
+                guildId: event.guildId,
             },
             change,
             leader: change.after

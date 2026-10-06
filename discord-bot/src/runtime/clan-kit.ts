@@ -21,3 +21,23 @@ export async function clanReplyKit(
     if (config) return { language: config.language, style: config.messageStyle }
     return { language: await language(guildId) }
 }
+
+/**
+ * The kit for a reply about a match whose context is gone or belongs to
+ * another server, such as "Zápas už není k dispozici" behind the attendance
+ * and "Zobrazit zařazení" buttons (L1-B19, L2-B01): the match's clan
+ * language while it is still known, else the server the click came from,
+ * else the server a DM button names in its custom ID. A DM sent before its
+ * buttons named the server has none of these and reads English.
+ */
+export async function matchReplyKit(
+    input: {
+        context: { config: { defaultLanguage?: string | null } } | null
+        guildId: string | null | undefined
+        customIdGuildId?: string
+    },
+    kit: typeof clanReplyKit = clanReplyKit
+): Promise<MessageKitOptions> {
+    if (input.context) return { language: input.context.config.defaultLanguage }
+    return kit(input.guildId || input.customIdGuildId)
+}

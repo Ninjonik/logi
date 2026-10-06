@@ -99,6 +99,7 @@ export function buildAttendanceReminderDm(input: {
                 title: matchTitle(input.event),
                 meetingStart: input.event.meetingStart,
                 gameStart: input.event.gameStart,
+                guildId: input.event.guildId,
             },
             place: input.place,
             now: input.now,

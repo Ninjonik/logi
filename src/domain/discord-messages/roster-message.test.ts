@@ -5,8 +5,12 @@ import { getRosterMessages } from "@/lib/clan-language/rosters"
 import { getSystemMessages } from "@/lib/clan-language/system"
 
 import {
+    attendanceButtonIds,
+    eventCustomId,
     findMyAssignment,
     myAssignmentView,
+    parseEventButtonId,
+    rosterButtonIds,
     rosterChangesView,
     rosterFullView,
     rosterMentionIds,
@@ -381,6 +385,59 @@ test("Moje zařazení: the place, leader, note, server with password and the mee
         context: context(Date.parse("2026-10-11T18:05:00.000Z")),
     })
     assert.deepEqual(buttons(late), [])
+})
+
+test("attendance and Zobrazit zařazení IDs name the server in a DM and older IDs still parse", () => {
+    // L1-B19, L2-B01: the registry routes by the unchanged prefixes.
+    assert.equal(attendanceButtonIds.confirm(""), "attendance-confirm:")
+    assert.equal(attendanceButtonIds.late(""), "attendance-late:")
+    assert.equal(attendanceButtonIds.decline(""), "attendance-decline:")
+    assert.equal(rosterButtonIds.assignment(""), "roster-assignment:")
+    const guildId = "900000000000000001"
+    const dm = attendanceButtonIds.confirm("event-1", guildId)
+    assert.equal(dm, `attendance-confirm:event-1:${guildId}`)
+    assert.ok(dm.startsWith(attendanceButtonIds.confirm("")))
+    assert.deepEqual(parseEventButtonId(dm, "attendance-confirm:"), {
+        eventId: "event-1",
+        guildId,
+    })
+    assert.deepEqual(
+        parseEventButtonId(
+            rosterButtonIds.assignment("event-1", guildId),
+            "roster-assignment:"
+        ),
+        { eventId: "event-1", guildId }
+    )
+    // A server card keeps the short form; a DM sent before has no server.
+    assert.equal(attendanceButtonIds.late("event-1"), "attendance-late:event-1")
+    assert.deepEqual(
+        parseEventButtonId("attendance-decline:event-1", "attendance-decline:"),
+        { eventId: "event-1" }
+    )
+    // Anything but a Discord ID after the event is ignored.
+    assert.deepEqual(
+        parseEventButtonId("roster-assignment:event-1:x", "roster-assignment:"),
+        { eventId: "event-1" }
+    )
+    assert.equal(
+        eventCustomId("attendance-late-modal:", "event-1", guildId),
+        `attendance-late-modal:event-1:${guildId}`
+    )
+    // "Moje zařazení" can arrive in a DM, so its buttons name the server.
+    const open = myAssignmentView({
+        event: { ...event, guildId },
+        assignment: findMyAssignment(roster, id(5)),
+        context: context(),
+    })
+    assert.deepEqual(
+        buttons(open).map((button) =>
+            button.kind === "action" ? button.id : "link"
+        ),
+        [
+            `attendance-confirm:${event.id}:${guildId}`,
+            `attendance-late:${event.id}:${guildId}`,
+        ]
+    )
 })
 
 test("Moje zařazení for a reserve and for a player off the roster", () => {

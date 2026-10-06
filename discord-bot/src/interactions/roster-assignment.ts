@@ -17,6 +17,7 @@ import {
 import {
     findMyAssignment,
     myAssignmentView,
+    parseEventButtonId,
     parseSquadSelection,
     rosterButtonIds,
     rosterFullView,
@@ -48,6 +49,7 @@ import { getDirectMessages } from "../../../src/lib/clan-language/direct-message
 import { getSystemMessages } from "../../../src/lib/clan-language/system"
 import { replyPrivately, type PrivateReplyTarget } from "../ui/replies"
 import type { InteractionFeature } from "./registry"
+import { matchReplyKit } from "../runtime/clan-kit"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 
@@ -204,11 +206,14 @@ export async function replyCard(
 
 /**
  * The event's context for a roster button. The reply can carry the server
- * password, so it must come from the event's own guild (or a DM).
+ * password, so it must come from the event's own guild (or a DM). When the
+ * match is gone the reply is still in the clan language: the server of the
+ * click, or the one a DM's "Zobrazit zařazení" names (L1-B19, L2-B01).
  */
 async function contextFor(
     interaction: ButtonInteraction | StringSelectMenuInteraction,
-    eventId: string
+    eventId: string,
+    customIdGuildId?: string
 ) {
     const context = await loadContext(eventId)
     if (
@@ -216,15 +221,19 @@ async function contextFor(
         (!interaction.guildId || interaction.guildId === context.event.guildId)
     )
         return context
-    const language = context?.config.defaultLanguage
-    const copy = getDirectMessages(language).replies
+    const kit = await matchReplyKit({
+        context,
+        guildId: interaction.guildId,
+        customIdGuildId,
+    })
+    const copy = getDirectMessages(kit.language).replies
     await replyCard(
         interaction,
         errorCard({
             title: copy.unavailableTitle,
             body: copy.unavailableBody,
         }),
-        { language }
+        kit
     )
     return null
 }
@@ -238,8 +247,11 @@ async function guildOf(
 
 /** "Zobrazit zařazení". */
 async function handleAssignment(interaction: ButtonInteraction) {
-    const eventId = interaction.customId.slice(ASSIGNMENT_PREFIX.length)
-    const context = await contextFor(interaction, eventId)
+    const { eventId, guildId } = parseEventButtonId(
+        interaction.customId,
+        ASSIGNMENT_PREFIX
+    )
+    const context = await contextFor(interaction, eventId, guildId)
     if (!context) return
     const squad = context.roster?.squads.find((item) =>
         item.players.some((player) => player.id === interaction.user.id)

@@ -15,12 +15,17 @@ import {
     simpleReply,
     type DmFrame,
 } from "../../../src/domain/discord-messages/direct-message-views"
+import {
+    eventCustomId,
+    parseEventButtonId,
+} from "../../../src/domain/discord-messages/roster-message"
 import { DECLINE_REASON_MAX_LENGTH } from "../../../src/domain/rosters/attendance-decline"
 import { attendanceAnswerWindow } from "../../../src/domain/rosters/attendance-window"
 import type { MessageView } from "../../../src/domain/discord-messages/message-view"
 import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
 import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import type { EventInteractionContext } from "../types"
+import { matchReplyKit } from "../runtime/clan-kit"
 import { replyFrame } from "./attendance-replies"
 import { replyUnknownError } from "../ui/replies"
 import { replyCard } from "./roster-assignment"
@@ -58,8 +63,15 @@ export function buildAttendanceDeclineModal(
         matchTitle(context.event),
         getDirectMessages(context.config.defaultLanguage)
     )
+    // The form names the server like the DM button that opens it.
     return new ModalBuilder()
-        .setCustomId(`${ATTENDANCE_DECLINE_MODAL_PREFIX}${context.event.id}`)
+        .setCustomId(
+            eventCustomId(
+                ATTENDANCE_DECLINE_MODAL_PREFIX,
+                context.event.id,
+                context.event.guildId
+            )
+        )
         .setTitle(copy.title.slice(0, 45))
         .addComponents(
             new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -174,10 +186,19 @@ function kitOptions(context: EventInteractionContext) {
 export async function handleAttendanceDeclineButton(
     interaction: ButtonInteraction
 ) {
-    const eventId = interaction.customId.slice(ATTENDANCE_DECLINE_PREFIX.length)
-    const context = await loadContext(eventId)
+    const button = parseEventButtonId(
+        interaction.customId,
+        ATTENDANCE_DECLINE_PREFIX
+    )
+    const context = await loadContext(button.eventId)
     if (!context || !belongsHere(interaction, context)) {
-        const copy = getDirectMessages(context?.config.defaultLanguage)
+        // In the clan language also in a DM (L1-B19, L2-B01).
+        const kit = await matchReplyKit({
+            context,
+            guildId: interaction.guildId,
+            customIdGuildId: button.guildId,
+        })
+        const copy = getDirectMessages(kit.language)
         await replyCard(
             interaction,
             simpleReply({
@@ -185,7 +206,7 @@ export async function handleAttendanceDeclineButton(
                 body: copy.replies.unavailableBody,
                 dm: !interaction.guildId,
             }),
-            { language: context?.config.defaultLanguage }
+            kit
         )
         return
     }
@@ -208,14 +229,20 @@ export async function handleAttendanceDeclineModalSubmit(
     await interaction.deferReply(
         interaction.guildId ? { flags: MessageFlags.Ephemeral } : {}
     )
-    const eventId = interaction.customId.slice(
-        ATTENDANCE_DECLINE_MODAL_PREFIX.length
+    const form = parseEventButtonId(
+        interaction.customId,
+        ATTENDANCE_DECLINE_MODAL_PREFIX
     )
-    const context = await loadContext(eventId)
+    const context = await loadContext(form.eventId)
     if (!context || !belongsHere(interaction, context)) {
-        await replyUnknownError(interaction, {
-            language: context?.config.defaultLanguage,
-        })
+        await replyUnknownError(
+            interaction,
+            await matchReplyKit({
+                context,
+                guildId: interaction.guildId,
+                customIdGuildId: form.guildId,
+            })
+        )
         return
     }
     const copy = getDirectMessages(context.config.defaultLanguage)
