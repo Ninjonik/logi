@@ -673,8 +673,7 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
     const observation = () => ctx.db.tables.memberObservations[0]
     const guild = () => ctx.db.tables.membershipGuilds[0]
     const first = new Date(Date.now() - 20_000).toISOString(),
-        second = new Date(Date.now() - 10_000).toISOString(),
-        third = new Date().toISOString()
+        second = new Date(Date.now() - 10_000).toISOString()
     await observe(["allowed", "other"], first)
     const written = {
         feed: feedRows(),
@@ -711,7 +710,9 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
         "the run still marks the member as seen"
     )
     assert.equal(observation().revision, written.revision)
-    await observe(["allowed"], third)
+    // Evidence older than the reconciliation's is refused, so the change is
+    // observed at the time of the call, never at a time captured earlier.
+    await observe(["allowed"], new Date().toISOString())
     assert.ok(feedRows() > written.feed, "a role change is a change")
     assert.notEqual(observation().revision, written.revision)
     assert.notEqual(guild().revision, written.guildRevision)
