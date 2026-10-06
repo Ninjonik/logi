@@ -5,6 +5,11 @@ import type {
     StoredPublication,
 } from "../src/application/discord-publications/panel-overview"
 import {
+    CALENDAR_PUBLICATION_KEY,
+    PANEL_KEY_PREFIX,
+    panelPublicationKey,
+} from "../src/domain/discord-publications/keys"
+import {
     isPanelPaused,
     MAX_PANELS_PER_GUILD,
     normalizePanelKind,
@@ -15,6 +20,7 @@ import type {
 } from "../src/application/discord-publications/save-panel"
 import type { PanelActionStore } from "../src/application/discord-publications/panel-actions"
 import type { PanelStatusRecord } from "../src/domain/discord-publications/panel-delivery"
+import { publicationByKey, publicationsWithPrefix } from "./discordPublications"
 import { serverJoinUrl } from "../src/domain/discord-publications/server-join"
 import { connectionSource, workspaceSources } from "./gameDataCatalog"
 import { attachableAsset, syncAssetReferences } from "./imageAssets"
@@ -89,11 +95,37 @@ export function panelOwnsKey(
     )
 }
 
-export async function guildPublications(ctx: Db, guildId: string) {
-    return await ctx.db
-        .query("discordPublications")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .collect()
+/**
+ * The managed publications of every panel of a guild: the `panel:` prefix
+ * range plus the calendar's fixed `calendar` key, never the guild's whole
+ * table (ARCHITECTURE.md, "Convex hot paths").
+ */
+export async function panelPublications(ctx: Db, guildId: string) {
+    const [rows, calendar] = await Promise.all([
+        publicationsWithPrefix(ctx, guildId, PANEL_KEY_PREFIX),
+        publicationByKey(ctx, guildId, CALENDAR_PUBLICATION_KEY),
+    ])
+    return calendar ? [...rows, calendar] : rows
+}
+
+/** The publications one panel owns (`panelOwnsKey`), read by its key prefix. */
+export async function ownedPublications(
+    ctx: Db,
+    panel: Pick<Doc<"discordPublicPanels">, "_id" | "guildId" | "kind">
+) {
+    const [rows, calendar] = await Promise.all([
+        publicationsWithPrefix(
+            ctx,
+            panel.guildId,
+            panelPublicationKey(String(panel._id))
+        ),
+        panel.kind === "calendar"
+            ? publicationByKey(ctx, panel.guildId, CALENDAR_PUBLICATION_KEY)
+            : null,
+    ])
+    return (calendar ? [...rows, calendar] : rows).filter((row) =>
+        panelOwnsKey(panel, row.key)
+    )
 }
 
 export function storedPublication(
@@ -266,8 +298,7 @@ export function panelActionStore(ctx: MutationCtx): PanelActionStore {
         async resetDelivery(guildId, panelId, options) {
             const panel = await guildPanel(ctx, guildId, panelId)
             if (!panel) return
-            for (const row of await guildPublications(ctx, guildId)) {
-                if (!panelOwnsKey(panel, row.key)) continue
+            for (const row of await ownedPublications(ctx, panel)) {
                 // A running delivery keeps its lease; only waits are cleared.
                 if (row.leaseUntil > Date.now()) continue
                 await ctx.db.patch(row._id, {
@@ -287,7 +318,7 @@ export function panelSaveStore(ctx: MutationCtx): PanelSaveStore {
         async panels(guildId) {
             const [rows, publications, statuses] = await Promise.all([
                 guildPanels(ctx, guildId),
-                guildPublications(ctx, guildId),
+                panelPublications(ctx, guildId),
                 ctx.db
                     .query("discordPanelStatus")
                     .withIndex("guildId", (q) => q.eq("guildId", guildId))
@@ -454,9 +485,7 @@ export async function purgePanel(
     ctx: MutationCtx,
     panel: Doc<"discordPublicPanels">
 ) {
-    const publications = (await guildPublications(ctx, panel.guildId)).filter(
-        (row) => panelOwnsKey(panel, row.key)
-    )
+    const publications = await ownedPublications(ctx, panel)
     if (publications.some((row) => row.messageId || row.pending)) return false
     for (const row of publications) await ctx.db.delete(row._id)
     const status = await panelStatusRow(ctx, String(panel._id))

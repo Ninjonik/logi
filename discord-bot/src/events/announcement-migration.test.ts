@@ -2,13 +2,15 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    finishAnnouncementMigration,
+    migrationPassDelayMs,
+    runAnnouncementMigrationPass,
+    startAnnouncementMigration,
+} from "./announcement-migration"
+import {
     ANNOUNCEMENT_LAYOUT_VERSION,
     ANNOUNCEMENT_MIGRATIONS_PER_MINUTE,
 } from "../../../src/domain/events/announcement-migration"
-import {
-    finishAnnouncementMigration,
-    runAnnouncementMigrationPass,
-} from "./announcement-migration"
 
 function deps(due: string[]) {
     const queued: string[] = []
@@ -114,4 +116,79 @@ test("a failed record leaves the match for the next pass", async () => {
         ),
         false
     )
+})
+
+test("after three failed passes in a row the worker waits ten minutes, never retrying every minute", () => {
+    assert.equal(migrationPassDelayMs(0), 60_000)
+    assert.equal(migrationPassDelayMs(2), 60_000)
+    assert.equal(migrationPassDelayMs(3), 600_000)
+    assert.equal(migrationPassDelayMs(10), 600_000)
+})
+
+test("the worker backs off while the query keeps failing and recovers once it answers", async () => {
+    const scheduled: Array<{ run: () => Promise<void>; delayMs: number }> = []
+    let failing = true
+    let due: string[] = ["old"]
+    const stop = startAnnouncementMigration(
+        { queueEventSync: () => {}, triggerSoon: () => {} },
+        {
+            listDue: async () => {
+                if (failing) throw new Error("backend unavailable")
+                return due.map((eventId) => ({ eventId, guildId: "g" }))
+            },
+            timers: {
+                schedule: (run, delayMs) => {
+                    scheduled.push({ run, delayMs })
+                    return scheduled.length
+                },
+                cancel: () => {},
+            },
+        }
+    )
+    const next = async () => {
+        const entry = scheduled[scheduled.length - 1]
+        await entry.run()
+        return scheduled[scheduled.length - 1].delayMs
+    }
+    assert.equal(
+        scheduled[0].delayMs,
+        90_000,
+        "the start-up sync settles first"
+    )
+    assert.equal(await next(), 60_000, "first failure")
+    assert.equal(await next(), 60_000, "second failure")
+    assert.equal(await next(), 600_000, "third failure backs off")
+    assert.equal(await next(), 600_000, "and stays backed off")
+    failing = false
+    assert.equal(await next(), 60_000, "an answer restores the minute cadence")
+    failing = true
+    assert.equal(await next(), 60_000, "the failure count restarted")
+    failing = false
+    due = []
+    const before = scheduled.length
+    await scheduled[before - 1].run()
+    assert.equal(scheduled.length, before, "nothing due: the worker stops")
+    stop()
+})
+
+test("a stopped worker schedules no further pass", async () => {
+    const scheduled: Array<{ run: () => Promise<void>; delayMs: number }> = []
+    const cancelled: unknown[] = []
+    const stop = startAnnouncementMigration(
+        { queueEventSync: () => {}, triggerSoon: () => {} },
+        {
+            listDue: async () => [{ eventId: "e", guildId: "g" }],
+            timers: {
+                schedule: (run, delayMs) => {
+                    scheduled.push({ run, delayMs })
+                    return scheduled.length
+                },
+                cancel: (handle) => cancelled.push(handle),
+            },
+        }
+    )
+    stop()
+    assert.deepEqual(cancelled, [1])
+    await scheduled[0].run()
+    assert.equal(scheduled.length, 1)
 })

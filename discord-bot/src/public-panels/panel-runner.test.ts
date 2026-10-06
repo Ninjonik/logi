@@ -114,6 +114,8 @@ function fakes(overrides: Partial<PanelRunPorts> = {}) {
         notified: 0,
         purged: [] as string[],
         calendar: 0,
+        /** The key prefixes the runner asked the bindings for. */
+        prefixes: [] as string[],
     }
     let bindings: PublicationBinding[] = []
     const ports: PanelRunPorts = {
@@ -121,7 +123,12 @@ function fakes(overrides: Partial<PanelRunPorts> = {}) {
             published.push(input)
             return input.channelId ? "323456789012345678" : null
         },
-        bindings: async () => bindings,
+        // Honours the prefix like the Convex query does, so a runner that
+        // asked for too narrow a prefix would miss its own messages here too.
+        bindings: async (prefix = "") => {
+            calls.prefixes.push(prefix)
+            return bindings.filter((binding) => binding.key.startsWith(prefix))
+        },
         channelAccess: async () => ({ everyoneCanView: true, canAttach: true }),
         hllLive: async (): Promise<HllServed> => ({
             kind: "ready",
@@ -358,6 +365,8 @@ test("an unsent panel withdraws its message; a removed panel is purged", async (
             message: {},
         },
     ])
+    // Only this panel's keys were read, never the guild's whole table.
+    assert.deepEqual(fake.calls.prefixes, ["panel:discordPublicPanels:1"])
     const removed = await runPanel(
         panel({ removing: true }),
         pass,

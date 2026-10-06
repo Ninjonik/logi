@@ -4,13 +4,18 @@ import {
     type PublicPanelSaveResult,
 } from "../src/domain/discord-publications/settings"
 import {
+    guildPanels,
+    panelPublications,
+    panelServerRow,
+    serverNames,
+} from "./discordPanelStore"
+import {
     mutation,
     query,
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
 import { buildResultCardFacts } from "../src/domain/discord-publications/result-card"
-import { guildPanels, panelServerRow, serverNames } from "./discordPanelStore"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { attachableAsset, syncAssetReferences } from "./imageAssets"
@@ -188,10 +193,7 @@ export const list = query({
             .query("discordPublicPanels")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .take(20)
-        const publications = await ctx.db
-            .query("discordPublications")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        const publications = await panelPublications(ctx, args.guildId)
         const config = await ctx.db
             .query("discordConfigs")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))

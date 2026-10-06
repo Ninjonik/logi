@@ -150,49 +150,6 @@ export const revokeKey = mutation({
     },
 })
 
-export const checkRateLimit = mutation({
-    args: {
-        secret: v.string(),
-        bucket: v.string(),
-        limit: v.number(),
-        windowMs: v.number(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const now = Date.now()
-        const existing = await ctx.db
-            .query("apiRateLimitBuckets")
-            .withIndex("bucket", (q) => q.eq("bucket", args.bucket))
-            .unique()
-        if (!existing || existing.resetAt <= now) {
-            if (existing)
-                await ctx.db.patch(existing._id, {
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            else
-                await ctx.db.insert("apiRateLimitBuckets", {
-                    bucket: args.bucket,
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            return {
-                allowed: true,
-                remaining: args.limit - 1,
-                resetAt: now + args.windowMs,
-            }
-        }
-        if (existing.count >= args.limit)
-            return { allowed: false, remaining: 0, resetAt: existing.resetAt }
-        await ctx.db.patch(existing._id, { count: existing.count + 1 })
-        return {
-            allowed: true,
-            remaining: args.limit - existing.count - 1,
-            resetAt: existing.resetAt,
-        }
-    },
-})
-
 type IdempotentMutationInput = {
     keyHash: string
     idempotencyKey: string
@@ -1606,29 +1563,8 @@ export const mutateClanCalendarItem = mutation({
     },
 })
 
-/** Authenticates a hash only; callers never receive a bearer key or its hash. */
-export const authenticateKey = mutation({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const guild = await getGuildByDiscordId(ctx, key.guildId)
-        if (!guild) return null
-        // Usage telemetry must not alter authorization; this best-effort write is
-        // deliberately separate from every resource read.
-        await ctx.db.patch(key._id, { lastUsedAt: new Date().toISOString() })
-        return {
-            guildId: key.guildId,
-            ...(key.readAccess !== undefined
-                ? { readAccess: key.readAccess }
-                : {}),
-        }
-    },
-})
+// API key authentication lives in `apiKeyAuth.ts`: it runs on every request
+// and must not pay for this module's graph.
 
 /** A deliberately small, authenticated sync marker and count projection. */
 export const getClanMeta = query({

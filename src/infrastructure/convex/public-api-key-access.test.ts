@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import { seedDashboardActor, actorFixture } from "./testing/dashboard-actor"
+import * as apiKeyAuth from "../../../convex/apiKeyAuth"
 import * as publicApi from "../../../convex/publicApi"
 
 process.env.INTERNAL_AUTH_SECRET = "dev-internal-auth-secret"
@@ -290,7 +291,7 @@ test("summary detail checks tenant, game, document type and current revocation",
     assert.ok(result, "a granted event summary must be returned")
     assert.equal(result.id, "wardogs")
     assert.equal("serverPassword" in result, false)
-    assert.ok(await invoke(publicApi.authenticateKey, db))
+    assert.ok(await invoke(apiKeyAuth.authenticateKey, db))
     await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
     assert.equal(
         await invoke(publicApi.getClanResource, db, {
@@ -475,8 +476,9 @@ test("key creation persists read access and listing/authentication expose policy
     })) as Array<Record<string, unknown>>
     assert.deepEqual(keys[0].readAccess, readAccess)
     assert.equal("keyHash" in keys[0], false)
-    assert.deepEqual(await invoke(publicApi.authenticateKey, db), {
+    assert.deepEqual(await invoke(apiKeyAuth.authenticateKey, db), {
         guildId: "guild-a",
+        lastUsedAt: null,
         readAccess,
     })
 })
@@ -509,8 +511,9 @@ test("key creation rejects empty or unsupported resource/game permissions", asyn
 test("legacy keys retain cross-game reads and completed write replay", async () => {
     const db = new Database()
     delete db.tables.apiKeys[0].readAccess
-    assert.deepEqual(await invoke(publicApi.authenticateKey, db), {
+    assert.deepEqual(await invoke(apiKeyAuth.authenticateKey, db), {
         guildId: "guild-a",
+        lastUsedAt: null,
     })
     const page = (await invoke(publicApi.getClanResourcePage, db, {
         resource: "events",
@@ -719,13 +722,13 @@ test("revocation is tenant-bound and blocks a resource read after prior authenti
         discordId: "guild-b",
         adminIds: [actorFixture.subject],
     })
-    assert.ok(await invoke(publicApi.authenticateKey, db))
+    assert.ok(await invoke(apiKeyAuth.authenticateKey, db))
     await assert.rejects(
         invoke(publicApi.revokeKey, db, { guildId: "guild-b", keyId: "key" }),
         /not found/i
     )
     await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
-    assert.equal(await invoke(publicApi.authenticateKey, db), null)
+    assert.equal(await invoke(apiKeyAuth.authenticateKey, db), null)
     assert.equal(
         await invoke(publicApi.getClanResourcePage, db, {
             resource: "events",
@@ -735,4 +738,17 @@ test("revocation is tenant-bound and blocks a resource read after prior authenti
         }),
         null
     )
+})
+
+test("authentication never writes; a key's use is recorded once per interval", async () => {
+    const db = new Database()
+    assert.ok(await invoke(apiKeyAuth.authenticateKey, db))
+    assert.equal(db.writes, 0)
+    assert.equal(await invoke(apiKeyAuth.recordKeyUse, db), true)
+    assert.equal(db.writes, 1)
+    assert.equal(typeof db.tables.apiKeys[0].lastUsedAt, "string")
+    assert.equal(await invoke(apiKeyAuth.recordKeyUse, db), false)
+    assert.equal(db.writes, 1)
+    await invoke(publicApi.revokeKey, db, { guildId: "guild-a", keyId: "key" })
+    assert.equal(await invoke(apiKeyAuth.recordKeyUse, db), false)
 })

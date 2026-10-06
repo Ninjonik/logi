@@ -5,8 +5,8 @@ import {
 } from "../src/application/discord-publications/panel-settings-api"
 import {
     guildPanels,
-    guildPublications,
     panelOwnsKey,
+    panelPublications,
     panelSaveStore,
     storedPanel,
 } from "./discordPanelStore"
@@ -60,7 +60,7 @@ export type ClanSettingsStore = {
 async function readDiscordPanels(ctx: Pick<QueryCtx, "db">, guildId: string) {
     const [rows, publications, statuses] = await Promise.all([
         guildPanels(ctx, guildId),
-        guildPublications(ctx, guildId),
+        panelPublications(ctx, guildId),
         ctx.db
             .query("discordPanelStatus")
             .withIndex("guildId", (q) => q.eq("guildId", guildId))

@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as apiKeyAuth from "../apiKeyAuth.js";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
 import type * as calendarFeed from "../calendarFeed.js";
@@ -169,6 +170,7 @@ import type * as websiteEventCommands from "../websiteEventCommands.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  apiKeyAuth: typeof apiKeyAuth;
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
   calendarFeed: typeof calendarFeed;

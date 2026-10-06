@@ -25,6 +25,37 @@ const FIRST_RUN_DELAY_MS = 90_000
 const INTERVAL_MS = 60_000
 /** A card that fails this often waits for its next ordinary sync. */
 const MAX_ATTEMPTS = 3
+/** After this many failed passes in a row the worker stops asking every minute. */
+const BACKOFF_AFTER_FAILURES = 3
+const BACKOFF_INTERVAL_MS = 10 * 60_000
+
+/**
+ * The wait before the next pass: a minute, or ten once three passes in a
+ * row failed (an older backend without the query, or one under load), so a
+ * failing pass is never retried every minute.
+ */
+export function migrationPassDelayMs(consecutiveFailures: number) {
+    return consecutiveFailures >= BACKOFF_AFTER_FAILURES
+        ? BACKOFF_INTERVAL_MS
+        : INTERVAL_MS
+}
+
+/** The worker's timers, replaceable in tests. */
+export type MigrationTimers = {
+    schedule(run: () => Promise<void>, delayMs: number): unknown
+    cancel(handle: unknown): void
+}
+
+const defaultTimers: MigrationTimers = {
+    schedule(run, delayMs) {
+        const timer = setTimeout(() => void run(), delayMs)
+        timer.unref?.()
+        return timer
+    },
+    cancel(handle) {
+        clearTimeout(handle as ReturnType<typeof setTimeout>)
+    },
+}
 
 type Due = { eventId: string; guildId: string }
 
@@ -102,27 +133,38 @@ export async function runAnnouncementMigrationPass(
     return open.length
 }
 
-export function startAnnouncementMigration(input: {
-    queueEventSync: (eventId: string) => void
-    triggerSoon: () => void
-}) {
+export function startAnnouncementMigration(
+    input: {
+        queueEventSync: (eventId: string) => void
+        triggerSoon: () => void
+    },
+    overrides: {
+        listDue?: AnnouncementMigrationDeps["listDue"]
+        timers?: MigrationTimers
+    } = {}
+) {
     const attempts = new Map<string, number>()
-    let timer: ReturnType<typeof setTimeout> | undefined
+    const timers = overrides.timers ?? defaultTimers
+    let timer: unknown
     let stopped = false
+    let failures = 0
     const deps: AnnouncementMigrationDeps = {
         ...input,
-        listDue: async (now) =>
-            (await convex.query(announcementReferences.listMigrationDue, {
-                secret: env.internalSecret,
-                version: ANNOUNCEMENT_LAYOUT_VERSION,
-                now: now.toISOString(),
-                limit: 50,
-            })) as Due[],
+        listDue:
+            overrides.listDue ??
+            (async (now) =>
+                (await convex.query(announcementReferences.listMigrationDue, {
+                    secret: env.internalSecret,
+                    version: ANNOUNCEMENT_LAYOUT_VERSION,
+                    now: now.toISOString(),
+                    limit: 50,
+                })) as Due[]),
     }
     const tick = async () => {
         if (stopped) return
         try {
             const remaining = await runAnnouncementMigrationPass(deps, attempts)
+            failures = 0
             if (!remaining) {
                 logInfo("announcement-migration", "All announcements redrawn")
                 return
@@ -131,18 +173,20 @@ export function startAnnouncementMigration(input: {
                 remaining,
             })
         } catch (error) {
-            // An older backend without the query: try again later.
+            // An older backend without the query, or one under load: try
+            // again later, and less often once it keeps failing.
+            failures += 1
             logWarn("announcement-migration", "Migration pass failed", {
                 error,
+                failures,
             })
         }
-        timer = setTimeout(() => void tick(), INTERVAL_MS)
-        timer.unref?.()
+        if (!stopped)
+            timer = timers.schedule(tick, migrationPassDelayMs(failures))
     }
-    timer = setTimeout(() => void tick(), FIRST_RUN_DELAY_MS)
-    timer.unref?.()
+    timer = timers.schedule(tick, FIRST_RUN_DELAY_MS)
     return () => {
         stopped = true
-        if (timer) clearTimeout(timer)
+        if (timer !== undefined) timers.cancel(timer)
     }
 }

@@ -17,6 +17,7 @@ import {
 } from "../src/domain/wardogs-league/discovery"
 import { storedLeagueSnapshot } from "../src/infrastructure/convex/league-fixture-store"
 import { acceptMessageVersion } from "../src/application/wardogs-league/intake-policy"
+import { LEAGUE_CARD_KEY_PREFIX } from "../src/domain/discord-publications/keys"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { projectLeagueFixture } from "../src/domain/wardogs-league/fixture"
@@ -24,6 +25,7 @@ import { dashboardActor, authorizeDashboardAdmin } from "./dashboardActor"
 import { leaguePanelKey } from "../src/domain/wardogs-league/panels"
 import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { assertSessionGateway } from "./dashboardSessionStore"
+import { publicationsWithPrefix } from "./discordPublications"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 const access = {
@@ -274,17 +276,15 @@ export const forGuild = query({
             .query("leagueTrackedMatches")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .take(MAX_TRACKED)
-        const publications = await ctx.db
-            .query("discordPublications")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        // Only the retired League cards, through their key prefix.
+        const publications = await publicationsWithPrefix(
+            ctx,
+            args.guildId,
+            LEAGUE_CARD_KEY_PREFIX
+        )
         const published = new Set(
             publications
-                .filter(
-                    (p) =>
-                        p.key.startsWith("league:") &&
-                        (p.messageId || p.pending)
-                )
+                .filter((p) => p.messageId || p.pending)
                 .map((p) => p.key)
         )
         return {

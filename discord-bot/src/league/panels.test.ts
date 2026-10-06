@@ -126,7 +126,9 @@ function fakes(
             ]
             return entry.channelId ? `m-${entry.key}` : null
         },
-        bindings: async () => bindings,
+        // Honours the prefix like the Convex query does.
+        bindings: async (prefix = "") =>
+            bindings.filter((binding) => binding.key.startsWith(prefix)),
         channelAccess: async () =>
             input.channel === false
                 ? null

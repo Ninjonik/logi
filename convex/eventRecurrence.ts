@@ -73,21 +73,33 @@ function seriesInput(source: Doc<"events">) {
  * never start series of their own. A start that already exists in the series
  * is never created twice, drafts and stopped series (recurrence removed) are
  * skipped, and one pass creates a bounded number of events. Monthly series
- * are not generated. The bot calls this every few minutes and refreshes the
- * dashboard for each created event.
+ * are not generated. The bot calls this at start and then every 15 minutes
+ * and refreshes the dashboard for each created event.
+ *
+ * Events are large documents, so the pass never reads the whole table: the
+ * weekly series come from the `recurrence_frequency` index and each one's
+ * occurrences from `recurrenceSeriesId_gameStart`, bounded to starts from
+ * now on. Earlier occurrences cannot collide with a new start, because a
+ * pass only creates starts after the latest existing one (and after now).
  */
 export const generateDue = mutation({
     args: { secret: v.string() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const now = new Date()
+        const nowIso = now.toISOString()
         const until = new Date(
             now.getTime() + RECURRENCE_HORIZON_DAYS * DAY_MS
         ).toISOString()
-        const events = await ctx.db.query("events").collect()
-        const series = events.filter(
+        const series = (
+            await ctx.db
+                .query("events")
+                .withIndex("recurrence_frequency", (q) =>
+                    q.eq("recurrence.frequency", "weekly")
+                )
+                .collect()
+        ).filter(
             (event) =>
-                event.recurrence?.frequency === "weekly" &&
                 !event.recurrenceSeriesId &&
                 event.isDraft !== true &&
                 (event.kind ?? "match") === "match"
@@ -96,11 +108,16 @@ export const generateDue = mutation({
         const zones = new Map<string, string>()
         for (const source of series) {
             if (created.length >= MAX_CREATED_PER_PASS) break
-            const occurrences = events.filter(
-                (event) =>
-                    event.recurrenceSeriesId === source._id &&
-                    event.guildId === source.guildId
-            )
+            const occurrences = (
+                await ctx.db
+                    .query("events")
+                    .withIndex("recurrenceSeriesId_gameStart", (q) =>
+                        q
+                            .eq("recurrenceSeriesId", source._id)
+                            .gte("gameStart", nowIso)
+                    )
+                    .collect()
+            ).filter((event) => event.guildId === source.guildId)
             const existing = new Set([
                 source.gameStart,
                 ...occurrences.map((event) => event.gameStart),

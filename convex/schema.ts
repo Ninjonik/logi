@@ -979,7 +979,18 @@ export default defineSchema({
         matchTeams: v.optional(v.array(matchTeamAssignment)),
         createdAt: v.string(),
         updatedAt: v.optional(v.string()),
-    }).index("guildId", ["guildId"]),
+    })
+        .index("guildId", ["guildId"])
+        // The timed passes read this table through these indexes, never
+        // whole (ARCHITECTURE.md, "Convex hot paths"): the recurrence pass
+        // takes the weekly series and each one's upcoming occurrences, the
+        // announcement migration the matches that end after a cutoff.
+        .index("recurrence_frequency", ["recurrence.frequency"])
+        .index("recurrenceSeriesId_gameStart", [
+            "recurrenceSeriesId",
+            "gameStart",
+        ])
+        .index("gameEnd", ["gameEnd"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"]),

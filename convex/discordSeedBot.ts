@@ -12,6 +12,7 @@ import {
 } from "./discordSeedStore"
 import {
     parseSeedPublicationKey,
+    SEED_PUBLICATION_KEY_PREFIX,
     seedPublicationKey,
     type SeedMessageKind,
 } from "../src/domain/discord-seed/publication-keys"
@@ -43,6 +44,7 @@ import type { SeedPlanSettings } from "../src/domain/discord-seed/plan"
 import { stopSeed } from "../src/application/discord-seed/stop-seed"
 import { mutation, query, type QueryCtx } from "./_generated/server"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
+import { publicationsWithPrefix } from "./discordPublications"
 import { assertInternalSecret } from "./discord_shared"
 import { panelServerInfos } from "./discordPanelStore"
 import type { Doc } from "./_generated/dataModel"
@@ -74,12 +76,17 @@ async function outboxRows(ctx: Reader, guildId: string) {
         .collect()
 }
 
-/** The managed publications of the seed, by `seed:<kind>:<key>`. */
+/**
+ * The managed publications of the seed, by `seed:<kind>:<key>`, from the
+ * `seed:` prefix range: the worker asks every 20 s per clan, so it never
+ * reads the clan's other messages.
+ */
 async function seedPublications(ctx: Reader, guildId: string) {
-    const rows = await ctx.db
-        .query("discordPublications")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .collect()
+    const rows = await publicationsWithPrefix(
+        ctx,
+        guildId,
+        SEED_PUBLICATION_KEY_PREFIX
+    )
     const refs = new Map<string, SeedMessageRef>()
     for (const row of rows)
         if (parseSeedPublicationKey(row.key))

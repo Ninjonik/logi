@@ -16,7 +16,7 @@ test("change HTTP bootstrap, signed cursor, atomic detail and explicit reset", a
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: "guild-a",
                     readAccess: {
@@ -114,7 +114,7 @@ test("membership feed HTTP binds its cursor to one subject and carries policy re
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: "guild-a",
                     readAccess: {

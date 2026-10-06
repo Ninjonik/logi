@@ -125,6 +125,13 @@ CONVEX_SELF_HOSTED_ADMIN_KEY=your-generated-admin-key
 
 With those private values configured, use `npx convex dev` to push Convex functions to a development instance; use the deployment process appropriate to your environment for production. Keep the Docker data volume persistent in production, configure public origins and TLS for your host, and set the same `INTERNAL_AUTH_SECRET` for Logi’s runtime and Convex functions. Never commit keys or secrets.
 
+Two settings matter for a production install, because Logi’s bot and panels write to Convex every few seconds:
+
+- `DOCUMENT_RETENTION_DELAY` is how long the backend keeps every superseded version of a document, in seconds. The compose file defaults to `172800` (48 hours), which suits a development instance; for a write-heavy self-hosted install set `DOCUMENT_RETENTION_DELAY=21600` (6 hours) in the backend’s environment so lease refreshes and cache writes do not pile up for two days.
+- Use Postgres (`POSTGRES_URL`) instead of the default SQLite file for production. SQLite serialises writes and slows down as the retained versions accumulate; Postgres keeps the dashboard responsive under the bot’s steady write load.
+
+The code-level rules that keep this load bounded are in [ARCHITECTURE.md](./ARCHITECTURE.md) under “Convex hot paths”.
+
 For current production guidance, storage options, upgrades, and limitations, follow Convex’s official [self-hosting guide](https://docs.convex.dev/self-hosting) and [self-hosted backend instructions](https://github.com/get-convex/convex-backend/tree/main/self-hosted).
 
 ## Contribute

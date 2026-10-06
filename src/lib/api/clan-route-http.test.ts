@@ -56,7 +56,7 @@ test("summary HTTP routes preserve page filters, detail identity and no-store", 
                 case "publicApi:checkRateLimit":
                     value = { allowed: true, remaining: 299, resetAt: 0 }
                     break
-                case "publicApi:authenticateKey":
+                case "apiKeyAuth:authenticateKey":
                     value = {
                         guildId: "guild-a",
                         readAccess: {
@@ -164,7 +164,7 @@ test("reviewed result HTTP reads need their own grant; bearer keys cannot confir
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: "guild-a",
                     readAccess: {
@@ -305,7 +305,7 @@ test("stored game data reaches the real HTTP route with scoped filters and nulla
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 200, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = {
                     guildId: "guild-a",
                     readAccess: restricted
@@ -404,7 +404,7 @@ test("event writes drop a returned team selection before validation and forwardi
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = { guildId: "guild-a" }
             else if (request.path === "publicApi:mutateClanEvent") {
                 forwarded.push(request.args[0].event)

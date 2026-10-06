@@ -45,17 +45,27 @@ export class TestDatabase {
         const tests: Array<(row: TestRow) => boolean> = []
         let fields: string[] = [],
             direction = 1
+        // Index fields may be nested paths such as `recurrence.frequency`.
+        const valueAt = (row: TestRow, field: string) =>
+            field
+                .split(".")
+                .reduce<any>(
+                    (value, part) => (value == null ? undefined : value[part]),
+                    row
+                )
         const predicate =
-            (op: string, field: string, value: any) => (row: TestRow) =>
-                op === "eq"
-                    ? row[field] === value
+            (op: string, field: string, value: any) => (row: TestRow) => {
+                const actual = valueAt(row, field)
+                return op === "eq"
+                    ? actual === value
                     : op === "gt"
-                      ? row[field] > value
+                      ? actual > value
                       : op === "gte"
-                        ? row[field] >= value
+                        ? actual >= value
                         : op === "lt"
-                          ? row[field] < value
-                          : row[field] <= value
+                          ? actual < value
+                          : actual <= value
+            }
         const index: any = {}
         for (const op of ["eq", "gt", "gte", "lt", "lte"])
             index[op] = (field: string, value: unknown) => {
@@ -81,9 +91,12 @@ export class TestDatabase {
                 .filter((row) => tests.every((fn) => fn(row)))
                 .slice()
                 .sort((a, b) => {
-                    for (const field of fields)
-                        if (a[field] !== b[field])
-                            return (a[field] < b[field] ? -1 : 1) * direction
+                    for (const field of fields) {
+                        const left = valueAt(a, field),
+                            right = valueAt(b, field)
+                        if (left !== right)
+                            return (left < right ? -1 : 1) * direction
+                    }
                     return 0
                 })
         const query = {

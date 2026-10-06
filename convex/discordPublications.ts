@@ -1,5 +1,6 @@
+import { publicationKeyRange } from "../src/domain/discord-publications/keys"
+import { mutation, query, type QueryCtx } from "./_generated/server"
 import { publicationState } from "./discordPublicationTable"
-import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 function authorize(secret: string) {
     if (
@@ -105,14 +106,59 @@ export const claim = mutation({
         }
     },
 })
+/**
+ * A guild's managed publications whose key starts with `prefix`, through a
+ * range of the `guild_key` index; every one for an empty prefix. The table
+ * grows for as long as the clan exists, so a reader on a timer passes the
+ * narrowest prefix it needs (ARCHITECTURE.md, "Convex hot paths").
+ */
+export async function publicationsWithPrefix(
+    ctx: Pick<QueryCtx, "db">,
+    guildId: string,
+    prefix: string
+) {
+    const range = publicationKeyRange(prefix)
+    return await ctx.db
+        .query("discordPublications")
+        .withIndex("guild_key", (q) =>
+            range
+                ? q
+                      .eq("guildId", guildId)
+                      .gte("key", range.start)
+                      .lt("key", range.end)
+                : q.eq("guildId", guildId)
+        )
+        .collect()
+}
+
+/** One managed publication of a guild by its exact key. */
+export async function publicationByKey(
+    ctx: Pick<QueryCtx, "db">,
+    guildId: string,
+    key: string
+) {
+    return await ctx.db
+        .query("discordPublications")
+        .withIndex("guild_key", (q) => q.eq("guildId", guildId).eq("key", key))
+        .unique()
+}
+
+/** The bot's view of a guild's bindings; `prefix` narrows them to one owner's keys. */
 export const bindings = query({
-    args: { secret: v.string(), guildId: v.string() },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        prefix: v.optional(v.string()),
+    },
     handler: async (ctx, args) => {
         authorize(args.secret)
-        return ctx.db
-            .query("discordPublications")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        if ((args.prefix?.length ?? 0) > 150)
+            throw new Error("Invalid publication.")
+        return await publicationsWithPrefix(
+            ctx,
+            args.guildId,
+            args.prefix ?? ""
+        )
     },
 })
 export const save = mutation({

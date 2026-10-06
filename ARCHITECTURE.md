@@ -160,6 +160,58 @@ Read modules should also be split by feature. For example:
 - `convex/serverMetadata.ts` for focused metadata reads
 - `convex/serverRosters.ts` for roster-specific read models
 
+### Convex hot paths
+
+Production runs a self-hosted Convex backend that keeps every version of a
+document for the retention period. Reads and writes that recur on a timer, a
+cron or a live subscription therefore decide the backend's load, and a few
+careless ones can take the whole deployment down. These rules apply to every
+function that such a path calls:
+
+- No whole-table `.collect()` in anything that runs on a timer, a cron or a
+  subscription. `events`, `discordPublications` and similar tables grow for
+  as long as a clan exists; read them through an index that bounds the
+  result to what the pass needs (the weekly series, the matches that end
+  after a cutoff, one owner's publication keys).
+- Bound every periodic read with an index: an equality on the owner (guild,
+  series, connection) plus a range on the field the pass filters by, and a
+  `.take()` where the number of rows the pass can act on is limited anyway.
+  A string prefix becomes a range of `[prefix, prefix with its last
+character stepped up)` on the same index (`publicationKeyRange`).
+- Never rewrite a large document just to refresh a lease. A claim patches
+  the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
+  `retainUntil`); the payload is written once, when the read finished, and
+  dropped only when it stops being valid. Copying it back into the same
+  document on every lease stores a new version of it each time.
+- Prefer small status rows next to large payload rows. A table that is both
+  read every few seconds and holds a large payload (a live read, a message
+  cache) should keep the lease, timestamps and counters in a row of their
+  own, so the frequent readers and writers never touch the payload.
+- In the bot, run a pass that reads many rows on its own cadence (once at
+  start, then every 15 minutes for the recurrence pass), not on the
+  one-minute reconcile tick, and back off a pass whose backend call keeps
+  failing instead of retrying it every minute.
+- The request path never writes. A mutation that patches one document on
+  every API request (a `lastUsedAt`, a rate-limit counter) makes parallel
+  requests conflict on that document and retry inside Convex; the backend
+  degraded on exactly this. Authenticate through a query, count rate limits
+  in the web process, and record usage from a separate mutation that writes
+  at most once per interval and re-checks before it writes.
+- A function pays for its whole module graph. Convex evaluates a function's
+  module, with everything it imports, on each fresh isolate, so under
+  parallel load a function in a 1.2 MB module costs about 100 ms of CPU
+  before it reads anything, while one in a 10 KB module costs a few
+  milliseconds. Keep what runs on every request or every tick in small
+  modules (`convex/apiKeyAuth.ts`), and keep Zod schemas, use-cases and
+  repositories out of modules that only project or read. Measure with
+  `npx esbuild convex/<module>.ts --bundle --platform=node --format=esm
+--external:convex --metafile=out.json`.
+
+Tests of these functions assert which index a read uses (see
+`src/infrastructure/convex/event-recurrence.test.ts`) and which fields a
+claim patches (`hll-live-cache.test.ts`), so a later change cannot quietly
+bring a whole-table read back.
+
 ### `discord-bot/`
 
 The bot is a runtime adapter. It should:

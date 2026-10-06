@@ -28,7 +28,7 @@ test("people HTTP boundaries require independent grants, exact scope and signed 
             let value: unknown
             if (request.path === "publicApi:checkRateLimit")
                 value = { allowed: true, remaining: 299, resetAt: 0 }
-            else if (request.path === "publicApi:authenticateKey")
+            else if (request.path === "apiKeyAuth:authenticateKey")
                 value = revoked
                     ? null
                     : {

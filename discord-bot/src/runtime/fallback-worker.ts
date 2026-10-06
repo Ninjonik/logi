@@ -1,5 +1,6 @@
 import { parentPort } from "node:worker_threads"
 
+import { createRecurrenceGate } from "./recurrence-cadence"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -7,9 +8,9 @@ import { env } from "../environment"
 // This is the only recurring poll: it advances time-based event states.
 const RECONCILE_INTERVAL_MS = 60_000
 const RECONCILE_BATCH_SIZE = 25
-// Weekly match series are extended two weeks ahead on this cadence.
-const RECURRENCE_INTERVAL_MS = 15 * 60_000
-let lastRecurrencePassAt = 0
+// Weekly match series are extended two weeks ahead once at start, then at
+// most every 15 minutes; the pass reads every series, so it never runs per tick.
+const recurrenceGate = createRecurrenceGate()
 
 if (!parentPort) {
     throw new Error("Fallback worker must be started from a worker thread.")
@@ -35,8 +36,7 @@ process.on("uncaughtExceptionMonitor", (error) => {
 
 /** Creates due occurrences of weekly series; the event index then announces them. */
 async function generateRecurringEvents() {
-    if (Date.now() - lastRecurrencePassAt < RECURRENCE_INTERVAL_MS) return
-    lastRecurrencePassAt = Date.now()
+    if (!recurrenceGate.claim(Date.now())) return
     const result = (await convex.mutation(references.generateRecurringEvents, {
         secret: env.internalSecret,
     })) as { created: Array<{ eventId: string; guildId: string }> }
