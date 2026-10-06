@@ -60,6 +60,8 @@ export type ClanErrorReportInput = {
     number?: number
     /** Players a reminder was for. */
     players?: number
+    /** The panel the entry concerns, by its name (P4-30). */
+    panelName?: string
     /** @deprecated Free text of older call sites; only read to find the source. */
     action?: string
     /** @deprecated See `action`. */
@@ -122,6 +124,8 @@ export function inferErrorSource(
     const { action, location, scope } = input
     if (has(action, /\bDM\b/)) return null
     switch (scope) {
+        case "panel-password":
+            return "panelPassword"
         case "event-sync":
             return "announcement"
         case "event-roles":
@@ -267,7 +271,9 @@ export async function failureFacts(
     context: ErrorReportContext,
     discord: DiscordLookups
 ): Promise<{ facts: BotErrorFacts; channelMention?: string }> {
-    let failure = classifyDiscordFailure(discordFailureOf(input.error))
+    let failure =
+        BOT_ERROR_SOURCE_SPECS[source].failure ??
+        classifyDiscordFailure(discordFailureOf(input.error))
     const channelId = actionChannelId(source, input, context)
     const channel = await discord.channel(channelId)
     const categoryId =
@@ -412,6 +418,9 @@ export async function buildErrorReport(
         user,
         number: input.number,
         players: input.players,
+        panel: input.panelName?.trim()
+            ? escapeMarkdownText(input.panelName.trim())
+            : undefined,
     }
     return messagePayload(
         botErrorReportView({

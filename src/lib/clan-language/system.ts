@@ -424,6 +424,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationPanel: "The application panel was not updated",
                 calendarPanel: "The calendar was not updated",
                 publicPanel: "The panel was not updated",
+                panelPassword: "The bot removed the password from the panel",
                 attendanceReminders: "The attendance reminders were not sent",
                 ticketOpen: "The ticket did not open",
                 ticketSupport: "Support could not be added to the ticket",
@@ -468,6 +469,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 fullServer:
                     "The server already has 500 channels; Discord allows no more.",
                 timeout: "Discord did not answer in time.",
+                publicChannel:
+                    "Everyone (@everyone) can see the channel {channel}. The server password cannot be shown here.",
                 other: "Discord refused the action.",
             },
             fixes: {
@@ -496,6 +499,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Nothing. The bot tries again at the next sync. If this keeps coming for more than an hour, contact Logi support.",
                 timeoutInteraction:
                     "Nothing, the player can try again. If it keeps happening for more than an hour, contact Logi support.",
+                publicChannel:
+                    "Make the channel private. Logi shows the password only in a channel @everyone cannot see, and checks that on every panel refresh.",
                 other: "Try again. If it keeps happening, contact Logi support and send the time of the error.",
             },
             followUps: {
@@ -525,6 +530,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationNumber: "application #{number}",
                 moreMembers: "and {count} more",
                 players: { one: "{count} player", other: "{count} players" },
+                panel: "Panel {panel}",
             },
             unnamed: {
                 channel: "set in Logi",
@@ -665,6 +671,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationPanel: "Panel přihlášek se neaktualizoval",
                 calendarPanel: "Kalendář se neaktualizoval",
                 publicPanel: "Panel se neaktualizoval",
+                panelPassword: "Bot odstranil heslo z panelu",
                 attendanceReminders: "Připomínky docházky se neodeslaly",
                 ticketOpen: "Ticket se neotevřel",
                 ticketSupport: "Do ticketu se nepodařilo přidat podporu",
@@ -708,6 +715,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Kategorie {category} už má 50 kanálů, víc Discord do jedné kategorie nedovolí.",
                 fullServer: "Na serveru je 500 kanálů, víc Discord nedovolí.",
                 timeout: "Discord neodpověděl včas.",
+                publicChannel:
+                    "Kanál {channel} vidí všichni (@everyone). Heslo serveru tu zobrazit nejde.",
                 other: "Discord akci odmítl.",
             },
             fixes: {
@@ -735,6 +744,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Nic. Bot to zkusí znovu při další synchronizaci. Když se zpráva opakuje déle než hodinu, napiš podpoře Logi.",
                 timeoutInteraction:
                     "Nic, hráč to může zkusit znovu. Když se to opakuje přes hodinu, napiš podpoře Logi.",
+                publicChannel:
+                    "Nastav kanál jako soukromý. Logi heslo ukáže jen v kanálu, který @everyone nevidí. Ověří to při každém obnovení panelu.",
                 other: "Zkus to znovu. Když se to opakuje, napiš podpoře Logi a pošli čas chyby.",
             },
             followUps: {
@@ -768,6 +779,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     many: "{count} hráče",
                     other: "{count} hráčů",
                 },
+                panel: "Panel {panel}",
             },
             unnamed: {
                 channel: "z nastavení Logi",
@@ -928,6 +940,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Das Bewerbungs-Panel wurde nicht aktualisiert",
                 calendarPanel: "Der Kalender wurde nicht aktualisiert",
                 publicPanel: "Das Panel wurde nicht aktualisiert",
+                panelPassword:
+                    "Der Bot hat das Passwort aus dem Panel entfernt",
                 attendanceReminders:
                     "Die Anwesenheitserinnerungen wurden nicht gesendet",
                 ticketOpen: "Das Ticket hat sich nicht geöffnet",
@@ -976,6 +990,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 fullServer:
                     "Der Server hat schon 500 Kanäle, mehr erlaubt Discord nicht.",
                 timeout: "Discord hat nicht rechtzeitig geantwortet.",
+                publicChannel:
+                    "Alle (@everyone) sehen den Kanal {channel}. Das Serverpasswort kann hier nicht angezeigt werden.",
                 other: "Discord hat die Aktion abgelehnt.",
             },
             fixes: {
@@ -1006,6 +1022,8 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                     "Nichts. Der Bot versucht es bei der nächsten Synchronisierung erneut. Wenn die Meldung länger als eine Stunde wiederkommt, schreib dem Logi-Support.",
                 timeoutInteraction:
                     "Nichts, der Spieler kann es erneut versuchen. Wenn es länger als eine Stunde passiert, schreib dem Logi-Support.",
+                publicChannel:
+                    "Mach den Kanal privat. Logi zeigt das Passwort nur in einem Kanal, den @everyone nicht sieht, und prüft das bei jeder Aktualisierung des Panels.",
                 other: "Versuch es erneut. Wenn es wieder passiert, schreib dem Logi-Support und schick die Uhrzeit des Fehlers.",
             },
             followUps: {
@@ -1038,6 +1056,7 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
                 applicationNumber: "Bewerbung #{number}",
                 moreMembers: "und {count} weitere",
                 players: { one: "{count} Spieler", other: "{count} Spieler" },
+                panel: "Panel {panel}",
             },
             unnamed: {
                 channel: "aus den Logi-Einstellungen",

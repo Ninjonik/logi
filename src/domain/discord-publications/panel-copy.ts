@@ -53,9 +53,6 @@ export type LivePanelCopy = {
     points: string
     newMap: string
     combinedTitle: string
-    /** The errors-channel notice when a channel turned public (P4-30). */
-    passwordHiddenNotice: (channel: string, panel: string) => string
-    passwordHiddenAction: string
     buttons: {
         join: string
         players: string

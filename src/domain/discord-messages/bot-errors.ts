@@ -42,6 +42,7 @@ export const BOT_ERROR_SOURCES = [
     "applicationPanel",
     "calendarPanel",
     "publicPanel",
+    "panelPassword",
     "attendanceReminders",
     "ticketOpen",
     "ticketSupport",
@@ -124,6 +125,11 @@ export type BotErrorSourceSpec = {
     links: readonly BotErrorLink[]
     /** What the action needs; checked in the channel, else on the server. */
     permissions: readonly BotPermission[]
+    /**
+     * A notice rather than a Discord failure: the entry always explains this
+     * class, whatever the bot passes as the error.
+     */
+    failure?: BotFailureClass
 }
 
 const MESSAGE: readonly BotPermission[] = [
@@ -260,6 +266,14 @@ export const BOT_ERROR_SOURCE_SPECS: Record<
         links: [],
         permissions: MESSAGE,
     },
+    // P4-30, P4-B06: the channel turned public, so the password left the panel.
+    panelPassword: {
+        area: "panels",
+        flow: "sync",
+        links: [],
+        permissions: [],
+        failure: "publicChannel",
+    },
     attendanceReminders: {
         area: "reminders",
         flow: "sync",
@@ -358,6 +372,8 @@ export const BOT_FAILURE_CLASSES = [
     "fullCategory",
     "fullServer",
     "timeout",
+    /** `@everyone` can see a channel that must stay private (P4-B06). */
+    "publicChannel",
     "other",
 ] as const
 
@@ -412,6 +428,7 @@ const FIXABLE: ReadonlySet<BotFailureClass> = new Set([
     "roleAbove",
     "fullCategory",
     "fullServer",
+    "publicChannel",
 ])
 
 export type BotErrorRetry = "afterFix" | "byItself" | "playerTold"
@@ -457,6 +474,8 @@ export type BotErrorsCopy = {
         fullCategory: string
         fullServer: string
         timeout: string
+        /** "Kanál {channel} vidí všichni (@everyone). Heslo serveru tu zobrazit nejde." */
+        publicChannel: string
         other: string
     }
     fixes: {
@@ -474,6 +493,7 @@ export type BotErrorsCopy = {
         fullServer: string
         timeoutSync: string
         timeoutInteraction: string
+        publicChannel: string
         other: string
     }
     followUps: Record<BotErrorFollowUp, string>
@@ -488,6 +508,8 @@ export type BotErrorsCopy = {
         applicationNumber: string
         moreMembers: string
         players: PluralForms
+        /** "Panel {panel}". */
+        panel: string
     }
     /** Words for an unnamed thing, e.g. "nastavený v Logi" (the channel). */
     unnamed: { channel: string; category: string; role: string }
@@ -535,6 +557,8 @@ export type BotErrorContext = {
     number?: number
     /** Players a reminder was for. */
     players?: number
+    /** The panel's name, already markdown-safe. */
+    panel?: string
 }
 
 export type BotErrorLinks = Partial<Record<BotErrorLink, string>> & {
@@ -666,6 +690,8 @@ export function botErrorContextLine(
     }
     if (area === "reminders" && typeof context.players === "number")
         parts.push(formatCount(locale, context.players, copy.context.players))
+    if (area === "panels" && context.panel?.trim())
+        parts.push(fillTemplate(copy.context.panel, { panel: context.panel }))
     if (
         (area === "panels" || source === "general") &&
         context.channel &&
@@ -766,6 +792,11 @@ export function botErrorExplanation(
             return {
                 reason: copy.reasons.fullServer,
                 fix: copy.fixes.fullServer,
+            }
+        case "publicChannel":
+            return {
+                reason: fillTemplate(copy.reasons.publicChannel, { channel }),
+                fix: copy.fixes.publicChannel,
             }
         case "timeout":
             return {

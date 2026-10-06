@@ -30,7 +30,6 @@ import type { ReportObservation } from "../../../src/domain/player-reports/repor
 import type { HllServed } from "../../../src/application/game-data/read-hll-live"
 import { createPanelImageSource, webPanelImageRequest } from "./score-image"
 import { everyoneCanView } from "../../../src/domain/discord-seed/channels"
-import { getPanelMessages } from "../../../src/lib/clan-language/panels"
 import { runLeaguePanels, type LeaguePanelData } from "../league/panels"
 import { applicationEmoji } from "../runtime/application-emoji"
 import { publishManagedMessage } from "../sync/publication"
@@ -311,21 +310,16 @@ export function startPublicPanelWorker(
                 guildId: guild.id,
                 panelId,
             }),
+        // P4-30, P4-B06: its own entry in the errors channel, never the
+        // generic "Discord akci odmítl" card.
         notifyPasswordHidden: async (panel) => {
-            const copy = getPanelMessages(pass.language).live
             await reportToErrorsChannel({
                 client,
                 guildId: guild.id,
-                error: new Error(
-                    copy.passwordHiddenNotice(
-                        `<#${panel.channelId}>`,
-                        panel.title ?? panel.servers[0]?.name ?? "—"
-                    )
-                ),
-                action: copy.passwordHiddenAction,
-                location: "Discord panels",
-                scope: "panel-password",
-                target: `<#${panel.channelId}>`,
+                error: null,
+                source: "panelPassword",
+                channelId: panel.channelId,
+                panelName: panel.title ?? panel.servers[0]?.name ?? undefined,
             })
         },
     })
