@@ -185,17 +185,18 @@ async function trackIntegrationChanges<T>(
                           "reviewedResultGameId",
                           "matchTeams",
                       ]
-                    : [
+                    : // Bookkeeping times (`lastAttemptAt`, `nextAttemptAt`,
+                      // `historyLastSuccessAt`, `updatedAt`) advance on every
+                      // collector run, once a second while a history walk is
+                      // in progress; a feed entry per run flooded the change
+                      // log. The served record carries the current times.
+                      [
                           "provider",
                           "enabled",
                           "observation",
-                          "lastAttemptAt",
-                          "nextAttemptAt",
                           "errorCategory",
                           "historyCount",
-                          "historyLastSuccessAt",
                           "historyErrorCategory",
-                          "updatedAt",
                       ]
             const fingerprint = JSON.stringify(fields.map((key) => data[key]))
             const resources: SyncResource[] =
