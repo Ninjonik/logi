@@ -3,7 +3,6 @@ import {
     DEFAULT_TRACKING_SETTINGS,
     REFRESH_MINUTES,
     SCAN_MINUTES,
-    trackingSettingsSchema,
     type TrackingSettings,
 } from "@/domain/wardogs-league/discovery"
 import {
@@ -21,6 +20,7 @@ import {
     leagueReadSchema,
     type LeagueSnapshot,
 } from "@/domain/wardogs-league/contracts"
+import { trackingSettingsSchema } from "@/domain/wardogs-league/discovery.schema"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { useCallback, useEffect, useId, useState } from "react"
 import { EmptyState } from "@/components/app/empty-state"

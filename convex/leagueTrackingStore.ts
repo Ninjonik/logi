@@ -35,12 +35,7 @@ export async function leagueCollectionActive(ctx: Pick<QueryCtx, "db">) {
     ).length
     return leagueCollectionWanted(enabled, panels)
 }
-export function trackingConfig(ctx: Pick<QueryCtx, "db">, guildId: string) {
-    return ctx.db
-        .query("leagueTrackingSettings")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .unique()
-}
+export { trackingConfig } from "./leagueTrackingReads"
 export function trackedMatch(
     ctx: Pick<QueryCtx, "db">,
     guildId: string,

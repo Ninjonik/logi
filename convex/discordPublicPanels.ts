@@ -4,8 +4,8 @@ import {
     panelServerRow,
     serverNames,
 } from "./discordPanelStore"
+import { readLeagueSnapshotPayload } from "../src/domain/wardogs-league/snapshot-payload"
 import { buildResultCardFacts } from "../src/domain/discord-publications/result-card"
-import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { isPanelPaused } from "../src/domain/discord-publications/settings"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { getGuildByDiscordId, getUserByDiscordId } from "./identity"
@@ -229,9 +229,8 @@ async function resultCard(
                   .first()
             : null,
     ])
-    const snapshot = league?.snapshotJson
-        ? leagueSnapshotSchema.safeParse(JSON.parse(league.snapshotJson))
-        : null
+    // Stored by the League jobs after validation; read through the guard.
+    const snapshot = readLeagueSnapshotPayload(league?.snapshotJson)
     // The reviewer is the confirming admin's Discord user ID.
     const reviewerId =
         revision && revision.guildId === event.guildId
@@ -259,12 +258,12 @@ async function resultCard(
                       score: entry.score,
                   }))
                 : null,
-        league: snapshot?.success
+        league: snapshot
             ? {
-                  fixtureNumber: snapshot.data.fixtureNumber,
-                  type: snapshot.data.type,
-                  map: snapshot.data.map?.name ?? null,
-                  zone: snapshot.data.map?.zone ?? null,
+                  fixtureNumber: snapshot.fixtureNumber,
+                  type: snapshot.type,
+                  map: snapshot.map?.name ?? null,
+                  zone: snapshot.map?.zone ?? null,
               }
             : null,
     }

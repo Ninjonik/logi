@@ -1,9 +1,12 @@
+import { PARSER_VERSION } from "./league-constants"
 import { z } from "zod"
 
-export const PARSER_VERSION = "wardogs-league-html/1"
-export const CACHE_MS = 5 * 60_000
-export const LEASE_MS = 25_000
-export const MAX_RETRY_AFTER_MS = 24 * 60 * 60_000
+export {
+    CACHE_MS,
+    LEASE_MS,
+    MAX_RETRY_AFTER_MS,
+    PARSER_VERSION,
+} from "./league-constants"
 const text = z.string().min(1).max(500)
 const nullableText = text.nullable()
 const timestamp = z.iso.datetime()

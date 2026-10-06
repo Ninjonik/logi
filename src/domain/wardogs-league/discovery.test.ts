@@ -6,8 +6,8 @@ import {
     refreshIntervalMs,
     sharedScanIntervalMs,
     trackingDeadline,
-    trackingSettingsSchema,
 } from "./discovery"
+import { trackingSettingsSchema } from "./discovery.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 

@@ -1,5 +1,4 @@
 import type { LeagueMatch } from "./contracts"
-import { z } from "zod"
 
 /**
  * "Preparation" of a League fixture is the League's own match preparation
@@ -11,32 +10,10 @@ import { z } from "zod"
 export const PREPARATION_TONES = ["done", "running", "pending"] as const
 export type PreparationTone = (typeof PREPARATION_TONES)[number]
 
-const tone = z.enum(PREPARATION_TONES)
-const count = z.number().int().nonnegative().nullable()
-const iso = z.iso.datetime().nullable()
-export const preparationChipSchema = z.discriminatedUnion("kind", [
-    /** "Pravidla 2/3". */
-    z.object({
-        kind: z.literal("rules"),
-        tone,
-        picked: count,
-        total: count,
-    }),
-    /** "Hlasování o mapě · končí za 15 h" / "Hlasování o mapě od so 10. 10.". */
-    z.object({
-        kind: z.literal("mapVote"),
-        tone,
-        closesAt: iso,
-        opensAt: iso,
-    }),
-    /** "Moderátor přidělen" / "Moderátor zatím není". */
-    z.object({ kind: z.literal("moderator"), tone }),
-    /** "Ready check nezačal" / running / done. */
-    z.object({ kind: z.literal("readyCheck"), tone }),
-    /** "Příprava ještě nezačala": every step is still grey. */
-    z.object({ kind: z.literal("notStarted"), tone: z.literal("pending") }),
-])
-export type PreparationChip = z.infer<typeof preparationChipSchema>
+// `preparationChipSchema` lives in `preparation.schema.ts`; its type is
+// re-exported here for the chip builders below.
+export type { PreparationChip } from "./preparation.schema"
+import type { PreparationChip } from "./preparation.schema"
 
 const step = (match: LeagueMatch, label: string) =>
     match.progress?.find(

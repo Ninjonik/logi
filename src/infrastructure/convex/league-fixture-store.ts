@@ -1,13 +1,8 @@
-import {
-    leagueResultRecordSchema,
-    type LeagueResultRecord,
-} from "@/domain/wardogs-league/results"
-import {
-    leagueSnapshotSchema,
-    type LeagueSnapshot,
-} from "@/domain/wardogs-league/contracts"
+import { readLeagueSnapshotPayload } from "@/domain/wardogs-league/snapshot-payload"
 import type { LeaguePanelSource } from "@/application/wardogs-league/league-panels"
 import type { MutationCtx, QueryCtx } from "../../../convex/_generated/server"
+import type { LeagueResultRecord } from "@/domain/wardogs-league/results"
+import type { LeagueSnapshot } from "@/domain/wardogs-league/contracts"
 import { fixtureStale } from "@/domain/wardogs-league/all-fixtures"
 import type { Doc } from "../../../convex/_generated/dataModel"
 
@@ -16,17 +11,20 @@ export const LEAGUE_COLLECTION_KEY = "league"
 /** Caller label of League-wide reads in the shared detail cache; not a guild. */
 export const LEAGUE_WIDE_READER = "league-wide"
 
-/** A stored page, or null when it was written by an obsolete parser contract. */
+/**
+ * A stored page, or null when absent or written by an obsolete parser
+ * contract. The League jobs validated it before storing; the panel reads
+ * walk it on every pass, so it is read back through the guard, not Zod.
+ */
 export function storedLeagueSnapshot(json: string | undefined) {
-    if (!json) return null
-    const parsed = leagueSnapshotSchema.safeParse(JSON.parse(json))
-    return parsed.success ? parsed.data : null
+    return readLeagueSnapshotPayload(json)
 }
 
+/** The stored result as the panels compute with it; the schema validated it on write. */
 export function resultRecordFromDoc(
     doc: Doc<"leagueResults">
 ): LeagueResultRecord {
-    return leagueResultRecordSchema.parse({
+    return {
         matchId: doc.matchId,
         sourceUrl: doc.sourceUrl,
         fixtureNumber: doc.fixtureNumber,
@@ -37,7 +35,7 @@ export function resultRecordFromDoc(
         pointsRuleSource: doc.pointsRuleSource,
         confirmed: doc.confirmed,
         placements: doc.placements,
-    })
+    }
 }
 
 export function resultDocFields(record: LeagueResultRecord, revision: number) {

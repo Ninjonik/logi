@@ -1,6 +1,6 @@
+import { trackingSettingsSchema } from "@/domain/wardogs-league/discovery.schema"
 import { verifyPublicChannel } from "@/lib/gateways/discord-public-channel"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
-import { trackingSettingsSchema } from "@/domain/wardogs-league/discovery"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
