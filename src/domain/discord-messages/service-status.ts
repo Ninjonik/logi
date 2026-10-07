@@ -122,6 +122,28 @@ export function nextServiceStates(
     return { states, changes }
 }
 
+/**
+ * Whether two stored service lists say the same, entry by entry (name,
+ * state and since). The bot saves its state, and Logi stores it, only when
+ * they differ: an unchanged check every 30 s writes nothing.
+ */
+export function sameServiceStates(
+    left: readonly ServiceState[] | null | undefined,
+    right: readonly ServiceState[] | null | undefined
+): boolean {
+    const a = left ?? [],
+        b = right ?? []
+    return (
+        a.length === b.length &&
+        a.every(
+            (state, index) =>
+                state.name === b[index]!.name &&
+                state.online === b[index]!.online &&
+                (state.since ?? null) === (b[index]!.since ?? null)
+        )
+    )
+}
+
 /** "7 minut", "2 hodiny a 5 minut", "méně než minutu". */
 export function formatOutageDuration(
     copy: ServiceStatusCopy,
