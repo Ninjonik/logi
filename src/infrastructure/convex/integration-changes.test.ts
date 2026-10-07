@@ -267,6 +267,18 @@ test("a change expires two days after it is written; an older cursor bootstraps 
 })
 test("a collector's connection writes are live state and never reach the feed", async () => {
     const ctx = fixture()
+    const observation = (observedAt: string, players: number) => ({
+        observedAt,
+        providerUpdatedAt: null,
+        displayName: "Fixture",
+        state: "online" as const,
+        map: null,
+        players,
+        capacity: 100,
+        providerInstanceId: null,
+        scores: [],
+        capabilities: ["server_snapshot" as const],
+    })
     ctx.db.tables.apiKeys[0].readAccess = {
         resources: [
             "event-summaries",
@@ -285,7 +297,7 @@ test("a collector's connection writes are live state and never reach the feed", 
         errorCategory: null,
         historyCount: 1,
         historyErrorCategory: null,
-        observation: { observedAt: "2026-10-06T10:00:00.000Z", players: 1 },
+        observation: observation("2026-10-06T10:00:00.000Z", 1),
         lastAttemptAt: "2026-10-06T10:00:00.000Z",
         nextAttemptAt: 1,
         historyLastSuccessAt: "2026-10-06T10:00:00.000Z",
@@ -293,7 +305,7 @@ test("a collector's connection writes are live state and never reach the feed", 
     })
     await withIntegrationChanges(ctx as never, async (tracked) => {
         await tracked.db.patch("gameDataConnections:one" as never, {
-            observation: { observedAt: "2026-10-06T10:01:00.000Z", players: 2 },
+            observation: observation("2026-10-06T10:01:00.000Z", 2),
             errorCategory: "network",
             historyCount: 2,
             lastAttemptAt: "2026-10-06T10:01:00.000Z",
