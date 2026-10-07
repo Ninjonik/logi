@@ -549,8 +549,87 @@ test("source changes and expired claims reject writes until a new generation is 
     assert.equal(ctx.db.tables.gameDataConnections[0].errorCategory, null)
 })
 
+/** A website key that reads the guild's change feed. */
+function seedFeedReader(ctx: ReturnType<typeof fixture>) {
+    ctx.db.tables.apiKeys.push({
+        _id: "feed-key",
+        keyHash: "feed",
+        guildId: "guild-a",
+        readAccess: {
+            resources: [
+                "event-summaries",
+                "player-stat-summaries",
+                "server-snapshots",
+                "integration-health",
+            ],
+            gameIds: ["wardogs", "hell_let_loose"],
+        },
+    })
+}
+
+test("a collector run that changes the observation and health writes no feed row", async (t) => {
+    const ctx = fixture(t)
+    seedFeedReader(ctx)
+    await handler(gameData.configure)(ctx, {
+        secret: "synthetic-data-secret",
+        guildId: "guild-a",
+        sourceRef: "wdg",
+        enabled: true,
+    })
+    for (const [players, errorCategory] of [
+        [10, null],
+        [12, "timeout"],
+    ] as const) {
+        ctx.db.tables.gameDataConnections[0].nextAttemptAt = 0
+        ctx.db.tables.gameDataConnections[0].leaseUntil = 0
+        const claim = (await handler(gameData.claimNext)(ctx, {})) as {
+            id: string
+            generation: number
+            fence: number
+        }
+        assert.ok(claim)
+        assert.equal(
+            await handler(gameData.finishSnapshot)(ctx, {
+                ...claim,
+                result: {
+                    errorCategory,
+                    nextAttemptAt: Date.now() + 60_000,
+                    observation: {
+                        observedAt: new Date().toISOString(),
+                        providerUpdatedAt: null,
+                        displayName: "Fixture",
+                        state: "online",
+                        map: null,
+                        players,
+                        capacity: 100,
+                        providerInstanceId: null,
+                        scores: [],
+                        capabilities: ["server_snapshot"],
+                    },
+                },
+            }),
+            true
+        )
+    }
+    assert.equal(
+        (
+            ctx.db.tables.gameDataConnections[0].observation as {
+                players: number
+            }
+        ).players,
+        12
+    )
+    for (const table of [
+        "integrationChanges",
+        "integrationRecords",
+        "integrationHeads",
+    ])
+        assert.equal(ctx.db.tables[table], undefined, table)
+})
+
 test("history commit records an unchanged session and its connection at most once a minute, with no feed entry", async (t) => {
     const ctx = fixture(t)
+    seedFeedReader(ctx)
     const hll = {
         ...source,
         ref: "hll",
@@ -606,7 +685,11 @@ test("history commit records an unchanged session and its connection at most onc
         updatedAt: row().updatedAt,
         success: connection().historyLastSuccessAt,
     }
-    assert.ok(written.feed > 0, "the first session and count are a change")
+    assert.equal(
+        written.feed,
+        0,
+        "the connection's history count is live state, not a feed change"
+    )
     assert.equal(await commit(), true)
     assert.equal(feedRows(), written.feed, "a revisit is not a change")
     assert.equal(

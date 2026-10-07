@@ -282,6 +282,8 @@ export const readSyncRecord = query({
                   }
                 : null
         }
+        // `server-snapshots` and `integration-health` are no longer appended
+        // (`RETIRED_SYNC_RESOURCES`); their current record is still served.
         const table =
             resource === "server-snapshots" || resource === "integration-health"
                 ? "gameDataConnections"

@@ -221,6 +221,12 @@ test("roster presets require the same game as well as the same guild", async () 
 
 test("valid manager writes and bot acknowledgements retain native tracked changes", async () => {
     const ctx = fixture()
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:website",
+        guildId,
+        keyHash: "website",
+        readAccess: { resources: ["roster-summaries"], gameIds: ["wardogs"] },
+    })
     assert.equal(
         await invoke(rosters.upsert, ctx, {
             ...binding,

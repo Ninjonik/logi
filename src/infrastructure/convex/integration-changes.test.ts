@@ -4,8 +4,8 @@ import {
 } from "../../domain/integrations/change"
 import { appendIntegrationChange } from "../../../convex/integrationChangeLog"
 import { withIntegrationChanges } from "../../../convex/integrationMutation"
+import { invoke, spyReads, testContext } from "./testing/database"
 import * as feed from "../../../convex/integrationChanges"
-import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -126,14 +126,8 @@ test("expired cursor explicitly requires bootstrap", async () => {
         true
     )
 })
-test("rolled back mutation publishes neither revision nor webhook", async () => {
+test("rolled back mutation publishes no revision", async () => {
     const ctx = fixture()
-    ctx.db.seed("webhookSubscriptions", {
-        _id: "webhookSubscriptions:one",
-        guildId: "guild-a",
-        enabled: true,
-        eventTypes: ["integration.changed"],
-    })
     await assert.rejects(
         invoke(
             {
@@ -152,11 +146,135 @@ test("rolled back mutation publishes neither revision nor webhook", async () => 
         )
     )
     assert.equal(ctx.db.tables.integrationHeads, undefined)
+    assert.equal(ctx.db.tables.integrationChanges, undefined)
+})
+const change = (guildId: string) => ({
+    guildId,
+    gameId: "wardogs",
+    resource: "event-summaries" as const,
+    id: "events:one",
+    operation: "upsert" as const,
+})
+test("an append enqueues no webhook, even for a subscription to the retired event types", async () => {
+    const ctx = fixture()
+    ctx.db.seed("webhookSubscriptions", {
+        _id: "webhookSubscriptions:one",
+        guildId: "guild-a",
+        enabled: true,
+        eventTypes: ["integration.changed", "membership.changed"],
+    })
+    const reads = spyReads(ctx)
+    assert.equal(
+        await appendIntegrationChange(ctx as never, change("guild-a")),
+        "1"
+    )
+    await appendIntegrationChange(ctx as never, {
+        ...change("guild-a"),
+        resource: "membership-summaries",
+        id: "100000000000000001",
+    })
+    assert.equal(ctx.db.tables.integrationChanges.length, 2)
     assert.equal(ctx.db.tables.webhookDeliveries, undefined)
     assert.equal(ctx.scheduler.calls.length, 0)
+    assert.equal(
+        reads.some((read) => read.table === "webhookSubscriptions"),
+        false
+    )
 })
-test("collector bookkeeping times append no change; a health change does", async () => {
+test("a guild without a key that reads the feed gets no change, record or head write", async () => {
     const ctx = fixture()
+    const writes: string[] = []
+    const insert = ctx.db.insert.bind(ctx.db),
+        patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.insert = async (table: string, value: Record<string, unknown>) => {
+        writes.push(table)
+        return insert(table, value)
+    }
+    ctx.db.patch = async (id: string, value: Record<string, unknown>) => {
+        writes.push(id.split(":")[0])
+        return patch(id, value)
+    }
+    for (const key of [
+        { _id: "apiKeys:legacy", guildId: "guild-b", keyHash: "legacy" },
+        {
+            _id: "apiKeys:revoked",
+            guildId: "guild-b",
+            keyHash: "revoked",
+            revokedAt: "2026-10-01T00:00:00.000Z",
+            readAccess: {
+                resources: ["event-summaries"],
+                gameIds: ["wardogs"],
+            },
+        },
+        {
+            _id: "apiKeys:live-state",
+            guildId: "guild-b",
+            keyHash: "live-state",
+            readAccess: {
+                resources: ["server-snapshots", "integration-health"],
+                gameIds: ["wardogs"],
+            },
+        },
+    ])
+        ctx.db.seed("apiKeys", key)
+    const reads = spyReads(ctx)
+    assert.equal(
+        await appendIntegrationChange(ctx as never, change("guild-b")),
+        null
+    )
+    assert.deepEqual(writes, [])
+    assert.deepEqual(reads, [{ table: "apiKeys", index: "guildId" }])
+    await appendIntegrationChange(ctx as never, change("guild-a"))
+    assert.deepEqual(writes.sort(), [
+        "integrationChanges",
+        "integrationHeads",
+        "integrationRecords",
+    ])
+    assert.ok(
+        [
+            ...ctx.db.tables.integrationChanges,
+            ...ctx.db.tables.integrationRecords,
+            ...ctx.db.tables.integrationHeads,
+        ].every((row) => row.guildId === "guild-a")
+    )
+})
+test("a change expires two days after it is written; an older cursor bootstraps again", async () => {
+    const ctx = fixture()
+    const before = Date.now()
+    await appendIntegrationChange(ctx as never, {
+        ...change("guild-a"),
+        operation: "remove",
+    })
+    const twoDays = 2 * 24 * 60 * 60 * 1000
+    const [row] = ctx.db.tables.integrationChanges
+    assert.ok(row.expiresAt >= before + twoDays)
+    assert.ok(row.expiresAt <= Date.now() + twoDays)
+    assert.equal(
+        ctx.db.tables.integrationRecords[0].expiresAt,
+        row.expiresAt,
+        "the tombstone follows the change"
+    )
+    assert.equal(
+        (
+            await invoke(feed.readChanges, ctx, {
+                ...args,
+                afterRevision: "0",
+                issuedAt: Date.now() - twoDays - 1,
+            })
+        ).resetRequired,
+        true
+    )
+})
+test("a collector's connection writes are live state and never reach the feed", async () => {
+    const ctx = fixture()
+    ctx.db.tables.apiKeys[0].readAccess = {
+        resources: [
+            "event-summaries",
+            "server-snapshots",
+            "integration-health",
+        ],
+        gameIds: ["wardogs"],
+    }
     ctx.db.seed("gameDataConnections", {
         _id: "gameDataConnections:one",
         guildId: "guild-a",
@@ -167,6 +285,7 @@ test("collector bookkeeping times append no change; a health change does", async
         errorCategory: null,
         historyCount: 1,
         historyErrorCategory: null,
+        observation: { observedAt: "2026-10-06T10:00:00.000Z", players: 1 },
         lastAttemptAt: "2026-10-06T10:00:00.000Z",
         nextAttemptAt: 1,
         historyLastSuccessAt: "2026-10-06T10:00:00.000Z",
@@ -174,29 +293,45 @@ test("collector bookkeeping times append no change; a health change does", async
     })
     await withIntegrationChanges(ctx as never, async (tracked) => {
         await tracked.db.patch("gameDataConnections:one" as never, {
-            lastAttemptAt: "2026-10-06T10:00:01.000Z",
-            nextAttemptAt: 2,
-            historyLastSuccessAt: "2026-10-06T10:00:01.000Z",
-            updatedAt: "2026-10-06T10:00:01.000Z",
-        })
-    })
-    assert.equal(
-        ctx.db.tables.integrationChanges?.length ?? 0,
-        0,
-        "a run that only advanced its times is not a change"
-    )
-    await withIntegrationChanges(ctx as never, async (tracked) => {
-        await tracked.db.patch("gameDataConnections:one" as never, {
+            observation: { observedAt: "2026-10-06T10:01:00.000Z", players: 2 },
             errorCategory: "network",
+            historyCount: 2,
+            lastAttemptAt: "2026-10-06T10:01:00.000Z",
         })
     })
-    assert.deepEqual(
-        ctx.db.tables.integrationChanges.map((row) => row.resource).sort(),
-        ["integration-health", "server-snapshots"]
-    )
+    assert.equal(ctx.db.tables.integrationChanges, undefined)
+    assert.equal(ctx.db.tables.integrationHeads, undefined)
+    const live = { ...args, resources: ["server-snapshots"] }
+    const start = await invoke(feed.readChanges, ctx, {
+        ...live,
+        startNow: true,
+    })
+    assert.deepEqual(start.items, [], "the retired names are still accepted")
+    const replay = await invoke(feed.readChanges, ctx, {
+        ...live,
+        afterRevision: start.revision,
+        issuedAt: Date.now(),
+    })
+    assert.equal(replay.resetRequired, false)
+    assert.deepEqual(replay.items, [])
+    const record = await invoke(feed.readSyncRecord, ctx, {
+        ...live,
+        resource: "integration-health",
+        id: "gameDataConnections:one",
+    })
+    assert.equal(record.operation, "upsert", "the current record is served")
 })
 test("a session seen again appends no player change; a changed one does", async () => {
     const ctx = fixture()
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:people",
+        keyHash: "people",
+        guildId: "100000000000000001",
+        readAccess: {
+            resources: ["player-stat-summaries"],
+            gameIds: ["wardogs"],
+        },
+    })
     ctx.db.seed("gameSessions", {
         _id: "gameSessions:one",
         connectionId: "gameDataConnections:one",
