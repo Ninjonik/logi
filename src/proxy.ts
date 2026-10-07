@@ -1,12 +1,21 @@
 import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 
+import {
+    checkExternalApiRateLimit,
+    externalApiRateLimitResponse,
+} from "@/lib/api/external-api-rate-limit"
 import { routing } from "@/i18n/routing"
 
 const handleI18nRouting = createMiddleware(routing)
 
 export default async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname
+    if (pathname.startsWith("/api/v1/")) {
+        const rateLimit = checkExternalApiRateLimit()
+        if (!rateLimit.allowed) return externalApiRateLimitResponse(rateLimit)
+        return
+    }
     const isStaticAsset =
         pathname.startsWith("/img/") ||
         /^\/[a-zA-Z-]+\/img\//.test(pathname) ||
@@ -39,6 +48,7 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
+        "/api/v1/:path*",
         "/((?!api|wiki(?:/|$)|_next/static|_next/image|favicon.ico|\\.well-known|img).*)",
     ],
 }

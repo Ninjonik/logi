@@ -3,6 +3,7 @@ import test from "node:test"
 
 import { NextRequest } from "next/server"
 
+import { EXTERNAL_API_REQUESTS_PER_SECOND } from "./lib/api/external-api-rate-limit"
 import proxy from "./proxy"
 
 test("sends an unsigned dashboard visit through login and back to its exact URL", async () => {
@@ -19,4 +20,17 @@ test("sends an unsigned dashboard visit through login and back to its exact URL"
         location.searchParams.get("redirectTo"),
         "/en/dashboard/servers/workspace/events?game=wardogs"
     )
+})
+
+test("applies the shared external API ceiling before every v1 route", async () => {
+    const request = new NextRequest("https://logi.example/api/v1/clan/events")
+    for (let count = 0; count < EXTERNAL_API_REQUESTS_PER_SECOND; count++)
+        assert.equal(await proxy(request), undefined)
+
+    const response = await proxy(request)
+    assert.ok(response)
+    assert.equal(response.status, 429)
+    assert.equal(response.headers.get("RateLimit-Limit"), "60")
+    assert.equal(response.headers.get("RateLimit-Remaining"), "0")
+    assert.match(response.headers.get("Retry-After") ?? "", /^[1-9]\d*$/)
 })

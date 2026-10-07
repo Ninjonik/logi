@@ -286,6 +286,12 @@ website can safely cache and combine data from more than one game. The live,
 machine-readable contract is available at `/api/v1/openapi.json` and the
 interactive reference at `/api/v1/docs`.
 
+All external `/api/v1` requests share one server-side ceiling of **60 requests
+per second**. This protects the Convex backend from aggregate integration load;
+it does not apply to dashboard routes. A limited request returns `429` with
+`Retry-After` and `RateLimit-*` headers. Clients should back off and retry only
+after that delay.
+
 Start with the API key in an `Authorization` header; never put it in a URL or
 client-side bundle. The key is tenant-scoped: it can access only the workspace
 that created it and only operations permitted by its policy. A record ID from
