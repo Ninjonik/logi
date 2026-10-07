@@ -1,7 +1,7 @@
 import { publicApiMemory, type PublicApiMemory } from "./public-api-memory"
 
 /**
- * Hard aggregate ceiling for the externally consumed API. This lives at the
+ * Per-client ceiling for the externally consumed API. This lives at the
  * `/api/v1` boundary, so dashboard routes do not consume its budget.
  */
 export const EXTERNAL_API_REQUESTS_PER_SECOND = 60
@@ -11,14 +11,24 @@ const EXTERNAL_API_BUCKET = "external-api"
 type RateLimitStore = Pick<PublicApiMemory, "takeToken">
 
 export function checkExternalApiRateLimit(
+    clientIp: string,
     memory: RateLimitStore = publicApiMemory,
     now = Date.now()
 ) {
     return memory.takeToken(
-        EXTERNAL_API_BUCKET,
+        `${EXTERNAL_API_BUCKET}:${clientIp}`,
         EXTERNAL_API_REQUESTS_PER_SECOND,
         EXTERNAL_API_WINDOW_MS,
         now
+    )
+}
+
+/** The first forwarded address is the client IP when the reverse proxy sanitizes it. */
+export function externalApiClientIp(request: Request) {
+    return (
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "unknown"
     )
 }
 

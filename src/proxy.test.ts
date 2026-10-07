@@ -22,8 +22,10 @@ test("sends an unsigned dashboard visit through login and back to its exact URL"
     )
 })
 
-test("applies the shared external API ceiling before every v1 route", async () => {
-    const request = new NextRequest("https://logi.example/api/v1/clan/events")
+test("applies the external API ceiling independently per client IP", async () => {
+    const request = new NextRequest("https://logi.example/api/v1/clan/events", {
+        headers: { "x-forwarded-for": "203.0.113.10" },
+    })
     for (let count = 0; count < EXTERNAL_API_REQUESTS_PER_SECOND; count++)
         assert.equal(await proxy(request), undefined)
 
@@ -33,4 +35,13 @@ test("applies the shared external API ceiling before every v1 route", async () =
     assert.equal(response.headers.get("RateLimit-Limit"), "60")
     assert.equal(response.headers.get("RateLimit-Remaining"), "0")
     assert.match(response.headers.get("Retry-After") ?? "", /^[1-9]\d*$/)
+
+    assert.equal(
+        await proxy(
+            new NextRequest("https://logi.example/api/v1/clan/events", {
+                headers: { "x-forwarded-for": "203.0.113.11" },
+            })
+        ),
+        undefined
+    )
 })
