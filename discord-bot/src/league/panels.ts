@@ -21,13 +21,16 @@ import type {
     LeaguePassResult,
     PanelRunPorts,
 } from "../public-panels/panel-runner"
+import {
+    isRequestPending,
+    type PanelWarning,
+} from "../../../src/domain/discord-publications/panel-delivery"
 import { resolvePanelPresentation } from "../../../src/domain/discord-publications/panel-presentation"
 import {
     fixturesPayload,
     standingsPayload,
     type LeagueRenderContext,
 } from "./render"
-import type { PanelWarning } from "../../../src/domain/discord-publications/panel-delivery"
 import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
 import { panelChipIcons } from "../../../src/domain/discord-publications/live-panel"
 import { panelPartKeyPrefix } from "../../../src/domain/discord-publications/keys"
@@ -220,12 +223,18 @@ export async function runLeaguePanels(
         ports,
         LEAGUE_PANEL_ORDER.filter((part) => !messages[part])
     )
+    // An admin request publishes anew; a timed pass leaves current messages alone.
+    const force = isRequestPending(
+        panel.requestedAt,
+        panel.status?.handledRequestAt
+    )
     for (const part of wanted)
         await ports.publish({
             key: leaguePanelKey(panel._id, part),
             revision: panel.revision,
             channelId: panel.channelId,
             message: messages[part]!,
+            ...(force ? { force } : {}),
         })
     const dataAt = [data.standings?.dataAt, data.fixtures?.dataAt]
         .map((value) => (value ? Date.parse(value) : NaN))

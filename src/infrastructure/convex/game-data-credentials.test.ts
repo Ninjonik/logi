@@ -1234,3 +1234,47 @@ test("a selected legacy registration migrates even when it is not on the first p
     )
     assert.equal(leaks(result), false)
 })
+
+test("a repeated key failure is stored once; a new category or a failure after a success is stored again", async (t) => {
+    const ctx = setup(t)
+    await create(ctx, "guild-a", refA)
+    const connection = connectionOf(ctx, refA)
+    const credential = ctx.db.tables.gameDataCredentials![0]!
+    let clock = Date.parse("2026-10-07T12:00:00.000Z")
+    t.mock.method(Date, "now", () => clock)
+    const writes: unknown[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.patch = async (id, value) => {
+        writes.push(value)
+        return await patch(id, value)
+    }
+    const report = (category: "key_unavailable" | "decrypt_failed") =>
+        invoke(credentials.reportFailure, ctx, {
+            connectionId: connection._id,
+            generation: connection.generation,
+            category,
+        })
+    await report("decrypt_failed")
+    assert.equal(writes.length, 1)
+    const firstAt = credential.failureAt
+    // Every later run fails the same way: nothing new to store.
+    for (let run = 0; run < 3; run++) {
+        clock += 60_000
+        await report("decrypt_failed")
+    }
+    assert.equal(writes.length, 1)
+    assert.equal(credential.failureAt, firstAt)
+    await report("key_unavailable")
+    assert.equal(writes.length, 2)
+    assert.equal(credential.failure, "key_unavailable")
+    // A success in between hides the stored failure; the next one shows again.
+    clock += 60_000
+    connection.observation = {
+        ...(connection.observation ?? {}),
+        observedAt: new Date(clock).toISOString(),
+    }
+    clock += 60_000
+    await report("key_unavailable")
+    assert.equal(writes.length, 3)
+    assert.equal(credential.failureAt, new Date(clock).toISOString())
+})

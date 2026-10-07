@@ -2,13 +2,19 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    BOT_HEARTBEAT_INTERVAL_MS,
+    BOT_HEARTBEAT_MIN_WRITE_MS,
     BOT_OFFLINE_AFTER_MS,
     MINIMUM_BOT_VERSION,
     REQUIRED_PANEL_PROTOCOL,
+    botHeartbeatNeedsWrite,
     botHeartbeatState,
+    botVisitedGuild,
     isRequestPending,
     nextPanelStatus,
+    PANEL_STATUS_REFRESH_MS,
     panelActionPatch,
+    panelStatusNeedsWrite,
     panelDeliveryState,
     panelMessageState,
     panelWork,
@@ -350,4 +356,144 @@ test("each message of a panel reads its own state from its publication (P1-20, P
     assert.equal(state({ panel: "error", errorAt: 4_000 }), "published")
     assert.equal(state({ panel: "error", errorAt: 6_000 }), "error")
     assert.equal(state({ panel: "error", errorAt: null }), "published")
+})
+
+test("a pass that only moves the times is not stored; a change or ten minutes are", () => {
+    const first = nextPanelStatus(null, attempt({ attemptAt: 1_000 }))
+    assert.equal(panelStatusNeedsWrite(null, first), true)
+    // The next minutes render the same panel: nothing to store.
+    for (let minute = 1; minute < 10; minute++)
+        assert.equal(
+            panelStatusNeedsWrite(
+                first,
+                nextPanelStatus(
+                    first,
+                    attempt({
+                        attemptAt: 1_000 + minute * 60_000,
+                        nextAt: 61_000 + minute * 60_000,
+                        dataAt: 900 + minute * 60_000,
+                    })
+                )
+            ),
+            false
+        )
+    assert.equal(
+        panelStatusNeedsWrite(
+            first,
+            nextPanelStatus(
+                first,
+                attempt({ attemptAt: 1_000 + PANEL_STATUS_REFRESH_MS })
+            )
+        ),
+        true
+    )
+    for (const change of [
+        { warnings: ["attach_files_missing" as const] },
+        { messages: 2 },
+        { handledRequestAt: 900 },
+        { channelPrivate: true },
+        { nextAt: null },
+    ])
+        assert.equal(
+            panelStatusNeedsWrite(
+                first,
+                nextPanelStatus(
+                    first,
+                    attempt({ attemptAt: 61_000, ...change })
+                )
+            ),
+            true,
+            JSON.stringify(change)
+        )
+})
+
+test("a repeated error is stored once, a different one at once, and again after ten minutes", () => {
+    const ok = nextPanelStatus(null, attempt({ attemptAt: 1_000 }))
+    const failing = (at: number, code: "channel_missing" | "unknown") =>
+        attempt({ attemptAt: at, ok: false, error: { code, at } })
+    const failed = nextPanelStatus(ok, failing(61_000, "channel_missing"))
+    assert.equal(panelStatusNeedsWrite(ok, failed), true)
+    const again = nextPanelStatus(failed, failing(91_000, "channel_missing"))
+    assert.equal(panelStatusNeedsWrite(failed, again), false)
+    assert.equal(
+        panelStatusNeedsWrite(
+            failed,
+            nextPanelStatus(failed, failing(91_000, "unknown"))
+        ),
+        true
+    )
+    assert.equal(
+        panelStatusNeedsWrite(
+            failed,
+            nextPanelStatus(
+                failed,
+                failing(61_000 + PANEL_STATUS_REFRESH_MS, "channel_missing")
+            )
+        ),
+        true
+    )
+    // The first success after it records the recovery.
+    assert.equal(
+        panelStatusNeedsWrite(
+            failed,
+            nextPanelStatus(failed, attempt({ attemptAt: 121_000 }))
+        ),
+        true
+    )
+})
+
+test("a late heartbeat stays under the offline threshold, and a repeated beat is stored once a minute", () => {
+    // The worker ticks every 15 s, so a beat can come that much late.
+    assert.ok(BOT_HEARTBEAT_INTERVAL_MS + 15_000 < BOT_OFFLINE_AFTER_MS)
+    const beat = { version: "1.2.0", protocol: 2, startedAt: 5 }
+    const stored = { ...beat, seenAt: 1_000, guildIds: ["2", "1"] }
+    assert.equal(
+        botHeartbeatNeedsWrite(null, { ...beat, guildIds: [] }, 1_000),
+        true
+    )
+    // A row from before the list is rewritten with it.
+    assert.equal(
+        botHeartbeatNeedsWrite(
+            { ...beat, seenAt: 1_000 },
+            { ...beat, guildIds: ["1"] },
+            2_000
+        ),
+        true
+    )
+    const next = { ...beat, guildIds: ["1", "2"] }
+    assert.equal(botHeartbeatNeedsWrite(stored, next, 31_000), false)
+    assert.equal(
+        botHeartbeatNeedsWrite(
+            stored,
+            next,
+            1_000 + BOT_HEARTBEAT_MIN_WRITE_MS
+        ),
+        true
+    )
+    for (const change of [
+        { version: "1.2.1" },
+        { startedAt: 6 },
+        { guildIds: ["1"] },
+    ])
+        assert.equal(
+            botHeartbeatNeedsWrite(stored, { ...next, ...change }, 31_000),
+            true,
+            JSON.stringify(change)
+        )
+})
+
+test("presence in a workspace comes from the bot row's list, or its own row before the list", () => {
+    const bot = { version: "1.2.0", protocol: 2, startedAt: 0, seenAt: 1_000 }
+    const listed = { ...bot, guildIds: ["1"] }
+    assert.equal(botVisitedGuild(listed, null, "1", 2_000), true)
+    assert.equal(botVisitedGuild(listed, null, "2", 2_000), false)
+    assert.equal(
+        botVisitedGuild(listed, null, "1", 1_000 + BOT_OFFLINE_AFTER_MS),
+        false
+    )
+    // A list wins over a leftover per-workspace row.
+    assert.equal(botVisitedGuild(listed, { seenAt: 1_500 }, "2", 2_000), false)
+    assert.equal(botVisitedGuild(bot, { seenAt: 1_500 }, "2", 2_000), true)
+    assert.equal(botVisitedGuild(bot, null, "2", 2_000), false)
+    assert.equal(botVisitedGuild(null, null, "2", 2_000), false)
 })

@@ -186,11 +186,11 @@ async function upsertMatchPreview(
 
 async function schedulePerformanceHistoryRefresh(
     ctx: MutationCtx,
-    event: Pick<Doc<"events">, "gameId" | "guildId">
+    event: Pick<Doc<"events">, "_id" | "gameId" | "guildId">
 ) {
     // The scoreboard write can be close to Convex's document-size limit. Keep
     // this transaction focused on that durable write, then let the action run
-    // the guild and player history mutations independently.
+    // the guild history and the histories of this match's players.
     await ctx.scheduler.runAfter(
         0,
         internal.performanceHistory.refreshInBackground,
@@ -198,6 +198,7 @@ async function schedulePerformanceHistoryRefresh(
             secret: internalAuthSecret(),
             guildId: event.guildId,
             gameId: event.gameId ?? "hell_let_loose",
+            eventId: event._id,
         }
     )
 }

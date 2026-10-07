@@ -1,3 +1,4 @@
+import { sameServiceStates } from "../src/domain/discord-messages/service-status"
 import { assertInternalSecret } from "./discord_shared"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
@@ -68,6 +69,13 @@ export const updateBotState = mutation({
         assertInternalSecret(args.secret)
         const settings = await ctx.db.query("platformSettings").first()
         if (!settings) return
+        // The bot checks every 30 s; an unchanged state is not stored again.
+        if (
+            settings.statusMessageId === args.statusMessageId &&
+            settings.statusUpdatesThreadId === args.statusUpdatesThreadId &&
+            sameServiceStates(settings.serviceStates, args.serviceStates)
+        )
+            return
         await ctx.db.patch(settings._id, {
             statusMessageId: args.statusMessageId,
             statusUpdatesThreadId: args.statusUpdatesThreadId,

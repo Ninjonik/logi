@@ -89,6 +89,7 @@ type Published = {
     key: string
     channelId: string | null
     message: MessageCreateOptions
+    force?: boolean
 }
 function fakes(
     input: {
@@ -108,6 +109,7 @@ function fakes(
             revision: number
             channelId: string | null
             message: MessageCreateOptions
+            force?: boolean
         }) => {
             published.push(entry)
             bindings = [
@@ -193,6 +195,20 @@ test("the two League messages go out once in order as panel:<id>:standings and :
             "panel:discordPublicPanels:9:fixtures",
         ]
     )
+})
+
+test("a timed League pass may keep current messages; an admin request publishes both anew", async () => {
+    const timed = fakes()
+    await runLeaguePanels(panel(), pass, timed.ports)
+    assert.equal(timed.published.length, 2)
+    assert.ok(timed.published.every((entry) => entry.force === undefined))
+    const requested = fakes()
+    await runLeaguePanels(
+        panel({ requestedAt: now, status: null }),
+        pass,
+        requested.ports
+    )
+    assert.ok(requested.published.every((entry) => entry.force === true))
 })
 
 test("a table created after the fixtures re-posts the fixtures under it (P6-B07)", async () => {

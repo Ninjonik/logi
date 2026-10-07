@@ -11,10 +11,6 @@ import type {
     StoredSeedRun,
 } from "../src/application/discord-seed/ports"
 import {
-    hllLiveWithFreshness,
-    readHllLivePayload,
-} from "../src/domain/game-data/hll-live-payload"
-import {
     isPanelPaused,
     normalizePanelKind,
 } from "../src/domain/discord-publications/settings"
@@ -28,6 +24,7 @@ import { resolveSource, workspaceSources } from "./gameDataCatalog"
 import { projectSnapshot } from "../src/domain/game-data/policy"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
+import { storedHllLive } from "./liveReadPayloads"
 
 /**
  * Convex adapters of the seed ports. Every read is scoped by the clan's
@@ -366,13 +363,11 @@ export function seedPlayerCounts(
                 .query("hllLiveCache")
                 .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
                 .unique()
-            if (cache?.generation !== row.generation || !cache.dataJson)
-                return null
-            // Stored by `hllLiveReads:finish` after validation; the row
-            // carries the latest read's times.
-            const stored = readHllLivePayload(cache.dataJson)
-            if (!stored) return null
-            const data = hllLiveWithFreshness(stored, cache)
+            if (cache?.generation !== row.generation) return null
+            // The payload row with the cache row's latest times
+            // (`liveReadPayloads`).
+            const data = await storedHllLive(ctx, cache)
+            if (!data) return null
             const at = Date.parse(data.playersAt ?? "")
             if (
                 data.playersFreshness !== "fresh" ||

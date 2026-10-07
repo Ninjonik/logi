@@ -6,6 +6,7 @@ import {
     nextServiceStates,
     serviceChangeView,
     serviceStatusView,
+    sameServiceStates,
 } from "./service-status"
 import { getSystemMessages } from "../../lib/clan-language/system"
 import { validateMessageView } from "./message-validation"
@@ -184,4 +185,23 @@ test("outage lengths read naturally in the clan language", () => {
         formatOutageDuration(en.serviceStatus, en.locale, 7 * minute),
         "7 minutes"
     )
+})
+
+test("service lists compare entry by entry, a missing since as none", () => {
+    const list = [
+        { name: "Dashboard", online: true, since: "2026-10-07T08:00:00.000Z" },
+        { name: "Convex", online: false },
+    ]
+    assert.equal(sameServiceStates(list, structuredClone(list)), true)
+    assert.equal(sameServiceStates(null, []), true)
+    assert.equal(sameServiceStates(list, [...list].reverse()), false)
+    assert.equal(
+        sameServiceStates(list, [list[0]!, { ...list[1]!, online: true }]),
+        false
+    )
+    assert.equal(
+        sameServiceStates(list, [list[0]!, { ...list[1]!, since: "x" }]),
+        false
+    )
+    assert.equal(sameServiceStates(list, list.slice(0, 1)), false)
 })

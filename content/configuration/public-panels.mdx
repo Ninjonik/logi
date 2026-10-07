@@ -133,6 +133,12 @@ panel was saved, sent and last refreshed, when the next refresh is due, and
 whether the bot is online and running a current version. If the bot has not
 checked in for three minutes, panels do not refresh until it runs again.
 
+A panel whose content has not changed is not edited in Discord: the bot
+checks it every minute, but leaves a message that already shows the same
+thing alone and confirms it again after ten minutes. While nothing changes,
+"last refreshed" can therefore be up to ten minutes old. **Refresh now**
+always redraws the panel at once.
+
 **Load data from the server** runs the same live read as the bot (CRCON for Hell
 Let Loose, Warcon for Wardogs) and shows what came back with a preview of the
 panel. It never shows keys or the server password.

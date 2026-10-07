@@ -112,6 +112,7 @@ import type * as leagueMatchData from "../leagueMatchData.js";
 import type * as leagueMatches from "../leagueMatches.js";
 import type * as leagueTrackingReads from "../leagueTrackingReads.js";
 import type * as leagueTrackingStore from "../leagueTrackingStore.js";
+import type * as liveReadPayloads from "../liveReadPayloads.js";
 import type * as matchRecaps from "../matchRecaps.js";
 import type * as matchStats from "../matchStats.js";
 import type * as matchTeams from "../matchTeams.js";
@@ -288,6 +289,7 @@ declare const fullApi: ApiFromModules<{
   leagueMatches: typeof leagueMatches;
   leagueTrackingReads: typeof leagueTrackingReads;
   leagueTrackingStore: typeof leagueTrackingStore;
+  liveReadPayloads: typeof liveReadPayloads;
   matchRecaps: typeof matchRecaps;
   matchStats: typeof matchStats;
   matchTeams: typeof matchTeams;

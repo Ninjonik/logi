@@ -221,6 +221,46 @@ test("deleted subscription preserves in-flight audit; disabled work fails safely
     )
     assert.equal(disabled.db.tables.webhookDeliveries[0].status, "failed")
 })
+test("a drain with nothing due takes no lease and writes nothing", async () => {
+    const ctx = fixture()
+    // The first drain finishes the migration and delivers the one webhook.
+    const fence = await invoke(queue.beginDrain, ctx)
+    const claim = await invoke(queue.claimDueDelivery, ctx, {
+        drainFence: fence,
+    })
+    await invoke(queue.finishDelivery, ctx, {
+        deliveryId: claim.id,
+        fence: claim.fence,
+        delivered: true,
+    })
+    assert.equal(
+        await invoke(queue.claimDueDelivery, ctx, { drainFence: fence }),
+        null
+    )
+    await invoke(queue.endDrain, ctx, { fence })
+    const writes: string[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    const insert = ctx.db.insert.bind(ctx.db)
+    ctx.db.patch = async (id, value) => {
+        writes.push(id)
+        return await patch(id, value)
+    }
+    ctx.db.insert = async (table, value) => {
+        writes.push(table)
+        return await insert(table, value)
+    }
+    for (let minute = 0; minute < 3; minute++)
+        assert.equal(await invoke(queue.beginDrain, ctx), null)
+    assert.deepEqual(writes, [])
+    // A new delivery wakes its guild: the next drain takes the lease once.
+    await ctx.db.insert("webhookDispatchGuilds", {
+        guildId: "guild-a",
+        wakeAt: 0,
+    })
+    writes.length = 0
+    assert.equal(typeof (await invoke(queue.beginDrain, ctx)), "number")
+    assert.deepEqual(writes, [ctx.db.tables.webhookDispatchState[0]._id])
+})
 test("delivery history enforces guild ownership", async () => {
     await assert.rejects(
         invoke(webhook.listDeliveries, fixture(), {

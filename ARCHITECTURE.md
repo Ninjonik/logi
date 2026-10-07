@@ -204,11 +204,11 @@ character stepped up)` on the same index (`publicationKeyRange`).
   `lastCollectedAt` at most every ten minutes. Re-walking the whole
   history every cycle cost about 200,000 writes and as many provider calls
   a day per connection.
-- Never rewrite a large document just to refresh a lease. A claim patches
-  the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
-  `retainUntil`); the payload is written once, when the read finished, and
-  dropped only when it stops being valid. Copying it back into the same
-  document on every lease stores a new version of it each time.
+- Never rewrite a large document just to refresh a lease. A patch stores
+  the whole document again, whichever fields it names, so a lease, a time
+  or a counter never shares a row with a large payload; the claim writes
+  only the small row (`generation`, `fence`, `leaseUntil`, `nextAt`,
+  `retainUntil`).
 - Prefer small status rows next to large payload rows. A table that is both
   read every few seconds and holds a large payload (a live read, a message
   cache) should keep the lease, timestamps and counters in a row of their
@@ -337,14 +337,28 @@ character stepped up)` on the same index (`publicationKeyRange`).
   (`discordPanelBotWrites.ts`, `discordPanelGraphicsWrites.ts`,
   `discordPublicPanelsAdmin.ts`, `playerReportDrafts.ts`) and the bot calls
   them by their new paths.
-- A cache that holds a large payload writes it only when it changed. The
-  HLL and Warcon live caches compare the new read, minus its times, with
-  the stored one (`hllLiveComparable`, `warconComparable`) and on a match
-  patch only the lease and the small freshness fields (`fetchedAt`,
-  `statusAt`, `playersAt`, `observedAt`); every reader merges those fields
-  into the served payload, so the response carries the latest read's times
-  while an idle server stores one version of its data instead of one per
-  refresh.
+- A cache that holds a large payload keeps it in a row of its own and
+  writes it only when it changed. `hllLiveCache` and `warconReadCache` hold
+  the lease and the freshness fields (`fetchedAt`, `statusAt`, `playersAt`,
+  `observedAt`); the provider data is in `hllLivePayloads` and
+  `warconReadPayloads` (`liveReadPayloads.ts`), rewritten only when the new
+  read, minus its times, differs (`hllLiveComparable`, `warconComparable`).
+  Every reader merges the small row's times into the payload, so the
+  response carries the latest read's times while an idle server stores two
+  small rows per refresh. The Warcon read budget is a small row per
+  connection (`warconReadLimits`), not a counter on `gameDataConnections`.
+  Patching only the small fields of a row that also held the payload, as
+  before, still stored the payload on every claim and finish.
+- A timed writer stores only what changed. A panel publish whose render is
+  the one Discord shows, confirmed within ten minutes, is `current` without
+  a write (`publicationIsCurrent`), and an edit is the claim plus a
+  `finish` that carries the state; a pass report is stored only when the
+  error, warnings, messages, request, claim or privacy changed, or ten
+  minutes after the stored one (`panelStatusNeedsWrite`); the bot heartbeat
+  is one `bot` row with the visited workspaces every 90 s
+  (`botHeartbeatNeedsWrite`). The platform status state, an idle webhook
+  drain, the emoji report, a repeated key failure, an unchanged performance
+  history and a cached League match's access time (hourly) write nothing.
 
 Tests of these functions assert which index a read uses (see
 `src/infrastructure/convex/event-recurrence.test.ts` and

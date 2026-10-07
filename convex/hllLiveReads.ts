@@ -1,7 +1,6 @@
 import {
     hllLiveComparable,
     hllLiveFreshness,
-    hllLiveWithFreshness,
     readHllLivePayload,
 } from "../src/domain/game-data/hll-live-payload"
 import {
@@ -12,6 +11,7 @@ import { panelReadsConnection } from "../src/domain/discord-publications/setting
 import type { HllPrepared } from "../src/application/game-data/read-hll-live"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { internalMutation, type MutationCtx } from "./_generated/server"
+import { hllLivePayloadRow, storedHllLive } from "./liveReadPayloads"
 import type { DashboardActor } from "./dashboardActor"
 import { makeFunctionReference } from "convex/server"
 import { connectionSource } from "./gameDataCatalog"
@@ -101,15 +101,12 @@ export const reserve = internalMutation({
             .query("hllLiveCache")
             .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
             .unique()
-        // The payload was validated by the read action before `finish` stored
-        // it; it is read back through the guard with the row's latest times.
-        const stored =
-            cache?.generation === row.generation && cache.dataJson
-                ? readHllLivePayload(cache.dataJson)
-                : null
-        const previous = stored
-            ? hllLiveWithFreshness(stored, cache!)
-            : undefined
+        // The payload row (or, on a row from before the split, the inline
+        // payload) with the cache row's latest times.
+        const previous =
+            cache?.generation === row.generation
+                ? ((await storedHllLive(ctx, cache)) ?? undefined)
+                : undefined
         const mapChanged = Boolean(
             previous?.status &&
             row.observation &&
@@ -136,21 +133,25 @@ export const reserve = internalMutation({
                 nextAt: 0,
                 retainUntil: now + 3_600_000,
             }
-        // `dataJson` is large and every version of it is retained, so a
-        // claim patches the lease fields only; `finish` writes the data. It
-        // is dropped, never copied, when it stops serving as `previous`: the
-        // map changed, or the source generation did (ARCHITECTURE.md,
-        // "Convex hot paths").
+        // The claim writes the small cache row only. The payload row stays
+        // while it serves as `previous`; it is deleted, never copied, when
+        // the map or the source generation changed. A payload still inline
+        // from before the split is dropped here, and `finish` writes the
+        // payload row (ARCHITECTURE.md, "Convex hot paths").
         const keepData = Boolean(previous) && !mapChanged
         let cacheId = cache?._id
-        if (cache)
+        if (cache) {
             await ctx.db.patch(cache._id, {
                 ...lease,
-                ...(keepData || cache.dataJson === undefined
+                ...(cache.dataJson === undefined
                     ? {}
                     : { dataJson: undefined }),
             })
-        else {
+            const payload = keepData
+                ? null
+                : await hllLivePayloadRow(ctx, cache._id)
+            if (payload) await ctx.db.delete(payload._id)
+        } else {
             cacheId = await ctx.db.insert("hllLiveCache", {
                 ...lease,
                 connectionId: row._id,
@@ -169,7 +170,7 @@ export const reserve = internalMutation({
                 generation: row.generation,
                 fence,
             },
-            ...(previous && !mapChanged ? { previous } : {}),
+            ...(keepData ? { previous } : {}),
         }
     },
 })
@@ -209,18 +210,26 @@ export const finish = internalMutation({
             )
         )
             throw new Error("Invalid HLL observation time.")
-        // An idle server reads the same every time: the large payload is
-        // rewritten only when the provider data changed; the times go to
-        // their own small fields (ARCHITECTURE.md, "Convex hot paths").
-        const stored = cache.dataJson
-            ? readHllLivePayload(cache.dataJson)
-            : null
-        const unchanged =
-            stored !== null &&
-            hllLiveComparable(stored) === hllLiveComparable(data)
+        // An idle server reads the same every time: the payload row is
+        // written only when the provider data changed; the times go to the
+        // small cache row (ARCHITECTURE.md, "Convex hot paths").
+        const payload = await hllLivePayloadRow(ctx, cache._id)
+        const stored = payload ? readHllLivePayload(payload.dataJson) : null
+        if (
+            stored === null ||
+            hllLiveComparable(stored) !== hllLiveComparable(data)
+        ) {
+            const dataJson = JSON.stringify(data)
+            if (payload) await ctx.db.patch(payload._id, { dataJson })
+            else
+                await ctx.db.insert("hllLivePayloads", {
+                    cacheId: cache._id,
+                    dataJson,
+                })
+        }
         await ctx.db.patch(cache._id, {
-            ...(unchanged ? {} : { dataJson: JSON.stringify(data) }),
             ...hllLiveFreshness(data),
+            ...(cache.dataJson === undefined ? {} : { dataJson: undefined }),
             leaseUntil: 0,
             nextAt: now + data.refreshAfterSeconds * 1000,
             retainUntil: now + 3_600_000,
@@ -236,8 +245,11 @@ export const prune = internalMutation({
         const wait =
             Math.max(cache.retainUntil, cache.leaseUntil, cache.nextAt) -
             Date.now()
-        if (wait <= 0) await ctx.db.delete(cache._id)
-        else
+        if (wait <= 0) {
+            const payload = await hllLivePayloadRow(ctx, cache._id)
+            if (payload) await ctx.db.delete(payload._id)
+            await ctx.db.delete(cache._id)
+        } else
             await ctx.scheduler.runAfter(
                 wait,
                 makeFunctionReference<"mutation">("hllLiveReads:prune"),

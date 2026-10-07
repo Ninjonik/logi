@@ -159,11 +159,46 @@ test("a silent monitor shows 'Stav teď neznáme' and keeps the stored states (L
         card.text,
         /### Stav teď neznáme\n⚪ \*\*Monitoring neodpovídá\*\*/
     )
-    assert.deepEqual(
-        (run.saved[0] as { serviceStates: ServiceState[] }).serviceStates,
-        states
-    )
+    // The stored states stay as they are: nothing to save.
+    assert.deepEqual(run.saved, [])
     assert.equal(run.threadPosts.length, 0)
+})
+
+test("an unchanged check saves nothing; a change, a new message or a new service saves once", async () => {
+    const states = up.map((service) => ({
+        ...service,
+        since: "2026-10-11T08:00:00.000Z",
+    }))
+    const same = fakes({
+        services: up,
+        now: "2026-10-11T12:16:00.000Z",
+        states,
+    })
+    await runPlatformStatusPass(same.ports)
+    assert.equal(same.edits.length, 1)
+    assert.deepEqual(same.saved, [])
+    const down = fakes({
+        services: botDown,
+        now: "2026-10-11T12:16:00.000Z",
+        states,
+    })
+    await runPlatformStatusPass(down.ports)
+    assert.equal(down.saved.length, 1)
+    const added = fakes({
+        services: [...up, { name: "Web", online: true }],
+        now: "2026-10-11T12:16:00.000Z",
+        states,
+    })
+    await runPlatformStatusPass(added.ports)
+    assert.equal(added.saved.length, 1)
+    const posted = fakes({
+        services: up,
+        now: "2026-10-11T12:16:00.000Z",
+        states,
+        hasMessage: false,
+    })
+    await runPlatformStatusPass(posted.ports)
+    assert.equal(posted.saved.length, 1)
 })
 
 test("a missing message is posted with the 'Změny stavu' thread; old threads are renamed", async () => {

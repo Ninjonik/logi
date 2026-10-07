@@ -1,3 +1,4 @@
+import { publicationIsCurrent } from "../src/domain/discord-publications/publication-freshness"
 import { publicationKeyRange } from "../src/domain/discord-publications/keys"
 import { mutation, query, type QueryCtx } from "./_generated/server"
 import { publicationState } from "./discordPublicationTable"
@@ -17,6 +18,14 @@ export const claim = mutation({
         revision: v.number(),
         legacyChannelId: v.optional(v.string()),
         legacyMessageId: v.optional(v.string()),
+        /**
+         * The rendered hash and the target channel. With them a message that
+         * Discord already shows, confirmed recently, is reported `current`
+         * without a write (`publicationIsCurrent`); without them every claim
+         * takes the lease, as older bots expect.
+         */
+        hash: v.optional(v.string()),
+        channelId: v.optional(v.union(v.string(), v.null())),
     },
     handler: async (ctx, args) => {
         authorize(args.secret)
@@ -69,6 +78,26 @@ export const claim = mutation({
                 row.revision > args.revision)
         )
             return null
+        if (
+            row &&
+            args.hash !== undefined &&
+            args.channelId !== undefined &&
+            publicationIsCurrent(row, {
+                revision: args.revision,
+                channelId: args.channelId,
+                hash: args.hash,
+                now,
+            })
+        )
+            return {
+                id: String(row._id),
+                fence: row.fence,
+                channelId: row.channelId,
+                messageId: row.messageId,
+                pending: row.pending,
+                hash: row.hash,
+                current: true as const,
+            }
         if (!row) {
             const id = await ctx.db.insert("discordPublications", {
                 guildId: args.guildId,
@@ -176,6 +205,12 @@ export const save = mutation({
         await ctx.db.patch(id, state)
     },
 })
+/**
+ * Releases the lease. A successful publish passes its final `state`, which
+ * is stored in the same write under the same fence and lease check as
+ * `save`, so a publish costs the claim and this one write; an error keeps
+ * the stored state and records the wait before the next attempt.
+ */
 export const finish = mutation({
     args: {
         secret: v.string(),
@@ -183,12 +218,16 @@ export const finish = mutation({
         fence: v.number(),
         error: v.optional(v.string()),
         retryAfterMs: v.optional(v.number()),
+        state: v.optional(v.object(publicationState)),
     },
     handler: async (ctx, args) => {
         authorize(args.secret)
         const row = await ctx.db.get(args.id)
         if (!row || row.fence !== args.fence) return
+        if (args.state && !args.error && row.leaseUntil <= Date.now())
+            throw new Error("Publication lease expired.")
         await ctx.db.patch(args.id, {
+            ...(args.state && !args.error ? args.state : {}),
             leaseUntil: 0,
             error: args.error?.slice(0, 240) ?? null,
             retryAt: args.error

@@ -311,3 +311,44 @@ test("global network budget prevents misses across different match IDs", async (
         blocked.kind === "ready" && blocked.state.error === "rate_limited"
     )
 })
+test("a cached read refreshes the row's access time at most hourly", async (t) => {
+    const { ctx, args, snapshot, advance } = await setup(t)
+    const claim = await reserve(ctx, args)
+    if (claim.kind !== "claimed") return assert.fail("claim expected")
+    await finish(ctx, {
+        ...args,
+        cacheId: claim.cacheId,
+        fence: claim.fence,
+        snapshotJson: JSON.stringify(snapshot),
+    })
+    const patched: string[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    t.mock.method(
+        ctx.db,
+        "patch",
+        async (id: string, value: Record<string, unknown>) => {
+            patched.push(id)
+            return await patch(id, value)
+        }
+    )
+    // Page views within the five-minute cache: hits, no write.
+    for (let view = 0; view < 5; view++) {
+        advance(50_000)
+        assert.equal((await reserve(ctx, args)).kind, "ready")
+    }
+    assert.deepEqual(patched, [])
+    // An hour after the last touch (the snapshot refreshed meanwhile) a
+    // hit stores the access time once.
+    advance(cache.ACCESS_TOUCH_MS - 250_000)
+    const row = ctx.db.tables.leagueMatchCache[0]!
+    row.nextRefreshAt = Date.now() + 60_000
+    row.snapshotJson = JSON.stringify({
+        ...snapshot,
+        fetchedAt: new Date(Date.now()).toISOString(),
+    })
+    assert.equal((await reserve(ctx, args)).kind, "ready")
+    assert.deepEqual(patched, [row._id])
+    assert.equal(row.accessedAt, Date.now())
+    assert.equal((await reserve(ctx, args)).kind, "ready")
+    assert.equal(patched.length, 1)
+})

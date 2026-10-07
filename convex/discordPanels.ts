@@ -74,6 +74,7 @@ import { resolvePanelPresentation } from "../src/domain/discord-publications/pan
 import { convexLeaguePanelSource } from "../src/infrastructure/convex/league-fixture-store"
 import { credentialEnvelopeSchema } from "../src/domain/game-data/credentials.schema"
 import { panelSaveSchema } from "../src/domain/discord-publications/settings.schema"
+import { botVisitedGuild } from "../src/domain/discord-publications/panel-delivery"
 import { loadLeaguePanels } from "../src/application/wardogs-league/league-panels"
 import type { MessageView } from "../src/domain/discord-messages/message-view"
 import type { WarconServed } from "../src/application/game-data/read-warcon"
@@ -104,15 +105,15 @@ const dashboardArgs = {
     actor: dashboardActor,
 }
 
+/** The `bot` heartbeat, and the workspace's own row only while `bot` has no list. */
 async function botHeartbeats(ctx: Pick<QueryCtx, "db">, guildId: string) {
-    const [bot, guild] = await Promise.all(
-        ["bot", `guild:${guildId}`].map((key) =>
-            ctx.db
-                .query("discordBotHeartbeats")
-                .withIndex("key", (q) => q.eq("key", key))
-                .unique()
-        )
-    )
+    const beat = (key: string) =>
+        ctx.db
+            .query("discordBotHeartbeats")
+            .withIndex("key", (q) => q.eq("key", key))
+            .unique()
+    const bot = await beat("bot")
+    const guild = bot?.guildIds ? null : await beat(`guild:${guildId}`)
     return { bot: bot ?? null, guild: guild ?? null }
 }
 
@@ -260,8 +261,11 @@ export const overview = query({
             botInServer:
                 view.bot.state === "unknown" || !panels.length
                     ? null
-                    : Boolean(
-                          beats.guild && now - beats.guild.seenAt < 3 * 60_000
+                    : botVisitedGuild(
+                          beats.bot,
+                          beats.guild,
+                          args.guildId,
+                          now
                       ),
         }
     },
