@@ -2840,7 +2840,7 @@ export const enMessages = {
         refresh: "Refresh",
         loading: "Loading…",
         description:
-            "Latest 100 staff or application operations across games. Saving a member queues a change; only a verified Discord result is marked applied.",
+            "Latest 100 staff or application operations across games. Saving a member queues a change; only a verified Discord result is marked applied. Denied, superseded and failed operations are removed 30 days after they finished.",
         error: "Role operations are unavailable. Refresh to try again.",
         empty: "No managed role operations yet.",
         target: "Member Discord ID",
@@ -2850,7 +2850,7 @@ export const enMessages = {
         updated: "Updated",
         audit: "Attempt history",
         auditDescription:
-            "Latest 5 attempts shown; up to 20 retained per operation. Times are UTC. Reason codes help diagnose failures.",
+            "Latest 5 attempts shown; up to 20 retained per operation. A daily check that confirms the roles adds no attempt. Times are UTC. Reason codes help diagnose failures.",
         reason: "Reason",
         status: {
             pending: "Pending",
@@ -2874,7 +2874,7 @@ export const enMessages = {
             retry_scheduled:
                 "The bot will retry automatically after the waiting period.",
             applied:
-                "Discord roles matched this request at the last check. The bot checks again periodically.",
+                "Discord roles matched this request at the last check. The bot checks again once a day.",
             denied: "Check staff access, membership, bot permissions and role hierarchy, then save a new member request.",
             superseded:
                 "The assignment or policy changed. Only a new authorized request can apply the updated state.",

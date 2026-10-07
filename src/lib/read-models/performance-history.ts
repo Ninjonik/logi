@@ -1,3 +1,4 @@
+import type { DashboardActor } from "../../../convex/dashboardActor"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { fetchAction, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
@@ -23,7 +24,7 @@ const playersRef = makeFunctionReference<"query">(
     "performanceHistory:getPlayers"
 )
 const refreshRef = makeFunctionReference<"action">(
-    "performanceHistory:refreshInBackground"
+    "performanceHistory:refreshForDashboard"
 )
 
 export async function getGuildPerformanceHistory(
@@ -99,13 +100,20 @@ export async function getPlayersPerformanceHistories(
         3600
     )
 }
+/**
+ * "Refresh performance history": the workspace and every member's history
+ * for one game. Convex checks the actor's clan-admin right from the
+ * dashboard session again before it reads anything.
+ */
 export async function refreshPerformanceHistory(
     guildId: string,
-    gameId: Exclude<GameScope, "all">
+    gameId: Exclude<GameScope, "all">,
+    actor: DashboardActor
 ) {
     return fetchAction(refreshRef, {
         secret: getInternalAuthSecret(),
         guildId,
         gameId,
+        actor,
     })
 }

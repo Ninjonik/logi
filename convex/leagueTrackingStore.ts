@@ -177,20 +177,54 @@ export async function updateTracked(
         merged.pinned || merged.automatic || merged.ignored
             ? false
             : merged.intakeReserved
+    const after = { ...merged, everTracked, intakeReserved, revision }
+    const feed = row.tracked || after.tracked
+    // Projected before the patch: `row` must describe the stored state.
+    let previous: string | null | undefined
+    if (feed)
+        try {
+            previous = fixtureComparable(projectLeagueFixture(row, now))
+        } catch {
+            previous = undefined // A stored snapshot that no longer parses.
+        }
     await ctx.db.patch(row._id, {
         ...patch,
         everTracked,
         intakeReserved,
         revision,
     })
-    const after = { ...merged, everTracked, intakeReserved, revision }
-    if (row.tracked || after.tracked)
-        await appendIntegrationChange(ctx, {
-            guildId: row.guildId,
-            gameId: "wardogs",
-            resource: "league-fixtures",
-            id: row.matchId,
-            operation: projectLeagueFixture(after, now) ? "upsert" : "remove",
-        })
+    if (feed) {
+        // A refresh every five minutes re-reads the same page; the website
+        // re-fetches only when the fixture it is served changed.
+        const served = fixtureComparable(projectLeagueFixture(after, now))
+        if (served !== previous)
+            await appendIntegrationChange(ctx, {
+                guildId: row.guildId,
+                gameId: "wardogs",
+                resource: "league-fixtures",
+                id: row.matchId,
+                operation: served === null ? "remove" : "upsert",
+            })
+    }
     return after
+}
+/**
+ * The `league-fixtures` projection the website reads (`projectLeagueFixture`,
+ * as `readLeagueFixture` serves it) without what moves on every refresh: the
+ * row revision, the age and staleness, the last attempt and the snapshot's
+ * `fetchedAt`. `null` when the fixture is not served.
+ */
+function fixtureComparable(
+    fixture: ReturnType<typeof projectLeagueFixture>
+): string | null {
+    return fixture
+        ? JSON.stringify({
+              ...fixture,
+              revision: null,
+              stale: null,
+              ageSeconds: null,
+              lastAttemptAt: null,
+              snapshot: { ...fixture.snapshot, fetchedAt: null },
+          })
+        : null
 }

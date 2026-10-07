@@ -192,11 +192,23 @@ character stepped up)` on the same index (`publicationKeyRange`).
   `peopleSummaries:reconcileResultLinks` keeps an `updatedAt` watermark of
   its last complete run and reads the events updated since through the
   `updatedAt` index, with one full walk a day for rows without the field.
-- Never rewrite a large document just to refresh a lease. A claim patches
-  the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
-  `retainUntil`); the payload is written once, when the read finished, and
-  dropped only when it stops being valid. Copying it back into the same
-  document on every lease stores a new version of it each time.
+- A collector that walks a provider's history stops where it is caught up.
+  Each history cycle starts at page 1 (the newest games),
+  fetches only the sessions not yet stored complete for the current source
+  generation (`gameDataHistory:storedComplete`, one indexed lookup per ID,
+  called once per page) and ends at the first page that has none. A full
+  walk that re-reads every session runs at most once a day
+  (`lastFullWalkAt`, `HISTORY_FULL_WALK_INTERVAL_MS`) so provider
+  corrections still arrive. A complete, unchanged session is never
+  rewritten, and the Warcon history head rewrites an unchanged
+  `lastCollectedAt` at most every ten minutes. Re-walking the whole
+  history every cycle cost about 200,000 writes and as many provider calls
+  a day per connection.
+- Never rewrite a large document just to refresh a lease. A patch stores
+  the whole document again, whichever fields it names, so a lease, a time
+  or a counter never shares a row with a large payload; the claim writes
+  only the small row (`generation`, `fence`, `leaseUntil`, `nextAt`,
+  `retainUntil`).
 - Prefer small status rows next to large payload rows. A table that is both
   read every few seconds and holds a large payload (a live read, a message
   cache) should keep the lease, timestamps and counters in a row of their
@@ -217,25 +229,67 @@ character stepped up)` on the same index (`publicationKeyRange`).
   collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
   `updatedAt`, a session's `fetchedAt`, a member observation's `observedAt`
   and `receivedAt`. Two writers flooded the log to 666,000 rows: the bot's
-  membership reconciliation, which observes every member of a clan every
-  five minutes and stored each observation with a new revision and three
-  `membership-summaries` rows (one per game) whether or not anything
+  membership reconciliation, which then observed every member of a clan
+  every five minutes and stored each observation with a new revision and
+  three `membership-summaries` rows (one per game) whether or not anything
   changed, and a history walk that commits once a second and rewrote its
   connection and session rows each time. `storeMemberObservation` now
-  refreshes only the evidence fields when state, roles and epoch are the
-  same (`observationChanged`); a history commit patches a session only when
-  its content changed and records a visit (`fetchedAt`,
-  `historyLastSuccessAt`) at most once a minute
-  (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
-  each guild head once per batch, and `integrationChanges:resetFeed` is the
-  operator's way out of a flooded log: it raises every floor to its head so
-  consumers bootstrap again, then empties the log in batches.
+  refreshes only the evidence fields when state and roles are the same,
+  and only adds the new epoch to them after an invalidation
+  (`observationChange`: consumers reset on the epoch itself, through
+  `membershipScopeVersion`); a history commit patches a session only when
+  its content changed and records a visit (an unfinished session's
+  `fetchedAt`, `historyLastSuccessAt`) at most once a minute
+  (`HISTORY_TOUCH_INTERVAL_MS`).
+- The change feed keeps no log: `integrationChanges` and `integrationRecords`
+  were removed, `readChanges` answers every cursor with `reset_required`, and
+  `appendIntegrationChange` only allocates the clan's next revision and
+  enqueues its webhook deliveries. Only what a website re-downloads is
+  announced: live state is not tracked (`gameDataConnections`;
+  `server-snapshots` and `integration-health` are read from their own
+  endpoints), and a League refresh announces a fixture only when its served
+  projection changed.
+- The collectors run from their crons and never schedule themselves. A
+  history tick (`collectHistoryDue`, every ten minutes) runs up to
+  `HISTORY_STEPS_PER_TICK` steps of one session each in one action, a
+  second apart; an incremental cycle stops at the first page whose sessions
+  are stored complete, and a full walk runs once a day.
+- A pass over every member of a clan runs only when it can find something.
+  The bot reads the reconciliation's start (`reconciliationStart`, a query)
+  before the Discord fetch and inserts the run only after a complete fetch;
+  it reconciles at most every six hours unless the guild was invalidated (a
+  new gateway session, a guild becoming available, a deleted role or one
+  whose permissions changed, never a resumed session) or the manager role
+  changed, and waits 15 minutes after a failed fetch. Per unchanged member
+  a run writes the observation's evidence and nothing else: the observation
+  carries the run's mark (`seenRunId`) instead of a scratch row per member,
+  and `discordMemberAccess` is patched only when roles or access changed.
+  An applied managed role is checked again once a day, a check that
+  changes nothing writes no attempt row, and denied, superseded and failed
+  operations are removed 30 days after they finished
+  (`memberRoleOperations:pruneFinished`).
 - Every table that gains a row per request or per window has a cron that
   removes the expired rows in bounded batches through an expiry index:
   `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per
   Idempotency-Key, 24 h, with the stored response) and
   `apiRateLimitBuckets` (one row per window), hourly. Tens of thousands of
   dead rows in each were found in production because nothing removed them.
+- Every table that grows with history has a retention and an index-driven
+  prune. `housekeeping:pruneHistory` runs daily, about 250 rows per table
+  and transaction, rescheduled while a batch was full and deleted rows
+  (windows in `src/domain/housekeeping/retention.ts`): 30 days for
+  delivered or failed `webhookDeliveries` (`status_nextAttemptAt`),
+  `websiteEventCommandReceipts` (`createdAt`), `eventReminderRequests`
+  (`requestedAt`), `automaticReminderOutcomes` (`sentAt`), ended
+  `discordSeedRuns` with their delivered call row in `discordSeedMessages`
+  (`status_startedAt`), and `signupActivities` (`occurredAt`) and finished
+  `rosterChangeRequests` (`status_requestedAt`) once their match ended 30
+  days ago; a day after expiry for `meetingAttendanceRequests` and
+  `platformLinkChallenges` (`expiresAt`); 14 days for `leagueMessageRefs`,
+  which get an `expiresAt` at intake. `webhooks:remove` deletes the
+  subscription's deliveries. Match statistics (`gameSessions`,
+  `serverGameHistory`, `playerStats`, `matchStats`,
+  `eventResultRevisions`) and `matchRecaps` keep no limit.
 - A per-request endpoint serves counts from a maintained summary document,
   never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
   enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
@@ -286,14 +340,28 @@ character stepped up)` on the same index (`publicationKeyRange`).
   (`discordPanelBotWrites.ts`, `discordPanelGraphicsWrites.ts`,
   `discordPublicPanelsAdmin.ts`, `playerReportDrafts.ts`) and the bot calls
   them by their new paths.
-- A cache that holds a large payload writes it only when it changed. The
-  HLL and Warcon live caches compare the new read, minus its times, with
-  the stored one (`hllLiveComparable`, `warconComparable`) and on a match
-  patch only the lease and the small freshness fields (`fetchedAt`,
-  `statusAt`, `playersAt`, `observedAt`); every reader merges those fields
-  into the served payload, so the response carries the latest read's times
-  while an idle server stores one version of its data instead of one per
-  refresh.
+- A cache that holds a large payload keeps it in a row of its own and
+  writes it only when it changed. `hllLiveCache` and `warconReadCache` hold
+  the lease and the freshness fields (`fetchedAt`, `statusAt`, `playersAt`,
+  `observedAt`); the provider data is in `hllLivePayloads` and
+  `warconReadPayloads` (`liveReadPayloads.ts`), rewritten only when the new
+  read, minus its times, differs (`hllLiveComparable`, `warconComparable`).
+  Every reader merges the small row's times into the payload, so the
+  response carries the latest read's times while an idle server stores two
+  small rows per refresh. The Warcon read budget is a small row per
+  connection (`warconReadLimits`), not a counter on `gameDataConnections`.
+  Patching only the small fields of a row that also held the payload, as
+  before, still stored the payload on every claim and finish.
+- A timed writer stores only what changed. A panel publish whose render is
+  the one Discord shows, confirmed within ten minutes, is `current` without
+  a write (`publicationIsCurrent`), and an edit is the claim plus a
+  `finish` that carries the state; a pass report is stored only when the
+  error, warnings, messages, request, claim or privacy changed, or ten
+  minutes after the stored one (`panelStatusNeedsWrite`); the bot heartbeat
+  is one `bot` row with the visited workspaces every 90 s
+  (`botHeartbeatNeedsWrite`). The platform status state, an idle webhook
+  drain, the emoji report, a repeated key failure, an unchanged performance
+  history and a cached League match's access time (hourly) write nothing.
 
 Tests of these functions assert which index a read uses (see
 `src/infrastructure/convex/event-recurrence.test.ts` and

@@ -129,6 +129,58 @@ export function nextPanelStatus(
     }
 }
 
+/**
+ * The stored status is refreshed at least this often while nothing else
+ * changes: an ok pass this long after the stored success, a failing one
+ * this long after the stored attempt.
+ */
+export const PANEL_STATUS_REFRESH_MS = 10 * 60_000
+
+/** An error as the dashboard words it: its code, permissions and category, not its time. */
+const errorKey = (error: PanelError | null | undefined) =>
+    error
+        ? JSON.stringify([
+              error.code,
+              [...(error.permissions ?? [])].sort(),
+              error.category ?? null,
+          ])
+        : null
+
+/**
+ * Whether one pass's status must be stored. A panel refreshes every minute
+ * and Convex keeps a new version of the row on every write, so a pass that
+ * only moves the times (`attemptAt`, `successAt`, `nextAt`, `dataAt`, a
+ * repeated error's `at`) is not stored; a changed error, warning, message
+ * count, handled request, claim, first post, recovery, channel privacy or
+ * pause is, and so is a pass `PANEL_STATUS_REFRESH_MS` after the stored one.
+ */
+export function panelStatusNeedsWrite(
+    previous: PanelStatusRecord | null,
+    next: PanelStatusRecord
+): boolean {
+    if (!previous) return true
+    if (
+        errorKey(previous.error) !== errorKey(next.error) ||
+        errorKey(previous.lastError) !== errorKey(next.lastError) ||
+        [...previous.warnings].sort().join() !==
+            [...next.warnings].sort().join() ||
+        previous.messages !== next.messages ||
+        previous.handledRequestAt !== next.handledRequestAt ||
+        previous.claimedAt !== next.claimedAt ||
+        previous.sentAt !== next.sentAt ||
+        (previous.recoveredAt ?? null) !== (next.recoveredAt ?? null) ||
+        (previous.channelPrivate ?? null) !== (next.channelPrivate ?? null) ||
+        (previous.nextAt === null) !== (next.nextAt === null)
+    )
+        return true
+    const stored = next.error ? previous.attemptAt : previous.successAt
+    return (
+        stored === null ||
+        next.attemptAt === null ||
+        next.attemptAt - stored >= PANEL_STATUS_REFRESH_MS
+    )
+}
+
 // ---- State chip ----------------------------------------------------------------
 
 /** P1-B01: shown for every panel, also before the bot's first pass. */
@@ -389,9 +441,61 @@ export const REQUIRED_PANEL_PROTOCOL = 2
  * together with the protocol and the package version the bot reports.
  */
 export const MINIMUM_BOT_VERSION = "1.1.0"
-/** The bot writes its heartbeat every 30 s; silence for 3 min is "offline" (P1-05). */
-export const BOT_HEARTBEAT_INTERVAL_MS = 30_000
+/**
+ * The bot writes its heartbeat every 90 s; silence for 3 min is "offline"
+ * (P1-05). Every write keeps a version of the row, so the beat is half the
+ * offline threshold: a beat that comes a tick late still reads online.
+ */
+export const BOT_HEARTBEAT_INTERVAL_MS = 90_000
 export const BOT_OFFLINE_AFTER_MS = 3 * 60_000
+/** A bot still beating every 30 s is stored at most this often. */
+export const BOT_HEARTBEAT_MIN_WRITE_MS = 60_000
+
+/**
+ * The stored `bot` heartbeat. `guildIds` lists the workspaces the bot
+ * visited since its previous beat; rows written before the list existed
+ * lack it, and their presence lives in `guild:<id>` rows.
+ */
+export type StoredBotHeartbeat = BotHeartbeat & {
+    seenAt: number
+    guildIds?: string[]
+}
+
+/** Whether one beat must be stored: a new process, version or set of workspaces, or a minute since the stored one. */
+export function botHeartbeatNeedsWrite(
+    stored: StoredBotHeartbeat | null,
+    next: BotHeartbeat & { guildIds: string[] },
+    now: number
+): boolean {
+    if (!stored?.guildIds) return true
+    return (
+        stored.version !== next.version ||
+        stored.protocol !== next.protocol ||
+        stored.startedAt !== next.startedAt ||
+        [...stored.guildIds].sort().join() !==
+            [...next.guildIds].sort().join() ||
+        now - stored.seenAt >= BOT_HEARTBEAT_MIN_WRITE_MS
+    )
+}
+
+/**
+ * Whether the bot visited a workspace within the offline window: from the
+ * `bot` row's list, or from the workspace's own `guild:<id>` row while the
+ * `bot` row has no list yet.
+ */
+export function botVisitedGuild(
+    bot: StoredBotHeartbeat | null,
+    legacyGuild: { seenAt: number } | null,
+    guildId: string,
+    now: number
+): boolean {
+    const seenAt = bot?.guildIds
+        ? bot.guildIds.includes(guildId)
+            ? bot.seenAt
+            : null
+        : (legacyGuild?.seenAt ?? null)
+    return seenAt !== null && now - seenAt < BOT_OFFLINE_AFTER_MS
+}
 
 export type BotHeartbeatState =
     | { state: "unknown" }

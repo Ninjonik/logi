@@ -6,6 +6,7 @@ import type {
 
 import {
     nextServiceStates,
+    sameServiceStates,
     serviceChangeView,
     serviceStatusView,
     SERVICE_STATUS_INTERVAL_SECONDS,
@@ -142,11 +143,18 @@ export async function runPlatformStatusPass(ports: PlatformStatusPorts) {
                     options
                 )
             )
-    await ports.save({
-        statusMessageId,
-        statusUpdatesThreadId,
-        serviceStates: states,
-    })
+    // An unchanged check (the same message, thread and states) writes nothing.
+    if (
+        statusMessageId !== settings.statusMessageId ||
+        statusUpdatesThreadId !== settings.statusUpdatesThreadId ||
+        changes.length ||
+        !sameServiceStates(settings.serviceStates, states)
+    )
+        await ports.save({
+            statusMessageId,
+            statusUpdatesThreadId,
+            serviceStates: states,
+        })
     return { states, changes }
 }
 

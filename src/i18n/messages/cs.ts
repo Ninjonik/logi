@@ -2828,7 +2828,7 @@ export const csMessages = {
         refresh: "Obnovit",
         loading: "Načítání…",
         description:
-            "Posledních 100 operací správce nebo přihlášek napříč hrami. Uložení člena zařadí změnu do fronty; stav Provedeno vyžaduje ověření na Discordu.",
+            "Posledních 100 operací správce nebo přihlášek napříč hrami. Uložení člena zařadí změnu do fronty; stav Provedeno vyžaduje ověření na Discordu. Zamítnuté, nahrazené a neúspěšné operace se mažou 30 dní po svém skončení.",
         error: "Přehled změn rolí není dostupný. Zkuste jej obnovit.",
         empty: "Zatím nejsou žádné změny spravovaných rolí.",
         target: "Discord ID člena",
@@ -2838,7 +2838,7 @@ export const csMessages = {
         updated: "Aktualizace",
         audit: "Historie pokusů",
         auditDescription:
-            "Zobrazeno posledních 5 pokusů; uchovává se nejvýše 20 na operaci. Časy jsou v UTC. Kódy důvodů pomáhají při řešení chyb.",
+            "Zobrazeno posledních 5 pokusů; uchovává se nejvýše 20 na operaci. Denní kontrola, která role potvrdí, pokus nepřidává. Časy jsou v UTC. Kódy důvodů pomáhají při řešení chyb.",
         reason: "Důvod",
         status: {
             pending: "Čeká",
@@ -2861,7 +2861,7 @@ export const csMessages = {
             retry_scheduled:
                 "Bot požadavek automaticky zopakuje po uplynutí čekací doby.",
             applied:
-                "Při poslední kontrole role na Discordu odpovídaly požadavku. Bot je pravidelně kontroluje.",
+                "Při poslední kontrole role na Discordu odpovídaly požadavku. Bot je kontroluje jednou denně.",
             denied: "Ověřte přístup zadavatele, členství, oprávnění bota a pořadí rolí, poté uložte nový požadavek na člena.",
             superseded:
                 "Přiřazení nebo pravidla se změnila. Nový stav vyžaduje nový oprávněný požadavek.",

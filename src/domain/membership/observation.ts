@@ -42,13 +42,22 @@ export function isFreshObservation(
 }
 
 /**
- * Whether a new provider observation changes what the membership projections
- * serve: state, the role set and the epoch. A reconciliation observes every
- * member every few minutes; one that sees the same roles again is fresher
- * evidence (`observedAt`), not a change, so it must not allocate a revision
- * or a change-feed entry (ARCHITECTURE.md, "Convex hot paths").
+ * What a new provider observation changes about a stored one:
+ *
+ * - `"member"`: the state, the role set or availability differ (or nothing
+ *   is stored yet). Only this allocates a revision and a change-feed entry.
+ * - `"epoch"`: the same member seen under a newer guild epoch. The stored
+ *   epoch must follow, because freshness compares it with the guild's, but
+ *   nothing the website projections serve changed: their consumers already
+ *   reset on an epoch change (`membershipScopeVersion`).
+ * - `"none"`: fresher evidence (`observedAt`) of the same member.
+ *
+ * A reconciliation observes every member of a clan; one that sees the same
+ * roles again, even after an invalidation, must not allocate a revision or a
+ * change-feed entry per member (ARCHITECTURE.md, "Convex hot paths").
+ * `roleIds` are compared in order; callers pass them sorted.
  */
-export function observationChanged(
+export function observationChange(
     previous: {
         state: ProviderObservation["state"]
         roleIds: string[]
@@ -61,13 +70,14 @@ export function observationChanged(
         epoch: string
         unavailable: boolean
     }
-): boolean {
-    return (
+): "member" | "epoch" | "none" {
+    if (
         !previous ||
         previous.state !== next.state ||
-        previous.epoch !== next.epoch ||
         (previous.unavailable ?? false) !== next.unavailable ||
         previous.roleIds.length !== next.roleIds.length ||
         previous.roleIds.some((roleId, index) => roleId !== next.roleIds[index])
     )
+        return "member"
+    return previous.epoch === next.epoch ? "none" : "epoch"
 }

@@ -19,20 +19,20 @@ snapshot metadata. Only Scheduled League fixtures have real-page acceptance.
 
 ## What the website can build from Logi
 
-| Website capability | Logi data / flow | Website responsibility and limits |
-| --- | --- | --- |
-| HLL/Wardogs calendar and event listings | `event-summaries` | Map routes/locales, editorial visibility, own public cache; operational event edits remain in Logi |
-| Match schedule and imported scores | `match-summaries` | Preserve `unknown`/`provisional`, no inferred final result or home/away identity |
-| Reviewed result pages and corrections | `result-summaries` | Show explicit state/version and N participants; retain 0 versus null; publication still needs website approval |
-| Game-server cards | `server-snapshots` | Show observation age and source attribution, unknown/stale rather than guessed offline/zero |
-| Warcon scoreboard, analytics and gameplay statistics | `warcon-data` + `wardogs` | Fifteen typed views, including player names/Steam IDs; keep keys server-side and apply website publication policy |
-| Wardogs League fixture preview from a pasted URL | `league-matches` + `wardogs` | Public teams/factions, schedule, map and preparation; poll every 5–10 minutes, retain stale metadata, no inferred results or automatic event creation |
-| Integration administration / stale-data notices | `integration-health` | Restrict to appropriate website operators; do not expose provider secrets or raw errors |
-| Member-only/game-specific sections | Exact `membership-summaries` lookup | Authenticate the user, bind their Discord subject, check freshness and your game/role policy on each decision |
-| Recovery after missed notifications or restarts | Changes feed, atomic refetch, signed webhooks | Durable inbox, projections and checkpoint transactions; periodic reconciliation and reset handling |
-| Private staff roster/group tools | Explicitly granted legacy operational reads | Extra review of sensitive fields and audience; these are not minimized public profiles |
-| Link to operational actions | Existing Logi dashboard and bot | Keep one operational writer; no delegated website actor-command protocol is supplied |
-| Verified result attribution | I5 proof used internally by D4 | Public summaries expose counts, not raw Steam/Discord identities or an account-proof directory |
+| Website capability                                   | Logi data / flow                              | Website responsibility and limits                                                                                                                     |
+| ---------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HLL/Wardogs calendar and event listings              | `event-summaries`                             | Map routes/locales, editorial visibility, own public cache; operational event edits remain in Logi                                                    |
+| Match schedule and imported scores                   | `match-summaries`                             | Preserve `unknown`/`provisional`, no inferred final result or home/away identity                                                                      |
+| Reviewed result pages and corrections                | `result-summaries`                            | Show explicit state/version and N participants; retain 0 versus null; publication still needs website approval                                        |
+| Game-server cards                                    | `server-snapshots`                            | Show observation age and source attribution, unknown/stale rather than guessed offline/zero                                                           |
+| Warcon scoreboard, analytics and gameplay statistics | `warcon-data` + `wardogs`                     | Fifteen typed views, including player names/Steam IDs; keep keys server-side and apply website publication policy                                     |
+| Wardogs League fixture preview from a pasted URL     | `league-matches` + `wardogs`                  | Public teams/factions, schedule, map and preparation; poll every 5–10 minutes, retain stale metadata, no inferred results or automatic event creation |
+| Integration administration / stale-data notices      | `integration-health`                          | Restrict to appropriate website operators; do not expose provider secrets or raw errors                                                               |
+| Member-only/game-specific sections                   | Exact `membership-summaries` lookup           | Authenticate the user, bind their Discord subject, check freshness and your game/role policy on each decision                                         |
+| Recovery after missed notifications or restarts      | Changes feed, atomic refetch, signed webhooks | Durable inbox, projections and checkpoint transactions; periodic reconciliation and reset handling                                                    |
+| Private staff roster/group tools                     | Explicitly granted legacy operational reads   | Extra review of sensitive fields and audience; these are not minimized public profiles                                                                |
+| Link to operational actions                          | Existing Logi dashboard and bot               | Keep one operational writer; no delegated website actor-command protocol is supplied                                                                  |
+| Verified result attribution                          | I5 proof used internally by D4                | Public summaries expose counts, not raw Steam/Discord identities or an account-proof directory                                                        |
 
 The initial website integration is read-only. Existing legacy write endpoints do
 not authorize this consumer to mutate operational data. A service bearer key must
@@ -40,16 +40,16 @@ not stand in for a human reviewer, account owner or Discord administrator.
 
 ## IDs, games and authorization
 
-| Concept | Contract |
-| --- | --- |
-| HLL API game | `hell_let_loose`; map to website game `hell-let-loose` and route `/{locale}/hll` |
-| Wardogs API game | `wardogs`; map explicitly to `/{locale}/wardogs` |
-| Source instance | Keep a website-owned stable ID for the configured Logi origin |
-| Guild | Comes from the key; do not trust a browser-supplied guild to select authority |
-| Event/match/result summary ID | Logi event ID; not a CRCON session or raw match-statistics ID |
-| Snapshot/health ID | Logi connection ID; not a provider endpoint or password |
-| Membership subject | One verified 17–20 digit Discord ID, not nickname or imported player ID |
-| Stored projection key | `(sourceInstance, guildId, gameId, resource, externalId)` |
+| Concept                       | Contract                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| HLL API game                  | `hell_let_loose`; map to website game `hell-let-loose` and route `/{locale}/hll` |
+| Wardogs API game              | `wardogs`; map explicitly to `/{locale}/wardogs`                                 |
+| Source instance               | Keep a website-owned stable ID for the configured Logi origin                    |
+| Guild                         | Comes from the key; do not trust a browser-supplied guild to select authority    |
+| Event/match/result summary ID | Logi event ID; not a CRCON session or raw match-statistics ID                    |
+| Snapshot/health ID            | Logi connection ID; not a provider endpoint or password                          |
+| Membership subject            | One verified 17–20 digit Discord ID, not nickname or imported player ID          |
+| Stored projection key         | `(sourceInstance, guildId, gameId, resource, externalId)`                        |
 
 Use a fixed HTTPS origin, bounded requests and server-side secret storage. Give
 each consumer a revocable restricted key with only required resources/games. The
@@ -71,18 +71,18 @@ Every route below uses `Authorization: Bearer <restricted server-side key>`.
 Paths are relative to `/api/v1/clan`. See the linked versioned contract for field
 schemas and full errors; examples use synthetic IDs only.
 
-| GET path | Grant / additional gate | Shape and use |
-| --- | --- | --- |
-| `/event-summaries?game=wardogs` and `/event-summaries/{eventId}` | `event-summaries` and stored game | Scheduled match/training summaries; [0.4](../v0.4/README.md#http-contract) |
-| `/match-summaries?game=hell_let_loose` and `/match-summaries/{eventId}` | `match-summaries` and stored game | Non-training event, unknown/provisional import; [0.4](../v0.4/README.md#http-contract) |
-| `/result-summaries?game=wardogs` and `/result-summaries/{eventId}` | Independent `result-summaries` grant | Unknown/provisional/confirmed/corrected revision; [0.10](README.md#website-read-contract--openapi-160) |
-| `/server-snapshots?game=wardogs` and `/server-snapshots/{connectionId}` | `server-snapshots` | Safe current observation and freshness; [0.5](../v0.5/README.md#website-api-130) |
-| `/integration-health?game=hell_let_loose` and `/integration-health/{connectionId}` | `integration-health` | Collector health/freshness without secrets; [0.5](../v0.5/README.md#website-api-130) |
-| `/warcon-data/{connectionId}?game=wardogs&view=live` | Explicit `warcon-data` + `wardogs`; legacy keys denied | Timestamped gameplay projection; fifteen views in [0.11](../v0.11/README.md), including deliberately granted player names/IDs |
-| `/membership-summaries/{discordUserId}?game=wardogs&maxAgeMs=60000` | `membership-summaries` **and enabled per-key/game policy** | Exact subject observation; no collection endpoint; [0.7](../v0.7/README.md) |
-| `/changes?game=wardogs&resources=event-summaries,result-summaries&start=now` | Restricted key with all requested resource/game grants | Initial signed cursor, then paged changes; [0.6](../v0.6/README.md) |
-| `/sync-records/{resource}/{id}?game=wardogs` | Same restricted grants; membership also needs its policy | Atomic projection/revision or tombstone; [0.6](../v0.6/README.md) |
-| `/teams?game=hell_let_loose` and `/teams/{id}?game=hell_let_loose` | Explicit `teams` grant for the one requested game; legacy keys denied; Convex rechecks revocation, workspace and game | Active teams of the global per-game catalogue owned by Logi's global administrators (stable global ID, game, name, short code, public logo URL, description, links, revision); archived and merged teams excluded; collection is `{data: {items, nextCursor}}`; also a `changes`/`sync-records` resource fanned out to every granted workspace; [0.15](../v0.15/README.md) |
+| GET path                                                                           | Grant / additional gate                                                                                               | Shape and use                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/event-summaries?game=wardogs` and `/event-summaries/{eventId}`                   | `event-summaries` and stored game                                                                                     | Scheduled match/training summaries; [0.4](../v0.4/README.md#http-contract)                                                                                                                                                                                                                                                                                                 |
+| `/match-summaries?game=hell_let_loose` and `/match-summaries/{eventId}`            | `match-summaries` and stored game                                                                                     | Non-training event, unknown/provisional import; [0.4](../v0.4/README.md#http-contract)                                                                                                                                                                                                                                                                                     |
+| `/result-summaries?game=wardogs` and `/result-summaries/{eventId}`                 | Independent `result-summaries` grant                                                                                  | Unknown/provisional/confirmed/corrected revision; [0.10](README.md#website-read-contract--openapi-160)                                                                                                                                                                                                                                                                     |
+| `/server-snapshots?game=wardogs` and `/server-snapshots/{connectionId}`            | `server-snapshots`                                                                                                    | Safe current observation and freshness; [0.5](../v0.5/README.md#website-api-130)                                                                                                                                                                                                                                                                                           |
+| `/integration-health?game=hell_let_loose` and `/integration-health/{connectionId}` | `integration-health`                                                                                                  | Collector health/freshness without secrets; [0.5](../v0.5/README.md#website-api-130)                                                                                                                                                                                                                                                                                       |
+| `/warcon-data/{connectionId}?game=wardogs&view=live`                               | Explicit `warcon-data` + `wardogs`; legacy keys denied                                                                | Timestamped gameplay projection; fifteen views in [0.11](../v0.11/README.md), including deliberately granted player names/IDs                                                                                                                                                                                                                                              |
+| `/membership-summaries/{discordUserId}?game=wardogs&maxAgeMs=60000`                | `membership-summaries` **and enabled per-key/game policy**                                                            | Exact subject observation; no collection endpoint; [0.7](../v0.7/README.md)                                                                                                                                                                                                                                                                                                |
+| `/changes?game=wardogs&resources=event-summaries,result-summaries&start=now`       | Restricted key with all requested resource/game grants                                                                | Initial signed cursor, then paged changes; [0.6](../v0.6/README.md)                                                                                                                                                                                                                                                                                                        |
+| `/sync-records/{resource}/{id}?game=wardogs`                                       | Same restricted grants; membership also needs its policy                                                              | Atomic projection/revision or tombstone; [0.6](../v0.6/README.md)                                                                                                                                                                                                                                                                                                          |
+| `/teams?game=hell_let_loose` and `/teams/{id}?game=hell_let_loose`                 | Explicit `teams` grant for the one requested game; legacy keys denied; Convex rechecks revocation, workspace and game | Active teams of the global per-game catalogue owned by Logi's global administrators (stable global ID, game, name, short code, public logo URL, description, links, revision); archived and merged teams excluded; collection is `{data: {items, nextCursor}}`; also a `changes`/`sync-records` resource fanned out to every granted workspace; [0.15](../v0.15/README.md) |
 
 Regular summary collections return `{data: [...], page: {nextCursor, limit}}`;
 details return `{data: ...}`. Collections support `limit` 1–100, opaque `cursor`,
@@ -120,25 +120,26 @@ Authorization: Bearer <restricted service key>
    revisions as `BigInt`, and commit the projection and checkpoint together.
    Reviewed-result versions and synchronization revisions are different counters.
 4. Apply explicit removals/tombstones. Missing list rows are not deletion proof.
-   History/tombstone retention is seven days; `410 reset_required` requires a new
+   Logi keeps no change history or tombstones (since 7 October 2026): every
+   cursor returns `410 reset_required`, which requires a new
    boundary and rebuild that preserves website editorial/consent data.
 5. Authenticate webhook raw bytes with the separate HMAC secret and timestamp.
    Durably deduplicate by signed envelope ID plus source/guild, reject mismatch
    with the unsigned delivery header, enqueue refetch, then acknowledge. See the
    [signature/consumer contract](../v0.3/README.md#synchronization-acceptance-contract).
-6. Subscribe explicitly to `integration.changed`; membership uses the separate
-   opt-in `membership.changed`. Notifications carry invalidations, not publishing
-   payloads or website privileges. Keep periodic feed reconciliation.
+6. Poll the feed: `integration.changed` and `membership.changed` are no longer
+   emitted (October 2026). Read server snapshots and integration health from
+   their own endpoints; the feed no longer carries them.
 
-| Condition | Consumer behavior |
-| --- | --- |
-| 401 / revoked or invalid key | Stop privileged use; fix credentials, do not delete records |
-| 403 / insufficient scope or disabled policy | Fail closed and correct grants/policy; no automatic widening |
-| 400 / invalid or altered scope/cursor | Fix the request; do not retry it unchanged forever |
-| 404 / missing or foreign detail | Respect resource semantics; use durable removal evidence for reconciliation |
-| 410 / retention, membership policy or epoch reset | Re-bootstrap the relevant scope/subject |
-| Timeout / 408 / 429 / 5xx | Bounded backoff/jitter and Retry-After; retain checkpoint and mark stale |
-| Stale/unknown membership | Deny access requiring fresh evidence; never infer roles from an old success |
+| Condition                                         | Consumer behavior                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------------------- |
+| 401 / revoked or invalid key                      | Stop privileged use; fix credentials, do not delete records                 |
+| 403 / insufficient scope or disabled policy       | Fail closed and correct grants/policy; no automatic widening                |
+| 400 / invalid or altered scope/cursor             | Fix the request; do not retry it unchanged forever                          |
+| 404 / missing or foreign detail                   | Respect resource semantics; use durable removal evidence for reconciliation |
+| 410 / retention, membership policy or epoch reset | Re-bootstrap the relevant scope/subject                                     |
+| Timeout / 408 / 429 / 5xx                         | Bounded backoff/jitter and Retry-After; retain checkpoint and mark stale    |
+| Stale/unknown membership                          | Deny access requiring fresh evidence; never infer roles from an old success |
 
 Use at most 60-second evidence for privileged website writes and five minutes for
 protected reads, or a stricter website policy. Age is checked at decision time,

@@ -1,13 +1,23 @@
 import {
+    action,
+    internalAction,
+    internalQuery,
+    mutation,
+    query,
+    type ActionCtx,
+} from "./_generated/server"
+import {
     filterByGameScope,
     resolveGameScope,
     type GameId,
-    type GameScope,
 } from "../src/domain/games/game"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
-import { internalAction, mutation, query } from "./_generated/server"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { canonicalJson } from "../src/domain/game-data/canonical-json"
+import { assertSessionGateway } from "./dashboardSessionStore"
 import type { MutationCtx } from "./_generated/server"
-import { api } from "./_generated/api"
+import type { Doc } from "./_generated/dataModel"
+import { api, internal } from "./_generated/api"
 import { v } from "convex/values"
 
 const gameIdValidator = v.union(
@@ -69,6 +79,50 @@ const clanPoints = (
     if (event.eventResult?.outcome === "defeat")
         return Math.min(score.sideA, score.sideB)
     return score.sideA
+}
+
+/**
+ * Stores a history row only when its matches changed: a match import or a
+ * refresh recomputes every row it touches, and most come out the same.
+ * Convex keeps a new version of a row on every write.
+ */
+async function storeGuildHistory(
+    ctx: MutationCtx,
+    guildId: string,
+    existing: Doc<"guildPerformanceHistory"> | null,
+    matches: Doc<"guildPerformanceHistory">["matches"],
+    updatedAt: string
+) {
+    if (existing && canonicalJson(existing.matches) === canonicalJson(matches))
+        return false
+    if (existing) await ctx.db.patch(existing._id, { matches, updatedAt })
+    else
+        await ctx.db.insert("guildPerformanceHistory", {
+            guildId,
+            matches,
+            updatedAt,
+        })
+    return true
+}
+async function storePlayerHistory(
+    ctx: MutationCtx,
+    guildId: string,
+    userId: string,
+    existing: Doc<"playerPerformanceHistory"> | null,
+    matches: Doc<"playerPerformanceHistory">["matches"],
+    updatedAt: string
+) {
+    if (existing && canonicalJson(existing.matches) === canonicalJson(matches))
+        return false
+    if (existing) await ctx.db.patch(existing._id, { matches, updatedAt })
+    else
+        await ctx.db.insert("playerPerformanceHistory", {
+            guildId,
+            userId,
+            matches,
+            updatedAt,
+        })
+    return true
 }
 
 export async function rebuildGuildPerformanceHistory(
@@ -181,17 +235,7 @@ export async function rebuildGuildPerformanceHistory(
               ...guildMatches,
           ]
         : guildMatches
-    if (guildExisting)
-        await ctx.db.patch(guildExisting._id, {
-            matches: nextGuildMatches,
-            updatedAt: now,
-        })
-    else
-        await ctx.db.insert("guildPerformanceHistory", {
-            guildId,
-            matches: nextGuildMatches,
-            updatedAt: now,
-        })
+    await storeGuildHistory(ctx, guildId, guildExisting, nextGuildMatches, now)
     if (!includePlayers)
         return { guildMatches: guildMatches.length, players: 0 }
     const playerMatches = new Map<string, Map<string, Snapshot>>()
@@ -245,30 +289,18 @@ export async function rebuildGuildPerformanceHistory(
                   ...limitedMatches,
               ]
             : limitedMatches
-        if (existing)
-            await ctx.db.patch(existing._id, {
-                matches: nextMatches,
-                updatedAt: now,
-            })
-        else
-            await ctx.db.insert("playerPerformanceHistory", {
-                guildId,
-                userId,
-                matches: nextMatches,
-                updatedAt: now,
-            })
+        await storePlayerHistory(
+            ctx,
+            guildId,
+            userId,
+            existing,
+            nextMatches,
+            now
+        )
     }
     return { guildMatches: guildMatches.length, players: clanUserIds.size }
 }
 
-export const refreshForGuild = mutation({
-    args: { secret: v.string(), guildId: v.string() },
-    handler: async (ctx, args) => {
-        if (args.secret !== internalAuthSecret())
-            throw new Error("Unauthorized.")
-        return rebuildGuildPerformanceHistory(ctx, args.guildId)
-    },
-})
 export const listClanUserIds = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
@@ -363,51 +395,143 @@ export const refreshPlayerForGuild = mutation({
                 q.eq("guildId", args.guildId).eq("userId", args.userId)
             )
             .unique()
-        const updatedAt = new Date().toISOString()
         const nextMatches = [
             ...(existing?.matches.filter(
                 (match) => resolveGameScope(match.gameId) !== args.gameId
             ) ?? []),
             ...limitedHistory,
         ]
-        if (existing)
-            await ctx.db.patch(existing._id, {
-                matches: nextMatches,
-                updatedAt,
-            })
-        else
-            await ctx.db.insert("playerPerformanceHistory", {
-                guildId: args.guildId,
-                userId: args.userId,
-                matches: nextMatches,
-                updatedAt,
-            })
+        await storePlayerHistory(
+            ctx,
+            args.guildId,
+            args.userId,
+            existing,
+            nextMatches,
+            new Date().toISOString()
+        )
         return { matches: limitedHistory.length }
     },
 })
+/**
+ * The workspace members who played one imported match: the scoreboard's
+ * player IDs, through their statistics rows, to linked users assigned in
+ * the workspace. Only their histories can change with that import.
+ */
+export const matchClanUserIds = internalQuery({
+    args: { guildId: v.string(), eventId: v.id("events") },
+    handler: async (ctx, args): Promise<string[]> => {
+        const stats = await ctx.db
+            .query("matchStats")
+            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+            .unique()
+        if (!stats || stats.guildId !== args.guildId) return []
+        const linked = new Set<string>()
+        for (const playerId of new Set(
+            stats.raw.player_stats.map((row) => row.player_id)
+        ))
+            for (const doc of await ctx.db
+                .query("playerStats")
+                .withIndex("id", (q) => q.eq("id", playerId))
+                .take(10))
+                if (doc.userId) linked.add(doc.userId)
+        const members: string[] = []
+        for (const userId of linked)
+            if (
+                await ctx.db
+                    .query("userAssignments")
+                    .withIndex("serverId_userId", (q) =>
+                        q.eq("serverId", args.guildId).eq("userId", userId)
+                    )
+                    .first()
+            )
+                members.push(userId)
+        return members.sort()
+    },
+})
+type RefreshResult = { guildMatches: number; players: number }
+/** The workspace history, then each given player's (every member's without a list). */
+async function refreshHistories(
+    ctx: ActionCtx,
+    args: {
+        guildId: string
+        gameId: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    },
+    players?: string[]
+): Promise<RefreshResult> {
+    const access = { ...args, secret: internalAuthSecret() }
+    const guild: RefreshResult = await ctx.runMutation(
+        api.performanceHistory.refreshGuildOnly,
+        access
+    )
+    const userIds: string[] =
+        players ??
+        (await ctx.runQuery(api.performanceHistory.listClanUserIds, access))
+    for (const userId of userIds)
+        await ctx.runMutation(api.performanceHistory.refreshPlayerForGuild, {
+            ...access,
+            userId,
+        })
+    return { ...guild, players: userIds.length }
+}
+/**
+ * After a match import (`matchStats:upsertForEvent`): the workspace history
+ * and the histories of the players in that match. Without `eventId` every
+ * member's history is rebuilt.
+ */
 export const refreshInBackground = internalAction({
-    args: { secret: v.string(), guildId: v.string(), gameId: gameIdValidator },
-    handler: async (
-        ctx,
-        args
-    ): Promise<{ guildMatches: number; players: number }> => {
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        gameId: gameIdValidator,
+        eventId: v.optional(v.id("events")),
+    },
+    handler: async (ctx, args): Promise<RefreshResult> => {
         if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
-        const guild: { guildMatches: number; players: number } =
-            await ctx.runMutation(api.performanceHistory.refreshGuildOnly, args)
-        const userIds: string[] = await ctx.runQuery(
-            api.performanceHistory.listClanUserIds,
-            args
+        const target = { guildId: args.guildId, gameId: args.gameId }
+        return await refreshHistories(
+            ctx,
+            target,
+            args.eventId
+                ? await ctx.runQuery(
+                      internal.performanceHistory.matchClanUserIds,
+                      { guildId: args.guildId, eventId: args.eventId }
+                  )
+                : undefined
         )
-        for (const userId of userIds)
-            await ctx.runMutation(
-                api.performanceHistory.refreshPlayerForGuild,
-                {
-                    ...args,
-                    userId,
-                }
-            )
-        return { ...guild, players: userIds.length }
+    },
+})
+/** The dashboard check of `refreshForDashboard`: a current clan admin's session. */
+export const authorizeRefresh = internalQuery({
+    args: { secret: v.string(), guildId: v.string(), actor: dashboardActor },
+    handler: async (ctx, args) => {
+        await authorizeDashboardAdmin(ctx, args)
+    },
+})
+/**
+ * "Refresh performance history" in Settings → Imports: rebuilds the
+ * workspace history and every member's for one game. The web route checks
+ * the clan-admin right; this action checks it again from the dashboard
+ * session (`authorizeDashboardAdmin`) before it reads or writes anything.
+ */
+export const refreshForDashboard = action({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        gameId: gameIdValidator,
+        actor: dashboardActor,
+    },
+    handler: async (ctx, args): Promise<RefreshResult> => {
+        assertSessionGateway(args.secret)
+        await ctx.runQuery(internal.performanceHistory.authorizeRefresh, {
+            secret: args.secret,
+            guildId: args.guildId,
+            actor: args.actor,
+        })
+        return await refreshHistories(ctx, {
+            guildId: args.guildId,
+            gameId: args.gameId,
+        })
     },
 })
 function normalizeHistory<

@@ -24,24 +24,37 @@ operation, data } }`. Upserts contain the existing minimal DTO; removals have
 6. Keep the returned cursor for polling even when `hasMore` is false. Signatures
    bind key, guild, game and resources. Tampering/filter changes return 400;
    missing grants return 403. All sync responses use `Cache-Control: no-store`.
-7. History and tombstones retain seven days. Expired cursors or cursors behind
-   the durable retention floor return **410 `reset_required`**. Capture a new
-   start boundary and rebuild. Never interpret a missing list row as deletion.
+7. Logi keeps no change history or tombstones since 7 October 2026 (seven
+   days, then two, before that): every cursor returns
+   **410 `reset_required`**. Capture a new start boundary and rebuild. Never
+   interpret a missing list row as deletion.
 
-Registered resources: `event-summaries`, `match-summaries`, `server-snapshots`,
-`integration-health`. Other resources are not implicitly registered. Scope moves
-remove the old projection and upsert the new scope. No event-delete API was added.
-Preserve editorial and consent records during rebuilding. Time-based collector
-freshness still requires `observedAt` age checks and periodic refetch: wall-clock
-passage does not itself emit a change. Telemetry never confirms a result.
+Registered resources: `event-summaries`, `match-summaries`. Other resources are
+not implicitly registered. Scope moves remove the old projection and upsert the
+new scope. No event-delete API was added. Preserve editorial and consent records
+during rebuilding. Telemetry never confirms a result.
+
+`server-snapshots` and `integration-health` are no longer carried by the feed.
+They are live state: the collector re-observes every server once a minute, and
+every poll used to append two changes per server. `/clan/changes` and
+`/clan/sync-records` still accept both names, so an existing request keeps
+working and simply receives no items; read the current state from
+`/api/v1/clan/server-snapshots` and `/api/v1/clan/integration-health`, polling
+at the freshness the website needs and checking `observedAt` age.
+
+A clan's feed is written only while the clan has a live restricted key granted
+at least one feed resource (or a website event-command key, whose revision check
+uses the `event-summaries` revision). A clan without one gets no changes, records
+or revisions, and its head stays where it is. Nothing a website could read is
+lost: a new key bootstraps with `start=now` and the baseline sweep, as above.
 
 ## Webhooks
 
-Administrators may explicitly configure `integration.changed` using `eventTypes`
-in the existing session-authenticated webhook configuration endpoint. Existing
-subscriptions and the manager's default event list remain compatible. Its
-`resource` contains only change identity, operation and revision. Refetch through
-the scoped key; do not publish webhook JSON. The feed backstops webhook loss.
+The feed no longer emits `integration.changed` or `membership.changed` webhooks
+(October 2026); poll `/clan/changes` instead. The dashboard never offered these
+event types. A subscription that lists them is still accepted and keeps its
+other event types; it simply receives no delivery for them. The queue below
+still serves the other webhook event types.
 
 Enqueues schedule work transactionally. Each worker drains at most 25 deliveries
 with four simultaneous HTTP requests, 10-second request deadlines and a 30-second

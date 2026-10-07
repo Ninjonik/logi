@@ -13,6 +13,25 @@ export const SYNC_RESOURCES = [
     "teams",
 ] as const
 export type SyncResource = (typeof SYNC_RESOURCES)[number]
+/**
+ * Live state the feed no longer carries. `/clan/changes` and
+ * `/clan/sync-records` still accept the names, so existing website requests
+ * keep working and receive no items; the state is read from
+ * `/api/v1/clan/server-snapshots` and `/api/v1/clan/integration-health`.
+ */
+export const RETIRED_SYNC_RESOURCES = [
+    "server-snapshots",
+    "integration-health",
+] as const
+/** The resources a writer may append to the feed. */
+export type FeedResource = Exclude<
+    SyncResource,
+    (typeof RETIRED_SYNC_RESOURCES)[number]
+>
+export const FEED_RESOURCES = SYNC_RESOURCES.filter(
+    (resource): resource is FeedResource =>
+        !(RETIRED_SYNC_RESOURCES as readonly string[]).includes(resource)
+)
 export type IntegrationChange = {
     revision: string
     guildId: string

@@ -31,6 +31,12 @@ type Access = {
     keyHash?: string
 }
 const RETAIN_MS = 14 * 86400_000
+/**
+ * `accessedAt` only orders eviction and the 14-day retention, so a read
+ * refreshes it at most hourly: every write stores a new version of the row
+ * with its snapshot, and the website reads a match on every page view.
+ */
+export const ACCESS_TOUCH_MS = 3_600_000
 const pruneRef = makeFunctionReference<"mutation">("leagueMatches:prune")
 async function authorize(ctx: MutationCtx, args: Access) {
     if (
@@ -92,7 +98,8 @@ export const reserve = internalMutation({
                 nextRefreshAt: current.nextRefreshAt,
             })
         }
-        if (row) await ctx.db.patch(row._id, { accessedAt: now })
+        if (row && now - row.accessedAt >= ACCESS_TOUCH_MS)
+            await ctx.db.patch(row._id, { accessedAt: now })
         if (
             current.snapshot &&
             current.nextRefreshAt > now &&

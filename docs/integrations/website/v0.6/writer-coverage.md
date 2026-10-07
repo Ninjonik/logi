@@ -15,16 +15,17 @@ throws commit nothing. Tests simulate rollback; Convex supplies the real guarant
 | Migration          | `migrations.migrateEventResults`; old result shapes are compared without DTO parsing so migration remains possible                                                                       |
 | Helper setup       | `serverSetup.resetHelperDataForGuild`, `initializeDefaultHelperDataForGuild`; projected timestamps if modified                                                                           |
 | Competition        | `competitions.linkEvent`; nonprojected linkage today, tracked for future projected changes                                                                                               |
-| Snapshot collector | `gameData.configure`, `claimNext`, `finishSnapshot`                                                                                                                                      |
-| History collector  | `gameDataHistory.claimNext`, `commit`, `fail`; connection health only, never private sessions                                                                                            |
+| Snapshot collector | `gameData.configure`, `claimNext`, `finishSnapshot`; connection rows are live state and append nothing                                                                                   |
+| History collector  | `gameDataHistory.claimNext`, `commit`, `fail`; session people projections only, never connection health                                                                                  |
 
 Event fields: name, kind, status, gameStart, gameEnd, updatedAt, eventResult,
-guildId and resolved gameId. Collector fields: provider, enabled, observation,
-errorCategory, historyCount, historyErrorCategory and scope. The bookkeeping
-times (lastAttemptAt, nextAttemptAt, historyLastSuccessAt, updatedAt) advance
-on every collector run and are not a change; the served `integration-health`
-record carries the current values. Likewise a session (`player-stat-summaries`)
-seen again with the same content (fetchedAt, updatedAt only) is not a change.
+guildId and resolved gameId. `gameDataConnections` is not tracked: its
+observation and health change on every collector poll, so nothing announces `server-snapshots` or `integration-health` (read
+`/api/v1/clan/server-snapshots` and `/api/v1/clan/integration-health`). A
+session (`player-stat-summaries`) seen again with the same content (fetchedAt,
+updatedAt only) is not a change. A tracked League fixture (`league-fixtures`)
+is a change only when its served projection changes; the row revision, age,
+staleness, last attempt and the snapshot's `fetchedAt` move on every refresh and are left out of the comparison.
 Kind/scope changes remove the old projection (e.g. match to training). Extra
 invalidations are harmless; private fields never enter the stream.
 
@@ -45,3 +46,7 @@ reconciliation of an unchanged clan, a nickname-only gateway update) refreshes
 The standalone legacy HLL scope repository currently has no production caller;
 any future caller must use the decorator. Scheduled jobs call covered event
 handlers. Public previews, raw stats and recap bodies are not summary dependencies.
+
+Logi keeps no change log (7 Oct): an append allocates the clan's next
+revision in `integrationHeads` and enqueues the `integration.changed` or
+`membership.changed` deliveries of the clan's webhook subscriptions.

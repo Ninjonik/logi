@@ -22,6 +22,7 @@ import type { ResultRevision } from "../src/domain/match-results/result-revision
 import { confirmResult } from "../src/application/match-results/confirm-result"
 import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
 import { axisAlliesScore } from "../src/domain/match-results/result-sides"
+import { newestSessionFirst } from "../src/domain/game-data/history-rules"
 import { providerSessionSchema } from "../src/domain/game-data/contracts"
 import { resolveGameScope, isGameId } from "../src/domain/games/game"
 import { assertMembershipSecret } from "./membershipAccess"
@@ -245,6 +246,8 @@ export const review = mutation({
         return revision
     },
 })
+/** How many collected sessions the result picker offers. */
+const SESSION_PICKER_LIMIT = 50
 export const get = query({
     args: scope,
     handler: async (ctx, args) => {
@@ -256,17 +259,25 @@ export const get = query({
             .withIndex("eventId_version", (q) => q.eq("eventId", event._id))
             .order("desc")
             .take(20)
+        // The picker offers the clan's most recently collected sessions,
+        // newest game first. Candidates come in collection order (creation
+        // time, which no later rewrite moves); `fetchedAt` changes whenever
+        // a session is recollected, e.g. after a source change.
         const sessions =
             args.gameId === "hell_let_loose"
-                ? await ctx.db
-                      .query("gameSessions")
-                      .withIndex("guildId_gameId_fetchedAt", (q) =>
-                          q
-                              .eq("guildId", args.guildId)
-                              .eq("gameId", "hell_let_loose")
-                      )
-                      .order("desc")
-                      .take(50)
+                ? (
+                      await ctx.db
+                          .query("gameSessions")
+                          .withIndex("guildId_gameId", (q) =>
+                              q
+                                  .eq("guildId", args.guildId)
+                                  .eq("gameId", "hell_let_loose")
+                          )
+                          .order("desc")
+                          .take(SESSION_PICKER_LIMIT)
+                  ).sort((left, right) =>
+                      newestSessionFirst(left.session, right.session)
+                  )
                 : []
         return {
             current,

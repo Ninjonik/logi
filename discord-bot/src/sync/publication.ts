@@ -127,6 +127,12 @@ export async function publishManagedMessage(
         legacyChannelId?: string
         legacyMessageId?: string
         message: MessageCreateOptions
+        /**
+         * Leave a message Discord already shows, confirmed within
+         * `PUBLICATION_RECHECK_MS`, untouched: no write, no Discord call.
+         * The panels set it on their timed refresh, never on an admin request.
+         */
+        reuseCurrent?: boolean
     }
 ) {
     const guild = await client.guilds.fetch(input.guildId)
@@ -190,12 +196,16 @@ export async function publishManagedMessage(
                     ...(input.legacyMessageId
                         ? { legacyMessageId: input.legacyMessageId }
                         : {}),
+                    ...(input.reuseCurrent
+                        ? { hash, channelId: input.channelId }
+                        : {}),
                 }),
             save: (state) =>
                 convex.mutation(ref("save"), {
                     secret: env.internalSecret,
                     ...state,
                 }),
+            // A success stores the final state with the release (one write).
             finish: async (state, error) =>
                 convex.mutation(ref("finish"), {
                     secret: env.internalSecret,
@@ -209,7 +219,14 @@ export async function publishManagedMessage(
                                   input.key
                               ),
                           }
-                        : {}),
+                        : {
+                              state: {
+                                  channelId: state.channelId,
+                                  messageId: state.messageId,
+                                  pending: state.pending,
+                                  hash: state.hash,
+                              },
+                          }),
                 }),
         },
         {

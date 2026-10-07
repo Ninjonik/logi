@@ -7,11 +7,15 @@ import {
     purgePanel,
 } from "./discordPanelStore"
 import {
+    botHeartbeatNeedsWrite,
+    nextPanelStatus,
+    panelStatusNeedsWrite,
+} from "../src/domain/discord-publications/panel-delivery"
+import {
     botHeartbeatSchema,
     panelAttemptSchema,
 } from "../src/domain/discord-publications/panel-delivery.schema"
 import { requestPanelAction } from "../src/application/discord-publications/panel-actions"
-import { nextPanelStatus } from "../src/domain/discord-publications/panel-delivery"
 import { normalizePanelKind } from "../src/domain/discord-publications/settings"
 import { panelAction } from "./discordPublicationTable"
 import { assertInternalSecret } from "./discord_shared"
@@ -29,7 +33,12 @@ import { v } from "convex/values"
  */
 const snowflake = /^\d{17,20}$/
 
-/** "Bot online · verze … · poslední kontakt před 12 s" (P1-04..06, P1-B05). */
+/**
+ * "Bot online · verze … · poslední kontakt před 12 s" (P1-04..06, P1-B05):
+ * one `bot` row with the workspaces the bot visited. A beat that changes
+ * nothing within `BOT_HEARTBEAT_MIN_WRITE_MS` is not stored. The first beat
+ * with the list removes the `guild:<id>` rows the earlier layout kept.
+ */
 export const heartbeat = mutation({
     args: {
         secret: v.string(),
@@ -38,29 +47,34 @@ export const heartbeat = mutation({
             protocol: v.number(),
             startedAt: v.number(),
         }),
-        /** Workspaces with panels this bot visited on its last pass. */
+        /** Workspaces with panels this bot visited since its previous beat. */
         guildIds: v.array(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const beat = botHeartbeatSchema.parse(args.heartbeat)
         const now = Date.now()
-        const keys = [
-            "bot",
-            ...[...new Set(args.guildIds)]
-                .filter((id) => snowflake.test(id))
-                .slice(0, 200)
-                .map((id) => `guild:${id}`),
-        ]
-        for (const key of keys) {
-            const row = await ctx.db
+        const guildIds = [...new Set(args.guildIds)]
+            .filter((id) => snowflake.test(id))
+            .sort()
+            .slice(0, 200)
+        const row = await ctx.db
+            .query("discordBotHeartbeats")
+            .withIndex("key", (q) => q.eq("key", "bot"))
+            .unique()
+        if (!botHeartbeatNeedsWrite(row, { ...beat, guildIds }, now)) return
+        const firstList = !row?.guildIds
+        const value = { ...beat, key: "bot", seenAt: now, guildIds }
+        if (row) await ctx.db.patch(row._id, value)
+        else await ctx.db.insert("discordBotHeartbeats", value)
+        if (firstList)
+            for (const legacy of await ctx.db
                 .query("discordBotHeartbeats")
-                .withIndex("key", (q) => q.eq("key", key))
-                .unique()
-            const value = { ...beat, key, seenAt: now }
-            if (row) await ctx.db.patch(row._id, value)
-            else await ctx.db.insert("discordBotHeartbeats", value)
-        }
+                .withIndex("key", (q) =>
+                    q.gte("key", "guild:").lt("key", "guild;")
+                )
+                .take(500))
+                await ctx.db.delete(legacy._id)
     },
 })
 
@@ -94,6 +108,14 @@ export const report = mutation({
             panelId: args.panelId,
             passwordNotifiedAt: notified,
         }
+        // A pass that only moved the times is not stored (every write keeps
+        // a version of the row; the panels report every minute).
+        if (
+            row &&
+            (row.passwordNotifiedAt ?? null) === notified &&
+            !panelStatusNeedsWrite(panelStatusRecord(row), next)
+        )
+            return
         if (row) await ctx.db.patch(row._id, value)
         else await ctx.db.insert("discordPanelStatus", value)
     },

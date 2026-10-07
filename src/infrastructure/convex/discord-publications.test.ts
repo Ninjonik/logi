@@ -84,6 +84,125 @@ test("durable lease serializes workers, retains uncertain attempts and fences ol
         "denied"
     )
 })
+/** Counts every insert and patch the handlers make. */
+function countWrites(ctx: ReturnType<typeof testContext>) {
+    const writes: string[] = []
+    const insert = ctx.db.insert.bind(ctx.db)
+    const patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.insert = async (table, value) => {
+        writes.push(`insert:${table}`)
+        return await insert(table, value)
+    }
+    ctx.db.patch = async (id, value) => {
+        writes.push(`patch:${id.split(":")[0]}`)
+        return await patch(id, value)
+    }
+    return writes
+}
+test("an unchanged message confirmed within ten minutes is current without a write; a publish is the claim and one finish", async (t) => {
+    let clock = Date.parse("2026-10-07T12:00:00.000Z")
+    t.mock.method(Date, "now", () => clock)
+    const ctx = testContext()
+    const writes = countWrites(ctx)
+    const target = { hash: "h1", channelId: "channel" }
+    const args = { secret, guildId: "guild-a", key: "calendar", revision: 1 }
+    const publishOnce = async (hash: string) => {
+        const claimed = await invoke(claim, ctx, { ...args, ...target, hash })
+        if (!claimed || claimed.current) return claimed
+        await invoke(finish, ctx, {
+            secret,
+            id: claimed.id,
+            fence: claimed.fence,
+            state: {
+                channelId: "channel",
+                messageId: "message",
+                pending: null,
+                hash,
+            },
+        })
+        return claimed
+    }
+    await publishOnce("h1")
+    assert.deepEqual(writes, [
+        "insert:discordPublications",
+        "patch:discordPublications",
+        "patch:discordPublications",
+    ])
+    const row = ctx.db.tables.discordPublications[0]
+    assert.equal(row.hash, "h1")
+    assert.equal(row.messageId, "message")
+    assert.equal(row.leaseUntil, 0)
+    // The next minute renders the same: nothing is written.
+    writes.length = 0
+    clock += 60_000
+    const current = await publishOnce("h1")
+    assert.equal(current.current, true)
+    assert.equal(current.messageId, "message")
+    assert.deepEqual(writes, [])
+    // A changed render: the claim and the finish carrying the state.
+    clock += 60_000
+    await publishOnce("h2")
+    assert.deepEqual(writes, [
+        "patch:discordPublications",
+        "patch:discordPublications",
+    ])
+    assert.equal(row.hash, "h2")
+    // Ten minutes after the last confirmation the same render is checked again.
+    writes.length = 0
+    clock += 10 * 60_000
+    assert.equal((await publishOnce("h2")).current, undefined)
+    assert.equal(writes.length, 2)
+    // Another channel, or an old bot that sends no hash, always takes the lease.
+    writes.length = 0
+    const moved = await invoke(claim, ctx, {
+        ...args,
+        hash: "h2",
+        channelId: "elsewhere",
+    })
+    assert.equal(moved.current, undefined)
+    await invoke(finish, ctx, { secret, id: moved.id, fence: moved.fence })
+    const old = await invoke(claim, ctx, args)
+    assert.equal(old.current, undefined)
+    assert.ok(old.fence > moved.fence)
+})
+test("a finish that stores the state needs the lease, like save", async (t) => {
+    let clock = Date.parse("2026-10-07T12:00:00.000Z")
+    t.mock.method(Date, "now", () => clock)
+    const ctx = testContext()
+    const first = await invoke(claim, ctx, {
+        secret,
+        guildId: "guild-a",
+        key: "calendar",
+        revision: 1,
+    })
+    clock += 120_001
+    const state = {
+        channelId: "channel",
+        messageId: "message",
+        pending: null,
+        hash: "h1",
+    }
+    await assert.rejects(
+        invoke(finish, ctx, {
+            secret,
+            id: first.id,
+            fence: first.fence,
+            state,
+        }),
+        /lease/
+    )
+    assert.equal(ctx.db.tables.discordPublications[0].hash, null)
+    // The failure is recorded without the state.
+    await invoke(finish, ctx, {
+        secret,
+        id: first.id,
+        fence: first.fence,
+        state,
+        error: "Chyba",
+    })
+    assert.equal(ctx.db.tables.discordPublications[0].hash, null)
+    assert.equal(ctx.db.tables.discordPublications[0].error, "Chyba")
+})
 test("panel management rejects revoked dashboard identity and foreign source before writes", async () => {
     const ctx = testContext()
     seedDashboardActor(ctx.db)

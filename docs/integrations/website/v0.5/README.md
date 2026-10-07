@@ -120,12 +120,18 @@ their last data, displayed as unavailable. No API key may configure sources.
   per action. Session upsert and its remaining-ID checkpoint share a transaction.
   Keys are `(connectionId, externalId)`, so provider IDs cannot collide across
   connections. A storage failure leaves the lease/checkpoint for recovery.
-- Discovery performs bounded full sweeps, restarting at page one five minutes
-  after a completed sweep. Replaying a sweep is idempotent; this favors eventual
-  completeness over an unverified incremental cursor. Offset pages are only
-  hints: expired work with no pending IDs rewinds one page. New-head records are
-  picked up on the next sweep; they need not appear within five minutes during a
-  large initial backfill. This is not a provider-consistent snapshot guarantee.
+- Discovery starts a cycle at page one on the first ten-minute collector tick
+  at least five minutes after the previous one ended. A cycle collects only the IDs not yet stored complete for the current
+  connection generation and ends at the first page whose IDs are all stored, so
+  new games arrive within about fifteen minutes without re-reading the archive.
+  One tick runs up to 30 steps of one session each, a second apart.
+  At most once a day (and on the first cycle after enabling or reconfiguring a
+  source) the cycle is a full sweep that re-reads every session to the last
+  page, so provider corrections of older games arrive within a day. Replaying a
+  sweep is idempotent. Offset pages are only hints: expired work with no pending
+  IDs rewinds one page. New-head records need not appear within fifteen minutes
+  during a large initial backfill. This is not a provider-consistent snapshot
+  guarantee.
 - Previously imported unfinished sessions are revisited independently, oldest
   first after five minutes, alternating with discovery so neither starves.
   An end timestamp marks provider completion, **not human result confirmation**.

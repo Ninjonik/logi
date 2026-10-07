@@ -20,6 +20,7 @@ import { trackingSettingsSchema } from "../src/domain/wardogs-league/discovery.s
 import { LEAGUE_CARD_KEY_PREFIX } from "../src/domain/discord-publications/keys"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
+import { leagueMessageRefExpiry } from "../src/domain/housekeeping/retention"
 import { projectLeagueFixture } from "../src/domain/wardogs-league/fixture"
 import { dashboardActor, authorizeDashboardAdmin } from "./dashboardActor"
 import { leaguePanelKey } from "../src/domain/wardogs-league/panels"
@@ -434,12 +435,16 @@ export const ingestMessage = mutation({
                 nextRefreshAt: Date.now(),
             })
         }
+        // A reference lives 14 days from the post (pruneReferences removes
+        // it); without links left it stays a week as a replay tombstone.
         if (old) {
             await ctx.db.patch(old._id, {
                 matchIds: acceptedIds,
                 version: args.version,
                 deleted: args.deleted,
-                expiresAt: acceptedIds.length ? undefined : now + 7 * 86400_000,
+                expiresAt: acceptedIds.length
+                    ? leagueMessageRefExpiry(old._creationTime)
+                    : now + 7 * 86400_000,
             })
         } else if (acceptedIds.length)
             await ctx.db.insert("leagueMessageRefs", {
@@ -449,6 +454,7 @@ export const ingestMessage = mutation({
                 matchIds: acceptedIds,
                 version: args.version,
                 deleted: false,
+                expiresAt: leagueMessageRefExpiry(now),
             })
     },
 })

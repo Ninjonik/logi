@@ -1,14 +1,15 @@
 import {
+    claimDue,
+    finishRead,
+    enqueueIndex,
+    pruneReferences,
+} from "../../../convex/leagueDiscoveryQueue"
+import {
     configure,
     manage,
     ingestMessage,
     forGuild,
 } from "../../../convex/leagueDiscovery"
-import {
-    claimDue,
-    finishRead,
-    enqueueIndex,
-} from "../../../convex/leagueDiscoveryQueue"
 import { claim as claimPublication } from "../../../convex/discordPublications"
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
 import { parseMatchHtml } from "../wardogs-league/parse-match"
@@ -162,6 +163,31 @@ test("deleting a human reference preserves pin and automatic reasons; delayed ed
     assert.equal(row.pinned, true)
     assert.equal(row.automatic, true)
     assert.equal(ctx.db.tables.leagueMessageRefs[0].deleted, true)
+})
+test("a posted link's reference expires 14 days after the post, edits included, and the minute prune removes it", async () => {
+    const ctx = await setup()
+    await invoke(manage, ctx, { ...access, sourceUrl, operation: "add" })
+    await finish(ctx, await invoke(claimDue, ctx))
+    const args = {
+        secret,
+        guildId,
+        channelId,
+        messageId: "100000000000000004",
+        human: true,
+        deleted: false,
+    }
+    const before = Date.now()
+    await invoke(ingestMessage, ctx, { ...args, urls: [sourceUrl], version: 1 })
+    const ref = ctx.db.tables.leagueMessageRefs[0]
+    const day = 86400_000
+    assert.ok(ref.expiresAt >= before + 14 * day)
+    assert.ok(ref.expiresAt <= Date.now() + 14 * day)
+    // An edit that keeps the link keeps the expiry of the post.
+    ref._creationTime = Date.now() - 15 * day
+    await invoke(ingestMessage, ctx, { ...args, urls: [sourceUrl], version: 2 })
+    assert.equal(ref.expiresAt, ref._creationTime + 14 * day)
+    await invoke(pruneReferences, ctx)
+    assert.deepEqual(ctx.db.tables.leagueMessageRefs, [])
 })
 test("native event binding is same-guild, Wardogs match-only and one-to-one", async () => {
     const ctx = await setup()
@@ -433,4 +459,70 @@ test("explicitly refreshing an archived unresolved match attempts one read witho
     })
     assert.equal(ctx.db.tables.leagueTrackedMatches[0].state, "archived")
     assert.equal(await invoke(claimDue, ctx), null)
+})
+
+test("a tracked fixture refresh notifies a change only when the fixture the website reads changed", async () => {
+    const ctx = await setup()
+    ctx.db.seed("webhookSubscriptions", {
+        _id: "webhookSubscriptions:website",
+        guildId,
+        url: "https://website.invalid/hook",
+        enabled: true,
+        eventTypes: ["integration.changed"],
+    })
+    const fixtureChanges = () =>
+        (ctx.db.tables.webhookDeliveries ?? [])
+            .map(
+                (row) =>
+                    (
+                        JSON.parse(row.payload as string) as {
+                            resource: {
+                                resource: string
+                                id: string
+                                operation: string
+                            }
+                        }
+                    ).resource
+            )
+            .filter((change) => change.resource === "league-fixtures")
+    await invoke(manage, ctx, { ...access, sourceUrl, operation: "add" })
+    await finish(ctx, await invoke(claimDue, ctx))
+    assert.equal(ctx.db.tables.leagueTrackedMatches[0].tracked, true)
+    const first = fixtureChanges().length
+    assert.ok(first > 0, "the first readable snapshot is a change")
+    const refresh = async (data = snapshot) => {
+        Object.assign(ctx.db.tables.leagueTrackedMatches[0], {
+            nextRefreshAt: 0,
+            leaseUntil: 0,
+        })
+        const job = await invoke(claimDue, ctx)
+        assert.ok(job)
+        await finish(ctx, job, data)
+    }
+    const revision = ctx.db.tables.leagueTrackedMatches[0].revision
+    await refresh({
+        ...snapshot,
+        fetchedAt: new Date(Date.now() + 1_000).toISOString(),
+    })
+    assert.ok(
+        ctx.db.tables.leagueTrackedMatches[0].revision > revision,
+        "the row itself was refreshed"
+    )
+    assert.equal(
+        fixtureChanges().length,
+        first,
+        "the same page read again (new fetchedAt, attempt and age) is not a change"
+    )
+    await refresh({
+        ...snapshot,
+        title: `${snapshot.title} (renamed)`,
+        fetchedAt: new Date(Date.now() + 2_000).toISOString(),
+    })
+    assert.deepEqual(
+        fixtureChanges()
+            .slice(first)
+            .map((change) => [change.id, change.operation]),
+        [[matchId, "upsert"]],
+        "a changed page is one change"
+    )
 })

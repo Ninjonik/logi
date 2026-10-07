@@ -78,7 +78,8 @@ The [generated OpenAPI endpoint](/api/v1/openapi.json) includes these operations
 Use `Authorization: Bearer <command-service-key>` and
 `X-Logi-Actor-Token: <current-opaque-SSO-access-token>` from the website backend.
 POST also requires an `Idempotency-Key` of 16–128 ASCII letters, digits,
-underscores or hyphens. Exactly one game query parameter is required. Additional
+underscores or hyphens. Receipts are kept 30 days: a repeated key replays its
+receipt within that time, later it runs as a new command. Exactly one game query parameter is required. Additional
 query parameters are rejected. JSON bodies are limited to 16 KiB and five
 seconds of body read time. HTTP responses are `no-store` and do not echo raw
 adapter diagnostics, credentials or private native fields.

@@ -11,10 +11,6 @@ import {
     runningMatchFor,
     type RunningMatch,
 } from "../src/domain/discord-publications/running-match"
-import {
-    hllLiveWithFreshness,
-    readHllLivePayload,
-} from "../src/domain/game-data/hll-live-payload"
 import type { CompetitionDivisionTable } from "../src/domain/discord-publications/competition-panel"
 import { clanBadgeTag } from "../src/domain/discord-publications/panel-graphics-projection"
 import { joinPagePlayers } from "../src/domain/discord-publications/server-join"
@@ -26,6 +22,7 @@ import { projectSnapshot } from "../src/domain/game-data/policy"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc, Id } from "./_generated/dataModel"
 import { connectionSource } from "./gameDataCatalog"
+import { storedHllLive } from "./liveReadPayloads"
 import { getGuildByDiscordId } from "./identity"
 import { clanShortCode } from "./clanTeamStore"
 
@@ -344,12 +341,10 @@ async function latestHllLive(
         .query("hllLiveCache")
         .withIndex("connectionId", (q) => q.eq("connectionId", connection._id))
         .unique()
-    if (cache?.generation !== connection.generation || !cache.dataJson)
-        return null
-    // Stored by `hllLiveReads:finish` after validation; the row carries the
-    // latest read's times.
-    const data = readHllLivePayload(cache.dataJson)
-    return data ? hllLiveFacts(hllLiveWithFreshness(data, cache)) : null
+    if (cache?.generation !== connection.generation) return null
+    // The payload row with the cache row's latest times (`liveReadPayloads`).
+    const data = await storedHllLive(ctx, cache)
+    return data ? hllLiveFacts(data) : null
 }
 
 /**

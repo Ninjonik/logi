@@ -1,4 +1,8 @@
-import { isRetainedWarconSession } from "../src/domain/game-data/history-rules"
+import {
+    HISTORY_HEAD_TOUCH_INTERVAL_MS,
+    historyTouchDue,
+    isRetainedWarconSession,
+} from "../src/domain/game-data/history-rules"
 import { readStoredSource } from "../src/domain/game-data/operator-sources"
 import type { ProviderSession } from "../src/domain/game-data/contracts"
 import type { HistoryRecord } from "../src/domain/game-data/history"
@@ -63,13 +67,26 @@ export async function archiveWarconHistory(
     const facts = { ...session, sourceDigest: undefined }
     const contentDigest = await digest(facts)
     const head = await historyHead(ctx, connection.guildId)
-    const now = new Date().toISOString()
+    const at = Date.now()
+    const now = new Date(at).toISOString()
     const revision =
         existing?.contentDigest === contentDigest
             ? (head?.revision ?? "0")
             : nextRevision(head?.revision ?? "0")
-    if (head) await ctx.db.patch(head._id, { revision, lastCollectedAt: now })
-    else
+    // The daily full walk re-reads every game, one a second. An unchanged
+    // game refreshes only "data as of" (`lastCollectedAt`), at most every
+    // ten minutes (ARCHITECTURE.md, "Convex hot paths").
+    if (head) {
+        if (
+            head.revision !== revision ||
+            historyTouchDue(
+                head.lastCollectedAt,
+                at,
+                HISTORY_HEAD_TOUCH_INTERVAL_MS
+            )
+        )
+            await ctx.db.patch(head._id, { revision, lastCollectedAt: now })
+    } else
         await ctx.db.insert("serverGameHistoryHeads", {
             guildId: connection.guildId,
             revision,

@@ -24,10 +24,16 @@ boards L3, P4–P8) turns the panels into one model with explicit delivery:
   a real `paused` flag (legacy rows read `!enabled`).
 - **Status**: the bot reports every pass (`discordPanelBot:report`) with a typed
   error code, missing permission names, warnings and timing; the dashboard
-  turns the code into a plain sentence with its fix step. The bot writes a
-  heartbeat with its version every 30 s (`LOGI_BOT_VERSION`, else the version
-  in `package.json`); a bot with an older panel protocol is named with the
-  minimum release the panels need (`MINIMUM_BOT_VERSION`).
+  turns the code into a plain sentence with its fix step. A pass that only
+  moves the times is not stored, so "last attempt" and "next refresh" can be
+  up to ten minutes old while nothing changes. The bot writes a heartbeat
+  with its version and the workspaces it visited every 90 s
+  (`LOGI_BOT_VERSION`, else the version in `package.json`); a bot with an
+  older panel protocol is named with the minimum release the panels need
+  (`MINIMUM_BOT_VERSION`).
+- **Unchanged messages**: a panel renders every 60 s, but a message whose
+  render Discord already shows, confirmed less than ten minutes ago, is left
+  alone (no write, no Discord call); an admin request always publishes.
 - **Test fetch**: `discordPanels:testFetch` runs the CRCON or Warcon live read
   with the admin's session and returns the provider status, a summary and the
   rendered preview, never a key, address or password. HLL live reads accept a

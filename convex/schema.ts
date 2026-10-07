@@ -657,7 +657,8 @@ export default defineSchema({
         ),
     })
         .index("tokenHash", ["tokenHash"])
-        .index("userRecordId_createdAt", ["userRecordId", "createdAt"]),
+        .index("userRecordId_createdAt", ["userRecordId", "createdAt"])
+        .index("expiresAt", ["expiresAt"]),
     platformIdentityLinks: defineTable({
         platform: v.literal("steam"),
         platformId: v.string(),
@@ -1008,7 +1009,8 @@ export default defineSchema({
         .index("updatedAt", ["updatedAt"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
-        .index("guildId_occurredAt", ["guildId", "occurredAt"]),
+        .index("guildId_occurredAt", ["guildId", "occurredAt"])
+        .index("occurredAt", ["occurredAt"]),
     competitions: defineTable({
         // Optional so existing ECL records remain valid; missing values are
         // treated as the legacy Hell Let Loose scope.
@@ -1131,7 +1133,8 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
-        .index("status", ["status"]),
+        .index("status", ["status"])
+        .index("requestedAt", ["requestedAt"]),
     // Who the scheduled sign-up and attendance reminders did not reach (board
     // L2-64): one row per match, kind and run (the attendance offset or the
     // sign-up day), updated when a later pass retries. The match page shows
@@ -1146,7 +1149,8 @@ export default defineSchema({
         failedUserIds: v.array(v.string()),
     })
         .index("eventId_sentAt", ["eventId", "sentAt"])
-        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"]),
+        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"])
+        .index("sentAt", ["sentAt"]),
     // A re-published roster's change digest and change DMs, requested by the
     // dashboard and sent by the bot (board L1-120..126, L2-35..40). `before`
     // is the published version the dashboard replaced; the bot compares it
@@ -1188,7 +1192,8 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
-        .index("status", ["status"]),
+        .index("status", ["status"])
+        .index("status_requestedAt", ["status", "requestedAt"]),
     stratmaps: defineTable({
         guildId: v.string(),
         gameId: v.optional(gameId),
@@ -1393,7 +1398,8 @@ export default defineSchema({
         ),
     })
         .index("status", ["status"])
-        .index("guildId", ["guildId"]),
+        .index("guildId", ["guildId"])
+        .index("expiresAt", ["expiresAt"]),
     playerReportDrafts: defineTable({
         guildId: v.string(),
         reporterId: v.string(),
@@ -1530,59 +1536,10 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("threadId", ["threadId"])
         .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
-    membershipApplicationDrafts: defineTable({
-        guildId: v.string(),
-        creatorId: v.string(),
-        categoryId: v.string(),
-        gameId: v.optional(gameId),
-        specialization: v.optional(
-            v.union(v.literal("infantry"), v.literal("armour"))
-        ),
-        answers: v.array(
-            v.object({
-                questionId: v.string(),
-                label: v.string(),
-                value: v.string(),
-            })
-        ),
-        step: v.union(
-            v.literal("game"),
-            v.literal("specialization"),
-            v.literal("account"),
-            v.literal("questions"),
-            v.literal("review")
-        ),
-        expiresAt: v.string(),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("guildId_creatorId", ["guildId", "creatorId"])
-        .index("expiresAt", ["expiresAt"]),
     membershipApplicationFormDrafts: defineTable(applicationDraftFields)
         .index("guildId_creatorId", ["guildId", "creatorId"])
         .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),
-    platformIdLinkTokens: defineTable({
-        token: v.string(),
-        guildId: v.string(),
-        userId: v.string(),
-        userName: v.string(),
-        userAvatar: v.optional(v.string()),
-        categoryId: v.optional(v.string()),
-        language: v.union(v.literal("en"), v.literal("cs")),
-        completionMode: v.optional(
-            v.union(v.literal("membership"), v.literal("link"))
-        ),
-        applyMessageUrl: v.optional(v.string()),
-        interactionToken: v.optional(v.string()),
-        interactionApplicationId: v.optional(v.string()),
-        expiresAt: v.string(),
-        consumedAt: v.optional(v.string()),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("token", ["token"])
-        .index("userId", ["userId"]),
     privacyRequests: defineTable({
         userId: v.string(),
         discordId: v.string(),
@@ -1713,6 +1670,7 @@ export default defineSchema({
         historyCount: v.optional(v.number()),
         historyLastSuccessAt: v.optional(v.string()),
         historyErrorCategory: v.optional(v.union(gameDataError, v.null())),
+        // No longer written: the Warcon read budget is in `warconReadLimits`.
         warconReadWindowAt: v.optional(v.number()),
         warconReadCount: v.optional(v.number()),
         warconReadBlockedUntil: v.optional(v.number()),
@@ -1813,15 +1771,33 @@ export default defineSchema({
         leaseUntil: v.number(),
         nextAt: v.number(),
         retainUntil: v.number(),
+        /** The payload before `hllLivePayloads`; the next claim drops it. */
         dataJson: v.optional(v.string()),
         /**
-         * The latest read's times, kept out of the payload: `finish` rewrites
-         * `dataJson` only when the provider data changed and readers merge
+         * The latest read's times, kept out of the payload: readers merge
          * these in (absent on rows from before them).
          */
         fetchedAt: v.optional(v.string()),
         statusAt: v.optional(v.union(v.string(), v.null())),
         playersAt: v.optional(v.union(v.string(), v.null())),
+    }).index("connectionId", ["connectionId"]),
+    // The live caches' payloads, one row per cache row, written only when
+    // the provider data changed (`liveReadPayloads.ts`); the cache rows keep
+    // the lease, times and counters. `warconReadLimits` is a connection's
+    // Warcon read budget, formerly on `gameDataConnections`.
+    hllLivePayloads: defineTable({
+        cacheId: v.id("hllLiveCache"),
+        dataJson: v.string(),
+    }).index("cacheId", ["cacheId"]),
+    warconReadPayloads: defineTable({
+        cacheId: v.id("warconReadCache"),
+        envelopeJson: v.string(),
+    }).index("cacheId", ["cacheId"]),
+    warconReadLimits: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        windowAt: v.number(),
+        count: v.number(),
+        blockedUntil: v.number(),
     }).index("connectionId", ["connectionId"]),
     warconReadCache: defineTable({
         connectionId: v.id("gameDataConnections"),
@@ -1832,10 +1808,10 @@ export default defineSchema({
         cacheUntil: v.number(),
         retryUntil: v.optional(v.number()),
         retainUntil: v.number(),
+        /** The payload before `warconReadPayloads`; the next claim drops it. */
         envelopeJson: v.optional(v.string()),
         /**
-         * The latest read's times, kept out of the payload: `finish` rewrites
-         * `envelopeJson` only when the provider data changed and readers merge
+         * The latest read's times, kept out of the payload: readers merge
          * these in (absent on rows from before them; the live view's own
          * `statusAt`, `playersAt` and `observedAt` only for that view).
          */
@@ -1857,6 +1833,9 @@ export default defineSchema({
         lastSuccessAt: v.union(v.string(), v.null()),
         lastCompletedAt: v.union(v.string(), v.null()),
         lastWasRevisit: v.boolean(),
+        // The current cycle re-reads every session; the last one that did (ms).
+        fullWalk: v.optional(v.boolean()),
+        lastFullWalkAt: v.optional(v.number()),
     })
         .index("connectionId", ["connectionId"])
         .index("nextAttemptAt", ["nextAttemptAt"]),
@@ -2131,7 +2110,8 @@ export default defineSchema({
             "gameId",
             "idempotencyKey",
         ])
-        .index("guildId", ["guildId"]),
+        .index("guildId", ["guildId"])
+        .index("createdAt", ["createdAt"]),
     apiRateLimitBuckets: defineTable({
         bucket: v.string(),
         resetAt: v.number(),
@@ -2170,6 +2150,8 @@ export default defineSchema({
         epochRevision: v.string(),
         refreshWindowAt: v.number(),
         refreshCount: v.number(),
+        // Snapshot time of the last complete reconciliation (dashboard).
+        lastFullSyncAt: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
     memberObservations: defineTable({
         guildId: v.string(),
@@ -2246,7 +2228,9 @@ export default defineSchema({
             "discordUserId",
             "version",
         ])
-        .index("guildId_createdAt", ["guildId", "createdAt"]),
+        .index("guildId_createdAt", ["guildId", "createdAt"])
+        // Finished operations (`nextAttemptAt` is NEVER) by age, for the prune.
+        .index("nextAttemptAt_updatedAt", ["nextAttemptAt", "updatedAt"]),
     memberRoleLocks: defineTable({
         guildId: v.string(),
         discordUserId: v.string(),
@@ -2286,12 +2270,6 @@ export default defineSchema({
     })
         .index("guildId", ["guildId"])
         .index("expiresAt", ["expiresAt"]),
-    membershipSyncSubjects: defineTable({
-        runId: v.id("membershipSyncRuns"),
-        discordUserId: v.string(),
-    })
-        .index("runId_discordUserId", ["runId", "discordUserId"])
-        .index("runId", ["runId"]),
     membershipRefreshLimits: defineTable({
         name: v.string(),
         until: v.number(),

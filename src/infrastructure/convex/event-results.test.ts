@@ -1,10 +1,10 @@
 import { withIntegrationChanges } from "../../../convex/integrationMutation"
 import { recordImportedResult } from "../../../convex/eventResultStore"
 import type { MutationCtx } from "../../../convex/_generated/server"
+import { invoke, spyReads, testContext } from "./testing/database"
 import * as publicApiReads from "../../../convex/publicApiReads"
 import * as links from "../../../convex/platformIdentityLinks"
 import * as feed from "../../../convex/integrationChanges"
-import { invoke, testContext } from "./testing/database"
 import * as results from "../../../convex/eventResults"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -365,4 +365,53 @@ test("clan review list skips drafts, trainings and heads of another game scope",
     assert.deepEqual(await list(), [])
     await ctx.db.patch("events:a", { kind: "match", gameId: "wardogs" })
     assert.deepEqual(await list(), [])
+})
+
+test("session picker lists collected sessions newest game first, whatever was recollected last", async () => {
+    const ctx = fixture()
+    const reads = spyReads(ctx)
+    // Collection order and `fetchedAt` disagree with the games' own times:
+    // a backfill walks newest first and a recollection stamps old games.
+    for (const [id, startedAt, endedAt, fetchedAt] of [
+        ["b", "2026-09-28T10:00:00.000Z", "2026-09-28T11:00:00.000Z", 9],
+        ["c", "2026-09-29T12:00:00.000Z", null, 2],
+        ["d", null, "2026-09-29T09:30:00.000Z", 5],
+        ["e", "2026-09-29T08:00:00.000Z", "2026-09-29T09:00:00.000Z", 7],
+    ] as const)
+        ctx.db.seed("gameSessions", {
+            _id: `gameSessions:${id}`,
+            guildId: "guild",
+            gameId: "hell_let_loose",
+            connectionId: "gameDataConnections:a",
+            externalId: id,
+            fetchedAt,
+            updatedAt: "2026-09-29T13:00:00Z",
+            session: {
+                externalId: id,
+                startedAt,
+                endedAt,
+                complete: endedAt !== null,
+                map: "Foy",
+                participants: scores,
+                sourceDigest: "a".repeat(64),
+                players: [],
+            },
+        })
+    const read = await invoke(results.get, ctx, base)
+    assert.deepEqual(
+        read.sessions.map((session: { id: string }) => session.id),
+        [
+            "gameSessions:c",
+            "gameSessions:d",
+            "gameSessions:e",
+            "gameSessions:b",
+            "gameSessions:a",
+        ],
+        "by start time, else end time; sessions without a time last"
+    )
+    assert.deepEqual(
+        reads.find((call) => call.table === "gameSessions"),
+        { table: "gameSessions", index: "guildId_gameId" },
+        "bounded through the clan's collection order, not fetchedAt"
+    )
 })

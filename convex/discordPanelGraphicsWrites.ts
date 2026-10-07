@@ -14,6 +14,7 @@ import {
 import { panelEmojiStatus } from "../src/domain/discord-publications/panel-graphics-projection"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { attachableAsset, syncAssetReferences } from "./imageAssetStore"
+import { canonicalJson } from "../src/domain/game-data/canonical-json"
 import { mutation, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import type { Doc } from "./_generated/dataModel"
@@ -169,16 +170,29 @@ export const update = mutation({
     },
 })
 
-/** The bot reports which application emoji are installed (P8-20, P8-24). */
+/**
+ * The bot reports which application emoji are installed (P8-20, P8-24),
+ * hourly. A report whose content is the stored one, `checkedAt` aside, is
+ * not stored again; the row keeps the check that found this state.
+ */
 export const reportEmoji = mutation({
     args: { secret: v.string(), report: v.any() },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const report = panelEmojiReportSchema.parse(args.report)
         const row = await emojiReport(ctx)
+        // Every reported field but `checkedAt`; an older bot omits `installed`.
+        const unchanged =
+            row !== null &&
+            Object.entries(report).every(
+                ([key, value]) =>
+                    key === "checkedAt" ||
+                    canonicalJson(row[key as keyof typeof report]) ===
+                        canonicalJson(value)
+            )
         const value = { key: "global" as const, ...report }
-        if (row) await ctx.db.patch(row._id, value)
-        else await ctx.db.insert("discordApplicationEmoji", value)
+        if (!row) await ctx.db.insert("discordApplicationEmoji", value)
+        else if (!unchanged) await ctx.db.patch(row._id, value)
         return panelEmojiStatus(report)
     },
 })

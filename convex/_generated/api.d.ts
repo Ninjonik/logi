@@ -8,6 +8,11 @@
  * @module
  */
 
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 import type * as apiHousekeeping from "../apiHousekeeping.js";
 import type * as apiKeyAuth from "../apiKeyAuth.js";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
@@ -86,6 +91,7 @@ import type * as guildGames from "../guildGames.js";
 import type * as guilds from "../guilds.js";
 import type * as hllLiveData from "../hllLiveData.js";
 import type * as hllLiveReads from "../hllLiveReads.js";
+import type * as housekeeping from "../housekeeping.js";
 import type * as identity from "../identity.js";
 import type * as imageAssetStore from "../imageAssetStore.js";
 import type * as imageAssets from "../imageAssets.js";
@@ -106,6 +112,7 @@ import type * as leagueMatchData from "../leagueMatchData.js";
 import type * as leagueMatches from "../leagueMatches.js";
 import type * as leagueTrackingReads from "../leagueTrackingReads.js";
 import type * as leagueTrackingStore from "../leagueTrackingStore.js";
+import type * as liveReadPayloads from "../liveReadPayloads.js";
 import type * as matchRecaps from "../matchRecaps.js";
 import type * as matchStats from "../matchStats.js";
 import type * as matchTeams from "../matchTeams.js";
@@ -168,17 +175,20 @@ import type * as userAssignments from "../userAssignments.js";
 import type * as users from "../users.js";
 import type * as warconData from "../warconData.js";
 import type * as warconReads from "../warconReads.js";
+import type * as webhookDeliveryCleanup from "../webhookDeliveryCleanup.js";
 import type * as webhookDispatcher from "../webhookDispatcher.js";
 import type * as webhookQueue from "../webhookQueue.js";
 import type * as webhooks from "../webhooks.js";
 import type * as websiteEventCommands from "../websiteEventCommands.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 declare const fullApi: ApiFromModules<{
   apiHousekeeping: typeof apiHousekeeping;
   apiKeyAuth: typeof apiKeyAuth;
@@ -258,6 +268,7 @@ declare const fullApi: ApiFromModules<{
   guilds: typeof guilds;
   hllLiveData: typeof hllLiveData;
   hllLiveReads: typeof hllLiveReads;
+  housekeeping: typeof housekeeping;
   identity: typeof identity;
   imageAssetStore: typeof imageAssetStore;
   imageAssets: typeof imageAssets;
@@ -278,6 +289,7 @@ declare const fullApi: ApiFromModules<{
   leagueMatches: typeof leagueMatches;
   leagueTrackingReads: typeof leagueTrackingReads;
   leagueTrackingStore: typeof leagueTrackingStore;
+  liveReadPayloads: typeof liveReadPayloads;
   matchRecaps: typeof matchRecaps;
   matchStats: typeof matchStats;
   matchTeams: typeof matchTeams;
@@ -340,33 +352,16 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   warconData: typeof warconData;
   warconReads: typeof warconReads;
+  webhookDeliveryCleanup: typeof webhookDeliveryCleanup;
   webhookDispatcher: typeof webhookDispatcher;
   webhookQueue: typeof webhookQueue;
   webhooks: typeof webhooks;
   websiteEventCommands: typeof websiteEventCommands;
 }>;
-
-/**
- * A utility for referencing Convex functions in your app's public API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
-
-/**
- * A utility for referencing Convex functions in your app's internal API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = internal.myModule.myFunction;
- * ```
- */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">

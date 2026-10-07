@@ -7,7 +7,7 @@ import {
     membershipPolicy,
 } from "./membershipAccess"
 import {
-    observationChanged,
+    observationChange,
     type ProviderObservation,
 } from "../src/domain/membership/observation"
 import { projectMembership } from "../src/domain/membership/observation.schema"
@@ -80,23 +80,32 @@ export async function storeMemberObservation(
         receivedAt: new Date().toISOString(),
         refreshUntil: 0,
         nextRefreshAt: 0,
-        seenRunId,
+        // Only a reconciliation marks a member seen. A gateway event or a
+        // lookup in the middle of a run keeps the mark, or the run's sweep
+        // would take the member for departed.
+        ...(seenRunId ? { seenRunId } : {}),
     }
-    if (
-        previous &&
-        !observationChanged(previous, {
-            state: value.state,
-            roleIds,
-            epoch: guild.epoch,
-            unavailable,
-        })
-    ) {
-        // Same state, roles and epoch: newer evidence only. The guild
-        // revision, the subject's revision and the change feed stay as they
-        // are; a reconciliation of an unchanged clan writes nothing else.
-        // A member who is still absent or still unknown gains no evidence
-        // from being seen absent again, so nothing is written at all.
-        if (value.state === "present")
+    const change = observationChange(previous, {
+        state: value.state,
+        roleIds,
+        epoch: guild.epoch,
+        unavailable,
+    })
+    if (previous && change !== "member") {
+        // Same state and roles: newer evidence only. The guild revision, the
+        // subject's revision and the change feed stay as they are; a
+        // reconciliation of an unchanged clan writes nothing else. A newer
+        // epoch is stored with the evidence (freshness compares it with the
+        // guild's) but is no change to the member: consumers reset on the
+        // epoch itself. A member who is still absent or still unknown under
+        // the same epoch gains no evidence from being seen so again, so
+        // nothing is written at all.
+        if (change === "epoch")
+            await ctx.db.patch(previous._id, {
+                ...evidence,
+                epoch: guild.epoch,
+            })
+        else if (value.state === "present")
             await ctx.db.patch(previous._id, evidence)
         return
     }

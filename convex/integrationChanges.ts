@@ -216,6 +216,8 @@ export const readSyncRecord = query({
                   }
                 : null
         }
+        // `server-snapshots` and `integration-health` are live state that no
+        // writer notifies (`RETIRED_SYNC_RESOURCES`); their record is served.
         const table =
             resource === "server-snapshots" || resource === "integration-health"
                 ? "gameDataConnections"

@@ -2928,7 +2928,7 @@ export const deMessages = {
         refresh: "Aktualisieren",
         loading: "Laden…",
         description:
-            "Die letzten 100 Verwaltungs- oder Bewerbungsvorgänge für alle Spiele. Das Speichern stellt eine Änderung in die Warteschlange; erst die Discord-Prüfung bestätigt sie.",
+            "Die letzten 100 Verwaltungs- oder Bewerbungsvorgänge für alle Spiele. Das Speichern stellt eine Änderung in die Warteschlange; erst die Discord-Prüfung bestätigt sie. Abgelehnte, ersetzte und fehlgeschlagene Vorgänge werden 30 Tage nach ihrem Ende gelöscht.",
         error: "Rollenvorgänge sind nicht verfügbar. Bitte erneut aktualisieren.",
         empty: "Noch keine Änderungen verwalteter Rollen.",
         target: "Discord-ID des Mitglieds",
@@ -2938,7 +2938,7 @@ export const deMessages = {
         updated: "Aktualisiert",
         audit: "Versuchsverlauf",
         auditDescription:
-            "Die letzten 5 Versuche werden angezeigt; maximal 20 je Vorgang gespeichert. Zeiten in UTC. Grundcodes helfen bei der Fehlerdiagnose.",
+            "Die letzten 5 Versuche werden angezeigt; maximal 20 je Vorgang gespeichert. Eine tägliche Prüfung, die die Rollen bestätigt, fügt keinen Versuch hinzu. Zeiten in UTC. Grundcodes helfen bei der Fehlerdiagnose.",
         reason: "Grund",
         status: {
             pending: "Ausstehend",
@@ -2962,7 +2962,7 @@ export const deMessages = {
             retry_scheduled:
                 "Der Bot wiederholt den Versuch nach der Wartezeit automatisch.",
             applied:
-                "Die Discord-Rollen entsprachen beim letzten Prüfen dem Auftrag. Der Bot prüft regelmäßig erneut.",
+                "Die Discord-Rollen entsprachen beim letzten Prüfen dem Auftrag. Der Bot prüft einmal täglich erneut.",
             denied: "Zugang des Auftraggebers, Mitgliedschaft, Bot-Rechte und Rollenhierarchie prüfen, dann einen neuen Mitgliedsauftrag speichern.",
             superseded:
                 "Zuweisung oder Regeln wurden geändert. Der neue Zustand benötigt einen neuen berechtigten Auftrag.",

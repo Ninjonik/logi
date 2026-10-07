@@ -1,7 +1,6 @@
 import {
     readWarconEnvelope,
     warconComparable,
-    warconEnvelopeWithFreshness,
     warconFreshnessOf,
 } from "../src/domain/game-data/warcon-payload"
 import {
@@ -19,10 +18,12 @@ import {
 } from "../src/domain/api/key-access"
 import { panelReadsConnection } from "../src/domain/discord-publications/settings"
 import type { WarconPrepared } from "../src/application/game-data/read-warcon"
+import { storedWarconEnvelope, warconPayloadRow } from "./liveReadPayloads"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import { makeFunctionReference } from "convex/server"
 import { gameDataError } from "./gameDataValidators"
 import { connectionSource } from "./gameDataCatalog"
+import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 const accessArgs = {
@@ -40,7 +41,7 @@ type Access = {
     connectionId: string
     keyHash?: string
     actor?: DashboardActor
-    panelId?: import("./_generated/dataModel").Id<"discordPublicPanels">
+    panelId?: Id<"discordPublicPanels">
     queryJson: string
 }
 async function authorize(ctx: MutationCtx, args: Access) {
@@ -104,6 +105,19 @@ async function authorize(ctx: MutationCtx, args: Access) {
     return { row, source, input, queryJson: JSON.stringify(input) }
 }
 const pruneReference = makeFunctionReference<"mutation">("warconReads:prune")
+async function warconLimitRow(
+    ctx: MutationCtx,
+    connectionId: Id<"gameDataConnections">
+) {
+    return await ctx.db
+        .query("warconReadLimits")
+        .withIndex("connectionId", (q) => q.eq("connectionId", connectionId))
+        .unique()
+}
+async function deletePayload(ctx: MutationCtx, cacheId: Id<"warconReadCache">) {
+    const payload = await warconPayloadRow(ctx, cacheId)
+    if (payload) await ctx.db.delete(payload._id)
+}
 export const reserve = internalMutation({
     args: accessArgs,
     handler: async (ctx, args): Promise<WarconPrepared> => {
@@ -119,17 +133,11 @@ export const reserve = internalMutation({
             .unique()
         if (
             existing?.generation === row.generation &&
-            existing.cacheUntil > now &&
-            existing.envelopeJson
+            existing.cacheUntil > now
         ) {
-            // Stored by `finish` after the action validated it; served with
-            // the row's latest times.
-            const stored = readWarconEnvelope(existing.envelopeJson)
-            if (stored)
-                return {
-                    kind: "cached",
-                    envelope: warconEnvelopeWithFreshness(stored, existing),
-                }
+            // The payload row with the cache row's latest times.
+            const stored = await storedWarconEnvelope(ctx, existing)
+            if (stored) return { kind: "cached", envelope: stored }
         }
         if (
             existing?.generation === row.generation &&
@@ -141,23 +149,31 @@ export const reserve = internalMutation({
             (existing.retryUntil ?? 0) > now
         )
             return { kind: "busy", retryAfterMs: existing.retryUntil! - now }
-        if ((row.warconReadBlockedUntil ?? 0) > now)
-            return {
-                kind: "busy",
-                retryAfterMs: row.warconReadBlockedUntil! - now,
-            }
-        const windowAt =
-            (row.warconReadWindowAt ?? 0) + 60_000 > now
-                ? row.warconReadWindowAt!
-                : now
+        // The connection's read budget lives in its own small row; the
+        // fields on `gameDataConnections` are read only until it exists.
+        const limit = await warconLimitRow(ctx, row._id)
+        const blockedUntil = Math.max(
+            limit?.blockedUntil ?? 0,
+            row.warconReadBlockedUntil ?? 0
+        )
+        if (blockedUntil > now)
+            return { kind: "busy", retryAfterMs: blockedUntil - now }
+        const lastWindowAt = limit?.windowAt ?? row.warconReadWindowAt ?? 0
+        const windowAt = lastWindowAt + 60_000 > now ? lastWindowAt : now
         const count =
-            windowAt === row.warconReadWindowAt ? (row.warconReadCount ?? 0) : 0
+            windowAt === lastWindowAt
+                ? (limit?.count ?? row.warconReadCount ?? 0)
+                : 0
         if (count >= 30)
             return { kind: "busy", retryAfterMs: windowAt + 60_000 - now }
-        await ctx.db.patch(row._id, {
-            warconReadWindowAt: windowAt,
-            warconReadCount: count + 1,
-        })
+        if (limit) await ctx.db.patch(limit._id, { windowAt, count: count + 1 })
+        else
+            await ctx.db.insert("warconReadLimits", {
+                connectionId: row._id,
+                windowAt,
+                count: count + 1,
+                blockedUntil: 0,
+            })
         const fence = (existing?.fence ?? 0) + 1
         const state = {
             generation: row.generation,
@@ -168,8 +184,19 @@ export const reserve = internalMutation({
             retainUntil: now + 3_600_000,
         }
         let cacheId = existing?._id
-        if (cacheId) await ctx.db.patch(cacheId, state)
-        else {
+        if (existing) {
+            // The claim writes the small row only; a payload still inline
+            // from before the split is dropped, `finish` writes its row.
+            await ctx.db.patch(existing._id, {
+                ...state,
+                ...(existing.envelopeJson === undefined
+                    ? {}
+                    : { envelopeJson: undefined }),
+            })
+            // Another source generation's data is never compared or served.
+            if (existing.generation !== row.generation)
+                await deletePayload(ctx, existing._id)
+        } else {
             const entries = await ctx.db
                 .query("warconReadCache")
                 .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
@@ -179,6 +206,7 @@ export const reserve = internalMutation({
                     .filter((e) => e.leaseUntil <= now)
                     .sort((a, b) => a.retainUntil - b.retainUntil)[0]
                 if (!oldest) return { kind: "busy", retryAfterMs: 35_000 }
+                await deletePayload(ctx, oldest._id)
                 await ctx.db.delete(oldest._id)
             }
             cacheId = await ctx.db.insert("warconReadCache", {
@@ -242,20 +270,32 @@ export const finish = internalMutation({
                 cacheUntil > now + warconCacheMs(access.input) + 5000
             )
                 throw new Error("Invalid Warcon response.")
-            // An idle server reads the same every time: the large payload is
-            // rewritten only when the provider data changed; the times go to
-            // their own small fields (ARCHITECTURE.md, "Convex hot paths").
-            const stored = cache.envelopeJson
-                ? readWarconEnvelope(cache.envelopeJson)
+            // An idle server reads the same every time: the payload row is
+            // written only when the provider data changed; the times go to
+            // the small cache row (ARCHITECTURE.md, "Convex hot paths").
+            const payload = await warconPayloadRow(ctx, cache._id)
+            const stored = payload
+                ? readWarconEnvelope(payload.envelopeJson)
                 : null
-            const unchanged =
-                stored !== null &&
-                warconComparable(stored) === warconComparable(value)
+            if (
+                stored === null ||
+                warconComparable(stored) !== warconComparable(value)
+            ) {
+                const envelopeJson = JSON.stringify(value)
+                if (payload) await ctx.db.patch(payload._id, { envelopeJson })
+                else
+                    await ctx.db.insert("warconReadPayloads", {
+                        cacheId: cache._id,
+                        envelopeJson,
+                    })
+            }
             await ctx.db.patch(cache._id, {
                 leaseUntil: 0,
                 cacheUntil,
-                ...(unchanged ? {} : { envelopeJson: JSON.stringify(value) }),
                 ...warconFreshnessOf(value),
+                ...(cache.envelopeJson === undefined
+                    ? {}
+                    : { envelopeJson: undefined }),
                 retainUntil: now + 3_600_000,
             })
         } else {
@@ -266,12 +306,26 @@ export const finish = internalMutation({
                 leaseUntil: 0,
                 cacheUntil: 0,
                 retryUntil: now + delay,
-                envelopeJson: undefined,
+                ...(cache.envelopeJson === undefined
+                    ? {}
+                    : { envelopeJson: undefined }),
             })
-            if (args.errorCategory === "rate_limited")
-                await ctx.db.patch(access.row._id, {
-                    warconReadBlockedUntil: now + delay,
-                })
+            // A failed read serves nothing until the next success.
+            await deletePayload(ctx, cache._id)
+            if (args.errorCategory === "rate_limited") {
+                const limit = await warconLimitRow(ctx, access.row._id)
+                if (limit)
+                    await ctx.db.patch(limit._id, {
+                        blockedUntil: now + delay,
+                    })
+                else
+                    await ctx.db.insert("warconReadLimits", {
+                        connectionId: access.row._id,
+                        windowAt: now,
+                        count: 0,
+                        blockedUntil: now + delay,
+                    })
+            }
         }
         return true
     },
@@ -282,7 +336,9 @@ export const prune = internalMutation({
         const row = await ctx.db.get(args.cacheId)
         if (!row) return
         const wait = Math.max(row.retainUntil, row.leaseUntil) - Date.now()
-        if (wait <= 0) await ctx.db.delete(row._id)
-        else await ctx.scheduler.runAfter(wait, pruneReference, args)
+        if (wait <= 0) {
+            await deletePayload(ctx, row._id)
+            await ctx.db.delete(row._id)
+        } else await ctx.scheduler.runAfter(wait, pruneReference, args)
     },
 })

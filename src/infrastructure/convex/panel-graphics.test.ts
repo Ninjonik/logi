@@ -254,15 +254,31 @@ test("the bot reads the projection and reports emoji only with the internal secr
         })
     )
     await invoke(graphicsWrites.reportEmoji, ctx, { secret, report })
+    const writes: unknown[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.patch = async (id, value) => {
+        writes.push(value)
+        return await patch(id, value)
+    }
+    // The hourly check finds the same emoji: nothing to store.
     await invoke(graphicsWrites.reportEmoji, ctx, {
         secret,
         report: { ...report, checkedAt: 2000 },
     })
+    assert.equal(writes.length, 0)
     assert.equal(ctx.db.tables.discordApplicationEmoji.length, 1)
-    const view = await invoke(graphics.get, ctx, access)
+    let view = await invoke(graphics.get, ctx, access)
     assert.deepEqual(view.emoji, {
         faction: { ready: 2, total: 12, complete: false },
         status: { ready: 1, total: 7, complete: false },
-        checkedAt: 2000,
+        checkedAt: 1000,
     })
+    // The failed sign was uploaded: stored once.
+    await invoke(graphicsWrites.reportEmoji, ctx, {
+        secret,
+        report: { ...report, ready: [...report.ready, "axis"], failed: [] },
+    })
+    assert.equal(writes.length, 1)
+    view = await invoke(graphics.get, ctx, access)
+    assert.equal(view.emoji.faction.ready, 3)
 })

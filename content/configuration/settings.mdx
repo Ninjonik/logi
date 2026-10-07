@@ -400,8 +400,9 @@ reject stale requests. The signing secret is revealed only when a subscription
 is created or rotated. Current mutation events include article creation, update, and
 deletion; event creation and updates; and roster updates caused by API event-signup changes. Failed transient deliveries retry with bounded backoff; permanent
 4xx responses do not retry except `408` and `429`. Delivery history records
-successful, failed, and retried attempts; deleting or disabling a subscription
-prevents queued deliveries from being sent.
+successful, failed, and retried attempts and keeps finished deliveries for 30
+days; deleting or disabling a subscription prevents queued deliveries from
+being sent, and deleting it also removes its delivery history.
 
 Each delivery is an HTTP `POST` with `Content-Type: application/json` and
 `User-Agent: Logi-Webhooks/1.0`. The body has this exact JSON envelope. The
@@ -554,7 +555,12 @@ switches, the errors channel and the panel switches together.
 members of the Discord server have it. People with the manager role can change
 settings, matches and rosters. **Who has access now** lists the people who can
 manage Logi and why: the Discord Administrator permission, the manager role, or
-being added in Logi. It shows when Logi last saw the server's members.
+being added in Logi. It shows when Logi last saw the server's members: the
+bot reads every member when it starts, after Discord reports a guild or role
+change that can affect access (a deleted role, a role whose permissions
+changed, a new connection), when the manager role changes, and otherwise at
+most every six hours; joins, leaves and role changes of single members arrive
+in between as they happen.
 **Reload from Discord** rebuilds manager access from the current members of the
 saved manager role; it is available once a manager role is saved and the page
 has no unsaved changes.
@@ -752,8 +758,10 @@ mutation: a cursor response is `410 reset_required`, so rebuild the integration'
 own baseline when recovery is needed. Keep CMS/publication decisions in the
 website's own backend.
 
-The registered projections are event summaries, match summaries, reviewed result
-summaries, server snapshots and integration health. Optional `integration.changed` webhook subscriptions emit
+The registered projections are event summaries, match summaries and reviewed
+result summaries. Server snapshots and integration health are live state with no
+invalidations: read them from `/api/v1/clan/server-snapshots` and
+`/api/v1/clan/integration-health`. Optional `integration.changed` webhook subscriptions emit
 minimal invalidations from dashboard, API, bot, import and collector transactions.
 Use the existing administrator-session webhook endpoint to opt into that event
 type; existing subscriptions are unchanged. The queue processes bounded batches,
@@ -796,9 +804,9 @@ session; API keys cannot change these permissions.
 Membership reads return an explicit unknown state when fresh Discord evidence is
 unavailable. They never expose all roles or grant website administration. Policy
 changes and reconnects invalidate cached authority. Membership feed consumers must
-specify one Discord subject and handle a scope reset; membership webhooks require an
-explicit `membership.changed` subscription. Existing summary keys and webhook
-subscriptions do not gain member access automatically.
+specify one Discord subject and handle a scope reset. `membership.changed`
+webhooks are no longer sent; poll the membership feed instead. Existing summary
+keys and webhook subscriptions do not gain member access automatically.
 
 ## Website event commands
 

@@ -8,6 +8,7 @@ import {
     type RoleActor,
 } from "../src/domain/membership/managed-roles"
 import {
+    internalMutation,
     mutation,
     query,
     type MutationCtx,
@@ -20,6 +21,7 @@ import {
 } from "../src/domain/games/game"
 import { assertMembershipSecret, memberObservation } from "./membershipAccess"
 import { getGuildByDiscordId, getUserByIdentifier } from "./identity"
+import { makeFunctionReference } from "convex/server"
 import type { Doc } from "./_generated/dataModel"
 import { v } from "convex/values"
 
@@ -55,10 +57,51 @@ type Evidence = {
     observedAt: number
 }
 
+/** An applied operation is checked against Discord again after a day. */
+export const REVERIFY_INTERVAL_MS = 24 * 60 * 60_000
+/** Denied, superseded and failed operations are kept this long. */
+export const FINISHED_RETENTION_MS = 30 * 24 * 60 * 60_000
+const PRUNE_BATCH = 50
+type AttemptOutcome =
+    | "running"
+    | "applied"
+    | "retry_scheduled"
+    | "denied"
+    | "superseded"
+    | "failed"
+
+/** One attempt row; an operation keeps its latest 20. */
+async function recordAttempt(
+    ctx: MutationCtx,
+    operation: Operation,
+    attempt: { fence: number; attempt: number },
+    outcome: AttemptOutcome,
+    reason: string
+) {
+    await ctx.db.insert("memberRoleAudits", {
+        operationId: operation._id,
+        guildId: operation.guildId,
+        userId: operation.userId,
+        actorId: operation.actorId,
+        ...attempt,
+        outcome,
+        reason,
+        at: new Date().toISOString(),
+    })
+    const history = await ctx.db
+        .query("memberRoleAudits")
+        .withIndex("operationId_fence", (q) =>
+            q.eq("operationId", operation._id)
+        )
+        .order("desc")
+        .take(21)
+    for (const old of history.slice(20)) await ctx.db.delete(old._id)
+}
+
 async function closeRunningAttempt(
     ctx: MutationCtx,
     operation: Operation,
-    outcome: "applied" | "retry_scheduled" | "denied" | "superseded" | "failed",
+    outcome: Exclude<AttemptOutcome, "running">,
     reason: string
 ) {
     const audit = await ctx.db
@@ -70,6 +113,17 @@ async function closeRunningAttempt(
     // A later desired version must not rewrite an already verified attempt.
     if (audit?.outcome === "running")
         await ctx.db.patch(audit._id, { outcome, reason })
+    // The daily check of an applied operation is claimed without a row: one
+    // that confirms the roles again records nothing, one that ends any other
+    // way records its outcome.
+    else if (!audit && operation.status === "running" && outcome !== "applied")
+        await recordAttempt(
+            ctx,
+            operation,
+            { fence: operation.fence, attempt: operation.attempts },
+            outcome,
+            reason
+        )
 }
 
 async function policyFor(ctx: Context, guildId: string, gameId: GameId) {
@@ -441,7 +495,8 @@ export const claimNext = mutation({
                     fence,
                     leaseUntil,
                 })
-            const attempts = operation.attempts + 1
+            const attempts = operation.attempts + 1,
+                reverify = operation.status === "applied"
             await ctx.db.patch(operation._id, {
                 status: "running",
                 attempts,
@@ -451,26 +506,16 @@ export const claimNext = mutation({
                 nextAttemptAt: leaseUntil,
                 updatedAt: new Date().toISOString(),
             })
-            await ctx.db.insert("memberRoleAudits", {
-                operationId: operation._id,
-                guildId: operation.guildId,
-                userId: operation.userId,
-                actorId: operation.actorId,
-                fence,
-                attempt: attempts,
-                outcome: "running",
-                reason: "claimed",
-                at: new Date().toISOString(),
-            })
-            // Periodic verification must not grow an unbounded per-operation log.
-            const history = await ctx.db
-                .query("memberRoleAudits")
-                .withIndex("operationId_fence", (q) =>
-                    q.eq("operationId", operation._id)
+            // The daily check of an applied operation writes an attempt row
+            // only when it ends otherwise than applied (`closeRunningAttempt`).
+            if (!reverify)
+                await recordAttempt(
+                    ctx,
+                    operation,
+                    { fence, attempt: attempts },
+                    "running",
+                    "claimed"
                 )
-                .order("desc")
-                .take(21)
-            for (const old of history.slice(20)) await ctx.db.delete(old._id)
             return { operationId: operation._id, fence }
         }
         return null
@@ -568,13 +613,15 @@ export const finish = mutation({
                     until,
                 })
         }
+        // Before the patch: the attempt is judged by the claimed state.
+        await closeRunningAttempt(ctx, operation, status, reason)
         await ctx.db.patch(operation._id, {
             status,
             failureCount,
             leaseUntil: 0,
             nextAttemptAt:
                 status === "applied"
-                    ? Date.now() + 300_000
+                    ? Date.now() + REVERIFY_INTERVAL_MS
                     : status === "retry_scheduled"
                       ? Date.now() + delay
                       : NEVER,
@@ -586,7 +633,6 @@ export const finish = mutation({
             : null
         if (lock?.fence === args.fence)
             await ctx.db.patch(lock._id, { leaseUntil: 0 })
-        await closeRunningAttempt(ctx, operation, status, reason)
         return true
     },
 })
@@ -632,5 +678,80 @@ export const listForGuild = query({
                 }
             })
         )
+    },
+})
+
+/**
+ * Daily removal of finished operations: denied, superseded and failed ones
+ * (`nextAttemptAt` is NEVER, nothing runs them again) 30 days after they
+ * finished, with their attempt rows and, once no operation of that member is
+ * left, the member's Discord lock. Bounded batches through an index,
+ * rescheduled while a batch is full (ARCHITECTURE.md, "Convex hot paths").
+ * An applied operation is never removed: the bot keeps checking it.
+ */
+export const pruneFinished = internalMutation({
+    args: {},
+    handler: async (ctx) => {
+        const cutoff = new Date(
+            Date.now() - FINISHED_RETENTION_MS
+        ).toISOString()
+        const rows = await ctx.db
+            .query("memberRoleOperations")
+            .withIndex("nextAttemptAt_updatedAt", (q) =>
+                q.eq("nextAttemptAt", NEVER).lt("updatedAt", cutoff)
+            )
+            .take(PRUNE_BATCH)
+        let audits = 0,
+            locks = 0
+        const subjects = new Map<string, { guildId: string; id: string }>()
+        for (const operation of rows) {
+            for (;;) {
+                const page = await ctx.db
+                    .query("memberRoleAudits")
+                    .withIndex("operationId_fence", (q) =>
+                        q.eq("operationId", operation._id)
+                    )
+                    .take(100)
+                for (const audit of page) await ctx.db.delete(audit._id)
+                audits += page.length
+                if (page.length < 100) break
+            }
+            await ctx.db.delete(operation._id)
+            if (operation.discordUserId)
+                subjects.set(
+                    `${operation.guildId}:${operation.discordUserId}`,
+                    { guildId: operation.guildId, id: operation.discordUserId }
+                )
+        }
+        for (const subject of subjects.values()) {
+            const lock = await lockFor(ctx, subject.guildId, subject.id)
+            if (!lock || lock.leaseUntil > Date.now()) continue
+            let used = false
+            for (const gameId of GAME_IDS)
+                if (
+                    await latestForSubject(
+                        ctx,
+                        subject.guildId,
+                        gameId,
+                        subject.id
+                    )
+                ) {
+                    used = true
+                    break
+                }
+            if (used) continue
+            await ctx.db.delete(lock._id)
+            locks++
+        }
+        const more = rows.length === PRUNE_BATCH
+        if (more)
+            await ctx.scheduler.runAfter(
+                0,
+                makeFunctionReference<"mutation">(
+                    "memberRoleOperations:pruneFinished"
+                ),
+                {}
+            )
+        return { operations: rows.length, audits, locks, more }
     },
 })

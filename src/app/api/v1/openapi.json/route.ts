@@ -596,7 +596,7 @@ for (const resource of resources) {
         "server-snapshots",
         "integration-health",
     ].includes(resource)
-        ? "Stored game-provider observations and sanitized collection health. Requires the matching resource grant and permitted game. No provider calls or controls are performed by these reads. IDs identify Logi connections. Unknown fields are null and zero is preserved. Stale at 180 seconds, unavailable at 900 seconds; errors can make data stale earlier. Freshness can change with time without a new updatedSince record. Live scores and imported sessions are not confirmed results. Source addresses, credentials and player identities are excluded."
+        ? "Stored game-provider observations and sanitized collection health. Requires the matching resource grant and permitted game. No provider calls or controls are performed by these reads. IDs identify Logi connections. Unknown fields are null and zero is preserved. Stale at 180 seconds, unavailable at 900 seconds; errors can make data stale earlier. Freshness can change with time without a new updatedSince record. Not carried by /clan/changes: poll this collection for the current state. Live scores and imported sessions are not confirmed results. Source addresses, credentials and player identities are excluded."
         : undefined
     const isGameOwned = [
         "server-snapshots",
@@ -1367,7 +1367,7 @@ paths["/clan/changes"] = {
         security: [{ clanApiKey: [] }],
         summary: "Read scoped transactional invalidations",
         description:
-            "Requires explicit underlying read grants. Obtain start=now before a baseline sweep and keep resources and game fixed. Logi intentionally retains no mutation replay log: any cursor returns 410 reset_required and requires a new baseline. Revisions are canonical decimal strings (compare as integers). Webhooks can notify consumers, but each consumer owns outage recovery. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
+            "Requires explicit underlying read grants. Obtain start=now before a baseline sweep and keep resources and game fixed. Logi intentionally retains no mutation replay log: any cursor returns 410 reset_required and requires a new baseline. Revisions are canonical decimal strings (compare as integers). Webhooks can notify consumers, but each consumer owns outage recovery. server-snapshots and integration-health are still accepted but are never notified: they are live state, read from /clan/server-snapshots and /clan/integration-health. A league-fixtures change is notified only when the served fixture changes, not when only its revision, stale, ageSeconds, lastAttemptAt or snapshot fetchedAt moved. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
         parameters: [
             ...syncParameters,
             {
@@ -1452,7 +1452,7 @@ paths["/clan/sync-records/{resource}/{id}"] = {
         security: [{ clanApiKey: [] }],
         summary: "Atomically read a safe projection and its revision",
         description:
-            "Requires an explicit grant for the underlying resource and game. Returns an upsert projection or a retained scoped removal tombstone. Unknown, foreign and expired-tombstone IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation.",
+            "Requires an explicit grant for the underlying resource and game. Returns the current upsert projection. Logi keeps no removal tombstones: removed, unknown and foreign IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation. server-snapshots and integration-health records stay readable here, but the change feed no longer announces them; read their current state from /clan/server-snapshots and /clan/integration-health.",
         parameters: [
             ...syncParameters,
             {
@@ -1471,7 +1471,7 @@ paths["/clan/sync-records/{resource}/{id}"] = {
         responses: {
             ...responses,
             "200": {
-                description: "Atomic projection or tombstone",
+                description: "Atomic current projection",
                 content: {
                     "application/json": {
                         schema: {
@@ -1925,7 +1925,7 @@ paths["/clan/warcon-data/{connectionId}"] = {
         security: [{ clanApiKey: [] }],
         summary: "Read Warcon gameplay data for one configured connection",
         description:
-            "Requires explicit warcon-data and wardogs readAccess grants. Legacy keys are denied. Includes game display names and Steam IDs; never treat these as verified Logi identity or membership. Uses a Logi connection ID from server-snapshots, not the panel UUID or game join code. Only an enabled, matching guild/game/source is readable. Credential provisioning and connection enable/disable are operator/session-only operations. Live includes per-player K/D, cash, ping and separate status/player timestamps and freshness. Closed match detail is null for an unfinished or missing match. Kills exposes configured=false when the upstream feed is disabled; this API never enables it. Career requires a Warcon key restricted to exactly this one server, because upstream career otherwise aggregates its visible organisation. Unknown/admin fields are stripped. Always no-store to consumers. Logi shares a 10-second live cache, 15-second kills cache, 5-minute catalog/capabilities cache and 60-second cache for other views. Provider misses share a 30/minute/connection budget and a lease. Authorization and configuration are rechecked after fetch. On errors return 429/503, never stale data relabeled as live. See WarconQuery for the closed, view-specific parameter combinations: unknown, duplicate and inapplicable parameters are rejected. Warcon reads use polling and are not part of the changes/webhook feed; durable snapshots and reviewed results retain their existing change feed.",
+            "Requires explicit warcon-data and wardogs readAccess grants. Legacy keys are denied. Includes game display names and Steam IDs; never treat these as verified Logi identity or membership. Uses a Logi connection ID from server-snapshots, not the panel UUID or game join code. Only an enabled, matching guild/game/source is readable. Credential provisioning and connection enable/disable are operator/session-only operations. Live includes per-player K/D, cash, ping and separate status/player timestamps and freshness. Closed match detail is null for an unfinished or missing match. Kills exposes configured=false when the upstream feed is disabled; this API never enables it. Career requires a Warcon key restricted to exactly this one server, because upstream career otherwise aggregates its visible organisation. Unknown/admin fields are stripped. Always no-store to consumers. Logi shares a 10-second live cache, 15-second kills cache, 5-minute catalog/capabilities cache and 60-second cache for other views. Provider misses share a 30/minute/connection budget and a lease. Authorization and configuration are rechecked after fetch. On errors return 429/503, never stale data relabeled as live. See WarconQuery for the closed, view-specific parameter combinations: unknown, duplicate and inapplicable parameters are rejected. Warcon reads use polling and are not part of the change feed; reviewed results retain their existing change feed.",
         "x-logi-query-schema": "#/components/schemas/WarconQuery",
         parameters: [
             {

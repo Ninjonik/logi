@@ -26,10 +26,18 @@ crons.interval(
 )
 crons.interval(
     "prune membership reconciliation metadata",
-    { minutes: 1 },
+    { minutes: 10 },
     makeFunctionReference<"mutation">(
         "memberObservations:pruneReconciliations"
     ),
+    {}
+)
+// Denied, superseded and failed role operations 30 days after they finished,
+// with their attempt history and an unused Discord lock.
+crons.daily(
+    "prune finished membership role operations",
+    { hourUTC: 3, minuteUTC: 50 },
+    makeFunctionReference<"mutation">("memberRoleOperations:pruneFinished"),
     {}
 )
 crons.interval(
@@ -95,6 +103,15 @@ crons.interval(
     "prune expired API idempotency keys and rate-limit buckets",
     { hours: 1 },
     makeFunctionReference<"mutation">("apiHousekeeping:pruneExpired"),
+    {}
+)
+
+// Retention of the tables that grow by a row per request, run or change: 30
+// days of history, a day for expired requests (convex/housekeeping.ts).
+crons.daily(
+    "prune history past its retention",
+    { hourUTC: 4, minuteUTC: 5 },
+    makeFunctionReference<"mutation">("housekeeping:pruneHistory"),
     {}
 )
 
