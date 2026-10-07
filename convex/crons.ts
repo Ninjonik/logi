@@ -32,6 +32,14 @@ crons.interval(
     ),
     {}
 )
+// Denied, superseded and failed role operations 30 days after they finished,
+// with their attempt history and an unused Discord lock.
+crons.daily(
+    "prune finished membership role operations",
+    { hourUTC: 3, minuteUTC: 50 },
+    makeFunctionReference<"mutation">("memberRoleOperations:pruneFinished"),
+    {}
+)
 crons.interval(
     "prune integration change retention",
     { hours: 1 },

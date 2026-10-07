@@ -152,9 +152,11 @@ role for another game, as a group role, or as the dashboard administrator role.
 **Membership role operations** shows pending, in-progress, retry, applied, denied,
 superseded and failed requests, their actor/target and recent attempts. Each attempt
 checks current staff access, target presence and bot hierarchy. A departure/rejoin
-cannot revive an old request. Applied means a fresh check matched the desired roles.
-After six consecutive failures, correct the cause and save a new authorized member
-request. Importing members does not create role grants. Details and activation
+cannot revive an old request. Applied means a fresh check matched the desired roles;
+the bot checks an applied request again once a day, and a check that finds the roles
+still matching adds no attempt to the history. After six consecutive failures, correct
+the cause and save a new authorized member request. Denied, superseded and failed
+requests are removed, with their attempts, 30 days after they finished. Importing members does not create role grants. Details and activation
 requirements are in the [managed-role handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.8/README.md).
 
 The bot verifies current Discord permissions before changing roles. A newly granted

@@ -19,6 +19,9 @@ can be saved before Discord succeeds; it is not proof that roles were applied.
 Membership settings shows the latest 100 operations across the workspace's games:
 actor, target, origin, version, status, update time, reason and latest five attempts.
 Up to 20 attempts are retained per operation; lifetime attempt count remains.
+The daily check of an applied operation adds an attempt only when it ends
+otherwise than applied. Denied, superseded and failed operations are deleted,
+with their attempts, 30 days after they finished (a daily prune).
 Refresh is explicit. Failed reads remove old rows; changing workspace clears them.
 Unlinked player records remain editable but produce a denied `target_not_linked`
 operation without a Discord request. This does not verify platform/Steam identity.
@@ -27,7 +30,7 @@ operation without a Discord request. This does not verify platform/Steam identit
 | --------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `pending` / `running` | Waiting for the bot or executing a bounded attempt                                                             |
 | `retry_scheduled`     | Transient error, unknown provider result or rate limit; automatic retry                                        |
-| `applied`             | A fresh read confirmed the complete managed role set; checked periodically                                     |
+| `applied`             | A fresh read confirmed the complete managed role set; checked again once a day                                 |
 | `denied`              | Actor, target, departure, permission or hierarchy check failed; correct the cause and save a new staff request |
 | `superseded`          | A newer request, assignment or policy replaced this desired state                                              |
 | `failed`              | Six consecutive failed/crashed attempts; correct the cause and save a new staff request                        |
@@ -93,7 +96,7 @@ The bot has an independent ten-second recovery pass, rotating over at most four
 available guilds, plus the existing full-sync hook. It claims one due operation per
 guild/pass. A durable 45-second lease serializes every game for a guild/member pair;
 fences reject stale completions. Another process can reclaim an expired attempt.
-Success is due for verification again after five minutes; actual cadence depends
+Success is due for verification again after 24 hours; actual cadence depends
 on backlog. Six consecutive failures stop automatic attempts; a verified success
 resets that consecutive-failure count.
 

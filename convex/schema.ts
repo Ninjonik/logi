@@ -2248,7 +2248,9 @@ export default defineSchema({
             "discordUserId",
             "version",
         ])
-        .index("guildId_createdAt", ["guildId", "createdAt"]),
+        .index("guildId_createdAt", ["guildId", "createdAt"])
+        // Finished operations (`nextAttemptAt` is NEVER) by age, for the prune.
+        .index("nextAttemptAt_updatedAt", ["nextAttemptAt", "updatedAt"]),
     memberRoleLocks: defineTable({
         guildId: v.string(),
         discordUserId: v.string(),
