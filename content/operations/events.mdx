@@ -127,10 +127,11 @@ new scheduled event instead.
 
 ### Discord behavior per event
 
-The public announcement shows only counts; names appear in the private **Show
-sign-ups** list, ordered by sign-up time within each group. Members without an
-answer are sorted by name in the server's Discord language (Czech sorting
-treats **Ch** as a letter after **H**).
+The public announcement lists every group offered by that event, its sign-up
+count and its signed-up display names in alphabetical order, plus a separate
+declined section. The bot edits that same card whenever a registration changes.
+The event thumbnail appears at the top right; its optional embed image appears
+below the registration list and above the action buttons.
 
 Discord output needs the bot running and the relevant server or event-level
 channel configuration. The event's announcement and event-info channels are

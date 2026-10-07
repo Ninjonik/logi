@@ -351,6 +351,7 @@ export function flowPreviewModel(
         messageStyle: context.messageStyle,
         notes: (values.notes || values.description || "").trim() || null,
         thumbnailUrl: values.thumbnailUrl || null,
+        imageUrl: values.imageUrl || null,
         signups: context.signups,
     }
 }

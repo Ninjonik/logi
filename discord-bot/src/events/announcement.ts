@@ -19,6 +19,7 @@ import {
     buildAnnouncementView,
     matchCardFullTitle,
     type AnnouncementCounts,
+    type AnnouncementSignupRoster,
     type AnnouncementResult,
     type MatchCardEvent,
 } from "../../../src/domain/discord-messages/match-announcement"
@@ -189,6 +190,72 @@ export function announcementCountsOf(
     }
 }
 
+function groupIcon(group: Group) {
+    if (group.discordEmoji?.trim()) return group.discordEmoji.trim()
+    const hex = group.color.replace("#", "")
+    const value = Number.parseInt(hex, 16)
+    if (!/^[0-9a-f]{6}$/i.test(hex) || !Number.isFinite(value)) return "⚪"
+    const red = (value >> 16) & 255
+    const green = (value >> 8) & 255
+    const blue = value & 255
+    if (Math.max(red, green, blue) - Math.min(red, green, blue) < 28)
+        return "⚪"
+    if (red >= green && red >= blue) return green > blue + 35 ? "🟠" : "🔴"
+    if (green >= red && green >= blue) return blue > red + 35 ? "🔵" : "🟢"
+    return "🔵"
+}
+
+/** Public roster for the card: offered groups and declined players by name. */
+export function announcementSignupRosterOf(
+    event: EventRecord,
+    groups: readonly Group[],
+    names: Readonly<Record<string, string>>,
+    locale = "en"
+): AnnouncementSignupRoster {
+    const offered = event.signupGroupIds ? new Set(event.signupGroupIds) : null
+    const visibleGroups = groups.filter(
+        (group) => !offered || offered.has(group.id)
+    )
+    const groupIdByName = new Map(
+        visibleGroups.map((group) => [group.name, group.id])
+    )
+    const byGroup = new Map(
+        visibleGroups.map((group) => [group.id, [] as string[]])
+    )
+    const declined: string[] = []
+    const participants = event.participants.length
+        ? event.participants
+        : event.signUps.map((signUp) => ({
+              userId: signUp.userId,
+              status:
+                  signUp.group === SIGNUP_NOT_ATTENDING
+                      ? ("not_attending" as const)
+                      : ("attending" as const),
+              group: signUp.group ?? null,
+          }))
+    for (const participant of participants) {
+        const name =
+            names[participant.userId]?.trim() || `<@${participant.userId}>`
+        if (participant.status === "not_attending") {
+            declined.push(name)
+            continue
+        }
+        const groupId = byGroup.has(participant.group ?? "")
+            ? participant.group!
+            : groupIdByName.get(participant.group ?? "")
+        if (groupId) byGroup.get(groupId)!.push(name)
+    }
+    const compare = new Intl.Collator(locale, { sensitivity: "base" }).compare
+    return {
+        groups: visibleGroups.map((group) => ({
+            name: group.name,
+            icon: groupIcon(group),
+            names: (byGroup.get(group.id) ?? []).sort(compare),
+        })),
+        declined: declined.sort(compare),
+    }
+}
+
 /** Places on a published roster and who confirmed (L1-37, L1-46). */
 export function rosterFactsOf(event: EventRecord, roster: Roster) {
     const rostered = roster.squads.flatMap((squad) =>
@@ -254,7 +321,10 @@ export function announcementStateOf(
 
 /** The announcement card as the kit's view. */
 export function buildAnnouncementCard(
-    payload: Pick<SyncPayload, "config" | "groups" | "guild" | "rosters">,
+    payload: Pick<
+        SyncPayload,
+        "config" | "groups" | "guild" | "rosters" | "userDisplayNames"
+    >,
     event: EventRecord,
     options: AnnouncementOptions = {}
 ) {
@@ -282,6 +352,12 @@ export function buildAnnouncementCard(
         event: card,
         state,
         counts: announcementCountsOf(event, payload.groups),
+        signupRoster: announcementSignupRosterOf(
+            event,
+            payload.groups,
+            payload.userDisplayNames,
+            card.locale
+        ),
         roster: rosterFacts
             ? {
                   players: rosterFacts.players,
@@ -301,6 +377,9 @@ export function buildAnnouncementCard(
         resultsChannelId: options.resultsChannelId ?? null,
         scheduledEvent: Boolean(options.scheduledEvent),
         thumbnail: options.thumbnail ?? null,
+        image: /^https?:\/\//i.test(event.imageUrl?.trim() ?? "")
+            ? { url: event.imageUrl!.trim(), description: event.name }
+            : null,
         links: {
             calendar: buildCalendarLink({
                 kind: event.kind,
@@ -335,6 +414,14 @@ export async function announcementThumbnail(
     event: EventRecord,
     language: string
 ): Promise<{ media: MessageMedia; file?: AttachmentBuilder } | null> {
+    const uploaded = event.thumbnailUrl?.trim()
+    if (uploaded && /^https?:\/\//i.test(uploaded))
+        return {
+            media: {
+                url: uploaded,
+                description: plainText(event.name).slice(0, 200),
+            },
+        }
     if (event.kind !== "match") return null
     const game = resolveGameScope(event.gameId)
     const art = await builtInMapImage(
@@ -363,20 +450,6 @@ export async function announcementThumbnail(
             }),
         }
     }
-    const uploaded = event.thumbnailUrl?.trim()
-    if (uploaded && /^https?:\/\//i.test(uploaded))
-        return {
-            media: {
-                url: uploaded,
-                description: plainText(
-                    formatMapLabel(
-                        event.map,
-                        event.gameId,
-                        getEventMessages(language)
-                    ) ?? event.name
-                ).slice(0, 200),
-            },
-        }
     return null
 }
 

@@ -79,7 +79,6 @@ export type AnnouncementAction =
     | "signup"
     | "editSignup"
     | "decline"
-    | "attendees"
     | "calendar"
     | "assignment"
     | "openRoster"
@@ -105,30 +104,22 @@ export function announcementActions(
 ): AnnouncementAction[][] {
     switch (state) {
         case "open":
-            return [
-                ["signup", "editSignup", "decline", "attendees"],
-                ["calendar"],
-            ]
+            return [["signup", "editSignup", "decline"], ["calendar"]]
         case "closed":
-            return [["attendees", "calendar"]]
+            return [["calendar"]]
         case "roster":
-            return [["assignment", "attendees", "openRoster"], ["calendar"]]
+            return [["assignment", "openRoster"], ["calendar"]]
         case "starting":
             return options.rosterPublished &&
                 (options.kind ?? "match") === "match"
                 ? [["confirm", "late", "assignment"]]
-                : [["attendees"]]
+                : []
         case "playing":
         case "cancelled":
             return []
         case "played":
             return options.hasMatchPage ? [["match"]] : []
     }
-}
-
-/** States in which "Zobrazit přihlášené" is offered (L1-69). */
-export function offersAttendeeList(state: AnnouncementState) {
-    return state === "open" || state === "closed" || state === "roster"
 }
 
 /**

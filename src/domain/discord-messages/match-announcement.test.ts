@@ -105,15 +105,9 @@ test("the open card reads like the board (L1-11..24)", () => {
     assert.deepEqual(view.header?.thumbnail, base.thumbnail)
     const body = text(view)
     assert.match(body, /`VLK` Spojenci ★ {2}vs {2}`ROG` Osa ✚/)
-    assert.match(
-        body,
-        /\*\*ne <t:1791741600:d> · <t:1791741600:t>\*\* · <t:1791741600:R>/
-    )
+    assert.match(body, /\*\*<t:1791741600:f>\*\* · <t:1791741600:R>/)
     assert.match(body, /Foy · den · sraz <t:1791739800:t>/)
-    assert.match(
-        body,
-        /🟢 \*\*Přihlášky otevřené\*\* · do so <t:1791653400:d> · <t:1791653400:t>/
-    )
+    assert.match(body, /🟢 \*\*Přihlášky otevřené\*\* · do <t:1791653400:f>/)
     assert.match(
         body,
         /\*\*Přihlášeno 17\*\* · Pěchota 12 · Tanky 4\/6 · Recon 1\/2\n/
@@ -130,9 +124,8 @@ test("the open card reads like the board (L1-11..24)", () => {
         [
             [
                 "Přihlásit se (success)",
-                "Upravit přihlášku (secondary)",
+                "Zkontrolovat přihlášení (secondary)",
                 "Nepřijdu (danger)",
-                "Zobrazit přihlášené (secondary)",
             ],
             ["Přidat do kalendáře ↗"],
         ]
@@ -148,6 +141,33 @@ test("the bar is the clan colour whatever the state or category (L1-02, L1-07)",
             0xe8a33d
         )
     }
+})
+
+test("the announcement keeps the offered groups and declined people visible", () => {
+    const view = buildAnnouncementView({
+        ...base,
+        signupRoster: {
+            groups: [
+                {
+                    name: "Pěchota",
+                    icon: "🟢",
+                    names: ["Ninjonik", "Sandiary"],
+                },
+                { name: "Recon", icon: "🔵", names: [] },
+            ],
+            declined: ["Baller", "Cilis"],
+        },
+        image: { url: "https://cdn.example/briefing.png" },
+    })
+    const body = text(view)
+    assert.match(body, /\*\*🟢 Pěchota \(2\)\*\*\nNinjonik, Sandiary/)
+    assert.match(body, /\*\*🔵 Recon \(0\)\*\*/)
+    assert.match(body, /\*\*❌ Odmítli \(2\)\*\*\nBaller, Cilis/)
+    const gallery = view.blocks.find((block) => block.kind === "gallery")
+    assert.equal(gallery?.kind, "gallery")
+    if (gallery?.kind === "gallery")
+        assert.equal(gallery.items[0]?.url, "https://cdn.example/briefing.png")
+    assert.doesNotMatch(JSON.stringify(buttons(view)), /Zobrazit přihlášené/)
 })
 
 test("a full capped group is named and the counts say plno and Zálohy (L1-28, L1-29)", () => {
@@ -187,7 +207,7 @@ test("closed sign-ups show velení skládá soupisku, plain counts and Nepřijde
     )
     assert.deepEqual(
         buttons(view).map((row) => row.map(label)),
-        [["Zobrazit přihlášené (secondary)", "Přidat do kalendáře ↗"]]
+        [["Přidat do kalendáře ↗"]]
     )
 })
 
@@ -207,11 +227,7 @@ test("a published roster names its size and channel and offers Zobrazit zařazen
     assert.deepEqual(
         buttons(view).map((row) => row.map(label)),
         [
-            [
-                "Zobrazit zařazení (primary)",
-                "Zobrazit přihlášené (secondary)",
-                "Otevřít soupisku ↗",
-            ],
+            ["Zobrazit zařazení (primary)", "Otevřít soupisku ↗"],
             ["Přidat do kalendáře ↗"],
         ]
     )
@@ -289,10 +305,7 @@ test("a played match shows the result, the match link and the results channel (L
         resultsChannelId: "888888888888888888",
     })
     const body = text(view)
-    assert.match(
-        body,
-        /⚪ \*\*Odehráno\*\* · ne <t:1791741600:d> · <t:1791741600:t> · Foy · den/
-    )
+    assert.match(body, /⚪ \*\*Odehráno\*\* · <t:1791741600:f> · Foy · den/)
     assert.match(body, /\*\*Výhra 4 : 1\*\* · potvrdil Kowalski/)
     assert.doesNotMatch(body, /Tanky drží|Přihlášeno|sraz/)
     assert.match(
@@ -312,7 +325,7 @@ test("a cancelled match strikes the start and tells players to do nothing (L1-56
         scheduledEvent: true,
     })
     const body = text(view)
-    assert.match(body, /~~ne <t:1791741600:d> · <t:1791741600:t>~~/)
+    assert.match(body, /~~<t:1791741600:f>~~/)
     assert.match(body, /🔴 \*\*Zrušeno\*\* · zápas se nehraje/)
     assert.match(
         body,
@@ -350,7 +363,7 @@ test("a training shows its server but no category, teams, map or forum (L1-61..6
     assert.match(body, /sraz <t:1791823500:t> · server Vlci Trénink/)
     assert.match(body, /\*\*Přihlášeno 8\*\* · Nepřijde 1/)
     assert.doesNotMatch(body, /Fórum zápasu|Spojenci|Foy/)
-    assert.deepEqual(buttons(view).flat().length, 5)
+    assert.deepEqual(buttons(view).flat().length, 4)
 })
 
 test("no state ever shows a server password or internal IDs (L1-03, L1-08, L1-B07)", () => {

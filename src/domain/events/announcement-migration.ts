@@ -11,7 +11,7 @@
  */
 
 /** Bump when every posted announcement must be redrawn once. */
-export const ANNOUNCEMENT_LAYOUT_VERSION = "l1-2026-10"
+export const ANNOUNCEMENT_LAYOUT_VERSION = "l1-2026-10-roster"
 
 /** Matches that ended longer ago keep their old message (L1-148). */
 export const ANNOUNCEMENT_MIGRATION_WINDOW_MS = 14 * 24 * 60 * 60 * 1000

@@ -3,6 +3,14 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    announcementCountsOf,
+    announcementMessage,
+    announcementSignupRosterOf,
+    announcementThumbnail,
+    buildAnnouncementCard,
+    rosterFactsOf,
+} from "./announcement"
+import {
     BOARD_NOW,
     boardConfig,
     boardEvent,
@@ -11,13 +19,6 @@ import {
     boardRoster,
     withLimits,
 } from "./board-example.fixture"
-import {
-    announcementCountsOf,
-    announcementMessage,
-    announcementThumbnail,
-    buildAnnouncementCard,
-    rosterFactsOf,
-} from "./announcement"
 import { ANNOUNCEMENT_LAYOUT_VERSION } from "../../../src/domain/events/announcement-migration"
 import { publicationFiles } from "../sync/publication-files"
 import { decideAnnouncement } from "./announcement-sync"
@@ -117,6 +118,41 @@ test("counts follow the board: groups, reserves and who is not coming", () => {
         declined: 1,
         generalSignup: false,
     })
+})
+
+test("the public card roster has every offered group and sorts names alphabetically", () => {
+    const event = boardEvent({
+        participants: [
+            {
+                userId: "z",
+                status: "attending",
+                group: "Pěchota",
+                updatedAt: "x",
+            },
+            { userId: "a", status: "attending", group: "inf", updatedAt: "x" },
+            {
+                userId: "d",
+                status: "not_attending",
+                group: null,
+                updatedAt: "x",
+            },
+        ],
+    })
+    assert.deepEqual(
+        announcementSignupRosterOf(event, boardGroups, {
+            z: "Zdeněk",
+            a: "Adam",
+            d: "Berta",
+        }),
+        {
+            groups: [
+                { name: "Pěchota", icon: "🟢", names: ["Adam", "Zdeněk"] },
+                { name: "Tanky", icon: "🔵", names: [] },
+                { name: "Recon", icon: "🟠", names: [] },
+            ],
+            declined: ["Berta"],
+        }
+    )
 })
 
 test("roster facts count places, reserves and confirmations", () => {
