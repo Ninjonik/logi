@@ -98,6 +98,9 @@ Training completion remains independently `passed`, `failed` or null.
 Each `player-stat-summaries` record identifies one durable `gameSessions` row.
 It carries connection/provider/external session ID, source digest, source
 times, completion, `fetchedAt`, and an independent `attributionCheckedAt`.
+`fetchedAt` is when Logi collected the stored content (first import or last
+change); a later re-read that finds a complete session unchanged does not move
+it.
 These are bounded source facts; there is no lifetime total, cross-provider
 deduplication, rank or inferred match outcome in this contract.
 
