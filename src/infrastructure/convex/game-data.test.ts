@@ -700,13 +700,15 @@ test("history commit records an unchanged session and its connection at most onc
     )
     assert.equal(row().updatedAt, written.updatedAt)
     assert.equal(connection().historyLastSuccessAt, written.success)
-    row().fetchedAt = Date.now() - 61_000
-    connection().historyLastSuccessAt = new Date(
-        Date.now() - 61_000
-    ).toISOString()
+    // Wall-clock free: the stale values are set explicitly and compared, so
+    // the test holds on a slow runner and within a single millisecond alike.
+    const staleFetchedAt = Date.now() - 61_000
+    const staleSuccess = new Date(staleFetchedAt).toISOString()
+    row().fetchedAt = staleFetchedAt
+    connection().historyLastSuccessAt = staleSuccess
     assert.equal(await commit(), true)
     assert.ok(
-        (row().fetchedAt as number) > Date.now() - 1_000,
+        (row().fetchedAt as number) > staleFetchedAt,
         "a visit is recorded again after a minute"
     )
     assert.equal(
@@ -714,7 +716,7 @@ test("history commit records an unchanged session and its connection at most onc
         written.updatedAt,
         "a visit alone keeps the content stamp"
     )
-    assert.notEqual(connection().historyLastSuccessAt, written.success)
+    assert.notEqual(connection().historyLastSuccessAt, staleSuccess)
     assert.equal(feedRows(), written.feed, "recording a visit is not a change")
     assert.equal(await commit({ ...session, map: "Foy" }), true)
     assert.equal(
