@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import { publicApiMemory, type PublicApiMemory } from "./public-api-memory"
 
 /**
@@ -11,12 +13,12 @@ const EXTERNAL_API_BUCKET = "external-api"
 type RateLimitStore = Pick<PublicApiMemory, "takeToken">
 
 export function checkExternalApiRateLimit(
-    clientIp: string,
+    bucket: string,
     memory: RateLimitStore = publicApiMemory,
     now = Date.now()
 ) {
     return memory.takeToken(
-        `${EXTERNAL_API_BUCKET}:${clientIp}`,
+        `${EXTERNAL_API_BUCKET}:${bucket}`,
         EXTERNAL_API_REQUESTS_PER_SECOND,
         EXTERNAL_API_WINDOW_MS,
         now
@@ -30,6 +32,22 @@ export function externalApiClientIp(request: Request) {
         request.headers.get("x-real-ip") ||
         "unknown"
     )
+}
+
+/**
+ * Clan API requests are limited by the SHA-256 hash of their bearer key, so a
+ * caller behind rotating Cloudflare addresses cannot acquire another budget.
+ * Public endpoints have no key and remain limited by source IP.
+ */
+export function externalApiRateLimitBucket(request: Request) {
+    if (new URL(request.url).pathname.startsWith("/api/v1/clan/")) {
+        const authorization = request.headers.get("authorization")
+        const key = authorization?.startsWith("Bearer ")
+            ? authorization.slice(7).trim()
+            : null
+        if (key) return `key:${createHash("sha256").update(key).digest("hex")}`
+    }
+    return `ip:${externalApiClientIp(request)}`
 }
 
 export function externalApiRateLimitResponse(result: {
