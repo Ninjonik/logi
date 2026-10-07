@@ -1,4 +1,5 @@
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { deleteWebhookDeliveries } from "./webhookDeliveryCleanup"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
@@ -148,6 +149,9 @@ export const remove = mutation({
         if (!hook || hook.guildId !== args.guildId)
             throw new Error("Webhook not found.")
         await ctx.db.delete(args.webhookId)
+        // Its delivery history goes with it: one batch here, the rest in
+        // scheduled continuations.
+        await deleteWebhookDeliveries(ctx, args.webhookId)
     },
 })
 

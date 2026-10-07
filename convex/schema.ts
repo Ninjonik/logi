@@ -657,7 +657,8 @@ export default defineSchema({
         ),
     })
         .index("tokenHash", ["tokenHash"])
-        .index("userRecordId_createdAt", ["userRecordId", "createdAt"]),
+        .index("userRecordId_createdAt", ["userRecordId", "createdAt"])
+        .index("expiresAt", ["expiresAt"]),
     platformIdentityLinks: defineTable({
         platform: v.literal("steam"),
         platformId: v.string(),
@@ -1008,7 +1009,8 @@ export default defineSchema({
         .index("updatedAt", ["updatedAt"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
-        .index("guildId_occurredAt", ["guildId", "occurredAt"]),
+        .index("guildId_occurredAt", ["guildId", "occurredAt"])
+        .index("occurredAt", ["occurredAt"]),
     competitions: defineTable({
         // Optional so existing ECL records remain valid; missing values are
         // treated as the legacy Hell Let Loose scope.
@@ -1131,7 +1133,8 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
-        .index("status", ["status"]),
+        .index("status", ["status"])
+        .index("requestedAt", ["requestedAt"]),
     // Who the scheduled sign-up and attendance reminders did not reach (board
     // L2-64): one row per match, kind and run (the attendance offset or the
     // sign-up day), updated when a later pass retries. The match page shows
@@ -1146,7 +1149,8 @@ export default defineSchema({
         failedUserIds: v.array(v.string()),
     })
         .index("eventId_sentAt", ["eventId", "sentAt"])
-        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"]),
+        .index("eventId_kind_runKey", ["eventId", "kind", "runKey"])
+        .index("sentAt", ["sentAt"]),
     // A re-published roster's change digest and change DMs, requested by the
     // dashboard and sent by the bot (board L1-120..126, L2-35..40). `before`
     // is the published version the dashboard replaced; the bot compares it
@@ -1188,7 +1192,8 @@ export default defineSchema({
         error: v.optional(v.string()),
     })
         .index("eventId_requestedAt", ["eventId", "requestedAt"])
-        .index("status", ["status"]),
+        .index("status", ["status"])
+        .index("status_requestedAt", ["status", "requestedAt"]),
     stratmaps: defineTable({
         guildId: v.string(),
         gameId: v.optional(gameId),
@@ -1393,7 +1398,8 @@ export default defineSchema({
         ),
     })
         .index("status", ["status"])
-        .index("guildId", ["guildId"]),
+        .index("guildId", ["guildId"])
+        .index("expiresAt", ["expiresAt"]),
     playerReportDrafts: defineTable({
         guildId: v.string(),
         reporterId: v.string(),
@@ -1530,59 +1536,10 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("threadId", ["threadId"])
         .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
-    membershipApplicationDrafts: defineTable({
-        guildId: v.string(),
-        creatorId: v.string(),
-        categoryId: v.string(),
-        gameId: v.optional(gameId),
-        specialization: v.optional(
-            v.union(v.literal("infantry"), v.literal("armour"))
-        ),
-        answers: v.array(
-            v.object({
-                questionId: v.string(),
-                label: v.string(),
-                value: v.string(),
-            })
-        ),
-        step: v.union(
-            v.literal("game"),
-            v.literal("specialization"),
-            v.literal("account"),
-            v.literal("questions"),
-            v.literal("review")
-        ),
-        expiresAt: v.string(),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("guildId_creatorId", ["guildId", "creatorId"])
-        .index("expiresAt", ["expiresAt"]),
     membershipApplicationFormDrafts: defineTable(applicationDraftFields)
         .index("guildId_creatorId", ["guildId", "creatorId"])
         .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),
-    platformIdLinkTokens: defineTable({
-        token: v.string(),
-        guildId: v.string(),
-        userId: v.string(),
-        userName: v.string(),
-        userAvatar: v.optional(v.string()),
-        categoryId: v.optional(v.string()),
-        language: v.union(v.literal("en"), v.literal("cs")),
-        completionMode: v.optional(
-            v.union(v.literal("membership"), v.literal("link"))
-        ),
-        applyMessageUrl: v.optional(v.string()),
-        interactionToken: v.optional(v.string()),
-        interactionApplicationId: v.optional(v.string()),
-        expiresAt: v.string(),
-        consumedAt: v.optional(v.string()),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("token", ["token"])
-        .index("userId", ["userId"]),
     privacyRequests: defineTable({
         userId: v.string(),
         discordId: v.string(),
@@ -2131,7 +2088,8 @@ export default defineSchema({
             "gameId",
             "idempotencyKey",
         ])
-        .index("guildId", ["guildId"]),
+        .index("guildId", ["guildId"])
+        .index("createdAt", ["createdAt"]),
     apiRateLimitBuckets: defineTable({
         bucket: v.string(),
         resetAt: v.number(),

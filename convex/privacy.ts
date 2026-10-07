@@ -55,7 +55,6 @@ export const exportForUser = query({
             assignments,
             playerStats,
             performanceHistory,
-            tokens,
             requests,
             events,
             rosters,
@@ -69,10 +68,6 @@ export const exportForUser = query({
                 .withIndex("userId", (q) => q.eq("userId", args.userId))
                 .collect(),
             ctx.db.query("playerPerformanceHistory").collect(),
-            ctx.db
-                .query("platformIdLinkTokens")
-                .withIndex("userId", (q) => q.eq("userId", args.userId))
-                .collect(),
             ctx.db
                 .query("privacyRequests")
                 .withIndex("userId", (q) => q.eq("userId", args.userId))
@@ -88,7 +83,6 @@ export const exportForUser = query({
             performanceHistory: performanceHistory.filter((entry) =>
                 includesUser(entry.userId)
             ),
-            platformLinkTokens: tokens,
             verifiedPlatformLinks: (
                 await ctx.db
                     .query("platformIdentityLinks")

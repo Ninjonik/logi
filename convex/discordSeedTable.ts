@@ -168,6 +168,7 @@ export const discordSeedRuns = defineTable({
     ])
     .index("guild_status", ["guildId", "status"])
     .index("status", ["status"])
+    .index("status_startedAt", ["status", "startedAt"])
 
 /**
  * The outbox of the seed messages: one row per call (`key` = run ID), control

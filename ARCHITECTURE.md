@@ -243,6 +243,22 @@ character stepped up)` on the same index (`publicationKeyRange`).
   Idempotency-Key, 24 h, with the stored response) and
   `apiRateLimitBuckets` (one row per window), hourly. Tens of thousands of
   dead rows in each were found in production because nothing removed them.
+- Every table that grows with history has a retention and an index-driven
+  prune. `housekeeping:pruneHistory` runs daily, about 250 rows per table
+  and transaction, rescheduled while a batch was full and deleted rows
+  (windows in `src/domain/housekeeping/retention.ts`): 30 days for
+  delivered or failed `webhookDeliveries` (`status_nextAttemptAt`),
+  `websiteEventCommandReceipts` (`createdAt`), `eventReminderRequests`
+  (`requestedAt`), `automaticReminderOutcomes` (`sentAt`), ended
+  `discordSeedRuns` with their delivered call row in `discordSeedMessages`
+  (`status_startedAt`), and `signupActivities` (`occurredAt`) and finished
+  `rosterChangeRequests` (`status_requestedAt`) once their match ended 30
+  days ago; a day after expiry for `meetingAttendanceRequests` and
+  `platformLinkChallenges` (`expiresAt`); 14 days for `leagueMessageRefs`,
+  which get an `expiresAt` at intake. `webhooks:remove` deletes the
+  subscription's deliveries. Match statistics (`gameSessions`,
+  `serverGameHistory`, `playerStats`, `matchStats`,
+  `eventResultRevisions`) and `matchRecaps` keep no limit.
 - A per-request endpoint serves counts from a maintained summary document,
   never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
   enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
