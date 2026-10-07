@@ -1,14 +1,15 @@
 import {
+    claimDue,
+    finishRead,
+    enqueueIndex,
+    pruneReferences,
+} from "../../../convex/leagueDiscoveryQueue"
+import {
     configure,
     manage,
     ingestMessage,
     forGuild,
 } from "../../../convex/leagueDiscovery"
-import {
-    claimDue,
-    finishRead,
-    enqueueIndex,
-} from "../../../convex/leagueDiscoveryQueue"
 import { claim as claimPublication } from "../../../convex/discordPublications"
 import { actorFixture, seedDashboardActor } from "./testing/dashboard-actor"
 import { parseMatchHtml } from "../wardogs-league/parse-match"
@@ -162,6 +163,31 @@ test("deleting a human reference preserves pin and automatic reasons; delayed ed
     assert.equal(row.pinned, true)
     assert.equal(row.automatic, true)
     assert.equal(ctx.db.tables.leagueMessageRefs[0].deleted, true)
+})
+test("a posted link's reference expires 14 days after the post, edits included, and the minute prune removes it", async () => {
+    const ctx = await setup()
+    await invoke(manage, ctx, { ...access, sourceUrl, operation: "add" })
+    await finish(ctx, await invoke(claimDue, ctx))
+    const args = {
+        secret,
+        guildId,
+        channelId,
+        messageId: "100000000000000004",
+        human: true,
+        deleted: false,
+    }
+    const before = Date.now()
+    await invoke(ingestMessage, ctx, { ...args, urls: [sourceUrl], version: 1 })
+    const ref = ctx.db.tables.leagueMessageRefs[0]
+    const day = 86400_000
+    assert.ok(ref.expiresAt >= before + 14 * day)
+    assert.ok(ref.expiresAt <= Date.now() + 14 * day)
+    // An edit that keeps the link keeps the expiry of the post.
+    ref._creationTime = Date.now() - 15 * day
+    await invoke(ingestMessage, ctx, { ...args, urls: [sourceUrl], version: 2 })
+    assert.equal(ref.expiresAt, ref._creationTime + 14 * day)
+    await invoke(pruneReferences, ctx)
+    assert.deepEqual(ctx.db.tables.leagueMessageRefs, [])
 })
 test("native event binding is same-guild, Wardogs match-only and one-to-one", async () => {
     const ctx = await setup()
