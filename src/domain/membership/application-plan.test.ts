@@ -77,6 +77,27 @@ test("window 1 has Hry, Kategorie, Herní jméno and the clan's questions (L6-18
     )
 })
 
+test("an application rejects multiple selected games", () => {
+    const result = submitWindow({
+        form,
+        categories,
+        answers: EMPTY_APPLICATION_ANSWERS,
+        windowId: "about",
+        values: {
+            games: ["wardogs", "hell_let_loose"],
+            category: ["main"],
+            name: ["Hráč 17"],
+            "q-source": ["source-1"],
+            "q-age": [],
+        },
+    })
+    assert.equal(result.ok, false)
+    if (!result.ok)
+        assert.deepEqual(result.issues, [
+            { fieldId: "games", issue: "too-many" },
+        ])
+})
+
 test("window 2 shows the found players and the accounts the game needs (L6-29..31)", () => {
     const hll: ApplicationAnswers = {
         ...EMPTY_APPLICATION_ANSWERS,
@@ -131,7 +152,7 @@ test("clan questions spill into 3b; the question window disappears without quest
     assert.equal(noQuestions.totalSteps, 2)
 })
 
-test("window 1 is saved; the category's game joins the chosen games", () => {
+test("window 1 is saved; the category's game replaces a mismatched game", () => {
     const result = submitWindow({
         form,
         categories,
@@ -147,7 +168,7 @@ test("window 1 is saved; the category's game joins the chosen games", () => {
     })
     assert.equal(result.ok, true)
     if (!result.ok) return
-    assert.deepEqual(result.answers.games, ["hell_let_loose", "wardogs"])
+    assert.deepEqual(result.answers.games, ["hell_let_loose"])
     assert.equal(result.answers.inGameName, "Hráč 17")
     assert.deepEqual(result.answers.answers, {
         source: ["source-1"],

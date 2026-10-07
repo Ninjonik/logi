@@ -634,6 +634,14 @@ export function MembershipSettingsForm({
                 toast.error(body.error ?? a.save.error)
                 return
             }
+            // `image` is only the unsaved asset choice. Once it has been
+            // attached and the settings have saved, keep its URL in the form
+            // state as well. A router refresh preserves this client component,
+            // so otherwise a second Save would treat the banner as empty.
+            setSettings((current) => ({
+                ...current,
+                panelImageUrl: panelImageUrl ?? "",
+            }))
             setImage(undefined)
             setShowIssues(false)
             toast.success(a.save.saved)

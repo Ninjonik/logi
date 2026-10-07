@@ -273,17 +273,17 @@ export function applicationFieldModel(
                 true,
                 {
                     kind: "select",
-                    multi: true,
+                    multi: false,
                     min: 1,
-                    max: planned.options.length,
+                    max: 1,
                     placeholder: copy.fields.games.placeholder,
                     options: planned.options.map((game) => ({
                         value: game,
                         label: GAME_LABELS[game],
                     })),
-                    values: answers.games.filter((game) =>
-                        planned.options.includes(game)
-                    ),
+                    values: answers.games
+                        .filter((game) => planned.options.includes(game))
+                        .slice(0, 1),
                 }
             )
         case "category":

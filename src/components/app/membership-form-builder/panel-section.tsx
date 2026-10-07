@@ -460,6 +460,7 @@ export function PanelSection({
                                 <li key={asset.id}>
                                     <button
                                         type="button"
+                                        aria-pressed={asset.url === imageUrl}
                                         aria-label={fillTemplate(t.pickImage, {
                                             number: String(index + 1),
                                         })}
@@ -470,7 +471,11 @@ export function PanelSection({
                                             })
                                             setPickerOpen(false)
                                         }}
-                                        className="focus-visible:ring-ring/50 block aspect-video w-full overflow-hidden rounded-lg border focus-visible:ring-[3px] focus-visible:outline-none"
+                                        className={`focus-visible:ring-ring/50 block aspect-video w-full overflow-hidden rounded-lg border focus-visible:ring-[3px] focus-visible:outline-none ${
+                                            asset.url === imageUrl
+                                                ? "ring-primary ring-2 ring-offset-2"
+                                                : ""
+                                        }`}
                                     >
                                         {/* eslint-disable-next-line @next/next/no-img-element -- the clan's own uploads, already normalized */}
                                         <img

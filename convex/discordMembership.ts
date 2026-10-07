@@ -248,15 +248,29 @@ export const getMembershipApplicationThreadContext = query({
                 .take(10),
         ])
         if (!config) return null
+        // An application record is scoped to its Discord guild and applicant.
+        // Do not let a stale/corrupt assignment ID escape that scope: decision
+        // handlers can remove an assignment when an application is denied.
+        const scopedAssignment =
+            assignment &&
+            assignment.serverId === application.guildId &&
+            assignment.userId === application.creatorId
+                ? assignment
+                : null
+        const applicationGame = application.gameId ?? "hell_let_loose"
         const category =
             config.membershipSettings?.categories.find(
-                (item) => item.id === application.categoryId
+                (item) =>
+                    item.id === application.categoryId &&
+                    (item.gameId ?? "hell_let_loose") === applicationGame
             ) ?? null
         const guild = await getGuildByDiscordId(ctx, application.guildId)
         return {
             config: normalizeConfigDoc(config),
             application: normalizeDoc(application),
-            assignment: assignment ? normalizeDoc(assignment) : null,
+            assignment: scopedAssignment
+                ? normalizeDoc(scopedAssignment)
+                : null,
             assignments: assignments.map((row) => ({
                 id: String(row._id),
                 gameId: row.gameId ?? "hell_let_loose",
