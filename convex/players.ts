@@ -1681,16 +1681,6 @@ export const mergeUsers = mutation({
             }
         }
 
-        for (const token of await ctx.db
-            .query("platformIdLinkTokens")
-            .withIndex("userId", (q) => q.eq("userId", secondaryStableId))
-            .collect()) {
-            await ctx.db.patch(token._id, {
-                userId: primaryStableId,
-                updatedAt: now,
-            })
-        }
-
         await rebuildUserPerformance(ctx as never, primaryStableId)
         await ctx.db.delete(secondaryUser._id)
 

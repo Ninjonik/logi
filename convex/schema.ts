@@ -1536,59 +1536,10 @@ export default defineSchema({
         .index("guildId", ["guildId"])
         .index("threadId", ["threadId"])
         .index("guildId_applicationNumber", ["guildId", "applicationNumber"]),
-    membershipApplicationDrafts: defineTable({
-        guildId: v.string(),
-        creatorId: v.string(),
-        categoryId: v.string(),
-        gameId: v.optional(gameId),
-        specialization: v.optional(
-            v.union(v.literal("infantry"), v.literal("armour"))
-        ),
-        answers: v.array(
-            v.object({
-                questionId: v.string(),
-                label: v.string(),
-                value: v.string(),
-            })
-        ),
-        step: v.union(
-            v.literal("game"),
-            v.literal("specialization"),
-            v.literal("account"),
-            v.literal("questions"),
-            v.literal("review")
-        ),
-        expiresAt: v.string(),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("guildId_creatorId", ["guildId", "creatorId"])
-        .index("expiresAt", ["expiresAt"]),
     membershipApplicationFormDrafts: defineTable(applicationDraftFields)
         .index("guildId_creatorId", ["guildId", "creatorId"])
         .index("submissionStatus", ["submissionStatus"])
         .index("expiresAt", ["expiresAt"]),
-    platformIdLinkTokens: defineTable({
-        token: v.string(),
-        guildId: v.string(),
-        userId: v.string(),
-        userName: v.string(),
-        userAvatar: v.optional(v.string()),
-        categoryId: v.optional(v.string()),
-        language: v.union(v.literal("en"), v.literal("cs")),
-        completionMode: v.optional(
-            v.union(v.literal("membership"), v.literal("link"))
-        ),
-        applyMessageUrl: v.optional(v.string()),
-        interactionToken: v.optional(v.string()),
-        interactionApplicationId: v.optional(v.string()),
-        expiresAt: v.string(),
-        consumedAt: v.optional(v.string()),
-        createdAt: v.string(),
-        updatedAt: v.string(),
-    })
-        .index("token", ["token"])
-        .index("userId", ["userId"]),
     privacyRequests: defineTable({
         userId: v.string(),
         discordId: v.string(),
