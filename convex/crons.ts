@@ -104,6 +104,15 @@ crons.interval(
     {}
 )
 
+// Retention of the tables that grow by a row per request, run or change: 30
+// days of history, a day for expired requests (convex/housekeeping.ts).
+crons.daily(
+    "prune history past its retention",
+    { hourUTC: 4, minuteUTC: 5 },
+    makeFunctionReference<"mutation">("housekeeping:pruneHistory"),
+    {}
+)
+
 // Unfinished clan applications are kept 24 h, then deleted (L6-08, N4-37).
 crons.interval(
     "delete expired clan application drafts",

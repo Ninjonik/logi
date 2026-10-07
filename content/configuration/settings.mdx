@@ -395,8 +395,9 @@ reject stale requests. The signing secret is revealed only when a subscription
 is created or rotated. Current mutation events include article creation, update, and
 deletion; event creation and updates; and roster updates caused by API event-signup changes. Failed transient deliveries retry with bounded backoff; permanent
 4xx responses do not retry except `408` and `429`. Delivery history records
-successful, failed, and retried attempts; deleting or disabling a subscription
-prevents queued deliveries from being sent.
+successful, failed, and retried attempts and keeps finished deliveries for 30
+days; deleting or disabling a subscription prevents queued deliveries from
+being sent, and deleting it also removes its delivery history.
 
 Each delivery is an HTTP `POST` with `Content-Type: application/json` and
 `User-Agent: Logi-Webhooks/1.0`. The body has this exact JSON envelope. The
