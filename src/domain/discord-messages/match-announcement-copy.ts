@@ -39,6 +39,8 @@ export type MatchAnnouncementCopy = {
         withoutGroup: string
         /** "Nepřijde {count}". */
         declined: string
+        /** Heading for people who declined the event registration. */
+        declinedHeading: string
         /** "Potvrzeno {confirmed} z {total}". */
         confirmed: string
         /** "přijde později {count}". */

@@ -8,10 +8,8 @@ import {
     Shield,
     Swords,
     UserCog,
-    ListTodo,
-    ListChecks,
     CalendarIcon,
-    Map,
+    Bot,
     Globe,
     Ticket,
 } from "lucide-react"
@@ -134,23 +132,45 @@ export function AppSidebar({
                       label: t.operations,
                       id: "onboarding-sidebar-operations",
                       items: [
-                          // Members see every event in one list; managers
-                          // work from matches and trainings.
-                          ...(resolvedCanAdmin
-                              ? []
-                              : [
-                                    {
-                                        title: t.events,
-                                        url: `${base}/events`,
-                                        icon: ListTodo,
-                                        isActive: within("events"),
-                                    },
-                                ]),
                           {
                               title: t.matches,
                               url: `${base}/matches`,
                               icon: CalendarIcon,
                               isActive: within("matches"),
+                              items: [
+                                  {
+                                      title: t.matches,
+                                      url: `${base}/matches`,
+                                      isActive: within("matches"),
+                                  },
+                                  {
+                                      title: t.topicPresets,
+                                      url: `${base}/topic-presets`,
+                                      isActive: within("topic-presets"),
+                                  },
+                                  {
+                                      title: t.stratmaps,
+                                      url: `${base}/stratmaps`,
+                                      isActive: within("stratmaps"),
+                                  },
+                                  {
+                                      title: t.rosters,
+                                      url: `${base}/rosters`,
+                                      isActive: within("rosters"),
+                                      items: [
+                                          {
+                                              title: t.rosters,
+                                              url: `${base}/rosters`,
+                                              isActive: within("rosters"),
+                                          },
+                                          {
+                                              title: t.squadPresets,
+                                              url: `${base}/squad-presets`,
+                                              isActive: within("squad-presets"),
+                                          },
+                                      ],
+                                  },
+                              ],
                           },
                           {
                               title: t.trainings,
@@ -158,33 +178,6 @@ export function AppSidebar({
                               icon: Shield,
                               isActive: within("trainings"),
                           },
-                          {
-                              title: t.signupActivity,
-                              url: `${base}/signup-activity`,
-                              icon: ListChecks,
-                          },
-                          {
-                              title: t.rosters,
-                              url: `${base}/rosters`,
-                              icon: ClipboardList,
-                              isActive: within("rosters"),
-                          },
-                          {
-                              title: t.stratmaps,
-                              url: `${base}/stratmaps`,
-                              icon: Map,
-                              isActive: within("stratmaps"),
-                          },
-                          ...(resolvedCanAdmin
-                              ? []
-                              : [
-                                    {
-                                        title: t.users,
-                                        url: `${base}/users`,
-                                        icon: UserCog,
-                                        isActive: within("users"),
-                                    },
-                                ]),
                       ],
                   },
                   ...(resolvedCanAdmin
@@ -194,36 +187,49 @@ export function AppSidebar({
                                 id: "onboarding-sidebar-configuration",
                                 items: [
                                     {
-                                        title: t.members,
+                                        title: t.users,
                                         url: `${base}/users`,
                                         icon: UserCog,
                                         isActive: within("users"),
-                                        // Listed under Members while that part is open.
                                         items: [
                                             {
-                                                title: t.groups,
-                                                url: `${base}/groups`,
-                                                isActive: within("groups"),
+                                                title: t.users,
+                                                url: `${base}/users`,
+                                                isActive: within("users"),
+                                            },
+                                            {
+                                                title: t.memberships,
+                                                // Membership settings now live in
+                                                // the clan settings hub. Link to
+                                                // that section directly instead
+                                                // of making people pass through
+                                                // the legacy redirect page.
+                                                url: `${base}/settings/membership`,
+                                                isActive:
+                                                    pathname?.startsWith(
+                                                        `${base}/memberships`
+                                                    ) ||
+                                                    within(
+                                                        "settings/membership"
+                                                    ),
                                             },
                                         ],
                                     },
                                     {
-                                        title: t.teams,
-                                        url: `${base}/teams`,
-                                        icon: Swords,
-                                        isActive: within("teams"),
-                                    },
-                                    {
                                         title: t.tickets,
-                                        url: `${base}/tickets`,
+                                        // Ticket configuration also moved into
+                                        // clan settings, so keep this shortcut
+                                        // on its live destination.
+                                        url: `${base}/settings/tickets`,
                                         icon: Ticket,
-                                        isActive: within("tickets"),
+                                        isActive:
+                                            within("tickets") ||
+                                            within("settings/tickets"),
                                     },
                                     {
-                                        title: t.settings,
+                                        title: t.serverSettings,
                                         url: `${base}/settings`,
                                         icon: Settings,
-                                        // Presets open from Settings > Presets.
                                         isActive:
                                             within("settings") ||
                                             within("system") ||
@@ -236,6 +242,32 @@ export function AppSidebar({
                                                 String(settingsAttention)
                                             ),
                                         },
+                                    },
+                                ],
+                            },
+                            {
+                                label: t.bot,
+                                items: [
+                                    ...(isSuperadmin
+                                        ? [
+                                              {
+                                                  title: t.competitions,
+                                                  url: `/${locale}/dashboard/competitions${superadminWorkspaceQuery}`,
+                                                  icon: Swords,
+                                                  isActive:
+                                                      pathname?.startsWith(
+                                                          `/${locale}/dashboard/competitions`
+                                                      ),
+                                              },
+                                          ]
+                                        : []),
+                                    {
+                                        title: t.bot,
+                                        url: `${base}/settings/discord-panels`,
+                                        icon: Bot,
+                                        isActive: within(
+                                            "settings/discord-panels"
+                                        ),
                                     },
                                 ],
                             },
@@ -302,8 +334,9 @@ export function AppSidebar({
             <SidebarContent
                 role="navigation"
                 aria-label={dictionary.appStates.mainNavigation}
-                // The account follows the menu directly, as in the design.
-                className="flex-initial gap-0"
+                // Let the navigation scroll independently so the account stays
+                // flush with the bottom border, even when nested sections are open.
+                className="gap-0"
             >
                 {navGroups.map((group) => (
                     <div key={group.label} id={group.id}>

@@ -6,7 +6,6 @@ import {
     announcementRefreshTimes,
     deriveAnnouncementState,
     fullSignupGroups,
-    offersAttendeeList,
     type AnnouncementState,
     type AnnouncementStateEvent,
 } from "./announcement-state"
@@ -111,9 +110,9 @@ test("each state has the board's button set (L1-B04)", () => {
         hasMatchPage: true,
     }
     const expected: Record<AnnouncementState, number> = {
-        open: 5,
-        closed: 2,
-        roster: 4,
+        open: 4,
+        closed: 1,
+        roster: 3,
         starting: 3,
         playing: 0,
         played: 1,
@@ -126,11 +125,11 @@ test("each state has the board's button set (L1-B04)", () => {
             name
         )
     assert.deepEqual(announcementActions("open", options), [
-        ["signup", "editSignup", "decline", "attendees"],
+        ["signup", "editSignup", "decline"],
         ["calendar"],
     ])
     assert.deepEqual(announcementActions("roster", options), [
-        ["assignment", "attendees", "openRoster"],
+        ["assignment", "openRoster"],
         ["calendar"],
     ])
     assert.deepEqual(announcementActions("starting", options), [
@@ -154,24 +153,7 @@ test("without a match page or roster the card offers what still works", () => {
             rosterPublished: false,
             hasMatchPage: false,
         }),
-        [["attendees"]]
-    )
-})
-
-test("the sign-up list is offered while sign-ups are open, closed and after the roster (L1-69)", () => {
-    assert.deepEqual(
-        (
-            [
-                "open",
-                "closed",
-                "roster",
-                "starting",
-                "playing",
-                "played",
-                "cancelled",
-            ] as const
-        ).filter(offersAttendeeList),
-        ["open", "closed", "roster"]
+        []
     )
 })
 

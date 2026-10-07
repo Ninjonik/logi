@@ -46,6 +46,7 @@ export type NewMatchPreviewModel = {
     /** The notes (or the description) the bot shows below the times. */
     notes?: string | null
     thumbnailUrl?: string | null
+    imageUrl?: string | null
     /** Sign-ups of a published match; a new one shows zero. */
     signups?: { total: number; byGroup: Record<string, number> }
 }
@@ -141,13 +142,26 @@ export function NewMatchPreview({
             total: model.signups?.total ?? 0,
             declined: 0,
         },
+        signupRoster:
+            model.kind === "match"
+                ? {
+                      groups: model.groups.map((group) => ({
+                          name: group.name,
+                          icon: "⚪",
+                          names: [],
+                      })),
+                      declined: [],
+                  }
+                : null,
         notes: model.notes,
         forumChannelId:
             model.kind === "match" && model.forum ? FORUM_CHANNEL_ID : null,
         thumbnail:
-            model.kind === "match" && (model.mapImageUrl || model.thumbnailUrl)
+            model.thumbnailUrl || (model.kind === "match" && model.mapImageUrl)
                 ? {
-                      url: (model.mapImageUrl || model.thumbnailUrl)!,
+                      url:
+                          model.thumbnailUrl ||
+                          (model.kind === "match" ? model.mapImageUrl : null)!,
                       description: model.map
                           ? announcement.card.mapAlt.replace(
                                 "{map}",
@@ -156,6 +170,9 @@ export function NewMatchPreview({
                           : undefined,
                   }
                 : null,
+        image: model.imageUrl
+            ? { url: model.imageUrl, description: model.title }
+            : null,
         links: {
             calendar:
                 "https://calendar.google.com/calendar/render?action=TEMPLATE",

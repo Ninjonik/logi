@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import type { LucideIcon } from "lucide-react"
+import { ChevronRight, type LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 
@@ -61,76 +61,135 @@ export function NavMenuItems({ items }: { items: NavItem[] }) {
     const game = searchParams.get("game")
     const gameQuery = game ? `game=${encodeURIComponent(game)}` : ""
 
-    return items.map((item) => {
-        const url = withGameQuery(item.url, gameQuery)
-        const active = isActiveItem(item, pathname)
-        const showSubItems =
-            Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
-        const hasBadge = Boolean(item.badge && item.badge.count > 0)
-        return (
-            <SidebarMenuItem key={`${item.title}-${url}`}>
-                <SidebarMenuButton
-                    asChild
-                    tooltip={item.title}
-                    isActive={active}
-                    className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+    return items.map((item) => (
+        <NavMenuItem
+            key={`${item.title}-${withGameQuery(item.url, gameQuery)}`}
+            item={item}
+            pathname={pathname}
+            gameQuery={gameQuery}
+        />
+    ))
+}
+
+function NavMenuItem({
+    item,
+    pathname,
+    gameQuery,
+}: {
+    item: NavItem
+    pathname: string
+    gameQuery: string
+}) {
+    const url = withGameQuery(item.url, gameQuery)
+    const active = isActiveItem(item, pathname)
+    const showSubItems =
+        Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
+    const hasBadge = Boolean(item.badge && item.badge.count > 0)
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                isActive={active}
+                className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+            >
+                <Link
+                    href={url}
+                    prefetch={!isHeavyServerRoute(url)}
+                    aria-current={active ? "page" : undefined}
                 >
-                    <Link
-                        href={url}
-                        prefetch={!isHeavyServerRoute(url)}
-                        aria-current={active ? "page" : undefined}
-                    >
-                        {item.icon && <item.icon aria-hidden="true" />}
-                        <span className="min-w-0 flex-1 truncate">
-                            {item.title}
+                    {item.icon && <item.icon aria-hidden="true" />}
+                    <span className="min-w-0 flex-1 truncate">
+                        {item.title}
+                    </span>
+                    {hasBadge && item.badge ? (
+                        <AttentionBadge label={item.badge.label}>
+                            {item.badge.count}
+                        </AttentionBadge>
+                    ) : null}
+                    {item.note ? (
+                        <span className="text-status-info shrink-0 text-[11px] font-medium">
+                            {item.note}
                         </span>
-                        {hasBadge && item.badge ? (
-                            <AttentionBadge label={item.badge.label}>
-                                {item.badge.count}
-                            </AttentionBadge>
-                        ) : null}
-                        {item.note ? (
-                            <span className="text-status-info shrink-0 text-[11px] font-medium">
-                                {item.note}
-                            </span>
-                        ) : null}
-                    </Link>
-                </SidebarMenuButton>
-                {showSubItems && item.items ? (
-                    <SidebarMenuSub className="mr-0 pr-0">
-                        {item.items.map((subItem) => {
-                            const subUrl = withGameQuery(subItem.url, gameQuery)
-                            const subActive = hasActiveDescendant(
-                                subItem,
-                                pathname
-                            )
-                            return (
-                                <SidebarMenuSubItem key={subUrl}>
-                                    <SidebarMenuSubButton
-                                        asChild
-                                        isActive={subActive}
-                                        className="h-9 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-7"
-                                    >
-                                        <Link
-                                            href={subUrl}
-                                            prefetch={
-                                                !isHeavyServerRoute(subUrl)
-                                            }
-                                            aria-current={
-                                                subActive ? "page" : undefined
-                                            }
-                                        >
-                                            <span>{subItem.title}</span>
-                                        </Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            )
-                        })}
-                    </SidebarMenuSub>
-                ) : null}
-            </SidebarMenuItem>
-        )
-    })
+                    ) : null}
+                    {item.items?.length ? (
+                        <ChevronRight
+                            aria-hidden="true"
+                            className={`size-4 shrink-0 transition-transform ${
+                                showSubItems ? "rotate-90" : ""
+                            }`}
+                        />
+                    ) : null}
+                </Link>
+            </SidebarMenuButton>
+            {showSubItems && item.items ? (
+                <SidebarMenuSub className="mr-0 pr-0">
+                    {item.items.map((subItem) => (
+                        <NavSubMenuItem
+                            key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
+                            item={subItem}
+                            pathname={pathname}
+                            gameQuery={gameQuery}
+                        />
+                    ))}
+                </SidebarMenuSub>
+            ) : null}
+        </SidebarMenuItem>
+    )
+}
+
+/** A recursive sub-navigation item, used for Matches → Rosters → presets. */
+function NavSubMenuItem({
+    item,
+    pathname,
+    gameQuery,
+}: {
+    item: NavItem
+    pathname: string
+    gameQuery: string
+}) {
+    const url = withGameQuery(item.url, gameQuery)
+    const active = isActiveItem(item, pathname)
+    const showSubItems =
+        Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
+
+    return (
+        <SidebarMenuSubItem>
+            <SidebarMenuSubButton
+                asChild
+                isActive={active}
+                className="h-9 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-7"
+            >
+                <Link
+                    href={url}
+                    prefetch={!isHeavyServerRoute(url)}
+                    aria-current={active ? "page" : undefined}
+                >
+                    <span>{item.title}</span>
+                    {item.items?.length ? (
+                        <ChevronRight
+                            aria-hidden="true"
+                            className={`ml-auto size-3.5 shrink-0 transition-transform ${
+                                showSubItems ? "rotate-90" : ""
+                            }`}
+                        />
+                    ) : null}
+                </Link>
+            </SidebarMenuSubButton>
+            {showSubItems && item.items ? (
+                <SidebarMenuSub className="mr-0 pr-0">
+                    {item.items.map((subItem) => (
+                        <NavSubMenuItem
+                            key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
+                            item={subItem}
+                            pathname={pathname}
+                            gameQuery={gameQuery}
+                        />
+                    ))}
+                </SidebarMenuSub>
+            ) : null}
+        </SidebarMenuSubItem>
+    )
 }
 
 /** The amber count beside an entry; screen readers hear the full label. */

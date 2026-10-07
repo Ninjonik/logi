@@ -27,15 +27,10 @@ import {
     type MessageMetaLine,
     type MessageView,
 } from "./message-view"
-import {
-    discordTimestamp,
-    discordWeekdayTimestamp,
-    fillTemplate,
-    formatCount,
-} from "./format"
 import { formatGroupCount, type SignupGroupCount } from "./signup-counts"
 import { attendanceButtonIds, rosterButtonIds } from "./roster-message"
 import type { MatchAnnouncementCopy } from "./match-announcement-copy"
+import { discordTimestamp, fillTemplate, formatCount } from "./format"
 import { categoryChip, sidesRow } from "./match-text"
 import { chipText } from "./message-layout"
 
@@ -77,6 +72,17 @@ export type AnnouncementCounts = {
     generalSignup?: boolean
 }
 
+/** The compact, public sign-up roster drawn directly in an announcement. */
+export type AnnouncementSignupRoster = {
+    groups: ReadonlyArray<{
+        name: string
+        /** A configured Discord emoji, or a colour-circle fallback. */
+        icon: string
+        names: readonly string[]
+    }>
+    declined: readonly string[]
+}
+
 export type AnnouncementResult = {
     outcome: ClanOutcome | null
     /** The clan's score first when the clan is known, else as reviewed. */
@@ -112,6 +118,9 @@ export type AnnouncementViewInput = {
     /** A Discord scheduled event exists, so a cancellation names it. */
     scheduledEvent?: boolean
     thumbnail?: MessageMedia | null
+    /** The event's full-width briefing/embed image, below the sign-up roster. */
+    image?: MessageMedia | null
+    signupRoster?: AnnouncementSignupRoster | null
     links: { calendar: string; roster?: string | null; match?: string | null }
     copy: MatchAnnouncementCopy
 }
@@ -190,35 +199,21 @@ export function matchSidesLine(
     })
 }
 
-/** "ne 11. 10. · 20:00" with Discord timestamps (L1-05). */
+/** One localized Discord date/time timestamp; Discord supplies the weekday. */
 export function weekdayTime(
-    event: Pick<MatchCardEvent, "locale" | "timeZone">,
+    _event: Pick<MatchCardEvent, "locale" | "timeZone">,
     iso: string
 ) {
-    return discordWeekdayTimestamp(iso, event.locale, event.timeZone) ?? ""
+    return discordTimestamp(iso, "f") ?? ""
 }
 
 /** "so 10. 10. v 19:30": a closed deadline as a date at a time (L1-71, L1-95). */
 export function weekdayAt(
-    event: Pick<MatchCardEvent, "locale" | "timeZone">,
+    _event: Pick<MatchCardEvent, "locale" | "timeZone">,
     iso: string,
-    copy: MatchAnnouncementCopy
+    _copy: MatchAnnouncementCopy
 ) {
-    const date = discordTimestamp(iso, "d")
-    const time = discordTimestamp(iso, "t")
-    if (!date || !time) return ""
-    let weekday = ""
-    try {
-        weekday = new Intl.DateTimeFormat(event.locale, {
-            weekday: "short",
-            timeZone: event.timeZone,
-        })
-            .format(Date.parse(iso))
-            .replace(/\.$/, "")
-    } catch {
-        weekday = ""
-    }
-    return [weekday, date, copy.card.at, time].filter(Boolean).join(" ")
+    return discordTimestamp(iso, "f") ?? ""
 }
 
 /** "Tanky a Recon" in the clan language. */
@@ -391,8 +386,6 @@ export function announcementCustomId(
             return `check-signup:${eventId}:${guildId}`
         case "decline":
             return `signup:${eventId}:${encodeURIComponent(SIGNUP_NOT_ATTENDING)}:${guildId}`
-        case "attendees":
-            return `attendees:${eventId}`
         // The roster's own routes (Moje zařazení, confirm, running late).
         case "assignment":
             return rosterButtonIds.assignment(eventId)
@@ -401,6 +394,32 @@ export function announcementCustomId(
         case "late":
             return attendanceButtonIds.late(eventId)
     }
+}
+
+function signupRosterBlocks(
+    roster: AnnouncementSignupRoster,
+    copy: MatchAnnouncementCopy
+): MessageBlock[] {
+    const section = (icon: string, name: string, names: readonly string[]) =>
+        [
+            `**${icon} ${escapeMarkdownText(name)} (${names.length})**`,
+            names.length
+                ? names.map((entry) => escapeMarkdownText(entry)).join(", ")
+                : undefined,
+        ]
+            .filter(Boolean)
+            .join("\n")
+    return [
+        {
+            kind: "text",
+            markdown: [
+                ...roster.groups.map((group) =>
+                    section(group.icon, group.name, group.names)
+                ),
+                section("❌", copy.card.declinedHeading, roster.declined),
+            ].join("\n\n"),
+        },
+    ]
 }
 
 function announcementButton(
@@ -625,6 +644,15 @@ export function buildAnnouncementView(
     } else if (state !== "played" && input.notes?.trim()) {
         blocks.push({ kind: "text", markdown: input.notes.trim() })
     }
+
+    if (
+        input.signupRoster &&
+        (state === "open" || state === "closed" || state === "roster")
+    )
+        blocks.push(...signupRosterBlocks(input.signupRoster, copy))
+
+    if (input.image && state !== "played" && state !== "cancelled")
+        blocks.push({ kind: "gallery", items: [input.image] })
 
     const rosterImage = input.roster?.image
     if (
