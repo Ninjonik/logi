@@ -744,17 +744,18 @@ refetch minimal records atomically with their revision at
 `GET /api/v1/clan/sync-records/{resource}/{id}?game=wardogs`. Both require explicit
 underlying read grants and one game. Capture `start=now` before a baseline sweep,
 then replay its signed cursor. Continue empty pages when `hasMore` is true.
-Store decimal revisions losslessly. After seven days without recovery, a 410
+Store decimal revisions losslessly. After two days without recovery, a 410
 `reset_required` response requires a new baseline. Keep CMS/publication decisions
 in the website's own backend.
 
-The registered projections are event summaries, match summaries, reviewed result
-summaries, server snapshots and integration health. Optional `integration.changed` webhook subscriptions emit
-minimal invalidations from dashboard, API, bot, import and collector transactions.
-Use the existing administrator-session webhook endpoint to opt into that event
-type; existing subscriptions are unchanged. The queue processes bounded batches,
-honors Retry-After and recovers expired worker leases. Receivers must deduplicate;
-the change feed remains the recovery source. See `/api/v1/docs` for the contract.
+The registered projections are event summaries, match summaries and reviewed
+result summaries. Server snapshots and integration health are live state and are
+not in the change feed: read them from `/api/v1/clan/server-snapshots` and
+`/api/v1/clan/integration-health`. Logi keeps a clan's change feed only while the
+clan has a website key that can read it; a new key starts with `start=now`, so
+nothing is lost. The feed is polled: `integration.changed` webhooks are no longer
+sent, and a subscription that lists that event type keeps working for its other
+types. See `/api/v1/docs` for the contract.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
 
@@ -792,9 +793,9 @@ session; API keys cannot change these permissions.
 Membership reads return an explicit unknown state when fresh Discord evidence is
 unavailable. They never expose all roles or grant website administration. Policy
 changes and reconnects invalidate cached authority. Membership feed consumers must
-specify one Discord subject and handle a scope reset; membership webhooks require an
-explicit `membership.changed` subscription. Existing summary keys and webhook
-subscriptions do not gain member access automatically.
+specify one Discord subject and handle a scope reset. `membership.changed`
+webhooks are no longer sent; poll the membership feed instead. Existing summary
+keys and webhook subscriptions do not gain member access automatically.
 
 ## Website event commands
 

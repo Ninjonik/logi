@@ -50,7 +50,7 @@ GET /api/v1/clan/changes?game=wardogs&resources=league-fixtures&start=now
 GET /api/v1/clan/sync-records/league-fixtures/<match-id>?game=wardogs
 ```
 
-Change-log writes are transactional. Use the sync envelope revision for ordering and source timestamps for freshness. Rebootstrap after cursor expiry. Disabling tracking pauses collection and withdraws cards but keeps snapshots readable; **Ignore** emits a removal. Responses are no-store.
+Change-log writes are transactional. A refresh appends a change only when the fixture the website reads changed; its revision, `stale`, `ageSeconds`, `lastAttemptAt` and the snapshot's `fetchedAt` move on every refresh without one, so re-read the collection when freshness matters. Use the sync envelope revision for ordering and source timestamps for freshness. Rebootstrap after cursor expiry. Disabling tracking pauses collection and withdraws cards but keeps snapshots readable; **Ignore** emits a removal. Responses are no-store.
 
 Service-key tracking administration is deliberately excluded: changing rooms/publication policy requires a current dashboard administrator. Actor-backed native event commands remain separate.
 
