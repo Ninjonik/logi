@@ -24,6 +24,7 @@ import type { PanelFactionEmoji } from "../../../src/domain/discord-publications
 import type { AnnouncementResult } from "../../../src/domain/discord-messages/match-announcement"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { publishManagedMessage } from "../sync/publication"
+import { memberNames } from "./match-context"
 import { logInfo, logWarn } from "../log"
 import { env } from "../environment"
 import { convex } from "../convex"
@@ -139,33 +140,49 @@ export async function syncAnnouncement(input: {
     const meetingChannel = meetingChannelId
         ? guild.channels.cache.get(meetingChannelId)
         : undefined
+    const participantIds = [
+        ...event.participants.map((participant) => participant.userId),
+        ...event.signUps.map((signUp) => signUp.userId),
+    ]
+    // The cache-backed event sync deliberately has no user projection. Resolve
+    // the current Discord members here, where the public card actually needs
+    // their names.
+    const userDisplayNames = await memberNames(
+        guild,
+        participantIds,
+        payload.userDisplayNames
+    )
     const thumbnail = await announcementThumbnail(
         event,
         payload.config.defaultLanguage
     )
-    const { view, state: cardState } = buildAnnouncementCard(payload, event, {
-        now: input.now,
-        factionEmoji: input.factionEmoji,
-        forumChannelId: input.forumChannelId,
-        rosterChannelId: input.rosterChannelId,
-        rosterImage: input.rosterImage
-            ? {
-                  url: input.rosterImage.mediaUrl,
-                  description:
-                      input.rosterImage.attachment.description ?? undefined,
-              }
-            : null,
-        thumbnail: thumbnail?.media ?? null,
-        announcementChannelId: input.channel.id,
-        clanName: guild.name,
-        meetingChannelName: meetingChannel?.name ?? null,
-        scheduledEvent: Boolean(
-            payload.config.meetingChannelId && state?.scheduledEventId
-        ),
-        result: context.result,
-        publicMatch: context.publicMatch,
-        resultsChannelId: context.resultsChannelId,
-    })
+    const { view, state: cardState } = buildAnnouncementCard(
+        { ...payload, userDisplayNames },
+        event,
+        {
+            now: input.now,
+            factionEmoji: input.factionEmoji,
+            forumChannelId: input.forumChannelId,
+            rosterChannelId: input.rosterChannelId,
+            rosterImage: input.rosterImage
+                ? {
+                      url: input.rosterImage.mediaUrl,
+                      description:
+                          input.rosterImage.attachment.description ?? undefined,
+                  }
+                : null,
+            thumbnail: thumbnail?.media ?? null,
+            announcementChannelId: input.channel.id,
+            clanName: guild.name,
+            meetingChannelName: meetingChannel?.name ?? null,
+            scheduledEvent: Boolean(
+                payload.config.meetingChannelId && state?.scheduledEventId
+            ),
+            result: context.result,
+            publicMatch: context.publicMatch,
+            resultsChannelId: context.resultsChannelId,
+        }
+    )
     const pingRoleIds = getAnnouncementPingRoleIds(payload, event)
     const decision = decideAnnouncement({
         state: cardState,
