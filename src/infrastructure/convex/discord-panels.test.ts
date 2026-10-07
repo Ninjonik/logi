@@ -811,6 +811,19 @@ test("the join page shows the queue from the server panel's live read (P4-44)", 
     assert.equal(page.players, 78)
     assert.equal(page.capacity, 100)
     assert.equal(page.queue, 3)
+    // The same read from its own payload row, the layout since the split.
+    const cache = ctx.db.tables.hllLiveCache![0]!
+    ctx.db.seed("hllLivePayloads", {
+        _id: "hllLivePayloads:hll",
+        cacheId: cache._id,
+        dataJson: cache.dataJson,
+    })
+    delete cache.dataJson
+    const split = await invoke(panelBot.joinPage, ctx, {
+        secret,
+        slug: "vlci-1",
+    })
+    assert.equal(split.queue, 3)
     // An old read, or one of another source generation, is not "now".
     advance(10 * 60_000)
     const later = await invoke(panelBot.joinPage, ctx, {

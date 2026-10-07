@@ -1713,6 +1713,7 @@ export default defineSchema({
         historyCount: v.optional(v.number()),
         historyLastSuccessAt: v.optional(v.string()),
         historyErrorCategory: v.optional(v.union(gameDataError, v.null())),
+        // No longer written: the Warcon read budget is in `warconReadLimits`.
         warconReadWindowAt: v.optional(v.number()),
         warconReadCount: v.optional(v.number()),
         warconReadBlockedUntil: v.optional(v.number()),
@@ -1813,15 +1814,33 @@ export default defineSchema({
         leaseUntil: v.number(),
         nextAt: v.number(),
         retainUntil: v.number(),
+        /** The payload before `hllLivePayloads`; the next claim drops it. */
         dataJson: v.optional(v.string()),
         /**
-         * The latest read's times, kept out of the payload: `finish` rewrites
-         * `dataJson` only when the provider data changed and readers merge
+         * The latest read's times, kept out of the payload: readers merge
          * these in (absent on rows from before them).
          */
         fetchedAt: v.optional(v.string()),
         statusAt: v.optional(v.union(v.string(), v.null())),
         playersAt: v.optional(v.union(v.string(), v.null())),
+    }).index("connectionId", ["connectionId"]),
+    // The live caches' payloads, one row per cache row, written only when
+    // the provider data changed (`liveReadPayloads.ts`); the cache rows keep
+    // the lease, times and counters. `warconReadLimits` is a connection's
+    // Warcon read budget, formerly on `gameDataConnections`.
+    hllLivePayloads: defineTable({
+        cacheId: v.id("hllLiveCache"),
+        dataJson: v.string(),
+    }).index("cacheId", ["cacheId"]),
+    warconReadPayloads: defineTable({
+        cacheId: v.id("warconReadCache"),
+        envelopeJson: v.string(),
+    }).index("cacheId", ["cacheId"]),
+    warconReadLimits: defineTable({
+        connectionId: v.id("gameDataConnections"),
+        windowAt: v.number(),
+        count: v.number(),
+        blockedUntil: v.number(),
     }).index("connectionId", ["connectionId"]),
     warconReadCache: defineTable({
         connectionId: v.id("gameDataConnections"),
@@ -1832,10 +1851,10 @@ export default defineSchema({
         cacheUntil: v.number(),
         retryUntil: v.optional(v.number()),
         retainUntil: v.number(),
+        /** The payload before `warconReadPayloads`; the next claim drops it. */
         envelopeJson: v.optional(v.string()),
         /**
-         * The latest read's times, kept out of the payload: `finish` rewrites
-         * `envelopeJson` only when the provider data changed and readers merge
+         * The latest read's times, kept out of the payload: readers merge
          * these in (absent on rows from before them; the live view's own
          * `statusAt`, `playersAt` and `observedAt` only for that view).
          */

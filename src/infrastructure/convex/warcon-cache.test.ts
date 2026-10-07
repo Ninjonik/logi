@@ -429,7 +429,35 @@ test("cache cardinality and retention stay bounded even across many query varian
     await handler(reads.prune)(ctx, { cacheId })
     assert.equal(ctx.db.tables.warconReadCache.length, 63)
 })
-test("an unchanged Warcon read writes only the times; a changed one writes the payload; both serve the latest times", async (t) => {
+/** Every write, as `<operation>:<table>`, with a patch's fields. */
+function recordWrites(t: TestContext, db: Database) {
+    const writes: Array<{ op: string; table: string; fields: string[] }> = []
+    const table = (id: string) => id.replace(/\d+$/, "")
+    const patch = db.patch.bind(db)
+    const insert = db.insert.bind(db)
+    const remove = db.delete.bind(db)
+    t.mock.method(db, "patch", async (id: string, value: Row) => {
+        writes.push({
+            op: "patch",
+            table: table(id),
+            fields: Object.keys(value).sort(),
+        })
+        return await patch(id, value)
+    })
+    t.mock.method(db, "insert", async (name: string, value: Row) => {
+        writes.push({ op: "insert", table: name, fields: [] })
+        return await insert(name, value)
+    })
+    t.mock.method(db, "delete", async (id: string) => {
+        writes.push({ op: "delete", table: table(id), fields: [] })
+        return await remove(id)
+    })
+    return writes
+}
+const summary = (writes: Array<{ op: string; table: string }>) =>
+    writes.map((write) => `${write.op}:${write.table}`)
+
+test("an unchanged Warcon read writes only the small row's times; a changed one writes the payload row once; both serve the latest times", async (t) => {
     const { ctx, input, envelope } = await fixture(t)
     let clock = Date.parse(warconTime)
     t.mock.method(Date, "now", () => clock)
@@ -443,17 +471,14 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
         true
     )
     const row = () => ctx.db.tables.warconReadCache[0]!
-    const stored = row().envelopeJson
-    const patches: Array<Record<string, unknown>> = []
-    const patch = ctx.db.patch.bind(ctx.db)
-    t.mock.method(
-        ctx.db,
-        "patch",
-        async (id: string, value: Record<string, unknown>) => {
-            patches.push(value)
-            return await patch(id, value)
-        }
+    const payload = () => ctx.db.tables.warconReadPayloads[0]!
+    assert.equal(
+        row().envelopeJson,
+        undefined,
+        "the cache row holds no payload"
     )
+    const stored = payload().envelopeJson
+    const writes = recordWrites(t, ctx.db)
     // The idle server reads the same ten seconds later; only the times moved.
     clock += 11_000
     const later = new Date(clock).toISOString()
@@ -473,6 +498,12 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
     }
     const second = await handler<Claim>(reads.reserve)(ctx, input)
     assert.equal(second.kind, "claimed")
+    // The claim: the connection's read budget and the lease, two small rows.
+    assert.deepEqual(summary(writes), [
+        "patch:warconReadLimits",
+        "patch:warconReadCache",
+    ])
+    writes.length = 0
     assert.equal(
         await handler(reads.finish)(ctx, {
             ...input,
@@ -481,18 +512,22 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
         }),
         true
     )
-    const finishPatch = patches[patches.length - 1]!
-    assert.ok(!("envelopeJson" in finishPatch), "the payload is not rewritten")
-    assert.deepEqual(Object.keys(finishPatch).sort(), [
-        "cacheUntil",
-        "fetchedAt",
-        "leaseUntil",
-        "observedAt",
-        "playersAt",
-        "retainUntil",
-        "statusAt",
+    assert.deepEqual(writes, [
+        {
+            op: "patch",
+            table: "warconReadCache",
+            fields: [
+                "cacheUntil",
+                "fetchedAt",
+                "leaseUntil",
+                "observedAt",
+                "playersAt",
+                "retainUntil",
+                "statusAt",
+            ],
+        },
     ])
-    assert.equal(row().envelopeJson, stored)
+    assert.equal(payload().envelopeJson, stored)
     const cached = await handler<{
         kind: string
         envelope: typeof envelope
@@ -507,7 +542,7 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
         cached.envelope.result.data.players,
         envelope.result.data.players
     )
-    // A player joined: the payload is written again.
+    // A player joined: the payload row is written again.
     clock += 11_000
     const latest = new Date(clock).toISOString()
     const changed = {
@@ -530,13 +565,17 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
     }
     const third = await handler<Claim>(reads.reserve)(ctx, input)
     assert.equal(third.kind, "claimed")
+    writes.length = 0
     await handler(reads.finish)(ctx, {
         ...input,
         ...third.claim,
         envelopeJson: JSON.stringify(changed),
     })
-    assert.ok("envelopeJson" in patches[patches.length - 1]!)
-    assert.notEqual(row().envelopeJson, stored)
+    assert.deepEqual(summary(writes), [
+        "patch:warconReadPayloads",
+        "patch:warconReadCache",
+    ])
+    assert.notEqual(payload().envelopeJson, stored)
     const served = await handler<{
         kind: string
         envelope: typeof envelope
@@ -544,6 +583,60 @@ test("an unchanged Warcon read writes only the times; a changed one writes the p
     assert.equal(served.kind, "cached")
     assert.equal(served.envelope.fetchedAt, latest)
     assert.equal(served.envelope.result.data.players.length, 2)
+})
+test("the Warcon read budget and a provider 429 live in their own small row, never on the connection", async (t) => {
+    const { ctx, input, id } = await fixture(t)
+    let clock = Date.parse(warconTime)
+    t.mock.method(Date, "now", () => clock)
+    const writes = recordWrites(t, ctx.db)
+    for (let page = 1; page <= 30; page++)
+        assert.equal(
+            (
+                await handler<{ kind: string }>(reads.reserve)(ctx, {
+                    ...input,
+                    queryJson: JSON.stringify({ view: "matches", page }),
+                })
+            ).kind,
+            "claimed"
+        )
+    const limited = await handler<{ kind: string; retryAfterMs: number }>(
+        reads.reserve
+    )(ctx, { ...input, queryJson: JSON.stringify({ view: "catalog" }) })
+    assert.deepEqual(limited, { kind: "busy", retryAfterMs: 60_000 })
+    assert.equal(ctx.db.tables.warconReadLimits.length, 1)
+    assert.equal(ctx.db.tables.warconReadLimits[0]!.count, 30)
+    assert.ok(!writes.some((write) => write.table === "gameDataConnections"))
+    // A new minute; a provider 429 blocks every view of the connection.
+    clock += 60_000
+    const claim = await handler<Claim>(reads.reserve)(ctx, input)
+    await handler(reads.finish)(ctx, {
+        ...input,
+        ...claim.claim,
+        errorCategory: "rate_limited",
+        retryAfterMs: 90_000,
+    })
+    assert.equal(
+        ctx.db.tables.warconReadLimits[0]!.blockedUntil,
+        clock + 90_000
+    )
+    assert.deepEqual(
+        await handler(reads.reserve)(ctx, {
+            ...input,
+            queryJson: JSON.stringify({ view: "catalog" }),
+        }),
+        { kind: "busy", retryAfterMs: 90_000 }
+    )
+    assert.ok(!writes.some((write) => write.table === "gameDataConnections"))
+    // A block stored on the connection before the move is still honoured.
+    clock += 90_000
+    await ctx.db.patch(id, { warconReadBlockedUntil: clock + 5_000 })
+    assert.deepEqual(
+        await handler(reads.reserve)(ctx, {
+            ...input,
+            queryJson: JSON.stringify({ view: "catalog" }),
+        }),
+        { kind: "busy", retryAfterMs: 5_000 }
+    )
 })
 test("a Warcon cache row from before the time fields serves the payload's own times", async (t) => {
     const { ctx, input, id, envelope } = await fixture(t)
