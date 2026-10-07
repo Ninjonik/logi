@@ -1,3 +1,4 @@
+import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
 import type { GameId } from "../../src/domain/games/game"
 
 export type ClanLanguage = "en" | "cs" | "de"
@@ -17,6 +18,8 @@ export type TicketCategory = {
     description?: string
     supportRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
+    /** The title of the thread card, e.g. "{author} nahlašuje hráče". */
+    threadTitle?: string
 }
 
 export type MembershipCategory = {
@@ -29,7 +32,11 @@ export type MembershipCategory = {
     recruitRoleIds: string[]
     finalRoleIds: string[]
     modalQuestions: TicketModalQuestion[]
-    assignmentType: "member" | "mercenary"
+    assignmentType: "member" | "reserve_member" | "mercenary"
+    /** Skip "pending" for main members of this category; falls back to the clan-wide switch. */
+    autoAssignRecruitOnApply?: boolean
+    /** Ask "Specializace" in this category (N4-B05); missing is yes for Hell Let Loose. */
+    askSpecialization?: boolean
 }
 
 export type TicketSettings = {
@@ -39,6 +46,8 @@ export type TicketSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour (`#RRGGBB`); missing means the clan colour. */
+    panelAccentColor?: string
     categories: TicketCategory[]
 }
 
@@ -49,11 +58,20 @@ export type MembershipSettings = {
     panelTitle: string
     panelDescription: string
     panelImageUrl?: string
+    /** The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10). */
+    panelAccentColor?: string
     applicationWelcomeMessage?: string
     collectSpecialization?: boolean
     autoAssignRecruitOnApply: boolean
+    /** Logi adds and removes membership roles; missing values follow `enabled`. */
+    roleSyncEnabled?: boolean
     inviteSupportMembersIndividually?: boolean
     categories: MembershipCategory[]
+    /** The stored application form (N4); missing uses the default form. */
+    applicationForm?: unknown
+    webFormEnabled?: boolean
+    mentionSupportRoles?: boolean
+    sendConfirmationDm?: boolean
 }
 
 export type PlayerStatsServer = {
@@ -127,6 +145,20 @@ export type DiscordConfig = {
     membershipPanelLastConfigUpdatedAt?: string
     ticketCounter?: number
     membershipApplicationCounter?: number
+    /** Clan colour and icon density of every bot message. */
+    messageStyle?: MessageStyle
+    /** Match message settings (board N1); missing reads the defaults. */
+    rosterMessageVariant?: "photo_text" | "photo"
+    rosterChangesPostDefault?: boolean
+    rosterChangesDmDefault?: boolean
+    attendanceNoticesInThread?: boolean
+    /** Per-message switches of "Zprávy a panely" (board N1); missing is on. */
+    debriefPostEnabled?: boolean
+    scheduledEventEnabled?: boolean
+    matchRecapDmEnabled?: boolean
+    trainingResultDmEnabled?: boolean
+    applicationCloseDmEnabled?: boolean
+    ticketCloseDmEnabled?: boolean
     updatedAt: string
 }
 
@@ -158,7 +190,7 @@ export type MembershipApplicationThreadRecord = {
     creatorId: string
     categoryId: string
     categoryLabel: string
-    assignmentType: "member" | "mercenary"
+    assignmentType: "member" | "reserve_member" | "mercenary"
     applicationNumber: number
     assignmentId?: string
     transcriptMessageId?: string
@@ -166,13 +198,34 @@ export type MembershipApplicationThreadRecord = {
         questionId: string
         label: string
         value: string
+        kind?: "custom" | "source" | "age" | "specialization" | "referrer"
     }>
     status: "open" | "closed"
     openedAt: string
+    source?: "discord" | "web"
+    applicantName?: string
+    games?: Array<"hell_let_loose" | "hell_let_loose_vietnam" | "wardogs">
+    inGameName?: string
+    accounts?: {
+        steam?: string
+        steamVerified: boolean
+        epic?: string
+        xbox?: string
+        playstation?: string
+    }
+    undecidedByUserId?: string
+    undecidedByName?: string
+    undecidedAt?: string
     closedAt?: string
     closedByUserId?: string
     closeReason?: string
-    closeOutcome?: "denied" | "pending" | "recruit" | "member" | "mercenary"
+    closeOutcome?:
+        | "denied"
+        | "pending"
+        | "recruit"
+        | "member"
+        | "reserve_member"
+        | "mercenary"
     createdAt: string
     updatedAt: string
 }
@@ -206,6 +259,9 @@ export type Group = {
     guildId: string
     name: string
     color: string
+    /** Order and parent group; the roster text groups squads by them. */
+    order?: number
+    parentId?: string
     discordRoleId?: string
     discordEmoji?: string
     updatedAt: string
@@ -277,6 +333,8 @@ export type EventRecord = {
     gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
     kind: "match" | "training"
     matchType?: string
+    /** The round of the competition fixture this match plays (L3-14). */
+    competitionRound?: number
     name: string
     description?: string
     thumbnailUrl?: string
@@ -316,6 +374,12 @@ export type EventRecord = {
     stratmapIds?: string[]
     /** Native match teams; absent or empty on legacy events. */
     matchTeams?: MatchTeamAssignment[]
+    /** Saved but unpublished; Convex leaves drafts out of every bot read. */
+    isDraft?: boolean
+    /** Attendance DM offsets in hours; missing means every offset. */
+    attendanceReminderHours?: number[]
+    /** Missing means the bot creates the attendee and reserve roles. */
+    createParticipantRoles?: boolean
     status: "registration" | "closed" | "starting" | "concluded"
     statusUpdatedAt: string
     concludedAt?: string
@@ -323,6 +387,14 @@ export type EventRecord = {
         userId: string
         offsetHours: number
         sentAt: string
+    }>
+    /** Late and "can't make it" notices; older payloads may omit them. */
+    absenceNotices?: Array<{
+        userId: string
+        reason: string
+        createdAt: string
+        /** "late" or "cannot_come"; older notices have none and read as late. */
+        kind?: "late" | "cannot_come"
     }>
     signUps: Array<{
         userId: string
@@ -332,6 +404,8 @@ export type EventRecord = {
         userId: string
         status: "attending" | "not_attending"
         group?: string | null
+        /** The full capped group a reserve chose. */
+        requestedGroup?: string | null
         completed?: "passed" | "failed"
         updatedAt: string
     }>
@@ -348,6 +422,14 @@ export type Roster = {
         ack: boolean
         confirmed?: boolean
     }>
+    /** Players marked as not coming; older payloads may omit it. */
+    notAttendingPlayerIds?: string[]
+    /** The publish dialog's choice of roster message (board D5). */
+    discordMessageVariant?: "photo_text" | "photo"
+    /** Whether the first roster post mentions the rostered players. */
+    discordMentionPlayers?: boolean
+    /** When the roster was last published from the dashboard. */
+    publishedAt?: string
     updatedAt: string
     squads: Array<{
         name: string
@@ -380,6 +462,8 @@ export type SyncState = {
     forumChannelId?: string
     forumThreadId?: string
     infoMessageId?: string
+    /** The match forum's Debrief post (its starter message ID). */
+    debriefMessageId?: string
     topicMessageIds: string[]
     lastSyncedAt?: string
     lastEventUpdatedAt?: string
@@ -414,9 +498,6 @@ export type GuildCacheSnapshot = {
     calendarItems: CalendarItem[]
     squadPresets: SquadPreset[]
     topicPresets: TopicPreset[]
-    assignments: Array<
-        SyncPayload["assignments"][number] & { serverId: string }
-    >
 }
 
 export type EventSyncIndex = {
@@ -448,4 +529,6 @@ export type EventInteractionContext = {
         status?: "pending" | "recruit" | "active"
     }>
     roster: Roster | null
+    /** Colour of the event's category; absent from older backends. */
+    categoryColor?: string | null
 }

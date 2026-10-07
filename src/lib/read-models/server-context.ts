@@ -50,6 +50,7 @@ async function getServerContextSnapshot(
     gameScope?: GameScope
 ): Promise<ServerContextReadModel | null> {
     return (await fetchQuery(getServerContextReference, {
+        secret: getInternalAuthSecret(),
         userId,
         serverId: serverId as never,
         gameScope,
@@ -83,7 +84,8 @@ export async function getServerContextReadModel(
 
         return await cachedRead(
             [
-                "server-context:v1",
+                // v2: member entries no longer carry drafts or manager secrets.
+                "server-context:v2",
                 serverId,
                 user.discordId,
                 gameScope ?? "all",

@@ -1,17 +1,23 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import Link from "next/link"
 
-import { getEventMetadata, getRosterMetadata } from "@/lib/server-metadata"
+import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
+import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
+import { Card, CardContent } from "@/components/ui/card"
 import { getServerContext } from "@/lib/server-context"
+import { issueClientGrant } from "@/lib/client-grants"
 import { getDictionary } from "@/i18n/dictionaries"
+import { Button } from "@/components/ui/button"
 import { isGameId } from "@/domain/games/game"
-import { getLoggedInUser } from "@/lib/auth"
 import { isLocale } from "@/i18n/config"
+import { getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
-    title: "Roster | Logi",
+    title: "Roster",
     description:
         "Roster board with reserves, role slots, publish state, and acknowledgements.",
 }
@@ -34,7 +40,7 @@ export default async function RosterDetailPage({
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
     const {
         rosters,
         events,
@@ -66,18 +72,71 @@ export default async function RosterDetailPage({
         ),
         context.server.discordId
     )
-    const user = await getLoggedInUser()
-    if (!user) return null
+    const session = await getSession()
+    if (!session) notFound()
+    // An admin sees every roster of the clan, so a missing one does not exist.
+    if (!roster && canAdmin) notFound()
+    const title = event
+        ? dictionary.matchDetail.roster.pageTitle.replace("{name}", event.name)
+        : dictionary.roster.title
+    const matchHref = event
+        ? `/${locale}/dashboard/servers/${serverId}/${event.kind === "training" ? "events" : "matches"}/${event.id}?tab=roster`
+        : undefined
+
+    // Members never receive an unpublished roster, not even hidden in props;
+    // the clan context already leaves drafts out for them.
+    if (!canAdmin && (!roster || !roster.published))
+        return (
+            <>
+                <PageHeader title={title} />
+                <div className="px-4 lg:px-6">
+                    <Card className="border-border/80 rounded-2xl border-dashed">
+                        <CardContent className="text-muted-foreground py-16 text-center">
+                            {dictionary.roster.rosterNotAvailable}
+                        </CardContent>
+                    </Card>
+                </div>
+            </>
+        )
+
+    const publishContext =
+        canAdmin && event
+            ? await getRosterPublishContext({
+                  serverId,
+                  locale,
+                  server: context.server,
+                  event,
+                  discordConfig,
+              })
+            : undefined
 
     return (
         <>
-            <PageHeader title={event ? `${event.name} roster` : "Roster"} />
+            <PageHeader
+                title={title}
+                actions={
+                    matchHref ? (
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl"
+                        >
+                            <Link href={matchHref}>
+                                {dictionary.matchDetail.roster.openMatch}
+                            </Link>
+                        </Button>
+                    ) : undefined
+                }
+            />
             <div className="px-4 lg:px-6">
                 <LiveRosterBoard
                     rosterId={rosterId}
                     serverId={serverId}
                     locale={locale}
-                    userId={user.discordId}
+                    grant={issueClientGrant(
+                        { discordId: session.sub, sid: session.sid },
+                        clientGrantScopes.roster(serverId, rosterId)
+                    )}
                     dictionary={dictionary}
                     initialRoster={roster}
                     initialEvent={event}
@@ -86,7 +145,16 @@ export default async function RosterDetailPage({
                     initialGroups={groups}
                     initialSquadPresets={squadPresets}
                     initialCanAdmin={canAdmin}
-                    initialDiscordConfig={discordConfig}
+                    initialDiscordConfig={
+                        discordConfig
+                            ? {
+                                  timezone: discordConfig.timezone,
+                                  meetingChannelId:
+                                      discordConfig.meetingChannelId,
+                              }
+                            : null
+                    }
+                    publishContext={publishContext}
                 />
             </div>
         </>

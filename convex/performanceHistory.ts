@@ -4,6 +4,7 @@ import {
     type GameId,
     type GameScope,
 } from "../src/domain/games/game"
+import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { internalAction, mutation, query } from "./_generated/server"
 import type { MutationCtx } from "./_generated/server"
 import { api } from "./_generated/api"
@@ -15,7 +16,6 @@ const gameIdValidator = v.union(
     v.literal("wardogs")
 )
 
-const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 type Snapshot = {
     eventId: string
     gameId?: GameId
@@ -264,14 +264,16 @@ export async function rebuildGuildPerformanceHistory(
 export const refreshForGuild = mutation({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
-        if (args.secret !== secret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         return rebuildGuildPerformanceHistory(ctx, args.guildId)
     },
 })
 export const listClanUserIds = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
-        if (args.secret !== secret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         return [
             ...new Set(
                 (
@@ -289,7 +291,8 @@ export const listClanUserIds = query({
 export const refreshGuildOnly = mutation({
     args: { secret: v.string(), guildId: v.string(), gameId: gameIdValidator },
     handler: async (ctx, args) => {
-        if (args.secret !== secret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         return rebuildGuildPerformanceHistory(
             ctx,
             args.guildId,
@@ -306,7 +309,8 @@ export const refreshPlayerForGuild = mutation({
         gameId: gameIdValidator,
     },
     handler: async (ctx, args) => {
-        if (args.secret !== secret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         const [events, docs] = await Promise.all([
             ctx.db
                 .query("events")
@@ -387,7 +391,8 @@ export const refreshInBackground = internalAction({
         ctx,
         args
     ): Promise<{ guildMatches: number; players: number }> => {
-        if (args.secret !== secret) throw new Error("Unauthorized.")
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
         const guild: { guildMatches: number; players: number } =
             await ctx.runMutation(api.performanceHistory.refreshGuildOnly, args)
         const userIds: string[] = await ctx.runQuery(
@@ -429,10 +434,12 @@ function normalizeHistory<
 }
 export const getGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const history = normalizeHistory(
             await ctx.db
                 .query("guildPerformanceHistory")
@@ -449,11 +456,13 @@ export const getGuild = query({
 })
 export const getPlayer = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const history = normalizeHistory(
             await ctx.db
                 .query("playerPerformanceHistory")
@@ -472,11 +481,13 @@ export const getPlayer = query({
 })
 export const getPlayers = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userIds: v.array(v.string()),
         gameScope: v.optional(v.union(v.literal("all"), gameIdValidator)),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const rows = await Promise.all(
             [...new Set(args.userIds)].map((userId) =>
                 ctx.db

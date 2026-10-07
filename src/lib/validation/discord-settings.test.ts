@@ -1,10 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { discordSettingsSchema } from "./discord-settings"
+import { discordSettingsPatchSchema } from "./discord-settings"
 
 test("Discord settings retain independent game membership overrides", () => {
-    const parsed = discordSettingsSchema.parse({
+    const parsed = discordSettingsPatchSchema.parse({
         timezone: "UTC",
         defaultLanguage: "en",
         gameOverrides: {
@@ -60,7 +60,7 @@ test("Discord settings retain independent game membership overrides", () => {
 })
 
 test("role-ping application invitations allow no more than ten support roles", () => {
-    const result = discordSettingsSchema.safeParse({
+    const result = discordSettingsPatchSchema.safeParse({
         timezone: "UTC",
         defaultLanguage: "en",
         membershipSettings: {
@@ -94,7 +94,7 @@ test("role-ping application invitations allow no more than ten support roles", (
 })
 
 test("membership categories retain their selected game", () => {
-    const parsed = discordSettingsSchema.parse({
+    const parsed = discordSettingsPatchSchema.parse({
         timezone: "UTC",
         defaultLanguage: "en",
         membershipSettings: {
@@ -122,7 +122,7 @@ test("membership categories retain their selected game", () => {
 })
 
 test("Discord settings accept /stats command switches and drop a blank default room", () => {
-    const parsed = discordSettingsSchema.parse({
+    const parsed = discordSettingsPatchSchema.parse({
         timezone: "UTC",
         defaultLanguage: "en",
         statsSettings: {
@@ -137,7 +137,7 @@ test("Discord settings accept /stats command switches and drop a blank default r
         defaultShareChannelId: undefined,
     })
     assert.ok(
-        !discordSettingsSchema.safeParse({
+        !discordSettingsPatchSchema.safeParse({
             timezone: "UTC",
             defaultLanguage: "en",
             statsSettings: {
@@ -146,5 +146,87 @@ test("Discord settings accept /stats command switches and drop a blank default r
                 defaultShareChannelId: "general",
             },
         }).success
+    )
+})
+
+test("the message style takes a hex clan colour and an icon density", () => {
+    assert.deepEqual(
+        discordSettingsPatchSchema.parse({
+            messageStyle: { accentColor: " #e8a33d ", iconDensity: "rich" },
+        }),
+        { messageStyle: { accentColor: "#E8A33D", iconDensity: "rich" } }
+    )
+    // A blank or null colour means Logi amber.
+    for (const accentColor of ["", null, undefined])
+        assert.deepEqual(
+            discordSettingsPatchSchema.parse({
+                messageStyle: { accentColor, iconDensity: "sparse" },
+            }).messageStyle,
+            { accentColor: undefined, iconDensity: "sparse" }
+        )
+    for (const messageStyle of [
+        { accentColor: "orange", iconDensity: "sparse" },
+        { accentColor: "#fff", iconDensity: "sparse" },
+        { accentColor: "#E8A33D", iconDensity: "loud" },
+        { accentColor: "#E8A33D" },
+        { accentColor: "#E8A33D", iconDensity: "rich", font: "serif" },
+    ])
+        assert.ok(
+            !discordSettingsPatchSchema.safeParse({ messageStyle }).success,
+            JSON.stringify(messageStyle)
+        )
+})
+
+test("a settings page can submit only its own settings", () => {
+    const parsed = discordSettingsPatchSchema.parse({
+        ticketSettings: {
+            enabled: false,
+            panelTitle: "",
+            panelDescription: "",
+            categories: [],
+        },
+    })
+    assert.deepEqual(Object.keys(parsed), ["ticketSettings"])
+})
+
+test("blank and null Discord IDs clear the field while omitted IDs stay out", () => {
+    const parsed = discordSettingsPatchSchema.parse({
+        errorsChannelId: "",
+        calendarChannelId: null,
+        announcementsChannelId: "123",
+    })
+    assert.equal(parsed.errorsChannelId, null)
+    assert.equal(parsed.calendarChannelId, null)
+    assert.equal(parsed.announcementsChannelId, "123")
+    assert.equal(parsed.eventInfoChannelId, undefined)
+    assert.equal(parsed.playerStatsServers, undefined)
+    assert.equal(parsed.calendarCategories, undefined)
+})
+
+test("membership settings keep roster score rules and accept German", () => {
+    const rosterScoreSettings = {
+        noCategory: 0,
+        declined: -1,
+        rosterPresent: 2,
+        reservePresent: 1,
+        rosterAbsent: -3,
+        reserveAbsent: -1,
+        excusedAbsence: 0,
+    }
+    const parsed = discordSettingsPatchSchema.parse({
+        defaultLanguage: "de",
+        membershipSettings: {
+            enabled: false,
+            panelTitle: "",
+            panelDescription: "",
+            autoAssignRecruitOnApply: false,
+            rosterScoreSettings,
+            categories: [],
+        },
+    })
+    assert.equal(parsed.defaultLanguage, "de")
+    assert.deepEqual(
+        parsed.membershipSettings?.rosterScoreSettings,
+        rosterScoreSettings
     )
 })

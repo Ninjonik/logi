@@ -34,7 +34,7 @@ Drag a person into a slot, add them to reserves, or mark them not attending. A p
 
 ### Save as draft, then publish
 
-Save while planning. Publish only when you are ready for people to rely on the assignments. The publish flow can offer notifications and roster-change posting options.
+Save while planning. Publish only when you are ready for people to rely on the assignments. **Publish roster** opens the publish dialog, which shows exactly what the bot posts; see [publish to Discord](#publish-to-discord).
 
 Saving requires a current Logi login and current workspace management access.
 If either changes while the board is open, sign in again or ask a workspace
@@ -63,6 +63,41 @@ after registration closed is therefore not automatically added to that roster's
 starting pool. The initial reserve and not-attending lists are sorted by the
 workspace score, then name; that order is a starting point, not an automatic
 team-selection decision.
+
+## The roster board
+
+The roster opens on the match page under **Roster**, and on its own roster page.
+Managers switch the board between three modes at the top: **View only**,
+**Squad editor** (squads and slots) and **Roster editor** (who plays where).
+Next to them are the squad preset, **Confirm from meeting VC** with the name of
+the meeting voice channel (for example "· Sraz 1") and, in the roster editor,
+**Auto-fill**. On phones the preset, the voice-channel confirmation, auto-fill
+and deleting or unpublishing sit behind the **⋯** button next to the modes.
+
+- **Unsaved changes: N** counts the edits since the last save: each changed
+  slot or squad, and each player moved in or out of the reserves or the
+  not-attending list. Save keeps the roster a draft; **Publish roster** asks
+  first. Deleting a draft is the bin icon and also asks first.
+- The line under the toolbar explains the status icons next to each name: a
+  double tick for confirmed by a manager, a tick for confirmed by the player,
+  and a clock for not confirmed yet. Managers change the status by clicking the
+  icon; in the roster editor the same menu moves the player to the reserves or
+  to not attending.
+- Each player shows their Discord avatar, group icons, score and K/D, and on
+  the right their group. In the roster editor the ⓧ button takes a player out
+  of the slot and back to the reserves.
+- The reserves and not-attending lists show how many people they hold. Under
+  the reserves, **No response: N members** counts members of the match's game
+  who have not answered the sign-up; **Remind** sends them the sign-up
+  reminder by Discord DM while sign-ups are open. A reminder to the same
+  people of a match can be sent once every 30 minutes.
+- In the roster editor, drag a player from the reserves into a slot; the free
+  slot under the pointer says **Drop here: name**. Or tap a free slot (**Pick
+  player**) and choose from the list. Tapping works on phones, where dragging
+  does not.
+- On phones each squad folds to its header; tap it to open or close it. The
+  first squad starts open. **Publish roster** (and **Save** while there are
+  unsaved changes) stays at the bottom of the screen.
 
 ## Three roster lists
 
@@ -96,7 +131,9 @@ the roster is published, and the person is assigned to a squad or reserve. It
 cannot add someone to the roster. Managers can update attendance status
 directly for a rostered player or reserve.
 
-Managers can also use **Confirm from meeting channel**. It checks only the
+Managers can also use **Confirm from meeting VC** in the roster's view and
+roster editor modes, or **Load from voice channel** under **Sign-ups and
+attendance** on the match page. It checks only the
 people already assigned to a squad or reserve and marks those currently in the
 configured meeting voice/stage channel as confirmed. It does not inspect other
 voice channels, move people, add anyone to the roster, or prove that a person
@@ -106,13 +143,92 @@ changes in Logi. The action needs a configured meeting channel and a running
 bot with access to read that channel; it is available to managers even if the
 roster is not published.
 
-When changing a published roster, choose notification options carefully. The
-dashboard can notify affected players by direct message and can post an update;
-delivery can fail if a recipient has DMs closed, even though the roster save
-succeeds. Posted updates use the event's information channel even after the
-event has started; only a single-channel configuration falls back to the event
-registration channel. A published roster is visible to non-managers; a draft is
-not.
+A published roster is visible to non-managers; a draft is not.
+
+## Publish to Discord
+
+**Publish roster** (and **Publish again** for a roster that is already
+published) opens one dialog. On the left you choose; on the right a preview
+shows the message as it will look in the roster channel.
+
+- **What goes to Discord:** **Photo and text roster** (the default) posts the
+  roster image with every squad written out under it, so it can be searched
+  and read on a phone. **Photo only** posts just the image, like the old bot.
+  The choice is made for each publish; the default comes from **Messages and
+  panels → Roster**.
+- **Channel:** the event-information channel from **Channels and language**,
+  shown read-only. Without a separate channel the match announcement carries
+  the roster image instead.
+- **Mention rostered players:** on the first publish the message mentions
+  everyone in a squad slot. Without a separate roster channel the announcement
+  carries the roster, and Discord never pings on an edited message, so the bot
+  mentions the players once in a reply to the announcement. Off by default
+  when publishing again, because the change DMs already reach the people
+  concerned.
+- **Counters:** players in the roster, reserves and not attending.
+
+Publishing again edits the same Discord message; no new one is posted. The
+dialog's subtitle says when the shown version was published ("published today
+at 18:40", "yesterday at …" or the date, in the clan's time zone). It lists the
+**changes since the last version** (who is new, who left or went to the
+reserves, who moved squad or changed role) and offers:
+
+- **Tell players about changes by DM:** only players whose place changed get a
+  DM in the clan language with their new squad and role.
+- **Post the change summary to the channel:** a short message under the
+  roster. There is one summary per match; each later publish edits it and adds
+  the new changes.
+
+Both default to the choice in **Messages and panels → Roster**. Logi keeps
+every published version on the server and compares the saved roster with the
+version the last publish replaced, so the DMs and the summary always describe
+what was actually published, even when another manager published from another
+tab in the meantime. The bot sends the DMs and the summary a few seconds after
+the save. If some players have
+closed DMs, Logi says so after publishing ("The DM did not reach 2 players:
+Mrak, Ježek."); the roster is saved either way.
+
+The DMs, the summary and these per-publish choices are dashboard actions. The
+clan API (`/api/v1`) publishes a roster with the clan's defaults and without
+mentions, DMs or a summary; the defaults themselves are the `matchMessages`
+settings slice.
+
+### The roster message
+
+The message title is `Roster · Name · Category · day date · time`, followed by
+the map, the meeting time and channel and the filled slots ("18 of 22 places").
+With the text roster, squads are grouped under the clan's root groups, one line
+per squad with short role names ("F1 · SL Rex_CZ · Medic Medvěd · MG Bizon ·
+Rifleman —", where "—" is an open slot), then the reserves and the players not
+attending. A roster too long for Discord's 4000-character limit falls back to the
+image with **Show full roster**. The footer says when it was published.
+
+Buttons:
+
+- **My assignment** (private): your squad, role, squad leader, the leader's
+  note, the meeting, and the server with its password. From the meeting start
+  it offers **Confirm attendance**; until the game starts **Running late**.
+  The attendance reminder DM, sent the day before, can already confirm.
+  Reserves see their reserve card; people not on the roster are told so.
+- **Show roster** (private): one squad at a time with every role, player and
+  whether they confirmed, are pending or are coming late; a menu switches to
+  another squad or the reserves.
+- **Open roster:** the public roster page.
+
+### Match forum
+
+When the match has a forum, the bot keeps a **Match information** post (the
+announcement's category chip and sides row with the team code chips and
+faction emblems, start, map, meeting channel, the server name without its
+password, notes and named stratmap links, **My assignment**), one post per
+topic of the topic preset, and a pinned **Debrief** post. Once the result is
+confirmed, Debrief shows it with **View match**. Discord archives quiet forum
+posts; the bot finds its posts again by their stored IDs, archived ones
+included, and reopens them to edit them, so a result confirmed days later
+updates the same Debrief instead of posting a second one. If **Messages and panels** turns on attendance
+notices, a running-late or can't-make-it notice is posted in the match
+information thread with the player's name and arrival time; the reason stays in
+Logi for the organisers.
 
 <Callout type="warning">
     Only drafts can be deleted. You must unpublish a published roster before

@@ -1,20 +1,121 @@
+import type { MessageCreateOptions } from "discord.js"
+
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    EmbedBuilder,
-    type MessageCreateOptions,
-} from "discord.js"
+    leagueFixturesMessage,
+    leagueLinkReplyMessage,
+    leagueStandingsMessage,
+    type LeaguePanelLook,
+} from "../../../src/domain/wardogs-league/panel-views"
+import type {
+    LeagueFixturesView,
+    LeagueStandingsView,
+} from "../../../src/domain/wardogs-league/panels"
+import type { PanelEmojiMarkup } from "../../../src/domain/discord-publications/live-panel"
+import type { LeagueLinkReplyView } from "../../../src/domain/wardogs-league/link-reply"
+import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
+import type { MessageMedia } from "../../../src/domain/discord-messages/message-view"
+import type { ChipTone } from "../../../src/domain/discord-messages/message-view"
 import { extractMatchUrls } from "../../../src/domain/wardogs-league/discovery"
-import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
-const clean = (text: string | null | undefined, max = 150) =>
-    (text ?? "—")
-        .replace(/[@<>]/g, "")
-        .replace(/[\\`*_~|]/g, "\\$&")
-        .replace(/[\r\n]/g, " ")
-        .slice(0, max)
-const at = (value: string | null) =>
-    value ? `<t:${Math.floor(Date.parse(value) / 1000)}:f>` : "—"
+import { messageKitLayoutOptions, messagePayload } from "../ui/message-kit"
+import { getLeagueMessages } from "../../../src/lib/clan-language/league"
+
+/**
+ * Discord payloads of the WD League panels ("tabulka", "nejbližší zápasy"
+ * with the recent results) and of the reply to a posted League link. The
+ * views come from the shared domain builders; this file only adds the clan
+ * look (language, colour, icons) and turns them into payloads.
+ */
+export type LeagueRenderContext = {
+    language: string
+    timeZone: string
+    style: MessageStyle | null
+    emoji: PanelEmojiMarkup
+    chipIcons?: Partial<Record<ChipTone, string>>
+    accentColor: string | null
+    paused: { since: number | null } | null
+    now: number
+}
+
+export function leagueLook(context: LeagueRenderContext): LeaguePanelLook {
+    const copy = getLeagueMessages(context.language)
+    return {
+        copy,
+        locale: copy.locale,
+        timeZone: context.timeZone,
+        accentColor: context.accentColor,
+        layout: messageKitLayoutOptions({
+            language: context.language,
+            style: context.style,
+            chipIcons: context.chipIcons,
+        }),
+        emoji: {
+            valkyra: context.emoji.valkyra,
+            manticore: context.emoji.manticore,
+            lonestar: context.emoji.lonestar,
+        },
+        chipIcons: context.chipIcons,
+        paused: context.paused,
+        now: context.now,
+    }
+}
+
+const kitOptions = (context: LeagueRenderContext) => ({
+    language: context.language,
+    style: context.style,
+    chipIcons: context.chipIcons,
+})
+
+/** "WD League · tabulka" as a message. */
+export function standingsPayload(
+    view: LeagueStandingsView,
+    context: LeagueRenderContext
+): MessageCreateOptions {
+    return messagePayload(
+        leagueStandingsMessage(view, leagueLook(context)),
+        kitOptions(context)
+    )
+}
+
+/** "WD League · nejbližší zápasy" (or "poslední výsledky" alone) as a message. */
+export function fixturesPayload(
+    view: LeagueFixturesView,
+    context: LeagueRenderContext,
+    options: {
+        fixtures: boolean
+        thumbnails?: ReadonlyMap<string, MessageMedia>
+    }
+) {
+    const message = leagueFixturesMessage(view, leagueLook(context), options)
+    return {
+        view: message,
+        payload: messagePayload(message, kitOptions(context)),
+    }
+}
+
+/** The reply under a posted League link (L3-56). */
+export function linkReplyPayload(
+    reply: LeagueLinkReplyView,
+    context: Pick<
+        LeagueRenderContext,
+        "language" | "timeZone" | "style" | "accentColor"
+    >
+): MessageCreateOptions {
+    const copy = getLeagueMessages(context.language)
+    return messagePayload(
+        leagueLinkReplyMessage(reply, {
+            copy,
+            locale: copy.locale,
+            timeZone: context.timeZone,
+            accentColor: context.accentColor,
+        }),
+        { language: context.language, style: context.style }
+    )
+}
+
+/**
+ * League links of a human message in the links channel. Edits are always
+ * read so a removed link can be forgotten after the room changed.
+ */
 export function humanLeagueInput(
     message: {
         guildId: string | null
@@ -32,57 +133,4 @@ export function humanLeagueInput(
         (!receivedEdit && message.channelId !== inputChannelId)
         ? null
         : extractMatchUrls(message.content)
-}
-export function renderLeagueCard(
-    fixture: LeagueFixture,
-    artworkUrl?: string,
-    icons: Record<string, string> = {}
-): MessageCreateOptions {
-    const match = fixture.snapshot
-    const teams =
-        match.teams
-            ?.slice(0, 3)
-            .map(
-                (team) =>
-                    `${icons[(team.faction ?? "").toLowerCase()] ?? "▸"} **${clean(team.code, 30)}** · ${clean(team.faction, 40)}`
-            )
-            .join("\n") ?? "Teams unavailable"
-    const embed = new EmbedBuilder()
-        .setColor(fixture.stale ? 0xd29922 : 0xf1c40f)
-        .setTitle(
-            `Match #${match.fixtureNumber ?? "—"} · ${clean(match.teams?.map((t) => t.code).join(" / ") ?? match.title, 170)}`
-        )
-        .setURL(match.sourceUrl)
-        .setDescription(
-            `**${clean(match.type)} · ${clean(match.status)}**\n${at(match.scheduledAt)}\n\n${teams}`
-        )
-        .addFields(
-            {
-                name: "Map",
-                value: [match.map?.name, match.map?.zone, match.map?.lighting]
-                    .map((v) => clean(v, 80))
-                    .join(" · "),
-            },
-            {
-                name: "Preparation",
-                value: `Vote: ${clean(match.mapVote?.status, 80)} · Rules: ${clean(match.rules?.summary, 80)}\nReady: ${clean(match.readyCheck, 80)}\nHost: ${clean(match.hosting?.teamCode ?? match.hosting?.mode, 80)}`,
-            }
-        )
-        .setFooter({
-            text: `Wardogs League · ${fixture.stale ? "Stale source data" : fixture.state === "paused" ? "Refresh paused" : fixture.state === "archived" ? "Archived snapshot" : "Source checked"} · results require source verification`,
-        })
-        .setTimestamp(new Date(match.fetchedAt))
-    if (artworkUrl) embed.setThumbnail(artworkUrl)
-    return {
-        embeds: [embed],
-        components: [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(match.sourceUrl)
-                    .setLabel("View match")
-            ),
-        ],
-        allowedMentions: { parse: [] },
-    }
 }

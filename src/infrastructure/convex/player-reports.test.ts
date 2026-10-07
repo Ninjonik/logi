@@ -1,6 +1,7 @@
 import { reportSubmissionSchema } from "../../domain/player-reports/report"
 import { closeTicketThread } from "../../../convex/discordMembership"
 import { sourceSchema } from "../../domain/game-data/contracts"
+import * as drafts from "../../../convex/playerReportDrafts"
 import * as reports from "../../../convex/playerReports"
 import { invoke, testContext } from "./testing/database"
 import test, { type TestContext } from "node:test"
@@ -83,7 +84,7 @@ async function fixture(t: TestContext) {
             },
         ],
     }
-    const draftId = await invoke(reports.createDraft, ctx, {
+    const draftId = await invoke(drafts.createDraft, ctx, {
         ...entry,
         interactionId: "555555555555555555",
         observationJson: JSON.stringify(observation),
@@ -94,7 +95,7 @@ async function fixture(t: TestContext) {
         entry,
         draftId,
         submit: () =>
-            invoke(reports.submit, ctx, {
+            invoke(drafts.submit, ctx, {
                 ...scope,
                 draftId,
                 submissionJson: JSON.stringify(input),
@@ -174,7 +175,7 @@ test("report drafts and intents reject another subject or community", async (t) 
         { guildId: "888888888888888888" },
     ]) {
         assert.equal(
-            await invoke(reports.draft, ctx, { ...scope, ...wrong, draftId }),
+            await invoke(drafts.draft, ctx, { ...scope, ...wrong, draftId }),
             null
         )
         await assert.rejects(
@@ -202,7 +203,7 @@ test("an expired creation lease permits reconciliation but never another create"
 test("report observations must be fresh and submissions enforce evidence/text bounds", async (t) => {
     const { ctx, entry } = await fixture(t)
     await assert.rejects(
-        invoke(reports.createDraft, ctx, {
+        invoke(drafts.createDraft, ctx, {
             ...entry,
             interactionId: "555555555555555556",
             observationJson: JSON.stringify({
@@ -227,7 +228,7 @@ test("report observations must be fresh and submissions enforce evidence/text bo
 })
 test("manual player identity remains explicitly unverified", async (t) => {
     const { ctx, scope, draftId } = await fixture(t)
-    const reportId = await invoke(reports.submit, ctx, {
+    const reportId = await invoke(drafts.submit, ctx, {
         ...scope,
         draftId,
         submissionJson: JSON.stringify({
@@ -252,13 +253,13 @@ test("report submission enforces cooldown and active-report limits even across d
         observedAt: null,
         players: [],
     }
-    const next = await invoke(reports.createDraft, ctx, {
+    const next = await invoke(drafts.createDraft, ctx, {
         ...entry,
         interactionId: "555555555555555556",
         observationJson: JSON.stringify(observation),
     })
     const send = () =>
-        invoke(reports.submit, ctx, {
+        invoke(drafts.submit, ctx, {
             ...scope,
             draftId: next,
             submissionJson: JSON.stringify({
@@ -280,7 +281,7 @@ test("report submission enforces cooldown and active-report limits even across d
         })
     await assert.rejects(send(), /Three reports/)
     assert.equal(
-        await invoke(reports.submit, ctx, {
+        await invoke(drafts.submit, ctx, {
             ...scope,
             draftId,
             submissionJson: JSON.stringify(input),
@@ -298,13 +299,13 @@ test("five active report forms is the maximum and delivery stops on revoked poli
         players: [],
     })
     for (let i = 1; i < 5; i++)
-        await invoke(reports.createDraft, ctx, {
+        await invoke(drafts.createDraft, ctx, {
             ...entry,
             interactionId: `55555555555555555${i}`,
             observationJson: observation,
         })
     await assert.rejects(
-        invoke(reports.createDraft, ctx, {
+        invoke(drafts.createDraft, ctx, {
             ...entry,
             interactionId: "555555555555555559",
             observationJson: observation,

@@ -1,15 +1,21 @@
 import {
-    canAttachImageAsset,
     cleanupDue,
     IMAGE_CLEANUP_BATCH,
     IMAGE_OUTPUT,
     IMAGE_UNATTACHED_TTL_MS,
     IMAGE_UPLOAD_LIMIT,
-    imagePublicIdSchema,
-    projectImageAsset,
-    type ImageAssetEntity,
+    imageAssetFileName,
     type ImageAssetKind,
 } from "../src/domain/assets/image-asset"
+import {
+    adoptPlatformLogo,
+    adoptablePlatformLogo,
+    assetPublicUrl,
+    attachableAsset,
+    imageAssetEntity,
+    syncAssetReferences,
+    type AssetOwner,
+} from "./imageAssetStore"
 import {
     action,
     internalMutation,
@@ -27,6 +33,11 @@ import {
     dashboardActor,
     type DashboardActor,
 } from "./dashboardActor"
+import {
+    imagePublicIdSchema,
+    projectImageAsset,
+} from "../src/domain/assets/image-asset.schema"
+import { authorizePlatformAdmin, PLATFORM_SCOPE } from "./platformAdmin"
 import { imageAssetKind, imageContentType } from "./teamValidators"
 import { assertSessionGateway } from "./dashboardSessionStore"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -39,74 +50,31 @@ const access = {
     actor: dashboardActor,
 }
 type Db = Pick<QueryCtx, "db">
-export type AssetOwner = "team" | "event" | "panel"
-
-export function imageAssetEntity(row: Doc<"imageAssets">): ImageAssetEntity {
-    return {
-        id: String(row._id),
-        guildId: row.guildId,
-        kind: row.kind,
-        publicId: row.publicId,
-        contentType: row.contentType,
-        width: row.width,
-        height: row.height,
-        bytes: row.bytes,
-        publicUrl: row.publicUrl,
-        state: row.state,
-        createdAt: row.createdAt,
-    }
+// The lookups and reference bookkeeping live in `imageAssetStore.ts`; they
+// stay exported from here for existing importers.
+export {
+    adoptPlatformLogo,
+    adoptablePlatformLogo,
+    assetPublicUrl,
+    attachableAsset,
+    imageAssetEntity,
+    syncAssetReferences,
+    type AssetOwner,
 }
-
-/** The asset a workspace may attach for this purpose, or null; never trusts the caller's ID alone. */
-export async function attachableAsset(
+/**
+ * An asset scope is a workspace (its Discord guild ID, authorized for that
+ * workspace's administrators) or the platform (global administrators only).
+ */
+async function authorizeAssetScope(
     ctx: Db,
-    input: { assetId: string; guildId: string; kind: ImageAssetKind }
-): Promise<Doc<"imageAssets"> | null> {
-    const id = ctx.db.normalizeId("imageAssets", input.assetId)
-    const row = id ? await ctx.db.get(id) : null
-    return row && canAttachImageAsset(row, input) ? row : null
-}
-
-/** Public URL for a stored asset; referenced assets are never deleted, so a URL stays valid. */
-export async function assetPublicUrl(
-    ctx: Db,
-    assetId: Id<"imageAssets"> | string | null
-): Promise<string | null> {
-    if (!assetId) return null
-    const id = ctx.db.normalizeId("imageAssets", String(assetId))
-    const row = id ? await ctx.db.get(id) : null
-    return row?.publicUrl ?? null
-}
-
-/** Reconciles indexed references for one owner inside the owner's own transaction. */
-export async function syncAssetReferences(
-    ctx: MutationCtx,
-    input: {
-        guildId: string
-        owner: AssetOwner
-        ownerId: string
-        assetIds: readonly Id<"imageAssets">[]
+    input: { secret: string; guildId: string; actor: DashboardActor }
+): Promise<{ subject: string }> {
+    if (input.guildId === PLATFORM_SCOPE) {
+        const admin = await authorizePlatformAdmin(ctx, input)
+        return { subject: admin.session.subject }
     }
-) {
-    const current = await ctx.db
-        .query("imageAssetReferences")
-        .withIndex("owner_ownerId", (q) =>
-            q.eq("owner", input.owner).eq("ownerId", input.ownerId)
-        )
-        .collect()
-    const wanted = new Set(input.assetIds.map(String))
-    for (const row of current)
-        if (!wanted.has(String(row.assetId))) await ctx.db.delete(row._id)
-    const have = new Set(current.map((row) => String(row.assetId)))
-    for (const assetId of input.assetIds)
-        if (!have.has(String(assetId)))
-            await ctx.db.insert("imageAssetReferences", {
-                assetId,
-                guildId: input.guildId,
-                owner: input.owner,
-                ownerId: input.ownerId,
-                createdAt: new Date().toISOString(),
-            })
+    const admin = await authorizeDashboardAdmin(ctx, input)
+    return { subject: admin.session.subject }
 }
 
 async function referenced(ctx: Db, assetId: Id<"imageAssets">) {
@@ -149,10 +117,13 @@ async function consumeUploadAttempt(ctx: MutationCtx, bucket: string) {
 export const reserveUpload = mutation({
     args: { ...access, kind: imageAssetKind },
     handler: async (ctx, args) => {
-        const admin = await authorizeDashboardAdmin(ctx, args)
+        const admin = await authorizeAssetScope(ctx, args)
+        // The platform scope holds catalogue team logos only.
+        if (args.guildId === PLATFORM_SCOPE && args.kind !== "team-logo")
+            return { error: "invalid_kind" as const }
         const attempt = await consumeUploadAttempt(
             ctx,
-            `image-upload:${args.guildId}:${admin.session.subject}`
+            `image-upload:${args.guildId}:${admin.subject}`
         )
         if (!attempt.allowed)
             return {
@@ -171,6 +142,7 @@ const normalizedAsset = v.object({
     width: v.number(),
     height: v.number(),
     publicUrl: v.string(),
+    fileName: v.optional(v.string()),
 })
 const recordReference = makeFunctionReference<
     "mutation",
@@ -188,6 +160,7 @@ const recordReference = makeFunctionReference<
             bytes: number
             sha256: string
             publicUrl: string
+            fileName?: string
         }
     },
     StoreImageAssetResult
@@ -202,7 +175,8 @@ async function sha256Hex(bytes: ArrayBuffer) {
 
 /**
  * Stores a normalized image the gateway produced and records it for the
- * current workspace administrator. The record re-authorizes the actor in its
+ * current workspace administrator, or for a global administrator in the
+ * platform scope. The record re-authorizes the actor in its
  * own transaction; when it is rejected or fails, exactly the blob stored here
  * is deleted, so no stored file is ever left without a record.
  */
@@ -251,10 +225,11 @@ export const record = internalMutation({
             bytes: v.number(),
             sha256: v.string(),
             publicUrl: v.string(),
+            fileName: v.optional(v.string()),
         }),
     },
     handler: async (ctx, args): Promise<StoreImageAssetResult> => {
-        const admin = await authorizeDashboardAdmin(ctx, args)
+        const admin = await authorizeAssetScope(ctx, args)
         const asset = args.asset,
             bounds = IMAGE_OUTPUT[asset.kind]
         if (
@@ -279,12 +254,15 @@ export const record = internalMutation({
                 .unique()
         )
             return { error: "invalid_asset" as const }
+        const { fileName: rawName, ...stored } = asset
+        const fileName = imageAssetFileName(rawName)
         const id = await ctx.db.insert("imageAssets", {
             guildId: args.guildId,
-            ...asset,
+            ...stored,
+            ...(fileName ? { fileName } : {}),
             state: "ready",
             createdAt: new Date().toISOString(),
-            createdBy: admin.session.subject,
+            createdBy: admin.subject,
         })
         const row = await ctx.db.get(id)
         return {
@@ -310,11 +288,11 @@ export const resolvePublic = query({
     },
 })
 
-/** Dashboard listing of this workspace's live assets of one kind (bounded). */
+/** Dashboard listing of one scope's live assets of one kind (bounded). */
 export const list = query({
     args: { ...access, kind: imageAssetKind },
     handler: async (ctx, args) => {
-        await authorizeDashboardAdmin(ctx, args)
+        await authorizeAssetScope(ctx, args)
         const rows = await ctx.db
             .query("imageAssets")
             .withIndex("guildId_kind", (q) =>

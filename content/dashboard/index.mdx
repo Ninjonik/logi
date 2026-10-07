@@ -44,11 +44,98 @@ valid Discord configuration.
 
 ## Workspace overview
 
-The overview is the starting point for a selected server. It summarises current information and gives you a path into the calendar, articles, events, and other workspace tools.
+The overview is the starting point for a selected server. When a game is
+selected in the sidebar, every block shows only that game.
 
-When you have a default workspace, the signed-in landing page opens it directly.
-If Logi needs to resolve a workspace, the sidebar stays available while the
-content area shows a loading indicator instead of an empty page.
+- **Greeting and date** in the clan's time zone, with the clan's games. Links to
+  all matches and, for managers, to a new match.
+- **Next match**: the earliest match that has not ended, with its category, map,
+  side and meeting time, the teams when they are set, and the roster state
+  (no roster, draft or published). With a roster it shows how many places are
+  filled. It also counts sign-ups and members who have not answered yet: clan
+  members of that game whose membership may sign up, without paused members and
+  applicants. That count is left out when the match also requires Discord roles,
+  because Logi cannot check them for every member. Managers get a button to
+  create or finish the roster; members see the published roster. While sign-ups
+  are open, managers can also **remind** the members without an answer: after a
+  confirmation the bot sends them a direct message in Discord, and the page
+  says how many reminders went out.
+- **Waiting for you** (managers only): staged results that wait for
+  confirmation, required settings that are still missing, and membership
+  applications in the pending phase with the date of the oldest one. Below it
+  is the clan setup progress, which opens the clan settings.
+- **This week**: today and the next six days with their matches and trainings.
+- **Form**: the outcomes of the last ten matches with a known result, oldest
+  first. A result with a dashed border still waits for confirmation.
+- **Most attendance points this month** (managers only): the four members with
+  the most points from this month's closed matches. Points follow the clan's
+  score rules under **Settings → Membership → Attendance points**, the same
+  rules that change a member's score when a match closes; only members with
+  points above zero are listed.
+- **Clan statistics**: upcoming events, published rosters, members and presets,
+  performance charts over the recorded matches (combat and support
+  effectiveness, K/D with kills and deaths, points), and the last ten results
+  with the record, win rate and top players.
+
+Apart from the reminder button, the overview does not send reminders: sign-up
+reminders go out on the match's own schedule.
+
+When you have a default workspace, the signed-in landing page opens it directly,
+but only while you can still open that clan; otherwise you see the list of your
+clans. **All clans** at the bottom of the clan switcher (top of the sidebar)
+always opens that list, grouped into clans you manage, clans you are a member
+of and mercenary clans. The switcher shows five clans first and **Show all**
+lists every clan you can open. If Logi needs to resolve a workspace, the
+sidebar stays available while the content area shows a placeholder shaped like
+the page instead of an empty page. When you have no clan in Logi yet, the
+landing page says so and links to the bot setup guide: a clan appears once the
+Logi bot is on its Discord server.
+
+Each clan on that list is a tile with its picture, description and number of
+members and admins; a tile opens the clan. Managed clans without the bot come
+last, marked **Bot missing**. Only clan admins are offered **Invite bot** and
+**Refresh** on such a tile. Members and mercenaries see a request to ask a clan
+admin instead.
+
+## The sidebar
+
+The clan switcher at the top of the sidebar shows the open clan and, under its
+name, the games in view (**All games** or one game). It opens a search over your
+clans; inside a clan with more than one game it also lets you show a single
+game, which every page of that clan then follows.
+
+The sidebar groups a clan's pages into **Workspace** (dashboard, calendar,
+articles), **Operations** (matches, trainings, sign-up history, rosters,
+tactical maps) and, for clan admins, **Configuration** (members, teams, tickets
+and settings). Groups are listed under **Members** while that part is open;
+topic and squad presets open from **Settings → Squad and topic presets**. **Settings** shows a
+number when required clan settings are still missing (games, the announcement
+channel or the clan role); it disappears once they are set. Logi's global
+administrators also see **Global administration** (marked "admins only"). Your
+account follows and opens **My account**.
+
+Pages below a section show their trail above the title, for example
+**Settings › Discord › Channels and language**; each step links back. The
+restart button for the guided tour, LogiComms, the wiki and Discord support
+are in the footer.
+
+On a phone the sidebar opens from the menu button at the top left and closes
+when you open a page; the avatar at the top right opens your account. Below a
+section the top bar shows a back arrow to the page one level up and the page's
+name instead. A page's main action, where it has one, stays in a bar at the
+bottom of the screen, next to a short state such as "1 change" when the page
+has one.
+
+## When something goes wrong
+
+A page that cannot load shows what happened, a **Try again** button and
+**Details for support** (an error reference, the time and the page) that you
+can copy into a support request. A save shows a short notice at the top right:
+a green tick when it worked, a red outline with the reason when it did not. A
+value that cannot be saved is also marked at its field, with the reason
+underneath. An address that does not exist shows a page
+in your language with a way back: the home page on the public site, or your
+clan list inside the dashboard.
 
 ## First-time guides
 

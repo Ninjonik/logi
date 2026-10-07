@@ -33,6 +33,15 @@ services:
       - HTTP_SERVER_TIMEOUT_SECONDS
       - INSTANCE_NAME
       - INSTANCE_SECRET
+      # Memory knobs of the backend (README.md, "Memory of a self-hosted
+      # backend"). Each function-runner worker keeps a V8 isolate with up to
+      # 96 MiB of heap for ISOLATE_IDLE_TIMEOUT_SECONDS after its last call;
+      # the upstream pool allows 300 of them.
+      - MAX_ISOLATE_WORKERS=${MAX_ISOLATE_WORKERS:-300}
+      - ISOLATE_IDLE_TIMEOUT_SECONDS=${ISOLATE_IDLE_TIMEOUT_SECONDS:-600}
+      - ISOLATE_MAX_LIFETIME_SECONDS=${ISOLATE_MAX_LIFETIME_SECONDS:-3600}
+      - UDF_CACHE_MAX_SIZE=${UDF_CACHE_MAX_SIZE:-104857600}
+      - INDEX_CACHE_SIZE=${INDEX_CACHE_SIZE:-536870912}
       - MYSQL_URL
       - POSTGRES_URL
       - REDACT_LOGS_TO_CLIENT
@@ -48,6 +57,12 @@ services:
       test: curl -f http://localhost:3210/version
       interval: 5s
       start_period: 10s
+    # A memory limit keeps the page cache of a large SQLite file and idle
+    # isolate heaps from taking the whole host; size it to the host (README).
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 12g
 
   dashboard:
     image: ghcr.io/get-convex/convex-dashboard:latest

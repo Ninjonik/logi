@@ -11,7 +11,7 @@ import sharp from "sharp"
 
 const origin = "https://logi.test"
 const route = (kind?: string) =>
-    `${origin}/api/servers/server-1/image-assets${kind ? `?kind=${kind}` : ""}`
+    `http://127.0.0.1:3000/api/servers/server-1/image-assets${kind ? `?kind=${kind}` : ""}`
 const pngBytes = async () =>
     new Uint8Array(
         await sharp({
@@ -232,7 +232,7 @@ test("animated and oversized-dimension sources are rejected before storage", asy
     assert.equal(calls.store, 0)
 })
 
-test("a valid logo is normalized, stored, recorded and returned", async () => {
+test("a valid logo behind a proxy is normalized, stored and returned with the public origin", async () => {
     const { calls, handlers } = fakePorts({ siteUrl: () => `${origin}/` })
     const response = await handlers.POST(
         upload(await pngBytes(), "image/png; charset=binary"),
@@ -264,6 +264,41 @@ test("a valid logo is normalized, stored, recorded and returned", async () => {
     assert.equal(stored.asset.width, 512)
     assert.ok(stored.asset.height <= 512)
     assert.equal(stored.asset.publicUrl, body.asset.url)
+})
+
+test("a map image must be at least 160 × 160 and is stored as WebP within 1200 × 1200", async () => {
+    const square = async (size: number) =>
+        new Uint8Array(
+            await sharp({
+                create: {
+                    width: size,
+                    height: size,
+                    channels: 3,
+                    background: { r: 90, g: 80, b: 60 },
+                },
+            })
+                .png()
+                .toBuffer()
+        )
+    const small = fakePorts()
+    const refused = await small.handlers.POST(
+        upload(await square(120), "image/png", { kind: "panel-map" }),
+        "server-1"
+    )
+    assert.equal(refused.status, 400)
+    assert.deepEqual(await refused.json(), { error: "bad_dimensions" })
+    assert.equal(small.calls.store, 0)
+    const { calls, handlers } = fakePorts()
+    const response = await handlers.POST(
+        upload(await square(1600), "image/png", { kind: "panel-map" }),
+        "server-1"
+    )
+    assert.equal(response.status, 200)
+    const [stored] = calls.stored
+    assert.equal(stored?.asset.kind, "panel-map")
+    assert.equal(stored?.asset.contentType, "image/webp")
+    assert.equal(stored?.asset.width, 1200)
+    assert.equal(stored?.asset.height, 1200)
 })
 
 test("storage and persistence failures map to unavailable", async () => {
@@ -351,4 +386,18 @@ test("listing is admin-only, kind-scoped and reports outages", async () => {
         ).status,
         503
     )
+})
+
+test("the uploaded file's own name is kept for display, cleaned (P8-08)", async () => {
+    const { calls, handlers } = fakePorts()
+    const request = new Request(
+        `${route("panel-banner")}&name=${encodeURIComponent("C:\\fotky\\vlci-public.png")}`,
+        {
+            method: "POST",
+            headers: { "content-type": "image/png", origin },
+            body: await pngBytes(),
+        }
+    )
+    assert.equal((await handlers.POST(request, "server-1")).status, 200)
+    assert.equal(calls.stored[0]?.asset.fileName, "vlci-public.png")
 })

@@ -140,3 +140,59 @@ test("every Discord bot event payload query carries matchTeams", async () => {
     })
     assert.deepEqual(interaction.event.matchTeams, matchTeams)
 })
+
+test("the interaction context carries the event category colour", async () => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = seededContext()
+    await ctx.db.patch("guilds:a", {
+        eventCategories: [
+            { id: "friendly", label: "Friendly", color: "#dc2626" },
+        ],
+    })
+    await ctx.db.patch("events:native", { matchType: " Friendly " })
+    const colour = async (eventId: string) =>
+        (
+            await invoke(discord.getEventInteractionContext, ctx, {
+                secret,
+                eventId,
+            })
+        ).categoryColor
+    assert.equal(await colour("events:native"), "#dc2626")
+    assert.equal(await colour("events:legacy"), null)
+})
+
+test("the bot's event payloads carry the competition round (L3-14)", async () => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = seededContext()
+    ctx.db.seed("competitionFixtures", {
+        _id: "competitionFixtures:1",
+        competitionId: "competitions:ecl",
+        phase: "league",
+        round: 3,
+        status: "scheduled",
+        eventId: "events:native",
+        createdAt: "2026-07-29T10:00:00.000Z",
+        updatedAt: "2026-07-29T10:00:00.000Z",
+    })
+    const syncContext = await invoke(discord.getEventSyncContext, ctx, {
+        secret,
+        eventId: "events:native",
+    })
+    assert.equal(syncContext.event.competitionRound, 3)
+    const legacy = await invoke(discord.getEventSyncContext, ctx, {
+        secret,
+        eventId: "events:legacy",
+    })
+    assert.equal(legacy.event.competitionRound, undefined)
+    const [payload] = await invoke(discord.listSyncPayloads, ctx, { secret })
+    const byId = new Map(
+        payload.events.map(
+            (event: { id: string; competitionRound?: number }) => [
+                event.id,
+                event.competitionRound,
+            ]
+        )
+    )
+    assert.equal(byId.get("events:native"), 3)
+    assert.equal(byId.get("events:legacy"), undefined)
+})

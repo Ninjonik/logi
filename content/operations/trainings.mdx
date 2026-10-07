@@ -9,23 +9,45 @@ import { Callout, Steps } from "nextra/components"
 
 Trainings are practice-focused scheduled sessions. The page keeps them separate from competitive matches so communities can plan both without mixing their purpose or completion flow.
 
+**Trainings** uses the same list as [Matches](/wiki/operations/matches#the-match-list):
+upcoming trainings grouped by week with their sign-ups and the sign-up
+deadline, recently finished trainings below them, and **Played** with how many
+passed and failed. Search by name and filter by game. A **Drafts** tab appears
+for managers only while a training draft exists.
+
 <Steps>
 
 ### Create a training (manager)
 
-Open **Trainings**, select the create action, and give the session a useful name.
+Open **Trainings** and choose **New training**. It opens the same five-step flow as a [new match](/wiki/operations/matches#create-a-match-manager) with a training template: no opponent and no map. The name comes from the template until you change it, and work in progress is saved as a draft that only managers see.
 
 ### Set an accurate start and end
 
-Set the meeting time and the session’s planned timing. An end time helps members understand the commitment and helps managers plan subsequent activity. Optionally choose a registration announcement start to show the training in calendars before Logi posts its Discord registration announcement.
+In the **Time** step, set the date and meeting time. The template gives registration close and duration; **Change for this training only** adjusts them. An end time helps members understand the commitment and helps managers plan subsequent activity. A template can also post the announcement a number of hours before the start, so the training shows in calendars before Logi posts its Discord registration announcement.
 
 ### Share the plan
 
 Add the relevant details and use the server’s normal communication process so people know what the training is for.
 
+### Change it before it happens
+
+The training page shows the training in short lines (training, time, sign-ups,
+Discord) beside its Discord announcement as members see it now. Managers open
+**Edit training** there, or **Edit** on a line, to change it in the same five
+steps, filled in with the saved training; see
+[edit a match](/wiki/operations/matches#edit-a-match-manager). The **Sign-ups**
+step of a training holds the **roles needed to sign up** and the **roles for
+passing**, which Logi gives to everyone marked as passed. **More options** in
+the first step holds the description, notes and thumbnail. **Save changes**
+updates the announcement; a concluded training can no longer be edited.
+
 ### Complete it afterwards
 
 When the training has taken place, use the completion action if your role permits it. Logi requires a completion result for every attendee before it will conclude the training. This keeps the list and history accurate.
+
+Each evaluated participant gets a training result DM in the clan language:
+**Passed** with the roles for passing they received, or **Not passed** with a
+pointer to the clan calendar for the next date.
 
 </Steps>
 

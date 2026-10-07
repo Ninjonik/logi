@@ -1,18 +1,24 @@
 import {
-    observationSchema,
-    type ClaimedConnection,
-    type DataSource,
-} from "../src/domain/game-data/contracts"
-import {
     acceptsRun,
     projectHealth,
+    projectLastState,
     projectSnapshot,
 } from "../src/domain/game-data/policy"
+import {
+    sourceFingerprint,
+    type ResolvedClaim,
+    type ResolvedSource,
+} from "../src/domain/game-data/credentials"
+import {
+    connectionFor,
+    connectionSource,
+    resolveSource,
+    workspaceSources,
+} from "./gameDataCatalog"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { gameDataError, gameDataObservation } from "./gameDataValidators"
 import { mutation, internalMutation } from "./integrationMutation"
 import type { MutationCtx } from "./_generated/server"
-import { catalogSources } from "./gameDataCatalog"
 import { resetHistory } from "./gameDataHistory"
 import { query } from "./_generated/server"
 import { internal } from "./_generated/api"
@@ -24,9 +30,6 @@ function assertSecret(secret: string) {
         secret !== process.env.INTERNAL_AUTH_SECRET
     )
         throw new Error("Unauthorized.")
-}
-function fingerprint(source: DataSource) {
-    return JSON.stringify(source)
 }
 
 const configurationArgs = {
@@ -42,30 +45,36 @@ async function configureConnection(
         guildId: string
         sourceRef: string
         enabled: boolean
-    }
+    },
+    options: { requireVerifiedKey: boolean } = { requireVerifiedKey: false }
 ): Promise<string> {
     assertSecret(args.secret)
-    return applyConnectionSource(ctx, args)
+    return applyConnectionSource(ctx, args, options)
 }
-/** Binds a connection to the current catalog entry for its reference; callers authorize. */
+/**
+ * Binds a connection to the current catalog entry for its reference; callers
+ * authorize. Collection starts only with a usable credential; a dashboard
+ * enable also needs a stored key that passed a connection test.
+ */
 export async function applyConnectionSource(
     ctx: MutationCtx,
-    args: { guildId: string; sourceRef: string; enabled: boolean }
+    args: { guildId: string; sourceRef: string; enabled: boolean },
+    options: { requireVerifiedKey: boolean } = { requireVerifiedKey: false }
 ): Promise<string> {
-    const source = (await catalogSources(ctx)).find(
-        (value) =>
-            value.ref === args.sourceRef && value.guildId === args.guildId
-    )
-    const existing = await ctx.db
-        .query("gameDataConnections")
-        .withIndex("sourceRef", (q) => q.eq("sourceRef", args.sourceRef))
-        .unique()
-    if (
-        (!source && args.enabled) ||
-        (existing && existing.guildId !== args.guildId) ||
-        (!source && !existing)
-    )
+    const entry = await resolveSource(ctx, args.guildId, args.sourceRef)
+    const source: ResolvedSource | undefined = entry?.source
+    const existing = await connectionFor(ctx, args.guildId, args.sourceRef)
+    if ((!source && args.enabled) || (!source && !existing))
         throw new Error("Configured source not found.")
+    if (args.enabled && !source?.usable)
+        throw new Error("Source credential is not ready.")
+    if (
+        args.enabled &&
+        options.requireVerifiedKey &&
+        source?.credentialMode === "encrypted" &&
+        !entry?.credential?.verifiedAt
+    )
+        throw new Error("Test the stored key before enabling collection.")
     if (
         source &&
         existing &&
@@ -90,7 +99,7 @@ export async function applyConnectionSource(
     if (existing) {
         await ctx.db.patch(existing._id, {
             ...state,
-            ...(source ? { sourceFingerprint: fingerprint(source) } : {}),
+            ...(source ? { sourceFingerprint: sourceFingerprint(source) } : {}),
             etag: null,
         })
         if (["hll_crcon", "wardogs_warcon"].includes(existing.provider))
@@ -111,7 +120,7 @@ export async function applyConnectionSource(
         gameId: source.gameId,
         provider: source.provider,
         providerServerId: source.providerServerId,
-        sourceFingerprint: fingerprint(source),
+        sourceFingerprint: sourceFingerprint(source),
         fence: 0,
         lastAttemptAt: null,
         observation: null,
@@ -138,7 +147,7 @@ export const configureForDashboard = mutation({
     args: { ...configurationArgs, actor: dashboardActor },
     handler: async (ctx, args) => {
         await authorizeDashboardAdmin(ctx, args)
-        return configureConnection(ctx, args)
+        return configureConnection(ctx, args, { requireVerifiedKey: true })
     },
 })
 
@@ -146,23 +155,23 @@ export const listConnections = query({
     args: { secret: v.string(), guildId: v.string() },
     handler: async (ctx, args) => {
         assertSecret(args.secret)
-        const configured = (await catalogSources(ctx)).filter(
-            (source) => source.guildId === args.guildId
+        const configured = (await workspaceSources(ctx, args.guildId)).map(
+            (entry) => entry.source
         )
         const rows = await ctx.db
             .query("gameDataConnections")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .collect()
+        const now = Date.now()
         const result = rows.map((row) => ({
             sourceRef: row.sourceRef,
             configured: configured.some(
                 (source) => source.ref === row.sourceRef
             ),
-            snapshot: projectSnapshot(
-                { ...row, id: String(row._id) },
-                Date.now()
-            ),
-            health: projectHealth({ ...row, id: String(row._id) }, Date.now()),
+            snapshot: projectSnapshot({ ...row, id: String(row._id) }, now),
+            health: projectHealth({ ...row, id: String(row._id) }, now),
+            // `/server-status` names the last state of a stale row (M3-23).
+            lastState: projectLastState(row, now),
         }))
         return {
             sources: configured.map(({ ref, gameId, provider }) => ({
@@ -177,7 +186,7 @@ export const listConnections = query({
 
 export const claimNext = internalMutation({
     args: {},
-    handler: async (ctx): Promise<ClaimedConnection | null> => {
+    handler: async (ctx): Promise<ResolvedClaim | null> => {
         const now = Date.now()
         const due = await ctx.db
             .query("gameDataConnections")
@@ -185,14 +194,10 @@ export const claimNext = internalMutation({
                 q.gte("nextAttemptAt", 0).lte("nextAttemptAt", now)
             )
             .take(10)
-        const catalog = await catalogSources(ctx)
         for (const row of due) {
             if (!row.enabled || row.leaseUntil > now) continue
-            const source = catalog.find(
-                (value) =>
-                    value.ref === row.sourceRef && value.guildId === row.guildId
-            )
-            if (!source || fingerprint(source) !== row.sourceFingerprint) {
+            const source = await connectionSource(ctx, row)
+            if (!source) {
                 await ctx.db.patch(row._id, {
                     errorCategory: "configuration",
                     nextAttemptAt: null,
@@ -242,18 +247,16 @@ export const finishSnapshot = internalMutation({
         const row = await ctx.db.get(args.id)
         const now = Date.now()
         if (!row || !acceptsRun(row, args, now)) return false
-        const source = (await catalogSources(ctx)).find(
-            (value) =>
-                value.ref === row.sourceRef && value.guildId === row.guildId
-        )
-        if (!source || fingerprint(source) !== row.sourceFingerprint)
-            return false
-        const observation =
-            args.result.observation === undefined
-                ? undefined
-                : observationSchema.parse(args.result.observation)
-        if (observation && Date.parse(observation.observedAt) > now)
-            throw new Error("Invalid observation time.")
+        if (!(await connectionSource(ctx, row))) return false
+        // The validator checked the shape and the collector action parsed
+        // the provider's reply with the observation schema; only the time
+        // is checked again here (ARCHITECTURE.md, "Convex hot paths").
+        const observation = args.result.observation
+        if (observation) {
+            const observedAt = Date.parse(observation.observedAt)
+            if (Number.isNaN(observedAt) || observedAt > now)
+                throw new Error("Invalid observation time.")
+        }
         await ctx.db.patch(row._id, {
             ...args.result,
             ...(observation ? { observation } : {}),

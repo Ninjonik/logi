@@ -3,16 +3,39 @@ import {
     ADMIN_TRACKING_RESERVE,
     MAX_HUMAN_CANDIDATES,
 } from "../src/domain/wardogs-league/discovery"
+import {
+    leagueCollectionWanted,
+    leaguePanelsOn,
+} from "../src/application/wardogs-league/tracking"
+import { isPanelPaused } from "../src/domain/discord-publications/settings"
 import { projectLeagueFixture } from "../src/domain/wardogs-league/fixture"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import type { Doc } from "./_generated/dataModel"
-export function trackingConfig(ctx: Pick<QueryCtx, "db">, guildId: string) {
-    return ctx.db
-        .query("leagueTrackingSettings")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .unique()
+/**
+ * League-wide collection (the shared index scan and every fixture) runs while
+ * a workspace keeps Wardogs League on, or has a sent, running WD League panel
+ * in a workspace that did not turn the League off (L3-55).
+ */
+export async function leagueCollectionActive(ctx: Pick<QueryCtx, "db">) {
+    const settings = await ctx.db.query("leagueTrackingSettings").take(100)
+    const enabled = settings.filter((row) => row.enabled)
+    if (enabled.length) return true
+    const panels = (
+        await ctx.db.query("discordPublicPanels").take(5000)
+    ).filter(
+        (panel) =>
+            panel.kind === "league" &&
+            !panel.draft &&
+            !panel.removing &&
+            !isPanelPaused(panel) &&
+            leaguePanelsOn(
+                settings.find((row) => row.guildId === panel.guildId) ?? null
+            )
+    ).length
+    return leagueCollectionWanted(enabled, panels)
 }
+export { trackingConfig } from "./leagueTrackingReads"
 export function trackedMatch(
     ctx: Pick<QueryCtx, "db">,
     guildId: string,

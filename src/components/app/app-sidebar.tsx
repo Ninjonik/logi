@@ -9,15 +9,14 @@ import {
     Swords,
     UserCog,
     ListTodo,
+    ListChecks,
     CalendarIcon,
     Map,
-    Bot,
-    Radio,
-    Trophy,
-    ServerCog,
+    Globe,
+    Ticket,
 } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { useEffect } from "react"
 
 import {
     Sidebar,
@@ -25,20 +24,26 @@ import {
     SidebarFooter,
     SidebarHeader,
     SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
+import { useSettingsAttentionCount } from "@/components/app/settings-attention"
+import { globalAdminHref, isGlobalAdminPath } from "@/lib/global-admin-routes"
+import { NavMain, NavMenuItems, type NavItem } from "@/components/nav-main"
+import { globalAdminSection } from "@/lib/navigation/global-admin-routes"
 import { ServerSwitcher } from "@/components/app/server-switcher"
-import { GameSwitcher } from "@/components/app/game-switcher"
-import { getPrimaryDisplayedScore } from "@/lib/user-scores"
+import { AdminSidebar } from "@/components/app/admin-sidebar"
+import { canAdminWorkspace } from "@/lib/workspace-admin"
 import type { Dictionary } from "@/i18n/dictionaries"
-import { AppLogo } from "@/components/app/app-logo"
 import { NavUser } from "@/components/nav-user"
-import { NavMain } from "@/components/nav-main"
 import type { AppUser } from "@/types/domain"
 import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
 
+/**
+ * The clan sidebar (design AppSidebar): the clan switcher, then the clan's
+ * pages in three groups, then global administration for Logi's admins and the
+ * person's account at the bottom.
+ */
 export function AppSidebar({
     locale,
     dictionary,
@@ -59,151 +64,125 @@ export function AppSidebar({
 }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const { isMobile, setOpenMobile } = useSidebar()
     const pathServerId = pathname?.match(/\/servers\/([^/]+)/)?.[1]
     const selectedWorkspaceId = searchParams.get("workspace") ?? undefined
+    // Global administration has its own navigation (see AdminSidebar). It is
+    // swapped in at the end, after every hook of this component has run.
+    const adminSection = isSuperadmin ? globalAdminSection(pathname) : null
     const resolvedServerId =
         pathServerId ?? selectedWorkspaceId ?? activeServerId
     const resolvedServer = resolvedServerId
         ? servers.find((server) => server.id === resolvedServerId)
         : undefined
-    const adminAccessOverride =
-        resolvedServer?.adminAccessOverrides?.[user.discordId]
-    const resolvedCanAdmin =
-        adminAccessOverride ??
-        Boolean(
-            resolvedServerId &&
-            (resolvedServer?.canAdmin ||
-                resolvedServer?.adminIds.includes(user.discordId) ||
-                canAdmin)
-        )
+    const resolvedCanAdmin = Boolean(
+        resolvedServerId &&
+        (resolvedServer
+            ? canAdminWorkspace(resolvedServer, user.discordId) ||
+              (canAdmin &&
+                  resolvedServer.adminAccessOverrides?.[user.discordId] ===
+                      undefined)
+            : canAdmin)
+    )
     const workspaceEnabled = Boolean(
         resolvedServer &&
         (resolvedServer.botInside || pathServerId || isSuperadmin)
     )
+    const settingsAttention = useSettingsAttentionCount(resolvedServerId)
+
+    // On phones the menu is a sheet over the page; close it after navigating.
+    useEffect(() => {
+        if (isMobile) setOpenMobile(false)
+    }, [pathname, isMobile, setOpenMobile])
+
     const base = resolvedServerId
         ? `/${locale}/dashboard/servers/${resolvedServerId}`
         : `/${locale}/dashboard`
     const superadminWorkspaceQuery = resolvedServerId
         ? `?workspace=${encodeURIComponent(resolvedServerId)}`
         : ""
+    const t = dictionary.sidebar
+    const within = (segment: string) =>
+        Boolean(pathname?.startsWith(`${base}/${segment}`))
 
-    const navGroups = [
-        ...(resolvedServerId && workspaceEnabled
+    const navGroups: Array<{ label: string; id?: string; items: NavItem[] }> =
+        resolvedServerId && workspaceEnabled
             ? [
                   {
-                      label: dictionary.sidebar.workspace,
+                      label: t.workspace,
                       items: [
                           {
-                              title: dictionary.sidebar.overview,
+                              title: t.dashboard,
                               url: base,
                               icon: LayoutDashboard,
                           },
                           {
-                              title: dictionary.sidebar.calendar,
+                              title: t.calendar,
                               url: `${base}/calendar`,
                               icon: CalendarDays,
+                              isActive: within("calendar"),
                           },
                           {
-                              title: dictionary.sidebar.articles,
+                              title: t.articles,
                               url: `${base}/articles`,
                               icon: ClipboardList,
+                              isActive: within("articles"),
                           },
                       ],
                   },
                   {
-                      label: dictionary.sidebar.operations,
+                      label: t.operations,
+                      id: "onboarding-sidebar-operations",
                       items: [
+                          // Members see every event in one list; managers
+                          // work from matches and trainings.
                           ...(resolvedCanAdmin
-                              ? [
-                                    {
-                                        title: dictionary.sidebar.matches,
-                                        url: `${base}/matches`,
-                                        icon: CalendarIcon,
-                                        items: [
-                                            {
-                                                title: dictionary.sidebar
-                                                    .matches,
-                                                url: `${base}/matches`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .topicPresets,
-                                                url: `${base}/topic-presets`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .stratmaps,
-                                                url: `${base}/stratmaps`,
-                                                icon: Map,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .rosters,
-                                                url: `${base}/rosters`,
-                                                items: [
-                                                    {
-                                                        title: dictionary
-                                                            .sidebar.rosters,
-                                                        url: `${base}/rosters`,
-                                                    },
-                                                    {
-                                                        title: dictionary
-                                                            .sidebar
-                                                            .squadPresets,
-                                                        url: `${base}/squad-presets`,
-                                                    },
-                                                ],
-                                            },
-                                        ],
-                                    },
-                                    {
-                                        title: dictionary.sidebar.trainings,
-                                        url: `${base}/trainings`,
-                                        icon: Shield,
-                                    },
-                                    {
-                                        title: dictionary.sidebar
-                                            .signupActivity,
-                                        url: `${base}/signup-activity`,
-                                        icon: ListTodo,
-                                    },
-                                ]
+                              ? []
                               : [
                                     {
-                                        title: dictionary.sidebar.events,
+                                        title: t.events,
                                         url: `${base}/events`,
                                         icon: ListTodo,
+                                        isActive: within("events"),
                                     },
+                                ]),
+                          {
+                              title: t.matches,
+                              url: `${base}/matches`,
+                              icon: CalendarIcon,
+                              isActive: within("matches"),
+                          },
+                          {
+                              title: t.trainings,
+                              url: `${base}/trainings`,
+                              icon: Shield,
+                              isActive: within("trainings"),
+                          },
+                          {
+                              title: t.signupActivity,
+                              url: `${base}/signup-activity`,
+                              icon: ListChecks,
+                          },
+                          {
+                              title: t.rosters,
+                              url: `${base}/rosters`,
+                              icon: ClipboardList,
+                              isActive: within("rosters"),
+                          },
+                          {
+                              title: t.stratmaps,
+                              url: `${base}/stratmaps`,
+                              icon: Map,
+                              isActive: within("stratmaps"),
+                          },
+                          ...(resolvedCanAdmin
+                              ? []
+                              : [
                                     {
-                                        title: dictionary.sidebar.matches,
-                                        url: `${base}/matches`,
-                                        icon: CalendarIcon,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.trainings,
-                                        url: `${base}/trainings`,
-                                        icon: Shield,
-                                    },
-                                    {
-                                        title: dictionary.sidebar
-                                            .signupActivity,
-                                        url: `${base}/signup-activity`,
-                                        icon: ListTodo,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.stratmaps,
-                                        url: `${base}/stratmaps`,
-                                        icon: Map,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.rosters,
-                                        url: `${base}/rosters`,
-                                        icon: ClipboardList,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.users,
+                                        title: t.users,
                                         url: `${base}/users`,
                                         icon: UserCog,
+                                        isActive: within("users"),
                                     },
                                 ]),
                       ],
@@ -211,169 +190,140 @@ export function AppSidebar({
                   ...(resolvedCanAdmin
                       ? [
                             {
-                                label: dictionary.sidebar.configuration,
+                                label: t.configuration,
+                                id: "onboarding-sidebar-configuration",
                                 items: [
                                     {
-                                        title: dictionary.sidebar.members,
-                                        url: `${base}/members`,
+                                        title: t.members,
+                                        url: `${base}/users`,
                                         icon: UserCog,
+                                        isActive: within("users"),
+                                        // Listed under Members while that part is open.
                                         items: [
                                             {
-                                                title: dictionary.sidebar.users,
-                                                url: `${base}/users`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .memberships,
-                                                url: `${base}/memberships`,
-                                            },
-                                            {
-                                                title: dictionary.sidebar
-                                                    .groups,
+                                                title: t.groups,
                                                 url: `${base}/groups`,
+                                                isActive: within("groups"),
                                             },
                                         ],
                                     },
                                     {
-                                        title: dictionary.sidebar.teams,
+                                        title: t.teams,
                                         url: `${base}/teams`,
                                         icon: Swords,
+                                        isActive: within("teams"),
                                     },
                                     {
-                                        title: dictionary.sidebar.tickets,
+                                        title: t.tickets,
                                         url: `${base}/tickets`,
-                                        icon: ListTodo,
+                                        icon: Ticket,
+                                        isActive: within("tickets"),
                                     },
                                     {
-                                        title: dictionary.sidebar
-                                            .serverSettings,
+                                        title: t.settings,
                                         url: `${base}/settings`,
                                         icon: Settings,
-                                    },
-                                    {
-                                        title: dictionary.sidebar.system,
-                                        url: `${base}/system`,
-                                        icon: ServerCog,
+                                        // Presets open from Settings > Presets.
+                                        isActive:
+                                            within("settings") ||
+                                            within("system") ||
+                                            within("topic-presets") ||
+                                            within("squad-presets"),
+                                        badge: {
+                                            count: settingsAttention,
+                                            label: t.settingsAttention.replace(
+                                                "{count}",
+                                                String(settingsAttention)
+                                            ),
+                                        },
                                     },
                                 ],
                             },
                         ]
                       : []),
               ]
-            : []),
-        ...(isSuperadmin
-            ? [
-                  {
-                      label: dictionary.sidebar.bot,
-                      items: [
-                          {
-                              title: dictionary.sidebar.competitions,
-                              url: `/${locale}/dashboard/competitions${superadminWorkspaceQuery}`,
-                              icon: Trophy,
-                          },
-                          {
-                              title: dictionary.sidebar.bot,
-                              url: `/${locale}/dashboard/bot${superadminWorkspaceQuery}`,
-                              icon: Bot,
-                          },
-                          {
-                              title: dictionary.sidebar.platformSettings,
-                              url: `/${locale}/dashboard/platform-settings${superadminWorkspaceQuery}`,
-                              icon: Settings,
-                          },
-                      ],
-                  },
-              ]
-            : []),
-        {
-            label: dictionary.sidebar.logiComms,
-            items: [
-                {
-                    title: dictionary.sidebar.logiComms,
-                    url: `/${locale}/dashboard/logicomms${superadminWorkspaceQuery}`,
-                    icon: Radio,
-                },
-            ],
-        },
-    ]
+            : []
+
+    // Global administration has its own sidebar (AdminSidebar); this entry
+    // leads there and is shown to Logi's administrators only.
+    const footerItems: NavItem[] = isSuperadmin
+        ? [
+              {
+                  title: t.globalAdmin,
+                  url: globalAdminHref(
+                      locale,
+                      "teams",
+                      superadminWorkspaceQuery
+                  ),
+                  icon: Globe,
+                  isActive: isGlobalAdminPath(pathname),
+                  note: t.adminNav.adminsOnly,
+              },
+          ]
+        : []
+
+    if (adminSection)
+        return (
+            <AdminSidebar
+                locale={locale}
+                dictionary={dictionary}
+                user={user}
+                servers={servers}
+                activeSection={adminSection}
+                workspaceId={selectedWorkspaceId ?? activeServerId}
+                {...props}
+            />
+        )
 
     return (
         <Sidebar id="onboarding-sidebar" {...props}>
-            <SidebarHeader className="border-sidebar-border/70 gap-2 border-b px-2 py-2 2xl:gap-4 2xl:px-3 2xl:py-4">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            size="lg"
-                            asChild
-                            isActive={pathname === `/${locale}/dashboard`}
-                            className="h-10 gap-2 p-1.5 text-[13px] 2xl:h-12 2xl:p-2 2xl:text-sm"
-                        >
-                            <Link
-                                href={`/${locale}/dashboard${superadminWorkspaceQuery}`}
-                            >
-                                <AppLogo />
-                                <div className="grid flex-1 text-left text-[13px] leading-tight 2xl:text-sm">
-                                    <span className="truncate font-semibold">
-                                        {dictionary.app.name}
-                                    </span>
-                                    <span className="text-muted-foreground truncate text-[10px] 2xl:text-xs">
-                                        {dictionary.app.tagline}
-                                    </span>
-                                </div>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+            <SidebarHeader className="p-2 pb-0">
                 <ServerSwitcher
                     locale={locale}
                     servers={servers}
                     activeServerId={resolvedServerId}
+                    enabledGames={resolvedServer?.enabledGames}
                     labels={{
                         selectWorkspace: dictionary.workspace.selectWorkspace,
-                        activeWorkspace: dictionary.workspace.activeWorkspace,
                         noWorkspaceSelected:
                             dictionary.workspace.noWorkspaceSelected,
                         searchWorkspace: dictionary.workspace.searchWorkspace,
                         noMatchingResults: dictionary.shared.noMatchingResults,
                         missingWorkspaceHelp:
                             dictionary.workspace.missingWorkspaceHelp,
+                        showAllResults: dictionary.workspace.showAllResults,
+                        allClans: dictionary.workspace.allClans,
+                        allGames: dictionary.workspace.allGames,
+                        gameHeading: dictionary.workspace.gameHeading,
+                        clanHeading: dictionary.workspace.clanHeading,
                     }}
                 />
-                {resolvedServerId ? (
-                    <GameSwitcher
-                        enabledGames={resolvedServer?.enabledGames}
+            </SidebarHeader>
+            <SidebarContent
+                role="navigation"
+                aria-label={dictionary.appStates.mainNavigation}
+                // The account follows the menu directly, as in the design.
+                className="flex-initial gap-0"
+            >
+                {navGroups.map((group) => (
+                    <div key={group.label} id={group.id}>
+                        <NavMain label={group.label} items={group.items} />
+                    </div>
+                ))}
+            </SidebarContent>
+            <SidebarFooter id="onboarding-account-menu" className="p-2 pt-0">
+                <div className="border-sidebar-border flex flex-col gap-0.5 border-t pt-2">
+                    {footerItems.length ? (
+                        <SidebarMenu className="gap-0.5">
+                            <NavMenuItems items={footerItems} />
+                        </SidebarMenu>
+                    ) : null}
+                    <NavUser
+                        user={{ name: user.name, avatar: user.avatar }}
+                        locale={locale}
                         dictionary={dictionary}
                     />
-                ) : null}
-            </SidebarHeader>
-            <SidebarContent>
-                {navGroups.map((group) => {
-                    const onboardingId =
-                        group.label === dictionary.sidebar.operations
-                            ? "onboarding-sidebar-operations"
-                            : group.label === dictionary.sidebar.configuration
-                              ? "onboarding-sidebar-configuration"
-                              : undefined
-                    return (
-                        <div key={group.label} id={onboardingId}>
-                            <NavMain label={group.label} items={group.items} />
-                        </div>
-                    )
-                })}
-            </SidebarContent>
-            <SidebarFooter
-                id="onboarding-account-menu"
-                className="border-sidebar-border/70 border-t p-1.5 2xl:p-2"
-            >
-                <NavUser
-                    user={{
-                        name: user.name,
-                        email: `${getPrimaryDisplayedScore(user)} ${dictionary.navUser.scoreSuffix}`,
-                        avatar: user.avatar,
-                    }}
-                    locale={locale}
-                    dictionary={dictionary}
-                />
+                </div>
             </SidebarFooter>
         </Sidebar>
     )

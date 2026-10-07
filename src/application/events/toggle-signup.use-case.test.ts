@@ -428,3 +428,114 @@ test("ToggleSignupUseCase keeps existing signup on repeated clicks", async () =>
     assert.equal(result.removed, false)
     assert.deepEqual(result.signUps, [{ userId: "user-1", group: "INF" }])
 })
+
+test("ToggleSignupUseCase gives a reserve place when the capped group is full", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "event-1",
+                {
+                    id: "event-1",
+                    guildId: "guild-1",
+                    name: "Evening match",
+                    kind: "match" as const,
+                    registrationEnd: "2026-01-01T12:00:00.000Z",
+                    meetingStart: "2026-01-01T13:00:00.000Z",
+                    gameEnd: "2026-01-01T15:00:00.000Z",
+                    status: "registration" as const,
+                    signupGroupLimits: [{ groupId: "g-tanks", max: 1 }],
+                    participants: [
+                        {
+                            userId: "user-0",
+                            status: "attending" as const,
+                            group: "Tanks",
+                            updatedAt: "2026-01-01T08:00:00.000Z",
+                        },
+                    ],
+                    signUps: [],
+                    absenceNotices: [],
+                },
+            ],
+        ]),
+        new Map([
+            ["guild-1:user-1", { type: "member", status: "active" }],
+            ["guild-1:user-0", { type: "member", status: "active" }],
+        ]),
+        new Map([["g-tanks", "Tanks"]])
+    )
+    const useCase = new ToggleSignupUseCase(
+        events,
+        new NoopEventWorkflowSyncPort(),
+        new FakeClock(new Date("2026-01-01T09:00:00.000Z"))
+    )
+
+    const full = await useCase.execute({
+        eventId: "event-1",
+        userId: "user-1",
+        group: "Tanks",
+    })
+    assert.equal(full.fullGroup, "Tanks")
+    assert.equal(full.appliedSignupLabel, SIGNUP_GENERAL)
+    const reserve = events.events
+        .get("event-1")
+        ?.participants?.find((entry) => entry.userId === "user-1")
+    assert.equal(reserve?.group, null)
+    // The list of sign-ups shows "Zálohy · původně Tanks" (board L1-77).
+    assert.equal(reserve?.requestedGroup, "Tanks")
+
+    // The player who holds the place keeps it.
+    const kept = await useCase.execute({
+        eventId: "event-1",
+        userId: "user-0",
+        group: "Tanks",
+    })
+    assert.equal(kept.fullGroup, undefined)
+    assert.equal(kept.appliedSignupLabel, "Tanks")
+})
+
+test("a reserve who later picks a free group no longer reads as a reserve", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "event-1",
+                {
+                    id: "event-1",
+                    guildId: "guild-1",
+                    name: "Evening match",
+                    kind: "match" as const,
+                    registrationEnd: "2026-01-01T12:00:00.000Z",
+                    meetingStart: "2026-01-01T13:00:00.000Z",
+                    gameEnd: "2026-01-01T15:00:00.000Z",
+                    status: "registration" as const,
+                    signupGroupLimits: [{ groupId: "g-tanks", max: 1 }],
+                    participants: [
+                        {
+                            userId: "user-1",
+                            status: "attending" as const,
+                            group: null,
+                            requestedGroup: "Tanks",
+                            updatedAt: "2026-01-01T08:00:00.000Z",
+                        },
+                    ],
+                    signUps: [],
+                    absenceNotices: [],
+                },
+            ],
+        ]),
+        new Map([["guild-1:user-1", { type: "member", status: "active" }]]),
+        new Map([
+            ["g-tanks", "Tanks"],
+            ["g-inf", "Infantry"],
+        ])
+    )
+    await new ToggleSignupUseCase(
+        events,
+        new NoopEventWorkflowSyncPort(),
+        new FakeClock(new Date("2026-01-01T09:00:00.000Z"))
+    ).execute({ eventId: "event-1", userId: "user-1", group: "Infantry" })
+    const participant = events.events
+        .get("event-1")
+        ?.participants?.find((entry) => entry.userId === "user-1")
+    assert.equal(participant?.group, "Infantry")
+    assert.equal(participant && "requestedGroup" in participant, false)
+})

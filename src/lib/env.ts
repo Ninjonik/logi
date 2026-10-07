@@ -60,6 +60,15 @@ export function getInternalAuthSecret() {
     return process.env.INTERNAL_AUTH_SECRET ?? getJwtSecret()
 }
 
+/**
+ * Operator keyring for encrypted game-server keys (`{"current":..,"keys":{..}}`).
+ * Server-only, set identically in the Convex deployment, never `NEXT_PUBLIC_*`
+ * and never derived from another secret. Unset means encryption is not active.
+ */
+export function getCredentialKeyring() {
+    return process.env.LOGI_CREDENTIAL_KEYRING
+}
+
 export function getSsoProviderEnvironment() {
     if (process.env.LOGI_SSO_ENABLED !== "true")
         throw new Error("Provider unavailable.")

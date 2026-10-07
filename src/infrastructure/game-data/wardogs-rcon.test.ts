@@ -1,4 +1,4 @@
-import { parseSources } from "../../domain/game-data/policy"
+import { parseSources } from "../../domain/game-data/policy.schema"
 import { wardogsRconProvider } from "./wardogs-rcon"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"

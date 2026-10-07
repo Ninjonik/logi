@@ -1,11 +1,9 @@
 import { mutation, query } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -228,9 +226,11 @@ export const upsertMatches = mutation({
 
 export const listForUser = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const docs = await ctx.db
             .query("playerStats")
             .withIndex("userId", (q) => q.eq("userId", args.userId))
@@ -242,9 +242,11 @@ export const listForUser = query({
 
 export const listUserIdsForEvents = query({
     args: {
+        secret: v.string(),
         eventIds: v.array(v.string()),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const eventIdSet = new Set(args.eventIds)
         const docs = await ctx.db.query("playerStats").collect()
         const userIds = new Set<string>()

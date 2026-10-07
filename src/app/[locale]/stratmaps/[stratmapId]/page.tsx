@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, stratmapId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const stratmap = await getPublicStratmapDetail(stratmapId)
+    const stratmap = await getPublicStratmapDetail(stratmapId).catch(() => null)
 
     if (!stratmap) {
         return {
-            title: `${dictionary.stratmaps.title} | ${dictionary.app.name}`,
+            title: dictionary.stratmaps.title,
             description: dictionary.stratmaps.pageDescription,
             robots: { index: false, follow: false },
         }
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 )?.label ?? stratmap.strongpointId)
               : undefined
 
-    const title = `${stratmap.title} · ${mapName} | ${dictionary.app.name}`
+    const title = `${stratmap.title} · ${mapName}`
     const descriptionParts = [
         stratmap.description,
         mapName,
@@ -87,7 +87,7 @@ export default async function PublicStratmapPage({ params }: Props) {
     const { locale, stratmapId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
-    const stratmap = await getPublicStratmapDetail(stratmapId)
+    const stratmap = await getPublicStratmapDetail(stratmapId).catch(() => null)
 
     if (!stratmap) {
         notFound()
@@ -97,7 +97,6 @@ export default async function PublicStratmapPage({ params }: Props) {
         <main className="bg-background h-dvh w-dvw overflow-hidden">
             <StratmapEditor
                 locale={safeLocale}
-                userId="public"
                 stratmapId={stratmapId}
                 initialCanAdmin={false}
                 initialStratmap={stratmap}

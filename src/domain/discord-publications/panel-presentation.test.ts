@@ -8,18 +8,20 @@ import {
     isPanelFactionEmojiDraft,
     isPanelFactionGame,
     panelAccentColor,
-    panelPresentationFromDraft,
     panelFactionIcons,
     panelFactionOf,
-    panelPresentationInputSchema,
-    panelPresentationSchema,
     resolvePanelPresentation,
 } from "./panel-presentation"
 import {
+    panelPresentationFromDraft,
+    panelPresentationInputSchema,
+    panelPresentationSchema,
+} from "./panel-presentation.schema"
+import {
     publicPanelSaveResultSchema,
-    publicPanelSettingsInput,
     publicPanelSettingsSchema,
-} from "./settings"
+} from "./settings.schema"
+import { publicPanelSettingsInput } from "./settings"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -255,4 +257,40 @@ test("dashboard drafts normalize visible factions and block invalid fields", () 
     assert.equal(isPanelAccentColorDraft("red"), false)
     assert.equal(isPanelFactionEmojiDraft(undefined), true)
     assert.equal(isPanelFactionEmojiDraft("<:x:1>"), false)
+})
+
+test("a panel's own style is optional, validated and kept through the save input", () => {
+    assert.equal("style" in panelPresentationSchema.parse({}), false)
+    assert.equal(panelPresentationInputSchema.parse({ style: "b" }).style, "b")
+    assert.equal(
+        panelPresentationInputSchema.parse({ style: null }).style,
+        null
+    )
+    assert.equal(
+        panelPresentationInputSchema.safeParse({ style: "d" }).success,
+        false
+    )
+    const settings = publicPanelSettingsSchema.parse({
+        ...legacy,
+        presentation: { style: "c" },
+    })
+    assert.equal(publicPanelSettingsInput(settings).presentation?.style, "c")
+    const plain = publicPanelSettingsInput(
+        publicPanelSettingsSchema.parse({ ...legacy, presentation: {} })
+    )
+    assert.equal("style" in (plain.presentation ?? {}), false)
+    const draft = {
+        layout: DEFAULT_PANEL_LAYOUT,
+        accentColor: null,
+        bannerAssetId: null,
+        factionEmoji: {},
+    }
+    assert.equal(
+        panelPresentationFromDraft({ ...draft, style: "a" }, [])?.style,
+        "a"
+    )
+    assert.equal(
+        "style" in (panelPresentationFromDraft(draft, []) ?? {}),
+        false
+    )
 })

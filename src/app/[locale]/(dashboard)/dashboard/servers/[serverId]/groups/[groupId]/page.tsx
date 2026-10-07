@@ -1,7 +1,8 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
+import { ManagersOnlyState } from "@/components/app/managers-only-state"
 import { PageHeader } from "@/components/app/page-header"
-import { getGroupMetadata } from "@/lib/server-metadata"
 import { GroupForm } from "@/components/app/group-form"
 import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
@@ -9,7 +10,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Group | Logi",
+    title: "Group",
     description: "Manage a server group.",
 }
 
@@ -25,10 +26,25 @@ export default async function GroupDetailPage({
     const { locale, serverId, groupId } = await params
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const context = await getServerContext(serverId)
-    if (!context?.canAdmin) return null
+    if (!context) notFound()
+    if (!context.canAdmin)
+        return (
+            <ManagersOnlyState
+                dictionary={dictionary}
+                overviewHref={`/${locale}/dashboard/servers/${serverId}`}
+            />
+        )
 
     const group = (context.groups ?? []).find((item) => item.id === groupId)
-    if (!group) return null
+    if (!group) notFound()
+    const usage = {
+        primary: context.assignments.filter(
+            (assignment) => assignment.primaryGroupId === group.id
+        ).length,
+        secondary: context.assignments.filter((assignment) =>
+            (assignment.secondaryGroupIds ?? []).includes(group.id)
+        ).length,
+    }
 
     return (
         <>
@@ -48,6 +64,7 @@ export default async function GroupDetailPage({
                     group={group}
                     gameId={group.gameId}
                     availableGroups={context.groups ?? []}
+                    usage={usage}
                 />
             </div>
         </>

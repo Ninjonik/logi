@@ -1,88 +1,36 @@
 import {
-    projectMembership,
+    assertMembershipSecret,
+    authorizeMembership,
+    ensureMembershipGuild,
+    memberObservation,
+    membershipGuild,
+    membershipPolicy,
+} from "./membershipAccess"
+import {
+    observationChanged,
     type ProviderObservation,
 } from "../src/domain/membership/observation"
-import {
-    allowsApiKeyRead,
-    isApiKeyReadAccess,
-} from "../src/domain/api/key-access"
 import {
     appendIntegrationChange,
     integrationRecord,
 } from "./integrationChangeLog"
+import { projectMembership } from "../src/domain/membership/observation.schema"
 import { nextRevision, revisionOrder } from "../src/domain/integrations/change"
-import { isGameId, GAME_IDS, type GameId } from "../src/domain/games/game"
+import { GAME_IDS, type GameId } from "../src/domain/games/game"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { readMembershipAssignment } from "./membershipSubject"
 import type { Doc } from "./_generated/dataModel"
 
-export function assertMembershipSecret(secret: string) {
-    if (
-        !process.env.INTERNAL_AUTH_SECRET ||
-        secret !== process.env.INTERNAL_AUTH_SECRET
-    )
-        throw new Error("Unauthorized.")
-}
-export const membershipGuild = (ctx: Pick<QueryCtx, "db">, guildId: string) =>
-    ctx.db
-        .query("membershipGuilds")
-        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-        .unique()
-export const memberObservation = (
-    ctx: Pick<QueryCtx, "db">,
-    guildId: string,
-    discordUserId: string
-) =>
-    ctx.db
-        .query("memberObservations")
-        .withIndex("guildId_discordUserId", (q) =>
-            q.eq("guildId", guildId).eq("discordUserId", discordUserId)
-        )
-        .unique()
-export async function ensureMembershipGuild(ctx: MutationCtx, guildId: string) {
-    const existing = await membershipGuild(ctx, guildId)
-    if (existing) return existing
-    const id = await ctx.db.insert("membershipGuilds", {
-        guildId,
-        epoch: "1",
-        revision: "0",
-        epochRevision: "0",
-        refreshWindowAt: 0,
-        refreshCount: 0,
-    })
-    return (await ctx.db.get(id))!
-}
-export async function membershipPolicy(
-    ctx: Pick<QueryCtx, "db">,
-    key: Doc<"apiKeys">,
-    gameId: string
-) {
-    if (
-        key.revokedAt ||
-        !isGameId(gameId) ||
-        !isApiKeyReadAccess(key.readAccess) ||
-        !allowsApiKeyRead(key.readAccess, "membership-summaries", gameId)
-    )
-        return null
-    const policy = await ctx.db
-        .query("membershipIntegrationPolicies")
-        .withIndex("apiKeyId", (q) => q.eq("apiKeyId", key._id))
-        .unique()
-    const game = policy?.games.find((game) => game.gameId === gameId)
-    if (!policy?.enabled || policy.guildId !== key.guildId || !game) return null
-    return { policy, roleIds: game.roleIds }
-}
-export async function authorizeMembership(
-    ctx: Pick<QueryCtx, "db">,
-    args: { keyHash: string; guildId: string; gameId: string }
-) {
-    const key = await ctx.db
-        .query("apiKeys")
-        .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-        .unique()
-    if (!key || key.guildId !== args.guildId) return null
-    const grant = await membershipPolicy(ctx, key, args.gameId)
-    return grant ? { key, ...grant } : null
+// The secret check, guild/observation lookups and the key policy live in
+// `membershipAccess.ts` (free of Zod); they stay exported from here for
+// existing importers. The projections below validate and keep the schema.
+export {
+    assertMembershipSecret,
+    authorizeMembership,
+    ensureMembershipGuild,
+    memberObservation,
+    membershipGuild,
+    membershipPolicy,
 }
 
 export async function readMembershipRecord(
@@ -137,20 +85,43 @@ export async function storeMemberObservation(
 ) {
     const guild = await ensureMembershipGuild(ctx, guildId),
         previous = await memberObservation(ctx, guildId, discordUserId)
-    const revision = nextRevision(guild.revision)
-    const patch = {
-        state: value.state,
-        roleIds:
+    const roleIds =
             value.state === "present" ? [...new Set(value.roleIds)].sort() : [],
+        unavailable = value.state === "unknown"
+    const evidence = {
         observedAt: value.observedAt,
         receivedAt: new Date().toISOString(),
-        epoch: guild.epoch,
-        revision,
-        unavailable: value.state === "unknown",
-        refreshFence: previous?.refreshFence ?? 0,
         refreshUntil: 0,
         nextRefreshAt: 0,
         seenRunId,
+    }
+    if (
+        previous &&
+        !observationChanged(previous, {
+            state: value.state,
+            roleIds,
+            epoch: guild.epoch,
+            unavailable,
+        })
+    ) {
+        // Same state, roles and epoch: newer evidence only. The guild
+        // revision, the subject's revision and the change feed stay as they
+        // are; a reconciliation of an unchanged clan writes nothing else.
+        // A member who is still absent or still unknown gains no evidence
+        // from being seen absent again, so nothing is written at all.
+        if (value.state === "present")
+            await ctx.db.patch(previous._id, evidence)
+        return
+    }
+    const revision = nextRevision(guild.revision)
+    const patch = {
+        state: value.state,
+        roleIds,
+        ...evidence,
+        epoch: guild.epoch,
+        revision,
+        unavailable,
+        refreshFence: previous?.refreshFence ?? 0,
         departureRevision:
             value.state === "left" ? revision : previous?.departureRevision,
     }

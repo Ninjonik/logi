@@ -56,18 +56,21 @@ import { formatDateTime, formatTime } from "@/lib/format"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Badge } from "@/components/ui/badge"
 
-const TYPE_LABELS: Array<{ key: string; label: string }> = [
-    { key: "infantry", label: "Infantry" },
-    { key: "machine_gun", label: "Machine Gun" },
-    { key: "artillery", label: "Artillery" },
-    { key: "armor", label: "Armor" },
-    { key: "sniper", label: "Sniper" },
-    { key: "commander", label: "Commander" },
-    { key: "grenade", label: "Grenade" },
-    { key: "bazooka", label: "Bazooka" },
-    { key: "satchel", label: "Satchel" },
-    { key: "mine", label: "Mine" },
-]
+const KILL_TYPES = [
+    "infantry",
+    "machine_gun",
+    "artillery",
+    "armor",
+    "sniper",
+    "commander",
+    "grenade",
+    "bazooka",
+    "satchel",
+    "mine",
+] as const
+
+/** Server and browser must format dates alike, or hydration fails. */
+const FALLBACK_TIMEZONE = "UTC"
 
 type MatchPlayer = MatchRecord["raw"]["player_stats"][number]
 
@@ -267,15 +270,19 @@ function renderTooltipContent({
 function buildBreakdownTotals(
     players: MatchPlayer[],
     teamSeries: TeamSeries[],
-    key: "kills_by_type" | "deaths_by_type"
+    key: "kills_by_type" | "deaths_by_type",
+    dictionary: Dictionary
 ) {
     const base = new Map<
         string,
         { label: string; total: number } & Record<string, number | string>
     >(
-        TYPE_LABELS.map(({ key: typeKey, label }) => [
+        KILL_TYPES.map((typeKey) => [
             typeKey,
-            { label, total: 0 },
+            {
+                label: dictionary.matchDetail.stats.killTypes[typeKey],
+                total: 0,
+            },
         ])
     )
     const teamKeys = new Set(teamSeries.map((team) => team.key))
@@ -284,7 +291,7 @@ function buildBreakdownTotals(
         const target = normalizeTeamValue(player.team.side)
         if (!teamKeys.has(target)) continue
 
-        for (const { key: typeKey } of TYPE_LABELS) {
+        for (const typeKey of KILL_TYPES) {
             const value = player[key]?.[typeKey] ?? 0
             const current = base.get(typeKey)
             if (!current) {
@@ -381,42 +388,43 @@ function hasMatchingWeapon(record: Record<string, number>, pattern: RegExp) {
     )
 }
 
-function buildPlayerBadges(player: MatchPlayer) {
+function buildPlayerBadges(player: MatchPlayer, dictionary: Dictionary) {
+    const t = dictionary.matchDetail.stats.badges
     const badges: PlayerBadge[] = []
 
     if (hasMatchingWeapon(player.weapons, /knife|spade|trench/i)) {
         badges.push({
-            label: "Blade",
+            label: t.blade,
             tone: "default",
-            description: "Killed someone with a melee weapon.",
+            description: t.bladeDescription,
         })
     }
     if (hasMatchingWeapon(player.weapons, /mine/i)) {
         badges.push({
-            label: "Miner",
+            label: t.miner,
             tone: "default",
-            description: "Killed someone with a mine.",
+            description: t.minerDescription,
         })
     }
     if ((player.kills_by_type?.artillery ?? 0) >= 3) {
         badges.push({
-            label: "Artillery",
+            label: t.artillery,
             tone: "secondary",
-            description: "Got at least 3 artillery kills.",
+            description: t.artilleryDescription,
         })
     }
     if (player.kills_streak >= 8) {
         badges.push({
-            label: "Streak",
+            label: t.streak,
             tone: "default",
-            description: "Reached a kill streak of 8 or more.",
+            description: t.streakDescription,
         })
     }
     if (player.teamkills >= 3) {
         badges.push({
-            label: "Friendly Fire",
+            label: t.friendlyFire,
             tone: "destructive",
-            description: "Teamkilled at least 3 times.",
+            description: t.friendlyFireDescription,
         })
     }
     if (
@@ -425,16 +433,16 @@ function buildPlayerBadges(player: MatchPlayer) {
         )[0] ?? 0) >= 5
     ) {
         badges.push({
-            label: "Nemesis",
+            label: t.nemesis,
             tone: "outline",
-            description: "Was killed at least 5 times by the same opponent.",
+            description: t.nemesisDescription,
         })
     }
     if (player.kills >= 25 && player.deaths <= 10) {
         badges.push({
-            label: "Carry",
+            label: t.carry,
             tone: "default",
-            description: "Finished with 25+ kills and 10 or fewer deaths.",
+            description: t.carryDescription,
         })
     }
 
@@ -481,7 +489,8 @@ function buildRivalries(players: MatchPlayer[]) {
         .slice(0, 8)
 }
 
-function buildAwards(players: MatchPlayer[]) {
+function buildAwards(players: MatchPlayer[], dictionary: Dictionary) {
+    const t = dictionary.matchDetail.stats.awards
     if (players.length === 0) {
         return [] as AwardRow[]
     }
@@ -509,43 +518,61 @@ function buildAwards(players: MatchPlayer[]) {
 
     return [
         {
-            label: "Top Fragger",
+            label: t.topFragger,
             player: topKills.player,
-            detail: `${topKills.kills} kills`,
+            detail: t.topFraggerDetail.replace(
+                "{count}",
+                String(topKills.kills)
+            ),
             icon: Swords,
         },
         {
-            label: "Anchor",
+            label: t.anchor,
             player: topDefense.player,
-            detail: `${topDefense.defense} defense`,
+            detail: t.anchorDetail.replace(
+                "{count}",
+                String(topDefense.defense)
+            ),
             icon: ShieldAlert,
         },
         {
-            label: "Support Spine",
+            label: t.supportSpine,
             player: topSupport.player,
-            detail: `${topSupport.support} support`,
+            detail: t.supportSpineDetail.replace(
+                "{count}",
+                String(topSupport.support)
+            ),
             icon: Target,
         },
         ...(bestKd
             ? [
                   {
-                      label: "Cleanest K/D",
+                      label: t.cleanestKd,
                       player: bestKd.player,
-                      detail: `${bestKd.kill_death_ratio.toFixed(2)} K/D`,
+                      detail: t.cleanestKdDetail.replace(
+                          "{value}",
+                          bestKd.kill_death_ratio.toFixed(2)
+                      ),
                       icon: TrendingUp,
                   },
               ]
             : []),
         {
-            label: "Under Fire",
+            label: t.underFire,
             player: roughDay.player,
-            detail: `${roughDay.deaths} deaths`,
+            detail: t.underFireDetail.replace(
+                "{count}",
+                String(roughDay.deaths)
+            ),
             icon: TrendingDown,
         },
         {
-            label: "Hot Streak",
+            label: t.hotStreak,
             player: streak.player,
-            detail: `${streak.kills_streak} streak`,
+            detail: t.hotStreakDetail.replace(
+                "{count}",
+                String(streak.kills_streak)
+            ),
             icon: Bomb,
         },
     ]
@@ -613,6 +640,8 @@ export function MatchDetails({
         }
     }, [match.eventId])
 
+    const stats = dictionary.matchDetail.stats
+    const timeZone = timezone ?? FALLBACK_TIMEZONE
     const chartStyles = getChartStyles()
     const players = useMemo(
         () =>
@@ -632,12 +661,24 @@ export function MatchDetails({
         [teamSeries]
     )
     const killTypeData = useMemo(
-        () => buildBreakdownTotals(players, teamSeries, "kills_by_type"),
-        [players, teamSeries]
+        () =>
+            buildBreakdownTotals(
+                players,
+                teamSeries,
+                "kills_by_type",
+                dictionary
+            ),
+        [dictionary, players, teamSeries]
     )
     const deathTypeData = useMemo(
-        () => buildBreakdownTotals(players, teamSeries, "deaths_by_type"),
-        [players, teamSeries]
+        () =>
+            buildBreakdownTotals(
+                players,
+                teamSeries,
+                "deaths_by_type",
+                dictionary
+            ),
+        [dictionary, players, teamSeries]
     )
     const weaponData = useMemo(
         () => buildWeaponTotals(players, teamSeries, "weapons"),
@@ -648,7 +689,10 @@ export function MatchDetails({
         [players, teamSeries]
     )
     const rivalryData = useMemo(() => buildRivalries(players), [players])
-    const awards = useMemo(() => buildAwards(players), [players])
+    const awards = useMemo(
+        () => buildAwards(players, dictionary),
+        [dictionary, players]
+    )
     const scatterData = useMemo(
         () =>
             players.map((player) => ({
@@ -717,7 +761,7 @@ export function MatchDetails({
                             {dictionary.event.importedAt}
                         </CardDescription>
                         <CardTitle className="text-base">
-                            {formatDateTime(match.importedAt, timezone)}
+                            {formatDateTime(match.importedAt, timeZone)}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -764,7 +808,7 @@ export function MatchDetails({
                                         <XAxis
                                             type="number"
                                             dataKey="deaths"
-                                            name="Deaths"
+                                            name={stats.deaths}
                                             tick={{
                                                 fill: chartStyles.axis,
                                                 fontSize: 12,
@@ -779,7 +823,7 @@ export function MatchDetails({
                                         <YAxis
                                             type="number"
                                             dataKey="kills"
-                                            name="Kills"
+                                            name={stats.kills}
                                             tick={{
                                                 fill: chartStyles.axis,
                                                 fontSize: 12,
@@ -864,7 +908,7 @@ export function MatchDetails({
                                         />
                                         <Bar
                                             dataKey="total"
-                                            name="Total"
+                                            name={stats.total}
                                             fill="var(--chart-2)"
                                             activeBar={false}
                                             radius={[0, 6, 6, 0]}
@@ -926,14 +970,24 @@ export function MatchDetails({
                                     >
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="font-medium">
-                                                {rivalry.left} vs{" "}
-                                                {rivalry.right}
+                                                {stats.versus
+                                                    .replace(
+                                                        "{left}",
+                                                        rivalry.left
+                                                    )
+                                                    .replace(
+                                                        "{right}",
+                                                        rivalry.right
+                                                    )}
                                             </div>
                                             <Badge
                                                 variant="secondary"
                                                 className="rounded-full px-3"
                                             >
-                                                {rivalry.total} duels
+                                                {stats.duels.replace(
+                                                    "{count}",
+                                                    String(rivalry.total)
+                                                )}
                                             </Badge>
                                         </div>
                                         <div className="text-muted-foreground mt-2 text-sm">
@@ -956,12 +1010,12 @@ export function MatchDetails({
                                     {dictionary.event.playedAt}
                                 </div>
                                 <div className="font-medium">
-                                    {formatDateTime(match.raw.start, timezone)}
+                                    {formatDateTime(match.raw.start, timeZone)}
                                 </div>
                             </div>
                             <div>
                                 <div className="text-muted-foreground">
-                                    Server
+                                    {stats.server}
                                 </div>
                                 <div className="font-medium">
                                     #{match.raw.server_number}
@@ -969,7 +1023,7 @@ export function MatchDetails({
                             </div>
                             <div>
                                 <div className="text-muted-foreground">
-                                    Match ID
+                                    {stats.matchId}
                                 </div>
                                 <div className="font-medium">
                                     {match.raw.id}
@@ -997,8 +1051,8 @@ export function MatchDetails({
                         <CardHeader>
                             <CardTitle>{dictionary.event.playersTab}</CardTitle>
                             <CardDescription>
-                                {formatTime(match.raw.start, timezone)} -{" "}
-                                {formatTime(match.raw.end, timezone)}
+                                {formatTime(match.raw.start, timeZone)} -{" "}
+                                {formatTime(match.raw.end, timeZone)}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -1007,19 +1061,39 @@ export function MatchDetails({
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>#</TableHead>
-                                            <TableHead>Team</TableHead>
-                                            <TableHead>Player</TableHead>
+                                            <TableHead>
+                                                {stats.columns.team}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.player}
+                                            </TableHead>
                                             <TableHead>
                                                 {dictionary.event.badges}
                                             </TableHead>
-                                            <TableHead>Lvl</TableHead>
-                                            <TableHead>Kills</TableHead>
-                                            <TableHead>K/D</TableHead>
-                                            <TableHead>Deaths</TableHead>
-                                            <TableHead>Off</TableHead>
-                                            <TableHead>Def</TableHead>
-                                            <TableHead>Sup</TableHead>
-                                            <TableHead>TK</TableHead>
+                                            <TableHead>
+                                                {stats.columns.level}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.kills}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.kd}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.deaths}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.offense}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.defense}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.support}
+                                            </TableHead>
+                                            <TableHead>
+                                                {stats.columns.teamkills}
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1030,8 +1104,10 @@ export function MatchDetails({
                                                         player.team.side
                                                     )
                                                 )
-                                            const badges =
-                                                buildPlayerBadges(player)
+                                            const badges = buildPlayerBadges(
+                                                player,
+                                                dictionary
+                                            )
 
                                             return (
                                                 <TableRow
@@ -1191,16 +1267,28 @@ export function MatchDetails({
                                                     </div>
                                                     <div className="text-muted-foreground flex items-center gap-4 text-sm">
                                                         <span>
-                                                            {player.kills} K
+                                                            {stats.killsShort.replace(
+                                                                "{count}",
+                                                                String(
+                                                                    player.kills
+                                                                )
+                                                            )}
                                                         </span>
                                                         <span>
-                                                            {player.deaths} D
+                                                            {stats.deathsShort.replace(
+                                                                "{count}",
+                                                                String(
+                                                                    player.deaths
+                                                                )
+                                                            )}
                                                         </span>
                                                         <span>
-                                                            {player.kill_death_ratio.toFixed(
-                                                                2
-                                                            )}{" "}
-                                                            K/D
+                                                            {stats.kdShort.replace(
+                                                                "{value}",
+                                                                player.kill_death_ratio.toFixed(
+                                                                    2
+                                                                )
+                                                            )}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1321,7 +1409,7 @@ export function MatchDetails({
                             title: dictionary.event.killsByTypeTab,
                             data: killTypeData,
                         },
-                        { title: "Deaths by type", data: deathTypeData },
+                        { title: stats.deathsByType, data: deathTypeData },
                     ].map((section) => (
                         <Card
                             key={section.title}

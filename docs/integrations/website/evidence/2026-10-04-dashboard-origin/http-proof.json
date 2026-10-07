@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-10-04T16:50:13.118Z",
+  "target": "http://127.0.0.1:32184/api/servers/origin-smoke/api-keys",
+  "credentials": "none",
+  "dataWrites": "none; invalid body rejected before session or persistence",
+  "results": [
+    {
+      "name": "public-origin",
+      "expected": 400,
+      "actual": 400,
+      "body": {
+        "error": "Enter a key name of up to 80 characters."
+      },
+      "pass": true
+    },
+    {
+      "name": "missing-origin",
+      "expected": 403,
+      "actual": 403,
+      "body": {
+        "error": "Forbidden."
+      },
+      "pass": true
+    },
+    {
+      "name": "opaque-origin",
+      "expected": 403,
+      "actual": 403,
+      "body": {
+        "error": "Forbidden."
+      },
+      "pass": true
+    },
+    {
+      "name": "internal-origin",
+      "expected": 403,
+      "actual": 403,
+      "body": {
+        "error": "Forbidden."
+      },
+      "pass": true
+    },
+    {
+      "name": "foreign-origin",
+      "expected": 403,
+      "actual": 403,
+      "body": {
+        "error": "Forbidden."
+      },
+      "pass": true
+    },
+    {
+      "name": "forged-forwarding",
+      "expected": 403,
+      "actual": 403,
+      "body": {
+        "error": "Forbidden."
+      },
+      "pass": true
+    }
+  ]
+}

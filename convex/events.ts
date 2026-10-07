@@ -3,6 +3,7 @@ import {
     handleAppendAttendanceReminderLog,
     handleConcludeEvent,
     handleFindNoticeTarget,
+    handleFindStartedNoticeEvent,
     handleReconcileStatuses,
     handleSetEventResult,
     handleToggleSignup,
@@ -19,8 +20,8 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ReconcileEventStatusesUseCase } from "../src/application/events/reconcile-event-statuses.use-case"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import { CompleteTrainingUseCase } from "../src/application/events/complete-training.use-case"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import {
     getGuildById,
     getGuildByDiscordId,
@@ -32,21 +33,22 @@ import { UpsertNoticeUseCase } from "../src/application/events/upsert-notice.use
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
+import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
+import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
 import { currentEventStatus } from "../src/domain/events/status"
+import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { recordImportedResult } from "./eventResultStore"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
-import type { MutationCtx } from "./_generated/server"
 import { resolveEventMatchTeams } from "./matchTeams"
+import { eventWriteFields } from "./eventValidators"
 import { matchTeamInput } from "./teamValidators"
 import type { Id } from "./_generated/dataModel"
 import { mutation } from "./integrationMutation"
+import { eventTeamSides } from "./competitions"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 
 const attendanceReminder = v.object({
     userId: v.string(),
@@ -164,11 +166,31 @@ export const upsert = mutation({
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
         // Directory team selections (identity, slot, side); snapshots are captured here.
         matchTeams: v.optional(v.array(matchTeamInput)),
+        // Template settings; omitted keeps the saved value on an update, [] clears.
+        signupGroupLimits: eventWriteFields.signupGroupLimits,
+        attendanceReminderHours: eventWriteFields.attendanceReminderHours,
+        createParticipantRoles: eventWriteFields.createParticipantRoles,
+        // null clears the roster's squad preset on an update.
+        squadPresetId: v.optional(v.union(v.id("squadPresets"), v.null())),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        if (args.squadPresetId) {
+            // A preset of another clan is never stored on this clan's event.
+            const [guild, preset] = await Promise.all([
+                getGuildById(ctx, String(args.serverId)),
+                ctx.db.get(args.squadPresetId),
+            ])
+            if (
+                !guild ||
+                !preset ||
+                preset.guildId !== getGuildDiscordId(guild)
+            )
+                throw new Error("Referenced squad preset was not found.")
+        }
         const eventId = await handleUpsertEvent({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 ...args,
                 serverId: String(args.serverId),
@@ -178,14 +200,19 @@ export const upsert = mutation({
                     : undefined,
                 stratmapIds: args.stratmapIds?.map((value) => String(value)),
                 allowedSignupStatuses: args.allowedSignupStatuses,
+                squadPresetId:
+                    args.squadPresetId === null
+                        ? ""
+                        : args.squadPresetId
+                          ? String(args.squadPresetId)
+                          : undefined,
             },
             getGuildById: async (serverId) => await getGuildById(ctx, serverId),
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
-            resolveMatchTeams: async ({ guildId, existing }) => {
+            resolveMatchTeams: async ({ existing }) => {
                 const resolved = await resolveEventMatchTeams(ctx, {
-                    guildId,
                     gameId: args.gameId ?? existing?.gameId,
                     kind: args.kind ?? existing?.kind,
                     status: existing ? currentEventStatus(existing) : undefined,
@@ -219,9 +246,11 @@ export const upsert = mutation({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const event = await ctx.db.get(args.eventId)
         return event
             ? { ...normalizeEventRecord(event), id: String(event._id) }
@@ -229,50 +258,92 @@ export const getById = query({
     },
 })
 
-export const findNoticeTarget = query({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        userId: v.string(),
-        query: v.string(),
-    },
-    handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
-            throw new Error("Unauthorized.")
-        const guild = await getGuildByDiscordId(ctx, args.guildId)
-        if (guild && getGuildDiscordId(guild) !== args.guildId) return []
-        const keys = new Set([
-            args.guildId,
-            ...(guild
-                ? [String(guild._id), ...(guild.id ? [guild.id] : [])]
-                : []),
-        ])
-        const events = (
-            await Promise.all(
-                [...keys].map((guildId) =>
-                    ctx.db
-                        .query("events")
-                        .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                        .collect()
-                )
+/** The server's events with their roster reserves, for `/notice`. */
+async function noticeCandidates(ctx: QueryCtx, discordGuildId: string) {
+    const guild = await getGuildByDiscordId(ctx, discordGuildId)
+    if (guild && getGuildDiscordId(guild) !== discordGuildId) return null
+    const keys = new Set([
+        discordGuildId,
+        ...(guild ? [String(guild._id), ...(guild.id ? [guild.id] : [])] : []),
+    ])
+    const events = (
+        await Promise.all(
+            [...keys].map((guildId) =>
+                ctx.db
+                    .query("events")
+                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
+                    .collect()
             )
-        ).flat()
-
-        const eventsWithReserves = await Promise.all(
-            events.map(async (event) => {
-                const roster = await ctx.db
-                    .query("rosters")
-                    .withIndex("eventId", (q) => q.eq("eventId", event._id))
-                    .unique()
-                return {
-                    ...event,
-                    reservePlayerIds: roster?.reservePlayerIds ?? [],
-                }
-            })
         )
+    ).flat()
+    const withReserves = await Promise.all(
+        events.map(async (event) => {
+            const roster = await ctx.db
+                .query("rosters")
+                .withIndex("eventId", (q) => q.eq("eventId", event._id))
+                .unique()
+            return {
+                ...event,
+                reservePlayerIds: roster?.reservePlayerIds ?? [],
+            }
+        })
+    )
+    return { guild, events, withReserves }
+}
 
-        return handleFindNoticeTarget({
+const noticeQueryArgs = {
+    secret: v.string(),
+    guildId: v.string(),
+    userId: v.string(),
+    query: v.string(),
+}
+
+export const findNoticeTarget = query({
+    args: noticeQueryArgs,
+    handler: async (ctx, args) => {
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
+        const candidates = await noticeCandidates(ctx, args.guildId)
+        if (!candidates) return []
+        const { guild, events, withReserves: eventsWithReserves } = candidates
+
+        const targets = handleFindNoticeTarget({
             events: eventsWithReserves,
+            userId: args.userId,
+            query: args.query.trim(),
+            now: new Date(),
+        })
+        // The match category ("Přátelák", "Liga") labels /notice's choices.
+        const byId = new Map(events.map((event) => [String(event._id), event]))
+        return targets.map((target) => {
+            const event = byId.get(target.id)
+            const categoryId =
+                event?.kind === "training"
+                    ? undefined
+                    : event?.matchType?.trim() || undefined
+            const label = categoryId
+                ? (guild?.eventCategories?.find(
+                      (category) => category.id === categoryId
+                  )?.label ?? categoryId)
+                : undefined
+            return label ? { ...target, categoryLabel: label } : target
+        })
+    },
+})
+
+/**
+ * `/notice` typed a signed-up event that already started (M3-19): its ID and
+ * name, so the bot answers "VLK vs ROG už začal" instead of "not signed up".
+ */
+export const findStartedNoticeEvent = query({
+    args: noticeQueryArgs,
+    handler: async (ctx, args) => {
+        if (args.secret !== internalAuthSecret())
+            throw new Error("Unauthorized.")
+        const candidates = await noticeCandidates(ctx, args.guildId)
+        if (!candidates) return null
+        return handleFindStartedNoticeEvent({
+            events: candidates.withReserves,
             userId: args.userId,
             query: args.query.trim(),
             now: new Date(),
@@ -290,7 +361,7 @@ export const toggleSignUp = mutation({
     handler: async (ctx, args) => {
         return await handleToggleSignup({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 eventId: String(args.eventId),
                 userId: args.userId,
@@ -316,7 +387,7 @@ export const reconcileStatuses = mutation({
     handler: async (ctx, args) => {
         return await handleReconcileStatuses({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 cursor: args.cursor ?? null,
                 limit: args.limit ?? 25,
@@ -343,7 +414,7 @@ export const applyEventScore = mutation({
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET) {
+        if (args.secret !== internalAuthSecret()) {
             throw new Error("Unauthorized.")
         }
 
@@ -368,7 +439,7 @@ export const conclude = mutation({
     handler: async (ctx, args) => {
         return await handleConcludeEvent({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             createUseCase: () =>
                 new ConcludeEventUseCase(
@@ -397,7 +468,7 @@ export const completeTraining = mutation({
         ),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET) {
+        if (args.secret !== internalAuthSecret()) {
             throw new Error("Unauthorized.")
         }
 
@@ -424,7 +495,7 @@ export const appendAttendanceReminderLog = mutation({
     handler: async (ctx, args) => {
         return await handleAppendAttendanceReminderLog({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             reminders: args.reminders,
             getEventById: async (eventId) =>
@@ -445,7 +516,7 @@ export const upsertNotice = mutation({
     handler: async (ctx, args) => {
         return await handleUpsertNotice({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             args: {
                 eventId: String(args.eventId),
                 userId: args.userId,
@@ -468,7 +539,7 @@ export const setDiscordEventRoles = mutation({
         reserveRoleId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
+        if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
         await ctx.db.patch(args.eventId, {
             attendeeRoleId: args.attendeeRoleId,
@@ -487,7 +558,7 @@ export const setResult = mutation({
     handler: async (ctx, args) => {
         const result = await handleSetEventResult({
             secret: args.secret,
-            expectedSecret: INTERNAL_AUTH_SECRET,
+            expectedSecret: internalAuthSecret(),
             eventId: String(args.eventId),
             eventResult: args.eventResult,
             getEventById: async (eventId) =>
@@ -496,14 +567,28 @@ export const setResult = mutation({
                 await ctx.db.patch(eventId as Id<"events">, patch),
         })
         const event = await ctx.db.get(args.eventId)
-        if (event?.competitionFixtureId) {
-            await ctx.db.patch(event.competitionFixtureId, {
-                scoreA: args.eventResult.score.sideA,
-                scoreB: args.eventResult.score.sideB,
+        const fixture = event?.competitionFixtureId
+            ? await ctx.db.get(event.competitionFixtureId)
+            : null
+        // The imported score is Axis/Allies; each fixture team gets the score
+        // of the side it played. Unknown sides leave the fixture for an admin.
+        const score =
+            event && fixture?.sideATeamId && fixture.sideBTeamId
+                ? fixtureScoreFromEvent({
+                      fixture: {
+                          sideATeamId: String(fixture.sideATeamId),
+                          sideBTeamId: String(fixture.sideBTeamId),
+                      },
+                      eventTeams: await eventTeamSides(ctx, event),
+                      score: args.eventResult.score,
+                  })
+                : null
+        if (fixture && score)
+            await ctx.db.patch(fixture._id, {
+                ...score,
                 status: "final",
                 updatedAt: new Date().toISOString(),
             })
-        }
         await recordImportedResult(ctx, args.eventId, args.eventResult)
         return result
     },

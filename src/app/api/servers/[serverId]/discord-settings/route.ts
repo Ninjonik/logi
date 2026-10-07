@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
 
 import { invalidPublicationDestination } from "@/domain/discord-publications/destinations"
-import { discordSettingsSchema } from "@/lib/validation/discord-settings"
+import { discordSettingsPatchSchema } from "@/lib/validation/discord-settings"
+import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { saveDiscordConfig } from "@/lib/server-discord-settings"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { fetchDiscordGuildChannels } from "@/lib/discord"
+import { readBoundedJson } from "@/lib/api/request-json"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
@@ -17,13 +19,15 @@ export async function POST(
     await handleIfNotLoggedIn(`/dashboard/servers/${serverId}/settings`)
 
     const serverContext = await getServerContext(serverId)
-    if (!serverContext?.canAdmin) {
+    if (!serverContext?.canAdmin || !isDashboardWriteOrigin(request)) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
     try {
-        const json = await request.json()
-        const parsed = discordSettingsSchema.safeParse(json)
+        // Settings pages send at most a few kilobytes; ticket and membership
+        // forms with every category stay far below this bound.
+        const json = await readBoundedJson(request, 256 * 1024)
+        const parsed = discordSettingsPatchSchema.safeParse(json)
 
         if (!parsed.success) {
             return NextResponse.json(
@@ -37,7 +41,14 @@ export async function POST(
         }
 
         const invalidChannel = invalidPublicationDestination(
-            parsed.data,
+            {
+                ...parsed.data,
+                announcementsChannelId:
+                    parsed.data.announcementsChannelId ?? undefined,
+                eventInfoChannelId: parsed.data.eventInfoChannelId ?? undefined,
+                errorsChannelId: parsed.data.errorsChannelId ?? undefined,
+                calendarChannelId: parsed.data.calendarChannelId ?? undefined,
+            },
             await fetchDiscordGuildChannels(serverContext.server.discordId)
         )
         if (invalidChannel)
@@ -51,10 +62,7 @@ export async function POST(
                 { status: 400 }
             )
 
-        await saveDiscordConfig({
-            guildId: serverId,
-            ...parsed.data,
-        })
+        await saveDiscordConfig(serverId, parsed.data)
 
         revalidateCacheEntries([
             appCacheTags.serverContext(serverId),

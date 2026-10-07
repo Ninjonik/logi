@@ -14,70 +14,103 @@ import { Logo } from "@/components/logo"
 
 const githubHref = "https://github.com/ninjonik/logi"
 
+/** Public sections with their own navigation entry (designs J1, J2). */
+export type PublicSection = "community" | "competitions" | "wiki"
+
+type NavigationItem = { href: string; label: string; section: PublicSection }
+
+function NavigationLink({
+    item,
+    className,
+    current,
+}: {
+    item: NavigationItem
+    className: string
+    current?: PublicSection
+}) {
+    return (
+        <Link
+            href={item.href}
+            aria-current={item.section === current ? "page" : undefined}
+            className={className}
+        >
+            {item.label}
+        </Link>
+    )
+}
+
 export async function PublicSiteShell({
     children,
     locale,
     dashboardHref,
+    current,
 }: {
     children: React.ReactNode
     locale: Locale
     dashboardHref?: string
+    /** The section the page belongs to, marked in the navigation. */
+    current?: PublicSection
 }) {
     const dictionary = getDictionary(locale)
     const status = await getLogiStatus()
     const discordSupportUrl = getDiscordSupportUrl()
+    const navigation: NavigationItem[] = [
+        {
+            href: `/${locale}/community`,
+            label: dictionary.publicProfiles.communityTitle,
+            section: "community",
+        },
+        {
+            href: `/${locale}/competitions`,
+            label: dictionary.competition.title,
+            section: "competitions",
+        },
+        {
+            href: "/wiki",
+            label: dictionary.publicNavigation.wiki,
+            section: "wiki",
+        },
+    ]
+    const navLinkClass =
+        "text-muted-foreground hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground rounded-lg px-2.5 py-1.5 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
 
     return (
         <div className="bg-background text-foreground flex min-h-dvh flex-col">
             <header className="bg-background/90 sticky top-0 z-30 border-b backdrop-blur">
-                <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex h-16 w-full max-w-[75rem] items-center gap-4 px-4 sm:px-6 lg:gap-6 lg:px-8">
                     <Link
                         href={`/${locale}`}
-                        className="inline-flex items-center gap-2.5 text-sm font-semibold tracking-wide"
+                        aria-label={dictionary.app.name}
+                        className="inline-flex shrink-0 items-center gap-2 text-base font-bold"
                     >
-                        <span className="bg-card flex size-9 items-center justify-center rounded-lg border">
-                            <Logo size={19} />
+                        <span className="bg-card flex size-8 items-center justify-center rounded-lg border">
+                            <Logo size={18} />
                         </span>
-                        {dictionary.app.name}
+                        <span aria-hidden="true">{dictionary.app.name}</span>
                     </Link>
+                    {/* Community, Competitions and Wiki (designs J1, J2); Discord support is in the footer. */}
                     <nav
                         aria-label="Main navigation"
-                        className="text-muted-foreground hidden items-center gap-5 text-sm md:flex"
+                        className="hidden flex-1 items-center gap-1 text-sm md:flex"
                     >
-                        <Link
-                            href={`/${locale}/community`}
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.home.community}
-                        </Link>
-                        <Link
-                            href={`/${locale}/competitions`}
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.home.competitions}
-                        </Link>
-                        <Link
-                            href="/wiki"
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {dictionary.publicNavigation.wiki}
-                        </Link>
-                        <a
-                            href={discordSupportUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
-                        >
-                            <SiDiscord
-                                aria-hidden="true"
-                                className="size-3.5"
+                        {navigation.map((item) => (
+                            <NavigationLink
+                                key={item.href}
+                                item={item}
+                                current={current}
+                                className={navLinkClass}
                             />
-                            {dictionary.publicNavigation.discordSupport}
-                        </a>
+                        ))}
                     </nav>
-                    <div className="flex items-center gap-2">
-                        <LogiStatusLink status={status} showLabel={false} />
-                        <ThemeSwitcher />
+                    <div className="ml-auto flex items-center gap-2">
+                        <span className="hidden sm:inline-flex">
+                            <LogiStatusLink
+                                status={status}
+                                showLabel={false}
+                                locale={locale}
+                            />
+                        </span>
+                        <ThemeSwitcher dictionary={dictionary} />
                         <LocaleSwitcher
                             locale={locale}
                             dictionary={dictionary}
@@ -92,15 +125,29 @@ export async function PublicSiteShell({
                         </Button>
                     </div>
                 </div>
+                {/* The menu stays visible on a phone, as its own row (design J1). */}
+                <nav
+                    aria-label="Main navigation"
+                    className="mx-auto flex w-full max-w-[75rem] items-center gap-1 overflow-x-auto px-4 pb-2 text-sm sm:px-6 md:hidden"
+                >
+                    {navigation.map((item) => (
+                        <NavigationLink
+                            key={item.href}
+                            item={item}
+                            current={current}
+                            className={navLinkClass}
+                        />
+                    ))}
+                </nav>
             </header>
             {children}
             <footer className="bg-background border-t">
-                <div className="text-muted-foreground mx-auto flex min-h-14 w-full max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3 text-xs sm:px-6 lg:px-8">
+                <div className="text-muted-foreground mx-auto flex min-h-14 w-full max-w-[75rem] flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3 text-xs sm:px-6 lg:px-8">
                     <span>
                         &copy; {new Date().getFullYear()} {dictionary.app.name}
                     </span>
-                    <div className="flex items-center gap-4">
-                        <LogiStatusLink status={status} />
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <LogiStatusLink status={status} locale={locale} />
                         <a
                             href={discordSupportUrl}
                             target="_blank"
@@ -156,7 +203,7 @@ export async function PublicSiteShell({
 
 export function PublicPage({
     children,
-    className = "max-w-6xl",
+    className = "max-w-[75rem]",
 }: {
     children: React.ReactNode
     className?: string

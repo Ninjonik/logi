@@ -17,10 +17,7 @@ import {
     ConvexEventScoreRepository,
     DelegatingEventScorePort,
 } from "../src/infrastructure/convex/event-command-repositories"
-import {
-    ConvexMatchTeamSnapshotPorts,
-    syncEventAssetReferences,
-} from "../src/infrastructure/convex/team-directory-repositories"
+import { ConvexMatchTeamSnapshotPorts } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     mutation,
     query,
@@ -32,6 +29,7 @@ import {
     assertSessionGateway,
     activeDashboardSession,
 } from "./dashboardSessionStore"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
 import { executeWebsiteEventCommand } from "../src/application/events/website-event-command"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
@@ -40,7 +38,7 @@ import { CancelEventUseCase } from "../src/application/events/cancel-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { projectEventMatchTeams } from "../src/domain/api/event-summaries"
-import { memberObservation, membershipGuild } from "./membership_shared"
+import { memberObservation, membershipGuild } from "./membershipAccess"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
 import { currentEventStatus } from "../src/domain/events/status"
@@ -188,12 +186,11 @@ async function refreshMatchTeam(
 ): Promise<{ eventId: string } | { error: "invalid_match_teams" }> {
     const id = tracked.db.normalizeId("events", command.eventId)
     const event = id ? await tracked.db.get(id) : null
-    if (!event || event.guildId !== actor.guildId)
+    if (!event || event.guildId !== actor.guildId || event.isDraft === true)
         return { error: "invalid_match_teams" }
     const refreshed = await refreshAssignedMatchTeam(
         new ConvexMatchTeamSnapshotPorts(tracked),
         {
-            guildId: actor.guildId,
             event: { ...event, id: String(event._id) },
             teamId: command.teamId,
             actor: actor.subject,
@@ -218,6 +215,8 @@ export const readEditor = query({
         if (
             !current ||
             current.guildId !== grant.actor.guildId ||
+            // Website commands never see unpublished drafts.
+            current.isDraft === true ||
             resolveGameScope(current.gameId) !== game.data
         )
             return error("not_found")
@@ -286,7 +285,7 @@ export const execute = mutation({
                 event: async (eventId) => {
                     const id = ctx.db.normalizeId("events", eventId)
                     const event = id ? await ctx.db.get(id) : null
-                    return event
+                    return event && event.isDraft !== true
                         ? {
                               ...event,
                               id: String(event._id),
@@ -354,7 +353,6 @@ export const execute = mutation({
                             const matchTeams = await resolveEventMatchTeams(
                                 tracked,
                                 {
-                                    guildId: actor.guildId,
                                     gameId,
                                     kind: fields.kind,
                                     status: current

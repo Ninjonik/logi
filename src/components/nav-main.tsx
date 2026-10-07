@@ -1,7 +1,8 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 
 import {
@@ -14,153 +15,155 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 
-type NavItem = {
+export type NavItem = {
     title: string
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    /** Related pages, listed under the entry while its section is open. */
     items?: NavItem[]
+    /** A count that needs the person's attention, such as missing settings. */
+    badge?: { count: number; label: string }
+    /** A short note after the title, such as "admins only". */
+    note?: string
+}
+
+function isActiveItem(item: NavItem, pathname: string): boolean {
+    return Boolean(item.isActive) || pathname === item.url
 }
 
 function hasActiveDescendant(item: NavItem, pathname: string): boolean {
-    if (item.isActive || pathname === item.url) {
-        return true
-    }
-
     return (
-        item.items?.some((subItem) => hasActiveDescendant(subItem, pathname)) ??
-        false
+        isActiveItem(item, pathname) ||
+        (item.items?.some((subItem) =>
+            hasActiveDescendant(subItem, pathname)
+        ) ??
+            false)
     )
 }
 
-function renderNavItems(
-    items: NavItem[],
-    pathname: string,
-    gameQuery: string,
-    depth = 0
-) {
-    const isHeavyServerRoute = (url: string) =>
-        url.includes("/dashboard/servers/")
-
-    return items.map((item) => {
-        const url =
-            item.url.includes("/dashboard/servers/") && gameQuery
-                ? `${item.url}?${gameQuery}`
-                : item.url
-        return (
-            <Collapsible
-                key={`${depth}-${item.title}-${url}`}
-                asChild
-                defaultOpen={hasActiveDescendant(item, pathname)}
-                className="group/collapsible"
-            >
-                {depth === 0 ? (
-                    <SidebarMenuItem>
-                        {item.items?.length ? (
-                            <>
-                                <CollapsibleTrigger asChild>
-                                    <SidebarMenuButton
-                                        tooltip={item.title}
-                                        className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
-                                        isActive={pathname === item.url}
-                                    >
-                                        {item.icon && <item.icon />}
-                                        <span>{item.title}</span>
-                                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                    </SidebarMenuButton>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <SidebarMenuSub>
-                                        {renderNavItems(
-                                            item.items,
-                                            pathname,
-                                            gameQuery,
-                                            depth + 1
-                                        )}
-                                    </SidebarMenuSub>
-                                </CollapsibleContent>
-                            </>
-                        ) : (
-                            <SidebarMenuButton
-                                asChild
-                                tooltip={item.title}
-                                className="h-7 cursor-pointer px-1.5 text-[13px] 2xl:h-8 2xl:px-2 2xl:text-sm"
-                                isActive={pathname === item.url}
-                            >
-                                <Link
-                                    href={url}
-                                    prefetch={!isHeavyServerRoute(url)}
-                                >
-                                    {item.icon && <item.icon />}
-                                    <span>{item.title}</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        )}
-                    </SidebarMenuItem>
-                ) : (
-                    <SidebarMenuSubItem>
-                        {item.items?.length ? (
-                            <>
-                                <CollapsibleTrigger asChild>
-                                    <SidebarMenuSubButton
-                                        className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
-                                        isActive={pathname === item.url}
-                                    >
-                                        <span>{item.title}</span>
-                                        <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                    </SidebarMenuSubButton>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <SidebarMenuSub className="mx-1 mt-0.5 2xl:mx-2 2xl:mt-1">
-                                        {renderNavItems(
-                                            item.items,
-                                            pathname,
-                                            gameQuery,
-                                            depth + 1
-                                        )}
-                                    </SidebarMenuSub>
-                                </CollapsibleContent>
-                            </>
-                        ) : (
-                            <SidebarMenuSubButton
-                                asChild
-                                className="h-6 cursor-pointer px-1.5 text-xs 2xl:h-7 2xl:px-2 2xl:text-sm"
-                                isActive={pathname === item.url}
-                            >
-                                <Link
-                                    href={url}
-                                    prefetch={!isHeavyServerRoute(url)}
-                                >
-                                    <span>{item.title}</span>
-                                </Link>
-                            </SidebarMenuSubButton>
-                        )}
-                    </SidebarMenuSubItem>
-                )}
-            </Collapsible>
-        )
-    })
+function withGameQuery(url: string, gameQuery: string) {
+    return url.includes("/dashboard/servers/") && gameQuery
+        ? `${url}?${gameQuery}`
+        : url
 }
 
-export function NavMain({ label, items }: { label: string; items: NavItem[] }) {
-    const pathname = usePathname()
+const isHeavyServerRoute = (url: string) => url.includes("/dashboard/servers/")
+
+/**
+ * One entry of the sidebar (design AppSidebar): icon, title and an optional
+ * attention badge or note. The current page is shaded and bold.
+ */
+export function NavMenuItems({ items }: { items: NavItem[] }) {
+    const pathname = usePathname() ?? ""
     const searchParams = useSearchParams()
     const game = searchParams.get("game")
     const gameQuery = game ? `game=${encodeURIComponent(game)}` : ""
 
+    return items.map((item) => {
+        const url = withGameQuery(item.url, gameQuery)
+        const active = isActiveItem(item, pathname)
+        const showSubItems =
+            Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
+        const hasBadge = Boolean(item.badge && item.badge.count > 0)
+        return (
+            <SidebarMenuItem key={`${item.title}-${url}`}>
+                <SidebarMenuButton
+                    asChild
+                    tooltip={item.title}
+                    isActive={active}
+                    className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+                >
+                    <Link
+                        href={url}
+                        prefetch={!isHeavyServerRoute(url)}
+                        aria-current={active ? "page" : undefined}
+                    >
+                        {item.icon && <item.icon aria-hidden="true" />}
+                        <span className="min-w-0 flex-1 truncate">
+                            {item.title}
+                        </span>
+                        {hasBadge && item.badge ? (
+                            <AttentionBadge label={item.badge.label}>
+                                {item.badge.count}
+                            </AttentionBadge>
+                        ) : null}
+                        {item.note ? (
+                            <span className="text-status-info shrink-0 text-[11px] font-medium">
+                                {item.note}
+                            </span>
+                        ) : null}
+                    </Link>
+                </SidebarMenuButton>
+                {showSubItems && item.items ? (
+                    <SidebarMenuSub className="mr-0 pr-0">
+                        {item.items.map((subItem) => {
+                            const subUrl = withGameQuery(subItem.url, gameQuery)
+                            const subActive = hasActiveDescendant(
+                                subItem,
+                                pathname
+                            )
+                            return (
+                                <SidebarMenuSubItem key={subUrl}>
+                                    <SidebarMenuSubButton
+                                        asChild
+                                        isActive={subActive}
+                                        className="h-9 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-7"
+                                    >
+                                        <Link
+                                            href={subUrl}
+                                            prefetch={
+                                                !isHeavyServerRoute(subUrl)
+                                            }
+                                            aria-current={
+                                                subActive ? "page" : undefined
+                                            }
+                                        >
+                                            <span>{subItem.title}</span>
+                                        </Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            )
+                        })}
+                    </SidebarMenuSub>
+                ) : null}
+            </SidebarMenuItem>
+        )
+    })
+}
+
+/** The amber count beside an entry; screen readers hear the full label. */
+function AttentionBadge({
+    label,
+    children,
+}: {
+    label: string
+    children: ReactNode
+}) {
     return (
-        <SidebarGroup className="p-1.5 2xl:p-2">
-            <SidebarGroupLabel className="h-6 px-1.5 text-[10px] 2xl:h-8 2xl:px-2 2xl:text-xs">
+        <>
+            <span
+                aria-hidden="true"
+                title={label}
+                className="bg-status-warning-muted text-status-warning flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums"
+            >
+                {children}
+            </span>
+            <span className="sr-only">{`, ${label}`}</span>
+        </>
+    )
+}
+
+/** A labelled group of sidebar entries, such as "Operations". */
+export function NavMain({ label, items }: { label: string; items: NavItem[] }) {
+    return (
+        <SidebarGroup className="px-2 pt-2 pb-0">
+            <SidebarGroupLabel className="text-muted-foreground h-8 px-2 text-xs font-medium">
                 {label}
             </SidebarGroupLabel>
-            <SidebarMenu className="gap-0.5 2xl:gap-1">
-                {renderNavItems(items, pathname, gameQuery)}
+            <SidebarMenu className="gap-0.5">
+                <NavMenuItems items={items} />
             </SidebarMenu>
         </SidebarGroup>
     )

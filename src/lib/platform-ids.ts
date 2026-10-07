@@ -125,3 +125,71 @@ export function describePlatformIds(
         describePlatformId(platformId, labels)
     )
 }
+
+/** Longest platform ID the dashboard accepts. */
+export const MAX_PLATFORM_ID_LENGTH = 64
+
+/**
+ * Why an entered platform ID cannot be saved as typed. `duplicate` only
+ * informs: the ID is saved once.
+ */
+export type PlatformIdIssue =
+    | "steam_format"
+    | "epic_format"
+    | "too_long"
+    | "duplicate"
+    | "linked_elsewhere"
+
+export type PlatformIdAssessment = {
+    rawId: string
+    platform: PlatformKey
+    issue?: PlatformIdIssue
+}
+
+/**
+ * Checks the comma-separated platform IDs typed for one player before they
+ * are saved. `takenIds` maps IDs already linked to other players to a name to
+ * show. A Steam ID must be the 17-digit SteamID64, so a long number that is
+ * not one is reported as a mistyped Steam ID.
+ */
+export function assessPlatformIdsInput(
+    input: string,
+    takenIds: ReadonlyMap<string, string> = new Map()
+): { entries: PlatformIdAssessment[]; hasErrors: boolean } {
+    const seen = new Set<string>()
+    const entries = input
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .map((entry): PlatformIdAssessment => {
+            const prefixed = splitPlatformPrefix(entry)
+            const rawId = stripPlatformPrefix(entry).replace(/\s+/g, "")
+            const platform = detectPlatformFromId(entry)
+            const key = rawId.toLowerCase()
+            let issue: PlatformIdIssue | undefined
+            if (rawId.length > MAX_PLATFORM_ID_LENGTH) issue = "too_long"
+            else if (
+                (prefixed?.platform === "steam" ||
+                    (!prefixed && /^\d{15,}$/.test(rawId))) &&
+                !STEAM_ID64_REGEX.test(rawId) &&
+                !STEAM_LEGACY_REGEX.test(rawId)
+            )
+                issue = "steam_format"
+            else if (
+                prefixed?.platform === "epic" &&
+                !EPIC_UUID_REGEX.test(rawId) &&
+                !EPIC_HEX32_REGEX.test(rawId)
+            )
+                issue = "epic_format"
+            else if (seen.has(key)) issue = "duplicate"
+            else if (takenIds.has(rawId)) issue = "linked_elsewhere"
+            seen.add(key)
+            return { rawId, platform, ...(issue ? { issue } : {}) }
+        })
+    return {
+        entries,
+        hasErrors: entries.some(
+            (entry) => entry.issue && entry.issue !== "duplicate"
+        ),
+    }
+}

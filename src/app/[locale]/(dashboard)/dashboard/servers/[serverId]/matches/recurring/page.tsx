@@ -1,74 +1,61 @@
-import Link from "next/link"
+import { connection } from "next/server"
+import type { Metadata } from "next"
 
-import { PageHeader } from "@/components/app/page-header"
+import {
+    ClanListUnavailable,
+    RecurringMatchesView,
+} from "@/components/app/match-list-view"
+import { getClanFixtureLabels } from "@/lib/read-models/competition-labels"
+import { getClanResultReviews } from "@/lib/read-models/result-reviews"
+import { buildRecurringMatchRows } from "@/lib/match-list-rows"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
-import { Button } from "@/components/ui/button"
-import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
+
+export const metadata: Metadata = {
+    title: "Recurring matches",
+    description: "Match series that repeat on a schedule.",
+}
 
 export default async function RecurringMatchesPage({
     params,
 }: {
     params: Promise<{ locale: string; serverId: string }>
 }) {
-    const { locale, serverId } = await params
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    await connection()
+    const { locale: rawLocale, serverId } = await params
+    const locale = isLocale(rawLocale) ? rawLocale : "en"
+    const dictionary = getDictionary(locale)
     const context = await getServerContext(serverId)
-    if (!context) return null
-    const matches = context.events
-        .filter((event) => event.kind === "match" && event.recurrence)
-        .sort(
-            (left, right) =>
-                new Date(right.gameStart).getTime() -
-                new Date(left.gameStart).getTime()
-        )
+    if (!context)
+        return <ClanListUnavailable locale={locale} dictionary={dictionary} />
+    const { canAdmin, discordConfig, server } = context
+    const series = context.events.some((event) => event.recurrence)
+    const [reviews, competitions] = await Promise.all([
+        series && canAdmin ? getClanResultReviews(server.discordId) : undefined,
+        series && context.events.some((event) => event.competitionFixtureId)
+            ? getClanFixtureLabels(server.discordId)
+            : undefined,
+    ])
+    const rows = buildRecurringMatchRows({
+        events: context.events,
+        rosters: context.rosters,
+        categories: server.eventCategories,
+        canAdmin,
+        locale,
+        serverId,
+        timeZone: discordConfig?.timezone ?? "UTC",
+        dictionary,
+        now: new Date(),
+        reviews,
+        competitions,
+    })
     return (
-        <main className="space-y-6">
-            <PageHeader
-                title={dictionary.event.recurringMatches}
-                description={dictionary.event.recurringMatchesDescription}
-                actions={
-                    context.canAdmin ? (
-                        <Button asChild className="rounded-xl">
-                            <Link
-                                href={`/${locale}/dashboard/servers/${serverId}/matches/create`}
-                            >
-                                {dictionary.common.createEvent}
-                            </Link>
-                        </Button>
-                    ) : undefined
-                }
-            />
-            <div className="space-y-3">
-                {matches.map((match) => (
-                    <Link
-                        key={match.id}
-                        href={`/${locale}/dashboard/servers/${serverId}/matches/${match.id}`}
-                        className="border-border/60 hover:bg-muted/50 block rounded-2xl border p-4 transition"
-                    >
-                        <div className="font-medium">{match.name}</div>
-                        <div className="text-muted-foreground mt-1 text-sm">
-                            {formatDateTime(
-                                match.gameStart,
-                                context.discordConfig?.timezone
-                            )}{" "}
-                            ·{" "}
-                            {match.recurrence?.frequency === "weekly"
-                                ? dictionary.event.recurrenceWeekly
-                                : match.recurrence?.frequency === "monthly_date"
-                                  ? dictionary.event.recurrenceMonthlyDate
-                                  : dictionary.event
-                                        .recurrenceMonthlyNthWeekday}
-                        </div>
-                    </Link>
-                ))}
-                {!matches.length ? (
-                    <p className="text-muted-foreground rounded-2xl border border-dashed p-8 text-center text-sm">
-                        {dictionary.event.noRecurringMatches}
-                    </p>
-                ) : null}
-            </div>
-        </main>
+        <RecurringMatchesView
+            rows={rows}
+            canAdmin={canAdmin}
+            base={`/${locale}/dashboard/servers/${serverId}`}
+            dictionary={dictionary}
+        />
     )
 }

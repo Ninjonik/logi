@@ -1,16 +1,18 @@
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { PublicNotFoundPage } from "@/components/app/not-found-page"
+import { RootDocument } from "@/components/providers/root-document"
+import { defaultLocale } from "@/i18n/config"
 
+/**
+ * 404 for addresses no route matches. It sits above `[locale]/layout.tsx`,
+ * so it brings its own document, and it is static and in the default
+ * language: reading the request here (for its locale) would make every page
+ * dynamic. A localized page that calls `notFound()` gets the localized 404
+ * (`[locale]/not-found.tsx`) instead.
+ */
 export default function NotFound() {
     return (
-        <div className="flex min-h-screen items-center justify-center">
-            <div className="text-center">
-                <h1 className="text-4xl font-bold">404</h1>
-                <p className="text-muted-foreground mt-2">Page not found</p>
-                <Button asChild className="mt-4">
-                    <Link href="/dashboard">Go to Dashboard</Link>
-                </Button>
-            </div>
-        </div>
+        <RootDocument lang={defaultLocale}>
+            <PublicNotFoundPage locale={defaultLocale} />
+        </RootDocument>
     )
 }

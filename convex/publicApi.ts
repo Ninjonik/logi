@@ -1,19 +1,21 @@
 import {
-    omitResultStorage,
-    projectResultSummary,
-} from "../src/domain/api/result-summaries"
+    applyClanSettingsSlicePatches,
+    readClanSettingsSlices,
+} from "../src/domain/api/settings-slices"
 import {
-    projectEventSummary,
-    projectMatchSummary,
-} from "../src/domain/api/event-summaries"
-import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
+    apiDocument,
+    assertInternalSecret,
+    safeDiscordConfigOf,
+} from "./publicApiShared"
+import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { prepareExternalClanSettings } from "./clanSettingsStores"
+import { readExternalClanSettings } from "./clanSettingsReads"
 import type { MutationCtx } from "./_generated/server"
 import type { Doc, Id } from "./_generated/dataModel"
 import { GAME_IDS } from "../src/domain/games/game"
 import { mutation } from "./integrationMutation"
-import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 import {
@@ -30,44 +32,36 @@ import {
     ConvexEventWorkflowSyncPort,
 } from "../src/infrastructure/convex/event-workflow-repositories"
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
-import {
-    isGameId,
-    matchesGameScope,
-    resolveGameScope,
-} from "../src/domain/games/game"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
-import { syncEventAssetReferences } from "../src/infrastructure/convex/team-directory-repositories"
 import {
     buildDefaultStratmapState,
     stringifyStratmapState,
 } from "../src/lib/stratmaps"
+import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
-import {
-    allowsApiKeyRead,
-    isApiKeyReadAccess,
-} from "../src/domain/api/key-access"
 import { UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
-import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { IDEMPOTENCY_RETENTION_MS } from "../src/domain/api/idempotency"
+import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { currentEventStatus } from "../src/domain/events/status"
+import { requestRegistrationAfterSave } from "./discordCommands"
+import { resolveGameScope } from "../src/domain/games/game"
+import { isDraftEvent } from "../src/domain/events/drafts"
 import { systemClock } from "../src/domain/shared/clock"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import { apiKeyReadAccess } from "./apiKeyValidators"
 import { resolveEventMatchTeams } from "./matchTeams"
 import { getGuildByDiscordId } from "./identity"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
-}
+// The per-request reads of `/api/v1` live in `publicApiReads.ts`; only the
+// idempotent writes and the key commands stay here, so a website read never
+// evaluates the command use-cases or the stratmap catalogue.
 
 export const createKey = mutation({
     args: {
@@ -101,29 +95,6 @@ export const createKey = mutation({
     },
 })
 
-export const listKeys = query({
-    args: { secret: v.string(), guildId: v.string(), actor: dashboardActor },
-    handler: async (ctx, args) => {
-        await authorizeDashboardAdmin(ctx, args)
-        return (
-            await ctx.db
-                .query("apiKeys")
-                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-                .collect()
-        ).map((key) => ({
-            id: String(key._id),
-            name: key.name,
-            keyPrefix: key.keyPrefix,
-            createdAt: key.createdAt,
-            lastUsedAt: key.lastUsedAt,
-            revokedAt: key.revokedAt,
-            ...(key.readAccess !== undefined
-                ? { readAccess: key.readAccess }
-                : {}),
-        }))
-    },
-})
-
 export const revokeKey = mutation({
     args: {
         secret: v.string(),
@@ -137,49 +108,6 @@ export const revokeKey = mutation({
         if (!key || key.guildId !== args.guildId)
             throw new Error("API key not found.")
         await ctx.db.patch(args.keyId, { revokedAt: new Date().toISOString() })
-    },
-})
-
-export const checkRateLimit = mutation({
-    args: {
-        secret: v.string(),
-        bucket: v.string(),
-        limit: v.number(),
-        windowMs: v.number(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const now = Date.now()
-        const existing = await ctx.db
-            .query("apiRateLimitBuckets")
-            .withIndex("bucket", (q) => q.eq("bucket", args.bucket))
-            .unique()
-        if (!existing || existing.resetAt <= now) {
-            if (existing)
-                await ctx.db.patch(existing._id, {
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            else
-                await ctx.db.insert("apiRateLimitBuckets", {
-                    bucket: args.bucket,
-                    count: 1,
-                    resetAt: now + args.windowMs,
-                })
-            return {
-                allowed: true,
-                remaining: args.limit - 1,
-                resetAt: now + args.windowMs,
-            }
-        }
-        if (existing.count >= args.limit)
-            return { allowed: false, remaining: 0, resetAt: existing.resetAt }
-        await ctx.db.patch(existing._id, { count: existing.count + 1 })
-        return {
-            allowed: true,
-            remaining: args.limit - existing.count - 1,
-            resetAt: existing.resetAt,
-        }
     },
 })
 
@@ -482,7 +410,9 @@ export const mutateClanEvent = mutation({
             const current = args.eventId ? await ctx.db.get(args.eventId) : null
             if (
                 args.operation !== "create" &&
-                (!current || current.guildId !== key.guildId)
+                (!current ||
+                    current.guildId !== key.guildId ||
+                    isDraftEvent(current))
             ) {
                 status = 404
                 response = {
@@ -545,8 +475,24 @@ export const mutateClanEvent = mutation({
                             "Referenced topic preset was not found."
                         )
                 }
+                // "" clears the squad preset on an update; an ID must be this clan's.
+                if (
+                    typeof event.squadPresetId === "string" &&
+                    event.squadPresetId.trim()
+                ) {
+                    const squadPresetId = ctx.db.normalizeId(
+                        "squadPresets",
+                        event.squadPresetId.trim()
+                    )
+                    const squadPreset = squadPresetId
+                        ? await ctx.db.get(squadPresetId)
+                        : null
+                    if (!squadPreset || squadPreset.guildId !== key.guildId)
+                        throw new Error(
+                            "Referenced squad preset was not found."
+                        )
+                }
                 const kept = await resolveEventMatchTeams(ctx, {
-                    guildId: key.guildId,
                     gameId:
                         (event as EventUpsertCommand).gameId ?? current?.gameId,
                     kind: (event as EventUpsertCommand).kind ?? current?.kind,
@@ -623,7 +569,7 @@ export const mutateClanEventSignup = mutation({
         const event = await ctx.db.get(args.eventId)
         let status = 200
         let response!: Record<string, unknown>
-        if (!event || event.guildId !== key.guildId) {
+        if (!event || event.guildId !== key.guildId || isDraftEvent(event)) {
             status = 404
             response = {
                 error: { code: "not_found", message: "Event not found." },
@@ -977,7 +923,10 @@ export const mutateClanPreset = mutation({
                         "hell_let_loose"
                     if (eventId && !event)
                         throw new Error("Referenced event was not found.")
-                    if (event && event.guildId !== key.guildId)
+                    if (
+                        event &&
+                        (event.guildId !== key.guildId || isDraftEvent(event))
+                    )
                         throw new Error("Referenced event was not found.")
                     if (
                         event &&
@@ -1575,187 +1524,6 @@ export const mutateClanCalendarItem = mutation({
     },
 })
 
-/** Authenticates a hash only; callers never receive a bearer key or its hash. */
-export const authenticateKey = mutation({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        const guild = await getGuildByDiscordId(ctx, key.guildId)
-        if (!guild) return null
-        // Usage telemetry must not alter authorization; this best-effort write is
-        // deliberately separate from every resource read.
-        await ctx.db.patch(key._id, { lastUsedAt: new Date().toISOString() })
-        return {
-            guildId: key.guildId,
-            ...(key.readAccess !== undefined
-                ? { readAccess: key.readAccess }
-                : {}),
-        }
-    },
-})
-
-/** A deliberately small, authenticated sync marker and count projection. */
-export const getClanMeta = query({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, "meta")) return null
-        const guild = await getGuildByDiscordId(ctx, key.guildId)
-        if (!guild) return null
-        const guildId = key.guildId
-        const events = await ctx.db
-            .query("events")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect()
-        const [
-            groups,
-            assignments,
-            calendarItems,
-            stratmaps,
-            topicPresets,
-            squadPresets,
-            matches,
-            articles,
-            apiKeys,
-            enabledGames,
-        ] = await Promise.all([
-            ctx.db
-                .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("userAssignments")
-                .withIndex("serverId", (q) => q.eq("serverId", guildId))
-                .collect(),
-            ctx.db
-                .query("calendarItems")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("stratmaps")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("topicPresets")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("squadPresets")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("matchStats")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("articles")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("apiKeys")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
-            ctx.db
-                .query("guildGames")
-                .filter((q) => q.eq(q.field("guildId"), guildId))
-                .collect(),
-        ])
-        const rosters = await Promise.all(
-            events.map((event) =>
-                ctx.db
-                    .query("rosters")
-                    .withIndex("eventId", (q) => q.eq("eventId", event._id))
-                    .unique()
-            )
-        )
-        return {
-            guild: { id: String(guild._id), guildId, name: guild.name },
-            enabledGames: enabledGames
-                .filter((entry) => entry.enabled)
-                .map((entry) => entry.gameId),
-            counts: {
-                events: events.length,
-                groups: groups.length,
-                rosters: rosters.filter(Boolean).length,
-                assignments: assignments.length,
-                users: new Set(assignments.map((entry) => entry.userId)).size,
-                "calendar-items": calendarItems.length,
-                stratmaps: stratmaps.length,
-                "topic-presets": topicPresets.length,
-                "squad-presets": squadPresets.length,
-                matches: matches.length,
-                articles: articles.length,
-                settings: 1,
-                "api-keys": apiKeys.length,
-            },
-            updatedAt: guild.updatedAt,
-        }
-    },
-})
-
-export const getClanSettings = query({
-    args: { secret: v.string(), keyHash: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, "settings")) return null
-        const [guild, discordConfig] = await Promise.all([
-            getGuildByDiscordId(ctx, key.guildId),
-            ctx.db
-                .query("discordConfigs")
-                .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-                .unique(),
-        ])
-        if (!guild) return null
-        const safeDiscordConfig = discordConfig
-            ? (() => {
-                  const {
-                      playerStatsServers: _playerStatsServers,
-                      gameOverrides,
-                      ...config
-                  } = discordConfig
-                  return {
-                      ...config,
-                      id: String(discordConfig._id),
-                      ...(gameOverrides
-                          ? {
-                                gameOverrides: Object.fromEntries(
-                                    Object.entries(gameOverrides).map(
-                                        ([gameId, override]) => {
-                                            const {
-                                                playerStatsServers: _tokens,
-                                                ...safeOverride
-                                            } = override
-                                            return [gameId, safeOverride]
-                                        }
-                                    )
-                                ),
-                            }
-                          : {}),
-                  }
-              })()
-            : null
-        return {
-            guild: { ...guild, id: String(guild._id) },
-            discordConfig: safeDiscordConfig,
-        }
-    },
-})
-
 /** Applies only explicit safe settings fields; omitted fields are preserved. */
 export const mutateClanSettings = mutation({
     args: {
@@ -1780,6 +1548,8 @@ export const mutateClanSettings = mutation({
         squadVoiceCategoryId: v.optional(v.union(v.string(), v.null())),
         clanRoleId: v.optional(v.union(v.string(), v.null())),
         dashboardAdminRoleId: v.optional(v.union(v.string(), v.null())),
+        /** Feature settings slices by key; validated again below with Zod. */
+        slices: v.optional(v.record(v.string(), v.any())),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -1800,7 +1570,45 @@ export const mutateClanSettings = mutation({
                 .query("discordConfigs")
                 .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
                 .unique()
+            const slicePatch = applyClanSettingsSlicePatches(
+                args.slices,
+                { discordConfig: safeDiscordConfigOf(config) },
+                CLAN_SETTINGS_SLICES
+            )
+            if (!slicePatch.ok) {
+                status = 400
+                response = {
+                    error: {
+                        code: "validation_error",
+                        message: slicePatch.error,
+                    },
+                }
+            }
+            // Slices in their own table are checked against the database
+            // here and written below only when the whole request is accepted.
+            const external =
+                slicePatch.ok && args.slices
+                    ? await prepareExternalClanSettings(
+                          ctx,
+                          key.guildId,
+                          args.slices,
+                          CLAN_SETTINGS_SLICES
+                      )
+                    : null
+            if (external && !external.ok && !response) {
+                status = external.error.status
+                response = {
+                    error: {
+                        code: external.error.code,
+                        message: external.error.message,
+                    },
+                }
+            }
             const hasDiscordPatch = [
+                // External slices write no Discord configuration fields.
+                slicePatch.ok && Object.keys(slicePatch.patch).length
+                    ? true
+                    : undefined,
                 args.timezone,
                 args.defaultLanguage,
                 args.announcementsChannelId,
@@ -1813,7 +1621,7 @@ export const mutateClanSettings = mutation({
                 args.clanRoleId,
                 args.dashboardAdminRoleId,
             ].some((value) => value !== undefined)
-            if (hasDiscordPatch && !config) {
+            if (hasDiscordPatch && !config && !response) {
                 status = 400
                 response = {
                     error: {
@@ -1884,54 +1692,41 @@ export const mutateClanSettings = mutation({
                 Object.assign(discordPatch, {
                     defaultLanguage: args.defaultLanguage,
                 })
+            if (slicePatch.ok) Object.assign(discordPatch, slicePatch.patch)
             if (!response && Object.keys(discordPatch).length && config)
                 await ctx.db.patch(config._id, {
                     ...discordPatch,
                     updatedAt: now,
                 })
+            // A saved `commands` slice registers the commands again, as a
+            // save on the "Příkazy" page does (M1-B01, N3-B02).
+            if (!response && config && args.slices?.commands !== undefined)
+                await requestRegistrationAfterSave(ctx, key.guildId)
+            if (!response && external?.ok)
+                await external.commit(`api:${String(key._id)}`)
             if (!response!) {
                 const updatedGuild = await ctx.db.get(guild._id)
                 const updatedConfig = config
                     ? await ctx.db.get(config._id)
                     : null
-                const safeDiscordConfig = updatedConfig
-                    ? (() => {
-                          const {
-                              playerStatsServers: _playerStatsServers,
-                              gameOverrides,
-                              ...safeConfig
-                          } = updatedConfig
-                          return {
-                              ...safeConfig,
-                              id: String(updatedConfig._id),
-                              ...(gameOverrides
-                                  ? {
-                                        gameOverrides: Object.fromEntries(
-                                            Object.entries(gameOverrides).map(
-                                                ([gameId, override]) => {
-                                                    const {
-                                                        playerStatsServers:
-                                                            _tokens,
-                                                        ...safeOverride
-                                                    } = override
-                                                    return [
-                                                        gameId,
-                                                        safeOverride,
-                                                    ]
-                                                }
-                                            )
-                                        ),
-                                    }
-                                  : {}),
-                          }
-                      })()
-                    : null
+                const safeDiscordConfig = safeDiscordConfigOf(updatedConfig)
                 response = {
                     data: {
                         guild: updatedGuild
                             ? { ...updatedGuild, id: String(updatedGuild._id) }
                             : null,
                         discordConfig: safeDiscordConfig,
+                        slices: readClanSettingsSlices(
+                            {
+                                discordConfig: safeDiscordConfig,
+                                external: await readExternalClanSettings(
+                                    ctx,
+                                    key.guildId,
+                                    CLAN_SETTINGS_SLICES
+                                ),
+                            },
+                            CLAN_SETTINGS_SLICES
+                        ),
                     },
                 }
                 await enqueueClanWebhook(ctx, {
@@ -1947,680 +1742,5 @@ export const mutateClanSettings = mutation({
         const body = JSON.stringify(response)
         await ctx.db.patch(idempotencyId, { status, responseBody: body })
         return { status, body }
-    },
-})
-
-const apiResource = v.union(
-    v.literal("server-snapshots"),
-    v.literal("integration-health"),
-    v.literal("event-summaries"),
-    v.literal("match-summaries"),
-    v.literal("result-summaries"),
-    v.literal("events"),
-    v.literal("groups"),
-    v.literal("rosters"),
-    v.literal("assignments"),
-    v.literal("calendar-items"),
-    v.literal("stratmaps"),
-    v.literal("topic-presets"),
-    v.literal("squad-presets"),
-    v.literal("matches"),
-    v.literal("articles"),
-    v.literal("users")
-)
-const apiGameScope = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs"),
-    v.literal("all")
-)
-const apiGameSelection = v.union(
-    apiGameScope,
-    v.array(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    )
-)
-
-export const getClanPerformanceHistory = query({
-    args: {
-        secret: v.string(),
-        keyHash: v.string(),
-        game: apiGameSelection,
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, "performance-history", args.game))
-            return null
-        const history = await ctx.db
-            .query("guildPerformanceHistory")
-            .withIndex("guildId", (q) => q.eq("guildId", key.guildId))
-            .unique()
-        if (!history) return { matches: [], updatedAt: null }
-        return {
-            matches: history.matches
-                .filter((match) => matchesGameScope(match.gameId, args.game))
-                .map((match) => ({
-                    ...match,
-                    gameId: resolveGameScope(match.gameId),
-                })),
-            updatedAt: history.updatedAt,
-        }
-    },
-})
-
-export const getClanMatchByEvent = query({
-    args: { secret: v.string(), keyHash: v.string(), eventId: v.id("events") },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, "matches")) return null
-        const event = await ctx.db.get(args.eventId)
-        if (!event || event.guildId !== key.guildId) return null
-        if (
-            !allowsApiKeyRead(
-                key.readAccess,
-                "matches",
-                resolveGameScope(event.gameId)
-            )
-        )
-            return null
-        const match = await ctx.db
-            .query("matchStats")
-            .withIndex("eventId", (q) => q.eq("eventId", event._id))
-            .unique()
-        if (
-            match &&
-            (match.guildId !== key.guildId ||
-                !allowsApiKeyRead(
-                    key.readAccess,
-                    "matches",
-                    resolveGameScope(match.gameId)
-                ))
-        )
-            return null
-        return match
-            ? {
-                  ...apiDocument(match),
-                  eventId: String(event._id),
-                  gameId: resolveGameScope(match.gameId),
-              }
-            : null
-    },
-})
-
-export const getClanUser = query({
-    args: { secret: v.string(), keyHash: v.string(), userId: v.string() },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, "users")) return null
-        const assignment = await ctx.db
-            .query("userAssignments")
-            .withIndex("serverId_userId", (q) =>
-                q.eq("serverId", key.guildId).eq("userId", args.userId)
-            )
-            .first()
-        if (!assignment) return null
-        const user = await ctx.db
-            .query("users")
-            .withIndex("discordId", (q) => q.eq("discordId", args.userId))
-            .unique()
-        return user ? apiDocument(user) : null
-    },
-})
-
-function apiDocument<T extends { _id: unknown; gameId?: unknown }>(
-    document: T
-) {
-    return {
-        ...omitResultStorage(document),
-        id: String(document._id),
-        ...(Object.prototype.hasOwnProperty.call(document, "gameId")
-            ? { gameId: resolveGameScope(document.gameId as never) }
-            : {}),
-    }
-}
-
-function apiGameDocument<T extends { _id: unknown; gameId?: unknown }>(
-    document: T
-) {
-    return {
-        ...apiDocument(document),
-        gameId: resolveGameScope(document.gameId as never),
-    }
-}
-
-function belongsToGame(
-    document: { gameId?: never },
-    game: string | readonly string[]
-) {
-    return matchesGameScope(document.gameId as never, game as never)
-}
-
-/**
- * A bounded, authenticated page for exactly one clan concern. This intentionally
- * replaces getClanData: no endpoint may load a clan's entire database.
- */
-export const getClanResourcePage = query({
-    args: {
-        secret: v.string(),
-        keyHash: v.string(),
-        resource: apiResource,
-        game: apiGameSelection,
-        cursor: v.union(v.string(), v.null()),
-        limit: v.number(),
-        updatedSince: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, args.resource, args.game))
-            return null
-        const guildId = key.guildId
-        const options = { cursor: args.cursor, numItems: args.limit }
-        if (
-            args.resource === "server-snapshots" ||
-            args.resource === "integration-health"
-        ) {
-            const page = await ctx.db
-                .query("gameDataConnections")
-                .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .paginate(options)
-            return {
-                items: page.page
-                    .filter(
-                        (row) =>
-                            matchesGameScope(row.gameId, args.game) &&
-                            (!args.updatedSince ||
-                                Date.parse(row.updatedAt) >=
-                                    Date.parse(args.updatedSince))
-                    )
-                    .map((row) =>
-                        (args.resource === "server-snapshots"
-                            ? projectSnapshot
-                            : projectHealth)(
-                            { ...row, id: String(row._id) },
-                            Date.now()
-                        )
-                    ),
-                nextCursor: page.isDone ? null : page.continueCursor,
-                limit: args.limit,
-            }
-        }
-        const pageFor = async (query: {
-            paginate: (value: typeof options) => Promise<{
-                page: Array<Record<string, unknown>>
-                continueCursor: string
-                isDone: boolean
-            }>
-        }) => {
-            const result = await query.paginate(options)
-            return {
-                items: result.page
-                    .filter((item) => belongsToGame(item as never, args.game))
-                    .map((item) =>
-                        [
-                            "events",
-                            "groups",
-                            "rosters",
-                            "assignments",
-                            "stratmaps",
-                            "matches",
-                            "squad-presets",
-                        ].includes(args.resource)
-                            ? apiGameDocument(item as never)
-                            : apiDocument(item as never)
-                    ),
-                nextCursor: result.isDone ? null : result.continueCursor,
-                limit: args.limit,
-            }
-        }
-        switch (args.resource) {
-            case "event-summaries":
-            case "result-summaries":
-            case "match-summaries": {
-                const events = ctx.db
-                    .query("events")
-                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                const result = await (
-                    args.updatedSince
-                        ? events.filter((q) =>
-                              q.gte(q.field("updatedAt"), args.updatedSince!)
-                          )
-                        : events
-                ).paginate(options)
-                return {
-                    items: result.page
-                        .filter(
-                            (event) =>
-                                matchesGameScope(event.gameId, args.game) &&
-                                (args.resource === "event-summaries" ||
-                                    (event.kind ?? "match") === "match")
-                        )
-                        .map((event) =>
-                            args.resource === "result-summaries"
-                                ? projectResultSummary(event)
-                                : args.resource === "event-summaries"
-                                  ? projectEventSummary(event)
-                                  : projectMatchSummary(event)
-                        ),
-                    nextCursor: result.isDone ? null : result.continueCursor,
-                    limit: args.limit,
-                }
-            }
-            case "events":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("events")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("events")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "groups":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("groups")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("groups")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "assignments":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("userAssignments")
-                              .withIndex("serverId", (q) =>
-                                  q.eq("serverId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("userAssignments")
-                              .withIndex("serverId", (q) =>
-                                  q.eq("serverId", guildId)
-                              )
-                )
-            case "calendar-items":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("calendarItems")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("calendarItems")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "stratmaps":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("stratmaps")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("stratmaps")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "topic-presets":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("topicPresets")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("topicPresets")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "squad-presets":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("squadPresets")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("squadPresets")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "matches":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("matchStats")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("matchStats")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "articles":
-                return await pageFor(
-                    args.updatedSince
-                        ? ctx.db
-                              .query("articles")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                              .filter((q) =>
-                                  q.gte(
-                                      q.field("updatedAt"),
-                                      args.updatedSince!
-                                  )
-                              )
-                        : ctx.db
-                              .query("articles")
-                              .withIndex("guildId", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                )
-            case "rosters": {
-                const rosterPage = await (
-                    args.updatedSince
-                        ? ctx.db
-                              .query("rosters")
-                              .withIndex("guildId_updatedAt", (q) =>
-                                  q
-                                      .eq("guildId", guildId)
-                                      .gte("updatedAt", args.updatedSince!)
-                              )
-                        : ctx.db
-                              .query("rosters")
-                              .withIndex("guildId_updatedAt", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                ).paginate(options)
-                const events = await Promise.all(
-                    rosterPage.page.map((roster) => ctx.db.get(roster.eventId))
-                )
-                return {
-                    items: rosterPage.page.flatMap((roster, index) => {
-                        const event = events[index]
-                        if (
-                            !event ||
-                            event.guildId !== guildId ||
-                            !belongsToGame(event as never, args.game)
-                        )
-                            return []
-                        return [
-                            {
-                                ...apiDocument(roster),
-                                gameId: resolveGameScope(event.gameId),
-                            },
-                        ]
-                    }),
-                    nextCursor: rosterPage.isDone
-                        ? null
-                        : rosterPage.continueCursor,
-                    limit: args.limit,
-                }
-            }
-            case "users": {
-                const projectionPage = await (
-                    args.updatedSince
-                        ? ctx.db
-                              .query("clanApiUserProjections")
-                              .withIndex("guildId_updatedAt", (q) =>
-                                  q
-                                      .eq("guildId", guildId)
-                                      .gte("updatedAt", args.updatedSince!)
-                              )
-                        : ctx.db
-                              .query("clanApiUserProjections")
-                              .withIndex("guildId_updatedAt", (q) =>
-                                  q.eq("guildId", guildId)
-                              )
-                ).paginate(options)
-                const users = await Promise.all(
-                    projectionPage.page.map((projection) =>
-                        ctx.db
-                            .query("users")
-                            .withIndex("discordId", (q) =>
-                                q.eq("discordId", projection.userId)
-                            )
-                            .unique()
-                    )
-                )
-                return {
-                    items: users
-                        .filter(Boolean)
-                        .map((user) => apiDocument(user!)),
-                    nextCursor: projectionPage.isDone
-                        ? null
-                        : projectionPage.continueCursor,
-                    limit: args.limit,
-                }
-            }
-        }
-    },
-})
-
-/** Returns a single record only after proving its direct or parent ownership. */
-export const getClanResource = query({
-    args: {
-        secret: v.string(),
-        keyHash: v.string(),
-        resource: apiResource,
-        id: v.string(),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-        const key = await ctx.db
-            .query("apiKeys")
-            .withIndex("keyHash", (q) => q.eq("keyHash", args.keyHash))
-            .unique()
-        if (!key || key.revokedAt) return null
-        if (!allowsApiKeyRead(key.readAccess, args.resource)) return null
-        if (
-            args.resource === "server-snapshots" ||
-            args.resource === "integration-health"
-        ) {
-            const id = ctx.db.normalizeId("gameDataConnections", args.id)
-            const row = id ? await ctx.db.get(id) : null
-            if (
-                !row ||
-                row.guildId !== key.guildId ||
-                !allowsApiKeyRead(key.readAccess, args.resource, row.gameId)
-            )
-                return null
-            return (
-                args.resource === "server-snapshots"
-                    ? projectSnapshot
-                    : projectHealth
-            )({ ...row, id: String(row._id) }, Date.now())
-        }
-        if (
-            args.resource === "event-summaries" ||
-            args.resource === "result-summaries" ||
-            args.resource === "match-summaries"
-        ) {
-            const eventId = ctx.db.normalizeId("events", args.id)
-            if (!eventId) return null
-            const event = await ctx.db.get(eventId)
-            if (
-                !event ||
-                event.guildId !== key.guildId ||
-                !allowsApiKeyRead(
-                    key.readAccess,
-                    args.resource,
-                    resolveGameScope(event.gameId)
-                ) ||
-                ((args.resource === "match-summaries" ||
-                    args.resource === "result-summaries") &&
-                    (event.kind ?? "match") !== "match")
-            )
-                return null
-            return args.resource === "result-summaries"
-                ? projectResultSummary(event)
-                : args.resource === "event-summaries"
-                  ? projectEventSummary(event)
-                  : projectMatchSummary(event)
-        }
-        const item = (await ctx.db.get(args.id as never)) as
-            (Record<string, unknown> & { _id: unknown }) | null
-        if (!item) return null
-        if (!isClanApiResourceDocument(args.resource, item)) return null
-        const guildId = key.guildId
-        // Rosters inherit game ownership from their event, including records
-        // whose own guildId was populated by the read-projection migration.
-        if (args.resource === "rosters") {
-            const event = await ctx.db.get(item.eventId as Id<"events">)
-            if (
-                !event ||
-                event.guildId !== guildId ||
-                (item.guildId !== undefined && item.guildId !== guildId) ||
-                !allowsApiKeyRead(
-                    key.readAccess,
-                    args.resource,
-                    resolveGameScope(event.gameId)
-                )
-            )
-                return null
-            return {
-                ...apiDocument(item),
-                gameId: resolveGameScope(event.gameId),
-            }
-        }
-        const itemGame = item.gameId
-        if (
-            itemGame !== undefined &&
-            (typeof itemGame !== "string" || !isGameId(itemGame))
-        )
-            return null
-        if (
-            !allowsApiKeyRead(
-                key.readAccess,
-                args.resource,
-                resolveGameScope(itemGame)
-            )
-        )
-            return null
-        const directGuildId =
-            typeof item.guildId === "string"
-                ? item.guildId
-                : typeof item.serverId === "string"
-                  ? item.serverId
-                  : undefined
-        if (directGuildId !== guildId) {
-            if (args.resource === "users") {
-                const userId =
-                    typeof item.discordId === "string"
-                        ? item.discordId
-                        : typeof item.id === "string"
-                          ? item.id
-                          : ""
-                const assignment = await ctx.db
-                    .query("userAssignments")
-                    .withIndex("serverId", (q) => q.eq("serverId", guildId))
-                    .filter((q) => q.eq(q.field("userId"), userId))
-                    .first()
-                if (!assignment) return null
-            } else return null
-        }
-        return [
-            "events",
-            "groups",
-            "rosters",
-            "assignments",
-            "stratmaps",
-            "matches",
-        ].includes(args.resource)
-            ? apiGameDocument(item)
-            : apiDocument(item)
     },
 })

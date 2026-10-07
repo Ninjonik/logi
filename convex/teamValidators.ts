@@ -32,7 +32,8 @@ export const matchTeamInput = v.object({
 })
 export const imageAssetKind = v.union(
     v.literal("team-logo"),
-    v.literal("panel-banner")
+    v.literal("panel-banner"),
+    v.literal("panel-map")
 )
 export const imageContentType = v.union(
     v.literal("image/png"),
@@ -44,5 +45,15 @@ export const teamAuditOperation = v.union(
     v.literal("update"),
     v.literal("archive"),
     v.literal("restore"),
-    v.literal("snapshot_refresh")
+    v.literal("snapshot_refresh"),
+    v.literal("merge"),
+    v.literal("request_approved")
 )
+/** Proposed presentation in a team request; reviewed before it reaches the catalogue. */
+export const teamProposal = v.object({
+    name: v.string(),
+    shortCode: v.union(v.string(), v.null()),
+    logoAssetId: v.union(v.id("imageAssets"), v.null()),
+    description: v.union(v.string(), v.null()),
+    links: v.array(v.string()),
+})

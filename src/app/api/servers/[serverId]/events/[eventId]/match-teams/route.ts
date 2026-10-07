@@ -3,9 +3,9 @@ import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { TEAM_DASHBOARD_RATE_LIMIT } from "@/lib/api/teams-dashboard-route"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { checkPublicApiRateLimit } from "@/lib/public-api"
 import { makeFunctionReference } from "convex/server"
-import { getInternalAuthSecret } from "@/lib/env"
 import { fetchMutation } from "convex/nextjs"
 
 export const runtime = "nodejs"
@@ -15,6 +15,7 @@ const refreshSnapshot = makeFunctionReference<"mutation">(
 )
 
 const handler = matchTeamRefreshHandler({
+    origin: new URL(getSiteUrl()).origin,
     access: async (serverId) => {
         const [server, actor] = await Promise.all([
             getServerContextUncached(serverId),

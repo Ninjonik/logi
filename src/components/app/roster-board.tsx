@@ -5,6 +5,7 @@ import {
     Circle,
     CircleDot,
     Loader2,
+    MoreHorizontal,
     Plus,
     Save,
     Send,
@@ -13,6 +14,14 @@ import {
     EyeOff,
     WandSparkles,
 } from "lucide-react"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
     useDeferredValue,
     useEffect,
@@ -40,6 +49,11 @@ import {
     getUserSignupLabel,
 } from "@/lib/roster-assignment"
 import {
+    RosterPublishDialog,
+    type RosterPublishChoice,
+    type RosterPublishContext,
+} from "@/components/app/roster-publish-dialog"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -51,6 +65,10 @@ import type {
     DragState,
     RosterBoardMode,
 } from "@/components/app/roster-board-types"
+import {
+    ReminderButton,
+    type ReminderAudienceState,
+} from "@/components/app/match-detail/reminder-button"
 import type {
     AppUser,
     EventRecord,
@@ -58,6 +76,10 @@ import type {
     Roster,
     SquadPreset,
 } from "@/types/domain"
+import {
+    getAttendanceIcon,
+    SquadCard,
+} from "@/components/app/roster-board-squad-card"
 import {
     Tooltip,
     TooltipContent,
@@ -67,13 +89,15 @@ import { RosterBoardAttendeeLists } from "@/components/app/roster-board-attendee
 import { PublicShareLinkButton } from "@/components/app/public-share-link-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
-import { SquadCard } from "@/components/app/roster-board-squad-card"
+import { countRosterChanges } from "@/domain/rosters/roster-changes"
+import { resultFaction } from "@/domain/match-results/result-sides"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { getUserScoreForGuild } from "@/lib/user-scores"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { formatDateTime } from "@/lib/format"
+import { pluralize } from "@/i18n/plural"
+import { cn } from "@/lib/utils"
 
 function getCustomPlayerName(
     player: Roster["squads"][number]["players"][number]
@@ -109,6 +133,9 @@ export function RosterBoard({
     locale,
     timezone,
     meetingChannelId,
+    meetingChannelName,
+    reminder,
+    publishContext,
     defaultMode = "view",
 }: {
     roster?: Roster
@@ -123,6 +150,12 @@ export function RosterBoard({
     locale: string
     timezone?: string
     meetingChannelId?: string
+    /** Name of the meeting voice channel, shown on its confirm button. */
+    meetingChannelName?: string
+    /** Members who have not answered, for the reserves box reminder. */
+    reminder?: ReminderAudienceState
+    /** The clan's Discord settings for the publish dialog (board D5). */
+    publishContext?: RosterPublishContext
     defaultMode?: RosterBoardMode
 }) {
     const router = useRouter()
@@ -138,8 +171,6 @@ export function RosterBoard({
     const [publishDialogOpen, setPublishDialogOpen] = useState(false)
     const [publishedUpdateDialogOpen, setPublishedUpdateDialogOpen] =
         useState(false)
-    const [notifyRosterChanges, setNotifyRosterChanges] = useState(true)
-    const [postRosterChanges, setPostRosterChanges] = useState(false)
     const [autoFillDialogOpen, setAutoFillDialogOpen] = useState(false)
     const [templateChangeDialogOpen, setTemplateChangeDialogOpen] =
         useState(false)
@@ -557,6 +588,28 @@ export function RosterBoard({
             signupGroupByUserId,
         ]
     )
+
+    // Clan members: who may get a change DM from the publish dialog.
+    const memberIds = useMemo(
+        () => new Set(userAssignments.map((assignment) => assignment.userId)),
+        [userAssignments]
+    )
+
+    const changeCount = isDirty ? countRosterChanges(roster, board) : 0
+    const draggedUserId =
+        dragState?.type === "slot"
+            ? board?.squads[dragState.squadIndex]?.players[
+                  dragState.playerIndex
+              ]?.id
+            : dragState?.userId
+    const draggedName = draggedUserId
+        ? usersById.get(draggedUserId)?.name
+        : undefined
+    const firstSquad = sortedSquads[0]
+    const sideFaction = resultFaction(event?.side)
+    const sideLabel = sideFaction
+        ? dictionary.publicPanelAppearance.factions[sideFaction]
+        : event?.side
 
     if (!event) {
         return (
@@ -1203,12 +1256,53 @@ export function RosterBoard({
         }
     }
 
+    /**
+     * Follows the bot's change DMs after a re-publish and says how many did
+     * not arrive (board L2-64): the bot sends them, the dialog only asks.
+     */
+    const watchRosterChanges = async (rosterId: string, requestId: string) => {
+        const t = dictionary.rosterPublish
+        for (let attempt = 0; attempt < 15; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 2_000))
+            const response = await fetch(
+                `/api/servers/${serverId}/rosters/${rosterId}/update-notifications?requestId=${encodeURIComponent(requestId)}`,
+                { cache: "no-store" }
+            ).catch(() => null)
+            const status = (await response?.json().catch(() => null)) as {
+                status?: string
+                dmFailedUserIds?: string[]
+            } | null
+            if (status?.status === "failed") {
+                toast.error(t.requestFailed)
+                return
+            }
+            if (status?.status !== "sent") continue
+            const failed = status.dmFailedUserIds ?? []
+            if (failed.length) {
+                const names = failed
+                    .map(
+                        (id) =>
+                            usersById.get(id)?.name ?? dictionary.common.unknown
+                    )
+                    .join(", ")
+                toast.warning(
+                    pluralize(locale, failed.length, t.dmFailed).replace(
+                        "{names}",
+                        names
+                    )
+                )
+            }
+            return
+        }
+    }
+
     const executeSave = async (
         published: boolean = false,
-        options?: { postAnnouncement?: boolean; notifyPlayers?: boolean }
+        choice?: RosterPublishChoice
     ) => {
         if (!board || !event) return
         const previousRoster = roster
+        const republishing = Boolean(previousRoster?.published && published)
 
         startTransition(async () => {
             try {
@@ -1264,6 +1358,18 @@ export function RosterBoard({
                             notAttendingPlayerIds: cleanNotAttendingPlayerIds,
                             streamerId: board.streamerId,
                             published: published,
+                            // The Discord roster message for this publish (D5);
+                            // a re-publish pings through the bot's reply.
+                            ...(published && choice
+                                ? {
+                                      discordPublish: {
+                                          variant: choice.variant,
+                                          mentionPlayers:
+                                              !republishing &&
+                                              choice.mentionPlayers,
+                                      },
+                                  }
+                                : {}),
                         }),
                     }
                 )
@@ -1296,6 +1402,7 @@ export function RosterBoard({
                 )
                 setIsDirty(false)
                 setPublishDialogOpen(false)
+                setPublishedUpdateDialogOpen(false)
 
                 if (wasDraft) {
                     router.replace(
@@ -1313,60 +1420,43 @@ export function RosterBoard({
                     }),
                 }).catch(() => null)
 
-                if (previousRoster?.published && published) {
+                if (republishing) {
                     const notificationResponse = await fetch(
                         `/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`,
                         {
                             method: "POST",
                             headers: { "content-type": "application/json" },
+                            // Only the choices: the server compares the saved
+                            // roster with the version it stored at the last
+                            // publish (D5-B04).
                             body: JSON.stringify({
-                                previousRoster,
-                                nextRoster: {
-                                    ...board,
-                                    id: nextRosterId,
-                                    reservePlayerIds: cleanReservePlayerIds,
-                                    reserveAttendances: (
-                                        board.reserveAttendances ?? []
-                                    ).filter((attendance) =>
-                                        cleanReservePlayerIds.includes(
-                                            attendance.userId
-                                        )
-                                    ),
-                                    notAttendingPlayerIds:
-                                        cleanNotAttendingPlayerIds,
-                                    squads: saveSquads,
-                                    published: true,
-                                },
-                                postAnnouncement:
-                                    options?.postAnnouncement ?? false,
-                                notifyPlayers: options?.notifyPlayers ?? true,
+                                postAnnouncement: choice?.postChanges ?? false,
+                                notifyPlayers: choice?.notifyPlayers ?? true,
+                                mentionPlayers: choice?.mentionPlayers ?? false,
                             }),
                         }
                     )
                     const notificationBody = (await notificationResponse
                         .json()
                         .catch(() => null)) as {
-                        dmFailedUserIds?: string[]
+                        requestId?: string
                     } | null
 
                     if (!notificationResponse.ok) {
-                        throw new Error(
-                            "Unable to send roster update notifications."
+                        toast.error(dictionary.rosterPublish.requestFailed)
+                    } else if (notificationBody?.requestId) {
+                        void watchRosterChanges(
+                            nextRosterId,
+                            notificationBody.requestId
                         )
-                    }
-
-                    if (notificationBody?.dmFailedUserIds?.length) {
-                        toast.warning(dictionary.roster.updateDmDeliveryFailed)
                     }
                 }
 
                 toast.success(
-                    previousRoster?.published && published
-                        ? options?.postAnnouncement
-                            ? dictionary.roster.updatePosted
-                            : dictionary.roster.updateSavedWithoutPost
+                    republishing
+                        ? dictionary.rosterPublish.republished
                         : published
-                          ? dictionary.roster.published
+                          ? dictionary.rosterPublish.published
                           : dictionary.roster.saved
                 )
             } catch (error) {
@@ -1374,6 +1464,20 @@ export function RosterBoard({
                 toast.error(dictionary.common.error)
             }
         })
+    }
+
+    // Without the page's settings the dialog still works with the defaults.
+    const resolvedPublishContext: RosterPublishContext = publishContext ?? {
+        language: locale,
+        timeZone: timezone ?? "UTC",
+        meetingChannelId,
+        meetingChannelName,
+        defaultVariant: "photo_text",
+        changesPostDefault: true,
+        changesDmDefault: true,
+        messagesSettingsHref: `/${locale}/dashboard/servers/${serverId}/settings/messages`,
+        channelsSettingsHref: `/${locale}/dashboard/servers/${serverId}/settings/channels`,
+        rosterUrl: "",
     }
 
     const handleSave = async (published: boolean = false) => {
@@ -1388,10 +1492,12 @@ export function RosterBoard({
     const canConfirmFromMeetingChannel = Boolean(
         meetingChannelId && board?.id && event?.id
     )
-    const shouldShowMeetingChannelConfirmation = canAdmin && mode === "view"
+    const shouldShowMeetingChannelConfirmation = canAdmin && mode !== "layout"
+    // On phones these actions sit behind the "⋯" button (Mobile board).
     const actionControlClass =
-        "h-10 min-h-10 w-full shrink-0 rounded-xl px-4 text-xs sm:w-56"
-    const actionSelectTriggerClass = `${actionControlClass} data-[size=default]:h-10`
+        "hidden h-9 min-h-9 shrink-0 rounded-xl px-3 text-xs md:inline-flex"
+    const actionSelectTriggerClass =
+        "hidden h-9 min-h-9 w-auto shrink-0 rounded-xl px-3 text-xs data-[size=default]:h-9 md:flex"
     const confirmFromMeetingChannelButton = (
         <Button
             variant="outline"
@@ -1411,6 +1517,11 @@ export function RosterBoard({
             {isConfirmingMeetingChannel
                 ? dictionary.roster.confirmingFromMeetingChannel
                 : dictionary.roster.confirmFromMeetingChannel}
+            {meetingChannelName && !isConfirmingMeetingChannel ? (
+                <span className="text-muted-foreground font-normal">
+                    · {meetingChannelName}
+                </span>
+            ) : null}
         </Button>
     )
 
@@ -1492,34 +1603,146 @@ export function RosterBoard({
     }
 
     return (
-        <div className="space-y-2">
+        <div
+            className={cn(
+                "space-y-2",
+                canAdmin && (!board.published || isDirty) && "pb-20 md:pb-0"
+            )}
+        >
             {canAdmin ? (
-                <div className="flex justify-center md:justify-end">
-                    <div className="flex w-full flex-wrap justify-center gap-3 md:w-auto md:justify-end">
-                        <Select
-                            value={mode}
-                            onValueChange={(value) =>
-                                setMode(value as RosterBoardMode)
-                            }
+                <div className="flex flex-col gap-2 md:items-end">
+                    <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
+                        <div
+                            role="radiogroup"
+                            aria-label={dictionary.matchDetail.roster.modeLabel}
+                            className="border-border/70 bg-muted/40 flex h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-xl border p-0.5 md:flex-none"
                         >
-                            <SelectTrigger className={actionSelectTriggerClass}>
-                                <Settings2 className="size-4" />
-                                <SelectValue
-                                    placeholder={dictionary.roster.modeView}
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="view">
-                                    {dictionary.roster.modeView}
-                                </SelectItem>
-                                <SelectItem value="layout">
-                                    {dictionary.roster.modeLayout}
-                                </SelectItem>
-                                <SelectItem value="assignment">
-                                    {dictionary.roster.modeAssignment}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <Settings2
+                                className="text-muted-foreground mx-1.5 hidden size-4 shrink-0 md:block"
+                                aria-hidden
+                            />
+                            {(
+                                [
+                                    ["view", dictionary.roster.modeView],
+                                    ["layout", dictionary.roster.modeLayout],
+                                    [
+                                        "assignment",
+                                        dictionary.roster.modeAssignment,
+                                    ],
+                                ] as const
+                            ).map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={mode === value}
+                                    onClick={() => setMode(value)}
+                                    className={cn(
+                                        "h-full flex-1 shrink-0 rounded-lg px-2 text-xs whitespace-nowrap transition-colors md:flex-none md:px-2.5",
+                                        mode === value
+                                            ? "bg-background text-foreground font-semibold shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-9 shrink-0 rounded-xl md:hidden"
+                                    aria-label={
+                                        dictionary.matchDetail.roster
+                                            .moreActions
+                                    }
+                                >
+                                    <MoreHorizontal className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                {board && squadPresets.length > 0 ? (
+                                    <>
+                                        <DropdownMenuLabel className="text-muted-foreground text-xs">
+                                            {
+                                                dictionary.roster
+                                                    .selectPresetPlaceholder
+                                            }
+                                        </DropdownMenuLabel>
+                                        {squadPresets.map((preset) => (
+                                            <DropdownMenuItem
+                                                key={preset.id}
+                                                onSelect={() =>
+                                                    requestTemplateChange(
+                                                        preset.id
+                                                    )
+                                                }
+                                            >
+                                                {preset.id ===
+                                                board.squadPresetId ? (
+                                                    <Check className="size-4" />
+                                                ) : (
+                                                    <span className="size-4" />
+                                                )}
+                                                {preset.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        <DropdownMenuSeparator />
+                                    </>
+                                ) : null}
+                                {shouldShowMeetingChannelConfirmation ? (
+                                    <DropdownMenuItem
+                                        disabled={
+                                            !canConfirmFromMeetingChannel ||
+                                            isPending ||
+                                            isConfirmingMeetingChannel
+                                        }
+                                        onSelect={() =>
+                                            void handleConfirmFromMeetingChannel()
+                                        }
+                                    >
+                                        <Check className="size-4" />
+                                        {
+                                            dictionary.roster
+                                                .confirmFromMeetingChannel
+                                        }
+                                    </DropdownMenuItem>
+                                ) : null}
+                                {mode === "assignment" ? (
+                                    <DropdownMenuItem
+                                        disabled={isPending}
+                                        onSelect={() =>
+                                            setAutoFillDialogOpen(true)
+                                        }
+                                    >
+                                        <WandSparkles className="size-4" />
+                                        {dictionary.roster.autoFill}
+                                    </DropdownMenuItem>
+                                ) : null}
+                                {board?.published ? (
+                                    <DropdownMenuItem
+                                        disabled={isPending}
+                                        onSelect={() => void handleSave(false)}
+                                    >
+                                        <EyeOff className="size-4" />
+                                        {dictionary.roster.unpublishRoster}
+                                    </DropdownMenuItem>
+                                ) : board?.id !== "draft-roster" ? (
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={isPending || isDeleting}
+                                        onSelect={() =>
+                                            setDeleteDialogOpen(true)
+                                        }
+                                    >
+                                        <Trash2 className="size-4" />
+                                        {dictionary.roster.deleteRoster}
+                                    </DropdownMenuItem>
+                                ) : null}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         {board && squadPresets.length > 0 ? (
                             <Select
                                 value={board.squadPresetId}
@@ -1553,7 +1776,10 @@ export function RosterBoard({
                             ) : (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <span tabIndex={0} className="block">
+                                        <span
+                                            tabIndex={0}
+                                            className="hidden md:block"
+                                        >
                                             {confirmFromMeetingChannelButton}
                                         </span>
                                     </TooltipTrigger>
@@ -1576,8 +1802,21 @@ export function RosterBoard({
                                 }
                             >
                                 <WandSparkles className="size-4" />
-                                {dictionary.roster.autoFill}
+                                {dictionary.matchDetail.roster.autoFill}
                             </Button>
+                        ) : null}
+                    </div>
+                    <div className="flex w-full flex-wrap items-center gap-2 empty:hidden md:w-auto md:justify-end">
+                        {isDirty && changeCount > 0 ? (
+                            <span
+                                role="status"
+                                className="text-muted-foreground text-xs"
+                            >
+                                {dictionary.matchDetail.roster.unsavedChanges.replace(
+                                    "{count}",
+                                    String(changeCount)
+                                )}
+                            </span>
                         ) : null}
                         {board?.published && event ? (
                             <PublicShareLinkButton
@@ -1600,7 +1839,7 @@ export function RosterBoard({
                             ) : (
                                 <Save className="size-4" />
                             )}
-                            {dictionary.common.save}
+                            {dictionary.matchDetail.roster.save}
                         </Button>
                         {!board?.published ? (
                             <>
@@ -1621,8 +1860,12 @@ export function RosterBoard({
                                 </Button>
                                 {board?.id !== "draft-roster" ? (
                                     <Button
-                                        variant="destructive"
-                                        className={actionControlClass}
+                                        variant="outline"
+                                        className="text-destructive hover:text-destructive hidden size-9 shrink-0 rounded-xl md:inline-flex"
+                                        aria-label={
+                                            dictionary.roster.deleteRoster
+                                        }
+                                        title={dictionary.roster.deleteRoster}
                                         onClick={() =>
                                             setDeleteDialogOpen(true)
                                         }
@@ -1637,7 +1880,6 @@ export function RosterBoard({
                                         ) : (
                                             <Trash2 className="size-4" />
                                         )}
-                                        {dictionary.roster.deleteRoster}
                                     </Button>
                                 ) : null}
                             </>
@@ -1661,23 +1903,54 @@ export function RosterBoard({
                     </div>
                 </div>
             ) : null}
+            <p className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                <span className="inline-flex items-center gap-1">
+                    {getAttendanceIcon("confirmed")}
+                    {dictionary.matchDetail.roster.legendAdmin}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    {getAttendanceIcon("acknowledged")}
+                    {dictionary.matchDetail.roster.legendPlayer}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    {getAttendanceIcon("pending")}
+                    {dictionary.matchDetail.roster.legendPending}
+                </span>
+                {isAssignmentMode ? (
+                    <span>{dictionary.matchDetail.roster.hint}</span>
+                ) : null}
+            </p>
             <Card className="border-border/60 bg-card text-card-foreground rounded-2xl">
                 <CardHeader className="border-border/70 flex flex-col gap-5 border-b pb-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex w-full items-start justify-between gap-4">
                         <div className="space-y-1.5">
                             <div className="text-muted-foreground text-xs tracking-[0.3em] uppercase">
                                 {dictionary.roster.title}
                             </div>
                             <CardTitle className="text-xl leading-none">
-                                {event.name} -{" "}
-                                {formatDateTime(event.gameStart, timezone)}
+                                {event.name} –{" "}
+                                {formatRosterDate(
+                                    event.gameStart,
+                                    locale,
+                                    timezone
+                                )}
                             </CardTitle>
                             <div className="text-muted-foreground text-xs">
-                                {formattedMap} • {event.side} • {assignedCount}/
-                                {totalSlots} {dictionary.common.assigned}
+                                {[
+                                    formattedMap,
+                                    sideLabel,
+                                    dictionary.matchDetail.roster.occupied
+                                        .replace(
+                                            "{assigned}",
+                                            String(assignedCount)
+                                        )
+                                        .replace("{total}", String(totalSlots)),
+                                ]
+                                    .filter(Boolean)
+                                    .join(" • ")}
                             </div>
                         </div>
-                        <div className="flex flex-col gap-3 lg:items-end">
+                        <div className="flex shrink-0 flex-col items-end gap-3">
                             <Badge
                                 variant={
                                     board.published ? "default" : "secondary"
@@ -1692,22 +1965,27 @@ export function RosterBoard({
                     </div>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
                         <RosterInfoCard
-                            label={dictionary.roster.matchTime}
-                            value={formatDateTime(event.meetingStart, timezone)}
+                            label={dictionary.matchDetail.roster.meetingTime}
+                            value={formatRosterDate(
+                                event.meetingStart,
+                                locale,
+                                timezone
+                            )}
                         />
                         <RosterInfoCard
                             label={dictionary.roster.opponent}
                             value={
                                 event.name
                                     .split(dictionary.roster.versusDelimiter)[1]
-                                    ?.trim() ?? dictionary.common.unknown
+                                    ?.split(" · ")[0]
+                                    ?.trim() || dictionary.common.unknown
                             }
                         />
                         <RosterInfoCard
                             label={dictionary.roster.mapSide}
-                            value={`${formattedMap} • ${event.side ?? dictionary.common.unknown}`}
+                            value={`${formattedMap} • ${sideLabel ?? dictionary.common.unknown}`}
                         />
                         <RosterInfoCard
                             label={dictionary.roster.notes}
@@ -1756,6 +2034,25 @@ export function RosterBoard({
                                 notAttendingIndicatorByUserId={
                                     notAttendingIndicatorByUserId
                                 }
+                                reminder={
+                                    reminder ? (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-muted-foreground text-xs">
+                                                {dictionary.matchDetail.roster.noResponse.replace(
+                                                    "{count}",
+                                                    String(reminder.count)
+                                                )}
+                                            </span>
+                                            <ReminderButton
+                                                serverId={serverId}
+                                                eventId={event.id}
+                                                audience="unanswered"
+                                                state={reminder}
+                                                dictionary={dictionary}
+                                            />
+                                        </div>
+                                    ) : undefined
+                                }
                             />
                         ) : null}
                         <div className="space-y-2.5">
@@ -1794,7 +2091,7 @@ export function RosterBoard({
                                             {groupEntry.group.name}
                                         </h3>
                                     </div>
-                                    <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                                    <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                         {groupEntry.squads.map((squad) => (
                                             <SquadCard
                                                 // A squad's name and group are editable. Using either as
@@ -1867,6 +2164,10 @@ export function RosterBoard({
                                                 serverDiscordId={event.guildId}
                                                 noticeReasonByUserId={
                                                     noticeReasonByUserId
+                                                }
+                                                draggedName={draggedName}
+                                                defaultExpanded={
+                                                    squad === firstSquad
                                                 }
                                             />
                                         ))}
@@ -1949,6 +2250,12 @@ export function RosterBoard({
                                                         noticeReasonByUserId={
                                                             noticeReasonByUserId
                                                         }
+                                                        draggedName={
+                                                            draggedName
+                                                        }
+                                                        defaultExpanded={
+                                                            squad === firstSquad
+                                                        }
                                                     />
                                                 ))
                                             )}
@@ -1959,6 +2266,32 @@ export function RosterBoard({
                     </div>
                 </CardContent>
             </Card>
+            {canAdmin && (!board.published || isDirty) ? (
+                // On phones the main action stays at the bottom, in reach.
+                <div className="bg-background/95 border-border/70 fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t p-3 md:hidden">
+                    {isDirty ? (
+                        <Button
+                            variant="outline"
+                            className="h-11 flex-1 rounded-xl"
+                            onClick={() => handleSave(board.published)}
+                            disabled={isPending || isConfirmingMeetingChannel}
+                        >
+                            <Save className="size-4" />
+                            {dictionary.common.save}
+                        </Button>
+                    ) : null}
+                    {!board.published ? (
+                        <Button
+                            className="h-11 flex-1 rounded-xl"
+                            onClick={() => setPublishDialogOpen(true)}
+                            disabled={isPending || isConfirmingMeetingChannel}
+                        >
+                            <Send className="size-4" />
+                            {dictionary.roster.publishRoster}
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
             <Dialog
                 open={templateChangeDialogOpen}
                 onOpenChange={setTemplateChangeDialogOpen}
@@ -2018,40 +2351,24 @@ export function RosterBoard({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog
-                open={publishDialogOpen}
-                onOpenChange={setPublishDialogOpen}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {dictionary.roster.publishConfirmTitle}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {dictionary.roster.publishConfirmDescription}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="outline" className="rounded-xl">
-                                {dictionary.common.cancel}
-                            </Button>
-                        </DialogClose>
-                        <Button
-                            className="rounded-xl"
-                            onClick={() => handleSave(true)}
-                            disabled={isPending || isConfirmingMeetingChannel}
-                        >
-                            {isPending ? (
-                                <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                                <Send className="size-4" />
-                            )}
-                            {dictionary.roster.publishRoster}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {board && event ? (
+                <RosterPublishDialog
+                    open={publishDialogOpen}
+                    onOpenChange={setPublishDialogOpen}
+                    mode="publish"
+                    dictionary={dictionary}
+                    locale={locale}
+                    event={event}
+                    saved={roster}
+                    draft={board}
+                    users={users}
+                    memberIds={memberIds}
+                    groups={groups}
+                    context={resolvedPublishContext}
+                    pending={isPending || isConfirmingMeetingChannel}
+                    onPublish={(choice) => void executeSave(true, choice)}
+                />
+            ) : null}
             <Dialog
                 open={Boolean(unsignedPlayerAssignment)}
                 onOpenChange={(open) =>
@@ -2095,85 +2412,24 @@ export function RosterBoard({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog
-                open={publishedUpdateDialogOpen}
-                onOpenChange={setPublishedUpdateDialogOpen}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {dictionary.roster.updatePublishedPromptTitle}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {dictionary.roster.updatePublishedPromptDescription}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={notifyRosterChanges}
-                            onChange={(event) =>
-                                setNotifyRosterChanges(event.target.checked)
-                            }
-                        />{" "}
-                        {dictionary.roster.notifyRosterChanges}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={postRosterChanges}
-                            onChange={(event) =>
-                                setPostRosterChanges(event.target.checked)
-                            }
-                        />{" "}
-                        {dictionary.roster.postRosterChanges}
-                    </label>
-                    <DialogFooter>
-                        <div
-                            className={
-                                "flex w-full flex-row items-center justify-center gap-2"
-                            }
-                        >
-                            <Button
-                                variant="outline"
-                                className="rounded-xl"
-                                onClick={() => {
-                                    setPublishedUpdateDialogOpen(false)
-                                    void executeSave(true, {
-                                        postAnnouncement: postRosterChanges,
-                                        notifyPlayers: notifyRosterChanges,
-                                    })
-                                }}
-                                disabled={
-                                    isPending || isConfirmingMeetingChannel
-                                }
-                            >
-                                <Save className="size-4" />
-                                {dictionary.roster.updatePublishedPromptSkip}
-                            </Button>
-                            <Button
-                                className="rounded-xl"
-                                onClick={() => {
-                                    setPublishedUpdateDialogOpen(false)
-                                    void executeSave(true, {
-                                        postAnnouncement: true,
-                                        notifyPlayers: notifyRosterChanges,
-                                    })
-                                }}
-                                disabled={
-                                    isPending || isConfirmingMeetingChannel
-                                }
-                            >
-                                <Send className="size-4" />
-                                {
-                                    dictionary.roster
-                                        .updatePublishedPromptAnnounce
-                                }
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {board && event ? (
+                <RosterPublishDialog
+                    open={publishedUpdateDialogOpen}
+                    onOpenChange={setPublishedUpdateDialogOpen}
+                    mode="republish"
+                    dictionary={dictionary}
+                    locale={locale}
+                    event={event}
+                    saved={roster}
+                    draft={board}
+                    users={users}
+                    memberIds={memberIds}
+                    groups={groups}
+                    context={resolvedPublishContext}
+                    pending={isPending || isConfirmingMeetingChannel}
+                    onPublish={(choice) => void executeSave(true, choice)}
+                />
+            ) : null}
             <Dialog
                 open={autoFillDialogOpen}
                 onOpenChange={setAutoFillDialogOpen}
@@ -2248,6 +2504,25 @@ export function RosterBoard({
             </Dialog>
         </div>
     )
+}
+
+/** "ne 11. 10. 20:00" in the clan's time zone, as on the roster board (D3). */
+function formatRosterDate(value: string, locale: string, timeZone?: string) {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    const options = { timeZone: timeZone || "UTC" } as const
+    const day = new Intl.DateTimeFormat(locale, {
+        ...options,
+        weekday: "short",
+        day: "numeric",
+        month: "numeric",
+    }).format(date)
+    const time = new Intl.DateTimeFormat(locale, {
+        ...options,
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(date)
+    return `${day} ${time}`
 }
 
 function RosterInfoCard({ label, value }: { label: string; value: string }) {

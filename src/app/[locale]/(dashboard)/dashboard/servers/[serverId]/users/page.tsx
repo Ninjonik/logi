@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 import {
@@ -40,7 +41,7 @@ function getAssignmentStatusLabel(
 }
 
 export const metadata: Metadata = {
-    title: "Members | Logi",
+    title: "Members",
     description: "Manage server members.",
 }
 
@@ -60,7 +61,7 @@ export default async function ServerUsersPage({
         serverId,
         typeof game === "string" && isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
 
     const { groups, canAdmin } = context
     const assignments = context.assignments

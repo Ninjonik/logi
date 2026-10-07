@@ -21,7 +21,9 @@ import { collectSnapshot } from "../src/application/game-data/collect-snapshot"
 import { collectSessions } from "../src/application/game-data/collect-sessions"
 import { hllCrconProvider } from "../src/infrastructure/game-data/hll-crcon"
 import { retryDelay } from "../src/domain/game-data/policy"
+import { runCredential } from "./gameDataRunCredential"
 import { internalAction } from "./_generated/server"
+import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 
 const providers: Record<ClaimedConnection["provider"], GameDataProvider> = {
@@ -47,14 +49,17 @@ export const collectDue = internalAction({
         await collectSnapshot(connection, {
             provider,
             http: createProviderHttp(connection, {
-                resolveSecret: (ref) => process.env[ref],
+                credential: runCredential(ctx, connection, {
+                    connectionId: connection.id,
+                    generation: connection.generation,
+                }),
                 now: Date.now,
             }),
             now: Date.now,
             repository: {
                 finish: async (result) =>
                     ctx.runMutation(internal.gameData.finishSnapshot, {
-                        id: connection.id as import("./_generated/dataModel").Id<"gameDataConnections">,
+                        id: connection.id as Id<"gameDataConnections">,
                         generation: connection.generation,
                         fence: connection.fence,
                         result,
@@ -85,7 +90,10 @@ export const collectHistoryDue = internalAction({
             fence: claim.fence,
         }
         const http = createProviderHttp(claim.connection, {
-            resolveSecret: (ref) => process.env[ref],
+            credential: runCredential(ctx, claim.connection, {
+                connectionId: claim.connectionId,
+                generation: claim.generation,
+            }),
             now: Date.now,
         })
         try {

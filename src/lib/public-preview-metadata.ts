@@ -1,4 +1,5 @@
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
+import { getInternalAuthSecret } from "@/lib/env"
 
 type PublicPreview = {
     title: string
@@ -18,6 +19,8 @@ export async function getPublicPreviewMetadata(
             : entityType === "clan"
               ? appCacheTags.publicClan(entityId)
               : appCacheTags.publicProfile(entityId)
+    // A failed read throws inside the cache so it is not stored for a day;
+    // the page then renders without a preview.
     return await cachedRead(
         ["public-preview", entityType, entityId],
         [tag],
@@ -29,19 +32,25 @@ export async function getPublicPreviewMetadata(
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     path: "publicPreviews:get",
-                    args: { entityType, entityId },
+                    args: {
+                        secret: getInternalAuthSecret(),
+                        entityType,
+                        entityId,
+                    },
                     format: "json",
                 }),
             })
-            if (!response.ok) return null
+            if (!response.ok) throw new Error("Preview read failed.")
             const result = (await response.json()) as {
                 status: "success" | "error"
                 value?: PublicPreview | null
             }
-            return result.status === "success" ? (result.value ?? null) : null
+            if (result.status !== "success")
+                throw new Error("Preview read failed.")
+            return result.value ?? null
         },
         86400
-    )
+    ).catch(() => null)
 }
 
 export async function getMatchPreviewMetadata(eventId: string) {

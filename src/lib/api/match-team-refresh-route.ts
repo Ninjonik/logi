@@ -33,6 +33,7 @@ const refreshedSchema = z.array(matchTeamAssignmentSchema).max(3)
 export type MatchTeamRefreshPorts<
     Actor extends { subject: string } = { subject: string },
 > = {
+    origin: string
     /** Current workspace admin and dashboard actor; null denies the request. */
     access(serverId: string): Promise<{
         serverRecordId: string
@@ -61,7 +62,7 @@ export function matchTeamRefreshHandler<Actor extends { subject: string }>(
         request: Request,
         params: { serverId: string; eventId: string }
     ): Promise<Response> {
-        if (request.headers.get("origin") !== new URL(request.url).origin)
+        if (request.headers.get("origin") !== ports.origin)
             return json({ error: "forbidden" }, 403)
         try {
             const access = await ports.access(params.serverId)

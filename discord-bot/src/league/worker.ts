@@ -6,99 +6,184 @@ import {
     type ReadonlyCollection,
     type Snowflake,
 } from "discord.js"
-import type { LeagueFixture } from "../../../src/domain/wardogs-league/fixture"
-import { panelArtwork, factionAssets } from "../public-panels/assets"
-import { humanLeagueInput, renderLeagueCard } from "./render"
+import type { LeagueLinkReplyView } from "../../../src/domain/wardogs-league/link-reply"
+import type { MessageStyle } from "../../../src/domain/discord-messages/message-style"
+import { LEAGUE_CARD_KEY_PREFIX } from "../../../src/domain/discord-publications/keys"
+import { humanLeagueInput, linkReplyPayload } from "./render"
 import { publishManagedMessage } from "../sync/publication"
 import { makeFunctionReference } from "convex/server"
 import { env } from "../environment"
 import { convex } from "../convex"
+
+const query = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
+    convex.query(makeFunctionReference<"query">(name), {
+        secret: env.internalSecret,
+        ...args,
+    })
+const mutation = <T>(name: string, args: Record<string, unknown>): Promise<T> =>
+    convex.mutation(makeFunctionReference<"mutation">(name), {
+        secret: env.internalSecret,
+        ...args,
+    })
+
 type GuildTracking = {
     settings: { enabled: boolean; inputChannelId: string | null }
-    records: Array<{
-        id: string
-        revision: number
-        channelId: string | null
-        fixture: LeagueFixture | null
-    }>
+    records: Array<{ id: string; revision: number }>
 }
-async function data(guildId: string): Promise<GuildTracking | null> {
-    return convex.query(
-        makeFunctionReference<"query">("leagueDiscovery:forGuild"),
-        { secret: env.internalSecret, guildId }
+type Binding = {
+    key: string
+    messageId: string | null
+    pending: { channelId: string; marker: string } | null
+}
+
+/**
+ * The per-match League cards are retired (L3-50..55 superseded by the WD
+ * League panels, P6): every card still in Discord is deleted once through
+ * the managed publisher, which also forgets its binding.
+ */
+export async function retireLeagueCards(ports: {
+    tracking: () => Promise<GuildTracking | null>
+    bindings: () => Promise<Binding[]>
+    withdraw: (key: string, revision: number) => Promise<unknown>
+}) {
+    const [tracking, bindings] = await Promise.all([
+        ports.tracking(),
+        ports.bindings(),
+    ])
+    const live = new Set(
+        bindings
+            .filter(
+                (binding) =>
+                    binding.key.startsWith("league:") &&
+                    (binding.messageId || binding.pending)
+            )
+            .map((binding) => binding.key)
     )
+    let removed = 0
+    for (const record of tracking?.records ?? []) {
+        const key = `league:${record.id}`
+        if (!live.has(key)) continue
+        await ports.withdraw(key, record.revision)
+        removed++
+    }
+    return removed
 }
+
+export type PendingLinkReply = {
+    messageId: string
+    channelId: string
+    reply: LeagueLinkReplyView
+}
+
+/**
+ * Answers League links people posted in the links channel (L3-56, L3-57),
+ * once per match: the "replied" flag is stored before the reply is sent, so
+ * a restart never answers twice.
+ */
+export async function sendLeagueLinkReplies(ports: {
+    pending: () => Promise<PendingLinkReply[]>
+    context: () => Promise<{
+        language: string
+        timeZone: string
+        messageStyle: MessageStyle | null
+    }>
+    markReplied: (messageId: string, matchId: string) => Promise<boolean>
+    reply: (
+        channelId: string,
+        messageId: string,
+        payload: ReturnType<typeof linkReplyPayload>
+    ) => Promise<boolean>
+}) {
+    const pending = await ports.pending()
+    if (!pending.length) return 0
+    const context = await ports.context()
+    let sent = 0
+    for (const item of pending) {
+        if (!(await ports.markReplied(item.messageId, item.reply.matchId)))
+            continue
+        const payload = linkReplyPayload(item.reply, {
+            language: context.language,
+            timeZone: context.timeZone,
+            style: context.messageStyle,
+            accentColor: null,
+        })
+        if (await ports.reply(item.channelId, item.messageId, payload)) sent++
+    }
+    return sent
+}
+
 export function startLeagueWorker(client: Client) {
     let stopped = false,
-        running = false,
-        iconsAt = 0,
-        icons: Record<string, string> = {}
+        running = false
     const tick = async () => {
         if (running || stopped) return
         running = true
         try {
-            if (Date.now() > iconsAt) {
-                try {
-                    const emojis = await client.application?.emojis.fetch()
-                    icons = Object.fromEntries(
-                        (await factionAssets()).flatMap((asset) => {
-                            const found = emojis?.find(
-                                (e) => e.name === asset.name
-                            )
-                            return found
-                                ? [[asset.faction, found.toString()]]
-                                : []
-                        })
-                    )
-                } catch {
-                    /* Readable faction labels remain. */
-                }
-                iconsAt = Date.now() + 3600000
-            }
             for (const guild of client.guilds.cache.values()) {
-                const tracking = await data(guild.id)
-                for (const row of tracking?.records ?? []) {
-                    try {
-                        const art = row.fixture
-                            ? await panelArtwork(
-                                  "wardogs",
-                                  row.fixture.snapshot.map?.name
-                              )
-                            : null
-                        const message = row.fixture
-                            ? renderLeagueCard(row.fixture, art?.url, icons)
-                            : {
-                                  content: "League fixture unavailable",
-                                  allowedMentions: { parse: [] as never[] },
-                              }
-                        await publishManagedMessage(client, {
-                            guildId: guild.id,
-                            key: `league:${row.id}`,
-                            revision: row.revision,
-                            channelId: row.channelId,
-                            message: {
-                                ...message,
-                                ...(art
-                                    ? {
-                                          files: [
-                                              {
-                                                  attachment: art.path,
-                                                  name: art.name,
-                                              },
-                                          ],
-                                      }
-                                    : {}),
+                try {
+                    await retireLeagueCards({
+                        tracking: () =>
+                            query<GuildTracking | null>(
+                                "leagueDiscovery:forGuild",
+                                { guildId: guild.id }
+                            ),
+                        // Only the retired cards' keys, never the guild's
+                        // whole publication table.
+                        bindings: () =>
+                            query<Binding[]>("discordPublications:bindings", {
+                                guildId: guild.id,
+                                prefix: LEAGUE_CARD_KEY_PREFIX,
+                            }),
+                        withdraw: (key, revision) =>
+                            publishManagedMessage(client, {
+                                guildId: guild.id,
+                                key,
+                                revision,
+                                channelId: null,
+                                message: {},
+                            }),
+                    })
+                    if (env.leagueMessageContent)
+                        await sendLeagueLinkReplies({
+                            pending: () =>
+                                query<PendingLinkReply[]>(
+                                    "leagueDiscovery:pendingLinkReplies",
+                                    { guildId: guild.id }
+                                ),
+                            context: () =>
+                                query("discordPanelBot:guildContext", {
+                                    guildId: guild.id,
+                                }),
+                            markReplied: (messageId, matchId) =>
+                                mutation<boolean>(
+                                    "leagueDiscovery:markLinkReplied",
+                                    { guildId: guild.id, messageId, matchId }
+                                ),
+                            reply: async (channelId, messageId, payload) => {
+                                const channel = await guild.channels
+                                    .fetch(channelId)
+                                    .catch(() => null)
+                                if (!channel?.isTextBased()) return false
+                                const original = await channel.messages
+                                    .fetch(messageId)
+                                    .catch(() => null)
+                                if (!original) return false
+                                await original.reply({
+                                    ...payload,
+                                    allowedMentions: {
+                                        parse: [],
+                                        repliedUser: false,
+                                    },
+                                })
+                                return true
                             },
                         })
-                    } catch {
-                        console.warn(
-                            "[league] Publication pending; verify channel access or retry."
-                        )
-                    }
+                } catch {
+                    console.warn(
+                        "[league] League cards or link replies pending; will retry."
+                    )
                 }
             }
-        } catch {
-            console.warn("[league] Tracking temporarily unavailable.")
         } finally {
             running = false
         }

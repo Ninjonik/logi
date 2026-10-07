@@ -8,7 +8,8 @@ import test from "node:test"
 
 const secret = process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 const guildId = "guild-a"
-const access = { secret, guildId, actor: actorFixture }
+/** Catalogue writes belong to global administrators. */
+const platform = { secret, actor: { ...actorFixture, superadmin: true } }
 const logoUrl = "https://logi.test/api/image-assets/" + "a".repeat(32) + ".png"
 const schedule = {
     registrationEnd: "2030-01-01T17:00:00.000Z",
@@ -31,7 +32,7 @@ function setup() {
     ctx.db.tables.guilds[0].enabledGames = ["hell_let_loose", "wardogs"]
     ctx.db.seed("imageAssets", {
         _id: "imageAssets:logo",
-        guildId,
+        guildId: "platform",
         kind: "team-logo",
         publicId: "a".repeat(32),
         storageId: "storage:logo",
@@ -54,7 +55,7 @@ async function createTeam(
     extra: Record<string, unknown> = {}
 ): Promise<string> {
     const result = await invoke(teams.create, ctx, {
-        ...access,
+        ...platform,
         input: {
             gameId,
             name,
@@ -117,12 +118,12 @@ test("HLL saves capture two slot snapshots, keep them when omitted and clear the
     // Renaming and archiving the team never rewrites the saved snapshot; an
     // edit of unrelated fields that omits matchTeams preserves the selection.
     await invoke(teams.update, ctx, {
-        ...access,
+        ...platform,
         teamId: alpha,
         input: { expectedRevision: 1, name: "Alpha Renamed" },
     })
     await invoke(teams.archive, ctx, {
-        ...access,
+        ...platform,
         teamId: alpha,
         input: { expectedRevision: 2 },
     })
@@ -173,27 +174,11 @@ test("Wardogs saves accept three slots with factions, sorted by slot", async () 
     )
 })
 
-test("concluded matches freeze assignments; trainings, cross-game, foreign and archived teams are rejected", async () => {
+test("concluded matches freeze assignments; trainings, cross-game, unknown and archived teams are rejected", async () => {
     const ctx = setup()
     const alpha = await createTeam(ctx, "hell_let_loose", "Alpha")
     const bravo = await createTeam(ctx, "hell_let_loose", "Bravo")
     const wolf = await createTeam(ctx, "wardogs", "Wolf")
-    ctx.db.seed("teamDirectory", {
-        _id: "teamDirectory:foreign",
-        guildId: "guild-b",
-        gameId: "hell_let_loose",
-        name: "Foreign",
-        shortCode: null,
-        logoAssetId: null,
-        normalizedName: "foreign",
-        searchText: "foreign",
-        archivedAt: null,
-        revision: 1,
-        createdAt: "2026-10-01T00:00:00.000Z",
-        updatedAt: "2026-10-01T00:00:00.000Z",
-        createdBy: "someone",
-        updatedBy: "someone",
-    })
     const eventId = await upsert(ctx, {
         gameId: "hell_let_loose",
         matchTeams: [{ teamId: alpha, slot: "a", side: null }],
@@ -235,13 +220,13 @@ test("concluded matches freeze assignments; trainings, cross-game, foreign and a
         upsert(ctx, {
             gameId: "hell_let_loose",
             matchTeams: [
-                { teamId: "teamDirectory:foreign", slot: "a", side: null },
+                { teamId: "teamDirectory:missing", slot: "a", side: null },
             ],
         }),
         /match_teams:team_not_found/
     )
     await invoke(teams.archive, ctx, {
-        ...access,
+        ...platform,
         teamId: bravo,
         input: { expectedRevision: 1 },
     })

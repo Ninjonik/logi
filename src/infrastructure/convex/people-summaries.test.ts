@@ -3,11 +3,11 @@ import { projectPlayerFacts } from "../../../convex/peopleProjection"
 import { warconMatchDetail, warconServerId } from "../testing/warcon"
 import { PEOPLE_RESOURCES } from "../../domain/api/people-summaries"
 import type { DataSource } from "../../domain/game-data/contracts"
+import { invoke, spyReads, testContext } from "./testing/database"
 import { peopleGeneration } from "../../../convex/peopleChanges"
 import * as summaries from "../../../convex/peopleSummaries"
 import * as feed from "../../../convex/integrationChanges"
 import { readHllSession } from "../game-data/hll-sessions"
-import { invoke, testContext } from "./testing/database"
 import { readWarconSession } from "../game-data/warcon"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
@@ -488,6 +488,23 @@ test("session changes have revisions and deletion has a retained tombstone", asy
             fetchedAt: Date.now(),
         })
     })
+    assert.equal(
+        (await poll(ctx, before.peopleScopeVersion)).items.length,
+        0,
+        "a session seen again with the same content is not a change"
+    )
+    await changed(ctx, async (tracked) => {
+        const row = await tracked.db.get("gameSessions:one" as never)
+        await tracked.db.patch(
+            "gameSessions:one" as never,
+            {
+                session: {
+                    ...(row as { session: object }).session,
+                    map: "Foy",
+                },
+            } as never
+        )
+    })
     const changes = await poll(ctx, before.peopleScopeVersion)
     assert.equal(changes.resetRequired, false)
     assert.equal(changes.items[0].resource, "player-stat-summaries")
@@ -517,7 +534,6 @@ test("new native roster and verified identity mutation entrypoints use the track
         "rosters",
         "discordRosters",
         "platformIdentityLinks",
-        "platformIdLinks",
         "groups",
         "userAssignments",
         "players",
@@ -687,5 +703,117 @@ test("reviewed relationship backfill is bounded and overlapping or completed run
     assert.deepEqual(
         await invoke(summaries.reconcileResultLinks, ctx, { run }),
         { processed: 0, complete: false }
+    )
+})
+
+test("after a complete walk the cron walks only the events updated since its start through the updatedAt index, and every event again a day after the last full walk", async (t) => {
+    const T0 = Date.parse("2026-10-06T12:00:00.000Z")
+    t.mock.timers.enable({ apis: ["Date"], now: T0 })
+    const ctx = fixture()
+    ctx.db.seed("events", {
+        _id: "events:stale",
+        guildId,
+        gameId: "wardogs",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+    })
+    // A pre-feature row without `updatedAt`: only a full walk reaches it.
+    ctx.db.seed("events", { _id: "events:legacy", guildId, gameId: "wardogs" })
+    const everyEvent = ctx.db.tables.events.length
+    const calls = spyReads(ctx)
+    const eventReads = () =>
+        calls.filter((call) => call.table === "events").map((c) => c.index)
+    const state = () => ctx.db.tables.peopleIntegrationState[0]
+
+    // No watermark yet: the first run walks every event.
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: everyEvent,
+        complete: true,
+    })
+    assert.deepEqual(eventReads(), [null])
+    assert.equal(state().reconciliationSince, "2026-10-06T12:00:00.000Z")
+    assert.equal(state().reconciliationFullWalkAt, "2026-10-06T12:00:00.000Z")
+    assert.equal(state().reconciliationFull, true)
+
+    // Fifteen minutes later one event changed: only it is walked, through
+    // the index, and the watermark moves to this run's start.
+    t.mock.timers.setTime(T0 + 15 * 60_000)
+    await ctx.db.patch("events:stale", {
+        updatedAt: "2026-10-06T12:10:00.000Z",
+    })
+    calls.length = 0
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: 1,
+        complete: true,
+    })
+    assert.deepEqual(eventReads(), ["updatedAt"])
+    assert.equal(state().reconciliationSince, "2026-10-06T12:15:00.000Z")
+    assert.equal(state().reconciliationFullWalkAt, "2026-10-06T12:00:00.000Z")
+    assert.equal(state().reconciliationFull, false)
+
+    // Nothing changed since: the incremental run walks nothing.
+    t.mock.timers.setTime(T0 + 30 * 60_000)
+    calls.length = 0
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: 0,
+        complete: true,
+    })
+    assert.deepEqual(eventReads(), ["updatedAt"])
+
+    // A day after the last full walk every event is walked again, the
+    // legacy row included.
+    t.mock.timers.setTime(T0 + 25 * 3_600_000)
+    calls.length = 0
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: everyEvent,
+        complete: true,
+    })
+    assert.deepEqual(eventReads(), [null])
+    assert.equal(state().reconciliationFullWalkAt, "2026-10-07T13:00:00.000Z")
+    assert.equal(state().reconciliationSince, "2026-10-07T13:00:00.000Z")
+})
+
+test("an interrupted run resumes in its own mode so its cursor stays valid", async (t) => {
+    const T0 = Date.parse("2026-10-06T12:00:00.000Z")
+    t.mock.timers.enable({ apis: ["Date"], now: T0 })
+    const ctx = fixture()
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: ctx.db.tables.events.length,
+        complete: true,
+    })
+    // Thirty changed events: an incremental run needs two pages.
+    for (let index = 0; index < 30; index++)
+        ctx.db.seed("events", {
+            _id: `events:changed-${index}`,
+            guildId,
+            gameId: "wardogs",
+            updatedAt: "2026-10-06T12:05:00.000Z",
+        })
+    t.mock.timers.setTime(T0 + 15 * 60_000)
+    const calls = spyReads(ctx)
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: 25,
+        complete: false,
+    })
+    const state = ctx.db.tables.peopleIntegrationState[0]
+    assert.equal(state.reconciliationFull, false)
+    assert.equal(state.reconciliationStartedAt, "2026-10-06T12:15:00.000Z")
+    // The continuation never ran and the lease expired: the next cron call
+    // finishes the same incremental walk from its cursor.
+    t.mock.timers.setTime(T0 + 30 * 60_000)
+    assert.deepEqual(await invoke(summaries.reconcileResultLinks, ctx), {
+        processed: 5,
+        complete: true,
+    })
+    assert.deepEqual(
+        [
+            ...new Set(
+                calls.filter((c) => c.table === "events").map((c) => c.index)
+            ),
+        ],
+        ["updatedAt"]
+    )
+    assert.equal(
+        ctx.db.tables.peopleIntegrationState[0].reconciliationSince,
+        "2026-10-06T12:15:00.000Z"
     )
 })

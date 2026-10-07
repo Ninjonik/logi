@@ -58,6 +58,8 @@ export const leagueIndexCache = defineTable({
     key: v.string(),
     matchUrls: v.array(v.string()),
     fixtureUrls: v.array(v.string()),
+    /** Results-tab links of the same scan; absent before the WD League panels. */
+    resultUrls: v.optional(v.array(v.string())),
     incomplete: v.boolean(),
     fetchedAt: v.optional(v.number()),
     lastAttemptAt: v.optional(v.number()),
@@ -74,6 +76,8 @@ export const leagueMessageRefs = defineTable({
     version: v.optional(v.number()),
     deleted: v.optional(v.boolean()),
     expiresAt: v.optional(v.number()),
+    /** Matches of this message the bot already answered (L3-56, once each). */
+    repliedMatchIds: v.optional(v.array(v.string())),
 })
     .index("identity", ["guildId", "messageId"])
     .index("guildId", ["guildId"])

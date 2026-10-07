@@ -17,6 +17,11 @@ export type EventParticipant = {
     userId: string
     status: ParticipantStatus
     group?: string | null
+    /**
+     * The capped group a player chose while it was full; they hold a reserve
+     * place without a group ("Zálohy · původně Tanky").
+     */
+    requestedGroup?: string | null
     completed?: ParticipantCompletionStatus
     updatedAt: string
 }
@@ -30,7 +35,16 @@ export type EventNotice = {
     userId: string
     reason: string
     createdAt: string
+    /** The clan admin who excused the player; absent for late notices. */
+    excusedBy?: string
+    /**
+     * "late" from "Přijdu později", "cannot_come" from "Nemůžu". Older
+     * notices have none and read as late.
+     */
+    kind?: EventNoticeKind
 }
+
+export type EventNoticeKind = "late" | "cannot_come"
 
 export type EventResult = {
     sourceUrl: string

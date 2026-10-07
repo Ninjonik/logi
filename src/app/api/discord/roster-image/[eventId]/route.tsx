@@ -8,10 +8,8 @@ import {
     resolveRosterAvatarUrl,
     resolveSiteAssetUrl,
 } from "@/lib/roster-image"
-import {
-    getClanDiscordMessages,
-    getIntlLocaleForClanLanguage,
-} from "@/lib/clan-language"
+import { getIntlLocaleForClanLanguage } from "@/lib/clan-language/core"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { rosterImageCache } from "@/lib/roster-image-cache"
@@ -377,7 +375,7 @@ export async function GET(
 
     const clanLanguage = data.config?.defaultLanguage ?? "en"
     const configTimezone = data.config?.timezone
-    const messages = getClanDiscordMessages(clanLanguage)
+    const messages = getEventMessages(clanLanguage)
     const intlLocale = getIntlLocaleForClanLanguage(clanLanguage)
 
     const usersById = new Map(data.users.map((user) => [user.discordId, user]))
@@ -475,7 +473,8 @@ export async function GET(
     const DETAIL_LINE_HEIGHT = 23
 
     const showServer = hasValue(data.event.server)
-    const showServerPassword = hasValue(data.event.serverPassword)
+    // This image is public (Discord and the web roster link), so it never
+    // shows the server password; rostered players see it under "My assignment".
     const showCap = hasValue(data.event.cap)
     const descriptionLines = hasValue(data.event.description)
         ? wrapAndTruncate(
@@ -493,11 +492,7 @@ export async function GET(
         : []
     const hasDetails = descriptionLines.length > 0 || notesLines.length > 0
 
-    const rosterCardHeight =
-        102 +
-        (showCap ? 20 : 0) +
-        (showServer ? 20 : 0) +
-        (showServerPassword ? 20 : 0)
+    const rosterCardHeight = 102 + (showCap ? 20 : 0) + (showServer ? 20 : 0)
     const meetingCardHeight = 138
     const reserveRowsHeight =
         reserveUsers.length > 0 ? Math.min(reserveUsers.length, 20) * 30 : 22
@@ -1094,18 +1089,6 @@ export async function GET(
                             }}
                         >
                             {`${messages.rosterImage.server}: ${data.event.server}`}
-                        </div>
-                    ) : null}
-                    {showServerPassword ? (
-                        <div
-                            style={{
-                                display: "flex",
-                                fontSize: "12px",
-                                color: "#7dd3fc",
-                                marginTop: "2px",
-                            }}
-                        >
-                            {`${messages.rosterImage.password}: ${data.event.serverPassword}`}
                         </div>
                     ) : null}
                 </div>

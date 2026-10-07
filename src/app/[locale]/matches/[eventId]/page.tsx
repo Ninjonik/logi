@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { locale, eventId } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const preview = await getPublicPreviewMetadata("match", eventId)
-    const title = preview?.title ?? "Match result | Logi"
+    const title = preview?.title ?? "Match result"
     const description = preview?.description ?? "Recorded public match result."
     const imageVersion = getPublicImageVersion(
         preview?.imageVersion ?? "current"
@@ -66,7 +66,7 @@ export default async function PublicMatchPage({ params }: Props) {
     const match = await getPublicMatch(eventId)
     if (!match) notFound()
     return (
-        <PublicSiteShell locale={resolvedLocale}>
+        <PublicSiteShell locale={resolvedLocale} current="community">
             <PublicPage>
                 <div className="space-y-6">
                     <PublicBreadcrumbs

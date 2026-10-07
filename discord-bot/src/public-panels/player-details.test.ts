@@ -91,3 +91,23 @@ test("wrong guild and disabled player details never reach the provider", async (
         assert.equal(f.reads(), 0)
     }
 })
+test("a paused, unsent or removed panel answers no player list", async () => {
+    for (const change of [
+        { paused: true },
+        { enabled: false },
+        { draft: true },
+        { removing: true },
+        { kind: "servers" },
+        { showPlayers: false },
+    ]) {
+        const f = setup()
+        f.ports.readPanel = async () => ({ ...panel, ...change })
+        assert.equal(await loadPlayerDetails(f.input, f.ports), null)
+        assert.equal(f.reads(), 0)
+    }
+})
+test("legacy scoreboard panels keep their player list", async () => {
+    const f = setup()
+    f.ports.readPanel = async () => ({ ...panel, kind: "scoreboard" })
+    assert.ok(await loadPlayerDetails(f.input, f.ports))
+})

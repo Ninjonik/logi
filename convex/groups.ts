@@ -1,14 +1,12 @@
 import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -22,6 +20,7 @@ function normalizeDoc<T extends { _id: unknown }>(doc: T) {
 
 export const listForGuild = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
         gameScope: v.optional(
             v.union(
@@ -33,6 +32,7 @@ export const listForGuild = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildById(ctx, args.guildId)
         if (!guild) {
             return []
@@ -51,9 +51,11 @@ export const listForGuild = query({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         groupId: v.id("groups"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const group = await ctx.db.get(args.groupId)
         return group ? normalizeDoc(group) : null
     },

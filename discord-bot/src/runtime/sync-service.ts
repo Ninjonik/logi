@@ -132,8 +132,24 @@ export class DiscordSyncService {
         this.queueEventSync(eventId)
     }
 
+    /** Redraws one workspace's calendar panel now (a panel request). */
+    async refreshCalendar(guildId: string) {
+        if (!this.guildCache.get(guildId)?.config)
+            throw new Error("Workspace configuration not loaded yet.")
+        await this.syncGuildCalendar(guildId, true)
+    }
+
     getGuildConfig(guildId: string) {
         return this.guildCache.get(guildId)?.config
+    }
+
+    /** The current payload of one event, for DMs sent outside the sync loop. */
+    async loadEventPayload(eventId: string): Promise<SyncPayload | null> {
+        const context = await this.loadEventSyncContext(eventId)
+        if (!context) return null
+        const runtime = this.guildCache.get(context.event.guildId)
+        if (!runtime?.config) return null
+        return buildGuildPayload(runtime, [context])
     }
 
     triggerSoon(delayMs = 2000) {
@@ -438,17 +454,18 @@ export class DiscordSyncService {
             attendanceReminderDue ? new Set([eventId]) : new Set()
         )
         if (signupReminderDue) {
+            // The recipients come from the clan's assignments, read once per
+            // due reminder rather than kept in the guild cache subscription.
+            const assignments = await this.loadGuildAssignments(
+                context.event.guildId
+            )
             await processSignupReminders(
                 this.client,
-                payload,
+                { ...payload, assignments },
                 new Set([eventId])
             )
         }
-        await processMatchRecaps(
-            this.client,
-            eventId,
-            runtime.config.defaultLanguage
-        )
+        await processMatchRecaps(this.client, eventId)
         if (
             context.syncState?.lastCalendarSyncVersion !==
             getCalendarSyncVersion(context.event)
@@ -464,9 +481,19 @@ export class DiscordSyncService {
         })) as EventSyncContext | null
     }
 
-    private async syncGuildCalendar(guildId: string) {
+    private async loadGuildAssignments(guildId: string) {
+        return (await convex.query(references.listGuildAssignments, {
+            secret: env.internalSecret,
+            guildId,
+        })) as SyncPayload["assignments"]
+    }
+
+    private async syncGuildCalendar(guildId: string, requested = false) {
         const runtime = this.guildCache.get(guildId)
-        if (!runtime?.config || !hasConfiguredClanDiscordTarget(runtime)) {
+        if (
+            !runtime?.config ||
+            (!requested && !hasConfiguredClanDiscordTarget(runtime))
+        ) {
             return
         }
 

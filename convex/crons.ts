@@ -10,9 +10,11 @@ crons.interval(
     makeFunctionReference<"action">("leagueDiscoveryJobs:collectDue"),
     {}
 )
+// Walks the events updated since its last complete run, and every event once
+// a day; the inline rebuild on a reviewed-result change does the real work.
 crons.interval(
     "reconcile people result relationships",
-    { minutes: 5 },
+    { minutes: 15 },
     makeFunctionReference<"mutation">("peopleSummaries:reconcileResultLinks"),
     {}
 )
@@ -74,6 +76,41 @@ crons.interval(
     "deliver pending webhooks",
     { minutes: 1 },
     internal.webhookDispatcher.deliverDue,
+    {}
+)
+
+// Seed plans: schedule and automatic triggers, live threshold, timeout.
+// One transaction per plan; a duplicate delivery finds nothing left to do.
+crons.interval(
+    "evaluate seed plans",
+    { minutes: 1 },
+    internal.discordSeedTick.evaluate,
+    {}
+)
+
+crons.interval(
+    "collect all League fixtures and results for the WD League panels",
+    { minutes: 1 },
+    makeFunctionReference<"action">("leagueDiscoveryFixtureJobs:collectDue"),
+    {}
+)
+
+// Expired idempotency records (24 h) and rate-limit windows are removed in
+// bounded batches; nothing else does, and the rows carry stored responses.
+crons.interval(
+    "prune expired API idempotency keys and rate-limit buckets",
+    { hours: 1 },
+    makeFunctionReference<"mutation">("apiHousekeeping:pruneExpired"),
+    {}
+)
+
+// Unfinished clan applications are kept 24 h, then deleted (L6-08, N4-37).
+crons.interval(
+    "delete expired clan application drafts",
+    { hours: 1 },
+    makeFunctionReference<"mutation">(
+        "membershipApplications:deleteExpiredDrafts"
+    ),
     {}
 )
 

@@ -5,7 +5,11 @@ import {
     type LeagueMatch,
 } from "../../domain/wardogs-league/contracts"
 import { matchUrl } from "../../domain/wardogs-league/match-url"
-import { load } from "cheerio"
+import { parseLeagueResults } from "./parse-results"
+// `cheerio/slim` parses with htmlparser2 only; the full entry would bundle
+// parse5, undici and the encoding sniffer into every Convex module that
+// imports this parser (ARCHITECTURE.md, "Convex hot paths").
+import { load } from "cheerio/slim"
 import { z } from "zod"
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim()
@@ -40,7 +44,7 @@ export function parseMatchHtml(html: string, sourceUrl: string): LeagueMatch {
         !fixture
     )
         throw new LeagueError("invalid_html")
-    const warnings: string[] = ["results_not_supported"]
+    const warnings: string[] = []
     const section = (label: string, warning: string) => {
         const node = main.find(`section[aria-labelledby="${label}"]`)
         if (node.length > 1) throw new LeagueError("invalid_html")
@@ -203,6 +207,8 @@ export function parseMatchHtml(html: string, sourceUrl: string): LeagueMatch {
                   url: `https://wardogsleague.net${requestPath}`,
               }
             : null
+    const placements = parseLeagueResults($, { teams, progress, status })
+    warnings.push(...placements.warnings)
     try {
         return leagueMatchSchema.parse({
             id: source.id,
@@ -260,7 +266,7 @@ export function parseMatchHtml(html: string, sourceUrl: string): LeagueMatch {
                     ?.detail ?? null,
             progress,
             scoringRule: value("Points"),
-            results: null,
+            results: placements.results,
             warnings,
         })
     } catch {

@@ -64,23 +64,24 @@ npm install
 
 Create a private `.env.local` file at the repository root. Do not commit it. The exact variables depend on the parts of Logi you run:
 
-| Variable                                     | Used for                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CONVEX_URL`                     | Convex endpoint used by the dashboard and optionally the bot                                                                |
-| `CONVEX_SELF_HOSTED_URL`                     | Alternative endpoint for a self-hosted Convex backend                                                                       |
-| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private Convex CLI administration key for a self-hosted backend                                                             |
-| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                                       |
-| `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                                                                                         |
-| `JWT_SECRET`                                 | Dashboard session signing                                                                                                   |
-| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash                                                                |
-| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true`                                 |
-| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks`        |
-| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected |
-| `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations                                                                |
-| `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                       |
-| `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                               |
-| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces can also register sources in System → Game server data       |
-| `LOGI_GAME_DATA_<NAME>_TOKEN`                | Provider token in Convex, referenced by catalog name only                                                                   |
+| Variable                                     | Used for                                                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_CONVEX_URL`                     | Convex endpoint used by the dashboard and optionally the bot                                                                         |
+| `CONVEX_SELF_HOSTED_URL`                     | Alternative endpoint for a self-hosted Convex backend                                                                                |
+| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private Convex CLI administration key for a self-hosted backend                                                                      |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                                                |
+| `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                                                                                                  |
+| `JWT_SECRET`                                 | Dashboard session signing                                                                                                            |
+| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash                                                                         |
+| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true`                                          |
+| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks`                 |
+| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected          |
+| `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations                                                                         |
+| `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                                |
+| `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                                        |
+| `LOGI_CREDENTIAL_KEYRING`                    | Operator keyring for encrypted game-server keys; identical in Convex and the Next server, never public (see the credentials runbook) |
+| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces connect their own servers in Settings → Game servers                  |
+| `LOGI_GAME_DATA_<NAME>_TOKEN`                | Legacy provider token in Convex for operator catalog entries; migrate it to an encrypted key                                         |
 
 Start the dashboard:
 
@@ -123,6 +124,35 @@ CONVEX_SELF_HOSTED_ADMIN_KEY=your-generated-admin-key
 ```
 
 With those private values configured, use `npx convex dev` to push Convex functions to a development instance; use the deployment process appropriate to your environment for production. Keep the Docker data volume persistent in production, configure public origins and TLS for your host, and set the same `INTERNAL_AUTH_SECRET` for Logi’s runtime and Convex functions. Never commit keys or secrets.
+
+Two settings matter for a production install, because Logi’s bot and panels write to Convex every few seconds:
+
+- `DOCUMENT_RETENTION_DELAY` is how long the backend keeps every superseded version of a document, in seconds. The compose file defaults to `172800` (48 hours), which suits a development instance; for a write-heavy self-hosted install set `DOCUMENT_RETENTION_DELAY=21600` (6 hours) in the backend’s environment so lease refreshes and cache writes do not pile up for two days.
+- If the `integrationChanges` table (the website change feed) has grown to hundreds of thousands of rows, stop the Discord bot first (its five-minute membership reconciliation was the largest writer before `storeMemberObservation` learned to skip unchanged observations) and run `npx convex run integrationChanges:resetFeed` with the self-hosted URL and admin key in the environment: it raises every clan's feed floor so website consumers bootstrap again, then empties the log in batches of 500 and reschedules itself until done. Without the deployed fix the fastest purge is `npx convex import --table integrationChanges --format jsonLines --replace -y empty.jsonl` with an empty file (an atomic table swap; measured 2.4 s for 150,000 rows), followed by setting each `integrationHeads.floor` to its `revision`. Retained versions of the removed rows are released after `DOCUMENT_RETENTION_DELAY`; the SQLite file shrinks only after a `VACUUM` with the backend stopped.
+- Use Postgres (`POSTGRES_URL`) instead of the default SQLite file for production. SQLite serialises writes and slows down as the retained versions accumulate; Postgres keeps the dashboard responsive under the bot’s steady write load.
+
+The compose file publishes the backend on `3210`/`3211` on every interface. A production host that keeps the backend behind a reverse proxy sets `PORT` and `SITE_PROXY_PORT` in the compose `.env` (and binds them to `127.0.0.1` in its own override); never copy this file over a customised one without diffing the ports first.
+
+### Memory of a self-hosted backend
+
+The backend's resident memory is not one thing, and only one of its parts is a leak if it never comes back down:
+
+- **Isolate heaps.** Every function runs in a V8 isolate held by a function-runner worker. An isolate keeps up to 64 MiB of user heap plus 32 MiB of extras, is reused, and is dropped only after `ISOLATE_IDLE_TIMEOUT_SECONDS` (upstream default 600) of idleness or after `ISOLATE_MAX_LIFETIME_SECONDS` (3600). The pool allows `MAX_ISOLATE_WORKERS` (300) of them, so a burst of concurrent calls (an evening with the bot's panels, the website's polling and the crons at once) can leave many GiB of heap idle for ten minutes. The compose file passes these knobs through; a host with 16 to 32 GiB does well with `MAX_ISOLATE_WORKERS=64` and `ISOLATE_IDLE_TIMEOUT_SECONDS=120` in the backend's `.env`.
+- **Bounded caches.** Query results (`UDF_CACHE_MAX_SIZE`, 100 MiB), the index cache (`INDEX_CACHE_SIZE`, 512 MiB), module and code caches (750 MB together), the write log (50 MiB) and source maps (100 MB). About 1.5 GiB in all; they fill and stay.
+- **The SQLite file's page cache.** Reads and writes of the database file are cached by the kernel inside the container's cgroup, so `docker stats` counts them, and a backend that scans a large file (a snapshot export, the retention worker clearing a backlog after `DOCUMENT_RETENTION_DELAY` was lowered, a `resetFeed` chain) can show tens of GiB. This memory is reclaimable, not leaked, but without a container limit it is only reclaimed when the host runs out.
+
+To tell the parts apart on the host:
+
+```bash
+docker stats --no-stream convex-backend-1
+docker exec convex-backend-1 sh -c 'grep -E "^(anon|file|file_mapped|active_file|inactive_file) " /sys/fs/cgroup/memory.stat'
+docker exec convex-backend-1 ls -la /convex/data
+docker inspect -f '{{.RestartCount}} oom={{.State.OOMKilled}}' convex-backend-1
+```
+
+`anon` is the backend's own memory (isolates, caches); `file` is the page cache. A large `file` with a large database is expected until the file is compacted (`VACUUM` with the backend stopped, after the retention worker has caught up) or the data moves to Postgres. A large and growing `anon` with a stable workload is a leak to report upstream with the backend version; a restart releases it. A memory limit in the compose file (`deploy.resources.limits.memory`, commented example in `docker/convex/docker-compose.yml`) caps the page cache at the limit and turns a runaway into an OOM restart instead of a frozen host.
+
+The code-level rules that keep this load bounded are in [ARCHITECTURE.md](./ARCHITECTURE.md) under “Convex hot paths”.
 
 For current production guidance, storage options, upgrades, and limitations, follow Convex’s official [self-hosting guide](https://docs.convex.dev/self-hosting) and [self-hosted backend instructions](https://github.com/get-convex/convex-backend/tree/main/self-hosted).
 

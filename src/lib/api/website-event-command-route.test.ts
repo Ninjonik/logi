@@ -328,7 +328,7 @@ test("HTTP rate limit returns Retry-After without invoking the command", async (
     assert.deepEqual(f.calls, [])
 })
 
-test("policy setup requires same-origin cookie session and forwards immutable workspace binding", async () => {
+test("policy setup behind a proxy requires same-origin cookie session and forwards immutable workspace binding", async () => {
     const calls: unknown[] = []
     const policy = {
         enabled: true,
@@ -341,6 +341,7 @@ test("policy setup requires same-origin cookie session and forwards immutable wo
     }
     let signedIn = true
     const http = websiteEventPolicyHandlers({
+        origin,
         session: async () => (signedIn ? { sid: "sid-one" } : null),
         configure: async (...args) => {
             calls.push(args)
@@ -353,7 +354,7 @@ test("policy setup requires same-origin cookie session and forwards immutable wo
     })
     const request = (headers: HeadersInit = {}) =>
         new Request(
-            `${origin}/api/servers/workspace-one/website-event-policies`,
+            "http://127.0.0.1:3000/api/servers/workspace-one/website-event-policies",
             {
                 method: "POST",
                 headers: {

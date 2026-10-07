@@ -1,333 +1,79 @@
 import { fetchMutation, fetchQuery } from "convex/nextjs"
-import { NextRequest, NextResponse } from "next/server"
 import { makeFunctionReference } from "convex/server"
 
-import { resolveRosterUpdateChannelIds } from "@/domain/rosters/roster-update-channel"
-import { getEventMetadata, getGuildMetadata } from "@/lib/server-metadata"
-import { getDiscordConfigByGuild } from "@/lib/server-discord-settings"
-import { summarizeRosterUpdates } from "@/lib/roster-update-summary"
-import { getUsersByIds } from "@/lib/server-user-management"
-import { getClanDiscordMessages } from "@/lib/clan-language"
-import { getInternalAuthSecret } from "@/lib/env"
-import { sendDiscordBotDm } from "@/lib/discord"
-import { getDiscordBotToken } from "@/lib/env"
-import type { Roster } from "@/types/domain"
+import { rosterUpdateNotificationsHandler } from "@/lib/api/roster-update-notifications-route"
+import { getServerContextUncached } from "@/lib/read-models/server-context"
+import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
+import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 
-const getEventSyncContextReference = makeFunctionReference<"query">(
-    "discordSync:getEventSyncContext"
+export const runtime = "nodejs"
+
+const requestReference = makeFunctionReference<"mutation">(
+    "rosterChanges:request"
 )
-const updateRosterUpdateMessageReference = makeFunctionReference<"mutation">(
-    "discordSync:updateRosterUpdateMessage"
-)
+const statusReference = makeFunctionReference<"query">("rosterChanges:status")
 
-type UpdateNotificationBody = {
-    previousRoster: Roster
-    nextRoster: Roster
-    postAnnouncement?: boolean
-    notifyPlayers?: boolean
-}
-
-class DiscordChannelMessageError extends Error {
-    constructor(
-        readonly status: number,
-        readonly code?: number,
-        readonly details?: string
-    ) {
-        super(
-            `Unable to post roster update message to Discord (HTTP ${status}${code ? `, code ${code}` : ""}${details ? `: ${details}` : ""}).`
-        )
-    }
-}
-
-async function postDiscordChannelMessage(
-    channelId: string,
-    content: string,
-    messageId?: string
-) {
-    const botToken = getDiscordBotToken()
-    if (!botToken) {
-        throw new Error("Discord bot token is missing.")
-    }
-
-    const response = await fetch(
-        `https://discord.com/api/v10/channels/${channelId}/messages${messageId ? `/${messageId}` : ""}`,
-        {
-            method: messageId ? "PATCH" : "POST",
-            headers: {
-                Authorization: `Bot ${botToken}`,
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({
-                flags: 32768,
-                components: [
-                    {
-                        type: 17,
-                        accent_color: 0x5865f2,
-                        components: [{ type: 10, content }],
-                    },
-                ],
-            }),
-            cache: "no-store",
+/**
+ * The roster change digest and the change DMs are sent by the bot in the
+ * shared card (boards L1-120..126, L2-35..40). This route only asks for
+ * them with the admin's choices; Convex compares the saved roster with the
+ * version its previous publish replaced, stored on the server (D5-B04).
+ */
+const handler = rosterUpdateNotificationsHandler({
+    origin: new URL(getSiteUrl()).origin,
+    access: async (serverId, rosterId) => {
+        const [context, actor] = await Promise.all([
+            getServerContextUncached(serverId),
+            currentDashboardActor(),
+        ])
+        if (!context?.canAdmin || !actor) return null
+        const roster = context.rosters.find((item) => item.id === rosterId)
+        if (!roster) return "not_found"
+        return {
+            roster,
+            guildId: context.server.discordId,
+            actorId: actor.subject,
         }
-    )
-
-    if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-            code?: number
-            message?: string
-        } | null
-        throw new DiscordChannelMessageError(
-            response.status,
-            payload?.code,
-            payload?.message
-        )
-    }
-    return (await response.json()) as { id: string }
-}
-
-function formatAnnouncementMessage(input: {
-    eventName: string
-    messages: ReturnType<typeof getClanDiscordMessages>
-    summary: ReturnType<typeof summarizeRosterUpdates>
-    rosterUrl?: string
-}) {
-    const lines = [`📋 **${input.messages.rosterUpdate.announcementTitle}**`]
-
-    if (input.summary.addedLines.length) {
-        lines.push(
-            "",
-            `🟢 **${input.messages.rosterUpdate.addedLabel}**`,
-            ...input.summary.addedLines
-        )
-    }
-    if (input.summary.removedLines.length) {
-        lines.push(
-            "",
-            `🔴 **${input.messages.rosterUpdate.removedLabel}**`,
-            ...input.summary.removedLines
-        )
-    }
-    if (input.summary.movedLines.length) {
-        lines.push(
-            "",
-            `🔁 **${input.messages.rosterUpdate.movedLabel}**`,
-            ...input.summary.movedLines
-        )
-    }
-    if (input.summary.roleChangedLines.length) {
-        lines.push(
-            "",
-            `🔄 **${input.messages.rosterUpdate.roleChangedLabel}**`,
-            ...input.summary.roleChangedLines
-        )
-    }
-
-    return lines.join("\n").slice(0, 1900)
-}
-
-function formatDmMessage(input: {
-    eventName: string
-    playerName: string
-    messages: ReturnType<typeof getClanDiscordMessages>
-    userId: string
-    summary: ReturnType<typeof summarizeRosterUpdates>
-    rosterUrl?: string
-}) {
-    const lines = [
-        input.messages.rosterUpdate.dmIntro
-            .replace("{name}", input.playerName)
-            .replace("{event}", input.eventName),
-    ]
-
-    if (input.summary.addedUserIds.includes(input.userId)) {
-        lines.push(input.messages.rosterUpdate.dmAdded)
-    }
-    if (input.summary.removedUserIds.includes(input.userId)) {
-        lines.push(input.messages.rosterUpdate.dmRemoved)
-    }
-    if (input.summary.movedUserIds.includes(input.userId)) {
-        lines.push(input.messages.rosterUpdate.dmMoved)
-    }
-    if (input.summary.roleChangedUserIds.includes(input.userId)) {
-        const change = input.summary.roleChanges[input.userId]
-        lines.push(
-            `${input.messages.rosterUpdate.dmRoleChanged}: ${change?.previous ?? "Unassigned"} → ${change?.next ?? "Unassigned"}`
-        )
-    }
-
-    if (input.rosterUrl) lines.push("", input.rosterUrl)
-
-    return lines.join("\n")
-}
-
-export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ serverId: string; rosterId: string }> }
-) {
-    const { serverId } = await params
-    const body = (await request.json()) as UpdateNotificationBody
-
-    const [guild, event, discordConfig] = await Promise.all([
-        getGuildMetadata(serverId),
-        getEventMetadata(body.nextRoster.eventId),
-        getDiscordConfigByGuild(serverId),
-    ])
-
-    if (!guild || !event) {
-        return NextResponse.json(
-            { error: "Roster context not found." },
-            { status: 404 }
-        )
-    }
-
-    const changedUserIds = [
-        ...new Set([
-            ...body.previousRoster.squads.flatMap(
-                (squad) =>
-                    squad.players
-                        .map((player) => player.id)
-                        .filter(Boolean) as string[]
-            ),
-            ...body.nextRoster.squads.flatMap(
-                (squad) =>
-                    squad.players
-                        .map((player) => player.id)
-                        .filter(Boolean) as string[]
-            ),
-        ]),
-    ]
-    const users = await getUsersByIds(changedUserIds, guild.discordId)
-    const summary = summarizeRosterUpdates(
-        body.previousRoster,
-        body.nextRoster,
-        users
-    )
-
-    if (!summary.hasChanges) {
-        return NextResponse.json({
-            ok: true,
-            hasChanges: false,
-            dmSentUserIds: [],
-        })
-    }
-
-    const messages = getClanDiscordMessages(discordConfig?.defaultLanguage)
-    const channelIds = resolveRosterUpdateChannelIds({
-        eventAnnouncementChannelId: event.announcementChannelId,
-        eventInfoChannelId: event.eventInfoChannelId,
-        configuredAnnouncementChannelId: discordConfig?.announcementsChannelId,
-        configuredEventInfoChannelId: discordConfig?.eventInfoChannelId,
-    })
-    // The roster link is useful context, but a temporary Convex read failure must
-    // never prevent the actual DM notification from being sent.
-    const syncContext = (await fetchQuery(getEventSyncContextReference, {
-        secret: getInternalAuthSecret(),
-        eventId: event.id as never,
-    }).catch(() => null)) as {
-        syncState: {
-            eventInfoMessageId?: string
-            announcementMessageId?: string
-            rosterUpdateChannelId?: string
-            rosterUpdateMessageId?: string
-        } | null
-    } | null
-    const rosterMessageId =
-        syncContext?.syncState?.eventInfoMessageId ??
-        syncContext?.syncState?.announcementMessageId
-    const rosterChannelId = syncContext?.syncState?.eventInfoMessageId
-        ? channelIds.eventInfoChannelId
-        : channelIds.announcementChannelId
-    const rosterUrl =
-        rosterChannelId && rosterMessageId
-            ? `https://discord.com/channels/${guild.discordId}/${rosterChannelId}/${rosterMessageId}`
-            : undefined
-    const changedRecipients = [
-        ...new Set([
-            ...summary.addedUserIds,
-            ...summary.removedUserIds,
-            ...summary.movedUserIds,
-            ...summary.roleChangedUserIds,
-        ]),
-    ]
-    const usersById = new Map(users.map((user) => [user.discordId, user]))
-    const dmSentUserIds: string[] = []
-    const dmFailedUserIds: string[] = []
-
-    if (body.notifyPlayers !== false)
-        await Promise.all(
-            changedRecipients.map(async (userId) => {
-                const user = usersById.get(userId)
-
-                try {
-                    await sendDiscordBotDm(
-                        userId,
-                        formatDmMessage({
-                            eventName: event.name,
-                            playerName: user?.name ?? userId,
-                            messages,
-                            userId,
-                            summary,
-                            rosterUrl,
-                        })
-                    )
-                    dmSentUserIds.push(userId)
-                } catch {
-                    dmFailedUserIds.push(userId)
-                }
-            })
-        )
-
-    const rosterUpdateChannelId = channelIds.rosterUpdateChannelId
-    if (body.postAnnouncement && rosterUpdateChannelId) {
-        const existingDigestId =
-            syncContext?.syncState?.rosterUpdateChannelId ===
-            rosterUpdateChannelId
-                ? syncContext.syncState.rosterUpdateMessageId
-                : undefined
-        const content = formatAnnouncementMessage({
-            eventName: event.name,
-            messages,
-            summary,
-        })
-        let digest: { id: string }
-        try {
-            digest = await postDiscordChannelMessage(
-                rosterUpdateChannelId,
-                content,
-                existingDigestId
-            )
-        } catch (error) {
-            // Discord returns 10008 when the previously stored digest was
-            // deleted. Post a replacement instead of failing the update.
-            if (
-                existingDigestId &&
-                error instanceof DiscordChannelMessageError &&
-                error.code === 10008
-            ) {
-                digest = await postDiscordChannelMessage(
-                    rosterUpdateChannelId,
-                    content
-                )
-            } else {
-                throw error
-            }
-        }
-        await fetchMutation(updateRosterUpdateMessageReference, {
+    },
+    notify: async (input) => {
+        const queued = (await fetchMutation(requestReference, {
             secret: getInternalAuthSecret(),
-            eventId: event.id as never,
-            guildId: guild.discordId,
-            channelId: rosterUpdateChannelId,
-            messageId: digest.id,
-        })
-    }
+            guildId: input.guildId,
+            eventId: input.roster.eventId,
+            rosterId: input.roster.id,
+            requestedBy: input.actorId,
+            notifyPlayers: input.notifyPlayers,
+            postDigest: input.postAnnouncement,
+            mentionPlayers: input.mentionPlayers,
+        })) as { status: string; requestId?: string; hasChanges?: boolean }
+        if (queued.status !== "queued" && queued.status !== "nothing")
+            throw new Error("Roster change request was refused.")
+        return {
+            ok: true,
+            hasChanges: queued.hasChanges === true,
+            ...(queued.requestId ? { requestId: queued.requestId } : {}),
+        }
+    },
+    status: async (guildId, requestId) =>
+        (await fetchQuery(statusReference, {
+            secret: getInternalAuthSecret(),
+            guildId,
+            requestId,
+        })) as Record<string, unknown> | null,
+})
 
-    return NextResponse.json({
-        ok: true,
-        hasChanges: true,
-        dmSentUserIds,
-        dmFailedUserIds,
-        postedAnnouncement: Boolean(
-            body.postAnnouncement && rosterUpdateChannelId
-        ),
-    })
+/** Asks the bot to tell players about changes to a published roster; clan admins only. */
+export async function POST(
+    request: Request,
+    context: { params: Promise<{ serverId: string; rosterId: string }> }
+) {
+    return handler.POST(request, await context.params)
+}
+
+/** How the bot's change DMs went, for the publish dialog; clan admins only. */
+export async function GET(
+    request: Request,
+    context: { params: Promise<{ serverId: string; rosterId: string }> }
+) {
+    return handler.GET(request, await context.params)
 }

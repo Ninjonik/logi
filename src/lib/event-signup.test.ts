@@ -102,5 +102,40 @@ test("unassigned users still need the linked Discord role to sign up", () => {
         labels: signupLabels,
     })
 
-    assert.deepEqual(result, { ok: false, error: "Missing role" })
+    assert.deepEqual(result, {
+        ok: false,
+        error: "Missing role",
+        reason: "group_role",
+        group: {
+            id: "group-1",
+            name: "Alpha",
+            color: "#000",
+            discordRoleId: "role-1",
+        },
+    })
+})
+
+test("refusals name their reason so Discord can explain the next step", () => {
+    const base = {
+        groups: [{ id: "group-1", name: "Alpha", color: "#000" }],
+        memberRoleIds: [],
+        assignedGroupIds: [],
+        membershipStatus: "member" as const,
+        actionId: "group-1",
+        labels: signupLabels,
+    }
+    const reasonOf = (
+        patch: Partial<Parameters<typeof resolveEventSignupSelection>[0]>
+    ) => {
+        const result = resolveEventSignupSelection({ ...base, event, ...patch })
+        return result.ok ? null : result.reason
+    }
+    assert.equal(reasonOf({ event: { ...event, status: "closed" } }), "closed")
+    assert.equal(reasonOf({ membershipStatus: null }), "membership")
+    assert.equal(reasonOf({ memberRoleIds: null }), "unresolved")
+    assert.equal(reasonOf({ actionId: "gone" }), "invalid")
+    assert.equal(
+        reasonOf({ event: { ...event, requiredRoleIds: ["role-x"] } }),
+        "required_role"
+    )
 })

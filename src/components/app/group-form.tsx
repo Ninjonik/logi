@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
+import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { z } from "zod"
 
@@ -19,6 +20,7 @@ import {
     type DiscordSelectOption,
 } from "@/components/app/discord-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { EmojiPickerInput } from "@/components/app/emoji-picker-input"
 import { groupSchema, type GroupInput } from "@/lib/validation/group"
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -43,6 +45,7 @@ export function GroupForm({
     createMode = false,
     availableGroups = [],
     gameId,
+    usage,
 }: {
     serverId: string
     locale: string
@@ -52,6 +55,8 @@ export function GroupForm({
     createMode?: boolean
     availableGroups?: Group[]
     gameId?: GameId
+    /** How many players use the group, shown before it is deleted. */
+    usage?: { primary: number; secondary: number }
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -107,17 +112,24 @@ export function GroupForm({
             }
         )
 
-        const body = await response.json()
+        const body = (await response.json().catch(() => ({}))) as {
+            error?: string
+            groupId?: string
+        }
         if (!response.ok) {
-            form.setError("root", {
-                message: body.error ?? "Unable to save group.",
-            })
-            toast.error(body.error ?? "Unable to save group.")
+            const message = body.error?.includes("already exists")
+                ? dictionary.groups.duplicateName
+                : dictionary.groups.saveFailed
+            form.setError(
+                body.error?.includes("already exists") ? "name" : "root",
+                { message }
+            )
+            toast.error(message)
             return
         }
 
         toast.success(
-            createMode ? dictionary.groups.createTitle : dictionary.common.save
+            createMode ? dictionary.groups.created : dictionary.groups.saved
         )
 
         startTransition(() => {
@@ -135,17 +147,14 @@ export function GroupForm({
             {
                 method: "DELETE",
             }
-        )
-        const body = await response.json()
-        if (!response.ok) {
-            form.setError("root", {
-                message: body.error ?? "Unable to delete group.",
-            })
-            toast.error(body.error ?? "Unable to delete group.")
-            return
+        ).catch(() => null)
+        if (!response?.ok) {
+            form.setError("root", { message: dictionary.groups.deleteFailed })
+            toast.error(dictionary.groups.deleteFailed)
+            return false
         }
 
-        toast.success(dictionary.common.clear)
+        toast.success(dictionary.groups.deleted)
 
         startTransition(() => {
             router.push(
@@ -325,17 +334,46 @@ export function GroupForm({
                             {dictionary.common.save}
                         </Button>
                         {group && canEdit ? (
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                className="rounded-xl"
-                                onClick={removeGroup}
-                                disabled={
-                                    isPending || form.formState.isSubmitting
+                            <ConfirmActionDialog
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        className="rounded-xl"
+                                        disabled={
+                                            isPending ||
+                                            form.formState.isSubmitting
+                                        }
+                                    >
+                                        <Trash2 className="size-4" />
+                                        {dictionary.groups.deleteAction}
+                                    </Button>
                                 }
+                                title={dictionary.groups.deleteTitle.replace(
+                                    "{name}",
+                                    group.name
+                                )}
+                                description={
+                                    dictionary.groups.deleteDescription
+                                }
+                                confirmLabel={dictionary.groups.deleteAction}
+                                cancelLabel={dictionary.common.cancel}
+                                onConfirm={removeGroup}
                             >
-                                {dictionary.common.clear}
-                            </Button>
+                                {usage ? (
+                                    <p className="text-sm">
+                                        {dictionary.groups.deleteImpact
+                                            .replace(
+                                                "{primary}",
+                                                String(usage.primary)
+                                            )
+                                            .replace(
+                                                "{secondary}",
+                                                String(usage.secondary)
+                                            )}
+                                    </p>
+                                ) : null}
+                            </ConfirmActionDialog>
                         ) : null}
                         {!canEdit ? (
                             <p className="text-muted-foreground self-center text-sm">

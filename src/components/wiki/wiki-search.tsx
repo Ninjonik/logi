@@ -78,9 +78,9 @@ const pages = [
         "squad topic preset roster template",
     ],
     [
-        "Server settings",
+        "Clan settings",
         "/wiki/configuration/settings",
-        "API key Discord configuration",
+        "API key Discord configuration channels roles system webhooks imports",
     ],
     [
         "Tickets",

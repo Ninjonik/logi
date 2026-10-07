@@ -27,9 +27,9 @@ must refresh the information before accepting a new edit.
 
 The website command supports match or training names, descriptions, maps, sides
 and schedule times. Updates and cancellation are available before meeting start.
-For matches, the website can also select active workspace teams for each slot
-with an optional side or faction, and explicitly refresh one selected team's
-saved name, short code and logo from the team directory. That refresh stays
+For matches, the website can also select active teams from Logi's global team
+catalogue for each slot with an optional side or faction, and explicitly refresh
+one selected team's saved name, short code and logo from the catalogue. That refresh stays
 available after meeting start until the match concludes. Logi records each
 team's presentation when it is selected; an edit that leaves teams out keeps
 the current selection, and a concluded match keeps its teams unchanged.
@@ -48,8 +48,10 @@ to configure a dedicated application/key policy and per-game role allowlist.
 
 ### Start a new event
 
-Open the workspace **Events** page and choose **Create event**. If you started
-from **All games**, first select the intended game in the game-selection panel.
+Open **Matches** and choose **New match**, or **Trainings** and **New training**.
+The old **Events** list now opens **Matches**, which lists matches and
+trainings together. If you started from **All games**, first select the
+intended game in the game-selection panel.
 Enter a descriptive name before adding optional details.
 
 ### Set the schedule
@@ -108,12 +110,12 @@ attended.
 
 ## Event timeline and automation
 
-| Status       | When it applies                                                                                                        | What changes for members                                                                                                               |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                           |
-| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                              |
-| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.         |
-| Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | Discord event messages are removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
+| Status       | When it applies                                                                                                        | What changes for members                                                                                                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                                                                                               |
+| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                                                                                                  |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.                                                                             |
+| Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | The announcement becomes the **Played** card (or **Cancelled**, see below), the roster card is removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
 promise that every visual update happens at the exact second. Editing an event
@@ -125,21 +127,30 @@ new scheduled event instead.
 
 ### Discord behavior per event
 
-Match signup names are sorted within each group using the server's configured
-Discord language, independently of the bot host's language. Legacy embeds read
-left to right across each row; compact Components V2 messages keep that same
-order. Czech sorting treats **Ch** as a letter after **H**.
+The public announcement shows only counts; names appear in the private **Show
+sign-ups** list, ordered by sign-up time within each group. Members without an
+answer are sorted by name in the server's Discord language (Czech sorting
+treats **Ch** as a letter after **H**).
 
 Discord output needs the bot running and the relevant server or event-level
 channel configuration. The event's announcement and event-info channels are
 chosen when the event is created and are kept for later edits; changing those
 fields in the editor does not move existing Discord messages to a new channel.
 For matches, a forum post is enabled by default unless disabled; trainings do
-not create forum posts. When a forum channel exists, the registration and
-event-information embeds link directly to that event's forum channel. A
-scheduled Discord event exists only when the selected meeting channel is a
-voice or stage channel. If that channel is removed or is not a supported type,
-Logi cancels its linked scheduled event.
+not create forum posts. When a forum channel exists, the announcement's footer
+links it (**Match forum #vlk-vs-rog-11-10**). A scheduled Discord event exists
+only when the selected meeting channel is a voice or stage channel. If that
+channel is removed or is not a supported type, Logi cancels its linked
+scheduled event.
+
+The scheduled Discord event is written in the clan language: its name is the
+announcement title with the category ("VLK vs ROG · Friendly") and its
+description reads like "Friendly against ROG, we play Allies. / Meeting 19:30,
+start 20:00 · Foy · day / Sign-up and roster: #announcements / Rostered players
+get the server password under My assignment." It never contains the raw map
+name, the raw side or the password. It runs from the meeting to the match end;
+a match ended before its meeting cancels it, even when the bot only syncs it
+later.
 An optional registration announcement start delays Discord registration messages,
 event announcements, and match forum posts, without delaying calendar entries or
 Discord scheduled events. Events created before this option was added have no
@@ -148,13 +159,125 @@ start time and continue to announce immediately.
 Events have a planned duration (90 minutes by default, including legacy
 events) and a 15-minute reserve before automatic conclusion. Managers may
 conclude an event at any time after its meeting start. An event can also create
-one temporary voice channel for each non-empty roster squad at meeting start.
+one temporary voice channel for each non-empty roster squad at meeting start,
+named after the squad and what it is in the clan language (for example
+**F1 · Infantry**, **T1 · Tanks**, **R1 · Recon**, **CMD · Command**). The
+channels sit in the match's own category, **Squads · VLK vs ROG**, which the bot
+creates right below the selected category with the same permissions; when it
+cannot create a category, the channels go into the selected category itself.
 Enable this per event and select a category there, or leave the category empty
-to use the server's default squad-voice category. Those channels are removed
-when the event concludes.
+to use the server's default squad-voice category. The channels and the match's
+category are removed when the event concludes.
 
-The bot creates temporary Attendees and Reserves roles for non-concluded
-events. Attending sign-ups and squad placements feed Attendees; roster reserves
+### What the Discord messages show
+
+All event messages use the server's Discord language, address players
+informally and use one clan colour (Logi amber, `#E8A33D`, unless the clan
+sets its own under Discord messages). The state of a match is a chip inside the
+card and the category is a chip next to the title, with the category colour only
+as the chip's dot; neither changes the bar. Times are Discord timestamps with
+the weekday ("Sun 11. 10. · 20:00 · in 6 days"), so every reader sees them in
+their own time zone.
+
+- **Match announcement:** one message in the announcement channel from the
+  announcement to the result. The bot edits it in place at every change and
+  never posts a second one; a card deleted by someone is posted again in the
+  same channel without a ping. The role ping sits above the card and goes out
+  only with the first post. The card shows the team codes as the title
+  ("VLK vs ROG") with the category chip, the sides row (each team code with its
+  side and faction emblem), the start, the map with time of day and the meeting
+  time, the map picture top right, the state chip with its detail, the counts
+  and the notes. Its states:
+    - **Sign-ups open** with the deadline and **Signed up 17** · Infantry 12 ·
+      Tanks 4/6 · Recon 1/2. When a capped group is full the card names it
+      ("Tanks and Recon full") and counts **Reserves**. Buttons: **Sign up**,
+      **Edit sign-up**, **Can't make it**, **Show sign-ups** and **Add to
+      calendar**.
+    - **Sign-ups closed** ("command is building the roster") with plain counts
+      and **Not coming**; buttons **Show sign-ups** and **Add to calendar**.
+    - **Roster published** ("18 players and 7 reserves in #info") with **Show my
+      place**, **Show sign-ups**, **Open roster** and **Add to calendar**. Without
+      a roster channel the card also shows the roster picture.
+    - **Starting** from the meeting ("meeting is on in 🔊 Meeting") with
+      **Confirmed 15 of 18** · running late 1 · not coming 1 and **Confirm
+      attendance**, **Running late** and **My assignment**.
+    - **In progress** ("since 20:00") from the start: the counts stay and the
+      buttons go.
+    - **Played** with the start and map, the confirmed result ("**Win 4 : 1** ·
+      confirmed by Kowalski") once leadership confirms it, **Show match** when a
+      public match page exists and the results channel in the footer.
+    - **Cancelled** when the match was ended before its meeting: the start is
+      struck through and "The Discord event is cancelled. If you signed up, there
+      is nothing you need to do."
+      The bot redraws the card at the meeting and at the start, so these changes do
+      not wait for any edit.
+- **Training announcement:** the same card and buttons, titled "Training ·
+  name", with the meeting and the server (never its password), **Signed up 8** ·
+  Not coming 1, and no teams, map or forum.
+- **Sign-up replies** (visible only to the player who clicks; in a DM they
+  arrive as a normal message, in the clan's language too): **Sign up** opens "Where do you want to play?"
+  with each group, its count and, for a full group, "you'll go to the
+  reserves". Choosing a group saves the sign-up and the same card turns into
+  "Sign-up saved: Infantry" with **Change group** and **Can't make it**; **Edit
+  sign-up** returns that card. A full group keeps the sign-up as a reserve
+  without a group, a group that needs a Discord role names the group, the role
+  and where to ask for it, and closed sign-ups say when they closed. Every
+  refusal is a short reason and the next step.
+- **Show sign-ups** (private, for everyone): the players by group in sign-up
+  order with their membership chip (Member, Reserve, Recruit, Mercenary) and
+  sign-up time, "running late (20:15)" for a late notice, the reserves with the
+  group they originally chose, and who is not coming. A **Group** select narrows
+  the list; more than 40 names page with **Previous** and **Next**. Clan
+  leadership (the Logi admin role or Discord Administrator, checked when they
+  click) also sees why players are not coming, the members who neither signed
+  up nor declined (**No response**, also a filter), **Remind non-responders**
+  (the sign-up reminder DM, at most once an hour per match, while sign-ups are
+  open; after they close the button is greyed out and the card says why) and
+  **Open on the web** (the match's **Sign-ups and attendance** tab in Logi).
+- **Add to calendar** opens a Google Calendar event from the meeting to the
+  end, titled like the card, at "Discord · clan · channel Meeting", with the
+  meeting and start times, the map and a link back to the announcement channel.
+- **Published roster** (event-info channel): the roster image, by default with
+  every squad written out under it, and the **My assignment**, **Show roster**
+  and **Open roster** buttons. See
+  [publish to Discord](/wiki/operations/rosters#publish-to-discord).
+- **My assignment** (visible only to the player who presses it): squad and role,
+  the squad leader when the roster marks one (Officer, Squad Leader, SL, Tank
+  Commander, Spotter or Commander roles), the leader's note, the meeting time
+  and channel, and the server with its password. From the meeting start it
+  offers **Confirm attendance**, like the announcement; until the game starts
+  **Running late**. The attendance reminder DM, sent the day before, can
+  already confirm.
+- **Attendance reminder DM:** "You're playing Name tomorrow" (or today, in the
+  clan's time zone), start, meeting time and the player's squad and role, with
+  **Confirm attendance**, **Running late** and **Can't make it**. Both late and
+  can't-make-it work from the DM.
+
+Direct messages from the bot use the clan language and address the player
+informally. Each ends with the clan name and a **Message settings** link to the
+player's own Logi settings.
+
+When leadership deletes a match, **Confirm attendance**, **Running late**,
+**Can't make it**, **My assignment** and **Show roster** answer "This match is
+no longer available" in the clan language, in the server and in a DM. A DM sent
+before this behaviour was added has the same buttons, but when its match has
+been deleted the reply is in English, because the button does not name the
+clan.
+
+Faction emblems are the bot's installed application emoji (Wardogs factions,
+see the public panels guide) or, without them, a fixed monochrome marker: ★ for
+Allies, ✚ for Axis and `◈` for a Wardogs faction. Coloured squares are not used.
+
+A server password is never posted publicly: not in announcements, the
+event-information card, forum posts, Discord scheduled events or the public
+roster image. Only players on the published roster (squads or reserves) see it,
+under **My assignment**. For matches the server name is shown there as well;
+trainings, which have no roster assignment, still show their server in the
+announcement.
+
+The bot creates temporary match roles for non-concluded events when the match
+template enables them, named in the clan language after the match ("VLK vs ROG ·
+Players" and "VLK vs ROG · Reserves"; older roles are renamed). Attending sign-ups and squad placements feed Attendees; roster reserves
 feed Reserves and are excluded from Attendees. Both are deleted at conclusion.
 
 ### Absence notices and reminders
@@ -165,28 +288,52 @@ and people who are neither an attendee nor a reserve cannot submit one.
 
 For a **published** roster in **starting** status, the bot can direct-message
 unacknowledged squad players and reserves at 24, 18, 12, and 6 hours before the
-meeting time. Direct messages are skipped when unavailable, and each successful
-offset is logged so it is not sent twice. The message's acknowledge button only
-marks the person as acknowledged; a manager must mark them confirmed when that
-is appropriate.
+meeting time. Players who already sent an absence notice or declined get no
+further reminders. Direct messages are skipped when unavailable, and each
+successful offset is logged so it is not sent twice. The message's acknowledge
+button only marks the person as acknowledged; a manager must mark them confirmed
+when that is appropriate.
+
+**Can't make it** in the reminder DM is for a player on the published roster
+(squad or reserves) who has to drop out before the game starts. It opens a short
+form with an optional reason (only the organisers see it). Submitting it saves an
+absence notice with that reason (or "Can't make it"), withdraws the player's
+attendance confirmation and adds a **declined** entry with their squad and role
+to the sign-up history. The roster slot stays filled: the organisers see the
+notice on the roster board, the player counts as excused on the attendance page,
+and they decide who takes the place. Pressing it again with the same reason
+changes nothing.
 
 ### Daily match signup reminders
 
 For matches, managers can choose which membership categories receive a direct
 message reminder to sign up. The default is active regular members only;
 recruits and reserve members can be added, while mercenaries are never included.
-The bot sends a compact registration summary and controls 24 hours after
-creation, then every 24 hours while registration remains open. It does not
-show the signup list because that list is only live in the event registration
-message; when available, the DM links to the registration channel and event
-forum. Its controls let the recipient sign up, change their signup, or decline
-directly from the DM. Clear every recipient category to turn the reminders off
+The bot sends a sign-up reminder card (the match, its sides, the start, when
+sign-ups close and why the DM came) 24 hours after the announcement (or after
+creation when the match has no announcement start), then every 24 hours while
+registration remains open. Its **Sign up**, **Can't make it** and **Open
+announcement** buttons work directly from the DM: **Sign up** opens the group
+picker there and the replies arrive in the same conversation. The same card is
+sent when leadership presses **Remind** in Logi or **Remind non-responders**
+under **Show sign-ups**. Clear every recipient category to turn the reminders off
 for that match. A member stops
 receiving these reminders as soon as they choose either attending or not
 attending. Memberships without a game assignment are treated as Hell Let Loose
 members for Hell Let Loose matches. Matches that were created before this setting was added use the
 regular-member default as well, so members who had already responded are still
 excluded from their first reminder.
+
+## If saving is denied
+
+Creating or editing an event (including a Wardogs match registration), importing
+results and concluding events require a current workspace administrator session.
+If a save reports that only administrators can change the event, sign in again
+and check your access to that workspace. If an administrator still cannot save,
+ask the Logi operator to check that `SITE_URL` matches the public dashboard URL.
+This also applies when Logi runs behind a reverse proxy: its internal container
+address is not the browser's origin. API keys do not replace an administrator
+session for these dashboard actions.
 
 ## Event status and conclusion
 
@@ -201,3 +348,17 @@ was concluded before its meeting time is treated as cancelled for scoring.
 </Callout>
 
 > **Screenshot placeholder — event editor:** Show the Create/Edit Event form in a realistic populated state. Label the name, meeting time, game time, sign-up controls, map/mode fields, topic preset, stratmap selection, and save button.
+
+## Older Discord messages after the redesign
+
+After the update the bot redraws, once, the messages of upcoming matches and
+trainings and of those that ended in the last 14 days, a few matches per
+minute: the announcement, the published roster in the roster channel and the
+match forum's posts. That includes matches whose announcement the old bot had
+already removed when sign-ups closed: their roster message and forum posts are
+redrawn without posting a new announcement. It is the same message in the same
+place, so links keep working, sign-ups and rosters stay as they were and nobody
+is pinged again. The per-group buttons of old announcements (the group is now
+chosen after **Sign up**) and the grey **Automatic updates** button disappear.
+Matches that ended longer ago and DMs already sent stay as they are. Logi
+records each redrawn match, so a restart never redraws it twice.

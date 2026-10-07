@@ -443,7 +443,6 @@ function seedTeams(f: ReturnType<typeof fixture>) {
         team("alpha", { shortCode: "ALP", logoAssetId: "imageAssets:a" })
     )
     f.ctx.db.seed("teamDirectory", team("bravo"))
-    f.ctx.db.seed("teamDirectory", team("foreign", { guildId: "999" }))
     f.ctx.db.seed(
         "teamDirectory",
         team("archived", { archivedAt: "2026-10-02T00:00:00.000Z" })
@@ -592,11 +591,10 @@ test("commands capture team snapshots on create, preserve them when omitted and 
     assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 4)
 })
 
-test("foreign, archived, cross-game and duplicate selections return invalid_match_teams and write nothing", async (t) => {
+test("archived, cross-game, unknown and duplicate selections return invalid_match_teams and write nothing", async (t) => {
     const f = fixture(t)
     seedTeams(f)
     for (const matchTeams of [
-        [{ teamId: "teamDirectory:foreign", slot: "a", side: null }],
         [{ teamId: "teamDirectory:archived", slot: "a", side: null }],
         [{ teamId: "teamDirectory:hll", slot: "a", side: null }],
         [{ teamId: "teamDirectory:unknown", slot: "a", side: null }],

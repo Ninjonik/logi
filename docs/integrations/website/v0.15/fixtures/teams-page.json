@@ -7,6 +7,8 @@
                 "name": "Example Rifle Regiment",
                 "shortCode": "ERR",
                 "logoUrl": "https://logi.example/api/image-assets/fedcba9876543210fedcba9876543210.png",
+                "description": null,
+                "links": ["https://example.org/example-rifle-regiment"],
                 "revision": 1,
                 "updatedAt": "2026-09-30T08:15:00.000Z"
             },
@@ -16,6 +18,11 @@
                 "name": "Synthetic Armoured Division",
                 "shortCode": "SAD",
                 "logoUrl": "https://logi.example/api/image-assets/0123456789abcdef0123456789abcdef.png",
+                "description": "Synthetic Hell Let Loose armoured community used only in consumer examples.",
+                "links": [
+                    "https://example.org/synthetic-armoured-division",
+                    "https://example.org/synthetic-armoured-division/recruitment"
+                ],
                 "revision": 3,
                 "updatedAt": "2026-10-03T10:00:00.000Z"
             }

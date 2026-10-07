@@ -5,28 +5,35 @@ import {
     handleIfNotLoggedIn,
     updateCurrentPlayerProfile,
 } from "@/lib/auth"
+import { userSettingsPatchSchema } from "@/lib/validation/user-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
+import { isSameOrigin } from "@/lib/api/superadmin-route"
+import { getSiteUrl } from "@/lib/env"
 
 export async function POST(request: Request) {
     await handleIfNotLoggedIn("/dashboard/settings/user")
+    if (!isSameOrigin(request, new URL(getSiteUrl()).origin)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
 
     try {
-        const body = (await request.json()) as {
-            avatar?: string
-            platformIds?: string
-            matchRecapNotificationsEnabled?: boolean
-            defaultWorkspaceId?: string
-        }
-
-        if (!body.avatar?.trim()) {
+        const parsed = userSettingsPatchSchema.safeParse(
+            await request.json().catch(() => null)
+        )
+        if (!parsed.success) {
             return NextResponse.json(
-                { error: "Avatar is required." },
+                {
+                    error:
+                        parsed.error.issues[0]?.message ??
+                        "Invalid user settings.",
+                },
                 { status: 400 }
             )
         }
+        const body = parsed.data
 
-        const defaultWorkspaceId = body.defaultWorkspaceId?.trim()
+        const defaultWorkspaceId = body.defaultWorkspaceId
         if (defaultWorkspaceId) {
             const visibleWorkspaces = await getVisibleGuildsForLoggedInUser()
             if (

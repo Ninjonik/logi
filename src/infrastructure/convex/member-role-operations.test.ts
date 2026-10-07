@@ -87,16 +87,17 @@ test("actual staff assignment queues atomically while legacy service and import 
     assert.equal(operation.actorId, "333333333333333333")
     assert.deepEqual(operation.desiredRoleIds, ["clan", "member"])
     assert.equal(operation.status, "pending")
-    const broken = fixture()
-    broken.db.tables.discordConfigs[0].dashboardAdminRoleId = "member"
-    await assert.rejects(
-        invoke(assignments.upsertByServerDiscordId, broken, {
-            ...save,
-            roleActor: actor,
-        }),
-        /owner/
-    )
-    assert.equal(broken.db.tables.userAssignments?.length ?? 0, 0)
+    // A Discord role may also serve another policy (here the dashboard
+    // administrator role); the membership operation still queues.
+    const shared = fixture()
+    shared.db.tables.discordConfigs[0].dashboardAdminRoleId = "member"
+    await invoke(assignments.upsertByServerDiscordId, shared, {
+        ...save,
+        status: "active",
+        roleActor: actor,
+    })
+    assert.equal(shared.db.tables.userAssignments.length, 1)
+    assert.equal(shared.db.tables.memberRoleOperations.length, 1)
 })
 test("execution rechecks current actor authority, assignment version, policy and lease", async () => {
     const ctx = fixture(),
@@ -481,18 +482,16 @@ test("periodic checks retain a bounded audit and expose only tenant-scoped opera
     assert.equal("allowedRoleIds" in row, false)
 })
 
-test("dashboard and legacy group writers reject a second owner for membership roles", async () => {
+test("dashboard and legacy group writers accept a group role a membership policy also uses", async () => {
     const ctx = fixture()
     const group = {
-        name: "Conflicting group",
+        name: "Shared role group",
         color: "#ffffff",
         order: 0,
         discordRoleId: "member",
     }
-    await assert.rejects(
-        invoke(groups.upsert, ctx, { secret, guildId: "guilds:a", ...group }),
-        /owner/
-    )
+    await invoke(groups.upsert, ctx, { secret, guildId: "guilds:a", ...group })
+    assert.equal(ctx.db.tables.groups.length, 1)
     ctx.db.seed("apiKeys", {
         _id: "apiKeys:legacy",
         guildId: "111111111111111111",
@@ -506,31 +505,32 @@ test("dashboard and legacy group writers reject a second owner for membership ro
         methodPath: "POST /groups",
         operation: "create",
         ...group,
+        name: "Shared role group via API",
     }
     const result = await invoke(publicApi.mutateClanGroup, ctx, args)
-    assert.equal(result.status, 400)
-    assert.equal(JSON.parse(result.body).error.code, "validation_error")
+    assert.ok(result.status < 300, result.body)
     assert.deepEqual(await invoke(publicApi.mutateClanGroup, ctx, args), result)
-    assert.equal(ctx.db.tables.groups?.length ?? 0, 0)
+    assert.equal(ctx.db.tables.groups.length, 2)
 })
 
-test("configuration rejects shared category roles across games before persisting", async () => {
+test("configuration accepts category roles shared across games", async () => {
     const ctx = fixture(),
         policy = structuredClone(
             ctx.db.tables.discordConfigs[0].membershipSettings
         )
-    await assert.rejects(
-        invoke(configuration.upsertConfig, ctx, {
-            secret,
-            guildId: "guilds:a",
-            timezone: "UTC",
-            defaultLanguage: "en",
-            membershipSettings: policy,
-            gameOverrides: { wardogs: { membershipSettings: policy } },
-        }),
-        /owner/
+    await invoke(configuration.upsertConfig, ctx, {
+        secret,
+        guildId: "guilds:a",
+        timezone: "UTC",
+        defaultLanguage: "en",
+        membershipSettings: policy,
+        gameOverrides: { wardogs: { membershipSettings: policy } },
+    })
+    assert.deepEqual(
+        ctx.db.tables.discordConfigs[0].gameOverrides?.wardogs
+            ?.membershipSettings,
+        policy
     )
-    assert.equal(ctx.db.tables.discordConfigs[0].gameOverrides, undefined)
 })
 
 test("unlinked player assignments remain editable but cannot queue Discord grants", async () => {
@@ -796,6 +796,24 @@ test("aliases of one linked account share the desired version and Discord lock",
     assert.equal(second.operationId, newer._id)
     assert.ok(second.fence > first.fence)
     assert.equal(ctx.db.tables.memberRoleLocks.length, 1)
+})
+
+test("a submitted application queues the recruit role without the clan role (N4-40)", async () => {
+    const ctx = fixture()
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        roleActor: { userId: save.userId, kind: "application" },
+    })
+    const [applied] = ctx.db.tables.memberRoleOperations
+    assert.deepEqual(applied.desiredRoleIds, ["recruit"])
+    // Accepting as a recruit gives the clan role too.
+    await invoke(assignments.upsertByServerDiscordId, ctx, {
+        ...save,
+        assignmentId: ctx.db.tables.userAssignments[0]._id,
+        roleActor: { userId: "333333333333333333", kind: "recruitment" },
+    })
+    const latest = ctx.db.tables.memberRoleOperations.at(-1)
+    assert.deepEqual(latest?.desiredRoleIds, ["clan", "recruit"])
 })
 
 test("self application and leave/rejoin checks resolve a stable player to the linked Discord subject", async () => {

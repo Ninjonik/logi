@@ -6,17 +6,26 @@ import {
     updateTracked,
 } from "./leagueTrackingStore"
 import {
-    trackingSettingsSchema,
+    leagueLinkReply,
+    LINK_REPLY_WINDOW_MS,
+    type LeagueLinkReplyView,
+} from "../src/domain/wardogs-league/link-reply"
+import {
     DEFAULT_TRACKING_SETTINGS,
     MAX_TRACKED,
 } from "../src/domain/wardogs-league/discovery"
+import { storedLeagueSnapshot } from "../src/infrastructure/convex/league-fixture-store"
 import { acceptMessageVersion } from "../src/application/wardogs-league/intake-policy"
+import { trackingSettingsSchema } from "../src/domain/wardogs-league/discovery.schema"
+import { LEAGUE_CARD_KEY_PREFIX } from "../src/domain/discord-publications/keys"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { leagueSnapshotSchema } from "../src/domain/wardogs-league/contracts"
 import { projectLeagueFixture } from "../src/domain/wardogs-league/fixture"
 import { dashboardActor, authorizeDashboardAdmin } from "./dashboardActor"
+import { leaguePanelKey } from "../src/domain/wardogs-league/panels"
 import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { assertSessionGateway } from "./dashboardSessionStore"
+import { publicationsWithPrefix } from "./discordPublications"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 const access = {
@@ -267,17 +276,15 @@ export const forGuild = query({
             .query("leagueTrackedMatches")
             .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
             .take(MAX_TRACKED)
-        const publications = await ctx.db
-            .query("discordPublications")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
+        // Only the retired League cards, through their key prefix.
+        const publications = await publicationsWithPrefix(
+            ctx,
+            args.guildId,
+            LEAGUE_CARD_KEY_PREFIX
+        )
         const published = new Set(
             publications
-                .filter(
-                    (p) =>
-                        p.key.startsWith("league:") &&
-                        (p.messageId || p.pending)
-                )
+                .filter((p) => p.messageId || p.pending)
                 .map((p) => p.key)
         )
         return {
@@ -443,5 +450,120 @@ export const ingestMessage = mutation({
                 version: args.version,
                 deleted: false,
             })
+    },
+})
+/**
+ * Replies the bot owes for League links people posted in the links channel
+ * in the last day (L3-56, L3-57): one per accepted match, only once the
+ * match page was read, only when the WD League panel sits in another
+ * channel, never for scanner finds. At most ten per call.
+ */
+export const pendingLinkReplies = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertSessionGateway(args.secret)
+        const config = await trackingConfig(ctx, args.guildId)
+        if (!config?.enabled || !config.inputChannelId) return []
+        const panel =
+            (
+                await ctx.db
+                    .query("discordPublicPanels")
+                    .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                    .collect()
+            ).find(
+                (row) => row.kind === "league" && !row.draft && !row.removing
+            ) ?? null
+        const binding = panel
+            ? await ctx.db
+                  .query("discordPublications")
+                  .withIndex("guild_key", (q) =>
+                      q
+                          .eq("guildId", args.guildId)
+                          .eq(
+                              "key",
+                              leaguePanelKey(String(panel._id), "fixtures")
+                          )
+                  )
+                  .unique()
+            : null
+        const panelMessageUrl =
+            binding?.channelId && binding.messageId
+                ? `https://discord.com/channels/${args.guildId}/${binding.channelId}/${binding.messageId}`
+                : null
+        const since = Date.now() - LINK_REPLY_WINDOW_MS
+        const refs = (
+            await ctx.db
+                .query("leagueMessageRefs")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .take(2000)
+        ).filter(
+            (ref) =>
+                !ref.deleted &&
+                ref._creationTime >= since &&
+                ref.matchIds.length > 0
+        )
+        const replies: Array<{
+            messageId: string
+            channelId: string
+            reply: LeagueLinkReplyView
+        }> = []
+        for (const ref of refs)
+            for (const matchId of ref.matchIds) {
+                if (replies.length >= 10) return replies
+                if ((ref.repliedMatchIds ?? []).includes(matchId)) continue
+                const tracked = await trackedMatch(ctx, args.guildId, matchId)
+                const shared = tracked?.snapshotJson
+                    ? null
+                    : await ctx.db
+                          .query("leagueFixtures")
+                          .withIndex("matchId", (q) => q.eq("matchId", matchId))
+                          .unique()
+                const decision = leagueLinkReply({
+                    source: "human",
+                    accepted: true,
+                    alreadyReplied: false,
+                    inputChannelId: ref.channelId,
+                    panelChannelId: panel?.channelId ?? null,
+                    panelMessageUrl,
+                    match:
+                        storedLeagueSnapshot(tracked?.snapshotJson) ??
+                        storedLeagueSnapshot(shared?.snapshotJson),
+                })
+                if (decision.reply)
+                    replies.push({
+                        messageId: ref.messageId,
+                        channelId: ref.channelId,
+                        reply: decision.view,
+                    })
+            }
+        return replies
+    },
+})
+/** Records that the bot answered one match of a posted link; false when it already had. */
+export const markLinkReplied = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        messageId: v.string(),
+        matchId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        assertSessionGateway(args.secret)
+        const ref = await ctx.db
+            .query("leagueMessageRefs")
+            .withIndex("identity", (q) =>
+                q.eq("guildId", args.guildId).eq("messageId", args.messageId)
+            )
+            .unique()
+        if (
+            !ref ||
+            !ref.matchIds.includes(args.matchId) ||
+            (ref.repliedMatchIds ?? []).includes(args.matchId)
+        )
+            return false
+        await ctx.db.patch(ref._id, {
+            repliedMatchIds: [...(ref.repliedMatchIds ?? []), args.matchId],
+        })
+        return true
     },
 })

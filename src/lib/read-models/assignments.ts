@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server"
 import { fetchQuery } from "convex/nextjs"
 
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
+import { getInternalAuthSecret } from "@/lib/env"
 
 const listAssignmentsReference = makeFunctionReference<"query">(
     "userAssignments:listForServer"
@@ -34,6 +35,7 @@ export async function getServerUserAssignmentsReadModel(
         [appCacheTags.assignments(serverId)],
         async () =>
             (await fetchQuery(listAssignmentsReference, {
+                secret: getInternalAuthSecret(),
                 serverId,
             })) as ServerUserAssignmentReadModel[]
     )
@@ -45,6 +47,7 @@ export async function getServerUserAssignmentReadModel(assignmentId: string) {
         [appCacheTags.assignment(assignmentId)],
         async () =>
             (await fetchQuery(getAssignmentByIdReference, {
+                secret: getInternalAuthSecret(),
                 assignmentId: assignmentId as never,
             })) as ServerUserAssignmentReadModel | null
     )

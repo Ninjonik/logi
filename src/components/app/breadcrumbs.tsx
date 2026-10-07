@@ -1,5 +1,15 @@
 "use client"
 
+import { Fragment, useEffect, useMemo, useState } from "react"
+import { usePathname, useParams } from "next/navigation"
+import Link from "next/link"
+
+import {
+    buildDashboardBreadcrumbs,
+    dashboardPageTrail,
+    type DashboardCrumbLabels,
+    type DashboardPageTrail,
+} from "@/lib/navigation/dashboard-breadcrumbs"
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -8,14 +18,49 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { usePathname, useParams } from "next/navigation"
+import { SETTINGS_SECTIONS } from "@/domain/workspaces/settings-sections"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { Guild } from "@/types/domain"
 import type { Locale } from "@/i18n/config"
-import Link from "next/link"
-import React from "react"
+import { cn } from "@/lib/utils"
 
-export function AppBreadcrumbs({
+/** The page's own heading: PageHeader's title, else the first `h1`. */
+const PAGE_HEADING =
+    '[data-page-title], [data-slot="sidebar-inset"] h1, main h1'
+
+/**
+ * The current page's heading, so the trail and the phone title bar can name
+ * a record ("VLK vs ROG · Friendly" rather than "Match", design D3). Pages
+ * may stream their heading in after the frame, so it is watched for a while
+ * after every navigation.
+ */
+function usePageHeading(pathname: string) {
+    const [heading, setHeading] = useState<{ path: string; text: string }>()
+    useEffect(() => {
+        const read = () => {
+            const text = document
+                .querySelector(PAGE_HEADING)
+                ?.textContent?.replace(/\s+/g, " ")
+                .trim()
+            if (text) setHeading({ path: pathname, text })
+            return Boolean(text)
+        }
+        if (read()) return
+        const observer = new MutationObserver(() => {
+            if (read()) observer.disconnect()
+        })
+        observer.observe(document.body, { childList: true, subtree: true })
+        const stop = window.setTimeout(() => observer.disconnect(), 10_000)
+        return () => {
+            observer.disconnect()
+            window.clearTimeout(stop)
+        }
+    }, [pathname])
+    return heading?.path === pathname ? heading.text : undefined
+}
+
+/** The current page's trail: section, record and the way back. */
+export function useDashboardPageTrail({
     dictionary,
     locale,
     servers,
@@ -23,111 +68,147 @@ export function AppBreadcrumbs({
     dictionary: Dictionary
     locale: Locale
     servers: Guild[]
-}) {
-    const pathname = usePathname()
+}): DashboardPageTrail & { server?: Guild } {
+    const pathname = usePathname() ?? ""
     const params = useParams()
-
-    const serverId = params.serverId as string | undefined
-    const eventId = params.eventId as string | undefined
-    const rosterId = params.rosterId as string | undefined
-    const groupId = params.groupId as string | undefined
-    const presetId = params.presetId as string | undefined
-    const assignmentId = params.assignmentId as string | undefined
+    const heading = usePageHeading(pathname)
+    const serverId =
+        typeof params.serverId === "string" ? params.serverId : undefined
     const server = servers.find((item) => item.id === serverId)
-
-    const segments = pathname.split("/").filter(Boolean)
-
-    // Skip the locale segment
-    const breadcrumbSegments = segments.slice(1)
-
-    const items: { label: string; href: string; isLast: boolean }[] = []
-
-    let currentHref = `/${locale}`
-
-    breadcrumbSegments.forEach((segment, index) => {
-        currentHref += `/${segment}`
-        const isLast = index === breadcrumbSegments.length - 1
-
-        // Skip technical segments like "dashboard", "servers"
-        if (segment === "dashboard" || segment === "servers") return
-
-        let label = segment
-
-        // Map segments to i18n labels or dynamic names
-        if (segment === serverId) {
-            label = server?.name || dictionary.sidebar.workspace
-        } else if (segment === "calendar") {
-            label = dictionary.sidebar.calendar
-        } else if (segment === "events") {
-            label = dictionary.sidebar.events
-        } else if (segment === "rosters") {
-            label = dictionary.sidebar.rosters
-        } else if (segment === "groups") {
-            label = dictionary.sidebar.groups
-        } else if (segment === "topic-presets") {
-            label = dictionary.sidebar.topicPresets
-        } else if (segment === "squad-presets") {
-            label = dictionary.sidebar.squadPresets
-        } else if (segment === "users") {
-            label = dictionary.sidebar.users
-        } else if (segment === "settings") {
-            label = dictionary.sidebar.serverSettings
-        } else if (segment === "memberships") {
-            label = dictionary.sidebar.memberships
-        } else if (segment === "tickets") {
-            label = dictionary.sidebar.tickets
-        } else if (segment === "teams") {
-            label = dictionary.sidebar.teams
-        } else if (segment === "bot") {
-            label = dictionary.sidebar.bot
-        } else if (segment === "create") {
-            label = dictionary.common.create
-        } else if (segment === eventId) {
-            label = dictionary.event.infoTitle
-        } else if (segment === rosterId) {
-            label = dictionary.roster.title
-        } else if (segment === groupId) {
-            label = dictionary.sidebar.groups
-        } else if (segment === presetId) {
-            if (pathname.includes("squad-presets")) {
-                label = dictionary.presets.squadPresetMetaFallback
-            } else {
-                label = dictionary.presets.topicPresetMetaFallback
-            }
-        } else if (segment === assignmentId) {
-            label = dictionary.sidebar.users
+    const labels = useMemo(() => crumbLabels(dictionary), [dictionary])
+    return useMemo(() => {
+        const crumbs = buildDashboardBreadcrumbs({
+            locale,
+            pathname,
+            serverId,
+            serverName: server?.name,
+            labels,
+        }).map((crumb) =>
+            crumb.isLast && heading ? { ...crumb, label: heading } : crumb
+        )
+        return {
+            ...dashboardPageTrail(crumbs, {
+                inWorkspace: pathname.includes("/dashboard/servers/"),
+            }),
+            server,
         }
+    }, [heading, labels, locale, pathname, server, serverId])
+}
 
-        items.push({ label, href: currentHref, isLast })
-    })
-
-    if (items.length === 0) return null
+/**
+ * The trail above a page below the top level, such as "Settings › Discord ›
+ * Channels and language" (design A2). Section pages have none. On phones the
+ * title bar's back button takes its place.
+ */
+export function AppBreadcrumbs({
+    dictionary,
+    locale,
+    servers,
+    className,
+}: {
+    dictionary: Dictionary
+    locale: Locale
+    servers: Guild[]
+    className?: string
+}) {
+    const { crumbs } = useDashboardPageTrail({ dictionary, locale, servers })
+    if (crumbs.length === 0) return null
 
     return (
-        <Breadcrumb>
-            <BreadcrumbList className="gap-1 text-[11px] md:gap-1.5 md:text-xs 2xl:gap-2.5 2xl:text-sm [&_[data-slot=breadcrumb-separator]>svg]:size-3 2xl:[&_[data-slot=breadcrumb-separator]>svg]:size-3.5">
-                <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                        <Link href={`/${locale}/dashboard`}>
-                            {dictionary.sidebar.home}
-                        </Link>
-                    </BreadcrumbLink>
-                </BreadcrumbItem>
-                {items.map((item, index) => (
-                    <React.Fragment key={item.href}>
-                        <BreadcrumbSeparator />
+        <Breadcrumb className={cn("px-4 lg:px-6", className)}>
+            <BreadcrumbList className="gap-1.5 text-sm sm:gap-2 [&_[data-slot=breadcrumb-separator]>svg]:size-3.5">
+                {crumbs.map((item, index) => (
+                    <Fragment key={`${index}-${item.href}`}>
+                        {index > 0 ? <BreadcrumbSeparator /> : null}
                         <BreadcrumbItem>
                             {item.isLast ? (
-                                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                                <BreadcrumbPage className="max-w-[min(32rem,60vw)] truncate">
+                                    {item.label}
+                                </BreadcrumbPage>
                             ) : (
                                 <BreadcrumbLink asChild>
                                     <Link href={item.href}>{item.label}</Link>
                                 </BreadcrumbLink>
                             )}
                         </BreadcrumbItem>
-                    </React.Fragment>
+                    </Fragment>
                 ))}
             </BreadcrumbList>
         </Breadcrumb>
     )
+}
+
+/** Translated labels for every dashboard route segment and record kind. */
+function crumbLabels(dictionary: Dictionary): DashboardCrumbLabels {
+    const sidebar = dictionary.sidebar
+    const crumbs = sidebar.crumbs
+    const settingsHub = dictionary.settingsHub
+    return {
+        workspace: sidebar.workspace,
+        segments: {
+            calendar: sidebar.calendar,
+            articles: sidebar.articles,
+            events: sidebar.events,
+            matches: sidebar.matches,
+            trainings: sidebar.trainings,
+            rosters: sidebar.rosters,
+            groups: sidebar.groups,
+            "topic-presets": sidebar.topicPresets,
+            "squad-presets": sidebar.squadPresets,
+            stratmaps: sidebar.stratmaps,
+            users: sidebar.members,
+            members: sidebar.members,
+            memberships: sidebar.memberships,
+            tickets: sidebar.tickets,
+            teams: sidebar.teams,
+            settings: sidebar.settings,
+            "signup-activity": sidebar.signupActivity,
+            system: sidebar.system,
+            "helper-data": dictionary.clan.helperDataTitle,
+            imports: dictionary.clan.importsTitle,
+            webhooks: dictionary.clan.webhooksTitle,
+            recurring: dictionary.event.recurringMatches,
+            match: crumbs.matchResult,
+            "match-stats": crumbs.matchStatistics,
+            create: dictionary.common.create,
+        },
+        globalSegments: {
+            competitions: sidebar.competitions,
+            teams: sidebar.teamCatalog,
+            "team-requests": sidebar.teamRequests,
+            bot: sidebar.bot,
+            "platform-settings": sidebar.platformSettings,
+            logicomms: sidebar.logiComms,
+            user: sidebar.myAccount,
+        },
+        settingsSections: Object.fromEntries(
+            Object.entries(settingsHub.sections).map(([section, value]) => [
+                section,
+                value.title,
+            ])
+        ),
+        settingsGroups: Object.fromEntries(
+            SETTINGS_SECTIONS.map((section) => [
+                section.id,
+                {
+                    label: settingsHub.groups[section.group],
+                    anchor: `settings-group-${section.group}`,
+                },
+            ])
+        ),
+        records: {
+            events: crumbs.event,
+            matches: crumbs.event,
+            trainings: crumbs.training,
+            rosters: dictionary.roster.title,
+            groups: crumbs.group,
+            articles: crumbs.article,
+            stratmaps: crumbs.stratmap,
+            users: crumbs.player,
+            "squad-presets": dictionary.presets.squadPresetMetaFallback,
+            "topic-presets": dictionary.presets.topicPresetMetaFallback,
+            competitions: crumbs.competition,
+        },
+        detail: crumbs.detail,
+    }
 }

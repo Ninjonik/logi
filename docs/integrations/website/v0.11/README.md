@@ -149,6 +149,11 @@ combat fields; a zero counter alone is not proof of feed coverage.
 Provision the Warcon key only in the Convex runtime environment. Example source
 catalog entry (all values below are placeholders):
 
+> **Superseded for keys (2026-10-04):** workspaces now enter provider keys in the
+> dashboard, stored encrypted. `secretRef` variables remain only for operator
+> catalog entries until migrated; see
+> [game-server credentials](../game-server-credentials.md).
+
 ```json
 {
   "ref": "wardogs-warcon-primary",

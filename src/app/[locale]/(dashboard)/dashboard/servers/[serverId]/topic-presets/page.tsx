@@ -1,9 +1,11 @@
+import { ListChecks } from "lucide-react"
 import type { Metadata } from "next"
 
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { ResourceTable } from "@/components/app/resource-table"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -12,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Topic presets | Logi",
+    title: "Topic presets",
     description: "Manage event topic presets.",
 }
 
@@ -63,40 +65,63 @@ export default async function TopicPresetsPage({
                 />
             }
         >
-            <ResourceTable
-                className="h-full"
-                dictionary={dictionary}
-                rows={paginated.rows}
-                page={paginated.page}
-                pageSize={paginated.pageSize}
-                pageCount={paginated.pageCount}
-                totalRows={paginated.totalRows}
-                search={paginated.search}
-                searchPlaceholder={dictionary.shared.searchTable}
-                getHref={(preset) =>
-                    `/${locale}/dashboard/servers/${serverId}/topic-presets/${preset.id}`
-                }
-                columns={[
-                    {
-                        key: "name",
-                        title: dictionary.presets.table.preset,
-                        render: (preset) => (
-                            <div className="font-medium">{preset.name}</div>
-                        ),
-                    },
-                    {
-                        key: "map",
-                        title: dictionary.calendarCards.map,
-                        render: (preset) =>
-                            `${formatHllPresetLabel(preset.map) ?? preset.map ?? "TBD"} • ${preset.side ?? "TBD"}`,
-                    },
-                    {
-                        key: "topics",
-                        title: dictionary.presets.table.topics,
-                        render: (preset) => preset.topics.length,
-                    },
-                ]}
-            />
+            {!topicPresets.length ? (
+                <EmptyState
+                    icon={ListChecks}
+                    title={dictionary.presets.emptyTopicTitle}
+                    description={
+                        canAdmin
+                            ? dictionary.presets.emptyTopicAdmin
+                            : dictionary.presets.emptyMember
+                    }
+                    actions={
+                        canAdmin ? (
+                            <Button asChild className="rounded-xl">
+                                <a
+                                    href={`/${locale}/dashboard/servers/${serverId}/topic-presets/create`}
+                                >
+                                    {dictionary.common.createPreset}
+                                </a>
+                            </Button>
+                        ) : undefined
+                    }
+                />
+            ) : (
+                <ResourceTable
+                    className="h-full"
+                    dictionary={dictionary}
+                    rows={paginated.rows}
+                    page={paginated.page}
+                    pageSize={paginated.pageSize}
+                    pageCount={paginated.pageCount}
+                    totalRows={paginated.totalRows}
+                    search={paginated.search}
+                    searchPlaceholder={dictionary.shared.searchTable}
+                    getHref={(preset) =>
+                        `/${locale}/dashboard/servers/${serverId}/topic-presets/${preset.id}`
+                    }
+                    columns={[
+                        {
+                            key: "name",
+                            title: dictionary.presets.table.preset,
+                            render: (preset) => (
+                                <div className="font-medium">{preset.name}</div>
+                            ),
+                        },
+                        {
+                            key: "map",
+                            title: dictionary.calendarCards.map,
+                            render: (preset) =>
+                                `${formatHllPresetLabel(preset.map) ?? preset.map ?? "TBD"} • ${preset.side ?? "TBD"}`,
+                        },
+                        {
+                            key: "topics",
+                            title: dictionary.presets.table.topics,
+                            render: (preset) => preset.topics.length,
+                        },
+                    ]}
+                />
+            )}
         </TablePageLayout>
     )
 }

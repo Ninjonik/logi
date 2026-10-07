@@ -1,32 +1,9 @@
-import { GAME_IDS } from "../games/game"
-import { z } from "zod"
+import type { MembershipObservation } from "./observation.schema"
 
-export const membershipObservationSchema = z
-    .object({
-        guildId: z.string(),
-        discordUserId: z.string(),
-        gameId: z.enum(GAME_IDS),
-        state: z.enum(["present", "left", "unknown"]),
-        roleIds: z.array(z.string()),
-        assignment: z
-            .object({
-                type: z.enum(["member", "reserve_member", "mercenary"]),
-                status: z.enum(["pending", "recruit", "active"]),
-            })
-            .strict()
-            .nullable(),
-        observedAt: z.string().nullable(),
-        receivedAt: z.string().nullable(),
-        epoch: z.string().regex(/^(0|[1-9][0-9]{0,127})$/),
-        revision: z.string().regex(/^(0|[1-9][0-9]{0,127})$/),
-        completeness: z.enum([
-            "verified_member",
-            "verified_absent",
-            "unavailable",
-        ]),
-    })
-    .strict()
-export type MembershipObservation = z.infer<typeof membershipObservationSchema>
+// `membershipObservationSchema` and `projectMembership` live in
+// `observation.schema.ts`; the freshness rule and the stored shapes here stay
+// free of Zod for the role operations' and the wrapper's paths.
+export type { MembershipObservation } from "./observation.schema"
 export type MembershipSubject = Pick<
     MembershipObservation,
     "guildId" | "discordUserId" | "gameId"
@@ -63,49 +40,34 @@ export function isFreshObservation(
     const age = now - Date.parse(value.observedAt)
     return Number.isFinite(age) && age >= 0 && age <= maxAgeMs
 }
-export function projectMembership(
-    subject: MembershipSubject,
-    value: StoredObservation | null,
-    input: {
+
+/**
+ * Whether a new provider observation changes what the membership projections
+ * serve: state, the role set and the epoch. A reconciliation observes every
+ * member every few minutes; one that sees the same roles again is fresher
+ * evidence (`observedAt`), not a change, so it must not allocate a revision
+ * or a change-feed entry (ARCHITECTURE.md, "Convex hot paths").
+ */
+export function observationChanged(
+    previous: {
+        state: ProviderObservation["state"]
+        roleIds: string[]
         epoch: string
-        revision: string
-        allowedRoleIds: string[]
-        assignment: MembershipObservation["assignment"]
-        maxAgeMs: number
-        now: number
+        unavailable?: boolean
+    } | null,
+    next: {
+        state: ProviderObservation["state"]
+        roleIds: string[]
+        epoch: string
+        unavailable: boolean
     }
-): MembershipObservation {
-    const state = isFreshObservation(
-        value,
-        input.epoch,
-        input.maxAgeMs,
-        input.now
+): boolean {
+    return (
+        !previous ||
+        previous.state !== next.state ||
+        previous.epoch !== next.epoch ||
+        (previous.unavailable ?? false) !== next.unavailable ||
+        previous.roleIds.length !== next.roleIds.length ||
+        previous.roleIds.some((roleId, index) => roleId !== next.roleIds[index])
     )
-        ? value!.state
-        : "unknown"
-    return membershipObservationSchema.parse({
-        ...subject,
-        state,
-        roleIds:
-            state === "present"
-                ? [
-                      ...new Set(
-                          value!.roleIds.filter((role) =>
-                              input.allowedRoleIds.includes(role)
-                          )
-                      ),
-                  ].sort()
-                : [],
-        assignment: input.assignment,
-        observedAt: value?.observedAt ?? null,
-        receivedAt: value?.receivedAt ?? null,
-        epoch: input.epoch,
-        revision: input.revision,
-        completeness:
-            state === "present"
-                ? "verified_member"
-                : state === "left"
-                  ? "verified_absent"
-                  : "unavailable",
-    })
 }

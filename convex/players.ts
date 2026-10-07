@@ -1,4 +1,5 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { canOpenWorkspace } from "../src/domain/workspaces/workspace-access"
 import { parseSteamId } from "../src/domain/player-stats/player-stats"
 import { revokePlatformIdentity } from "./platformIdentityStore"
 import { invalidateUserSessions } from "./dashboardSessionStore"
@@ -17,12 +18,10 @@ import {
     getUserByIdentifier,
     getUserStableId,
 } from "./identity"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+import { internalAuthSecret } from "./discord_shared"
 
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -410,9 +409,11 @@ function toPlayer(user: {
 
 export const getById = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const user = await getUserByIdentifier(ctx, args.userId)
 
         return user ? toPlayer(user) : null
@@ -421,11 +422,13 @@ export const getById = query({
 
 export const searchClanPlayers = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         query: v.string(),
         limit: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const limit = Math.max(1, Math.min(args.limit ?? 5, 25))
         const assignments = await ctx.db
             .query("userAssignments")
@@ -437,6 +440,7 @@ export const searchClanPlayers = query({
             ReturnType<typeof toPlayer> & {
                 assignmentType?: "member" | "reserve_member" | "mercenary"
                 assignmentStatus?: "pending" | "recruit" | "active"
+                assignmentPaused?: boolean
                 searchScore: number
             }
         > = []
@@ -468,6 +472,7 @@ export const searchClanPlayers = query({
                 ...player,
                 assignmentType: assignment.type,
                 assignmentStatus: assignment.status,
+                assignmentPaused: assignment.paused,
                 searchScore,
             })
         }
@@ -491,6 +496,7 @@ export const searchClanPlayers = query({
             platformIds: player.platformIds,
             assignmentType: player.assignmentType,
             assignmentStatus: player.assignmentStatus,
+            assignmentPaused: player.assignmentPaused ?? false,
             matchesPlayed: player.performance?.matchesPlayed ?? 0,
             averageKills: player.performance?.averages.kills ?? 0,
             averageKd: player.performance?.averages.killDeathRatio ?? 0,
@@ -501,6 +507,7 @@ export const searchClanPlayers = query({
 
 export const getClanPlayerProfile = query({
     args: {
+        secret: v.string(),
         guildId: v.string(),
         userId: v.string(),
         gameId: v.optional(
@@ -512,6 +519,7 @@ export const getClanPlayerProfile = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const assignments = await ctx.db
             .query("userAssignments")
             .withIndex("serverId_userId", (q) =>
@@ -544,6 +552,7 @@ export const getClanPlayerProfile = query({
                 new Date(left.endedAt ?? left.importedAt).getTime()
         )
         const recentMatches = sortedMatches.slice(0, 5)
+        const firstMatch = sortedMatches.at(-1)
         const score = player.scores[args.guildId] ?? player.score ?? 0
 
         return {
@@ -588,6 +597,10 @@ export const getClanPlayerProfile = query({
                 support: match.support,
                 sourceUrl: match.sourceUrl,
             })),
+            // The oldest imported match, for /player's "48 zápasů od 2. 6.".
+            firstMatchAt: firstMatch
+                ? (firstMatch.endedAt ?? firstMatch.importedAt)
+                : undefined,
             updatedAt: player.updatedAt,
             createdAt: player.createdAt,
         }
@@ -836,27 +849,6 @@ async function resolveAndPersistDefaultWorkspace(
 ) {
     if (!user) return null
 
-    if (options.useStoredDefault && user.defaultWorkspaceRecordId) {
-        const workspace = await ctx.db.get(
-            user.defaultWorkspaceRecordId as Id<"guilds">
-        )
-        if (workspace) return String(workspace._id)
-    }
-
-    if (options.useStoredDefault && user.defaultWorkspaceId) {
-        const workspace = await getGuildByDiscordId(
-            ctx,
-            user.defaultWorkspaceId
-        )
-        if (workspace) {
-            await ctx.db.patch(user._id, {
-                defaultWorkspaceRecordId: String(workspace._id),
-                updatedAt: new Date().toISOString(),
-            })
-            return String(workspace._id)
-        }
-    }
-
     const [memberships, dashboardAccess] = await Promise.all([
         ctx.db
             .query("userAssignments")
@@ -867,6 +859,49 @@ async function resolveAndPersistDefaultWorkspace(
             .withIndex("userId", (q) => q.eq("userId", getUserDiscordId(user)))
             .collect(),
     ])
+    // A stored default is only reused while the person can still open it.
+    const canOpenStored = (workspace: Doc<"guilds">) =>
+        options.allowAnyWorkspace ||
+        canOpenWorkspace(
+            {
+                userDiscordId: getUserDiscordId(user),
+                primaryGuildId: user.guildId,
+                managedGuildIds: user.managedGuildIds,
+                mercenaryGuildIds: user.mercenaryGuildIds,
+                memberGuildIds:
+                    getDefaultWorkspaceCandidatesFromMemberships(memberships),
+                dashboardAccessGuildIds: dashboardAccess
+                    .filter((access) => access.hasDashboardAccess)
+                    .map((access) => access.guildId),
+            },
+            {
+                discordId: getGuildDiscordId(workspace),
+                adminIds: workspace.adminIds,
+                dashboardAdminIds: workspace.dashboardAdminIds,
+            }
+        )
+
+    if (options.useStoredDefault && user.defaultWorkspaceRecordId) {
+        const workspace = await ctx.db.get(
+            user.defaultWorkspaceRecordId as Id<"guilds">
+        )
+        if (workspace && canOpenStored(workspace)) return String(workspace._id)
+    }
+
+    if (options.useStoredDefault && user.defaultWorkspaceId) {
+        const workspace = await getGuildByDiscordId(
+            ctx,
+            user.defaultWorkspaceId
+        )
+        if (workspace && canOpenStored(workspace)) {
+            await ctx.db.patch(user._id, {
+                defaultWorkspaceRecordId: String(workspace._id),
+                updatedAt: new Date().toISOString(),
+            })
+            return String(workspace._id)
+        }
+    }
+
     let workspace = await findFirstWorkspace(ctx, [
         user.guildId,
         ...getDefaultWorkspaceCandidatesFromMemberships(memberships),

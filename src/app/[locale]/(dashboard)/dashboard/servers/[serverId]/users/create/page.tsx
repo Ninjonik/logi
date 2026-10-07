@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
 
 import { UserAssignmentForm } from "@/components/app/user-assignment-form"
+import { ManagersOnlyState } from "@/components/app/managers-only-state"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
 import { getEligibleUsersForServer } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
+import { notFound } from "next/navigation"
 import { isLocale } from "@/i18n/config"
 
 export default async function CreateServerUserPage({
@@ -22,7 +24,20 @@ export default async function CreateServerUserPage({
     const { game } = await searchParams
     const gameId = isGameId(game) ? game : undefined
     const context = await getServerContext(serverId, gameId ?? "all")
-    if (!context?.canAdmin) return null
+    if (!context) notFound()
+    if (!context.canAdmin)
+        return (
+            <>
+                <PageHeader
+                    title={dictionary.userManagement.addPlayer}
+                    description={dictionary.userManagement.description}
+                />
+                <ManagersOnlyState
+                    dictionary={dictionary}
+                    overviewHref={`/${safeLocale}/dashboard/servers/${serverId}`}
+                />
+            </>
+        )
     if (!gameId)
         return (
             <GameSelectionGate

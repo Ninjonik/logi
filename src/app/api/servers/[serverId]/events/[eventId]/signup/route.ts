@@ -7,8 +7,8 @@ import {
 } from "@/lib/event-signup"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { getResolvedMemberStatus } from "@/domain/assignments/policy"
+import { getEventMessages } from "@/lib/clan-language/events"
 import { toggleServerEventSignup } from "@/lib/server-events"
-import { getClanDiscordMessages } from "@/lib/clan-language"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
@@ -31,7 +31,7 @@ export async function POST(
     }
 
     const body = (await request.json()) as { actionId?: unknown }
-    const messages = getClanDiscordMessages(
+    const messages = getEventMessages(
         context.discordConfig?.defaultLanguage ?? "en"
     )
     const assignment = context.assignments.find(

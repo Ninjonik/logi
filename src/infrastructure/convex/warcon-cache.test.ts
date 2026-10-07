@@ -1,4 +1,9 @@
-import { warconLive, warconServerId, warconTime } from "../testing/warcon"
+import {
+    warconLive,
+    warconPlayer,
+    warconServerId,
+    warconTime,
+} from "../testing/warcon"
 import { seedDashboardActor } from "./testing/dashboard-actor"
 import * as history from "../../../convex/gameDataHistory"
 import * as reads from "../../../convex/warconReads"
@@ -175,6 +180,47 @@ test("public panels can read only their enabled guild/source live view, includin
         assert.deepEqual(await handler<unknown>(reads.reserve)(ctx, bad), {
             kind: "denied",
         })
+})
+
+test("Naše servery reads the live view of its own servers only (P4-38)", async (t) => {
+    const { ctx, input, id } = await fixture(t)
+    const { keyHash: _key, ...publicInput } = input
+    assert.equal(_key, "hash")
+    const combined = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:other", id],
+        enabled: true,
+        kind: "servers",
+    })
+    assert.equal(
+        (
+            await handler<{ kind: string }>(reads.reserve)(ctx, {
+                ...publicInput,
+                panelId: combined,
+            })
+        ).kind,
+        "claimed"
+    )
+    const elsewhere = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:other"],
+        enabled: true,
+        kind: "servers",
+    })
+    const results = await ctx.db.insert("discordPublicPanels", {
+        guildId: "guild",
+        connectionId: id,
+        enabled: true,
+        kind: "results",
+    })
+    for (const panelId of [elsewhere, results])
+        assert.deepEqual(
+            await handler<unknown>(reads.reserve)(ctx, {
+                ...publicInput,
+                panelId,
+            }),
+            { kind: "denied" }
+        )
 })
 
 test("dashboard Warcon reads recheck current actor rights and session before returning provider data", async (t) => {
@@ -382,4 +428,139 @@ test("cache cardinality and retention stay bounded even across many query varian
     clock += 3_600_000
     await handler(reads.prune)(ctx, { cacheId })
     assert.equal(ctx.db.tables.warconReadCache.length, 63)
+})
+test("an unchanged Warcon read writes only the times; a changed one writes the payload; both serve the latest times", async (t) => {
+    const { ctx, input, envelope } = await fixture(t)
+    let clock = Date.parse(warconTime)
+    t.mock.method(Date, "now", () => clock)
+    const first = await handler<Claim>(reads.reserve)(ctx, input)
+    assert.equal(
+        await handler(reads.finish)(ctx, {
+            ...input,
+            ...first.claim,
+            envelopeJson: JSON.stringify(envelope),
+        }),
+        true
+    )
+    const row = () => ctx.db.tables.warconReadCache[0]!
+    const stored = row().envelopeJson
+    const patches: Array<Record<string, unknown>> = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    t.mock.method(
+        ctx.db,
+        "patch",
+        async (id: string, value: Record<string, unknown>) => {
+            patches.push(value)
+            return await patch(id, value)
+        }
+    )
+    // The idle server reads the same ten seconds later; only the times moved.
+    clock += 11_000
+    const later = new Date(clock).toISOString()
+    const same = {
+        ...envelope,
+        fetchedAt: later,
+        cacheUntil: new Date(clock + 10_000).toISOString(),
+        result: {
+            view: "live",
+            data: {
+                ...envelope.result.data,
+                statusAt: later,
+                playersAt: later,
+                observedAt: later,
+            },
+        },
+    }
+    const second = await handler<Claim>(reads.reserve)(ctx, input)
+    assert.equal(second.kind, "claimed")
+    assert.equal(
+        await handler(reads.finish)(ctx, {
+            ...input,
+            ...second.claim,
+            envelopeJson: JSON.stringify(same),
+        }),
+        true
+    )
+    const finishPatch = patches[patches.length - 1]!
+    assert.ok(!("envelopeJson" in finishPatch), "the payload is not rewritten")
+    assert.deepEqual(Object.keys(finishPatch).sort(), [
+        "cacheUntil",
+        "fetchedAt",
+        "leaseUntil",
+        "observedAt",
+        "playersAt",
+        "retainUntil",
+        "statusAt",
+    ])
+    assert.equal(row().envelopeJson, stored)
+    const cached = await handler<{
+        kind: string
+        envelope: typeof envelope
+    }>(reads.reserve)(ctx, input)
+    assert.equal(cached.kind, "cached")
+    assert.equal(cached.envelope.fetchedAt, later)
+    assert.equal(cached.envelope.cacheUntil, same.cacheUntil)
+    assert.equal(cached.envelope.result.data.statusAt, later)
+    assert.equal(cached.envelope.result.data.playersAt, later)
+    assert.equal(cached.envelope.result.data.observedAt, later)
+    assert.deepEqual(
+        cached.envelope.result.data.players,
+        envelope.result.data.players
+    )
+    // A player joined: the payload is written again.
+    clock += 11_000
+    const latest = new Date(clock).toISOString()
+    const changed = {
+        ...same,
+        fetchedAt: latest,
+        cacheUntil: new Date(clock + 10_000).toISOString(),
+        result: {
+            view: "live",
+            data: {
+                ...same.result.data,
+                statusAt: latest,
+                playersAt: latest,
+                observedAt: latest,
+                players: [
+                    ...same.result.data.players,
+                    { ...warconPlayer, steamId: "76561198000000002" },
+                ],
+            },
+        },
+    }
+    const third = await handler<Claim>(reads.reserve)(ctx, input)
+    assert.equal(third.kind, "claimed")
+    await handler(reads.finish)(ctx, {
+        ...input,
+        ...third.claim,
+        envelopeJson: JSON.stringify(changed),
+    })
+    assert.ok("envelopeJson" in patches[patches.length - 1]!)
+    assert.notEqual(row().envelopeJson, stored)
+    const served = await handler<{
+        kind: string
+        envelope: typeof envelope
+    }>(reads.reserve)(ctx, input)
+    assert.equal(served.kind, "cached")
+    assert.equal(served.envelope.fetchedAt, latest)
+    assert.equal(served.envelope.result.data.players.length, 2)
+})
+test("a Warcon cache row from before the time fields serves the payload's own times", async (t) => {
+    const { ctx, input, id, envelope } = await fixture(t)
+    await ctx.db.insert("warconReadCache", {
+        connectionId: id,
+        queryJson: JSON.stringify({ view: "live" }),
+        generation: 1,
+        fence: 2,
+        leaseUntil: 0,
+        cacheUntil: Date.now() + 5_000,
+        retryUntil: 0,
+        retainUntil: Date.now() + 3_600_000,
+        envelopeJson: JSON.stringify(envelope),
+    })
+    const cached = await handler<{ kind: string; envelope: unknown }>(
+        reads.reserve
+    )(ctx, input)
+    assert.equal(cached.kind, "cached")
+    assert.deepEqual(cached.envelope, envelope)
 })

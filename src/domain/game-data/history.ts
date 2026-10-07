@@ -1,26 +1,10 @@
+import { isRetainedWarconSession } from "./history-rules"
 import { providerSessionSchema } from "./contracts"
 import { z } from "zod"
 
 const revision = z.string().regex(/^(0|[1-9][0-9]{0,127})$/)
 export const retainedWarconSessionSchema = providerSessionSchema.refine(
-    (session) =>
-        session.complete &&
-        session.startedAt !== null &&
-        session.endedAt !== null &&
-        Date.parse(session.endedAt) >= Date.parse(session.startedAt) &&
-        session.warcon !== undefined &&
-        new Set(
-            session.players.map(
-                (player) => `${player.platform}:${player.platformId}`
-            )
-        ).size === session.players.length &&
-        new Set(session.participants.map((faction) => faction.id)).size ===
-            session.participants.length &&
-        (session.warcon.winner === null ||
-            session.participants.length === 0 ||
-            session.participants.some(
-                (faction) => faction.id === session.warcon!.winner
-            )),
+    isRetainedWarconSession,
     { message: "Invalid retained Warcon session." }
 )
 export const historyRecordSchema = z.strictObject({

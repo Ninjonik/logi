@@ -1,49 +1,54 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { useMutation } from "convex/react"
+import { useRouter } from "next/navigation"
+import { RefreshCw } from "lucide-react"
+import { useTransition } from "react"
 import { toast } from "sonner"
 
-import { makeFunctionReference } from "convex/server"
+import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 
-const resyncDashboardAdminsReference = makeFunctionReference<"mutation">(
-    "guilds:resyncDashboardAdmins"
-)
-
+/** Rebuilds dashboard admin access from the current members of the dashboard role. */
 export function ResyncDashboardAdminsButton({
     serverId,
-    userId,
+    dictionary,
+    disabled = false,
 }: {
     serverId: string
-    userId: string
+    dictionary: Dictionary
+    disabled?: boolean
 }) {
+    const text = dictionary.settingsHub.rolesPage
+    const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const [clicked, setClicked] = useState(false)
-    const resyncDashboardAdmins = useMutation(resyncDashboardAdminsReference)
 
     return (
         <Button
+            type="button"
             variant="outline"
             className="rounded-xl"
-            disabled={isPending}
+            disabled={disabled || isPending}
             onClick={() => {
                 startTransition(async () => {
-                    try {
-                        await resyncDashboardAdmins({
-                            userId,
-                            serverId: serverId as never,
-                        })
-                        setClicked(true)
-                        toast.success("Admin access resynced.")
-                    } catch (error) {
-                        console.error(error)
-                        toast.error("Unable to resync admin access.")
+                    const response = await fetch(
+                        `/api/servers/${serverId}/dashboard-admins`,
+                        { method: "POST" }
+                    ).catch(() => null)
+                    if (!response?.ok) {
+                        toast.error(text.resyncError)
+                        return
                     }
+                    toast.success(text.resynced)
+                    // Shows the rebuilt list of people with access.
+                    router.refresh()
                 })
             }}
         >
-            {clicked ? "Resynced" : "Resync admin access"}
+            <RefreshCw
+                className={isPending ? "size-4 animate-spin" : "size-4"}
+                aria-hidden="true"
+            />
+            {text.resync}
         </Button>
     )
 }

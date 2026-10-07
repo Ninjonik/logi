@@ -4,6 +4,7 @@ import { DEFAULT_GAME_ID, GAME_LABELS, isGameId } from "@/domain/games/game"
 import { matchTeamGame } from "@/lib/teams/match-team-selection"
 import { TeamDirectory } from "@/components/app/team-directory"
 import { ConfigNotice } from "@/components/app/config-notice"
+import { teamSearchParam } from "@/domain/teams/team-links"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -11,8 +12,9 @@ import { TEAM_GAMES } from "@/domain/teams/team"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Teams | Logi",
-    description: "Manage the workspace team directory.",
+    title: "Teams",
+    description:
+        "Browse the Logi team catalogue and request new teams or changes.",
 }
 
 export default async function ServerTeamsPage({
@@ -20,16 +22,20 @@ export default async function ServerTeamsPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{ game?: string | string[] }>
+    searchParams: Promise<{
+        game?: string | string[]
+        search?: string | string[]
+    }>
 }) {
     const { locale, serverId } = await params
-    const { game } = await searchParams
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
+    const { game, search } = await searchParams
+    const resolvedLocale = isLocale(locale) ? locale : "en"
+    const dictionary = getDictionary(resolvedLocale)
     const context = await getServerContext(serverId, "all")
     if (!context?.canAdmin) return null
 
     const selected = typeof game === "string" && isGameId(game) ? game : null
-    // The all-games view lists each supported game separately; HLL: Vietnam has no directory.
+    // The all-games view lists each catalogue game separately; HLL: Vietnam has no catalogue.
     const games = selected ? [matchTeamGame(selected)] : TEAM_GAMES
     const enabledGames = context.server.enabledGames ?? [DEFAULT_GAME_ID]
 
@@ -47,14 +53,17 @@ export default async function ServerTeamsPage({
                 ) : (
                     <TeamDirectory
                         serverId={serverId}
+                        locale={resolvedLocale}
                         dictionary={dictionary}
-                        settingsHref={`/${locale}/dashboard/servers/${serverId}/settings`}
+                        settingsHref={`/${locale}/dashboard/servers/${serverId}/settings/games`}
+                        initialSearch={teamSearchParam(search)}
                         sections={games.flatMap((gameId) =>
                             gameId
                                 ? [
                                       {
                                           gameId,
-                                          canAdd: enabledGames.includes(gameId),
+                                          enabled:
+                                              enabledGames.includes(gameId),
                                       },
                                   ]
                                 : []

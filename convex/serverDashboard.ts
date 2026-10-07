@@ -7,14 +7,12 @@ import {
     getUserDiscordId,
     getUserStableId,
 } from "./identity"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+import { internalAuthSecret } from "./discord_shared"
 
 export const getRecentMatchSummaryInternal = query({
     args: { secret: v.string(), serverId: v.id("guilds") },
     handler: async (ctx, args) => {
-        if (args.secret !== INTERNAL_AUTH_SECRET)
+        if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
 
         const server = await ctx.db.get(args.serverId)

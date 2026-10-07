@@ -657,6 +657,7 @@ async function main() {
 
     const client = new ConvexHttpClient(convexUrl)
     const guild = (await client.query(getGuildByIdReference, {
+        secret,
         guildId,
     })) as GuildRecord | null
 

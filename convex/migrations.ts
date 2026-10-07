@@ -1,11 +1,9 @@
+import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./integrationMutation"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }

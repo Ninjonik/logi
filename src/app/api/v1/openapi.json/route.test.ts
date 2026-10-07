@@ -16,6 +16,36 @@ test("League match preview documents stale snapshots, explicit grants and nullab
         assert.ok(operation.responses[code])
 })
 
+test("the WD League overview documents the table, nearest fixtures, recent results and its grant", async () => {
+    const document = await (await GET()).json()
+    const operation = document.paths["/clan/league-fixtures/overview"].get
+    assert.equal(operation["x-logi-read-access"].resource, "league-fixtures")
+    assert.match(operation.description, /waiting_for_results/)
+    assert.match(operation.description, /1st 3 · 2nd 2 · 3rd 1/)
+    const limit = operation.parameters.find(
+        (p: { name: string }) => p.name === "limit"
+    )
+    assert.deepEqual(
+        [limit.schema.minimum, limit.schema.maximum, limit.schema.default],
+        [1, 10, 6]
+    )
+    const schema = document.components.schemas.LeagueOverview
+    assert.deepEqual(Object.keys(schema.properties), ["standings", "fixtures"])
+    assert.ok(schema.properties.fixtures.properties.recentResults)
+    assert.match(operation.description, /recentResults\.state/)
+    assert.deepEqual(
+        schema.properties.fixtures.properties.recentResults.anyOf[0].properties
+            .state.enum,
+        ["waiting_for_results", "ready"]
+    )
+    assert.ok(
+        document.components.schemas.LeagueFixture.properties.snapshot.properties
+            .results
+    )
+    for (const code of ["200", "400", "401", "403", "429", "503"])
+        assert.ok(operation.responses[code])
+})
+
 test("Warcon reads document every view, an explicit grant and typed player data", async () => {
     const document = await (await GET()).json()
     const endpoint = document.paths["/clan/warcon-data/{connectionId}"]
@@ -369,7 +399,7 @@ test("OpenAPI documents beginner-safe API workflows", async () => {
     )
 })
 
-test("team directory reads document explicit per-game grants, archived exclusion and snapshot delivery", async () => {
+test("global team catalogue reads document explicit per-game grants, fan-out changes, archived/merged exclusion and snapshot delivery", async () => {
     const document = await (await GET()).json()
     const collection = document.paths["/clan/teams"].get,
         detail = document.paths["/clan/teams/{id}"].get
@@ -395,16 +425,37 @@ test("team directory reads document explicit per-game grants, archived exclusion
     assert.ok(detail.responses["404"])
     assert.equal(collection.responses["404"], undefined)
     for (const phrase of [
-        /key supplies the workspace/i,
+        /team catalogue is global/i,
+        /global administrators own one catalogue per game/i,
+        /no workspace owns or keeps a private team list/i,
+        /key supplies the workspace and must still belong to the workspace that authenticated the request/i,
         /exactly one supported game/i,
-        /archived entries are excluded/i,
-        /create, update and restore emit upsert, archive emits remove/i,
+        /archived and merged teams are excluded/i,
+        /fanned out to the change feed of every workspace that has an active restricted key with the teams grant/i,
+        /create, update, restore and request approval emit upsert, archive emits remove/i,
+        /merge emits remove for the merged team .* followed by upsert for the kept team/i,
         /legacy broad keys do not acquire/i,
-        /no bearer-key API/i,
+        /catalogue writes .*, logo uploads and team requests .* no bearer-key API \(documented API-parity exception\)/i,
         /matchTeams snapshots \(ClanMatchTeam\)/,
+        /archived or merged/,
     ])
         assert.match(collection.description, phrase)
-    assert.match(detail.description, /generic 404 without labels/)
+    assert.doesNotMatch(collection.description, /workspace-owned/i)
+    for (const phrase of [
+        /global catalogue team ID/,
+        /public competition/,
+        /Unknown, archived, merged and other-game IDs return a generic 404 without labels/,
+        /merge target is not disclosed/,
+    ])
+        assert.match(detail.description, phrase)
+    assert.doesNotMatch(detail.description, /other-workspace/)
+    assert.match(detail.responses["404"].description, /merged/)
+    assert.match(
+        document.tags.find(
+            (tag: { name: string }) => tag.name === "Clan API — Teams"
+        ).description,
+        /^Global team catalogue reads/
+    )
     const limit = collection.parameters.find(
         (p: { name: string }) => p.name === "limit"
     )
@@ -436,14 +487,45 @@ test("team directory reads document explicit per-game grants, archived exclusion
         document.components.schemas
     assert.equal(ClanTeam.additionalProperties, false)
     assert.deepEqual(Object.keys(ClanTeam.properties).sort(), [
+        "description",
         "gameId",
         "id",
+        "links",
         "logoUrl",
         "name",
         "revision",
         "shortCode",
         "updatedAt",
     ])
+    assert.deepEqual([...ClanTeam.required].sort(), [
+        "description",
+        "gameId",
+        "id",
+        "links",
+        "logoUrl",
+        "name",
+        "revision",
+        "shortCode",
+        "updatedAt",
+    ])
+    assert.equal(ClanTeam.properties.links.type, "array")
+    assert.equal(ClanTeam.properties.links.maxItems, 3)
+    assert.match(ClanTeam.properties.links.description, /https/)
+    assert.deepEqual(
+        ClanTeam.properties.description.anyOf.map(
+            (option: { type: string }) => option.type
+        ),
+        ["string", "null"]
+    )
+    assert.match(ClanTeam.properties.description.description, /500/)
+    for (const field of [
+        "guildId",
+        "linkedGuildId",
+        "mergedIntoTeamId",
+        "logoAssetId",
+        "archivedAt",
+    ])
+        assert.equal(field in ClanTeam.properties, false, field)
     assert.deepEqual(ClanTeam.properties.gameId.enum, [
         "hell_let_loose",
         "wardogs",
@@ -584,7 +666,7 @@ test("OpenAPI derives concrete Convex-backed success bodies", async () => {
 
 test("bearer event writes document read-only match teams and complete records their internal snapshot fields", async () => {
     const document = await (await GET()).json()
-    assert.equal(document.info.version, "1.10.0")
+    assert.equal(document.info.version, "1.11.0")
     for (const operation of [
         document.paths["/clan/events"].post,
         document.paths["/clan/events/{id}"].patch,
@@ -603,5 +685,30 @@ test("bearer event writes document read-only match teams and complete records th
     ]) {
         assert.match(operation.description, /logoAssetId is an internal/)
         assert.match(operation.description, /ClanMatchTeam, logoUrl only/)
+    }
+})
+
+test("OpenAPI documents the template settings of event writes", async () => {
+    const document = await (await GET()).json()
+    for (const operation of [
+        document.paths["/clan/events"].post,
+        document.paths["/clan/events/{id}"].patch,
+    ]) {
+        const properties =
+            operation.requestBody.content["application/json"].schema.properties
+        assert.deepEqual(
+            properties.attendanceReminderHours.items.enum,
+            [24, 18, 12, 6]
+        )
+        assert.equal(
+            properties.signupGroupLimits.items.properties.max.maximum,
+            100
+        )
+        assert.equal(properties.createParticipantRoles.type, "boolean")
+        assert.match(
+            properties.squadPresetId.description,
+            /empty string removes/
+        )
+        assert.match(properties.signupGroupLimits.description, /removes nobody/)
     }
 })

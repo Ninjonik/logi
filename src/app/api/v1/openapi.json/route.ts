@@ -1,8 +1,11 @@
 import {
+    DEFAULT_LEAGUE_PANEL_OPTIONS,
+    leagueOverviewSchema,
+} from "@/domain/wardogs-league/panels"
+import {
     integrationChangeSchema,
     syncRecordSchema,
-    SYNC_RESOURCES,
-} from "@/domain/integrations/change"
+} from "@/domain/integrations/change.schema"
 import {
     clanEventSummarySchema,
     clanMatchSummarySchema,
@@ -19,29 +22,123 @@ import {
     peopleReadPaths,
     peopleResponseSchemas,
 } from "@/lib/api/people-openapi"
-import { membershipObservationSchema } from "@/domain/membership/observation"
+import { membershipObservationSchema } from "@/domain/membership/observation.schema"
 import { warconEnvelopeSchema } from "@/domain/game-data/warcon-contracts"
 import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
+import { PANEL_WINDOW } from "@/domain/wardogs-league/all-fixtures"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
+import { SYNC_RESOURCES } from "@/domain/integrations/change"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import {
+    TEAM_DESCRIPTION_MAX,
+    TEAM_GAMES,
+    TEAM_LINKS_MAX,
+    TEAM_PAGE_MAX,
+    teamDtoSchema,
+} from "@/domain/teams/team"
+import {
     websiteEventCommandPaths,
     websiteEventCommandSchemas,
 } from "@/lib/api/website-event-command-openapi"
-import { TEAM_GAMES, TEAM_PAGE_MAX, teamDtoSchema } from "@/domain/teams/team"
+import {
+    clanSettingsOpenApiPath,
+    clanSettingsOpenApiSchemas,
+} from "@/lib/api/settings-openapi"
 import { generatedOpenApiSchemas } from "@/lib/api/generated-openapi-schemas"
+
+/** One division of a public competition, shared by the full and the paged response. */
+const publicCompetitionDivisionSchema = {
+    type: "object",
+    required: ["id", "name", "teams", "fixtures"],
+    properties: {
+        id: { type: "string" },
+        name: {
+            type: "string",
+        },
+        teams: {
+            type: "array",
+            items: {
+                type: "object",
+                required: ["id", "name", "shortCode", "logoUrl", "withdrawn"],
+                properties: {
+                    id: {
+                        type: "string",
+                        description:
+                            "Global team catalogue ID (guild:<id> for a legacy record).",
+                    },
+                    name: {
+                        type: "string",
+                    },
+                    shortCode: {
+                        type: ["string", "null"],
+                    },
+                    logoUrl: {
+                        type: ["string", "null"],
+                        format: "uri",
+                    },
+                    withdrawn: {
+                        type: "boolean",
+                    },
+                },
+            },
+        },
+        fixtures: {
+            type: "array",
+            items: {
+                type: "object",
+                required: ["id", "phase", "teamAId", "teamBId", "status"],
+                properties: {
+                    id: {
+                        type: "string",
+                    },
+                    phase: {
+                        type: "string",
+                        enum: ["league", "playoff", "relegation"],
+                    },
+                    teamAId: {
+                        type: "string",
+                    },
+                    teamBId: {
+                        type: "string",
+                    },
+                    scoreA: {
+                        type: "integer",
+                    },
+                    scoreB: {
+                        type: "integer",
+                    },
+                    status: {
+                        type: "string",
+                        enum: ["scheduled", "final", "forfeit"],
+                    },
+                    scheduledAt: {
+                        type: "string",
+                        description:
+                            "ISO 8601 for fixtures scheduled in Logi; imported legacy fixtures may hold free text.",
+                    },
+                    eventId: {
+                        type: "string",
+                        description:
+                            "Linked Logi match event; its public page is /matches/{eventId}.",
+                    },
+                },
+            },
+        },
+    },
+} as const
 
 const summaryResponseSchemas = {
     ...historyResponseSchemas,
     LeagueFixture: z.toJSONSchema(leagueFixtureSchema),
     LeagueMatchRead: z.toJSONSchema(leagueReadSchema),
+    LeagueOverview: z.toJSONSchema(leagueOverviewSchema),
     WarconEnvelope: z.toJSONSchema(warconEnvelopeSchema),
     HllLiveEnvelope: z.toJSONSchema(hllLiveEnvelopeSchema),
     WarconQuery: z.toJSONSchema(warconQuerySchema),
@@ -53,8 +150,17 @@ const summaryResponseSchemas = {
     ClanEventSummariesDocument: z.toJSONSchema(clanEventSummarySchema),
     ClanMatchSummariesDocument: z.toJSONSchema(clanMatchSummarySchema),
     ClanResultSummariesDocument: z.toJSONSchema(clanResultSummarySchema),
-    /** Minimized workspace directory entry; actor identifiers and asset IDs are excluded. */
-    ClanTeam: z.toJSONSchema(teamDtoSchema),
+    /** Minimized global catalogue entry; actor identifiers, asset IDs and administration fields are excluded. */
+    ClanTeam: z.toJSONSchema(
+        teamDtoSchema.extend({
+            description: teamDtoSchema.shape.description.describe(
+                `Plain-text team description of at most ${TEAM_DESCRIPTION_MAX} characters, or null; may contain line breaks. Render as text.`
+            ),
+            links: teamDtoSchema.shape.links.describe(
+                `Up to ${TEAM_LINKS_MAX} unique public https URLs (for example a team site or Discord invite), or an empty array. Render as external links; they grant nothing.`
+            ),
+        })
+    ),
     ClanTeamPage: {
         type: "object",
         required: ["items", "nextCursor"],
@@ -327,7 +433,7 @@ const paths: Record<string, unknown> = {
             summary: "Get a public clan profile",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited clan profile. Use collection=recentMatches for recent matches.",
+                "Public, rate-limited clan profile, the data of the public clan page. Besides the profile and recentMatches it carries inviteUrl (the clan's own Discord invite as https://discord.gg/<code>, or null), games, upcomingMatches (announced, non-draft matches that have not started: eventId, gameId, startsAt, opponent, name, label; trainings, drafts, server details and sign-ups are never included), clanResults (recent recorded matches from the clan's side: outcome, clanScore, opponentScore, opponent, mapName) and competitions (placements in published competitions: slug, name, season, divisionName, position, teamCount; position is null before the division has a result). Use collection=recentMatches, upcomingMatches, clanResults or competitions for a paginated list.",
             parameters: [
                 {
                     name: "clanId",
@@ -361,32 +467,112 @@ const paths: Record<string, unknown> = {
             summary: "Get a public competition",
             tags: ["Public API — no key required"],
             description:
-                "Public, rate-limited competition details. Each competition includes its gameId. Use collection=divisions for divisions.",
+                "Public, rate-limited details of a published competition: its gameId, season, divisions with registered teams, and fixtures with results. Team IDs are global Logi team catalogue IDs, shared by every competition the team plays in (breaking change: they were Logi workspace IDs before). Teams carry name, shortCode and logoUrl (null when the team has none); fixtures reference them with teamAId and teamBId and carry an optional round number (missing on fixtures saved before rounds). An ID of the form guild:<id> marks a legacy record that has not been migrated yet. Unpublished and unknown competitions return 404. Use collection=divisions for a paginated division list.",
             parameters: [
                 {
                     name: "slug",
                     in: "path",
                     required: true,
-                    schema: { type: "string" },
+                    schema: {
+                        type: "string",
+                        pattern: "^[a-z0-9][a-z0-9-]{1,63}$",
+                    },
                 },
             ],
-            responses,
+            responses: {
+                ...responses,
+                "200": {
+                    description:
+                        "The published competition (or a page of its divisions with collection=divisions).",
+                    headers: responses["200"].headers,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["data"],
+                                properties: {
+                                    data: {
+                                        oneOf: [
+                                            {
+                                                type: "object",
+                                                required: [
+                                                    "id",
+                                                    "gameId",
+                                                    "slug",
+                                                    "name",
+                                                    "season",
+                                                    "description",
+                                                    "divisions",
+                                                ],
+                                                properties: {
+                                                    id: { type: "string" },
+                                                    gameId: {
+                                                        type: "string",
+                                                        enum: [
+                                                            "hell_let_loose",
+                                                            "hell_let_loose_vietnam",
+                                                            "wardogs",
+                                                        ],
+                                                    },
+                                                    slug: { type: "string" },
+                                                    name: { type: "string" },
+                                                    season: { type: "string" },
+                                                    description: {
+                                                        type: [
+                                                            "string",
+                                                            "null",
+                                                        ],
+                                                    },
+                                                    divisions: {
+                                                        type: "array",
+                                                        items: publicCompetitionDivisionSchema,
+                                                    },
+                                                },
+                                            },
+                                            {
+                                                description:
+                                                    "With collection=divisions: one page of divisions.",
+                                                type: "object",
+                                                required: [
+                                                    "page",
+                                                    "total",
+                                                    "offset",
+                                                    "limit",
+                                                    "nextOffset",
+                                                ],
+                                                properties: {
+                                                    page: {
+                                                        type: "array",
+                                                        items: publicCompetitionDivisionSchema,
+                                                    },
+                                                    total: { type: "integer" },
+                                                    offset: { type: "integer" },
+                                                    limit: { type: "integer" },
+                                                    nextOffset: {
+                                                        type: [
+                                                            "integer",
+                                                            "null",
+                                                        ],
+                                                    },
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
     },
     "/clan/meta": {
         get: {
             summary:
                 "Get authenticated guild identity, enabled games, resource counts, API limits, and server time",
+            description:
+                "guild, enabledGames, updatedAt (the clan's sync marker), limits and serverTime are current on every call. counts come from the clan's stored summary, which Logi recomputes at most once a minute off the request path, so they can lag the clan's records by up to 60 seconds; computedAt says when they were computed. The first call after a deployment computes the summary before answering. Use counts as a hint for sweeps, never as proof that a record exists or is absent; the resource lists and /clan/changes stay authoritative.",
             tags: ["Clan API — Overview"],
-            security: [{ clanApiKey: [] }],
-            responses,
-        },
-    },
-    "/clan/settings": {
-        get: {
-            summary:
-                "Get authenticated clan and Discord configuration without runtime secrets",
-            tags: ["Clan API — Settings"],
             security: [{ clanApiKey: [] }],
             responses,
         },
@@ -507,21 +693,11 @@ const idempotencyParameter = {
         "Use one new visible key for each write, for example `event-create-42`. Retrying the identical method, path, and body with that key replays the original status and body for 24 hours. Reusing it with a different request returns `409 idempotency_conflict`; generate a new key for that request.",
     schema: { type: "string", maxLength: 200, example: "event-create-42" },
 }
-paths["/clan/settings"] = {
-    get: (paths["/clan/settings"] as { get: unknown }).get,
-    patch: {
-        summary: "Patch safe clan and Discord settings",
-        tags: ["Clan API — Settings"],
-        description:
-            "Only supplied fields change. Runtime secrets, player-stat connections, ticket settings, membership settings, and game overrides cannot be set through this endpoint.",
-        security: [{ clanApiKey: [] }],
-        parameters: [idempotencyParameter],
-        responses: {
-            ...responses,
-            "409": { description: "Idempotency conflict" },
-        },
-    },
-}
+// Settings fields and every feature settings slice (src/lib/api/settings-openapi.ts).
+paths["/clan/settings"] = clanSettingsOpenApiPath({
+    responses,
+    idempotencyParameter,
+})
 paths["/clan/articles"] = {
     get: (paths["/clan/articles"] as { get: unknown }).get,
     post: {
@@ -659,6 +835,47 @@ const eventMutation = {
                         stratmapIds: {
                             type: "array",
                             items: { type: "string" },
+                        },
+                        signupGroupLimits: {
+                            type: "array",
+                            maxItems: 50,
+                            description:
+                                "Caps of offered signup groups (matches only); caps of groups not in signupGroupIds are dropped. A full group offers a reserve place instead. On PATCH, omitted keeps the saved caps and [] removes them. Lowering a cap below the current sign-ups removes nobody: players with a place keep it and only new sign-ups go to the reserve.",
+                            items: {
+                                type: "object",
+                                additionalProperties: false,
+                                required: ["groupId", "max"],
+                                properties: {
+                                    groupId: {
+                                        type: "string",
+                                        minLength: 1,
+                                        maxLength: 64,
+                                    },
+                                    max: {
+                                        type: "integer",
+                                        minimum: 1,
+                                        maximum: 100,
+                                    },
+                                },
+                            },
+                        },
+                        attendanceReminderHours: {
+                            type: "array",
+                            maxItems: 4,
+                            items: { type: "integer", enum: [24, 18, 12, 6] },
+                            description:
+                                "Hours before the meeting when unconfirmed roster players get an attendance DM. Missing on the event means all four. On PATCH, omitted keeps the saved offsets, [] sends none, and a change reschedules the reminders that have not been sent yet.",
+                        },
+                        createParticipantRoles: {
+                            type: "boolean",
+                            description:
+                                "Whether the bot keeps attendee and reserve Discord roles for the event (missing means yes). Turning it off makes the bot delete the roles it created; on PATCH, omitted keeps the saved value.",
+                        },
+                        squadPresetId: {
+                            type: "string",
+                            maxLength: 64,
+                            description:
+                                "Squad preset of this clan that a new roster for the match starts from. It does not change a roster that already exists. On PATCH, omitted keeps the saved preset and an empty string removes it.",
                         },
                         matchTeams: {
                             readOnly: true,
@@ -1402,13 +1619,72 @@ paths["/clan/league-fixtures"] = {
         },
     },
 }
+paths["/clan/league-fixtures/overview"] = {
+    get: {
+        tags: ["Clan API — Matches"],
+        summary:
+            "Read the whole Wardogs League as the WD League panels show it",
+        description:
+            "Requires explicit league-fixtures and wardogs grants (the same grant as the tracked collection). Website parity of the two WD League Discord panels: `standings` is the table of the current season (calendar year in Europe/Prague) that Logi computes from League placements with the points rule published on each match page (1st 3 · 2nd 2 · 3rd 1 by default), sorted by points, then 1st, 2nd and 3rd places, then fewer matches; teams equal on all of these share the rank. Until the first result of the season exists `standings.state` is waiting_for_results. `fixtures` lists the nearest live and upcoming fixtures of the whole League (not only the clan's) with teams, nationality, member count, faction, map, host and League preparation chips (rules, map vote, moderator, ready check; done/running/pending), plus the podiums of the last seven days. `fixtures.recentResults.state` is waiting_for_results until Logi has collected any League result and ready afterwards; an empty `items` list in the ready state means the League had no results in those seven days. Results are read from wardogsleague.net and are not verified by Logi; the parser does not read placements yet, so results stay empty until it does. `ours` marks this guild's watched team codes. Data is shared across guilds and refreshed by a one-minute collector through the shared five-minute detail cache; `stale` marks shown fixtures whose last read failed or is older than fifteen minutes. Panel placement, posting and refreshing in Discord are live Discord actions and are not part of the API. Responses are no-store.",
+        security: [{ clanApiKey: [] }],
+        "x-logi-read-access": {
+            resource: "league-fixtures",
+            games: ["wardogs"],
+            explicitGrantRequired: true,
+        },
+        parameters: [
+            {
+                name: "game",
+                in: "query",
+                required: true,
+                schema: { type: "string", enum: ["wardogs"] },
+            },
+            {
+                name: "limit",
+                in: "query",
+                description:
+                    "Nearest fixtures to return (the panel default is 6).",
+                schema: {
+                    type: "integer",
+                    minimum: 1,
+                    maximum: PANEL_WINDOW,
+                    default: DEFAULT_LEAGUE_PANEL_OPTIONS.fixtureCount,
+                },
+            },
+        ],
+        responses: {
+            "200": {
+                description:
+                    "League table, nearest fixtures and recent results",
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            required: ["data"],
+                            properties: {
+                                data: {
+                                    $ref: "#/components/schemas/LeagueOverview",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "400": { description: "Invalid game or limit" },
+            "401": { description: "Invalid or revoked key" },
+            "403": { description: "Missing explicit grant" },
+            "429": { description: "API rate limit" },
+            "503": { description: "Read unavailable" },
+        },
+    },
+}
 const teamGames = [...TEAM_GAMES]
 const teamGameParameter = {
     name: "game",
     in: "query",
     required: true,
     description:
-        "Exactly one directory game. No legacy default, game=all or combination; Hell Let Loose: Vietnam is not a directory game.",
+        "Exactly one catalogue game. No legacy default, game=all or combination; Hell Let Loose: Vietnam has no team catalogue.",
     schema: { type: "string", enum: teamGames },
 }
 const teamReadAccess = {
@@ -1422,7 +1698,7 @@ const teamErrorResponse = (description: string) => ({
 })
 const teamReadResponses = {
     "400": teamErrorResponse(
-        "invalid_query: the key's grant allows the request but the route rejects it: combined or repeated game, a game without a directory, unknown or repeated parameters, invalid pagination or a malformed team ID; on the detail read also a missing game or game=all"
+        "invalid_query: the key's grant allows the request but the route rejects it: combined or repeated game, a game without a team catalogue, unknown or repeated parameters, invalid pagination or a malformed team ID; on the detail read also a missing game or game=all"
     ),
     "401": teamErrorResponse(
         "missing_api_key or invalid_api_key: missing, invalid or revoked API key"
@@ -1433,14 +1709,14 @@ const teamReadResponses = {
     "429": teamErrorResponse(
         "rate_limited: API rate limit; respect Retry-After"
     ),
-    "503": teamErrorResponse("unavailable: directory read failed"),
+    "503": teamErrorResponse("unavailable: catalogue read failed"),
 }
 paths["/clan/teams"] = {
     get: {
         tags: ["Clan API — Teams"],
-        summary: "List this workspace's active directory teams for one game",
+        summary: "List the global catalogue's active teams for one game",
         description:
-            "Requires an explicit teams grant for the requested game. The key supplies the workspace; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game (hell_let_loose or wardogs) is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns the workspace-owned directory as minimized DTOs (stable ID, game, name, short code, public logo URL, revision, updated time) with absent optional values as null; archived entries are excluded. Use changes and sync-records with resource teams for updates: create, update and restore emit upsert, archive emits remove, and both collection and delta reads enforce the same grants. Legacy broad keys do not acquire this resource. Catalogue writes and logo uploads are session-bound dashboard administrator operations and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep historical labels and logos after a team is archived, and receiving them does not grant the directory. Responses are no-store.",
+            "Requires an explicit teams grant for the requested game. The team catalogue is global: Logi's global administrators own one catalogue per game (hell_let_loose or wardogs), no workspace owns or keeps a private team list, and every workspace whose key holds the grant reads the same teams. The key supplies the workspace and must still belong to the workspace that authenticated the request; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns active teams ordered by normalized name as minimized DTOs (stable global catalogue ID, game, name, short code, public logo URL, description, up to three https links, revision, updated time) with absent optional values as null and links as an array; archived and merged teams are excluded. Use changes and sync-records with resource teams for updates. Every catalogue change is fanned out to the change feed of every workspace that has an active restricted key with the teams grant for that game when the change is written; a key granted later bootstraps from this collection with start=now first. Create, update, restore and request approval emit upsert, archive emits remove, and a merge emits remove for the merged team (when it was still active) followed by upsert for the kept team in the same transaction. Revisions are per workspace feed, and both collection and delta reads enforce the same grants. Legacy broad keys do not acquire this resource. Catalogue writes (create, edit, archive, restore, link, merge), logo uploads and team requests (submission, cancellation and moderation decisions) are session-bound Logi administration and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep the captured ID, labels and logo after a team is archived or merged, and receiving them does not grant the catalogue. Responses are no-store.",
         security: [{ clanApiKey: [] }],
         "x-logi-read-access": teamReadAccess,
         parameters: [
@@ -1465,7 +1741,7 @@ paths["/clan/teams"] = {
         ],
         responses: {
             "200": {
-                description: "Active directory page for one game",
+                description: "Active catalogue page for one game",
                 content: {
                     "application/json": {
                         schema: {
@@ -1488,9 +1764,9 @@ paths["/clan/teams"] = {
 paths["/clan/teams/{id}"] = {
     get: {
         tags: ["Clan API — Teams"],
-        summary: "Read one active directory team",
+        summary: "Read one active catalogue team",
         description:
-            "Requires the same explicit teams grant and exactly one supported game, rechecked inside Convex. The ID is the stable directory record ID from the collection, a matchTeams snapshot or a teams change; it is never a Discord guild, competition or League identifier. Unknown, archived, other-workspace and other-game IDs return a generic 404 without labels. Returns one minimized ClanTeam. Responses are no-store.",
+            "Requires the same explicit teams grant and exactly one supported game, rechecked inside Convex. The ID is a stable global catalogue team ID from the collection, a teams change, a matchTeams snapshot or a public competition; it is never a Discord guild or League identifier. Unknown, archived, merged and other-game IDs return a generic 404 without labels; the merge target is not disclosed, so a matchTeams snapshot whose team was merged keeps its captured presentation. Returns one minimized ClanTeam. Responses are no-store.",
         security: [{ clanApiKey: [] }],
         "x-logi-read-access": teamReadAccess,
         parameters: [
@@ -1499,7 +1775,7 @@ paths["/clan/teams/{id}"] = {
                 in: "path",
                 required: true,
                 description:
-                    "Opaque directory team ID: 1–64 letters, digits, underscores or hyphens.",
+                    "Opaque global catalogue team ID: 1–64 letters, digits, underscores or hyphens.",
                 schema: {
                     type: "string",
                     minLength: 1,
@@ -1511,7 +1787,7 @@ paths["/clan/teams/{id}"] = {
         ],
         responses: {
             "200": {
-                description: "Active directory team",
+                description: "Active catalogue team",
                 content: {
                     "application/json": {
                         schema: {
@@ -1529,7 +1805,7 @@ paths["/clan/teams/{id}"] = {
             },
             ...teamReadResponses,
             "404": teamErrorResponse(
-                "not_found: unknown, archived, other-workspace or other-game team"
+                "not_found: unknown, archived, merged or other-game team"
             ),
         },
     },
@@ -1918,7 +2194,7 @@ export async function GET() {
             openapi: "3.1.1",
             info: {
                 title: "Logi Clan API",
-                version: "1.10.0",
+                version: "1.11.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
@@ -1942,7 +2218,7 @@ Send a new \`Idempotency-Key\` for each write, for example \`event-create-42\`. 
 ### Webhooks
 
 
-Webhook subscriptions are configured by a System administrator in the dashboard's **System** page Webhooks section, rather than through this bearer-key API. Each delivery is an HTTP POST with JSON \`{ id, type, createdAt, guildId, resource }\`, plus \`X-Logi-Event\`, \`X-Logi-Delivery\`, \`X-Logi-Timestamp\`, and \`X-Logi-Signature\` headers. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` before parsing the raw body, and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final. See the [System settings webhook guide](/wiki/configuration/settings#webhooks) for every event's trigger and resource shape.
+Webhook subscriptions are configured by a workspace administrator in the dashboard's **Settings → Webhooks** page, rather than through this bearer-key API. Each delivery is an HTTP POST with JSON \`{ id, type, createdAt, guildId, resource }\`, plus \`X-Logi-Event\`, \`X-Logi-Delivery\`, \`X-Logi-Timestamp\`, and \`X-Logi-Signature\` headers. Verify \`X-Logi-Signature\` as \`sha256=<HMAC_SHA256(X-Logi-Timestamp + "." + rawBody, signingSecret)>\` before parsing the raw body, and reject stale timestamps. Network failures, 408, 429, and 5xx responses retry with bounded backoff; other 4xx responses are final. See the [clan settings webhook guide](/wiki/configuration/settings#webhooks) for every event's trigger and resource shape.
 
 Article, group, calendar-item, roster, assignment, event, signup, stratmap, and preset write operations are documented below. Event, stratmap, topic-preset, and squad-preset deletion is intentionally unsupported because their dependent roster, match, Discord, and scheduled-job data has no safe deletion lifecycle.`,
             },
@@ -2006,7 +2282,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 {
                     name: "Clan API — Teams",
                     description:
-                        "Workspace team directory reads; match snapshots travel in summaries.",
+                        "Global team catalogue reads; match snapshots travel in summaries.",
                 },
                 {
                     name: "Clan API — Users",
@@ -2019,6 +2295,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                     ...generatedOpenApiSchemas,
                     ...summaryResponseSchemas,
                     ...websiteEventCommandSchemas,
+                    ...clanSettingsOpenApiSchemas(),
                 },
                 securitySchemes: {
                     clanApiKey: {

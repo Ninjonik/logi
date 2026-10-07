@@ -1,6 +1,8 @@
 /**
  * Builds the OpenAPI component schemas from the same Convex validators that
  * validate persisted API resources. Run after changing convex/schema.ts.
+ * Clan settings slices are documented from their Zod schemas at request time
+ * (src/lib/api/settings-openapi.ts) and need no regeneration.
  */
 import { writeFileSync } from "node:fs"
 import { resolve } from "node:path"

@@ -11,16 +11,15 @@ import {
 } from "../src/infrastructure/convex/server-read-model"
 import { filterByGameScope, type GameScope } from "../src/domain/games/game"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
+import { withoutDrafts } from "../src/domain/events/drafts"
+import { internalAuthSecret } from "./discord_shared"
 import type { QueryCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -118,7 +117,11 @@ async function buildServerContext(
             .withIndex("guildId", (q) => q.eq("guildId", serverDiscordId))
             .collect(),
     ])
-    const scopedEvents = filterByGameScope(events, options.gameScope)
+    // Unpublished match drafts are visible only to the clan's managers.
+    const scopedEvents = filterByGameScope(
+        canAdmin ? events : withoutDrafts(events),
+        options.gameScope
+    )
     const scopedSquadPresets = filterByGameScope(
         squadPresets,
         options.gameScope
@@ -134,8 +137,10 @@ async function buildServerContext(
                 .unique()
         )
     )
+    // Members only ever see published rosters; drafts stay with managers.
     const relevantRosters = eventRosters.filter(
-        (roster): roster is NonNullable<typeof roster> => Boolean(roster)
+        (roster): roster is NonNullable<typeof roster> =>
+            Boolean(roster) && (canAdmin || Boolean(roster?.published))
     )
     const groupNameById = new Map(
         groups.map((group) => [String(group._id), group.name])
@@ -161,21 +166,45 @@ async function buildServerContext(
         assignments: scopedAssignments.map((assignment) =>
             normalizeAssignmentDoc(assignment, groupNameById)
         ),
-        // The calendar feed token is a capability URL secret. Members may read
-        // the calendar, but only clan managers may obtain its subscription URL.
+        // The calendar feed token is a capability URL secret and stats server
+        // tokens are credentials: members get the config without either.
         discordConfig: discordConfig
-            ? {
-                  ...normalizeDoc(discordConfig),
-                  calendarFeedToken: canAdmin
-                      ? discordConfig.calendarFeedToken
-                      : undefined,
-              }
+            ? canAdmin
+                ? normalizeDoc(discordConfig)
+                : withoutManagerSecrets(normalizeDoc(discordConfig))
             : null,
     }
 }
 
+/** Removes the calendar feed capability and stats-server tokens from a config. */
+function withoutManagerSecrets<
+    T extends {
+        calendarFeedToken?: unknown
+        playerStatsServers?: unknown
+        gameOverrides?: Record<
+            string,
+            { playerStatsServers?: unknown } | undefined
+        >
+    },
+>(config: T): T {
+    const safe = { ...config }
+    delete safe.calendarFeedToken
+    delete safe.playerStatsServers
+    if (config.gameOverrides)
+        safe.gameOverrides = Object.fromEntries(
+            Object.entries(config.gameOverrides).map(([gameId, override]) => {
+                if (!override) return [gameId, override]
+                const copy = { ...override }
+                delete copy.playerStatsServers
+                return [gameId, copy]
+            })
+        )
+    return safe
+}
+
 export const getServerContext = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
         serverId: v.id("guilds"),
         gameScope: v.optional(
@@ -188,6 +217,7 @@ export const getServerContext = query({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         return await buildServerContext(ctx, args, {
             bypassAccessCheck: false,
             forceAdmin: false,

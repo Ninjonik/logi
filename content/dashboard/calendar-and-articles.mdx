@@ -21,8 +21,23 @@ occurrence.
 The calendar only expands a finite range and caps one recurring item at 512
 occurrences, so an endless recurrence is useful for normal schedules but is not
 an archival record of every historical instance. Event times are displayed in
-the workspace Discord timezone when it is configured. Check the meeting time
-and game time separately when both are shown.
+the workspace Discord timezone when it is configured, and the page says which
+time zone that is. Weekday and month names follow the page language. An event
+shows its meeting time, game start, registration end and map; a training shows
+a link to its Discord voice channel instead of a map. Check the meeting time
+and game start separately.
+
+On a phone the month is a list of the days that have something planned. Below
+the month, **Next up** shows the next three entries.
+
+### Calendar items (managers)
+
+Managers add a manual item with **Add custom event**. Start and end are entered
+as wall-clock times in the clan time zone, whatever time zone your own device
+uses, and the end must be after the start. To delete an item, open it in the
+calendar and choose **Delete item**; Logi asks first, and deleting a recurring
+item removes every repeat. Other changes to an item are made under
+**Clan settings → Clan profile**.
 
 Calendar categories affect presentation (label, colour, emoji) rather than
 eligibility, Discord permissions, or event status. A missing category falls
@@ -57,9 +72,16 @@ time; updating one does not move it to the top. There is no draft or separate
 public/private visibility state in this workflow: save only material that is
 appropriate for everyone who can access that workspace's articles.
 
-Deleting an article removes it rather than archiving it. Existing direct links
+Deleting an article removes it rather than archiving it. Managers open the
+article and choose **Delete article**, then confirm. Existing direct links
 will no longer resolve, and Logi does not automatically remove a copied link
-from Discord, another article, or an external site.
+from Discord, another article, or an external site. Files uploaded as
+attachments stay reachable through links that were already shared.
+
+Attachments upload as soon as you choose them. **Publish article** stays
+disabled until every upload has finished, and a failed upload is reported
+under the file field without losing the other files. A missing title, short
+description or text is marked at its field.
 
 <Callout type="warning">
     Do not put Discord tokens, private channels, personal data, or other

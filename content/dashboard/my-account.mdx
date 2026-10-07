@@ -7,28 +7,97 @@ import { Callout } from "nextra/components"
 
 # Your account
 
-Open your user settings from the account menu in the dashboard sidebar. This area is for your own account preferences and privacy-related actions, not for changing a server’s membership or settings.
+Open **My account** from the bottom of the dashboard sidebar (on a phone, from
+your avatar at the top right). This area is for your own account preferences
+and privacy-related actions, not for changing a server’s membership or
+settings.
 
-You can change your avatar and platform-ID list there. Your Discord name and
-Discord ID are displayed for reference but are not editable from Logi, and the
-current screen does not change your preferred language or streamer status.
-Match recap messages are enabled by default. You can turn them off globally in
-your account settings and turn them back on there at any time. The **Unsubscribe
-from recaps** button on a recap also turns them off for your own Discord account;
+Every change on this page is saved as soon as you make it; there is no save
+button. A short confirmation appears after each change, and a failed change is
+undone on screen with a message explaining why.
+
+The page header shows your avatar and the Discord account you signed in with.
+Click the avatar (a camera appears on it) to upload a new picture. **Log out**
+signs you out of this browser.
+
+## Language and appearance
+
+- **App language** switches the dashboard and website to that language on this
+  device.
+- **Theme** is light, dark or **System**, which follows your device.
+- **Clan after sign-in** chooses the workspace that opens when you enter the
+  dashboard. If you leave it on **Automatic**, Logi stores a default as soon as
+  possible: your primary clan first, then another non-pending recruit, member,
+  or reserve-member clan, then another workspace you can access. It remains
+  stored so the dashboard can open it immediately; mercenary and pending
+  assignments are not preferred. A stored clan you can no longer open is
+  skipped, and the dashboard shows your clan list instead.
+
+## Game accounts
+
+**Steam** shows whether your Steam account is verified. A verified account
+shows the verification date (hover it to see the Steam ID), and your
+statistics are matched to it automatically; **Unlink** stops future player attribution. Without a
+verified account, **Verify with Steam** signs you in on Steam to prove control
+of the account.
+
+**Epic, Xbox, PlayStation** lists the IDs you entered yourself. They are
+marked as unverified because Logi cannot check them. **Add ID** (or **Edit
+IDs**) opens a dialog where you can enter several IDs separated by commas. If
+one of them is already linked to another player, the message appears under the
+field. Platform IDs are normalised when saved; use the exact account IDs that
+the game platform supplies rather than a display name.
+
+### Linking in Discord with /link
+
+`/link` in a clan's Discord server does the same privately, in one message that
+updates as you go, in the clan's language:
+
+1. When Logi has stored games from the clan's servers, it first asks **Have
+   you played on the clan's servers?** **Yes, find me** opens **Find me in
+   game**: type at least three characters of your in-game name or your exact
+   ID and pick yourself from the players of those games, shown with the
+   platform, when you last played (with the weekday only within the last
+   week) and on which server. The clan application searches the same games. Nobody found offers **Search again** and
+   **Enter ID manually**.
+2. Otherwise, or with **No, I'll enter my ID**, pick the platform: Steam
+   (Steam64 ID, 17 digits), Epic Games (Epic Account ID), Xbox (your gamertag
+   or Xbox user ID) or PlayStation (your online ID). A short guide says what
+   the ID looks like and links the platform's own instructions; the window
+   asks for exactly that ID.
+3. The ID is checked before it is saved. A Steam64 ID has 17 digits and starts
+   with 7656119 (a `steamcommunity.com/profiles/…` link also works); anything
+   else is refused with **Enter again**, and the card's text links the
+   platform's guide. An ID another player already has is refused too.
+
+With accounts linked, `/link` lists them with **Add another account** and
+**Unlink account**. Unlinking says what changes: statistics from that account
+stop being matched, and an account your open clan application uses is marked
+so you do not remove it by mistake.
+
+An ID you link this way is your own statement, not proof that the account is
+yours. To prove a Steam account, use **Verify Steam on the web**, which opens
+this page.
+
+## Bot direct messages
+
+**Match recap** is on by default and sends you your stats from a confirmed
+match; the switch saves as soon as you change it. The **Unsubscribe from
+recaps** button on a recap also turns them off for your own Discord account;
 its confirmation offers **Subscribe to recaps** to reverse the choice. These
 responses follow your Discord language. Pending recaps are checked against your
-current preference before sending; a message already being sent may still arrive.
-You can also choose the workspace that opens when you enter the dashboard. If
-you leave it on **Automatic**, Logi stores a default as soon as possible: your
-primary clan first, then another non-pending recruit, member, or reserve-member
-clan, then another workspace you can access. It remains stored so the dashboard
-can open it immediately; mercenary and pending assignments are not preferred.
-Platform IDs are normalised when saved; use the exact account IDs that the game
-platform supplies rather than a display name.
+current preference before sending; a message already being sent may still
+arrive.
+
+**Sign-up and attendance reminders** are sent by your clan according to its
+own settings, so they are not switched here.
 
 ## Keep accounts connected correctly
 
-Use the Discord account that represents you in the community. If a platform ID needs linking, Logi may provide a secure linking flow. Do not share a linking token or a sign-in link with another person.
+Use the Discord account that represents you in the community. Link platform
+IDs on this page or with `/link` in Discord; Logi no longer sends one-time
+linking links by direct message. Do not share a sign-in link with another
+person.
 
 Steam verification must finish while the same Logi session is still valid.
 Signing out of that session, signing out everywhere, or expiry stops a pending
@@ -36,26 +105,27 @@ verification from creating a verified link. Start a new verification after signi
 in again. After a session-binding upgrade, older unfinished verification attempts
 also need to restart; existing verified links are retained.
 
-## Privacy requests
+## Privacy and data
 
 ### Platform-ID links
 
-When the bot starts a platform-ID link, the resulting token is single-use and
-expires after 15 minutes. Starting another link for the same Discord account
-invalidates that account's earlier unused link tokens. Completing it adds the
-trimmed platform ID to the account without duplicating an existing identical
-ID; it may create the basic Logi user record if one does not yet exist.
+Linking an ID with `/link` adds it to your account without duplicating an
+existing identical ID; it may create the basic Logi user record if one does
+not yet exist. Unlinking removes only that ID.
 
 Platform IDs are a membership-application prerequisite in the Discord flow.
 They are not automatically a membership approval, group assignment, Discord
 role, or proof of identity. Use the membership application process when the
 community requires approval.
 
-Logi provides routes for privacy export and privacy requests. Use your account settings or contact the service operator when you need help understanding your data options.
+**Download ZIP** downloads a readable report and a machine-readable copy of
+your own stored data.
 
-The export button downloads a ZIP containing a readable report and a
-machine-readable copy of your own stored data. An erasure click creates a
-request; it does not immediately delete the account in the browser session.
+**Delete account** removes your profile, sign-ups and linked accounts. To
+confirm, type your name into the field; the button stays disabled until the
+name matches (letter case does not matter). Confirming creates a request for
+the Logi team; it does not immediately delete the account in the browser
+session, and the deletion cannot be undone once processed.
 
 <Callout type="warning">
     Deleting or exporting personal data can affect what is available to you

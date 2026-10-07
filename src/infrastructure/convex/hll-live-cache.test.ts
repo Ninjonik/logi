@@ -80,6 +80,62 @@ test("HLL read uses one durable cache/lease and rechecks scope on cached reads",
     await ctx.db.patch("apiKeys:key", { revokedAt: hllLiveTime })
     assert.equal((await invoke(reads.reserve, ctx, args)).kind, "denied")
 })
+test("Naše servery reads the HLL live data of its own servers only (P4-38)", async (t) => {
+    const { ctx, args } = fixture(t)
+    ctx.db.seed("discordPublicPanels", {
+        _id: "discordPublicPanels:combined",
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:two", "gameDataConnections:one"],
+        enabled: true,
+        kind: "servers",
+        revision: 4,
+    })
+    ctx.db.seed("discordPublicPanels", {
+        _id: "discordPublicPanels:elsewhere",
+        guildId: "guild",
+        connectionIds: ["gameDataConnections:two"],
+        enabled: true,
+        kind: "servers",
+        revision: 1,
+    })
+    const panel = (panelId: string, panelRevision: number) => ({
+        ...args,
+        keyHash: undefined,
+        panelId,
+        panelRevision,
+    })
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:combined", 4)
+            )
+        ).kind,
+        "claimed"
+    )
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:elsewhere", 1)
+            )
+        ).kind,
+        "denied"
+    )
+    assert.equal(
+        (
+            await invoke(
+                reads.reserve,
+                ctx,
+                panel("discordPublicPanels:combined", 3)
+            )
+        ).kind,
+        "denied",
+        "an old revision of the panel"
+    )
+})
 for (const change of ["key", "source", "generation", "panel"]) {
     test(`HLL rejects an in-flight response after ${change} changes`, async (t) => {
         const { ctx, args } = fixture(t)
@@ -140,6 +196,9 @@ test("HLL source generation changes discard the previous provider's data", async
     await ctx.db.patch("gameDataConnections:one", { generation: 2 })
     const second = await invoke(reads.reserve, ctx, args)
     assert.equal(second.previous, undefined)
+    // The old generation's data is dropped with the claim, not kept behind
+    // the new generation number.
+    assert.equal(ctx.db.tables.hllLiveCache[0].dataJson, undefined)
     advance(40_000)
     const retry = await invoke(reads.reserve, ctx, args)
     assert.equal(retry.previous, undefined)
@@ -164,4 +223,164 @@ test("HLL preserves the cache backoff when the aggregate map changes", async (t)
     assert.equal((await invoke(reads.reserve, ctx, args)).kind, "busy")
     advance(120_000)
     assert.equal((await invoke(reads.reserve, ctx, args)).previous, undefined)
+})
+test("an HLL claim patches the lease only; the large data is dropped once when the map changes, never copied", async (t) => {
+    const { ctx, args, advance } = fixture(t),
+        data = hllLiveFixture(),
+        first = await invoke(reads.reserve, ctx, args)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...first.claim,
+        dataJson: JSON.stringify(data),
+    })
+    const row = () => ctx.db.tables.hllLiveCache[0]
+    const stored = row().dataJson
+    assert.ok(stored)
+    const patches: Array<Record<string, unknown>> = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    t.mock.method(
+        ctx.db,
+        "patch",
+        async (id: string, value: Record<string, unknown>) => {
+            patches.push(value)
+            return await patch(id, value)
+        }
+    )
+    // The cache budget passed: the next claim keeps the data as `previous`
+    // and writes nothing but the lease (every version is retained for days).
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    const second = await invoke(reads.reserve, ctx, args)
+    assert.equal(second.kind, "claimed")
+    assert.equal(second.previous?.fetchedAt, data.fetchedAt)
+    assert.deepEqual(
+        patches.map((value) => Object.keys(value).sort()),
+        [["fence", "generation", "leaseUntil", "nextAt", "retainUntil"]]
+    )
+    assert.equal(row().dataJson, stored)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...second.claim,
+        dataJson: JSON.stringify(data),
+    })
+    // The collected observation shows another map: the data no longer
+    // serves as `previous`, so the claim drops it in its one patch.
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    ctx.db.tables.gameDataConnections[0].observation = {
+        observedAt: new Date(Date.now()).toISOString(),
+        map: "Foy Warfare",
+    }
+    const third = await invoke(reads.reserve, ctx, args)
+    assert.equal(third.kind, "claimed")
+    assert.equal(third.previous, undefined)
+    const last = patches[patches.length - 1]
+    assert.ok("dataJson" in last)
+    assert.equal(last.dataJson, undefined)
+    assert.equal(row().dataJson, undefined)
+    // Without data there is nothing to drop: the claim is the lease alone.
+    advance(40_000)
+    const fourth = await invoke(reads.reserve, ctx, args)
+    assert.equal(fourth.kind, "claimed")
+    assert.ok(!("dataJson" in patches[patches.length - 1]))
+})
+test("an unchanged HLL read writes only the times; a changed one writes the payload; both serve the latest times", async (t) => {
+    const { ctx, args, advance } = fixture(t),
+        data = hllLiveFixture(),
+        first = await invoke(reads.reserve, ctx, args)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...first.claim,
+        dataJson: JSON.stringify(data),
+    })
+    const row = () => ctx.db.tables.hllLiveCache[0]
+    const stored = row().dataJson
+    const patches: Array<Record<string, unknown>> = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    t.mock.method(
+        ctx.db,
+        "patch",
+        async (id: string, value: Record<string, unknown>) => {
+            patches.push(value)
+            return await patch(id, value)
+        }
+    )
+    // The idle server reads the same; only the times moved.
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    const later = new Date(Date.now()).toISOString()
+    const same = {
+        ...data,
+        fetchedAt: later,
+        statusAt: later,
+        playersAt: later,
+    }
+    const second = await invoke(reads.reserve, ctx, args)
+    assert.equal(second.kind, "claimed")
+    assert.equal(
+        await invoke(reads.finish, ctx, {
+            ...args,
+            ...second.claim,
+            dataJson: JSON.stringify(same),
+        }),
+        true
+    )
+    const finishPatch = patches[patches.length - 1]!
+    assert.ok(!("dataJson" in finishPatch), "the payload is not rewritten")
+    assert.deepEqual(Object.keys(finishPatch).sort(), [
+        "fetchedAt",
+        "leaseUntil",
+        "nextAt",
+        "playersAt",
+        "retainUntil",
+        "statusAt",
+    ])
+    assert.equal(row().dataJson, stored)
+    assert.equal(row().fetchedAt, later)
+    const cached = await invoke(reads.reserve, ctx, args)
+    assert.equal(cached.kind, "cached")
+    assert.equal(cached.data.fetchedAt, later)
+    assert.equal(cached.data.statusAt, later)
+    assert.equal(cached.data.playersAt, later)
+    assert.equal(cached.data.status.playerCount, data.status!.playerCount)
+    // A player joined: the payload is written again, with the new times.
+    advance(data.refreshAfterSeconds * 1000 + 1000)
+    const latest = new Date(Date.now()).toISOString()
+    const changed = {
+        ...same,
+        fetchedAt: latest,
+        statusAt: latest,
+        playersAt: latest,
+        status: { ...same.status!, playerCount: same.status!.playerCount + 1 },
+    }
+    const third = await invoke(reads.reserve, ctx, args)
+    assert.equal(third.kind, "claimed")
+    assert.equal(third.previous?.fetchedAt, later)
+    await invoke(reads.finish, ctx, {
+        ...args,
+        ...third.claim,
+        dataJson: JSON.stringify(changed),
+    })
+    assert.ok("dataJson" in patches[patches.length - 1]!)
+    assert.notEqual(row().dataJson, stored)
+    const served = await invoke(reads.reserve, ctx, args)
+    assert.equal(served.kind, "cached")
+    assert.equal(served.data.fetchedAt, latest)
+    assert.equal(served.data.status.playerCount, data.status!.playerCount + 1)
+})
+test("an HLL cache row from before the time fields serves the payload's own times", async (t) => {
+    const { ctx, args } = fixture(t),
+        data = hllLiveFixture()
+    ctx.db.seed("hllLiveCache", {
+        _id: "hllLiveCache:old",
+        connectionId: "gameDataConnections:one",
+        generation: 1,
+        fence: 3,
+        leaseUntil: 0,
+        nextAt: Date.now() + 10_000,
+        retainUntil: Date.now() + 3_600_000,
+        dataJson: JSON.stringify(data),
+    })
+    const cached = await invoke(reads.reserve, ctx, args)
+    assert.equal(cached.kind, "cached")
+    assert.equal(cached.data.fetchedAt, data.fetchedAt)
+    assert.equal(cached.data.statusAt, data.statusAt)
+    assert.deepEqual(cached.data, data)
 })

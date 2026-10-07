@@ -26,19 +26,25 @@ export type EntitySelectOption = {
 }
 
 export function EntitySelect({
+    id,
     value,
     onChange,
     options,
     placeholder,
     allowNone = true,
     noneLabel = "None",
+    emptyLabel = "No results.",
 }: {
+    /** Lets a `<label htmlFor>` name the trigger. */
+    id?: string
     value?: string
     onChange: (value?: string) => void
     options: EntitySelectOption[]
     placeholder: string
     allowNone?: boolean
     noneLabel?: string
+    /** Shown when the search matches nothing. */
+    emptyLabel?: string
 }) {
     const [open, setOpen] = useState(false)
     const selected = useMemo(
@@ -50,6 +56,7 @@ export function EntitySelect({
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
+                    id={id}
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between rounded-xl"
@@ -62,7 +69,12 @@ export function EntitySelect({
                                 className="size-5 rounded-sm object-contain"
                             />
                         ) : null}
-                        <span className="truncate">
+                        <span
+                            className={cn(
+                                "truncate",
+                                !selected && "text-muted-foreground font-normal"
+                            )}
+                        >
                             {selected?.name ?? placeholder}
                         </span>
                     </span>
@@ -73,7 +85,7 @@ export function EntitySelect({
                 <Command>
                     <CommandInput placeholder={placeholder} />
                     <CommandList>
-                        <CommandEmpty>No results.</CommandEmpty>
+                        <CommandEmpty>{emptyLabel}</CommandEmpty>
                         <CommandGroup>
                             {allowNone ? (
                                 <CommandItem

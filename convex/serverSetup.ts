@@ -5,12 +5,10 @@ import { v } from "convex/values"
 import { createHllStarterSquadPreset } from "../src/lib/squad-preset-templates"
 import { defaultGroupSeeds } from "../src/lib/group-defaults"
 import { getGuildById, getGuildDiscordId } from "./identity"
-
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+import { internalAuthSecret } from "./discord_shared"
 
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }

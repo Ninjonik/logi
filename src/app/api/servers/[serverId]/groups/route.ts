@@ -4,6 +4,7 @@ import {
     getUserSafeErrorMessage,
     logRouteError,
 } from "@/lib/server-route-errors"
+import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { getServerContext } from "@/lib/server-context"
 import { saveServerGroup } from "@/lib/server-groups"
@@ -13,6 +14,9 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ serverId: string }> }
 ) {
+    if (!isDashboardWriteOrigin(request)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
     try {
         const body = groupSchema.parse(await request.json())
         const { serverId } = await params

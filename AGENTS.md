@@ -36,6 +36,7 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Integration roadmap](./docs/integrations/website/roadmap/README.md) — proposed HLL/Wardogs collection, website synchronization, Discord membership and identity plans
 - [Discord public panels](./docs/integrations/website/discord-public-panels.md) — channel settings, durable message recovery, map artwork, application emoji, live scoreboards, reviewed results and activation limits
 - [HLL live data and private player reports](./docs/integrations/website/hll-live-and-player-reports.md) — scoped CRCON live reads, private report intake, current Discord audience checks and recovery limits
+- [Game servers and API keys](./docs/integrations/website/game-server-credentials.md) — workspace-entered provider keys, AES-256-GCM keyring, credential modes and legacy interpretation, commands, fencing, operator activation/migration/rotation runbook, security review and pending live acceptance
 - [Integration settings coverage](./docs/integrations/website/configuration-coverage.md) — implemented UI controls, operator configuration and outstanding settings gaps
 - [Discord player statistics](./docs/integrations/website/discord-player-stats.md) — shared HLL/Wardogs command, self-declared Steam lookup, channel sharing, retained-history totals and HLL provider access limits
 - [Discord feature gallery](./docs/integrations/website/evidence/2026-10-03-discord-gallery/README.md) — 21 actual Discord screenshots, existing/new capability inventory, audiences and observed design gaps
@@ -44,14 +45,19 @@ The main stack is TypeScript (strict mode), React 19, Next.js, Convex, Discord.j
 - [Reviewed result handoff](./docs/integrations/website/v0.10/README.md) — immutable confirmation/correction, proof-based attribution, scoped result summaries, consumer fixtures and synthetic acceptance
 - [Warcon read integration](./docs/integrations/website/v0.11/README.md) — fifteen gameplay reads, live scoreboard, scoped website access, completed-match collection and provider/local proof
 - [Wardogs League public match reader](./docs/integrations/website/v0.12/README.md) — anonymous HTML parser, safe URL preview, shared stale cache, scoped website API and live/local proof
-- [League discovery and shared fixtures](./docs/integrations/website/league-discovery.md) — scheduled scanning, admin pins, human links, compact persistent Discord cards and scoped collection/change feed
-- [Workspace team directory design](./docs/superpowers/specs/2026-10-03-team-directory-design.md) — HLL/Wardogs team catalogue, logo ownership, historical match snapshots and website/Discord contracts; implemented, with runtime acceptance (isolated Convex, browser, Discord test channel) pending
+- [League discovery and shared fixtures](./docs/integrations/website/league-discovery.md) — scheduled scanning, admin pins, human links, compact persistent Discord cards and scoped collection/change feed; League-wide fixture/result store, Logi-computed table, WD League panel data and the overview API
+- [Workspace team directory design](./docs/superpowers/specs/2026-10-03-team-directory-design.md) — HLL/Wardogs team records, logo storage, historical match snapshots and website/Discord contracts; its per-workspace ownership model is superseded by the global teams and competitions design below, its snapshot, logo, website and Discord rules still apply
+- [Global teams and competitions design](./docs/superpowers/specs/2026-10-04-global-teams-and-competitions-design.md) — one global team catalogue per game owned by Logi's global administrators, workspace team requests with Discord DM decisions, merge, and competitions on global teams; implemented, with runtime acceptance pending
 - [Retained Warcon history](./docs/integrations/website/warcon-history.md) — durable completed-game archive, faction/player calculations, scoped web pages and local acceptance evidence
 - [Actor-backed website event commands](./docs/integrations/website/event-commands.md) — current SSO actor and role policy, native event writes, durable receipts, revision conflicts and local HTTP proof
 - [Central login and connected website acceptance](./docs/integrations/website/v0.13/README.md) — paired SSO, roles, native event commands, local regression/browser proof and remaining activation
 - [Read-only people and player facts](./docs/integrations/website/v0.14/README.md) — scoped member directory, published roster/attendance, verified collected-session facts and bounded dependency resets
 - [PR #158 review and repaired-runtime proof](./docs/integrations/website/v0.14/evidence/2026-10-03-pr-review/README.md) — upstream integration fixes, security dispositions, exact runtime verification and activation limits
-- [Workspace team directory handoff](./docs/integrations/website/v0.15/README.md) — explicit `teams` grant, scoped collection/detail reads, change-feed protocol, immutable match snapshots, actor-backed `matchTeams` commands and the catalogue-write API-parity exception
+- [Discord redesign design](./docs/superpowers/specs/2026-10-05-discord-redesign-design.md) — owner decisions for bot messages, commands, panels, seed, WD League panels, graphics, application form and settings, with per-board acceptance checklists used for implementation and audit; the [audit report](./docs/superpowers/specs/discord-redesign/AUDIT-REPORT.md) records the result of two independent audit rounds, accepted deviations and owner activation steps
+- [Discord redesign kit](./docs/superpowers/specs/discord-redesign/KIT.md) — W0 developer note: Components V2 message model, bot message kit and error path, dashboard preview, clan-language copy modules, interaction registry and `/api/v1` settings slices
+- [Discord panels API](./docs/superpowers/specs/discord-redesign/PANELS-API.md) — W1 contract of "Panely v Discordu": panel kinds and states, dashboard routes, overview, test fetch with preview, bot worker and Convex functions, encrypted server password, public join page and hand-offs to the UI, seed and League workstreams
+- [Clan meta from a maintained summary](./docs/integrations/website/clan-meta.md) — what `/api/v1/clan/meta` promises per field, the once-a-minute summary refresh off the request path, the reads the endpoint makes and the operator notes
+- [Global team catalogue handoff](./docs/integrations/website/v0.15/README.md) — explicit `teams` grant, global catalogue collection/detail reads, fan-out change feed and merge semantics, immutable match snapshots, actor-backed `matchTeams` commands and the API-parity exception for catalogue writes, logo uploads and team requests
 
 ### User-facing and legal Markdown
 
@@ -167,6 +173,7 @@ npm run test:domain     # domain tests only
 npm run bot:test        # bot tests only
 npm run test:coverage   # all tests with Node coverage
 npm run typecheck       # TypeScript without emit
+npm run check:convex-bundles  # Convex modules bundle for their runtime (no node: imports in V8 modules)
 npm run lint            # configured lint script
 npm run build           # production Next.js build
 npm run convex:deploy   # deploy Convex; external side effect
@@ -211,7 +218,7 @@ Convex is the persistence and transaction boundary. Read `convex/schema.ts` and 
 
 Treat IDs for Convex records, Discord entities, platform accounts, servers, users, events, and rosters as distinct concepts even when they are represented as strings. Preserve tenant/server scoping in every query and mutation.
 
-Authentication and internal-secret checks belong at runtime boundaries. Never weaken an authorization check to make a client flow work. Never log tokens, secrets, OAuth codes, raw cookies, or unnecessary personal data.
+Authentication and internal-secret checks belong at runtime boundaries. Every public Convex function must check the internal secret, a dashboard session gateway or a client grant before it reads or writes anything (see ARCHITECTURE.md); never trust a `userId` sent by the browser. Never weaken an authorization check to make a client flow work. Never log tokens, secrets, OAuth codes, raw cookies, or unnecessary personal data.
 
 ## Environment and Secrets
 

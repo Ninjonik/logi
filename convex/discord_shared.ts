@@ -1,3 +1,4 @@
+import { applicationFormValidator } from "./membershipApplicationValidators"
 import { v } from "convex/values"
 
 import {
@@ -7,11 +8,19 @@ import {
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
 
-export const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+/**
+ * The configured internal secret. Fails closed: without one nothing is
+ * accepted, rather than the development default that is public in this
+ * repository.
+ */
+export function internalAuthSecret() {
+    const expected = process.env.INTERNAL_AUTH_SECRET
+    if (!expected) throw new Error("Unauthorized.")
+    return expected
+}
 
 export function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -58,6 +67,7 @@ export const ticketCategoryValidator = v.object({
     description: v.optional(v.string()),
     supportRoleIds: v.array(v.string()),
     modalQuestions: v.array(ticketModalQuestionValidator),
+    threadTitle: v.optional(v.string()),
 })
 
 export const membershipCategoryValidator = v.object({
@@ -81,6 +91,8 @@ export const membershipCategoryValidator = v.object({
         v.literal("reserve_member"),
         v.literal("mercenary")
     ),
+    autoAssignRecruitOnApply: v.optional(v.boolean()),
+    askSpecialization: v.optional(v.boolean()),
 })
 
 export const ticketSettingsValidator = v.object({
@@ -90,6 +102,7 @@ export const ticketSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    panelAccentColor: v.optional(v.string()),
     categories: v.array(ticketCategoryValidator),
 })
 
@@ -100,9 +113,12 @@ export const membershipSettingsValidator = v.object({
     panelTitle: v.string(),
     panelDescription: v.string(),
     panelImageUrl: v.optional(v.string()),
+    // The panel's own colour, `#RRGGBB`; missing means the clan colour (L4-10).
+    panelAccentColor: v.optional(v.string()),
     applicationWelcomeMessage: v.optional(v.string()),
     collectSpecialization: v.optional(v.boolean()),
     autoAssignRecruitOnApply: v.boolean(),
+    roleSyncEnabled: v.optional(v.boolean()),
     inviteSupportMembersIndividually: v.optional(v.boolean()),
     rosterScoreSettings: v.optional(
         v.object({
@@ -116,6 +132,10 @@ export const membershipSettingsValidator = v.object({
         })
     ),
     categories: v.array(membershipCategoryValidator),
+    applicationForm: v.optional(applicationFormValidator),
+    webFormEnabled: v.optional(v.boolean()),
+    mentionSupportRoles: v.optional(v.boolean()),
+    sendConfirmationDm: v.optional(v.boolean()),
 })
 
 export const calendarCategoriesValidator = v.array(v.string())
@@ -124,6 +144,11 @@ export const statsSettingsValidator = v.object({
     enabled: v.boolean(),
     games: v.object({ hell_let_loose: v.boolean(), wardogs: v.boolean() }),
     defaultShareChannelId: v.optional(v.string()),
+})
+
+export const messageStyleValidator = v.object({
+    accentColor: v.optional(v.string()),
+    iconDensity: v.optional(v.union(v.literal("sparse"), v.literal("rich"))),
 })
 
 export const playerStatsServerValidator = v.object({

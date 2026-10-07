@@ -63,7 +63,8 @@ export type EditorMetaState = {
 
 export type StratmapEditorProps = {
     locale: string
-    userId: string
+    /** Server-signed grant for live updates and edits; absent on the public view. */
+    grant?: string
     stratmapId: string
     initialCanAdmin: boolean
     initialStratmap: StratmapRecord

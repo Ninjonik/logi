@@ -1,156 +1,27 @@
-import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button"
-import { LinkCompetitionEvent } from "@/components/app/link-competition-event"
-import { ConcludeEventButton } from "@/components/app/conclude-event-button"
-import { listPublicCompetitions } from "@/lib/read-models/competitions"
-import { EventFormPanel } from "@/components/app/event-form-panel"
-import { isGameId, resolveGameScope } from "@/domain/games/game"
-import { PageHeader } from "@/components/app/page-header"
-import { GameBadge } from "@/components/app/game-badge"
-import { getServerContext } from "@/lib/server-context"
-import { getEventStatusMeta } from "@/lib/event-status"
+import { MatchDetailPage } from "@/components/app/match-detail/match-detail-page"
 import { getDictionary } from "@/i18n/dictionaries"
-import { Button } from "@/components/ui/button"
 import { isLocale } from "@/i18n/config"
 
-export default async function MatchDetailPage({
+export default async function MatchDetailRoute({
     params,
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; eventId: string }>
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string; tab?: string }>
 }) {
     const { locale, serverId, eventId } = await params
-    const { game } = await searchParams
-    const safeLocale = isLocale(locale) ? locale : "en"
-    const dictionary = getDictionary(safeLocale)
-    const context = await getServerContext(
-        serverId,
-        isGameId(game) ? game : "all"
-    )
-    if (!context) return null
-    const {
-        events,
-        rosters,
-        canAdmin,
-        topicPresets,
-        stratmaps,
-        discordConfig,
-        groups,
-    } = context
-    const event = events.find(
-        (item) => item.id === eventId && item.kind === "match"
-    )
-    const roster = rosters.find((item) => item.eventId === eventId)
-    if (!event) return null
-
-    const statusMeta = getEventStatusMeta(event.status, dictionary)
-    const competitions =
-        canAdmin && !event.competitionFixtureId
-            ? (await listPublicCompetitions()).filter(
-                  (competition) =>
-                      competition.gameId === resolveGameScope(event.gameId)
-              )
-            : []
+    const { game, tab } = await searchParams
+    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
 
     return (
-        <>
-            <PageHeader
-                title={event.name}
-                description={event.description}
-                badges={
-                    !isGameId(game) ? (
-                        <GameBadge
-                            gameId={event.gameId}
-                            dictionary={dictionary}
-                        />
-                    ) : undefined
-                }
-                badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
-                actions={
-                    <div className="flex flex-wrap gap-2">
-                        {roster?.published ? (
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="rounded-xl"
-                            >
-                                <a
-                                    href={`/${locale}/dashboard/servers/${serverId}/rosters/${roster.id}`}
-                                >
-                                    {dictionary.event.showRoster}
-                                </a>
-                            </Button>
-                        ) : null}
-                        <Button
-                            asChild
-                            variant="outline"
-                            className="rounded-xl"
-                        >
-                            <a
-                                href={`/${locale}/dashboard/servers/${serverId}/signup-activity?eventId=${event.id}`}
-                            >
-                                {dictionary.signupActivity.title}
-                            </a>
-                        </Button>
-                        {event.matchStatsId ? (
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="rounded-xl"
-                            >
-                                <a
-                                    href={`/${locale}/dashboard/servers/${serverId}/matches/${event.id}/match-stats`}
-                                >
-                                    {dictionary.event.openMatch}
-                                </a>
-                            </Button>
-                        ) : null}
-                        {canAdmin ? (
-                            event.status === "concluded" ? (
-                                <SubmitMatchResultsButton
-                                    serverId={serverId}
-                                    eventId={event.id}
-                                    gameId={event.gameId ?? "hell_let_loose"}
-                                    dictionary={dictionary}
-                                />
-                            ) : (
-                                <ConcludeEventButton
-                                    serverId={serverId}
-                                    eventId={event.id}
-                                    disabled={false}
-                                    dictionary={dictionary}
-                                />
-                            )
-                        ) : null}
-                    </div>
-                }
-            />
-            <div className="px-4 lg:px-6">
-                <EventFormPanel
-                    event={event}
-                    serverId={serverId}
-                    locale={locale}
-                    topicPresets={topicPresets}
-                    stratmaps={stratmaps}
-                    groups={groups}
-                    eventCategories={context.server.eventCategories ?? []}
-                    timezone={discordConfig?.timezone ?? "UTC"}
-                    canEdit={canAdmin}
-                    dictionary={dictionary}
-                    createMode={false}
-                    discordConfig={discordConfig}
-                />
-                {competitions.length ? (
-                    <div className="mt-6">
-                        <LinkCompetitionEvent
-                            serverId={context.server.id}
-                            serverName={context.server.name}
-                            eventId={event.id}
-                            competitions={competitions}
-                        />
-                    </div>
-                ) : null}
-            </div>
-        </>
+        <MatchDetailPage
+            locale={locale}
+            serverId={serverId}
+            eventId={eventId}
+            game={game}
+            tab={tab}
+            section="matches"
+            dictionary={dictionary}
+        />
     )
 }

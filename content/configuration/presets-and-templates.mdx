@@ -1,13 +1,16 @@
 ---
 title: Presets and templates
-description: Reuse squad structures and briefing topics consistently.
+description: Reuse squad structures, briefing topics and match settings consistently.
 ---
 
 import { Callout, Tabs } from "nextra/components"
 
 # Presets and templates
 
-Presets save time and make repeated operations consistent. They are tools for managers; members usually encounter their effect in an event briefing or roster.
+Presets and match templates save time and make repeated operations consistent. They are tools for managers; members usually encounter their effect in an event briefing, a roster or a match announcement.
+
+**Settings › Squad and topic presets** shows how many presets of each kind the
+clan has and links to both lists.
 
 <Tabs items={["Squad presets", "Topic presets"]}>
     <Tabs.Tab>
@@ -32,6 +35,60 @@ Create a clear name, test a new preset with a draft roster or event, and keep ol
     details will fit. Always inspect the resulting roster or event before
     publishing it.
 </Callout>
+
+## Delete a preset
+
+Open the preset and choose **Delete preset**. The confirmation says what happens:
+
+- Deleting a **squad preset** keeps every existing roster as it is, because a
+  roster copies its squads when it is created. New rosters can no longer start
+  from that preset.
+- A **topic preset** cannot be deleted while a match that is not concluded
+  still uses it; the confirmation names how many. Choose another topic preset
+  in those matches first. Concluded matches keep the topics they already posted.
+
+Only clan managers can delete presets. Deleting cannot be undone.
+
+## Match templates
+
+**Settings › Match templates** holds what a new match or training starts with,
+for example _Friendly_, _League_ or _Training_. The chips at the top switch
+between templates and **New template** adds one. A template has:
+
+- **Times** counted back from the start: when the announcement is posted
+  (immediately, or a number of hours before the start), when registration closes
+  (hours before the meeting), the meeting (minutes before the start) and the
+  duration. An example timeline for a Sunday 20:00 start shows the result.
+- **Sign-ups** for matches: which member statuses may sign up; which signup
+  groups are offered and, per group, an optional **cap** (once a capped group is
+  full, a player who picks it gets a reserve place without a group); whether
+  players can sign up without choosing a group; and the daily **sign-up
+  reminder** (once a day or off, and to members, members and recruits, or also
+  reserves). Groups and caps need a game: a template for all games offers every
+  group of the match's game.
+- **Discord**: the sign-up channel comes from **Channels and language** (a
+  warning links there when it is missing); whom the announcement pings (nobody,
+  the clan role or chosen roles); whether the match forum, the squad voice
+  channels and the **roles for participants and reserves** are created (with the
+  roles off, the bot creates no match roles). The server password is only ever
+  shown to players on the roster, through **My assignment** and the attendance
+  reminder; public messages never show it.
+- **Roster** for matches: the **squad preset** the roster starts from (the
+  roster creator preselects it) and the **attendance reminders**: at 24, 18, 12
+  and/or 6 hours before the meeting, roster players who have not confirmed get
+  a DM.
+- **Template**: the name, whether it is for a match or a training, the game it
+  applies to (or all games), the event category and, for matches, the topic
+  preset.
+
+When you create a match or training, pick a template in the first step. It
+fills the other steps; you can still change the match before publishing.
+Templates apply to new events only: editing or deleting a template never
+changes an event that already exists. Save the page with **Save template**;
+**Discard** returns to the saved templates.
+
+Messages to affected players when a published match changes are not a template
+setting yet.
 
 ## Important preset boundaries
 

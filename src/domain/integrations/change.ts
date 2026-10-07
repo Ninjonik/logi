@@ -22,39 +22,8 @@ export type IntegrationChange = {
     operation: "upsert" | "remove"
 }
 export const CHANGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
-export const integrationChangeSchema = z
-    .object({
-        revision: z.string().regex(/^(0|[1-9][0-9]{0,127})$/),
-        guildId: z.string(),
-        gameId: z.enum(GAME_IDS),
-        resource: z.enum(SYNC_RESOURCES),
-        id: z.string(),
-        operation: z.enum(["upsert", "remove"]),
-    })
-    .strict()
-export const syncRecordSchema = z.union([
-    integrationChangeSchema.extend({
-        operation: z.literal("remove"),
-        data: z.null(),
-    }),
-    integrationChangeSchema.extend({
-        operation: z.literal("upsert"),
-        data: z.union([
-            historyRecordSchema,
-            leagueFixtureSchema,
-            clanMemberSummarySchema,
-            clanRosterSummarySchema,
-            clanPlayerStatSummarySchema,
-            clanEventSummarySchema,
-            clanMatchSummarySchema,
-            clanResultSummarySchema,
-            serverSnapshotSchema,
-            integrationHealthSchema,
-            membershipObservationSchema,
-            teamDtoSchema,
-        ]),
-    }),
-])
+// The wire schemas (`integrationChangeSchema`, `syncRecordSchema`) live in
+// `change.schema.ts`: this module stays free of Zod for the mutation wrapper.
 
 export function revisionOrder(revision: string): string {
     if (!/^(0|[1-9][0-9]{0,127})$/.test(revision))
@@ -67,23 +36,3 @@ export function nextRevision(revision: string): string {
     revisionOrder(next)
     return next
 }
-import {
-    clanMemberSummarySchema,
-    clanRosterSummarySchema,
-    clanPlayerStatSummarySchema,
-} from "../api/people-summaries"
-import {
-    clanEventSummarySchema,
-    clanMatchSummarySchema,
-} from "../api/event-summaries"
-import {
-    serverSnapshotSchema,
-    integrationHealthSchema,
-} from "../game-data/contracts"
-import { membershipObservationSchema } from "../membership/observation"
-import { clanResultSummarySchema } from "../api/result-summaries"
-import { leagueFixtureSchema } from "../wardogs-league/fixture"
-import { historyRecordSchema } from "../game-data/history"
-import { teamDtoSchema } from "../teams/team"
-import { GAME_IDS } from "../games/game"
-import { z } from "zod"

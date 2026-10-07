@@ -2,16 +2,17 @@ import {
     getAttendanceReminderDueAt,
     getSignupReminderDueAt,
     isExpiredScheduledJobClaim,
+    resolveAttendanceReminderHours,
     resolveSignupReminderStatuses,
     shouldDiscardScheduledJob,
 } from "../src/domain/events/scheduled-job-policy"
+import { announcementRefreshTimes } from "../src/domain/events/announcement-state"
+import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 function assertSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) throw new Error("Unauthorized.")
+    if (secret !== internalAuthSecret()) throw new Error("Unauthorized.")
 }
 const EVENT_CONCLUSION_RESERVE_MS = 15 * 60 * 1000
 
@@ -40,6 +41,7 @@ export const claimDue = mutation({
                 | "conclude-event"
                 | "attendance-reminder"
                 | "signup-reminder"
+                | "refresh-announcement"
         }> = []
 
         for (const job of candidates) {
@@ -50,6 +52,7 @@ export const claimDue = mutation({
                     eventStatus: event.status,
                     gameEnd: event.gameEnd,
                     now,
+                    isDraft: event.isDraft,
                 })
             ) {
                 await ctx.db.delete(job._id)
@@ -145,6 +148,7 @@ export const recoverQueue = mutation({
                     eventStatus: event.status,
                     gameEnd: event.gameEnd,
                     now,
+                    isDraft: event.isDraft,
                 })
             ) {
                 await ctx.db.delete(job._id)
@@ -179,7 +183,7 @@ export const backfillMissing = mutation({
             const historical =
                 new Date(event.gameEnd).getTime() <
                 Date.now() - 7 * 24 * 60 * 60 * 1000
-            if (historical) continue
+            if (historical || event.isDraft === true) continue
             const existingJobs = await ctx.db
                 .query("eventScheduleJobs")
                 .withIndex("eventId", (q) => q.eq("eventId", event._id))
@@ -209,7 +213,12 @@ export const backfillMissing = mutation({
                             EVENT_CONCLUSION_RESERVE_MS
                     ).toISOString(),
                 ],
-                ...[24, 18, 12, 6].flatMap((hours) => {
+                ...announcementRefreshTimes(event, nowDate).map(
+                    (dueAt) => ["refresh-announcement", dueAt] as const
+                ),
+                ...resolveAttendanceReminderHours(
+                    event.attendanceReminderHours
+                ).flatMap((hours) => {
                     const dueAt = getAttendanceReminderDueAt(
                         event.meetingStart,
                         hours,
@@ -224,7 +233,8 @@ export const backfillMissing = mutation({
                         event.createdAt,
                         event.registrationEnd,
                         nowDate,
-                        true
+                        true,
+                        event.registrationStart
                     )
                     return event.kind === "match" &&
                         resolveSignupReminderStatuses(
@@ -236,7 +246,12 @@ export const backfillMissing = mutation({
                 })(),
             ] as const
             for (const [kind, dueAt] of deadlines) {
-                const existing = existingJobs.find((job) => job.kind === kind)
+                // Two announcement redraws share a kind; each has its own time.
+                const existing = existingJobs.find(
+                    (job) =>
+                        job.kind === kind &&
+                        (kind !== "refresh-announcement" || job.dueAt === dueAt)
+                )
                 if (existing) {
                     // Older deployments scheduled conclusion at game end. Move
                     // that durable job into the new reserve window on startup.
@@ -266,7 +281,8 @@ export const backfillMissing = mutation({
                         | "create-squad-voice-channels"
                         | "conclude-event"
                         | "attendance-reminder"
-                        | "signup-reminder",
+                        | "signup-reminder"
+                        | "refresh-announcement",
                     dueAt,
                     status: "pending",
                     attempts: 0,

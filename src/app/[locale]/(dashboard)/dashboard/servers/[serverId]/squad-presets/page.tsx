@@ -1,8 +1,10 @@
+import { Users } from "lucide-react"
 import type { Metadata } from "next"
 
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { ResourceTable } from "@/components/app/resource-table"
 import { PageHeader } from "@/components/app/page-header"
+import { EmptyState } from "@/components/app/empty-state"
 import { getGuildMetadata } from "@/lib/server-metadata"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -12,7 +14,7 @@ import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Squad presets | Logi",
+    title: "Squad presets",
     description: "Manage preset squad structures.",
 }
 
@@ -31,6 +33,7 @@ export default async function SquadPresetsPage({
     const context = await getServerContext(serverId, gameScope)
     if (!context) return null
     const { squadPresets, canAdmin } = context
+    const createHref = `/${locale}/dashboard/servers/${serverId}/squad-presets/create${gameScope === "all" ? "" : `?game=${gameScope}`}`
     const paginated = getPaginatedRows({
         rows: squadPresets,
         searchParams: resolvedSearchParams,
@@ -49,9 +52,7 @@ export default async function SquadPresetsPage({
                     actions={
                         canAdmin ? (
                             <Button asChild className="rounded-xl">
-                                <a
-                                    href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create${gameScope === "all" ? "" : `?game=${gameScope}`}`}
-                                >
+                                <a href={createHref}>
                                     {dictionary.common.createPreset}
                                 </a>
                             </Button>
@@ -60,52 +61,84 @@ export default async function SquadPresetsPage({
                 />
             }
         >
-            <ResourceTable
-                className="h-full"
-                dictionary={dictionary}
-                rows={paginated.rows}
-                page={paginated.page}
-                pageSize={paginated.pageSize}
-                pageCount={paginated.pageCount}
-                totalRows={paginated.totalRows}
-                search={paginated.search}
-                searchPlaceholder={dictionary.shared.searchTable}
-                getHref={(preset) =>
-                    `/${locale}/dashboard/servers/${serverId}/squad-presets/${preset.id}${gameScope === "all" ? "" : `?game=${gameScope}`}`
-                }
-                gameColumn={{
-                    show: gameScope === "all",
-                    getGameId: (preset) => preset.gameId,
-                }}
-                columns={[
-                    {
-                        key: "name",
-                        title: dictionary.presets.table.preset,
-                        render: (preset) => (
-                            <div className="font-medium">{preset.name}</div>
-                        ),
-                    },
-                    {
-                        key: "groups",
-                        title: dictionary.presets.table.groups,
-                        render: (preset) => preset.squads.length,
-                    },
-                    {
-                        key: "roles",
-                        title: dictionary.presets.table.roleSlots,
-                        render: (preset) =>
-                            preset.squads.reduce(
-                                (sum, squad) =>
-                                    sum +
-                                    squad.roles.reduce(
-                                        (roleSum, role) => roleSum + role.count,
-                                        0
-                                    ),
-                                0
+            {!squadPresets.length ? (
+                <EmptyState
+                    icon={Users}
+                    title={dictionary.presets.emptySquadTitle}
+                    description={
+                        canAdmin
+                            ? dictionary.presets.emptySquadAdmin
+                            : dictionary.presets.emptyMember
+                    }
+                    actions={
+                        canAdmin ? (
+                            <Button asChild className="rounded-xl">
+                                <a href={createHref}>
+                                    {dictionary.common.createPreset}
+                                </a>
+                            </Button>
+                        ) : undefined
+                    }
+                />
+            ) : (
+                <ResourceTable
+                    className="h-full"
+                    dictionary={dictionary}
+                    rows={paginated.rows}
+                    page={paginated.page}
+                    pageSize={paginated.pageSize}
+                    pageCount={paginated.pageCount}
+                    totalRows={paginated.totalRows}
+                    search={paginated.search}
+                    searchPlaceholder={dictionary.shared.searchTable}
+                    getHref={(preset) =>
+                        `/${locale}/dashboard/servers/${serverId}/squad-presets/${preset.id}${gameScope === "all" ? "" : `?game=${gameScope}`}`
+                    }
+                    gameColumn={{
+                        show: gameScope === "all",
+                        getGameId: (preset) => preset.gameId,
+                    }}
+                    columns={[
+                        {
+                            key: "name",
+                            title: dictionary.presets.table.preset,
+                            render: (preset) => (
+                                <div className="font-medium">{preset.name}</div>
                             ),
-                    },
-                ]}
-            />
+                        },
+                        {
+                            key: "squads",
+                            title: dictionary.presets.table.squads,
+                            render: (preset) => preset.squads.length,
+                        },
+                        {
+                            key: "groups",
+                            title: dictionary.presets.table.groups,
+                            render: (preset) =>
+                                new Set(
+                                    preset.squads
+                                        .map((squad) => squad.group.trim())
+                                        .filter(Boolean)
+                                ).size,
+                        },
+                        {
+                            key: "roles",
+                            title: dictionary.presets.table.roleSlots,
+                            render: (preset) =>
+                                preset.squads.reduce(
+                                    (sum, squad) =>
+                                        sum +
+                                        squad.roles.reduce(
+                                            (roleSum, role) =>
+                                                roleSum + role.count,
+                                            0
+                                        ),
+                                    0
+                                ),
+                        },
+                    ]}
+                />
+            )}
         </TablePageLayout>
     )
 }

@@ -1,4 +1,10 @@
 import {
+    leagueCollectionActive,
+    trackingAdmission,
+    trackingConfig,
+    updateTracked,
+} from "./leagueTrackingStore"
+import {
     MAX_RETRY_AFTER_MS,
     leagueReadSchema,
     leagueSnapshotSchema,
@@ -7,11 +13,6 @@ import {
     refreshIntervalMs,
     sharedScanIntervalMs,
 } from "../src/domain/wardogs-league/discovery"
-import {
-    trackingAdmission,
-    trackingConfig,
-    updateTracked,
-} from "./leagueTrackingStore"
 import { selectTrackedSnapshot } from "../src/application/wardogs-league/accept-snapshot"
 import { trackingDecision } from "../src/application/wardogs-league/tracking"
 import { internalMutation, internalQuery } from "./_generated/server"
@@ -45,13 +46,8 @@ export const pruneReferences = internalMutation({
 export const claimScan = internalMutation({
     args: {},
     handler: async (ctx) => {
-        if (
-            !(await ctx.db
-                .query("leagueTrackingSettings")
-                .withIndex("enabled", (q) => q.eq("enabled", true))
-                .first())
-        )
-            return null
+        // A WD League panel needs the shared index even without tracking.
+        if (!(await leagueCollectionActive(ctx))) return null
         let row = await ctx.db
             .query("leagueIndexCache")
             .withIndex("key", (q) => q.eq("key", "indexes"))
@@ -115,6 +111,7 @@ export const finishScan = internalMutation({
         fence: v.number(),
         matchUrls: v.optional(v.array(v.string())),
         fixtureUrls: v.optional(v.array(v.string())),
+        resultUrls: v.optional(v.array(v.string())),
         incomplete: v.optional(v.boolean()),
         error: v.optional(v.string()),
         retryAfterMs: v.optional(v.number()),
@@ -124,7 +121,11 @@ export const finishScan = internalMutation({
             now = Date.now()
         if (!row || row.fence !== args.fence || row.leaseUntil <= now) return
         if (args.matchUrls && args.fixtureUrls) {
-            if (args.matchUrls.length > 500 || args.fixtureUrls.length > 500)
+            if (
+                args.matchUrls.length > 500 ||
+                args.fixtureUrls.length > 500 ||
+                (args.resultUrls?.length ?? 0) > 500
+            )
                 throw new Error("Index limit.")
             const urls = [
                 ...new Set(args.matchUrls.map((url) => matchUrl(url).url)),
@@ -132,6 +133,13 @@ export const finishScan = internalMutation({
             await ctx.db.patch(row._id, {
                 matchUrls: urls,
                 fixtureUrls: args.fixtureUrls.map((url) => matchUrl(url).url),
+                ...(args.resultUrls
+                    ? {
+                          resultUrls: args.resultUrls.map(
+                              (url) => matchUrl(url).url
+                          ),
+                      }
+                    : {}),
                 incomplete: args.incomplete ?? false,
                 fetchedAt: now,
                 nextScanAt:

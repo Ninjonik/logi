@@ -1,16 +1,16 @@
 "use client"
 
 import {
+    AlarmClock,
     Ban,
     CalendarClock,
     Check,
-    Circle,
-    CircleDot,
-    Clock3,
     GripVertical,
     MessageCircleOff,
+    Search,
     UserPlus,
 } from "lucide-react"
+import type { ReactNode } from "react"
 
 import {
     Command,
@@ -31,6 +31,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getAttendanceIcon } from "@/components/app/roster-board-squad-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import { GroupInlineIcons } from "@/components/app/group-inline-icons"
@@ -77,6 +78,7 @@ export function RosterBoardAttendeeLists({
     serverDiscordId,
     noticeReasonByUserId,
     notAttendingIndicatorByUserId,
+    reminder,
 }: {
     board: Roster
     users: AppUser[]
@@ -105,6 +107,8 @@ export function RosterBoardAttendeeLists({
     serverDiscordId: string
     noticeReasonByUserId: Map<string, string>
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
+    /** "Bez odpovědi: N členů · Připomenout" under the reserves (D3). */
+    reminder?: ReactNode
 }) {
     return (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -116,10 +120,16 @@ export function RosterBoardAttendeeLists({
                 onDrop={() => handleDropOnReserve()}
             >
                 <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
-                    <div className="flex h-6 items-center justify-between">
+                    <div className="flex h-6 items-center gap-2">
                         <CardTitle className="text-sm">
                             {dictionary.common.reserves}
                         </CardTitle>
+                        <span className="text-muted-foreground ml-auto text-xs">
+                            {dictionary.matchDetail.roster.reservesCount.replace(
+                                "{count}",
+                                String(reserveUsers.length)
+                            )}
+                        </span>
                         {isAssignmentMode && (
                             <Popover
                                 open={userPickerOpen}
@@ -200,14 +210,22 @@ export function RosterBoardAttendeeLists({
                             </Popover>
                         )}
                     </div>
-                    <Input
-                        value={reserveSearch}
-                        onChange={(event) =>
-                            setReserveSearch(event.target.value)
-                        }
-                        placeholder={dictionary.common.searchReserves}
-                        className="h-8 rounded-xl px-2 text-xs"
-                    />
+                    <label className="relative block">
+                        <Search
+                            aria-hidden="true"
+                            className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+                        />
+                        <Input
+                            type="search"
+                            value={reserveSearch}
+                            onChange={(event) =>
+                                setReserveSearch(event.target.value)
+                            }
+                            aria-label={dictionary.common.searchReserves}
+                            placeholder={dictionary.common.searchReserves}
+                            className="h-8 rounded-xl pr-2 pl-8 text-xs"
+                        />
+                    </label>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <ScrollArea className="h-[11rem] pr-1">
@@ -228,6 +246,11 @@ export function RosterBoardAttendeeLists({
                             notAttendingIndicatorByUserId={new Map()}
                         />
                     </ScrollArea>
+                    {reminder ? (
+                        <div className="border-border/60 mt-3 border-t pt-3">
+                            {reminder}
+                        </div>
+                    ) : null}
                 </CardContent>
             </Card>
 
@@ -239,10 +262,16 @@ export function RosterBoardAttendeeLists({
                 onDrop={() => handleDropOnNotAttending()}
             >
                 <CardHeader className="grid grid-rows-[1.5rem_2rem] gap-2 p-4">
-                    <div className="flex h-6 items-center justify-between">
+                    <div className="flex h-6 items-center gap-2">
                         <CardTitle className="text-sm">
                             {dictionary.roster.notAttending}
                         </CardTitle>
+                        <span className="text-muted-foreground ml-auto text-xs">
+                            {dictionary.matchDetail.roster.notAttendingCount.replace(
+                                "{count}",
+                                String(groupedNotAttendingUsers.length)
+                            )}
+                        </span>
                         {isAssignmentMode && (
                             <Popover
                                 open={notAttendingPickerOpen}
@@ -324,14 +353,22 @@ export function RosterBoardAttendeeLists({
                             </Popover>
                         )}
                     </div>
-                    <Input
-                        value={notAttendingSearch}
-                        onChange={(event) =>
-                            setNotAttendingSearch(event.target.value)
-                        }
-                        placeholder={dictionary.common.searchNotAttending}
-                        className="h-8 rounded-xl px-2 text-xs"
-                    />
+                    <label className="relative block">
+                        <Search
+                            aria-hidden="true"
+                            className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+                        />
+                        <Input
+                            type="search"
+                            value={notAttendingSearch}
+                            onChange={(event) =>
+                                setNotAttendingSearch(event.target.value)
+                            }
+                            aria-label={dictionary.common.searchNotAttending}
+                            placeholder={dictionary.common.searchNotAttending}
+                            className="h-8 rounded-xl pr-2 pl-8 text-xs"
+                        />
+                    </label>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <ScrollArea className="h-[11rem] pr-1">
@@ -393,19 +430,19 @@ function GroupedUserList({
     noticeReasonByUserId: Map<string, string>
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
 }) {
-    const sections: Record<string, RosterUser[]> = {}
-    users.forEach((user) => {
-        const section = user._reserveSection || dictionary.shared.notSet
-        if (!sections[section]) sections[section] = []
-        sections[section].push(user)
-    })
-
-    const sectionOrder = Object.keys(sections).sort((a, b) => {
-        if (focusedGroup && a === focusedGroup) return -1
-        if (focusedGroup && b === focusedGroup) return 1
-        return a.localeCompare(b)
-    })
-    const showSectionHeaders = Boolean(focusedGroup) || sectionOrder.length > 1
+    // One grid in ranking order with the group on the right (design D3);
+    // the focused group's players come first.
+    const ordered = focusedGroup
+        ? [
+              ...users.filter((user) => user._reserveSection === focusedGroup),
+              ...users.filter((user) => user._reserveSection !== focusedGroup),
+          ]
+        : users
+    const sections: Record<string, RosterUser[]> = { all: ordered }
+    const sectionOrder = ["all"]
+    // The design lists everyone in one grid with the group on the right; the
+    // focused group's players still come first.
+    const showSectionHeaders = false
 
     return (
         <div className="space-y-2">
@@ -419,7 +456,7 @@ function GroupedUserList({
                             <div className="bg-border/40 h-px flex-1" />
                         </div>
                     )}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid gap-2 md:grid-cols-2">
                         {sections[sectionName].map((user) => {
                             const assignment = assignmentsByUserId.get(
                                 user.discordId
@@ -449,7 +486,7 @@ function GroupedUserList({
                                         event.preventDefault()
                                     }
                                     onDrop={() => onDropUser(user.discordId)}
-                                    className="basis-full md:basis-[calc(50%-0.25rem)]"
+                                    className="min-w-0"
                                 >
                                     <div
                                         draggable={isAssignmentMode && canAdmin}
@@ -461,20 +498,25 @@ function GroupedUserList({
                                         }
                                         onDragEnd={() => setDragState(null)}
                                         className={[
-                                            "border-border/70 bg-background flex min-h-9 min-w-0 cursor-grab items-center gap-2 rounded-lg border p-2",
+                                            "border-border/70 bg-background flex min-h-10 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
+                                            isAssignmentMode && canAdmin
+                                                ? "cursor-grab"
+                                                : "",
                                             muted ? "opacity-60" : "",
                                         ].join(" ")}
                                     >
                                         {isAssignmentMode && canAdmin ? (
-                                            <GripVertical className="text-muted-foreground size-4" />
+                                            <GripVertical className="text-muted-foreground hidden size-4 shrink-0 md:block" />
                                         ) : null}
-                                        <Avatar className="size-5 shrink-0 rounded-md">
+                                        <Avatar className="size-6 shrink-0 rounded-md">
                                             <AvatarImage
                                                 src={user.avatar}
                                                 alt={user.name}
                                             />
-                                            <AvatarFallback>
-                                                {user.name.slice(0, 2)}
+                                            <AvatarFallback className="rounded-md text-[9px] font-semibold">
+                                                {user.name
+                                                    .slice(0, 2)
+                                                    .toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
                                         <GroupInlineIcons
@@ -525,15 +567,11 @@ function GroupedUserList({
                                                         <HoverCardTrigger
                                                             asChild
                                                         >
-                                                            {user.attendanceStatus ===
-                                                            "confirmed" ? (
-                                                                <Check className="size-3.5 text-emerald-500" />
-                                                            ) : user.attendanceStatus ===
-                                                              "acknowledged" ? (
-                                                                <CircleDot className="size-3.5 text-sky-500" />
-                                                            ) : (
-                                                                <Circle className="text-muted-foreground size-3.5" />
-                                                            )}
+                                                            <span className="inline-flex">
+                                                                {getAttendanceIcon(
+                                                                    user.attendanceStatus
+                                                                )}
+                                                            </span>
                                                         </HoverCardTrigger>
                                                         <HoverCardContent className="text-xs">
                                                             {attendanceLabel}
@@ -545,7 +583,7 @@ function GroupedUserList({
                                                         <HoverCardTrigger
                                                             asChild
                                                         >
-                                                            <Clock3 className="size-3.5 text-red-500" />
+                                                            <AlarmClock className="size-3.5 text-red-500" />
                                                         </HoverCardTrigger>
                                                         <HoverCardContent className="max-w-64 text-xs whitespace-pre-wrap">
                                                             {noticeReason}
@@ -577,7 +615,7 @@ function GroupedUserList({
                                                     </HoverCard>
                                                 ) : null}
                                             </div>
-                                            <div className="text-muted-foreground flex items-center text-[10px]">
+                                            <div className="text-muted-foreground flex items-center pt-0.5 text-[10px]">
                                                 <span className="truncate">
                                                     {formatRosterScoreline(
                                                         user,
@@ -587,6 +625,13 @@ function GroupedUserList({
                                                 </span>
                                             </div>
                                         </div>
+                                        {user._reserveSection &&
+                                        user._reserveSection !==
+                                            dictionary.shared.notSet ? (
+                                            <span className="text-muted-foreground max-w-20 shrink-0 truncate text-[10px]">
+                                                {user._reserveSection}
+                                            </span>
+                                        ) : null}
                                     </div>
                                 </div>
                             )

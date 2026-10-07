@@ -1,5 +1,4 @@
 import { matchUrl } from "./match-url"
-import { z } from "zod"
 export const SCAN_MS = 10 * 60_000
 export const TRACK_MS = 5 * 60_000
 /** Index scan and tracked-detail refresh cadences a workspace may choose, in minutes. */
@@ -17,35 +16,10 @@ export function indexUrl(input: string) {
         throw new Error("Invalid League index URL.")
     return { id: new URL(input).searchParams.get("tab")!, url: input }
 }
-const channel = z
-    .string()
-    .regex(/^\d{17,20}$/)
-    .nullable()
-export const trackingSettingsSchema = z
-    .object({
-        enabled: z.boolean(),
-        teamCodes: z
-            .array(
-                z
-                    .string()
-                    .min(1)
-                    .max(40)
-                    .regex(/^[\p{L}\p{N}|_-]+$/u)
-            )
-            .min(1)
-            .max(20)
-            .refine((v) => new Set(v).size === v.length),
-        inputChannelId: channel,
-        outputChannelId: channel,
-        scanMinutes: z
-            .union([z.literal(10), z.literal(15), z.literal(30), z.literal(60)])
-            .default(10),
-        refreshMinutes: z
-            .union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)])
-            .default(5),
-    })
-    .strict()
-export type TrackingSettings = z.infer<typeof trackingSettingsSchema>
+// `trackingSettingsSchema` lives in `discovery.schema.ts`; its type is
+// re-exported here for the defaults and cadences below.
+export type { TrackingSettings } from "./discovery.schema"
+import type { TrackingSettings } from "./discovery.schema"
 export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
     enabled: false,
     teamCodes: ["VLK"],

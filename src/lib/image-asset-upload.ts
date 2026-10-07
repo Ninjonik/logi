@@ -1,10 +1,12 @@
 import {
     IMAGE_INPUT_TYPES,
     IMAGE_MAX_INPUT_BYTES,
-    imageAssetDtoSchema,
-    type ImageAssetDto,
     type ImageAssetKind,
 } from "@/domain/assets/image-asset"
+import {
+    imageAssetDtoSchema,
+    type ImageAssetDto,
+} from "@/domain/assets/image-asset.schema"
 import { z } from "zod"
 
 /** Every error code of `POST /api/servers/{serverId}/image-assets`. */
@@ -102,7 +104,11 @@ export async function uploadImageAsset(
     if (rejected) return { ok: false, error: rejected, retryAfterMs: null }
     try {
         const response = await fetcher(
-            `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=${kind}`,
+            `/api/servers/${encodeURIComponent(serverId)}/image-assets?kind=${kind}${
+                "name" in file && typeof file.name === "string" && file.name
+                    ? `&name=${encodeURIComponent(file.name.slice(0, 200))}`
+                    : ""
+            }`,
             {
                 method: "POST",
                 headers: { "Content-Type": file.type },

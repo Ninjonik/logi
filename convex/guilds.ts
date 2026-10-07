@@ -4,11 +4,12 @@ import {
     getUserByDiscordId,
 } from "./identity"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
+import { normalizeMatchTemplates } from "../src/domain/events/match-templates"
+import { matchTemplateValidator } from "./matchTemplateValidators"
 import { mutation, query } from "./_generated/server"
+import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
 export const DEFAULT_ROSTER_SCORE_SETTINGS = {
     noCategory: 0,
     declined: -1,
@@ -20,7 +21,7 @@ export const DEFAULT_ROSTER_SCORE_SETTINGS = {
 } as const
 
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -78,9 +79,11 @@ function normalizeGuildDoc<
 
 export const visibleForUser = query({
     args: {
+        secret: v.string(),
         userId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const user = await getUserByDiscordId(ctx, args.userId)
 
         if (!user) {
@@ -249,9 +252,11 @@ export const syncManagedGuilds = mutation({
 
 export const getById = query({
     args: {
+        secret: v.string(),
         guildId: v.id("guilds"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await ctx.db.get(args.guildId)
 
         return guild ? normalizeGuildDoc(guild) : null
@@ -260,6 +265,7 @@ export const getById = query({
 
 export const setEnabledGames = mutation({
     args: {
+        secret: v.string(),
         userId: v.string(),
         guildId: v.id("guilds"),
         enabledGames: v.array(
@@ -271,6 +277,7 @@ export const setEnabledGames = mutation({
         ),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const [guild, user] = await Promise.all([
             ctx.db.get(args.guildId),
             getUserByDiscordId(ctx, args.userId),
@@ -306,9 +313,11 @@ export const setEnabledGames = mutation({
 
 export const getByDiscordId = query({
     args: {
+        secret: v.string(),
         discordId: v.string(),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const guild = await getGuildByDiscordId(ctx, args.discordId)
 
         return guild ? normalizeGuildDoc(guild) : null
@@ -317,10 +326,12 @@ export const getByDiscordId = query({
 
 export const resyncDashboardAdmins = mutation({
     args: {
+        secret: v.string(),
         userId: v.string(),
         serverId: v.id("guilds"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const user = await getUserByDiscordId(ctx, args.userId)
         const guild = await ctx.db.get(args.serverId)
         if (!user || !guild) {
@@ -377,62 +388,6 @@ export const resyncDashboardAdmins = mutation({
         return {
             adminCount: dashboardAdminIds.length,
         }
-    },
-})
-
-export const setPlayerAdminAccess = mutation({
-    args: {
-        userId: v.string(),
-        serverId: v.id("guilds"),
-        playerId: v.string(),
-        isAdmin: v.boolean(),
-    },
-    handler: async (ctx, args) => {
-        const [actor, guild, player] = await Promise.all([
-            getUserByDiscordId(ctx, args.userId),
-            ctx.db.get(args.serverId),
-            getUserByDiscordId(ctx, args.playerId),
-        ])
-        if (!actor || !guild || !player) {
-            throw new Error("Player or server not found.")
-        }
-
-        const guildDiscordId = getGuildDiscordId(guild)
-        const actorAccess = await ctx.db
-            .query("discordMemberAccess")
-            .withIndex("guildId_userId", (q) =>
-                q.eq("guildId", guildDiscordId).eq("userId", args.userId)
-            )
-            .unique()
-
-        const canManage = canAdminServerContext({
-            serverAdminIds: guild.adminIds,
-            dashboardAdminIds: guild.dashboardAdminIds,
-            adminAccessOverrides: guild.adminAccessOverrides,
-            userId: args.userId,
-            discordAccess: actorAccess,
-        })
-        if (!canManage) {
-            throw new Error("Unauthorized.")
-        }
-
-        const config = await ctx.db
-            .query("discordConfigs")
-            .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
-            .unique()
-        if (!config?.dashboardAdminRoleId) {
-            throw new Error("Configure a dashboard admin role first.")
-        }
-
-        const adminAccessOverrides = {
-            ...guild.adminAccessOverrides,
-            [args.playerId]: args.isAdmin,
-        }
-        await ctx.db.patch(guild._id, {
-            adminAccessOverrides,
-            updatedAt: new Date().toISOString(),
-        })
-        return { isAdmin: args.isAdmin }
     },
 })
 
@@ -718,5 +673,60 @@ export const backfillRosterScoreSettings = mutation({
         return {
             patchedCount,
         }
+    },
+})
+
+/**
+ * Replaces a clan's match templates. Signup groups and topic presets that do
+ * not belong to this clan are dropped, so a template cannot point elsewhere.
+ */
+export const saveMatchTemplates = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.id("guilds"),
+        templates: v.array(matchTemplateValidator),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const guild = await ctx.db.get(args.guildId)
+        if (!guild) {
+            throw new Error("Server not found.")
+        }
+        const result = normalizeMatchTemplates(args.templates)
+        if (!result.ok) return result
+
+        const guildDiscordId = getGuildDiscordId(guild)
+        const [groups, topicPresets] = await Promise.all([
+            ctx.db
+                .query("groups")
+                .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+                .collect(),
+            ctx.db
+                .query("topicPresets")
+                .withIndex("guildId", (q) => q.eq("guildId", guildDiscordId))
+                .collect(),
+        ])
+        const groupIds = new Set(groups.map((group) => String(group._id)))
+        const topicPresetIds = new Set(
+            topicPresets.map((preset) => String(preset._id))
+        )
+        const templates = result.templates.map((template) => ({
+            ...template,
+            signupGroupIds: template.signupGroupIds?.filter((groupId) =>
+                groupIds.has(groupId)
+            ),
+            topicPresetId:
+                template.topicPresetId &&
+                topicPresetIds.has(template.topicPresetId)
+                    ? template.topicPresetId
+                    : undefined,
+        }))
+
+        await ctx.db.patch(guild._id, {
+            matchTemplates: templates,
+            updatedAt: new Date().toISOString(),
+        })
+        return { ok: true as const, templates }
     },
 })

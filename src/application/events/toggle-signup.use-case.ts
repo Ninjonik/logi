@@ -1,8 +1,10 @@
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
 import { getResolvedMemberStatus } from "@/domain/assignments/policy"
 import { normalizeEventRecord } from "@/domain/events/normalization"
+import { isSignupGroupFull } from "@/domain/events/signup-limits"
 import { toggleSignup } from "@/domain/events/signup-policy"
 import type { Clock } from "@/application/ports/clock"
+import { isDraftEvent } from "@/domain/events/drafts"
 
 import type { EventWorkflowRepository, EventWorkflowSyncPort } from "./ports"
 
@@ -19,7 +21,8 @@ export class ToggleSignupUseCase {
         group: string | null
     }) {
         const event = await this.events.getById(input.eventId)
-        if (!event) {
+        // A draft has not been announced, so nobody can sign up for it yet.
+        if (!event || isDraftEvent(event)) {
             throw new Error("Event not found.")
         }
 
@@ -59,6 +62,37 @@ export class ToggleSignupUseCase {
             }
         }
 
+        // A capped group that is already full gives the player a reserve
+        // place instead: a signup without a group, which the roster treats as
+        // a reserve candidate. The caller learns which group was full.
+        let fullGroup: string | undefined
+        if (
+            normalizedEvent.kind === "match" &&
+            nextGroup &&
+            nextGroup !== SIGNUP_NOT_ATTENDING &&
+            nextGroup !== SIGNUP_GENERAL &&
+            event.signupGroupLimits?.length
+        ) {
+            for (const limit of event.signupGroupLimits) {
+                const groupName = await this.events.getGroupNameById(
+                    limit.groupId
+                )
+                if (
+                    groupName === nextGroup &&
+                    isSignupGroupFull({
+                        participants: normalizedEvent.participants,
+                        userId: input.userId,
+                        groupName,
+                        max: limit.max,
+                    })
+                ) {
+                    fullGroup = groupName
+                    nextGroup = null
+                    break
+                }
+            }
+        }
+
         const next = toggleSignup({
             participants: normalizedEvent.participants,
             event: normalizedEvent,
@@ -66,6 +100,7 @@ export class ToggleSignupUseCase {
             group: nextGroup,
             now,
             membershipStatus,
+            requestedGroup: fullGroup,
         })
 
         await this.events.saveSignupState(input.eventId, {
@@ -107,6 +142,7 @@ export class ToggleSignupUseCase {
                     ? SIGNUP_NOT_ATTENDING
                     : (nextGroup ?? SIGNUP_GENERAL),
             removed: next.removed,
+            ...(fullGroup ? { fullGroup } : {}),
         }
     }
 }

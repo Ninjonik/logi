@@ -1,12 +1,20 @@
 import {
+    hllLiveComparable,
+    hllLiveFreshness,
+    hllLiveWithFreshness,
+    readHllLivePayload,
+} from "../src/domain/game-data/hll-live-payload"
+import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
+import { panelReadsConnection } from "../src/domain/discord-publications/settings"
 import type { HllPrepared } from "../src/application/game-data/read-hll-live"
+import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { internalMutation, type MutationCtx } from "./_generated/server"
-import { hllLiveSchema } from "../src/domain/game-data/hll-live"
+import type { DashboardActor } from "./dashboardActor"
 import { makeFunctionReference } from "convex/server"
-import { catalogSources } from "./gameDataCatalog"
+import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
@@ -17,6 +25,8 @@ export const hllLiveAccess = {
     keyHash: v.optional(v.string()),
     panelId: v.optional(v.id("discordPublicPanels")),
     panelRevision: v.optional(v.number()),
+    /** A clan admin's test read from the panel editor (P2-B10). */
+    actor: v.optional(dashboardActor),
 }
 type Access = {
     secret: string
@@ -25,6 +35,7 @@ type Access = {
     keyHash?: string
     panelId?: Id<"discordPublicPanels">
     panelRevision?: number
+    actor?: DashboardActor
 }
 async function authorize(ctx: MutationCtx, args: Access) {
     if (
@@ -33,16 +44,24 @@ async function authorize(ctx: MutationCtx, args: Access) {
     )
         throw new Error("Unauthorized.")
     if (args.panelId !== undefined) {
-        if (args.keyHash !== undefined) return null
+        if (args.keyHash !== undefined || args.actor !== undefined) return null
         const panel = await ctx.db.get(args.panelId)
         if (
             !panel?.enabled ||
-            panel.kind === "results" ||
             panel.guildId !== args.guildId ||
-            panel.connectionId !== args.connectionId ||
+            !panelReadsConnection(panel, args.connectionId) ||
             panel.revision !== args.panelRevision
         )
             return null
+    } else if (args.actor !== undefined) {
+        // The dashboard's test read: a current clan admin, nothing else.
+        if (args.keyHash !== undefined || args.panelRevision !== undefined)
+            return null
+        try {
+            await authorizeDashboardAdmin(ctx, { ...args, actor: args.actor })
+        } catch {
+            return null
+        }
     } else {
         if (!args.keyHash || args.panelRevision !== undefined) return null
         const key = await ctx.db
@@ -67,15 +86,8 @@ async function authorize(ctx: MutationCtx, args: Access) {
         row.gameId !== "hell_let_loose"
     )
         return null
-    const source = (await catalogSources(ctx)).find(
-        (s) => s.ref === row.sourceRef && s.guildId === args.guildId
-    )
-    if (
-        !source ||
-        source.provider !== "hll_crcon" ||
-        JSON.stringify(source) !== row.sourceFingerprint
-    )
-        return null
+    const source = await connectionSource(ctx, row)
+    if (!source || source.provider !== "hll_crcon") return null
     return { row, source }
 }
 export const reserve = internalMutation({
@@ -89,10 +101,15 @@ export const reserve = internalMutation({
             .query("hllLiveCache")
             .withIndex("connectionId", (q) => q.eq("connectionId", row._id))
             .unique()
-        const previous =
+        // The payload was validated by the read action before `finish` stored
+        // it; it is read back through the guard with the row's latest times.
+        const stored =
             cache?.generation === row.generation && cache.dataJson
-                ? hllLiveSchema.parse(JSON.parse(cache.dataJson))
-                : undefined
+                ? readHllLivePayload(cache.dataJson)
+                : null
+        const previous = stored
+            ? hllLiveWithFreshness(stored, cache!)
+            : undefined
         const mapChanged = Boolean(
             previous?.status &&
             row.observation &&
@@ -112,22 +129,30 @@ export const reserve = internalMutation({
         )
             return { kind: "busy", retryAfterMs: cache.nextAt - now }
         const fence = (cache?.fence ?? 0) + 1,
-            state = {
+            lease = {
                 generation: row.generation,
                 fence,
                 leaseUntil: now + 35_000,
                 nextAt: 0,
                 retainUntil: now + 3_600_000,
-                dataJson:
-                    previous && !mapChanged
-                        ? JSON.stringify(previous)
-                        : undefined,
             }
+        // `dataJson` is large and every version of it is retained, so a
+        // claim patches the lease fields only; `finish` writes the data. It
+        // is dropped, never copied, when it stops serving as `previous`: the
+        // map changed, or the source generation did (ARCHITECTURE.md,
+        // "Convex hot paths").
+        const keepData = Boolean(previous) && !mapChanged
         let cacheId = cache?._id
-        if (cacheId) await ctx.db.patch(cacheId, state)
+        if (cache)
+            await ctx.db.patch(cache._id, {
+                ...lease,
+                ...(keepData || cache.dataJson === undefined
+                    ? {}
+                    : { dataJson: undefined }),
+            })
         else {
             cacheId = await ctx.db.insert("hllLiveCache", {
-                ...state,
+                ...lease,
                 connectionId: row._id,
             })
             await ctx.scheduler.runAfter(
@@ -172,7 +197,10 @@ export const finish = internalMutation({
             return false
         if (new TextEncoder().encode(args.dataJson).length > 256 * 1024)
             throw new Error("Invalid HLL response.")
-        const data = hllLiveSchema.parse(JSON.parse(args.dataJson))
+        // The read action parsed the provider's reply with `hllLiveSchema`
+        // before calling this internal mutation; the guard checks the shape.
+        const data = readHllLivePayload(args.dataJson)
+        if (!data) throw new Error("Invalid HLL response.")
         if (
             Date.parse(data.fetchedAt) > now + 5000 ||
             now - Date.parse(data.fetchedAt) > 35_000 ||
@@ -181,8 +209,18 @@ export const finish = internalMutation({
             )
         )
             throw new Error("Invalid HLL observation time.")
+        // An idle server reads the same every time: the large payload is
+        // rewritten only when the provider data changed; the times go to
+        // their own small fields (ARCHITECTURE.md, "Convex hot paths").
+        const stored = cache.dataJson
+            ? readHllLivePayload(cache.dataJson)
+            : null
+        const unchanged =
+            stored !== null &&
+            hllLiveComparable(stored) === hllLiveComparable(data)
         await ctx.db.patch(cache._id, {
-            dataJson: JSON.stringify(data),
+            ...(unchanged ? {} : { dataJson: JSON.stringify(data) }),
+            ...hllLiveFreshness(data),
             leaseUntil: 0,
             nextAt: now + data.refreshAfterSeconds * 1000,
             retainUntil: now + 3_600_000,

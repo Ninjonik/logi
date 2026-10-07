@@ -55,7 +55,13 @@ export const updateBotState = mutation({
         statusMessageId: v.optional(v.string()),
         statusUpdatesThreadId: v.optional(v.string()),
         serviceStates: v.array(
-            v.object({ name: v.string(), online: v.boolean() })
+            v.object({
+                name: v.string(),
+                online: v.boolean(),
+                // When the service last changed state, for the outage
+                // length in "Změny stavu" (board L5-37).
+                since: v.optional(v.string()),
+            })
         ),
     },
     handler: async (ctx, args) => {

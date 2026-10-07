@@ -1,9 +1,13 @@
-import { z } from "zod"
+import type { ImageAssetState } from "./image-asset.schema"
 
 /** Who may own an uploaded image and what it is normalized into. */
-export const IMAGE_ASSET_KINDS = ["team-logo", "panel-banner"] as const
+export const IMAGE_ASSET_KINDS = [
+    "team-logo",
+    "panel-banner",
+    /** A clan's own image for one map (P8 "Obrázky map"). */
+    "panel-map",
+] as const
 export type ImageAssetKind = (typeof IMAGE_ASSET_KINDS)[number]
-export const imageAssetKindSchema = z.enum(IMAGE_ASSET_KINDS)
 export const IMAGE_INPUT_TYPES = [
     "image/png",
     "image/jpeg",
@@ -16,10 +20,15 @@ export const IMAGE_MAX_SOURCE_DIMENSION = 4096
 export const IMAGE_OUTPUT = {
     "team-logo": { width: 512, height: 512, format: "png" },
     "panel-banner": { width: 1920, height: 1080, format: "webp" },
+    "panel-map": { width: 1200, height: 1200, format: "webp" },
 } as const satisfies Record<
     ImageAssetKind,
     { width: number; height: number; format: "png" | "webp" }
 >
+/** Smallest accepted source per kind; a map image must be at least 160 × 160 (P8-19). */
+export const IMAGE_MIN_SOURCE: Partial<
+    Record<ImageAssetKind, { width: number; height: number }>
+> = { "panel-map": { width: 160, height: 160 } }
 export const IMAGE_OUTPUT_TYPES: Record<"png" | "webp", ImageInputType> = {
     png: "image/png",
     webp: "image/webp",
@@ -31,9 +40,11 @@ export const IMAGE_UPLOAD_LIMIT = {
 /** Unattached uploads survive this long before the sweep claims them. */
 export const IMAGE_UNATTACHED_TTL_MS = 24 * 60 * 60_000
 export const IMAGE_CLEANUP_BATCH = 50
-export const imagePublicIdSchema = z.string().regex(/^[a-f0-9]{32}$/)
-export const imageAssetStateSchema = z.enum(["ready", "deleting"])
-export type ImageAssetState = z.infer<typeof imageAssetStateSchema>
+// The Zod schemas (`imageAssetKindSchema`, `imagePublicIdSchema`,
+// `imageAssetStateSchema`, `imageAssetDtoSchema`) and `projectImageAsset` live
+// in `image-asset.schema.ts`, so modules that only attach or resolve an asset
+// stay free of Zod.
+export type { ImageAssetDto, ImageAssetState } from "./image-asset.schema"
 
 export type ImageValidationError =
     | "unsupported_type"
@@ -85,6 +96,8 @@ export function validateImageSource(input: {
     bytes: number
     sniffed: ImageInputType | null
     decoded: DecodedImage | null
+    /** When given, the kind's minimum source size applies. */
+    kind?: ImageAssetKind
 }): ImageValidationError | null {
     if (input.bytes <= 0 || input.bytes > IMAGE_MAX_INPUT_BYTES)
         return "too_large"
@@ -112,6 +125,9 @@ export function validateImageSource(input: {
         width > IMAGE_MAX_SOURCE_DIMENSION ||
         height > IMAGE_MAX_SOURCE_DIMENSION
     )
+        return "bad_dimensions"
+    const minimum = input.kind ? IMAGE_MIN_SOURCE[input.kind] : undefined
+    if (minimum && (width < minimum.width || height < minimum.height))
         return "bad_dimensions"
     if (pages !== undefined && pages > 1) return "animated"
     return null
@@ -175,30 +191,6 @@ export function cleanupDue(
     )
 }
 
-export const imageAssetDtoSchema = z.strictObject({
-    id: z.string(),
-    kind: imageAssetKindSchema,
-    contentType: z.enum(IMAGE_INPUT_TYPES),
-    width: z.number().int().min(1),
-    height: z.number().int().min(1),
-    bytes: z.number().int().min(1),
-    url: z.string(),
-    createdAt: z.string(),
-})
-export type ImageAssetDto = z.infer<typeof imageAssetDtoSchema>
-export function projectImageAsset(asset: ImageAssetEntity): ImageAssetDto {
-    return imageAssetDtoSchema.parse({
-        id: asset.id,
-        kind: asset.kind,
-        contentType: asset.contentType,
-        width: asset.width,
-        height: asset.height,
-        bytes: asset.bytes,
-        url: asset.publicUrl,
-        createdAt: asset.createdAt,
-    })
-}
-
 /** Immutable public path; the file name extension matches the normalized format. */
 export function imageAssetPath(publicId: string, contentType: ImageInputType) {
     return `/api/image-assets/${publicId}.${contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg"}`
@@ -208,4 +200,21 @@ export function parseImageAssetFile(
 ): { publicId: string; extension: string } | null {
     const match = /^([a-f0-9]{32})\.(png|webp|jpg)$/.exec(file)
     return match ? { publicId: match[1]!, extension: match[2]! } : null
+}
+
+/**
+ * The uploaded file's own name, kept so a page can say "Nahráno
+ * vlci-public.png · 1200 × 400 · 380 kB" after a reload (P8-08): the last
+ * path segment, without control characters, at most 100 characters. Null
+ * when nothing usable is left. Display only; never a storage key.
+ */
+export function imageAssetFileName(
+    value: string | null | undefined
+): string | null {
+    const last = (value ?? "").split(/[\\/]/).pop() ?? ""
+    const clean = last
+        .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+    return clean ? Array.from(clean).slice(0, 100).join("") : null
 }

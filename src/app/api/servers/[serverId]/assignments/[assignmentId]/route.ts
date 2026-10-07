@@ -54,6 +54,11 @@ export async function PATCH(
             return NextResponse.json({ error: "Forbidden." }, { status: 403 })
         }
         const existingAssignment = await getServerUserAssignment(assignmentId)
+        if (
+            existingAssignment &&
+            existingAssignment.serverId !== serverContext.server.discordId
+        )
+            return NextResponse.json({ error: "Not found." }, { status: 404 })
         const linkedApplication = existingAssignment?.membershipCategoryId
             ? null
             : await getMembershipApplicationByAssignment(assignmentId)
@@ -131,6 +136,11 @@ export async function DELETE(
             return NextResponse.json({ error: "Forbidden." }, { status: 403 })
         }
         const existingAssignment = await getServerUserAssignment(assignmentId)
+        if (
+            existingAssignment &&
+            existingAssignment.serverId !== serverContext.server.discordId
+        )
+            return NextResponse.json({ error: "Not found." }, { status: 404 })
         const linkedApplication = existingAssignment?.membershipCategoryId
             ? null
             : existingAssignment

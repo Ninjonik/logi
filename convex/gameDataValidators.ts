@@ -9,6 +9,35 @@ export const gameDataError = v.union(
     v.literal("configuration"),
     v.literal("not_listed")
 )
+export const gameDataCredentialMode = v.union(
+    v.literal("none"),
+    v.literal("legacy_env"),
+    v.literal("encrypted")
+)
+export const gameDataCredentialFailure = v.union(
+    v.literal("key_unavailable"),
+    v.literal("decrypt_failed")
+)
+export const gameDataTestOutcome = v.union(
+    v.literal("ok"),
+    v.literal("unauthorized"),
+    v.literal("server_mismatch"),
+    v.literal("rate_limited"),
+    v.literal("timeout"),
+    v.literal("network"),
+    v.literal("invalid_response"),
+    v.literal("configuration"),
+    v.literal("unsupported"),
+    v.literal("key_unavailable")
+)
+/** A stored ciphertext as it travels between the gateway and Convex; never plaintext. */
+export const gameDataCredentialEnvelope = v.object({
+    format: v.literal(1),
+    keyId: v.string(),
+    nonce: v.string(),
+    ciphertext: v.string(),
+    tag: v.string(),
+})
 export const gameDataObservation = v.object({
     observedAt: v.string(),
     providerUpdatedAt: v.union(v.string(), v.null()),

@@ -3,29 +3,38 @@ import { createHash, randomBytes } from "node:crypto"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 
+import {
+    readClanApiMeta,
+    type ClanMetaRead,
+    type ClanMetaRefresh,
+} from "@/lib/api/clan-meta-read"
 import type { DashboardActor } from "../../convex/dashboardActor"
 import type { ApiKeyReadAccess } from "@/domain/api/key-access"
+import { publicApiMemory } from "@/lib/api/public-api-memory"
 import type { GameSelection } from "@/domain/games/game"
+import { keyUseDue } from "@/domain/api/key-usage"
 import { getInternalAuthSecret } from "@/lib/env"
 
 const createKeyReference = makeFunctionReference<"mutation">(
     "publicApi:createKey"
 )
-const listKeysReference = makeFunctionReference<"query">("publicApi:listKeys")
+const listKeysReference = makeFunctionReference<"query">(
+    "publicApiReads:listKeys"
+)
 const revokeKeyReference = makeFunctionReference<"mutation">(
     "publicApi:revokeKey"
 )
-const rateLimitReference = makeFunctionReference<"mutation">(
-    "publicApi:checkRateLimit"
+const authenticateKeyReference = makeFunctionReference<"query">(
+    "apiKeyAuth:authenticateKey"
 )
-const authenticateKeyReference = makeFunctionReference<"mutation">(
-    "publicApi:authenticateKey"
+const recordKeyUseReference = makeFunctionReference<"mutation">(
+    "apiKeyAuth:recordKeyUse"
 )
 const clanResourcePageReference = makeFunctionReference<"query">(
-    "publicApi:getClanResourcePage"
+    "publicApiReads:getClanResourcePage"
 )
 const clanResourceReference = makeFunctionReference<"query">(
-    "publicApi:getClanResource"
+    "publicApiReads:getClanResource"
 )
 const mutateArticleReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanArticle"
@@ -52,22 +61,25 @@ const mutateAssignmentReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanAssignment"
 )
 const clanMetaReference = makeFunctionReference<"query">(
-    "publicApi:getClanMeta"
+    "publicApiReads:getClanMeta"
+)
+const refreshClanMetaReference = makeFunctionReference<"mutation">(
+    "clanMeta:refreshClanMeta"
 )
 const clanSettingsReference = makeFunctionReference<"query">(
-    "publicApi:getClanSettings"
+    "publicApiReads:getClanSettings"
 )
 const mutateClanSettingsReference = makeFunctionReference<"mutation">(
     "publicApi:mutateClanSettings"
 )
 const clanPerformanceHistoryReference = makeFunctionReference<"query">(
-    "publicApi:getClanPerformanceHistory"
+    "publicApiReads:getClanPerformanceHistory"
 )
 const clanMatchByEventReference = makeFunctionReference<"query">(
-    "publicApi:getClanMatchByEvent"
+    "publicApiReads:getClanMatchByEvent"
 )
 const clanUserReference = makeFunctionReference<"query">(
-    "publicApi:getClanUser"
+    "publicApiReads:getClanUser"
 )
 
 export const clanApiResources = [
@@ -142,20 +154,41 @@ export async function revokeClanApiKey(
     })
 }
 
+/**
+ * A fixed one-minute window per bucket, counted in this web process. The
+ * request path makes no Convex write: one counter document patched on every
+ * request made parallel requests conflict and retry in the backend.
+ */
 export async function checkPublicApiRateLimit(bucket: string, limit: number) {
-    return (await fetchMutation(rateLimitReference, {
-        secret: getInternalAuthSecret(),
-        bucket,
-        limit,
-        windowMs: 60_000,
-    })) as { allowed: boolean; remaining: number; resetAt: number }
+    return publicApiMemory.takeToken(bucket, limit, 60_000)
 }
 
+/**
+ * Authenticates through a read-only query and records the key's last use
+ * off the request path, at most once per interval per key and process.
+ */
 export async function authenticateClanApiKey(key: string) {
-    return (await fetchMutation(authenticateKeyReference, {
-        secret: getInternalAuthSecret(),
-        keyHash: hashApiKey(key),
-    })) as { guildId: string; readAccess?: ApiKeyReadAccess } | null
+    const keyHash = hashApiKey(key)
+    const secret = getInternalAuthSecret()
+    const authenticated = (await fetchQuery(authenticateKeyReference, {
+        secret,
+        keyHash,
+    })) as {
+        guildId: string
+        lastUsedAt: string | null
+        readAccess?: ApiKeyReadAccess
+    } | null
+    if (!authenticated) return null
+    const now = Date.now()
+    if (
+        keyUseDue(authenticated.lastUsedAt, now) &&
+        publicApiMemory.claimKeyUse(keyHash, now)
+    )
+        void fetchMutation(recordKeyUseReference, { secret, keyHash }).catch(
+            () => undefined
+        )
+    const { guildId, readAccess } = authenticated
+    return { guildId, ...(readAccess !== undefined ? { readAccess } : {}) }
 }
 
 export async function getClanApiResourcePage(
@@ -188,10 +221,30 @@ export async function getClanApiResource(
     })
 }
 
+/**
+ * The meta's counts come from the clan's stored summary; the request never
+ * scans the clan's tables. A missing summary is computed synchronously once,
+ * a stale one is refreshed off the request path, at most once per clan and
+ * `CLAN_META_INTERVAL_MS` in this process (and once in the backend, which
+ * re-checks before it writes).
+ */
 export async function getClanApiMeta(key: string) {
-    return await fetchQuery(clanMetaReference, {
-        secret: getInternalAuthSecret(),
-        keyHash: hashApiKey(key),
+    const secret = getInternalAuthSecret()
+    const keyHash = hashApiKey(key)
+    return await readClanApiMeta({
+        read: async () =>
+            (await fetchQuery(clanMetaReference, {
+                secret,
+                keyHash,
+            })) as ClanMetaRead | null,
+        refresh: async () =>
+            (await fetchMutation(refreshClanMetaReference, {
+                secret,
+                keyHash,
+            })) as ClanMetaRefresh,
+        claimRefresh: (guildId, now) =>
+            publicApiMemory.claimClanMetaRefresh(guildId, now),
+        now: Date.now,
     })
 }
 
@@ -219,6 +272,8 @@ export async function mutateClanApiSettings(input: {
     meetingChannelId?: string | null
     clanRoleId?: string | null
     dashboardAdminRoleId?: string | null
+    /** Validated feature settings slices by key. */
+    slices?: Record<string, unknown>
 }) {
     return (await fetchMutation(mutateClanSettingsReference, {
         secret: getInternalAuthSecret(),

@@ -6,7 +6,12 @@ import {
     PanelRightClose,
     PanelRightOpen,
 } from "lucide-react"
-import { useRef, useState } from "react"
+import {
+    useRef,
+    useState,
+    useSyncExternalStore,
+    type CSSProperties,
+} from "react"
 
 import {
     Dialog,
@@ -32,6 +37,44 @@ import { StratmapBoard } from "@/components/app/stratmap-editor/board"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+/**
+ * A side panel is "auto" until someone toggles it: open on wide screens and
+ * closed on phones, decided by CSS so the server render matches the client.
+ */
+type PanelState = "auto" | "open" | "closed"
+
+const WIDE_SCREEN_QUERY = "(min-width: 768px)"
+
+function subscribeToScreenWidth(onChange: () => void) {
+    const query = window.matchMedia(WIDE_SCREEN_QUERY)
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+}
+
+/** Whether the screen is at least 768 px wide; the server assumes it is. */
+function useWideScreen() {
+    return useSyncExternalStore(
+        subscribeToScreenWidth,
+        () => window.matchMedia(WIDE_SCREEN_QUERY).matches,
+        () => true
+    )
+}
+
+function isPanelVisible(state: PanelState, wideScreen: boolean) {
+    return state === "open" || (state === "auto" && wideScreen)
+}
+
+/** On phones a panel floats over the map; from 768 px it is a grid column. */
+function panelClassName(state: PanelState, side: "left" | "right") {
+    return cn(
+        "bg-background/95 absolute inset-y-0 z-30 flex min-h-0 w-[min(85vw,18rem)] flex-col p-1 shadow-xl backdrop-blur-sm md:static md:z-auto md:w-auto md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [&>aside]:min-h-0 [&>aside]:flex-1",
+        side === "left" ? "left-0 rounded-r-lg" : "right-0 rounded-l-lg",
+        state === "auto" && "hidden md:flex",
+        state === "closed" && "hidden"
+    )
+}
 
 export function StratmapEditor({
     locale: _locale,
@@ -40,8 +83,32 @@ export function StratmapEditor({
     const [mode, setMode] = useState<StratmapEditorMode>(
         props.initialCanAdmin ? "edit" : "view"
     )
-    const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
-    const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+    const [leftPanel, setLeftPanel] = useState<PanelState>("auto")
+    const [rightPanel, setRightPanel] = useState<PanelState>("auto")
+    const leftSidebarOpen = leftPanel !== "closed"
+    const rightSidebarOpen = rightPanel !== "closed"
+    const labels = props.dictionary.stratmaps
+
+    const wideScreen = useWideScreen()
+    const leftVisible = isPanelVisible(leftPanel, wideScreen)
+    const rightVisible = isPanelVisible(rightPanel, wideScreen)
+
+    function togglePanel(side: "left" | "right") {
+        const visible = side === "left" ? leftVisible : rightVisible
+        const next: PanelState = visible ? "closed" : "open"
+        if (side === "left") setLeftPanel(next)
+        else setRightPanel(next)
+        // Phones show one floating panel at a time.
+        if (next === "open" && !wideScreen) {
+            if (side === "left") setRightPanel("closed")
+            else setLeftPanel("closed")
+        }
+    }
+
+    function closeFloatingPanels() {
+        if (leftPanel === "open") setLeftPanel("closed")
+        if (rightPanel === "open") setRightPanel("closed")
+    }
     const [attachmentViewerRequest, setAttachmentViewerRequest] =
         useState<IconAttachmentViewerRequest | null>(null)
     const editor = useStratmapEditor(props, mode)
@@ -52,62 +119,78 @@ export function StratmapEditor({
             ref={editor.rootRef}
             tabIndex={-1}
             onPointerDownCapture={() => editor.rootRef.current?.focus()}
-            className="grid h-full gap-1.5 overflow-hidden"
-            style={{
-                gridTemplateColumns: `${leftSidebarOpen ? "212px " : ""}minmax(0,1fr)${rightSidebarOpen ? " 236px" : ""}`,
-            }}
+            className="relative grid h-full grid-cols-[minmax(0,1fr)] gap-1.5 overflow-hidden md:[grid-template-columns:var(--stratmap-columns)]"
+            style={
+                {
+                    "--stratmap-columns": `${leftSidebarOpen ? "212px " : ""}minmax(0,1fr)${rightSidebarOpen ? " 236px" : ""}`,
+                } as CSSProperties
+            }
         >
-            {leftSidebarOpen ? (
-                <StratmapLeftSidebar
-                    dictionary={props.dictionary}
-                    canAdmin={editor.canAdmin}
-                    isPending={editor.isPending}
-                    title={editor.title}
-                    description={editor.description}
-                    gameId={props.initialStratmap.gameId}
-                    baseMapId={editor.baseMapId}
-                    side={editor.side}
-                    strongpointId={editor.strongpointId}
-                    maps={editor.maps}
-                    slides={editor.state.slides}
-                    selectedSlideId={editor.selectedSlideId}
-                    selectedMap={editor.selectedMap}
-                    activeOverlays={
-                        editor.activeSlide?.overlays ?? {
-                            showGrid: true,
-                            showAllStrongpoints: true,
-                            visibleStrongpointIds: [],
-                            showOffensiveGarrisons: false,
-                            overlayTeam: "a",
-                            showArtillery: false,
-                            showRepairStations: false,
-                            showSpawnRanges: false,
-                            showWardogsHqs: true,
-                            showWardogsTowers: true,
-                        }
+            {!wideScreen && (leftPanel === "open" || rightPanel === "open") ? (
+                <button
+                    type="button"
+                    aria-label={
+                        leftPanel === "open"
+                            ? labels.hideLeftPanel
+                            : labels.hideRightPanel
                     }
-                    onTitleChange={editor.setTitle}
-                    onDescriptionChange={editor.setDescription}
-                    onBaseMapChange={editor.handleBaseMapChange}
-                    onStrongpointChange={editor.setStrongpointId}
-                    onSideChange={editor.setSide}
-                    onSaveMeta={editor.saveMeta}
-                    onSelectSlide={editor.setSelectedSlideId}
-                    onAddSlide={editor.addSlide}
-                    onDuplicateSlide={editor.duplicateSlide}
-                    onRenameSlide={editor.renameSlide}
-                    onMoveSlide={(slideId, direction) =>
-                        editor.moveSlide(slideId, direction)
-                    }
-                    onDeleteSlide={editor.deleteSlide}
-                    onToggleStrongpoint={editor.toggleStrongpoint}
-                    onToggleWardogsHqs={(showWardogsHqs) =>
-                        editor.handleOverlayChange({ showWardogsHqs })
-                    }
-                    onToggleWardogsTowers={(showWardogsTowers) =>
-                        editor.handleOverlayChange({ showWardogsTowers })
-                    }
+                    className="absolute inset-0 z-20 bg-black/30 md:hidden"
+                    onClick={closeFloatingPanels}
                 />
+            ) : null}
+            {leftSidebarOpen ? (
+                <div className={panelClassName(leftPanel, "left")}>
+                    <StratmapLeftSidebar
+                        dictionary={props.dictionary}
+                        canAdmin={editor.canAdmin}
+                        isPending={editor.isPending}
+                        title={editor.title}
+                        description={editor.description}
+                        gameId={props.initialStratmap.gameId}
+                        baseMapId={editor.baseMapId}
+                        side={editor.side}
+                        strongpointId={editor.strongpointId}
+                        maps={editor.maps}
+                        slides={editor.state.slides}
+                        selectedSlideId={editor.selectedSlideId}
+                        selectedMap={editor.selectedMap}
+                        activeOverlays={
+                            editor.activeSlide?.overlays ?? {
+                                showGrid: true,
+                                showAllStrongpoints: true,
+                                visibleStrongpointIds: [],
+                                showOffensiveGarrisons: false,
+                                overlayTeam: "a",
+                                showArtillery: false,
+                                showRepairStations: false,
+                                showSpawnRanges: false,
+                                showWardogsHqs: true,
+                                showWardogsTowers: true,
+                            }
+                        }
+                        onTitleChange={editor.setTitle}
+                        onDescriptionChange={editor.setDescription}
+                        onBaseMapChange={editor.handleBaseMapChange}
+                        onStrongpointChange={editor.setStrongpointId}
+                        onSideChange={editor.setSide}
+                        onSaveMeta={editor.saveMeta}
+                        onSelectSlide={editor.setSelectedSlideId}
+                        onAddSlide={editor.addSlide}
+                        onDuplicateSlide={editor.duplicateSlide}
+                        onRenameSlide={editor.renameSlide}
+                        onMoveSlide={(slideId, direction) =>
+                            editor.moveSlide(slideId, direction)
+                        }
+                        onDeleteSlide={editor.deleteSlide}
+                        onToggleStrongpoint={editor.toggleStrongpoint}
+                        onToggleWardogsHqs={(showWardogsHqs) =>
+                            editor.handleOverlayChange({ showWardogsHqs })
+                        }
+                        onToggleWardogsTowers={(showWardogsTowers) =>
+                            editor.handleOverlayChange({ showWardogsTowers })
+                        }
+                    />
+                </div>
             ) : null}
             <StratmapBoard
                 svgRef={editor.svgRef}
@@ -150,84 +233,82 @@ export function StratmapEditor({
                 overlayControls={
                     <>
                         <EditorIconButton
-                            icon={
-                                leftSidebarOpen ? PanelLeftClose : PanelLeftOpen
-                            }
+                            icon={leftVisible ? PanelLeftClose : PanelLeftOpen}
                             label={
-                                leftSidebarOpen
-                                    ? "Collapse left sidebar"
-                                    : "Expand left sidebar"
+                                leftVisible
+                                    ? labels.hideLeftPanel
+                                    : labels.showLeftPanel
                             }
                             className="bg-background/85 pointer-events-auto size-7 shadow-sm backdrop-blur-sm"
-                            onClick={() =>
-                                setLeftSidebarOpen((current) => !current)
-                            }
+                            onClick={() => togglePanel("left")}
                         />
                         <EditorIconButton
                             icon={
-                                rightSidebarOpen
-                                    ? PanelRightClose
-                                    : PanelRightOpen
+                                rightVisible ? PanelRightClose : PanelRightOpen
                             }
                             label={
-                                rightSidebarOpen
-                                    ? "Collapse right sidebar"
-                                    : "Expand right sidebar"
+                                rightVisible
+                                    ? labels.hideRightPanel
+                                    : labels.showRightPanel
                             }
                             className="bg-background/85 pointer-events-auto size-7 shadow-sm backdrop-blur-sm"
-                            onClick={() =>
-                                setRightSidebarOpen((current) => !current)
-                            }
+                            onClick={() => togglePanel("right")}
                         />
                     </>
                 }
             />
             {rightSidebarOpen ? (
-                <StratmapRightSidebar
-                    dictionary={props.dictionary}
-                    canAdmin={editor.canAdmin}
-                    tool={editor.tool}
-                    mode={mode}
-                    onModeChange={setMode}
-                    canUndo={editor.canUndo}
-                    canRedo={editor.canRedo}
-                    strokeColor={editor.strokeColor}
-                    strokeWidth={editor.strokeWidth}
-                    lineStyle={editor.lineStyle}
-                    lineStartStyle={editor.lineStartStyle}
-                    lineEndStyle={editor.lineEndStyle}
-                    showLineDistance={editor.showLineDistance}
-                    textValue={editor.textValue}
-                    textSize={editor.textSize}
-                    iconId={editor.iconId}
-                    iconSize={editor.iconSize}
-                    catalogGroups={editor.catalogGroups}
-                    selectedElement={editor.selectedElement}
-                    isUploadingIconAttachments={
-                        editor.isUploadingIconAttachments
-                    }
-                    canEdit={editor.canEdit}
-                    onUndo={editor.undo}
-                    onRedo={editor.redo}
-                    onZoomIn={editor.zoomIn}
-                    onZoomOut={editor.zoomOut}
-                    onResetZoom={editor.resetZoom}
-                    onToolChange={editor.setTool}
-                    onStrokeColorChange={editor.setStrokeColor}
-                    onStrokeWidthChange={editor.setStrokeWidth}
-                    onLineStyleChange={editor.setLineStyle}
-                    onLineStartStyleChange={editor.setLineStartStyle}
-                    onLineEndStyleChange={editor.setLineEndStyle}
-                    onShowLineDistanceChange={editor.setShowLineDistance}
-                    onTextValueChange={editor.setTextValue}
-                    onTextSizeChange={editor.setTextSize}
-                    onIconChange={editor.setIconId}
-                    onIconSizeChange={editor.setIconSize}
-                    onSelectedElementChange={editor.handleSelectedElementChange}
-                    onUpload={(event) =>
-                        void editor.handleSelectedIconAttachmentUpload(event)
-                    }
-                />
+                <div className={panelClassName(rightPanel, "right")}>
+                    <StratmapRightSidebar
+                        dictionary={props.dictionary}
+                        canAdmin={editor.canAdmin}
+                        tool={editor.tool}
+                        mode={mode}
+                        onModeChange={setMode}
+                        canUndo={editor.canUndo}
+                        canRedo={editor.canRedo}
+                        strokeColor={editor.strokeColor}
+                        strokeWidth={editor.strokeWidth}
+                        lineStyle={editor.lineStyle}
+                        lineStartStyle={editor.lineStartStyle}
+                        lineEndStyle={editor.lineEndStyle}
+                        showLineDistance={editor.showLineDistance}
+                        textValue={editor.textValue}
+                        textSize={editor.textSize}
+                        iconId={editor.iconId}
+                        iconSize={editor.iconSize}
+                        catalogGroups={editor.catalogGroups}
+                        selectedElement={editor.selectedElement}
+                        isUploadingIconAttachments={
+                            editor.isUploadingIconAttachments
+                        }
+                        canEdit={editor.canEdit}
+                        onUndo={editor.undo}
+                        onRedo={editor.redo}
+                        onZoomIn={editor.zoomIn}
+                        onZoomOut={editor.zoomOut}
+                        onResetZoom={editor.resetZoom}
+                        onToolChange={editor.setTool}
+                        onStrokeColorChange={editor.setStrokeColor}
+                        onStrokeWidthChange={editor.setStrokeWidth}
+                        onLineStyleChange={editor.setLineStyle}
+                        onLineStartStyleChange={editor.setLineStartStyle}
+                        onLineEndStyleChange={editor.setLineEndStyle}
+                        onShowLineDistanceChange={editor.setShowLineDistance}
+                        onTextValueChange={editor.setTextValue}
+                        onTextSizeChange={editor.setTextSize}
+                        onIconChange={editor.setIconId}
+                        onIconSizeChange={editor.setIconSize}
+                        onSelectedElementChange={
+                            editor.handleSelectedElementChange
+                        }
+                        onUpload={(event) =>
+                            void editor.handleSelectedIconAttachmentUpload(
+                                event
+                            )
+                        }
+                    />
+                </div>
             ) : null}
             <IconAttachmentViewer request={attachmentViewerRequest} />
             <Dialog

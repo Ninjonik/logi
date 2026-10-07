@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation"
+
 import { getServerMatchByEventId } from "@/lib/server-matches"
 import { MatchDetails } from "@/components/app/match-details"
 import { PageHeader } from "@/components/app/page-header"
@@ -22,12 +24,12 @@ export default async function MatchStatsPage({
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
+    if (!context) notFound()
 
     const event = context.events.find(
         (item) => item.id === eventId && item.kind === "match"
     )
-    if (!event) return null
+    if (!event) notFound()
 
     const match = await getServerMatchByEventId(eventId)
 
@@ -72,7 +74,7 @@ export default async function MatchStatsPage({
                     <MatchDetails
                         match={match}
                         dictionary={dictionary}
-                        timezone={context.discordConfig?.timezone}
+                        timezone={context.discordConfig?.timezone ?? "UTC"}
                     />
                 ) : (
                     <div className="border-border/60 text-muted-foreground rounded-2xl border border-dashed px-6 py-10 text-sm">

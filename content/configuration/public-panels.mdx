@@ -1,109 +1,324 @@
 ---
 title: Public Discord panels
-description: Automatically updated server, scoreboard and reviewed result messages.
+description: Self-updating Discord messages for game servers, results, the calendar and competition tables.
 ---
 
 # Public Discord panels
 
-In workspace Discord settings, open **Public panels**, select a configured data
-source and choose **Server + score**, **Separate scoreboard** or **Confirmed
-results**. Search the channel list by name or ID, or switch to ID entry. Use
-**Verify channel** to check the bot's permissions before saving.
+Panels are Discord messages the Logi bot keeps up to date and edits in place.
+Live panels refresh every 60 seconds. A workspace can have up to 20 panels:
 
-One compact server panel includes map, player count and supported scores. A
-separate scoreboard needs another channel. Refresh can run every 30, 60 or 300
-seconds. Saving again requests an update; the bot checks changes every 15 seconds.
+- **Live server**: one panel per game server, with its state, map, players and
+  score.
+- **Our servers**: an optional extra message listing several servers with a
+  join button each. Every server keeps its own panel.
+- **Results**: confirmed match results of one game, one card per match. Each
+  game has at most one results panel.
+- **Calendar**: the clan's upcoming events, the next match highlighted.
+- **Competition table**: one table per division of a Logi competition, updated
+  after every confirmed result.
+- **WD League**: two messages for the whole Wardogs League, the table and the
+  next matches with recent results; see [Wardogs League](/configuration/league-tracking).
 
-Enable **Public top players (names + stats)** to add the top three connected
-players by kills and current cash, plus the leading killer and cash holder for
-each known Wardogs faction. This setting is off by default and is independent of
-the private player button. Cash is the reported current balance, not total match
-earnings; these live rankings are not confirmed match results.
+Panels speak the server's Discord language (English, Czech or German).
 
-**Private player details** enables a button for Warcon player names, factions,
-kills, deaths, cash and ping. Its response is visible only to the person pressing
-the button. HLL CRCON panels show connected players and current-round kills,
-deaths, combat, offense, defense and support scores. Public HLL leaders use kills
-overall and per team, with Allies/Axis scores, remaining time and map artwork.
-The HLL live website endpoint requires an explicit **HLL live data** read grant;
-ordinary aggregate keys cannot read player lists. Stale data is labeled; missing
-metrics stay unknown. HLL Records profile stats are a separate data source.
-Use **Previous** and **Next** to navigate eight players per page. If loading fails,
-the bot gives a private retry message instead of leaving the response loading.
-The button requires current access to the panel's channel. After the panel moves
-or its settings change, open its current message again; old private controls expire.
+All panels are managed on **Settings → Discord → Panely v Discordu** (Discord
+panels). Only clan administrators can open it. **Grafika panelů** (Panel
+graphics, see [Panel graphics](/configuration/panel-graphics)) and **Seed
+serverů** (Server seeding) are pages under it.
 
-Select a **Report Player** ticket category to add a private reporting button to a
-CRCON or Warcon server/score panel. The category shows the configured destination
-parent; choose or change that room in [Tickets](/configuration/tickets). A person
-can select a current player or enter a name for someone who left, then submit a
-reason and optional evidence link. Only the reporter and designated staff receive
-the resulting private thread. Staff close it with `/close_ticket`; reports do not
-automatically ban players. Leaving the category empty disables this feature.
+## Adding and sending a panel
 
-Public messages accept text or announcement channels. Ticket and recruitment
-private-thread parents must use ordinary text channels; the shared picker labels
-unsupported channel types and the central settings API validates pasted IDs.
+1. Open **Settings → Discord → Panely v Discordu** and choose **Nový panel**
+   (New panel) at the top right.
+2. **Typ panelu** (Panel type): choose **Live server**, **Our servers**,
+   **Results**, **WD League**, **Calendar** or **Competition table**. A clan
+   has at most one results panel per game and one WD League and calendar panel;
+   a type the clan already has is greyed out with a note to edit that panel.
+   **Results** stays available while one of the clan's games has no results
+   panel yet, and choosing it picks that game. Once a panel has been sent, its
+   type cannot change.
+3. Choose the source: the **game server** for a live server (its collection
+   state and whether live data works are shown under it), up to ten
+   **servers** for Our servers (drag them, or use the arrows, to set their order
+   in the message), the **game** for results, the **event categories** for the
+   calendar (none means every clan event) or the **competition**. Servers come
+   from **Settings → Game servers** (see [Game server data](/configuration/settings#game-server-data)); add one there first.
+4. **Kanál** (Channel): pick the panel's channel and choose **Ověřit**
+   (Verify). Logi lists the bot permissions the channel has and is missing and
+   whether `@everyone` can view it. A private channel says which roles can see
+   it; only there can a server's own panel show the server password.
+5. **Obsah** (Content): switch on what the message shows. For a live server:
+   score, top players, next map, queue, the IP:port (HLL) or join code
+   (Wardogs), the **Join** button, the server password, **Show players**,
+   **Report player** with its ticket category and the seed progress. The
+   address, join code and password are typed in right here (they are not taken
+   from **Game servers**) and apply to every panel of that server and its join
+   page. A saved address or join code stays editable here, and **Smazat**
+   (Remove) clears it on the next save. The password is stored encrypted and is
+   never shown back. For WD League: the table, the next matches, recent results
+   and how many matches to show.
+6. **Vzhled** (Look): the panel's name and an optional description, a banner,
+   the bar colour (the clan colour or an own colour) and the panel style (as in
+   Panel graphics, or A, B or C for this panel only); see [Look](#look).
+7. **Obnova** (Refresh): every panel refreshes every 60 seconds. Choose
+   whether the message footer says when it was last updated.
+8. Check the **preview** on the right. For server panels choose **Načíst data
+   ze serveru** (Load data from the server): Logi runs the same live read as the
+   bot and redraws the preview from it, with every change you make in the form.
+   Live server panels also show the join page a player opens after **Join**.
+   When the bot may not attach files in the chosen channel, the preview is the
+   text-only message the bot will post and names the missing permission. The
+   faction and status signs show as the bot's installed emoji once the bot has
+   reported them.
+9. Choose **Uložit** (Save) to keep the panel as **Not sent**, or **Odeslat do
+   kanálu** (Send to channel) to save and send it. The bot picks the request up
+   within about 15 seconds; the **Doručení** (Delivery) card ticks **Saved**,
+   **Bot picked up** and **Sent** (**Uloženo**, **Bot převzal**, **Odesláno**),
+   and the page updates itself. **Otevřít
+   zprávu v Discordu** (Open message in Discord) then opens the message.
 
-Confirmed results publish only after review in Logi. Corrections edit the original
-message. Historical reviews are not posted when first enabling the feature.
-Disabling result publication removes its owned result messages. Pausing a server
-panel keeps a paused card in the selected channel.
+To change a panel later, choose **Upravit** (Edit) on its row. The bar at the
+bottom counts the unsaved changes; **Uložit** edits the message in place, no new
+message is sent, and a paused panel stays paused. **Zahodit** (Discard) drops
+the changes.
+
+The same panel settings can be read and changed through the API
+(`GET/PATCH /api/v1/clan/settings`, slice `discordPanels`). Sending,
+refreshing, pausing and deleting messages, loading server data, verifying a
+channel and the server password stay in the dashboard.
+
+## The panel list
+
+The top of **Panely v Discordu** shows whether the bot is online, its version
+and its last contact, and warns when the bot is offline, outdated or not on the
+Discord server. The outdated warning names the bot's version and the version
+panels need ("Bot běží starší verzi 1.0.251. Panely v Discordu potřebují verzi
+1.1.0 nebo novější."); update and restart the bot. The bot reports the version
+set in `LOGI_BOT_VERSION`, otherwise the version of its `package.json`. **Zdroje dat** (Data sources) shows for every game server
+whether Logi collects its data, when the last data came in and whether live
+reads work. Below, the panels are grouped: live servers, Our servers, the
+**Server control** messages of server seeding (in each server's private admin
+channel, with the Seed, Refresh and Pause buttons; **Obnovit teď** redraws
+one), results, WD League,
+calendar and competitions. Each row shows the channel, whether it is public or
+private, when the panel was updated and when the next refresh is due, and the
+actions it allows. The two WD League messages (**tabulka** and **nejbližší
+zápasy**) have a row each with their own state, time and **Otevřít zprávu**;
+their buttons act on the whole panel, so **Pozastavit** pauses both messages,
+as the rows say. The page refreshes itself every few seconds.
+
+## Sending, refreshing and pausing
+
+A new panel is saved as **Not sent**. Nothing appears in Discord until you
+choose **Send to channel**. The bot picks the request up within about 15
+seconds. Every panel shows one state:
+
+- **Published**: the message is in Discord and refreshing.
+- **Waiting for the bot**: a request was sent and the bot has not answered yet.
+- **Error**: the last attempt failed. Logi names the cause and the fix, for
+  example the missing channel permission, and when the next attempt runs. Fix
+  it, then choose **Try again**. In the editor, **Delivery** keeps the last
+  error even after the panel recovers, in the past tense ("Discord did not
+  respond in time. The next attempt a minute later went through.").
+- **Not sent**: saved, but not in Discord.
+- **Paused**: the message stays in Discord with a **Paused** chip and is not
+  refreshed until you resume it.
+
+**Refresh now** redraws a panel at once. **Pause** keeps the message and
+stops refreshing it; **Resume** starts it again. **Delete message** (in the
+editor's bar) takes the message out of Discord and keeps the panel as not
+sent. **Remove panel** deletes its messages and its settings. Logi also shows when each
+panel was saved, sent and last refreshed, when the next refresh is due, and
+whether the bot is online and running a current version. If the bot has not
+checked in for three minutes, panels do not refresh until it runs again.
+
+**Load data from the server** runs the same live read as the bot (CRCON for Hell
+Let Loose, Warcon for Wardogs) and shows what came back with a preview of the
+panel. It never shows keys or the server password.
+
+The bot needs View Channel, Send Messages, Embed Links, Attach Files and Read
+Message History in the panel's channel. Without Attach Files the panel has no
+image. **Verify** in the editor checks these permissions and whether
+`@everyone` can view the channel.
+
+## Live server panel
+
+The panel's state chip is one of **Live** (players on the server), **Empty**
+(no players), **Seeding** (a seed is running and the server is below its live
+threshold, with a progress bar and a link to the seed call), **Unavailable**
+(the server does not answer; the last data time is shown) or **Paused**. A
+**New map** chip appears for a short time after the map changes.
+
+The panel shows only what the server reports: map, mode, day or night, players
+and capacity, the join queue, time remaining, the score, the next map and the
+top players. Hell Let Loose shows the queue, the next map and day or night only
+when CRCON reports them. Wardogs shows the three factions with their points and
+the players with the most kills and the most money now. If a live read fails,
+the panel shows the last collected data instead of disappearing.
+
+In a channel that `@everyone` cannot view, the panel is a clan panel: it also
+shows the Logi match running on the server, which clan members are playing
+(through verified Steam links) and, if you switch it on, the server password.
+
+While a seed runs, the panel counts players from the seed's own reading, the
+same number the seed call shows, so the two never disagree.
+
+With **Score** switched off the panel is a server status: **Online** instead of
+**Live**, the map and the players, without the score, the top players or the
+time left in the round.
+
+### The three styles
+
+- **Style A** (the default) puts the score image at the top of the message: the
+  map, the state, the players and queue, the score with the side signs and the
+  top three. The image follows the panel's switches: without **Score** it shows
+  the player count large, without **Top players** it has no top three. On an
+  empty server it says **Nobody is playing on the server right now**, and while
+  a seed runs it shows the progress toward the live threshold, e.g. **12 / 40**.
+  Under the image the text keeps everything the panel says for its state: the
+  empty sentence, the seed bar and the call link, the running Logi match and
+  **Clan members playing**.
+- **Style B** puts the banner at the top, then the name with the map thumbnail,
+  the score with the signs, the coloured player gauge, the top players and
+  the address with the next map. With no banner of its own the server's banner
+  or, with **Use the map image when the banner is missing** on, the current
+  map is drawn under the clan badge; with the switch off there is no picture
+  on top.
+- **Style C** is one compact line: the state icon, the name, the game and the
+  map, then the score with the time left and the player gauge, with **Join**
+  and **Show players** only.
+
+### Server password
+
+The server password is stored encrypted. It appears only on a server's own
+panel, only with **Show password** switched on, and only while `@everyone`
+cannot view the channel. The bot checks this on every refresh. If the channel
+becomes public, the bot removes the password from the panel and tells the
+admins once in the errors channel: **The server password was removed from the
+panel**, with the panel and the channel, why, and how to deny `@everyone`
+**View Channel**. The password comes back at the next refresh once the channel
+is private again. The password never appears on **Our
+servers**, on the join page or in any API response.
+
+### Join a server
+
+**Join** opens Logi's join page for the server, `/join/<server>`. Discord
+buttons can only open web links, so the page opens Steam
+(`steam://connect/<address>`) immediately. If the browser blocks it, the page
+shows the address with **Copy** and the steps for adding the server in Steam.
+For Wardogs it shows the join code. The page needs no login and shows only the
+server's name, players, the queue (from the panel's latest live read) and the
+address or join code.
+
+### Show players
+
+**Show players** answers privately with the current round's players, eight per
+page, split by side or faction and sorted by kills. Hell Let Loose lists kills
+and deaths; Wardogs lists kills and money now. Use **Previous** and **Next** to
+page. The button needs current access to the panel's channel; after the panel
+changes, open its current message again.
+
+### Report a player
+
+Select a **Report Player** ticket category to add **Report player** to a public
+CRCON or Warcon server panel. The whole flow is private: pick a player from the
+current round (or **Another player** for someone who left), describe what
+happened and optionally add when and an evidence link. The report becomes a
+private thread named **Report #17 · player** where the staff are mentioned once.
+Staff close it with `/close_ticket`; reports do not ban anyone automatically.
+If a report cannot be sent, the reporter reads why; problems only an admin can
+fix are posted to the errors channel. Choose or change the destination in
+[Tickets](/configuration/tickets).
+
+## Our servers
+
+The optional **Our servers** message lists up to ten servers in the order you
+set. Each row has its state, the side or faction signs with the score (and the
+time left) when **Score** is on, the map, a coloured player gauge with the queue
+and, as switched on, the next map, the IP:port of Hell Let Loose servers and the
+join code of Wardogs servers. A server that is seeding shows **seeding 9 / 40**
+and its seed bar. The rows read the same live data as each server's own panel,
+so the queue and the next map appear when the server reports them. Every server
+gets a **Join: name** button; a Wardogs button opens the join page, which shows
+its join code. The panel has the three styles too: style B puts a banner with
+the clan badge on top, style C leaves out the map pictures. It shows public
+data only: no player names, no password and no clan match.
+
+## Results
+
+Each game has one results panel. Only results confirmed in Logi are posted. A
+new results panel first posts the last five confirmed results, then each new
+one. A card shows the category, the score row with both sides on one line,
+the second side mirrored (`VLK Spojenci ★ 4 : 1 Osa ✚ ROG`, with the faction
+emblems), the clan's outcome (**Win**, **Loss** or **Draw**), the
+map, the date and who confirmed it. The compact layout shortens the row to
+`VLK 4 : 1 ROG`. Wardogs and other multi-team results list the places with
+points and the clan's place; a Wardogs League result is labelled with its
+fixture number and match type, for example **#38 FRIENDLY**. A correction edits the same card and
+says what the score was before. **Match details** links to the public match
+page when one exists. **Compact look** in the results panel's **Content** step
+draws each result as a shorter card: the score without the sides line, and a
+correction only says when and what it was before.
+
+## Calendar and competition tables
+
+The calendar shows the next match with its sign-up deadline, then compact rows
+of upcoming events with their type as a word; a competition match names its
+round, e.g. **ECL, 3. kolo**. Titles link to the event's
+announcement in Discord. **Open calendar** opens the Logi calendar. You can
+limit the calendar to chosen event categories. Times show in each reader's own
+time zone.
+
+The calendar's channel is chosen here, in the calendar panel's editor; it is no
+longer on **Channels and language**. A clan that set a calendar channel there
+before sees that calendar in the list as **Calendar** with **Edit**: the editor
+opens a new calendar panel in the same channel, and **Save** takes the existing
+message over, so it is edited and not posted again.
+
+A competition table panel posts one table per division with points, wins and
+the clan's next match, and links the public competition page.
+
+## Delivery and recovery
 
 The bot retains message IDs across restarts and edits the same message. Changing
 channels waits for removal of the old message. If Discord's response to a send
-is lost, the bot searches for its exact marker. A pending recovery that cannot be
-resolved from recent history needs operator attention; repeatedly saving does
-not send a duplicate.
+is lost, the bot searches recent messages for an invisible identifier it set on
+that message; members never see a marker. **Try again** sends a message whose
+delivery Discord never confirmed. Repeating an action never sends a duplicate.
 
-**Map artwork** uses the packaged map or game image as a compact, clickable
-thumbnail. The bot uploads it once and reuses the attachment on updates and
-restart. Application emoji are installed once by the operator; workspace
-administrators do not need to upload faction logos. Missing artwork and icons
+**Map artwork** uses the clan's own map image from Panel graphics, else the
+packaged map or game image, as a compact, clickable thumbnail. The bot attaches
+a resized copy with a versioned file name and reuses the attachment on updates
+and restart; a panel's own banner is attached the same way. The bot installs
+the faction and status signs as application emoji itself; workspace administrators do not need to upload faction logos (see
+[Panel graphics](/configuration/panel-graphics)). Missing artwork and icons
 have readable fallbacks.
 
-## Appearance
+## Look
 
-The **Appearance** section of the panel form changes how one panel looks in
-Discord. Save the panel to apply it; the bot updates the message within about
-15 seconds. Panels saved before these settings existed, and panels whose
-appearance is never changed, look exactly as before.
+The **Vzhled** (Look) step of the panel editor changes how one panel looks in
+Discord. Save the panel to apply it; a sent panel updates within about 15
+seconds. The preview shows the change at once.
 
-- **Layout** switches:
-    - **Show map name and artwork** hides or shows the map line and the map
-      thumbnail. The thumbnail additionally needs **Map artwork**.
-    - **Show scoreboard** hides or shows the faction or team score section.
-    - **Show player count** hides or shows connected players and capacity.
-    - **Compact header** uses a two-line header, puts scores on one line and
-      removes section separators.
-
-    Confirmed result messages use only the map and compact switches.
-
-- **Accent color** takes a `#RRGGBB` value, typed or picked with the color
-  picker. It replaces the green color of a live panel and the color of result
-  messages. Stale or paused panels keep the amber warning color. **Default
-  color** restores the standard green.
+- **Name** is the message title; without one the panel uses the server's name.
+  **Description** adds an optional short sentence under it.
 - **Banner** uploads a PNG, JPEG or WebP image of up to 2 MiB and at most
   4096 × 4096 pixels. Logi converts it to WebP of at most 1920 × 1080 pixels and
-  shows it as the main image above the panel header, in place of the map
-  thumbnail. **Choose an uploaded banner** lists the banners already uploaded in
-  this workspace, so several panels can share one without uploading it again.
-  Saving waits until a running upload finishes, and changes made meanwhile are
-  kept. An upload or choice is attached only after you save the panel; **Remove
-  banner** detaches it on the next save. Uploads that are never saved to a panel
-  are removed automatically after a day. Banner and team logo uploads share a
-  limit of 10 images every 10 minutes for each administrator in a workspace;
-  above it, the editor says how many seconds to wait. If a banner is no longer
+  shows it above the panel in place of the map image. **Choose uploaded** lists
+  the banners already uploaded in this workspace, so several panels can share
+  one. Saving waits until a running upload finishes. An upload or choice is
+  attached only after you save the panel; **Remove** detaches it on the next
+  save. Uploads that are never saved to a panel are removed automatically after
+  a day. Banner and team logo uploads share a limit of 10 images every 10
+  minutes for each administrator in a workspace. If a banner is no longer
   available to the workspace, saving asks you to upload it again or remove it.
   Discord shows the banner only when Logi runs on a public HTTPS address.
-- **Faction emoji** set the marker shown before each faction or team name on
-  scores, leader lists, results and private player pages, for the games of the
-  selected source:
-  Allies and Axis for Hell Let Loose, Valkyra, Manticore and Lonestar for
-  Wardogs. Enter one Unicode emoji such as 🦅, or a custom Discord emoji as
-  `<:name:id>` (animated: `<a:name:id>`). A custom emoji must belong to a
-  server the bot is in or to the bot application. An empty field keeps the
-  default shown as the placeholder: the installed Wardogs application emoji or
-  ◈, and no emoji for Hell Let Loose teams. Private player pages show only the
-  emoji you set, and drop them if they would make a page too long for Discord.
-  Provider labels such as Alpha or Bravo always keep the neutral ◈ marker.
+- **Bar colour** is the clan colour, or an own `#RRGGBB` colour for this panel
+  only. A paused panel keeps its colour and shows a grey **Paused** chip.
+- **Panel style** follows **Výchozí styl** in Panel graphics, or sets style A
+  (score image), B (banner and thumbnail) or C (compact text) for a server panel
+  or for **Our servers**; see [Panel graphics](/configuration/panel-graphics).
+
+Faction and status signs are fixed: the old per-panel faction emoji setting is
+gone, and a panel saved in the editor drops an override it had.

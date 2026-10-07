@@ -1,25 +1,42 @@
+import { RestartTourButton } from "@/components/app/restart-tour-button"
 import { LogiStatusLink } from "@/components/app/logi-status-link"
 import type { Dictionary } from "@/i18n/dictionaries"
 import type { LogiStatus } from "@/lib/logi-status"
 import { getDiscordSupportUrl } from "@/lib/env"
+import type { Locale } from "@/i18n/config"
 import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
+/**
+ * The dashboard footer: service status, help and the desktop app. The tour
+ * and the wiki live here since the title bar only carries navigation.
+ */
 export function SiteFooter({
     dictionary,
     status,
+    locale,
 }: {
     dictionary: Dictionary
     status: LogiStatus
+    locale: Locale
 }) {
     return (
-        <footer className="bg-background h-(--footer-height) border-t">
-            <div className="text-muted-foreground flex h-full items-center justify-between px-4 text-[11px] lg:px-6 2xl:text-xs">
+        <footer className="bg-background min-h-(--footer-height) border-t">
+            <div className="text-muted-foreground flex min-h-(--footer-height) flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-4 py-2 text-xs lg:px-6">
                 <div>
                     &copy; {dictionary.app.name} {new Date().getFullYear()}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     <LogiStatusLink status={status} />
+                    <RestartTourButton className="hover:text-foreground cursor-pointer transition-colors">
+                        {dictionary.publicNavigation.restartTour}
+                    </RestartTourButton>
+                    <Link
+                        href={`/${locale}/dashboard/logicomms`}
+                        className="hover:text-foreground transition-colors"
+                    >
+                        {dictionary.sidebar.logiComms}
+                    </Link>
                     <a
                         href={getDiscordSupportUrl()}
                         target="_blank"

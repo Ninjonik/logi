@@ -1,3 +1,4 @@
+import { skipsPendingOnApply, syncsMembershipRoles } from "./membership-options"
 import { type GameId } from "../games/game"
 
 export type RoleActorKind =
@@ -10,9 +11,11 @@ type Category = {
     recruitRoleIds: string[]
     finalRoleIds: string[]
     supportRoleIds: string[]
+    autoAssignRecruitOnApply?: boolean
 }
 type Settings = {
     enabled: boolean
+    roleSyncEnabled?: boolean
     autoAssignRecruitOnApply: boolean
     categories: Category[]
 }
@@ -43,15 +46,16 @@ export function managedRolePolicy(config: ManagedRoleConfig, gameId: GameId) {
         return { ...shared, categories }
     }
     const settings = settingsFor(gameId)
-    const roleIds = settings?.enabled
-        ? unique([
-              ...(config.clanRoleId ? [config.clanRoleId] : []),
-              ...settings.categories.flatMap((category) => [
-                  ...category.recruitRoleIds,
-                  ...category.finalRoleIds,
-              ]),
-          ])
-        : []
+    const roleIds =
+        settings && syncsMembershipRoles(settings)
+            ? unique([
+                  ...(config.clanRoleId ? [config.clanRoleId] : []),
+                  ...settings.categories.flatMap((category) => [
+                      ...category.recruitRoleIds,
+                      ...category.finalRoleIds,
+                  ]),
+              ])
+            : []
     if (roleIds.length > 100)
         throw new Error("Managed role scope exceeds 100 roles.")
     return {
@@ -63,19 +67,48 @@ export function managedRolePolicy(config: ManagedRoleConfig, gameId: GameId) {
 }
 export type ManagedRolePolicy = ReturnType<typeof managedRolePolicy>
 
+/**
+ * Whether an applicant may become a recruit without waiting: a main member of
+ * a category that skips "pending", or of an unknown category when the
+ * clan-wide switch is on.
+ */
+export function appliesAsRecruit(
+    policy: ManagedRolePolicy,
+    categoryId: string | undefined,
+    type: RoleAssignment["type"]
+) {
+    const category = policy.settings?.categories.find(
+        (row) => row.id === categoryId
+    )
+    return skipsPendingOnApply(policy.settings, {
+        assignmentType: type,
+        autoAssignRecruitOnApply: category?.autoAssignRecruitOnApply,
+    })
+}
+
+/**
+ * The managed roles a membership should have. `applicant` marks the write of
+ * a submitted application: while the recruiters decide, a recruit-on-apply
+ * applicant holds only the category's recruit roles ("Dát roli Rekrut hned
+ * po odeslání"); the clan role comes with acceptance (N4-32, N4-40).
+ */
 export function desiredMembershipRoles(
     policy: ManagedRolePolicy,
-    assignment: RoleAssignment | null
+    assignment: RoleAssignment | null,
+    options: { applicant?: boolean } = {}
 ) {
     if (
         !assignment ||
         assignment.status === "pending" ||
-        !policy.settings?.enabled
+        !policy.settings ||
+        !syncsMembershipRoles(policy.settings)
     )
         return []
     const category = policy.settings.categories.find(
         (row) => row.id === assignment.membershipCategoryId
     )
+    if (options.applicant && assignment.status === "recruit")
+        return unique(category?.recruitRoleIds ?? [])
     return unique([
         ...(policy.clanRoleId ? [policy.clanRoleId] : []),
         ...(assignment.status === "recruit"

@@ -1,22 +1,25 @@
 import type { Metadata } from "next"
 
+import {
+    DEFAULT_ROSTER_SCORE_SETTINGS,
+    summarizeRosterScoreChanges,
+} from "@/domain/events/score-policy"
 import { SubmitMatchResultsButton } from "@/components/app/submit-match-results-button"
-import { LinkCompetitionEvent } from "@/components/app/link-competition-event"
+import { MatchDetailPage } from "@/components/app/match-detail/match-detail-page"
+import { EventOverview } from "@/components/app/match-detail/event-overview"
 import { ConcludeEventButton } from "@/components/app/conclude-event-button"
-import { listPublicCompetitions } from "@/lib/read-models/competitions"
-import { EventFormPanel } from "@/components/app/event-form-panel"
-import { isGameId, resolveGameScope } from "@/domain/games/game"
+import { eventEditability } from "@/domain/events/event-edit"
 import { PageHeader } from "@/components/app/page-header"
-import { getEventMetadata } from "@/lib/server-metadata"
 import { GameBadge } from "@/components/app/game-badge"
 import { getServerContext } from "@/lib/server-context"
 import { getEventStatusMeta } from "@/lib/event-status"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Event | Logi",
+    title: "Event",
     description: "View and manage an event.",
 }
 
@@ -29,42 +32,54 @@ export default async function EventDetailPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string; eventId: string }>
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string; tab?: string }>
 }) {
     const { locale, serverId, eventId } = await params
-    const { game } = await searchParams
+    const { game, tab } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const context = await getServerContext(
         serverId,
         isGameId(game) ? game : "all"
     )
-    if (!context) return null
-    const {
-        events,
-        rosters,
-        canAdmin,
-        topicPresets,
-        stratmaps,
-        discordConfig,
-        groups,
-    } = context
-    const event = events.find((item) => item.id === eventId)
+    const found = context?.events.find((item) => item.id === eventId)
+    // Matches share the match detail; it also explains a missing match.
+    if (!context || !found || found.kind !== "training")
+        return (
+            <MatchDetailPage
+                locale={locale}
+                serverId={serverId}
+                eventId={eventId}
+                game={game}
+                tab={tab}
+                section="events"
+                dictionary={dictionary}
+            />
+        )
+    const { rosters, canAdmin, stratmaps, discordConfig } = context
+    const event = found
+    // Managers edit in the new-match flow until the training concludes.
+    const editHref =
+        canAdmin && eventEditability(event, new Date()) === "editable"
+            ? `/${locale}/dashboard/servers/${serverId}/events/${event.id}/edit`
+            : null
     const roster = rosters.find((item) => item.eventId === eventId)
     const attachedStratmaps = stratmaps.filter((stratmap) =>
-        event?.stratmapIds.includes(stratmap.id)
+        event.stratmapIds.includes(stratmap.id)
     )
-
-    if (!event) return null
+    const closeSummary = summarizeRosterScoreChanges({
+        userIds: context.assignments
+            .filter((assignment) => !assignment.paused)
+            .map((assignment) => assignment.userId),
+        settings:
+            discordConfig?.membershipSettings?.rosterScoreSettings ??
+            DEFAULT_ROSTER_SCORE_SETTINGS,
+        participants: event.participants,
+        notices: event.absenceNotices,
+        roster: roster ?? null,
+    })
 
     const statusMeta = getEventStatusMeta(event.status, dictionary)
-    const competitions =
-        event.kind === "match" && canAdmin && !event.competitionFixtureId
-            ? (await listPublicCompetitions()).filter(
-                  (competition) =>
-                      competition.gameId === resolveGameScope(event.gameId)
-              )
-            : []
 
     return (
         <>
@@ -82,6 +97,17 @@ export default async function EventDetailPage({
                 badge={`${event.cap ? `${event.cap} • ` : ""}${statusMeta?.label}`}
                 actions={
                     <div className="flex flex-wrap gap-2">
+                        {editHref ? (
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-xl"
+                            >
+                                <a href={editHref}>
+                                    {dictionary.newMatch.edit.titleTraining}
+                                </a>
+                            </Button>
+                        ) : null}
                         {attachedStratmaps.map((stratmap) => (
                             <Button
                                 key={stratmap.id}
@@ -135,6 +161,7 @@ export default async function EventDetailPage({
                                     eventId={event.id}
                                     disabled={false}
                                     dictionary={dictionary}
+                                    summary={closeSummary}
                                 />
                             )
                         ) : null}
@@ -142,30 +169,16 @@ export default async function EventDetailPage({
                 }
             />
             <div className="px-4 lg:px-6">
-                <EventFormPanel
+                <EventOverview
                     event={event}
-                    serverId={serverId}
-                    locale={locale}
-                    topicPresets={topicPresets}
-                    stratmaps={stratmaps}
-                    groups={groups}
-                    eventCategories={context.server.eventCategories ?? []}
-                    timezone={discordConfig?.timezone ?? "UTC"}
-                    canEdit={canAdmin}
+                    context={context}
                     dictionary={dictionary}
-                    createMode={false}
-                    discordConfig={discordConfig}
+                    locale={locale}
+                    serverId={serverId}
+                    editHref={editHref}
+                    seriesEditHref={null}
+                    canResyncTopics={false}
                 />
-                {competitions.length ? (
-                    <div className="mt-6">
-                        <LinkCompetitionEvent
-                            serverId={context.server.id}
-                            serverName={context.server.name}
-                            eventId={event.id}
-                            competitions={competitions}
-                        />
-                    </div>
-                ) : null}
             </div>
         </>
     )

@@ -36,6 +36,7 @@ export async function getGuildPerformanceHistory(
         [appCacheTags.matches(cacheServerId)],
         async () => {
             const row = (await fetchQuery(guildRef, {
+                secret: getInternalAuthSecret(),
                 guildId,
                 gameScope,
             })) as {
@@ -57,6 +58,7 @@ export async function getPlayerPerformanceHistory(
         [appCacheTags.matches(cacheServerId), appCacheTags.playerStats(userId)],
         async () => {
             const row = (await fetchQuery(playerRef, {
+                secret: getInternalAuthSecret(),
                 guildId,
                 userId,
                 gameScope,
@@ -88,6 +90,7 @@ export async function getPlayersPerformanceHistories(
         ],
         async () => {
             return (await fetchQuery(playersRef, {
+                secret: getInternalAuthSecret(),
                 guildId,
                 userIds: uniqueIds,
                 gameScope,

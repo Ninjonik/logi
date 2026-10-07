@@ -1,9 +1,11 @@
+import { ManagersOnlyState } from "@/components/app/managers-only-state"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
 import { PageHeader } from "@/components/app/page-header"
 import { GroupForm } from "@/components/app/group-form"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isGameId } from "@/domain/games/game"
+import { notFound } from "next/navigation"
 import { isLocale } from "@/i18n/config"
 
 export default async function CreateGroupPage({
@@ -20,7 +22,7 @@ export default async function CreateGroupPage({
     const selectedGame =
         typeof game === "string" && isGameId(game) ? game : null
     const context = await getServerContext(serverId, selectedGame ?? "all")
-    if (!context?.canAdmin) return null
+    if (!context) notFound()
 
     return (
         <>
@@ -28,23 +30,30 @@ export default async function CreateGroupPage({
                 title={dictionary.groups.createTitle}
                 description={dictionary.groups.createDescription}
             />
-            <div className="px-4 lg:px-6">
-                <GroupForm
-                    serverId={serverId}
-                    locale={locale}
+            {!context.canAdmin ? (
+                <ManagersOnlyState
                     dictionary={dictionary}
-                    canEdit={context.canAdmin}
-                    createMode
-                    gameId={selectedGame ?? undefined}
-                    availableGroups={context.groups ?? []}
+                    overviewHref={`/${locale}/dashboard/servers/${serverId}`}
                 />
-            </div>
-            {!selectedGame ? (
+            ) : selectedGame ? (
+                <div className="px-4 lg:px-6">
+                    <GroupForm
+                        serverId={serverId}
+                        locale={locale}
+                        dictionary={dictionary}
+                        canEdit={context.canAdmin}
+                        createMode
+                        gameId={selectedGame}
+                        availableGroups={context.groups ?? []}
+                    />
+                </div>
+            ) : (
+                // Choose the game first; the form appears once one is picked.
                 <GameSelectionGate
                     enabledGames={context.server.enabledGames}
                     dictionary={dictionary}
                 />
-            ) : null}
+            )}
         </>
     )
 }

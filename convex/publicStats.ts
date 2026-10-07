@@ -1,12 +1,19 @@
+import { assertInternalSecret } from "./discord_shared"
 import { query } from "./_generated/server"
+import { v } from "convex/values"
 
 export const overview = query({
-    args: {},
-    handler: async (ctx) => {
+    args: { secret: v.string() },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const [users, guilds, events] = await Promise.all([
             ctx.db.query("users").collect(),
             ctx.db.query("guilds").collect(),
-            ctx.db.query("events").collect(),
+            ctx.db
+                .query("events")
+                .collect()
+                // Unpublished drafts are not counted on public pages.
+                .then((rows) => rows.filter((row) => row.isDraft !== true)),
         ])
 
         return {

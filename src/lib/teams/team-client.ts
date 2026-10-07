@@ -2,11 +2,8 @@ import {
     TEAM_SEARCH_MAX,
     teamRecordPageSchema,
     teamRecordSchema,
-    type TeamCreateInput,
     type TeamGame,
-    type TeamLifecycleInput,
     type TeamRecord,
-    type TeamUpdateInput,
 } from "@/domain/teams/team"
 import {
     matchTeamAssignmentSchema,
@@ -18,23 +15,15 @@ import {
 } from "@/lib/image-asset-upload"
 import { z } from "zod"
 
-/** Dashboard error vocabularies; each code has a localized message under `dictionary.teams`. */
-export const TEAM_ERROR_CODES = [
+/** Codes a catalogue read can fail with; each has a localized message under `dictionary.teams.errors`. */
+export const TEAM_READ_ERROR_CODES = [
     "invalid_team",
-    "game_disabled",
-    "duplicate_name",
-    "revision_conflict",
-    "idempotency_conflict",
     "not_found",
-    "archived",
-    "not_archived",
-    "asset_unavailable",
-    "limit_reached",
     "forbidden",
     "rate_limited",
     "unavailable",
 ] as const
-export type TeamErrorCode = (typeof TEAM_ERROR_CODES)[number]
+export type TeamReadErrorCode = (typeof TEAM_READ_ERROR_CODES)[number]
 
 export const MATCH_TEAM_ERROR_CODES = [
     "invalid_match_teams",
@@ -60,14 +49,15 @@ export const MATCH_TEAM_SAVE_ERROR_CODES = [
 export type MatchTeamSaveErrorCode =
     (typeof MATCH_TEAM_SAVE_ERROR_CODES)[number]
 
-function readString(body: unknown, key: string): string | null {
+export function readString(body: unknown, key: string): string | null {
     const value =
         body && typeof body === "object" && key in body
             ? (body as Record<string, unknown>)[key]
             : null
     return typeof value === "string" ? value : null
 }
-function narrow<T extends string>(
+/** The response's `error` when it is one of `known`, else `fallback`. */
+export function narrowErrorCode<T extends string>(
     body: unknown,
     known: readonly T[],
     fallback: T
@@ -77,10 +67,10 @@ function narrow<T extends string>(
         ? (code as T)
         : fallback
 }
-export const teamErrorCode = (body: unknown) =>
-    narrow(body, TEAM_ERROR_CODES, "unavailable")
+export const teamReadErrorCode = (body: unknown) =>
+    narrowErrorCode(body, TEAM_READ_ERROR_CODES, "unavailable")
 export const matchTeamErrorCode = (body: unknown) =>
-    narrow(body, MATCH_TEAM_ERROR_CODES, "unavailable")
+    narrowErrorCode(body, MATCH_TEAM_ERROR_CODES, "unavailable")
 /** A match-team rule violation from the event save, or `null` for any other failure. */
 export function matchTeamSaveErrorCode(
     body: unknown
@@ -99,9 +89,9 @@ export function matchTeamsEndpoint(serverId: string, eventId: string) {
     return `/api/servers/${encodeURIComponent(serverId)}/events/${encodeURIComponent(eventId)}/match-teams`
 }
 
+/** One page of a game's active catalogue; workspaces never see archived or merged entries in a list. */
 export type TeamListQuery = {
     gameId: TeamGame
-    archived: boolean
     search?: string
     cursor?: string | null
     limit?: number
@@ -109,7 +99,6 @@ export type TeamListQuery = {
 /** Omits defaults so the route applies its own; a blank search is not sent. */
 export function teamListUrl(serverId: string, query: TeamListQuery) {
     const params = new URLSearchParams({ game: query.gameId })
-    if (query.archived) params.set("archived", "true")
     const search = query.search?.trim().slice(0, TEAM_SEARCH_MAX)
     if (search) params.set("search", search)
     if (query.cursor) params.set("cursor", query.cursor)
@@ -117,11 +106,11 @@ export function teamListUrl(serverId: string, query: TeamListQuery) {
     return `${teamsEndpoint(serverId)}?${params.toString()}`
 }
 
-/** A failed directory read carrying a localizable code. */
-export class TeamRequestError extends Error {
-    constructor(readonly code: TeamErrorCode) {
+/** A failed catalogue read carrying a localizable code. */
+export class TeamReadError extends Error {
+    constructor(readonly code: TeamReadErrorCode) {
         super(code)
-        this.name = "TeamRequestError"
+        this.name = "TeamReadError"
     }
 }
 
@@ -135,14 +124,18 @@ export async function fetchTeamPage(
         signal,
     })
     const body: unknown = await response.json().catch(() => null)
-    if (!response.ok) throw new TeamRequestError(teamErrorCode(body))
+    if (!response.ok) throw new TeamReadError(teamReadErrorCode(body))
     const page = teamRecordPageSchema.safeParse(body)
-    if (!page.success) throw new TeamRequestError("unavailable")
+    if (!page.success) throw new TeamReadError("unavailable")
     return page.data
 }
 
 const teamLookupSchema = z.object({ team: teamRecordSchema })
-/** One directory record by ID; `null` when it is gone, an error when the lookup fails. */
+/**
+ * One catalogue record by ID, including archived and merged entries so saved
+ * selections keep their history; `null` when it is gone, an error when the
+ * lookup fails.
+ */
 export async function fetchTeamRecord(
     serverId: string,
     teamId: string,
@@ -154,76 +147,16 @@ export async function fetchTeamRecord(
     )
     const body: unknown = await response.json().catch(() => null)
     if (response.status === 404) return null
-    if (!response.ok) throw new TeamRequestError(teamErrorCode(body))
+    if (!response.ok) throw new TeamReadError(teamReadErrorCode(body))
     const lookup = teamLookupSchema.safeParse(body)
-    if (!lookup.success) throw new TeamRequestError("unavailable")
+    if (!lookup.success) throw new TeamReadError("unavailable")
     return lookup.data.team
 }
 
-export type TeamCommandRequest =
-    | { action: "create"; input: TeamCreateInput }
-    | { action: "update"; teamId: string; input: TeamUpdateInput }
-    | {
-          action: "archive" | "restore"
-          teamId: string
-          input: TeamLifecycleInput
-      }
-export type TeamCommandResult =
-    | { ok: true; teamId: string | null }
-    | { ok: false; code: TeamErrorCode; existingId: string | null }
-
-/** Sends one same-origin directory command; network failures read as `unavailable`. */
-export async function sendTeamCommand(
-    serverId: string,
-    command: TeamCommandRequest
-): Promise<TeamCommandResult> {
-    let response: Response
-    try {
-        response = await fetch(teamsEndpoint(serverId), {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(command),
-        })
-    } catch {
-        return { ok: false, code: "unavailable", existingId: null }
-    }
-    const body: unknown = await response.json().catch(() => null)
-    if (!response.ok)
-        return {
-            ok: false,
-            code: teamErrorCode(body),
-            existingId: readString(body, "existingId"),
-        }
-    return { ok: true, teamId: readString(body, "teamId") }
-}
-
-export type TeamRestoreResult =
-    { ok: true; team: TeamRecord } | { ok: false; code: TeamErrorCode }
-
 /**
- * Restores an archived team at the revision the caller has seen and returns
- * the re-read record, so a duplicate-name conflict can reuse the existing team.
- */
-export async function restoreTeam(
-    serverId: string,
-    team: Pick<TeamRecord, "id" | "revision">
-): Promise<TeamRestoreResult> {
-    const result = await sendTeamCommand(serverId, {
-        action: "restore",
-        teamId: team.id,
-        input: { expectedRevision: team.revision },
-    })
-    if (!result.ok) return { ok: false, code: result.code }
-    const restored = await fetchTeamRecord(serverId, team.id).catch(() => null)
-    return restored && !restored.archivedAt
-        ? { ok: true, team: restored }
-        : { ok: false, code: "unavailable" }
-}
-
-/**
- * Uploads a team logo through the shared image-asset client, so local checks,
- * error codes and the rate-limit retry hint match every other upload; an
- * asset of any other kind is refused.
+ * Uploads a request logo in the workspace's scope through the shared
+ * image-asset client, so local checks, error codes and the rate-limit retry
+ * hint match every other upload; an asset of any other kind is refused.
  */
 export async function uploadTeamLogo(
     serverId: string,
@@ -244,7 +177,7 @@ export type MatchTeamRefreshResult =
     | { ok: true; matchTeams: MatchTeamAssignment[] }
     | { ok: false; code: MatchTeamErrorCode }
 
-/** Explicitly re-captures one saved assignment's snapshot from its active directory entry. */
+/** Explicitly re-captures one saved assignment's snapshot from its catalogue entry. */
 export async function requestMatchTeamRefresh(
     serverId: string,
     eventId: string,

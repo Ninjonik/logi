@@ -3,8 +3,8 @@ import { NextIntlClientProvider } from "next-intl"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
+import { RootDocument } from "@/components/providers/root-document"
 import { isLocale, type Locale } from "@/i18n/config"
-import { getDictionary } from "@/i18n/dictionaries"
 
 export async function generateMetadata({
     params,
@@ -30,9 +30,11 @@ export default async function LocaleLayout({
     const messages = await getMessages()
 
     return (
-        <NextIntlClientProvider messages={messages}>
-            {children}
-        </NextIntlClientProvider>
+        <RootDocument lang={locale}>
+            <NextIntlClientProvider messages={messages}>
+                {children}
+            </NextIntlClientProvider>
+        </RootDocument>
     )
 }
 

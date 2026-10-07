@@ -16,18 +16,25 @@ import { cn } from "@/lib/utils"
 
 const localeOptions: Record<Locale, { flag: string; label: string }> = {
     en: { flag: "🇬🇧", label: "English" },
-    cs: { flag: "🇨🇿", label: "Česky" },
+    cs: { flag: "🇨🇿", label: "Čeština" },
     de: { flag: "🇩🇪", label: "Deutsch" },
 }
 
 export function LocaleSwitcher({
     locale,
-    dictionary: _dictionary,
+    dictionary,
     compact = false,
+    hideFlag = false,
+    id,
+    className,
 }: {
     locale: Locale
     dictionary: Dictionary
     compact?: boolean
+    /** Shows only the language name, as in a settings row. */
+    hideFlag?: boolean
+    id?: string
+    className?: string
 }) {
     const router = useRouter(),
         pathname = usePathname(),
@@ -49,19 +56,25 @@ export function LocaleSwitcher({
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <button
+                    id={id}
                     type="button"
                     disabled={isPending}
                     className={cn(
                         "bg-background hover:bg-muted inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm font-medium transition-colors",
-                        compact && "h-8 px-2 text-xs"
+                        compact && "h-8 px-2 text-xs",
+                        className
                     )}
-                    aria-label="Change language"
+                    aria-label={dictionary.languageSwitcher.changeLanguage}
                 >
-                    <span className="text-base leading-none">
-                        {active.flag}
+                    {hideFlag ? null : (
+                        <span className="text-base leading-none">
+                            {active.flag}
+                        </span>
+                    )}
+                    <span className={cn(compact && "hidden sm:inline")}>
+                        {active.label}
                     </span>
-                    <span>{active.label}</span>
-                    <ChevronDown className="text-muted-foreground size-3.5" />
+                    <ChevronDown className="text-muted-foreground ml-auto size-3.5" />
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-36 p-1.5">

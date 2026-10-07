@@ -1,4 +1,11 @@
-import { parseSources, projectSnapshot, acceptsRun, retryDelay } from "./policy"
+import {
+    projectSnapshot,
+    projectLastState,
+    acceptsRun,
+    retryDelay,
+    LAST_STATE_MAX_AGE_MS,
+} from "./policy"
+import { parseSources } from "./policy.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -111,6 +118,38 @@ test("an incomplete directory observation stays stale even when its timestamp is
     assert.equal(result.freshness, "stale")
     assert.equal(result.state, "unknown")
     assert.equal(result.players, 0)
+})
+
+test("the last observed state outlives freshness for a day, without changing the snapshot (M3-23)", () => {
+    // 25 minutes old: the snapshot says unavailable and unknown, the last
+    // state is still known.
+    const later = now + 25 * 60_000
+    assert.equal(projectSnapshot(stored, later).state, "unknown")
+    assert.equal(projectSnapshot(stored, later).freshness, "unavailable")
+    assert.equal(projectLastState(stored, later), "online")
+    assert.equal(
+        projectLastState(
+            { ...stored, observation: { ...observation, state: "offline" } },
+            later
+        ),
+        "offline"
+    )
+    assert.equal(
+        projectLastState(stored, now + LAST_STATE_MAX_AGE_MS - 1),
+        "online"
+    )
+    assert.equal(projectLastState(stored, now + LAST_STATE_MAX_AGE_MS), null)
+    assert.equal(projectLastState({ ...stored, enabled: false }, now), null)
+    assert.equal(projectLastState({ ...stored, observation: null }, now), null)
+    assert.equal(
+        projectLastState(
+            { ...stored, observation: { ...observation, state: "unknown" } },
+            now
+        ),
+        null
+    )
+    // An observation from the future is not trusted.
+    assert.equal(projectLastState(stored, now - 1), null)
 })
 
 test("disabled generation and expired or superseded lease reject late commits", () => {

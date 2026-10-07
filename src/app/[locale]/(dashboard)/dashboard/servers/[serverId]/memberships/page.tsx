@@ -1,40 +1,23 @@
-import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 
-import { MembershipSettingsForm } from "@/components/app/membership-settings-form"
-import { PageHeader } from "@/components/app/page-header"
-import { getGuildMetadata } from "@/lib/server-metadata"
-import { getServerContext } from "@/lib/server-context"
-import { getDictionary } from "@/i18n/dictionaries"
+import { isGameId } from "@/domain/games/game"
 import { isLocale } from "@/i18n/config"
 
-export const metadata: Metadata = {
-    title: "Membership settings | Logi",
-    description: "Manage server membership settings.",
-}
-
+/** Membership settings moved to clan settings. */
 export default async function ServerMembershipsPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
+    searchParams: Promise<{ game?: string | string[] }>
 }) {
     const { locale, serverId } = await params
-    const dictionary = getDictionary(isLocale(locale) ? locale : "en")
-    const context = await getServerContext(serverId, "all")
-    if (!context?.canAdmin) return null
-
-    return (
-        <>
-            <PageHeader
-                title={dictionary.membershipSettings.title}
-                description={dictionary.membershipSettings.pageDescription}
-            />
-            <div className="space-y-6 px-4 lg:px-6">
-                <MembershipSettingsForm
-                    serverId={serverId}
-                    config={context.discordConfig}
-                    dictionary={dictionary}
-                />
-            </div>
-        </>
+    const { game } = await searchParams
+    const requestedGame = Array.isArray(game) ? game[0] : game
+    const safeLocale = isLocale(locale) ? locale : "en"
+    // Only a known game is carried over; anything else opens the clan-wide view.
+    const search = isGameId(requestedGame) ? `?game=${requestedGame}` : ""
+    redirect(
+        `/${safeLocale}/dashboard/servers/${encodeURIComponent(serverId)}/settings/membership${search}`
     )
 }

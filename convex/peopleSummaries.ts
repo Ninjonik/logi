@@ -22,7 +22,36 @@ import { query, internalMutation, type QueryCtx } from "./_generated/server"
 import { isGameId, resolveGameScope } from "../src/domain/games/game"
 import { nextRevision } from "../src/domain/integrations/change"
 import { makeFunctionReference } from "convex/server"
+import type { Doc } from "./_generated/dataModel"
 import { v } from "convex/values"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const RECONCILIATION_PAGE_SIZE = 25
+const RECONCILIATION_LEASE_MS = 300000
+
+/**
+ * What a reconciliation run walks: `null` for every event, otherwise the
+ * `updatedAt` watermark the incremental walk starts from. A resumed run (a
+ * scheduled continuation, or the cron after a lease expired mid-run) keeps
+ * its mode so that its cursor stays valid; a legacy run without the flag
+ * was a full walk. A fresh run walks everything until a complete run has
+ * set the watermark and once a day after the last complete full walk.
+ */
+function reconciliationWindow(
+    state: Doc<"peopleIntegrationState">,
+    resumed: boolean,
+    now: number
+): string | null {
+    if (resumed)
+        return state.reconciliationFull === false
+            ? (state.reconciliationSince ?? null)
+            : null
+    const since = state.reconciliationSince
+    const lastFullWalk = state.reconciliationFullWalkAt
+    if (!since || !lastFullWalk || !(now - Date.parse(lastFullWalk) < DAY_MS))
+        return null
+    return since
+}
 
 async function authorize(
     ctx: QueryCtx,
@@ -141,7 +170,17 @@ export const list = query({
     },
 })
 
-/** Rolling bounded reconciliation also backfills pre-feature reviewed result relationships. */
+/**
+ * Rolling bounded reconciliation: the safety net for
+ * `rebuildPeopleResultLinks`, which `withPeopleChanges` already runs inline
+ * whenever an event's reviewed result changes. A run walks the events whose
+ * `updatedAt` is at or after the start of the previous complete run
+ * (`reconciliationSince`, through the `updatedAt` index); once a day it walks
+ * every event instead, which also backfills pre-feature rows and legacy rows
+ * without `updatedAt`. A run pages 25 events a second under a lease and
+ * resumes from its cursor in the same mode after an interruption; the cron
+ * (every 15 minutes) starts a run only when no lease is held.
+ */
 export const reconcileResultLinks = internalMutation({
     args: { run: v.optional(v.string()) },
     handler: async (ctx, args) => {
@@ -157,17 +196,31 @@ export const reconcileResultLinks = internalMutation({
             state = await ctx.db.get(id)
         }
         if (!state) throw new Error("People reconciliation state unavailable.")
+        const now = Date.now()
         if (
             args.run
                 ? args.run !== state.reconciliationRun ||
                   (state.reconciliationLeaseUntil ?? 0) === 0
-                : (state.reconciliationLeaseUntil ?? 0) > Date.now()
+                : (state.reconciliationLeaseUntil ?? 0) > now
         )
             return { processed: 0, complete: false }
         const run = args.run ?? nextRevision(state.reconciliationRun ?? "0")
-        const page = await ctx.db.query("events").paginate({
+        const resumed =
+            args.run !== undefined || state.reconciliationCursor != null
+        const startedAt =
+            (resumed && state.reconciliationStartedAt) ||
+            new Date(now).toISOString()
+        const since = reconciliationWindow(state, resumed, now)
+        const events = ctx.db.query("events")
+        const page = await (
+            since === null
+                ? events
+                : events.withIndex("updatedAt", (q) =>
+                      q.gte("updatedAt", since)
+                  )
+        ).paginate({
             cursor: state.reconciliationCursor ?? null,
-            numItems: 25,
+            numItems: RECONCILIATION_PAGE_SIZE,
         })
         let changed = false
         for (const event of page.page)
@@ -177,7 +230,18 @@ export const reconcileResultLinks = internalMutation({
         await ctx.db.patch(state._id, {
             reconciliationRun: run,
             reconciliationCursor: page.isDone ? null : page.continueCursor,
-            reconciliationLeaseUntil: page.isDone ? 0 : Date.now() + 300000,
+            reconciliationLeaseUntil: page.isDone
+                ? 0
+                : now + RECONCILIATION_LEASE_MS,
+            reconciliationStartedAt: startedAt,
+            reconciliationFull: since === null,
+            // The next incremental run covers everything updated during
+            // this one: a row updated after the cursor passed it moves ahead
+            // of the cursor, and `since` starts at this run's start.
+            ...(page.isDone ? { reconciliationSince: startedAt } : {}),
+            ...(page.isDone && since === null
+                ? { reconciliationFullWalkAt: startedAt }
+                : {}),
         })
         if (!page.isDone)
             await ctx.scheduler.runAfter(

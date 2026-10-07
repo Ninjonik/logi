@@ -1,8 +1,10 @@
 import {
     getAttendanceReminderDueAt,
     getSignupReminderDueAt,
+    resolveAttendanceReminderHours,
     resolveSignupReminderStatuses,
 } from "@/domain/events/scheduled-job-policy"
+import { announcementRefreshTimes } from "@/domain/events/announcement-state"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 
@@ -27,6 +29,8 @@ export async function refreshEventSchedule(
         .withIndex("eventId", (q) => q.eq("eventId", event._id))
         .collect()
     await Promise.all(existingJobs.map((job) => ctx.db.delete(job._id)))
+    // A draft is never announced, so it has no deadlines until it is published.
+    if (event.isDraft === true) return
     const startAtMs = Math.max(
         new Date(event.registrationEnd).getTime(),
         new Date(event.meetingStart).getTime() - 24 * 60 * 60 * 1000
@@ -46,7 +50,14 @@ export async function refreshEventSchedule(
                 new Date(event.gameEnd).getTime() + EVENT_CONCLUSION_RESERVE_MS
             ).toISOString(),
         ],
-        ...[24, 18, 12, 6].flatMap((hours) => {
+        // The announcement card changes at the meeting and at the start
+        // without any stored change; redraw it then (board L1-B03).
+        ...announcementRefreshTimes(event, nowDate).map(
+            (dueAt) => ["refresh-announcement", dueAt] as const
+        ),
+        ...resolveAttendanceReminderHours(
+            event.attendanceReminderHours
+        ).flatMap((hours) => {
             const dueAt = getAttendanceReminderDueAt(
                 event.meetingStart,
                 hours,
@@ -58,7 +69,9 @@ export async function refreshEventSchedule(
             const dueAt = getSignupReminderDueAt(
                 event.createdAt,
                 event.registrationEnd,
-                nowDate
+                nowDate,
+                false,
+                event.registrationStart
             )
             return event.kind === "match" &&
                 resolveSignupReminderStatuses(event.signupReminderStatuses)

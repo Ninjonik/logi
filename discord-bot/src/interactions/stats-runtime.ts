@@ -28,7 +28,6 @@ export type StatsRuntimeDependencies = {
         expected: string[]
     ) => Promise<unknown>
     hll: StatsPorts["hll"]
-    artwork: StatsPorts["artwork"]
     send: StatsPorts["share"]
     settings: StatsPorts["settings"]
 }
@@ -48,7 +47,7 @@ async function bounded<T>(operation: Promise<T>, ms: number): Promise<T> {
 /** Runtime cache never substitutes for a current Discord membership check. */
 export function createStatsRuntimePorts(
     d: StatsRuntimeDependencies
-): StatsPorts {
+): Omit<StatsPorts, "access" | "factionEmoji"> {
     const now = d.now ?? Date.now,
         proofs = new Map<string, number>()
     type Snapshot = Awaited<ReturnType<StatsPorts["history"]>>
@@ -92,7 +91,6 @@ export function createStatsRuntimePorts(
         now,
         authorize,
         hll: d.hll,
-        artwork: d.artwork,
         settings: d.settings,
         async account(r) {
             return z
@@ -131,7 +129,7 @@ export function createStatsRuntimePorts(
         },
         async share(r, channel, payload) {
             if (!(await authorize(r))) throw new Error("forbidden")
-            await d.send(r, channel, payload)
+            return await d.send(r, channel, payload)
         },
         async history(r, steamId) {
             await scope(r)

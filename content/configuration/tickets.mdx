@@ -10,7 +10,18 @@ import { Callout, Steps } from "nextra/components"
 This page configures two Discord workflows for the selected workspace: support
 tickets and membership applications. It is not a public help desk by itself.
 The bot creates and maintains the Discord panels after the configuration is
-complete.
+complete. Configure them in **Settings → Tickets** and **Settings → Membership**.
+
+**Settings → Tickets** shows the on switch, the four steps of a ticket, the
+panel (channel, thread channel, heading, text, optional image and the panel's
+own colour) beside a preview of the exact Discord card the bot posts, and the
+categories as a table: who answers and how many questions each has. **Edit**
+opens a category's button text, emoji, description, the title of its thread
+card, support roles and form questions. **Settings → Membership** is the
+[clan application](/wiki/configuration/membership-applications): one form in
+several Discord windows, the decision buttons and the optional web form.
+Both pages save with the bar at the bottom, which only saves that page;
+**Discard** drops unsaved changes.
 
 ## Required configuration
 
@@ -18,10 +29,10 @@ Both workflows require the bot to be running and the selected submit channel to
 be a normal Discord text channel. An incomplete configuration is simply
 skipped: no panel is posted and no partial fallback panel is created.
 
-| Workflow                | Required settings                                                              | What each category adds                                                             |
-| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, support roles, and up to five modal questions    |
-| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles, and up to five modal questions |
+| Workflow                | Required settings                                                              | What each category adds                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support tickets         | Enabled, submit channel, ticket parent channel, and at least one category      | Label/emoji, optional description, thread card title, support roles, up to five questions                                                     |
+| Membership applications | Enabled, submit channel, application parent channel, and at least one category | Assignment type, support roles, recruit/final roles; the questions are in the [application form](/wiki/configuration/membership-applications) |
 
 The bot posts or updates one panel message in each configured submit channel.
 If its saved panel message is deleted, the next successful sync creates a new
@@ -39,26 +50,65 @@ one. Test after changing channels so staff do not leave an old panel in use.
 
 ### Support ticket
 
+The panel is one card in the clan colour, or in the colour set under **Panel
+colour** (leave it empty for the clan colour). It shows the heading, the text,
+one line per category ("**Report a player** · behaviour on the server") and one
+grey button per category, all equally important, with **Managed in Logi** at
+the bottom. With more than ten categories the buttons become one select. The
+card follows the clan language and has no "Automatic updates" button.
+
 1. The member chooses a category. If the category has questions, Discord shows
-   a modal; otherwise Logi creates the ticket immediately.
+   its window with the category's name, questions and placeholders; otherwise
+   Logi creates the ticket immediately.
 2. The bot creates a private thread under the configured ticket parent channel,
    assigns it a sequential workspace ticket number, and adds the requester plus
    configured category support members where Discord permissions allow.
-   Dashboard administrators are not automatically added.
-3. Logi stores the category, answers, creator, thread, and open state. Staff
-   close the tracked thread with `/close_ticket`, optionally providing a reason.
-4. Logi records who closed it and when, posts a closing record, renames the
-   Discord thread to `closed-<number>`, and attempts to DM the requester. A
-   failed DM does not stop the ticket from closing.
+   Dashboard administrators are not automatically added. The thread is named
+   after the category and number, for example **Report a player #12**.
+3. The thread opens with a card: "TICKET #12 · REPORT A PLAYER", the
+   category's **thread card title** (for example
+   `{author} is reporting a player`; empty reads "Player 17 · Report a
+   player"), the **Open** chip with "Opened …" as a small grey line under it,
+   the questions with their answers and "Support closes the ticket with
+   /close_ticket". Above the card the bot mentions only the author and
+   the category's support roles; nobody else is pinged.
+4. The member gets a private "Ticket #12 is open" with **Open thread**. When
+   tickets are switched off they read "Tickets are switched off right now".
+   If the thread cannot be created or stored, the member reads only "The
+   ticket couldn't be opened. Nothing was saved. The admins have been
+   notified" and the cause (for example a missing bot permission) goes to the
+   errors channel.
 
-Before closing, the bot reloads the current server owner, role permissions and
-staff membership. If Discord cannot confirm them, it leaves the ticket open;
-previously cached administrator access does not authorize closure.
+Staff close the tracked thread with `/close_ticket`, optionally with a reason.
+Logi records who closed it and when, posts the close card in the thread
+("Resolved", the **Closed** chip, "Closed by … · …" as a small grey line,
+the reason as a quote), DMs the author a card with the category, who closed it, the quoted
+reason and **Open thread**, renames the thread to **closed · Report a player
+#12**, then locks and archives it. Without a reason the quote is left out.
+The private reply says whether the author got the DM ("The author can't
+receive DMs; they'll find the summary in the thread"); a failed DM never
+stops the ticket from closing and is not posted to the errors channel.
+
+If Discord refuses the close card, the rename, the lock or the archive, the
+ticket is still closed in Logi. The reply then says what did not happen, for
+example "The thread couldn't be locked or archived. The admins have been
+notified.", and the cause goes to the errors channel (usually a missing
+**Manage Threads** or **Send Messages in Threads** permission for the bot).
+Finish the thread by hand once it is fixed.
+
+Before closing, the bot reloads the server, its role definitions and the
+member, the same check as `/close_application`. If Discord cannot confirm
+them, it leaves the ticket open ("Your roles can't be checked right now");
+previously cached administrator access does not authorize closure. Someone
+outside the category's support roles reads who closes that category's
+tickets. Used outside a ticket thread, in a thread that is not a ticket or on
+a closed ticket, the command says so in the clan language.
 
 ### Player reports
 
 Support categories can also receive **Report Player** tickets from a configured
-CRCON or Warcon public panel. Select the category in **Discord → Public panels**;
+CRCON or Warcon public panel. Select the category with **Report player** in the
+live server panel's editor (**Discord → Discord panels**);
 the selector shows the private-thread parent configured here. The player chooses
 an observed player or enters a name, then supplies a reason and optional evidence.
 The interaction and resulting thread are private to the reporter and designated
@@ -75,29 +125,20 @@ private reports. See the [implementation and operational limits](https://github.
 
 ### Membership application flow
 
-1. The person completes a private, ephemeral Discord wizard in one updating
-   message: game, category, platform account, category questions, and a final
-   review. The wizard keeps a
-   short-lived draft, so cancelling it creates neither an assignment nor an
-   application thread.
-2. The person must not already have a workspace assignment or another open
-   application, and must have at least one linked platform ID. If no platform
-   ID exists, platform selection and ID entry remain inside that wizard.
-3. After **Agree and submit**, the bot creates a private application thread and an assignment. It starts as
-   pending unless **auto-assign recruit on apply** is enabled for a member
-   category, in which case it starts as recruit and the configured recruit roles
-   are queued for the bot. The category decides whether its assignment is member, reserve
-   member, or mercenary.
-4. Eligible staff close it with `/close_application` and choose **denied**,
-   **pending**, **recruit**, **member**, or **mercenary**. The selected outcome
-   updates the assignment, except denied, which removes the assignment created
-   for the application.
-5. The bot records the closing outcome, posts the result in the thread, renames
-   it and attempts to DM the applicant. The assignment transaction separately
-   queues the configured membership roles for the status transition; inspect
-   the operation status before assuming that Discord has applied them.
+The application is one form in several Discord windows, sent once after a
+review; the private thread is created only then, and recruiters decide with
+buttons on the card or with `/close_application`. See
+[Clan applications](/wiki/configuration/membership-applications) for the form
+builder, the decision buttons, the DMs and the web form.
 
 ### Membership role and score settings
+
+**Membership** has two switches at the top: **Applications** publishes the
+panel and opens application threads, **Role sync** lets Logi add and remove
+membership roles by member status. Role sync follows applications until you
+change it, and it also works with applications switched off, for example when
+staff assign members on the dashboard only. The Discord panel lists every
+category with the description written under it.
 
 The workspace clan role is added for recruit or active membership outcomes.
 The category's **recruit roles** apply only to recruit, and its **final roles**
@@ -136,14 +177,10 @@ An application, an open application thread, and an existing membership block
 only the matching game. For example, an existing Hell Let Loose membership
 does not prevent a Wardogs application in the same workspace.
 
-The Discord panel has one application button. It opens a single updating
-membership wizard that first asks the player to choose a game, then shows only
-the membership categories configured for that game, and only then asks them to
-link a platform account if needed.
-If the Discord-linked Logi profile already has platform IDs, the player can
-reuse one for the application or choose to link another ID instead.
-This lookup is player-wide rather than game-specific: a platform ID linked
-through a different game is detected and offered for reuse as well.
+The Discord panel's **Apply** button opens the application windows described
+on [Clan applications](/wiki/configuration/membership-applications). Accounts
+already linked to the player's Logi profile are prefilled in the window for
+game accounts, whichever game they were linked through.
 
 In the dashboard, each category groups its display label, emoji, target game,
 and application result before the category description.
@@ -155,7 +192,7 @@ Discord add eligible small roles, but Discord limits this to roles with fewer
 than 100 members and up to 10 mentioned roles. Dashboard administrators can
 manage applications without being automatically added to their threads.
 
-Membership settings also contain the roster-score values used when a concluded
+**Settings → Membership** also contains the roster-score values used when a concluded
 event resolves player scores. They are per-workspace and determine the numeric
 result for declined, confirmed/absent roster or reserve, excused absence, and
 people with no score category. Change them before the relevant event concludes;
@@ -174,8 +211,9 @@ can see it.
 ### Test staff closure
 
 Use a configured support role to close the test thread. Then test that an
-unrelated member cannot close it. Confirm the close record, renamed thread, and
-optional DM behavior.
+unrelated member cannot close it. Confirm the close card, the renamed thread
+(**closed · …**), the DM card and, with DMs closed on the test account, the
+reply that the DM could not be delivered.
 
 ### Test a disposable membership role
 

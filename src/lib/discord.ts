@@ -247,7 +247,14 @@ async function fetchDiscordBot(path: string, init?: RequestInit) {
     return response
 }
 
-export async function sendDiscordBotDm(userId: string, content: string) {
+/**
+ * Sends a DM from the bot: plain text, or a whole message body such as a
+ * Components V2 card from `messageApiBody`.
+ */
+export async function sendDiscordBotDm(
+    userId: string,
+    message: string | Record<string, unknown>
+) {
     const dmChannelResponse = await fetchDiscordBot("/users/@me/channels", {
         method: "POST",
         headers: {
@@ -266,46 +273,17 @@ export async function sendDiscordBotDm(userId: string, content: string) {
             headers: {
                 "content-type": "application/json",
             },
-            body: JSON.stringify({
-                content,
-            }),
+            body: JSON.stringify(
+                typeof message === "string" ? { content: message } : message
+            ),
         }
     )
-    const message = (await messageResponse.json()) as DiscordApiMessage
+    const sent = (await messageResponse.json()) as DiscordApiMessage
 
     return {
-        channelId: message.channel_id,
-        messageId: message.id,
-        messageUrl: buildDiscordMessageUrl(
-            "@me",
-            message.channel_id,
-            message.id
-        ),
-    }
-}
-
-export async function editDiscordInteractionOriginalResponse(input: {
-    applicationId: string
-    interactionToken: string
-    content: string
-}) {
-    const response = await fetch(
-        `https://discord.com/api/v10/webhooks/${input.applicationId}/${input.interactionToken}/messages/@original`,
-        {
-            method: "PATCH",
-            headers: {
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({
-                content: input.content,
-                components: [],
-            }),
-            cache: "no-store",
-        }
-    )
-
-    if (!response.ok) {
-        throw new Error("Failed to edit original Discord interaction response.")
+        channelId: sent.channel_id,
+        messageId: sent.id,
+        messageUrl: buildDiscordMessageUrl("@me", sent.channel_id, sent.id),
     }
 }
 

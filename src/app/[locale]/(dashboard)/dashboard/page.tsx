@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
-import { Bot } from "lucide-react"
 
 import {
     getCurrentPlayer,
@@ -8,12 +7,12 @@ import {
     isCurrentUserSuperadmin,
     resolveDefaultWorkspaceForCurrentPlayer,
 } from "@/lib/auth"
-import { RefreshBotStatusButton } from "@/components/app/refresh-bot-status-button"
-import { BotInviteButton } from "@/components/app/bot-invite-button"
-import { ServerCard } from "@/components/app/server-card"
-import { PageHeader } from "@/components/app/page-header"
-import { buildDiscordBotInviteUrl } from "@/lib/discord"
+import {
+    CLAN_LIST_QUERY,
+    chooseDashboardLanding,
+} from "@/domain/workspaces/dashboard-landing"
 import { getServerContext } from "@/lib/server-context"
+import { ClanList } from "@/components/app/clan-list"
 import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
@@ -40,15 +39,24 @@ function requiresBotRoleHierarchySetup(
     return hasGroupRoleSync || hasMembershipRoleSync
 }
 
-export const metadata: Metadata = {
-    title: "Dashboard | Logi",
-    description: "Manage your Discord communities.",
+export async function generateMetadata(props: {
+    params?: Promise<{ locale: string }>
+}): Promise<Metadata> {
+    // The build also evaluates this while collecting page data, without params.
+    const locale = (await props?.params)?.locale
+    const dictionary = getDictionary(locale && isLocale(locale) ? locale : "en")
+    return {
+        title: dictionary.dashboard.title,
+        description: dictionary.dashboard.description,
+    }
 }
 
 export default async function DashboardHomePage({
     params,
+    searchParams,
 }: {
     params: Promise<{ locale: string }>
+    searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
     const { locale } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
@@ -59,29 +67,55 @@ export default async function DashboardHomePage({
         return null
     }
 
-    const defaultWorkspaceId =
-        user.defaultWorkspaceRecordId ??
-        (await resolveDefaultWorkspaceForCurrentPlayer(user.id))
-    if (defaultWorkspaceId) {
-        redirect(`/${safeLocale}/dashboard/servers/${defaultWorkspaceId}`)
-    }
+    const showClanList =
+        (await searchParams)[CLAN_LIST_QUERY.key] === CLAN_LIST_QUERY.value
     const [superadmin, visibleGuilds] = await Promise.all([
         isCurrentUserSuperadmin(),
         getVisibleGuildsForLoggedInUser(),
     ])
+    // Redirect only into a clan the person can still see; a stale stored
+    // default falls back to the resolved one, then to this clan list.
+    const visibleWorkspaceIds = new Set(visibleGuilds.map((guild) => guild.id))
+    let landing = chooseDashboardLanding({
+        showClanList,
+        visibleWorkspaceIds,
+        candidates: [user.defaultWorkspaceRecordId],
+    })
+    if (landing.kind === "clanList" && !showClanList) {
+        landing = chooseDashboardLanding({
+            showClanList,
+            visibleWorkspaceIds,
+            candidates: [
+                await resolveDefaultWorkspaceForCurrentPlayer(user.id),
+            ],
+        })
+    }
+    if (landing.kind === "workspace") {
+        redirect(`/${safeLocale}/dashboard/servers/${landing.workspaceId}`)
+    }
     const managedServers = superadmin
         ? visibleGuilds
         : visibleGuilds.filter((guild) =>
               user.managedGuildIds.includes(guild.discordId)
           )
-    const readyManagedServers = managedServers.filter(
-        (guild) => guild.botInside
-    )
     const managedServersMissingBot = managedServers.filter(
         (guild) => !guild.botInside
     )
-    const mercenaryServers = visibleGuilds.filter((guild) =>
-        user.mercenaryGuildIds.includes(guild.discordId)
+    const managedIds = new Set(managedServers.map((guild) => guild.id))
+    const mercenaryServers = visibleGuilds.filter(
+        (guild) =>
+            !managedIds.has(guild.id) &&
+            user.mercenaryGuildIds.includes(guild.discordId)
+    )
+    const mercenaryIds = new Set(mercenaryServers.map((guild) => guild.id))
+    // Clans the person belongs to without managing them (primary clan, bot-
+    // granted dashboard access); only clans the bot is in can be opened.
+    const memberServers = visibleGuilds.filter(
+        (guild) =>
+            guild.botInside &&
+            guild.name &&
+            !managedIds.has(guild.id) &&
+            !mercenaryIds.has(guild.id)
     )
     const inviteRoleHierarchyByGuildId = new Map<string, boolean>(
         await Promise.all(
@@ -98,97 +132,21 @@ export default async function DashboardHomePage({
     )
 
     return (
-        <>
-            <PageHeader
-                title={dictionary.dashboard.title}
-                description={dictionary.dashboard.description}
-            />
-            <div className="space-y-8 px-4 lg:px-6">
-                {managedServers.length ? (
-                    <section className="space-y-4">
-                        <div className="border-border/60 bg-card/50 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 className="text-muted-foreground text-sm font-semibold tracking-[0.24em] uppercase">
-                                    {dictionary.dashboard.managedServers}
-                                </h2>
-                                {managedServersMissingBot.length ? (
-                                    <p className="text-muted-foreground mt-2 text-sm">
-                                        {dictionary.dashboard.inviteBotHint}
-                                    </p>
-                                ) : null}
-                            </div>
-                            {managedServersMissingBot.length ? (
-                                <div className="flex flex-wrap gap-2">
-                                    <RefreshBotStatusButton
-                                        dictionary={dictionary}
-                                    />
-                                    {managedServersMissingBot.map((guild) => (
-                                        <BotInviteButton
-                                            key={guild.id}
-                                            dictionary={dictionary}
-                                            inviteUrl={buildDiscordBotInviteUrl(
-                                                guild.discordId
-                                            )}
-                                            roleHierarchyRelevant={
-                                                inviteRoleHierarchyByGuildId.get(
-                                                    guild.id
-                                                ) ?? false
-                                            }
-                                            variant="outline"
-                                            className="rounded-full"
-                                        >
-                                            <>
-                                                <Bot className="size-4" />
-                                                {guild.name}
-                                            </>
-                                        </BotInviteButton>
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-                        {readyManagedServers.length ? (
-                            <div className="grid gap-4 xl:grid-cols-2">
-                                {readyManagedServers.map((guild) => (
-                                    <ServerCard
-                                        key={guild.id}
-                                        locale={safeLocale}
-                                        guild={guild}
-                                        label={
-                                            dictionary.dashboard.managedServers
-                                        }
-                                        dictionary={dictionary}
-                                        inviteRoleHierarchyRelevant={
-                                            inviteRoleHierarchyByGuildId.get(
-                                                guild.id
-                                            ) ?? false
-                                        }
-                                    />
-                                ))}
-                            </div>
-                        ) : null}
-                    </section>
-                ) : null}
-                {mercenaryServers.length ? (
-                    <section className="space-y-4">
-                        <h2 className="text-muted-foreground text-sm font-semibold tracking-[0.24em] uppercase">
-                            {dictionary.dashboard.mercenaryServers}
-                        </h2>
-                        <div className="grid gap-4 xl:grid-cols-2">
-                            {mercenaryServers.map((guild) => (
-                                <ServerCard
-                                    key={guild.id}
-                                    locale={safeLocale}
-                                    guild={guild}
-                                    label={
-                                        dictionary.dashboard.mercenaryServers
-                                    }
-                                    dictionary={dictionary}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                ) : null}
-            </div>
-        </>
+        <ClanList
+            locale={safeLocale}
+            dictionary={dictionary}
+            inviteRoleHierarchyByGuildId={inviteRoleHierarchyByGuildId}
+            sections={[
+                {
+                    id: "managed",
+                    guilds: [
+                        ...managedServers.filter((guild) => guild.botInside),
+                        ...managedServersMissingBot,
+                    ],
+                },
+                { id: "member", guilds: memberServers },
+                { id: "mercenary", guilds: mercenaryServers },
+            ]}
+        />
     )
 }

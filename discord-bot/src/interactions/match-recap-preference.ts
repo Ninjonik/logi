@@ -1,59 +1,117 @@
+/**
+ * "Vypnout shrnutí" / "Zapnout shrnutí" on a match recap DM (board L2-50,
+ * L2-51): the choice applies to all of the player's clans and the same DM
+ * is redrawn with the "Shrnutí vypnutá" chip, in the clan's language, not
+ * the Discord client's. Older recap DMs carry no match; they still toggle
+ * and are answered with a short card.
+ */
+
+import type { ButtonInteraction } from "discord.js"
+
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    MessageFlags,
-    type ButtonInteraction,
-} from "discord.js"
-import { getClanDiscordMessages } from "../../../src/lib/clan-language"
+    buildMatchRecapView,
+    loadRecapInputs,
+    type MatchRecapData,
+} from "../sync/match-recaps"
+import { simpleReply } from "../../../src/domain/discord-messages/direct-message-views"
+import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { clanLanguageForGuild } from "../runtime/clan-language"
+import type { InteractionFeature } from "./registry"
+import { replyCard } from "./roster-assignment"
+import { editPayload } from "../ui/message-kit"
 import { convex, references } from "../convex"
 import { env } from "../environment"
 
-export function buildMatchRecapPreferenceUpdate(
-    enabled: boolean,
-    language: string
-) {
-    const messages = getClanDiscordMessages(language).matchRecap
-    return {
-        content: enabled ? messages.subscribed : messages.unsubscribed,
-        components: [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setStyle(ButtonStyle.Secondary)
-                    .setLabel(
-                        enabled ? messages.unsubscribe : messages.subscribe
-                    )
-                    .setCustomId(
-                        `match-recap:${enabled ? "unsubscribe" : "subscribe"}`
-                    )
-            ),
-        ],
+const PREFIX = "match-recap:"
+
+/** `match-recap:<unsubscribe|subscribe>[:<eventId>]` → the wanted state. */
+export function parseRecapAction(customId: string) {
+    const [, action, eventId] = customId.split(":")
+    const enabled =
+        action === "subscribe" ? true : action === "unsubscribe" ? false : null
+    return enabled === null ? null : { enabled, eventId: eventId || undefined }
+}
+
+/** A clan the player shares with the bot, for older recap DMs without a match. */
+async function sharedClanLanguage(interaction: ButtonInteraction) {
+    for (const guild of interaction.client.guilds.cache.values()) {
+        const member = await guild.members
+            .fetch(interaction.user.id)
+            .catch(() => null)
+        if (member) return await clanLanguageForGuild(guild.id)
     }
+    return undefined
 }
 
 export async function handleMatchRecapPreference(
     interaction: ButtonInteraction
 ) {
-    const enabled =
-        interaction.customId === "match-recap:subscribe"
-            ? true
-            : interaction.customId === "match-recap:unsubscribe"
-              ? false
-              : null
-    if (enabled === null) {
-        await interaction.reply({
-            content: getClanDiscordMessages(interaction.locale).matchRecap
-                .invalidAction,
-            flags: MessageFlags.Ephemeral,
-        })
+    const parsed = parseRecapAction(interaction.customId)
+    const inputs = parsed?.eventId
+        ? await loadRecapInputs(parsed.eventId)
+        : null
+    const language =
+        inputs?.context.config.defaultLanguage ??
+        (await sharedClanLanguage(interaction))
+    const copy = getDirectMessages(language)
+    if (!parsed) {
+        await replyCard(
+            interaction,
+            simpleReply({
+                title: copy.replies.unavailableTitle,
+                body: copy.replies.unavailableBody,
+                dm: !interaction.guildId,
+            }),
+            { language }
+        )
         return
     }
     await convex.mutation(references.setMatchRecapNotifications, {
         secret: env.internalSecret,
         userId: interaction.user.id,
-        enabled,
+        enabled: parsed.enabled,
     })
-    await interaction.update(
-        buildMatchRecapPreferenceUpdate(enabled, interaction.locale)
+    const recap =
+        inputs && parsed.eventId
+            ? ((await convex
+                  .query(references.getMatchRecapCard, {
+                      secret: env.internalSecret,
+                      eventId: parsed.eventId,
+                      discordUserId: interaction.user.id,
+                  })
+                  .catch(() => null)) as MatchRecapData | null)
+            : null
+    if (inputs && recap) {
+        await interaction.update(
+            editPayload(
+                buildMatchRecapView({
+                    inputs,
+                    recap,
+                    discordUserId: interaction.user.id,
+                    enabled: parsed.enabled,
+                }),
+                {
+                    language,
+                    style: inputs.context.config.messageStyle,
+                }
+            )
+        )
+        return
+    }
+    await replyCard(
+        interaction,
+        simpleReply({
+            title: parsed.enabled ? copy.recap.turnOn : copy.recap.offChip,
+            body: parsed.enabled ? undefined : copy.recap.offDetail,
+            dm: !interaction.guildId,
+        }),
+        { language }
     )
+}
+
+export const matchRecapInteractions: InteractionFeature = {
+    name: "match-recap",
+    register(registry) {
+        registry.button(PREFIX, handleMatchRecapPreference)
+    },
 }

@@ -1,4 +1,5 @@
 import { Activity, Shield, Skull, Swords, Target, Wrench } from "lucide-react"
+import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 import {
@@ -30,7 +31,7 @@ import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Edit assignment | Logi",
+    title: "Edit assignment",
     description: "Manage a member's server assignment.",
 }
 
@@ -53,17 +54,19 @@ export default async function ServerUserDetailPage({
     const safeLocale = isLocale(locale) ? locale : "en"
     const dictionary = getDictionary(safeLocale)
     const context = await getServerContext(serverId, gameScope)
-    if (!context) return null
+    if (!context) notFound()
     const { server, groups = [], assignments } = context
 
-    const assignment = await getServerUserAssignment(assignmentId)
+    const found = await getServerUserAssignment(assignmentId).catch(() => null)
+    // The ID comes from the URL: only this clan's assignments may be shown.
+    const assignment = found?.serverId === server.discordId ? found : null
     const users = assignment
         ? await getUsersByIds([assignment.userId], server.discordId)
         : []
     const user = users[0]
     const eligibleUsers = await getEligibleUsersForServer(server, assignments)
 
-    if (!assignment || !user) return null
+    if (!assignment || !user) notFound()
 
     const playerStatsDocs = await getPlayerStatsDocs(user.id)
     const sortedMatches = sortPlayerMatches(
@@ -94,9 +97,11 @@ export default async function ServerUserDetailPage({
                 .join(" ")
         },
     })
-    const matchRows = paginatedMatches.rows.map((match) => ({
+    // A player can have several stats rows for one event (one per linked
+    // platform account), so the event ID alone is not a unique row ID.
+    const matchRows = paginatedMatches.rows.map((match, index) => ({
         ...match,
-        id: match.eventId,
+        id: `${match.eventId}:${paginatedMatches.page}:${index}`,
     }))
 
     function formatAverage(value: number) {
@@ -129,6 +134,7 @@ export default async function ServerUserDetailPage({
                             <PlayerAdminAccessButton
                                 serverId={server.id}
                                 playerId={user.discordId}
+                                playerName={user.name}
                                 initialIsAdmin={
                                     server.adminAccessOverrides?.[
                                         user.discordId

@@ -121,6 +121,42 @@ export const create = mutation({
         })
     },
 })
+/** Renames an application or changes its website and return addresses; the client and secret stay. */
+export const update = mutation({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        userId: v.string(),
+        clientId: v.string(),
+        name: v.string(),
+        websiteUrl: v.string(),
+        redirectUris: v.array(v.string()),
+    },
+    handler: async (ctx, args) => {
+        assertProvider(args.secret)
+        await assertGuildAdmin(ctx, args.guildId, args.userId)
+        if (
+            !args.name.trim() ||
+            args.name.length > 100 ||
+            !validCallback(args.websiteUrl) ||
+            args.redirectUris.length < 1 ||
+            args.redirectUris.length > 10 ||
+            !args.redirectUris.every(validCallback)
+        )
+            throw new Error("Invalid application configuration.")
+        const app = await ctx.db
+            .query("ssoApplications")
+            .withIndex("clientId", (q) => q.eq("clientId", args.clientId))
+            .unique()
+        if (!app || app.guildId !== args.guildId) throw new Error("Not found.")
+        await ctx.db.patch(app._id, {
+            name: args.name.trim(),
+            websiteUrl: args.websiteUrl,
+            redirectUris: [...new Set(args.redirectUris)],
+            updatedAt: new Date().toISOString(),
+        })
+    },
+})
 export const remove = mutation({
     args: {
         secret: v.string(),

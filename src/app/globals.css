@@ -44,6 +44,18 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-status-success: var(--status-success);
+    --color-status-success-muted: var(--status-success-muted);
+    --color-status-success-border: var(--status-success-border);
+    --color-status-warning: var(--status-warning);
+    --color-status-warning-muted: var(--status-warning-muted);
+    --color-status-warning-border: var(--status-warning-border);
+    --color-status-danger: var(--status-danger);
+    --color-status-danger-muted: var(--status-danger-muted);
+    --color-status-danger-border: var(--status-danger-border);
+    --color-status-info: var(--status-info);
+    --color-status-info-muted: var(--status-info-muted);
+    --color-status-info-border: var(--status-info-border);
 }
 
 :root {
@@ -59,7 +71,8 @@
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    /* 0.52 keeps secondary text at 4.5:1 or more on muted surfaces too. */
+    --muted-foreground: oklch(0.52 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
@@ -75,12 +88,29 @@
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
+    /* #ebebeb: the current page in the sidebar (design AppSidebar). */
+    --sidebar-accent: oklch(0.94 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
     --top-loader: oklch(0.646 0.222 41.116);
     --top-loader-glow: oklch(0.646 0.222 41.116 / 45%);
+    /*
+     * Status colours (design K3): the same hue in both themes, text on a
+     * muted background of that hue, at least 4.5:1 contrast.
+     */
+    --status-success: #166534;
+    --status-success-muted: #dcfce7;
+    --status-success-border: #86efac;
+    --status-warning: #92400e;
+    --status-warning-muted: #fef3c7;
+    --status-warning-border: #fcd34d;
+    --status-danger: #b91c1c;
+    --status-danger-muted: #fef2f2;
+    --status-danger-border: #fecaca;
+    --status-info: #3730a3;
+    --status-info-muted: #e0e7ff;
+    --status-info-border: #a5b4fc;
 }
 
 .dark {
@@ -90,7 +120,8 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
+    /* Design K3: primary actions and progress are near-white (#fafafa). */
+    --primary: oklch(0.985 0 0);
     --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -99,7 +130,7 @@
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
+    --border: oklch(0.269 0 0);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
     --chart-1: oklch(0.488 0.243 264.376);
@@ -109,14 +140,26 @@
     --chart-5: oklch(0.645 0.246 16.439);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.985 0 0);
+    --sidebar-primary-foreground: oklch(0.205 0 0);
     --sidebar-accent: oklch(0.269 0 0);
     --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.556 0 0);
     --top-loader: oklch(0.769 0.188 70.08);
     --top-loader-glow: oklch(0.769 0.188 70.08 / 45%);
+    --status-success: #4ade80;
+    --status-success-muted: #052e16;
+    --status-success-border: #166534;
+    --status-warning: #fbbf24;
+    --status-warning-muted: #2a1a05;
+    --status-warning-border: #78350f;
+    --status-danger: #fca5a5;
+    --status-danger-muted: #450a0a;
+    --status-danger-border: #7f1d1d;
+    --status-info: #a5b4fc;
+    --status-info-muted: #1e1b4b;
+    --status-info-border: #3730a3;
 }
 
 @layer base {
@@ -154,6 +197,25 @@
     [data-side="right"][data-variant="inset"][data-state="collapsed"]
         ~ [data-slot="sidebar-inset"] {
         margin-right: 0.5rem !important;
+    }
+}
+
+/*
+ * Phones (design K2): below a section the title bar names the page next to
+ * its back button, so the page's own heading is left to screen readers.
+ */
+@media (width < 48rem) {
+    [data-slot="sidebar-inset"]:has(> [data-mobile-title-bar][data-back])
+        [data-page-title] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border-width: 0;
     }
 }
 

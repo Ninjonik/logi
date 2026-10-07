@@ -501,7 +501,11 @@ export const finishReconciliation = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", run.guildId))
             .paginate({ cursor: run.cursor, numItems: 100 })
         for (const row of page.page) {
+            // A member already recorded as departed stays departed: no
+            // subject lookup and no write for the thousands of former
+            // members a large server accumulates, on every run.
             if (
+                row.state === "left" ||
                 row.seenRunId === run._id ||
                 revisionOrder(row.revision) > revisionOrder(run.startedRevision)
             )

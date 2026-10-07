@@ -1,6 +1,9 @@
+import {
+    CHANGE_RETENTION_MS,
+    revisionOrder,
+} from "../../domain/integrations/change"
 import { appendIntegrationChange } from "../../../convex/integrationChangeLog"
 import { withIntegrationChanges } from "../../../convex/integrationMutation"
-import { CHANGE_RETENTION_MS } from "../../domain/integrations/change"
 import * as feed from "../../../convex/integrationChanges"
 import { invoke, testContext } from "./testing/database"
 import assert from "node:assert/strict"
@@ -151,4 +154,162 @@ test("rolled back mutation publishes neither revision nor webhook", async () => 
     assert.equal(ctx.db.tables.integrationHeads, undefined)
     assert.equal(ctx.db.tables.webhookDeliveries, undefined)
     assert.equal(ctx.scheduler.calls.length, 0)
+})
+test("collector bookkeeping times append no change; a health change does", async () => {
+    const ctx = fixture()
+    ctx.db.seed("gameDataConnections", {
+        _id: "gameDataConnections:one",
+        guildId: "guild-a",
+        gameId: "wardogs",
+        provider: "wardogs_warcon",
+        enabled: true,
+        generation: 1,
+        errorCategory: null,
+        historyCount: 1,
+        historyErrorCategory: null,
+        lastAttemptAt: "2026-10-06T10:00:00.000Z",
+        nextAttemptAt: 1,
+        historyLastSuccessAt: "2026-10-06T10:00:00.000Z",
+        updatedAt: "2026-10-06T10:00:00.000Z",
+    })
+    await withIntegrationChanges(ctx as never, async (tracked) => {
+        await tracked.db.patch("gameDataConnections:one" as never, {
+            lastAttemptAt: "2026-10-06T10:00:01.000Z",
+            nextAttemptAt: 2,
+            historyLastSuccessAt: "2026-10-06T10:00:01.000Z",
+            updatedAt: "2026-10-06T10:00:01.000Z",
+        })
+    })
+    assert.equal(
+        ctx.db.tables.integrationChanges?.length ?? 0,
+        0,
+        "a run that only advanced its times is not a change"
+    )
+    await withIntegrationChanges(ctx as never, async (tracked) => {
+        await tracked.db.patch("gameDataConnections:one" as never, {
+            errorCategory: "network",
+        })
+    })
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => row.resource).sort(),
+        ["integration-health", "server-snapshots"]
+    )
+})
+test("a session seen again appends no player change; a changed one does", async () => {
+    const ctx = fixture()
+    ctx.db.seed("gameSessions", {
+        _id: "gameSessions:one",
+        connectionId: "gameDataConnections:one",
+        guildId: "100000000000000001",
+        gameId: "wardogs",
+        externalId: "7",
+        session: { externalId: "7", complete: false, players: [] },
+        complete: false,
+        fetchedAt: 1,
+        sourceGeneration: 1,
+        updatedAt: "2026-10-06T10:00:00.000Z",
+    })
+    await withIntegrationChanges(ctx as never, async (tracked) => {
+        await tracked.db.patch("gameSessions:one" as never, {
+            fetchedAt: 2,
+            updatedAt: "2026-10-06T10:00:01.000Z",
+        })
+    })
+    assert.equal(ctx.db.tables.integrationChanges?.length ?? 0, 0)
+    await withIntegrationChanges(ctx as never, async (tracked) => {
+        await tracked.db.patch("gameSessions:one" as never, { complete: true })
+    })
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => [
+            row.resource,
+            row.id,
+            row.operation,
+        ]),
+        [["player-stat-summaries", "gameSessions:one", "upsert"]]
+    )
+})
+function seedChange(
+    ctx: ReturnType<typeof fixture>,
+    revision: string,
+    expiresAt: number
+) {
+    ctx.db.seed("integrationChanges", {
+        _id: `integrationChanges:${revision}`,
+        guildId: "guild-a",
+        gameId: "wardogs",
+        resource: "event-summaries",
+        id: "events:one",
+        revision,
+        revisionOrder: revisionOrder(revision),
+        operation: "upsert",
+        expiresAt,
+    })
+}
+test("prune raises a guild's floor once per batch, to the newest expired revision", async () => {
+    const ctx = fixture()
+    ctx.db.seed("integrationHeads", {
+        _id: "integrationHeads:a",
+        guildId: "guild-a",
+        revision: "5",
+        floor: "0",
+    })
+    for (const revision of ["1", "2", "3"])
+        seedChange(ctx, revision, Date.now() - 1)
+    seedChange(ctx, "4", Date.now() + CHANGE_RETENTION_MS)
+    let headWrites = 0
+    const patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.patch = async (id: string, value: Record<string, unknown>) => {
+        if (id.startsWith("integrationHeads:")) headWrites++
+        return patch(id, value)
+    }
+    await invoke(feed.prune, ctx)
+    assert.equal(headWrites, 1, "one head write per guild and batch")
+    assert.equal(ctx.db.tables.integrationHeads[0].floor, "3")
+    assert.deepEqual(
+        ctx.db.tables.integrationChanges.map((row) => row.revision),
+        ["4"]
+    )
+    assert.equal(ctx.scheduler.calls.length, 0)
+})
+test("resetFeed raises every floor to its head and empties the log in batches", async () => {
+    const ctx = fixture()
+    ctx.db.seed("integrationHeads", {
+        _id: "integrationHeads:a",
+        guildId: "guild-a",
+        revision: "700",
+        floor: "2",
+    })
+    for (let i = 1; i <= 501; i++)
+        seedChange(ctx, String(i), Date.now() + CHANGE_RETENTION_MS)
+    assert.deepEqual(await invoke(feed.resetFeed, ctx), {
+        removed: 500,
+        done: false,
+    })
+    assert.equal(ctx.db.tables.integrationHeads[0].floor, "700")
+    assert.deepEqual(
+        (ctx.scheduler.calls[0] as unknown[])[2],
+        { floorsRaised: true },
+        "the continuation skips the head writes"
+    )
+    assert.deepEqual(
+        await invoke(feed.resetFeed, ctx, { floorsRaised: true }),
+        { removed: 1, done: true }
+    )
+    assert.equal(ctx.db.tables.integrationChanges.length, 0)
+    assert.equal(
+        (
+            await invoke(feed.readChanges, ctx, {
+                ...args,
+                afterRevision: "3",
+                issuedAt: Date.now(),
+            })
+        ).resetRequired,
+        true,
+        "a consumer below the new floor bootstraps again"
+    )
+    assert.equal(
+        (await invoke(feed.readChanges, ctx, { ...args, startNow: true }))
+            .revision,
+        "700"
+    )
 })

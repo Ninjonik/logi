@@ -2,13 +2,11 @@ import { v } from "convex/values"
 
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { resolveGameScope } from "../src/domain/games/game"
+import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 
-const INTERNAL_AUTH_SECRET =
-    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
-
 function assertInternalSecret(secret: string) {
-    if (secret !== INTERNAL_AUTH_SECRET) {
+    if (secret !== internalAuthSecret()) {
         throw new Error("Unauthorized.")
     }
 }
@@ -123,5 +121,32 @@ export const upsert = mutation({
         })
 
         return String(presetId)
+    },
+})
+
+/**
+ * Deletes a squad preset of this clan. Rosters copied their squads when they
+ * were created, so existing rosters keep their structure.
+ */
+export const remove = mutation({
+    args: {
+        secret: v.string(),
+        serverId: v.id("guilds"),
+        presetId: v.id("squadPresets"),
+    },
+    handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+
+        const guild = await getGuildById(ctx, args.serverId)
+        if (!guild) {
+            throw new Error("Server not found.")
+        }
+        const existing = await ctx.db.get(args.presetId)
+        if (!existing || existing.guildId !== getGuildDiscordId(guild)) {
+            return { ok: false as const, error: "not_found" as const }
+        }
+
+        await ctx.db.delete(args.presetId)
+        return { ok: true as const }
     },
 })

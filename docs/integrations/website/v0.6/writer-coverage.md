@@ -20,10 +20,13 @@ throws commit nothing. Tests simulate rollback; Convex supplies the real guarant
 
 Event fields: name, kind, status, gameStart, gameEnd, updatedAt, eventResult,
 guildId and resolved gameId. Collector fields: provider, enabled, observation,
-lastAttemptAt, nextAttemptAt, errorCategory, historyCount, historyLastSuccessAt,
-historyErrorCategory, updatedAt and scope. Kind/scope changes remove the old
-projection (e.g. match to training). Extra invalidations are harmless; private
-fields never enter the stream.
+errorCategory, historyCount, historyErrorCategory and scope. The bookkeeping
+times (lastAttemptAt, nextAttemptAt, historyLastSuccessAt, updatedAt) advance
+on every collector run and are not a change; the served `integration-health`
+record carries the current values. Likewise a session (`player-stat-summaries`)
+seen again with the same content (fetchedAt, updatedAt only) is not a change.
+Kind/scope changes remove the old projection (e.g. match to training). Extra
+invalidations are harmless; private fields never enter the stream.
 
 Handler tests exercise dashboard upsert, API create, bot role update, result
 import, migration and user merge; collector tests exercise decorated configure/claim/finish
@@ -33,7 +36,11 @@ automatic proof of future code. Scope, retention and rollback tests are separate
 
 Membership tracking in v0.7 also covers assignment rekey/deletion during user
 merge: both affected subjects are invalidated on rekey, and the removed subject
-is invalidated when a duplicate assignment is deleted.
+is invalidated when a duplicate assignment is deleted. A member observation
+with the same state, role set and epoch as the stored one (every five-minute
+reconciliation of an unchanged clan, a nickname-only gateway update) refreshes
+`observedAt`/`receivedAt` only and allocates neither a revision nor a
+`membership-summaries` entry.
 
 The standalone legacy HLL scope repository currently has no production caller;
 any future caller must use the decorator. Scheduled jobs call covered event

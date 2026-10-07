@@ -11,16 +11,21 @@ import type {
     AppUser,
     SquadPreset,
 } from "@/types/domain"
+import type { ReminderAudienceState } from "@/components/app/match-detail/reminder-button"
+import type { RosterPublishContext } from "@/components/app/roster-publish-dialog"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import type { Dictionary } from "@/i18n/dictionaries"
 
 import { RosterBoard } from "./roster-board"
 
+type BoardDiscordConfig = Pick<DiscordConfig, "timezone" | "meetingChannelId">
+
 type LiveRosterBoardProps = {
     rosterId: string
     serverId: string
     locale: string
-    userId: string
+    /** Server-signed grant naming the viewer for this roster's live query. */
+    grant: string
     dictionary: Dictionary
     initialRoster?: Roster
     initialEvent?: EventRecord
@@ -29,7 +34,11 @@ type LiveRosterBoardProps = {
     initialGroups: Group[]
     initialSquadPresets: SquadPreset[]
     initialCanAdmin: boolean
-    initialDiscordConfig: DiscordConfig | null
+    initialDiscordConfig: BoardDiscordConfig | null
+    meetingChannelName?: string
+    reminder?: ReminderAudienceState
+    /** The clan's Discord settings for the publish dialog (D5); admins only. */
+    publishContext?: RosterPublishContext
 }
 
 type LiveRosterDetail = {
@@ -39,7 +48,7 @@ type LiveRosterDetail = {
     users: AppUser[]
     groups: Group[]
     assignments: ServerUserAssignment[]
-    discordConfig: DiscordConfig | null
+    discordConfig: BoardDiscordConfig | null
 }
 
 const getRosterDetailReference = makeFunctionReference<"query">(
@@ -48,7 +57,7 @@ const getRosterDetailReference = makeFunctionReference<"query">(
 
 export function LiveRosterBoard(props: LiveRosterBoardProps) {
     const liveData = useQuery(getRosterDetailReference, {
-        userId: props.userId,
+        grant: props.grant,
         serverId: props.serverId as never,
         rosterId: props.rosterId as never,
     }) as LiveRosterDetail | null | undefined
@@ -77,6 +86,9 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
             locale={props.locale}
             timezone={discordConfig?.timezone}
             meetingChannelId={discordConfig?.meetingChannelId}
+            meetingChannelName={props.meetingChannelName}
+            reminder={props.reminder}
+            publishContext={props.publishContext}
             defaultMode="view"
         />
     )

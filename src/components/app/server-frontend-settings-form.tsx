@@ -12,6 +12,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    saveFrontendSettings,
+    storedProfileCollections,
+} from "@/components/app/settings/save-frontend-settings"
 import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { CalendarItem, EventCategory, Guild } from "@/types/domain"
@@ -177,11 +181,14 @@ export function ServerFrontendSettingsForm({
     dictionary,
     guildLoginUrl,
     showLoginLink = true,
+    part = "all",
 }: {
     server: Guild
     dictionary: Dictionary
     guildLoginUrl: string
     showLoginLink?: boolean
+    /** Settings show the profile and the event categories on separate pages; both save the whole profile. */
+    part?: "all" | "profile" | "categories"
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -234,42 +241,18 @@ export function ServerFrontendSettingsForm({
     }
 
     async function handleSave(regenerateCalendarFeedToken = false) {
-        const response = await fetch(
-            `/api/servers/${server.id}/frontend-settings`,
-            {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    name,
-                    avatar,
-                    description,
-                    eventCategories: eventCategories.map((category) => ({
-                        id: category.id,
-                        label: category.label,
-                        color: category.color,
-                        emoji: category.emoji || undefined,
-                    })),
-                    calendarItems: toPersistedCalendarItems(calendarItems).map(
-                        (item) => ({
-                            id: item.id,
-                            title: item.title,
-                            description: item.description,
-                            color: item.color,
-                            emoji: item.emoji,
-                            label: item.label,
-                            startAt: item.startAt,
-                            endAt: item.endAt,
-                            allDay: item.allDay,
-                            recurrence: item.recurrence,
-                        })
-                    ),
-                    regenerateCalendarFeedToken,
-                }),
-            }
-        )
-        const body = await response.json()
-        if (!response.ok) {
-            toast.error(body.error ?? dictionary.common.error)
+        const result = await saveFrontendSettings(server.id, {
+            name,
+            avatar,
+            description,
+            ...storedProfileCollections({
+                eventCategories,
+                calendarItems: toPersistedCalendarItems(calendarItems),
+            }),
+            regenerateCalendarFeedToken,
+        })
+        if (!result.ok) {
+            toast.error(result.error ?? dictionary.common.error)
             return
         }
 
@@ -286,10 +269,14 @@ export function ServerFrontendSettingsForm({
     return (
         <Card className="border-border/60 rounded-2xl">
             <CardHeader>
-                <CardTitle>{dictionary.serverSettings.clanName}</CardTitle>
+                <CardTitle>
+                    {part === "categories"
+                        ? dictionary.serverSettings.eventCategoriesTitle
+                        : dictionary.serverSettings.clanName}
+                </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <Label>{dictionary.serverSettings.clanName}</Label>
                     <Input
                         value={name}
@@ -297,7 +284,7 @@ export function ServerFrontendSettingsForm({
                         className="rounded-xl"
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <AvatarPicker
                         value={avatar}
                         onChange={setAvatar}
@@ -307,7 +294,7 @@ export function ServerFrontendSettingsForm({
                         disabled={isPending}
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2" hidden={part === "categories"}>
                     <Label>{dictionary.event.fields.description}</Label>
                     <Textarea
                         value={description}
@@ -316,7 +303,10 @@ export function ServerFrontendSettingsForm({
                     />
                 </div>
 
-                <div className="border-border/60 space-y-4 rounded-2xl border p-4">
+                <div
+                    className="border-border/60 space-y-4 rounded-2xl border p-4"
+                    hidden={part === "profile"}
+                >
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <h3 className="font-semibold">

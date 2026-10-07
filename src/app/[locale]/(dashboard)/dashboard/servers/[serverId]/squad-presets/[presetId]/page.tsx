@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { PresetDeleteButton } from "@/components/app/preset-delete-button"
 import { filterByGameScope, resolveGameScope } from "@/domain/games/game"
 import { SquadPresetEditor } from "@/components/app/squad-preset-editor"
 import { getSquadPresetMetadata } from "@/lib/server-metadata"
@@ -9,7 +10,7 @@ import { getDictionary } from "@/i18n/dictionaries"
 import { isLocale } from "@/i18n/config"
 
 export const metadata: Metadata = {
-    title: "Squad preset | Logi",
+    title: "Squad preset",
     description: "Preset squad structure for new rosters.",
 }
 
@@ -41,6 +42,18 @@ export default async function SquadPresetDetailPage({
             <PageHeader
                 title={preset.name}
                 description={dictionary.presets.squadPresetPageDescription}
+                actions={
+                    canAdmin ? (
+                        <PresetDeleteButton
+                            serverId={serverId}
+                            locale={locale}
+                            kind="squad"
+                            presetId={preset.id}
+                            presetName={preset.name}
+                            dictionary={dictionary}
+                        />
+                    ) : undefined
+                }
             />
             <div className="px-4 lg:px-6">
                 <SquadPresetEditor

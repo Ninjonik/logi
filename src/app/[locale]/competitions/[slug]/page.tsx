@@ -1,33 +1,34 @@
-import { ExternalLink } from "lucide-react"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import Link from "next/link"
 
 import {
     PublicPage,
     PublicSiteShell,
 } from "@/components/public/public-site-shell"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PublicBreadcrumbs } from "@/components/public/public-breadcrumbs"
-import { deriveDivisionStandings } from "@/domain/competitions/standings"
+import { PublicCompetitionView } from "@/components/public/public-competition-view"
+import { getCompetitionClanLinks } from "@/lib/read-models/public-clan-page"
+import { selectCompetitionView } from "@/domain/competitions/public-rounds"
 import { getPublicCompetition } from "@/lib/read-models/competitions"
-import { GameBadge } from "@/components/app/game-badge"
 import { getDictionary } from "@/i18n/dictionaries"
-import { GAME_LABELS } from "@/domain/games/game"
 import { getLocalizedCanonical } from "@/lib/seo"
+import { requestTime } from "@/lib/request-time"
 import { isLocale } from "@/i18n/config"
 
-type Props = { params: Promise<{ locale: string; slug: string }> }
-const ECL_LOGO = "https://hll-ecl.eu/static/assets/ecl_logo_web_2025.png"
+type Props = {
+    params: Promise<{ locale: string; slug: string }>
+    searchParams: Promise<{ division?: string | string[] }>
+}
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({
+    params,
+}: Pick<Props, "params">): Promise<Metadata> {
     const { locale, slug } = await params
     const safeLocale = isLocale(locale) ? locale : "en"
     const competition = await getPublicCompetition(slug)
     return {
         title: competition
-            ? `${competition.name} ${competition.season} | Logi`
-            : "Competition | Logi",
+            ? `${competition.name} ${competition.season}`
+            : "Competition",
         description: competition
             ? `${competition.name} standings and match results.`
             : "Competition standings.",
@@ -35,208 +36,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 }
 
-export default async function CompetitionPage({ params }: Props) {
-    const { locale, slug } = await params
+export default async function CompetitionPage({ params, searchParams }: Props) {
+    const [{ locale, slug }, { division: requested }] = await Promise.all([
+        params,
+        searchParams,
+    ])
     const safeLocale = isLocale(locale) ? locale : "en"
-    const dictionary = getDictionary(safeLocale)
     const competition = await getPublicCompetition(slug)
     if (!competition) notFound()
-    const isEcl = competition.slug === "ecl-2026"
+    const clanLinks = await getCompetitionClanLinks(competition.slug)
 
     return (
-        <PublicSiteShell locale={safeLocale}>
+        <PublicSiteShell locale={safeLocale} current="competitions">
             <PublicPage>
-                <div className="space-y-8">
-                    <PublicBreadcrumbs
-                        items={[
-                            {
-                                label: dictionary.app.name,
-                                href: `/${safeLocale}`,
-                            },
-                            {
-                                label: dictionary.competition.title,
-                                href: `/${safeLocale}/competitions`,
-                            },
-                            { label: competition.name },
-                        ]}
-                    />
-                    <section className="bg-card rounded-3xl border p-5 sm:p-8">
-                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-background flex size-20 shrink-0 items-center justify-center rounded-2xl border p-2">
-                                    <img
-                                        src={ECL_LOGO}
-                                        alt="ECL"
-                                        className="max-h-full max-w-full object-contain"
-                                    />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-semibold tracking-tight">
-                                        {competition.name}
-                                    </h1>
-                                    <p className="text-muted-foreground mt-1">
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <GameBadge
-                                                gameId={competition.gameId}
-                                                dictionary={dictionary}
-                                            />
-                                            {GAME_LABELS[competition.gameId]} ·{" "}
-                                            {competition.season} season
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                            {isEcl ? (
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        className="hover:bg-muted inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
-                                        href="https://hll-ecl.eu"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        Official website{" "}
-                                        <ExternalLink className="size-4" />
-                                    </a>
-                                    <a
-                                        className="hover:bg-muted inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
-                                        href="https://hll-ecl.eu/rules"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        Official rules{" "}
-                                        <ExternalLink className="size-4" />
-                                    </a>
-                                </div>
-                            ) : null}
-                        </div>
-                    </section>
-                    {competition.divisions.map((division) => {
-                        const standings = deriveDivisionStandings(
-                            division.teams,
-                            division.fixtures
-                        )
-                        const names = new Map(
-                            division.teams.map((team) => [team.id, team.name])
-                        )
-                        return (
-                            <Card key={division.id} className="overflow-hidden">
-                                <CardHeader className="border-b">
-                                    <CardTitle>{division.name}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-6 p-0">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full min-w-[720px] text-sm">
-                                            <thead className="bg-muted/40 text-muted-foreground text-left">
-                                                <tr>
-                                                    <th className="px-4 py-3">
-                                                        #
-                                                    </th>
-                                                    <th className="px-4 py-3">
-                                                        Team
-                                                    </th>
-                                                    <th className="px-4 py-3 text-right">
-                                                        Cap Score
-                                                    </th>
-                                                    <th className="px-4 py-3 text-right">
-                                                        Regular Wins
-                                                    </th>
-                                                    <th className="px-4 py-3 text-right">
-                                                        Total Wins
-                                                    </th>
-                                                    <th className="px-4 py-3 text-right">
-                                                        Regular Matches
-                                                    </th>
-                                                    <th className="px-4 py-3 text-right">
-                                                        Total Matches
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {standings.map((row, index) => (
-                                                    <tr
-                                                        key={row.teamId}
-                                                        className="border-t"
-                                                    >
-                                                        <td className="px-4 py-3">
-                                                            {index + 1}
-                                                        </td>
-                                                        <td className="px-4 py-3 font-medium">
-                                                            {row.name}
-                                                            {division.teams.find(
-                                                                (team) =>
-                                                                    team.id ===
-                                                                    row.teamId
-                                                            )?.withdrawn
-                                                                ? " (withdrawn)"
-                                                                : ""}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            {row.capScore}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            {row.regularWins}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            {row.totalWins}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            {row.regularMatches}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            {row.totalMatches}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {division.fixtures.length ? (
-                                        <div className="space-y-2 px-4 pb-4 sm:px-6 sm:pb-6">
-                                            <h3 className="font-medium">
-                                                Results
-                                            </h3>
-                                            {division.fixtures.map((match) => (
-                                                <div
-                                                    key={match.id}
-                                                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm"
-                                                >
-                                                    <span>
-                                                        {names.get(
-                                                            match.teamAId
-                                                        )}{" "}
-                                                        <strong className="mx-2 tabular-nums">
-                                                            {match.scoreA ??
-                                                                "–"}{" "}
-                                                            :{" "}
-                                                            {match.scoreB ??
-                                                                "–"}
-                                                        </strong>{" "}
-                                                        {names.get(
-                                                            match.teamBId
-                                                        )}
-                                                    </span>
-                                                    {match.eventId ? (
-                                                        <Link
-                                                            className="text-primary hover:underline"
-                                                            href={`/${safeLocale}/matches/${match.eventId}`}
-                                                        >
-                                                            Match statistics
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            Statistics
-                                                            unavailable
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
-                </div>
+                <PublicCompetitionView
+                    competition={competition}
+                    view={selectCompetitionView(
+                        competition.divisions,
+                        typeof requested === "string" ? requested : undefined
+                    )}
+                    clanLinks={clanLinks}
+                    now={requestTime()}
+                    locale={safeLocale}
+                    dictionary={getDictionary(safeLocale)}
+                />
             </PublicPage>
         </PublicSiteShell>
     )

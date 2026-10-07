@@ -16,10 +16,16 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
+    assessPlatformIdsInput,
+    formatPlatformIds,
+    stripPlatformPrefix,
+} from "@/lib/platform-ids"
+import {
     getDetectedPlatformHint,
     PlatformIdList,
 } from "@/components/app/platform-id-display"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { UserAssignmentInput } from "@/lib/validation/user-assignment"
 import type { AppUser, DiscordConfig, Group, Guild } from "@/types/domain"
@@ -27,7 +33,6 @@ import type { ServerUserAssignment } from "@/lib/server-user-management"
 import { userAssignmentSchema } from "@/lib/validation/user-assignment"
 import { ConfigNotice } from "@/components/app/config-notice"
 import { getUserScoreForGuild } from "@/lib/user-scores"
-import { formatPlatformIds } from "@/lib/platform-ids"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -150,6 +155,20 @@ export function UserAssignmentForm({
     const primaryGroupId = form.watch("primaryGroupId")
     const secondaryGroupIds = form.watch("secondaryGroupIds")
     const platformIdsValue = form.watch("platformIds") ?? ""
+    // IDs already linked to other players, which the server would refuse.
+    const takenPlatformIds = useMemo(() => {
+        const taken = new Map<string, string>()
+        for (const { user } of eligibleUsers) {
+            if (user.discordId === selectedUserId) continue
+            for (const platformId of user.platformIds)
+                taken.set(stripPlatformPrefix(platformId), user.name)
+        }
+        return taken
+    }, [eligibleUsers, selectedUserId])
+    const platformAssessment = assessPlatformIdsInput(
+        platformIdsValue,
+        takenPlatformIds
+    )
 
     const matches = useMemo(() => {
         const normalized = query.trim().toLowerCase()
@@ -239,6 +258,15 @@ export function UserAssignmentForm({
 
     async function submit(values: UserAssignmentInput) {
         setServerError(null)
+        if (
+            assessPlatformIdsInput(values.platformIds ?? "", takenPlatformIds)
+                .hasErrors
+        ) {
+            form.setError("platformIds", {
+                message: dictionary.userManagement.platformIdsInvalid,
+            })
+            return
+        }
         const payload = {
             ...values,
             gameId: gameId ?? assignment?.gameId,
@@ -290,22 +318,21 @@ export function UserAssignmentForm({
 
     async function removeAssignment() {
         if (!assignment) return
-        if (!window.confirm(dictionary.userManagement.removePlayerConfirm)) {
-            return
-        }
         setServerError(null)
         const response = await fetch(
             `/api/servers/${server.id}/assignments/${assignment.id}`,
             {
                 method: "DELETE",
             }
-        )
-        const body = await response.json()
-        if (!response.ok) {
-            const message = body.error ?? dictionary.userManagement.deleteError
+        ).catch(() => null)
+        if (!response?.ok) {
+            const body = (await response?.json().catch(() => null)) as {
+                error?: string
+            } | null
+            const message = body?.error ?? dictionary.userManagement.deleteError
             setServerError(message)
             toast.error(message)
-            return
+            return false
         }
 
         toast.success(dictionary.userManagement.assignmentDeleted)
@@ -337,16 +364,33 @@ export function UserAssignmentForm({
                             <PencilLine className="size-4" />
                             {dictionary.common.edit}
                         </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            className="rounded-xl"
-                            onClick={removeAssignment}
-                            disabled={isPending || form.formState.isSubmitting}
-                        >
-                            <Trash2 className="size-4" />
-                            {dictionary.common.removeAssignment}
-                        </Button>
+                        <ConfirmActionDialog
+                            trigger={
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    className="rounded-xl"
+                                    disabled={
+                                        isPending || form.formState.isSubmitting
+                                    }
+                                >
+                                    <Trash2 className="size-4" />
+                                    {dictionary.common.removeAssignment}
+                                </Button>
+                            }
+                            title={dictionary.userManagement.removePlayerTitle.replace(
+                                "{name}",
+                                initialSelectedUser?.name ??
+                                    dictionary.common.unknown
+                            )}
+                            description={
+                                dictionary.userManagement
+                                    .removePlayerDescription
+                            }
+                            confirmLabel={dictionary.common.removeAssignment}
+                            cancelLabel={dictionary.common.cancel}
+                            onConfirm={removeAssignment}
+                        />
                     </div>
                 ) : null}
             </CardHeader>
@@ -797,9 +841,20 @@ export function UserAssignmentForm({
                                 </Label>
                                 {canEditFields ? (
                                     <Input
+                                        id="assignment-platform-ids"
                                         type="text"
                                         inputMode="text"
+                                        autoComplete="off"
+                                        spellCheck={false}
                                         placeholder={dictionary.shared.notSet}
+                                        aria-invalid={
+                                            platformAssessment.hasErrors ||
+                                            Boolean(
+                                                form.formState.errors
+                                                    .platformIds
+                                            )
+                                        }
+                                        aria-describedby="assignment-platform-ids-help"
                                         {...form.register("platformIds")}
                                         className="rounded-xl"
                                     />
@@ -828,13 +883,53 @@ export function UserAssignmentForm({
                                         : dictionary.userManagement
                                               .platformNotConnected}
                                 </p>
-                                {canEditFields && platformIdsValue.trim() ? (
-                                    <p className="text-muted-foreground text-sm">
-                                        {getDetectedPlatformHint(
-                                            platformIdsValue,
-                                            dictionary
+                                {canEditFields ? (
+                                    <div
+                                        id="assignment-platform-ids-help"
+                                        className="space-y-1 text-sm"
+                                    >
+                                        <p className="text-muted-foreground">
+                                            {
+                                                dictionary.userManagement
+                                                    .platformIdsHint
+                                            }
+                                        </p>
+                                        {platformIdsValue.trim() ? (
+                                            <p className="text-muted-foreground">
+                                                {getDetectedPlatformHint(
+                                                    platformIdsValue,
+                                                    dictionary
+                                                )}
+                                            </p>
+                                        ) : null}
+                                        {platformAssessment.entries.map(
+                                            (entry, index) =>
+                                                entry.issue ? (
+                                                    <p
+                                                        key={`${entry.rawId}-${index}`}
+                                                        className={
+                                                            entry.issue ===
+                                                            "duplicate"
+                                                                ? "text-muted-foreground break-all"
+                                                                : "text-destructive break-all"
+                                                        }
+                                                    >
+                                                        <span className="font-medium">
+                                                            {entry.rawId}
+                                                        </span>
+                                                        {": "}
+                                                        {dictionary.userManagement.platformIssues[
+                                                            entry.issue
+                                                        ].replace(
+                                                            "{name}",
+                                                            takenPlatformIds.get(
+                                                                entry.rawId
+                                                            ) ?? ""
+                                                        )}
+                                                    </p>
+                                                ) : null
                                         )}
-                                    </p>
+                                    </div>
                                 ) : null}
                                 {form.formState.errors.platformIds ? (
                                     <p className="text-destructive text-sm">

@@ -6,6 +6,7 @@ import {
 } from "../src/application/game-data/read-hll-live"
 import { createProviderHttp } from "../src/infrastructure/game-data/provider-http"
 import { readHllLive } from "../src/infrastructure/game-data/hll-live"
+import { runCredential } from "./gameDataRunCredential"
 import { makeFunctionReference } from "convex/server"
 import { hllLiveAccess } from "./hllLiveReads"
 import { action } from "./_generated/server"
@@ -27,11 +28,14 @@ export const read = action({
                     ),
                     args
                 ),
-            read: (source, previous) =>
+            read: (source, previous, claim) =>
                 readHllLive(
                     createProviderHttp(source, {
                         now: Date.now,
-                        resolveSecret: (ref) => process.env[ref],
+                        credential: runCredential(ctx, source, {
+                            connectionId: args.connectionId,
+                            generation: claim.generation,
+                        }),
                     }),
                     Date.now,
                     previous

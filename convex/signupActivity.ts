@@ -1,15 +1,18 @@
 import { canAccessServerContext } from "../src/infrastructure/convex/server-read-model"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
+import { assertInternalSecret } from "./discord_shared"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
 
 export const list = query({
     args: {
+        secret: v.string(),
         serverId: v.id("guilds"),
         userId: v.string(),
         eventId: v.optional(v.id("events")),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
         const [user, server] = await Promise.all([
             getUserByDiscordId(ctx, args.userId),
             ctx.db.get(args.serverId),

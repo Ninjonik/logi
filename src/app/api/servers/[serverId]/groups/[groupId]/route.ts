@@ -4,6 +4,7 @@ import {
     getUserSafeErrorMessage,
     logRouteError,
 } from "@/lib/server-route-errors"
+import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { deleteServerGroup, saveServerGroup } from "@/lib/server-groups"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
 import { getServerContext } from "@/lib/server-context"
@@ -13,6 +14,9 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ serverId: string; groupId: string }> }
 ) {
+    if (!isDashboardWriteOrigin(request)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
     try {
         const body = groupSchema.parse(await request.json())
         const { serverId, groupId } = await params
@@ -49,9 +53,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-    _request: NextRequest,
+    request: NextRequest,
     { params }: { params: Promise<{ serverId: string; groupId: string }> }
 ) {
+    if (!isDashboardWriteOrigin(request)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 })
+    }
     try {
         const { serverId, groupId } = await params
         const serverContext = await getServerContext(serverId)

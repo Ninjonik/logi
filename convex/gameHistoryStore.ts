@@ -1,11 +1,7 @@
-import {
-    retainedWarconSessionSchema,
-    historyRecordSchema,
-} from "../src/domain/game-data/history"
-import {
-    sourceSchema,
-    type ProviderSession,
-} from "../src/domain/game-data/contracts"
+import { isRetainedWarconSession } from "../src/domain/game-data/history-rules"
+import { readStoredSource } from "../src/domain/game-data/operator-sources"
+import type { ProviderSession } from "../src/domain/game-data/contracts"
+import type { HistoryRecord } from "../src/domain/game-data/history"
 import { nextRevision } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
@@ -34,9 +30,14 @@ export async function archiveWarconHistory(
     input: ProviderSession
 ) {
     if (connection.provider !== "wardogs_warcon" || !input.warcon) return
-    const session = retainedWarconSessionSchema.parse(input)
-    const source = sourceSchema.parse(JSON.parse(connection.sourceFingerprint))
+    // The commit validator checked the shape; the retention rules and the
+    // connection's own stored fingerprint are read without Zod.
+    if (!isRetainedWarconSession(input))
+        throw new Error("Invalid retained Warcon session.")
+    const session = input
+    const source = readStoredSource(JSON.parse(connection.sourceFingerprint))
     if (
+        !source ||
         source.guildId !== connection.guildId ||
         source.providerServerId !== connection.providerServerId ||
         source.provider !== "wardogs_warcon"
@@ -104,8 +105,9 @@ export async function archiveWarconHistory(
     return id
 }
 
-export function projectHistory(row: Doc<"serverGameHistory">) {
-    return historyRecordSchema.parse({
+/** The stored row as the website reads it; the schema validated it on write. */
+export function projectHistory(row: Doc<"serverGameHistory">): HistoryRecord {
+    return {
         schemaVersion: 1,
         id: String(row._id),
         guildId: row.guildId,
@@ -117,7 +119,7 @@ export function projectHistory(row: Doc<"serverGameHistory">) {
         collectedAt: row.collectedAt,
         updatedAt: row.updatedAt,
         session: row.session,
-    })
+    }
 }
 
 export async function readHistoryRecord(

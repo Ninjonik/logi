@@ -3,6 +3,8 @@ import type {
     TeamAuditDetails,
     TeamDirectoryRepository,
     TeamLogoPort,
+    TeamRequestLogoPort,
+    TeamRequestRepository,
     TeamWrite,
 } from "@/application/teams/ports"
 import {
@@ -15,6 +17,10 @@ import type {
     DirectoryTeamLookup,
     MatchTeamAssignment,
 } from "@/domain/teams/match-teams"
+import type {
+    TeamRequestEntity,
+    TeamRequestStatus,
+} from "@/domain/teams/team-request"
 
 export type InMemoryAudit = {
     teamId: string
@@ -23,19 +29,23 @@ export type InMemoryAudit = {
     actor: string
 } & TeamAuditDetails
 
-/** Directory, audit and change records kept in memory for use-case tests. */
+/** Global catalogue, audit, change and repoint records kept in memory for use-case tests. */
 export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     teams: TeamEntity[] = []
     audits: InMemoryAudit[] = []
     changes: { id: string; operation: "upsert" | "remove" }[] = []
+    repoints: { from: string; to: string }[] = []
+    /** Competition fixtures as [side A, side B] team IDs. */
+    fixtures: [string, string][] = []
+    /** Competition registrations as [competition ID, team ID]. */
+    registrations: [string, string][] = []
     private sequence = 0
 
-    async findCreate(guildId: string, idempotencyKey: string) {
+    async findCreate(idempotencyKey: string) {
         const audit = this.audits.find(
             (row) =>
-                row.idempotencyKey === idempotencyKey &&
-                this.teams.find((team) => team.id === row.teamId)?.guildId ===
-                    guildId
+                row.operation === "create" &&
+                row.idempotencyKey === idempotencyKey
         )
         return audit
             ? {
@@ -45,34 +55,24 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
               }
             : null
     }
-    async findByNormalizedName(
-        guildId: string,
-        gameId: TeamGame,
-        normalizedName: string
-    ) {
-        return (
-            this.teams.find(
-                (team) =>
-                    team.guildId === guildId &&
-                    team.gameId === gameId &&
-                    team.normalizedName === normalizedName
-            ) ?? null
+    async findByNormalizedName(gameId: TeamGame, normalizedName: string) {
+        const rows = this.teams.filter(
+            (team) =>
+                team.gameId === gameId &&
+                team.normalizedName === normalizedName &&
+                !team.mergedIntoTeamId
         )
+        return rows.find((team) => !team.archivedAt) ?? rows[0] ?? null
     }
-    async count(guildId: string, gameId: TeamGame) {
+    async count(gameId: TeamGame) {
         return Math.min(
-            this.teams.filter(
-                (team) => team.guildId === guildId && team.gameId === gameId
-            ).length,
+            this.teams.filter((team) => team.gameId === gameId).length,
             TEAM_DIRECTORY_LIMIT + 1
         )
     }
-    async get(guildId: string, teamId: string) {
-        return (
-            this.teams.find(
-                (team) => team.id === teamId && team.guildId === guildId
-            ) ?? null
-        )
+    async get(teamId: string) {
+        const team = this.teams.find((entry) => entry.id === teamId)
+        return team ? { ...team } : null
     }
     async insert(team: Omit<TeamEntity, "id">) {
         const stored = { ...team, id: `team-${++this.sequence}` }
@@ -102,26 +102,140 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
     async emit(team: TeamEntity, operation: "upsert" | "remove") {
         this.changes.push({ id: team.id, operation })
     }
+    async repoint(from: string, to: string) {
+        this.repoints.push({ from, to })
+    }
+    async competedTogether(teamId: string, otherTeamId: string) {
+        const competitions = (id: string) =>
+            new Set(
+                this.registrations
+                    .filter(([, team]) => team === id)
+                    .map(([competition]) => competition)
+            )
+        const other = competitions(otherTeamId)
+        return (
+            [...competitions(teamId)].some((id) => other.has(id)) ||
+            this.fixtures.some(
+                ([a, b]) =>
+                    (a === teamId && b === otherTeamId) ||
+                    (a === otherTeamId && b === teamId)
+            )
+        )
+    }
 }
 
-/** Attachable logos by workspace, and the references each team holds. */
+/**
+ * Logo ownership by scope ("platform" or a workspace ID) and the references
+ * each catalogue team holds.
+ */
 export class InMemoryTeamLogos implements TeamLogoPort {
-    /** Team ID to the workspace and assets it references. */
-    references = new Map<string, { guildId: string; assetIds: string[] }>()
+    references = new Map<string, string[]>()
+    constructor(readonly owned: Record<string, string>) {}
+    async attachable(assetId: string) {
+        return this.owned[assetId] === "platform" ? assetId : null
+    }
+    async adoptable(assetId: string, fromGuildId: string) {
+        const owner = this.owned[assetId]
+        return owner === fromGuildId || owner === "platform" ? assetId : null
+    }
+    async adopt(assetId: string, fromGuildId: string) {
+        if (!(await this.adoptable(assetId, fromGuildId))) return null
+        this.owned[assetId] = "platform"
+        return assetId
+    }
+    async syncReferences(teamId: string, assetIds: readonly string[]) {
+        this.references.set(teamId, [...assetIds])
+    }
+}
+
+/** Request rows and their pending DM state, held in memory. */
+export class InMemoryTeamRequests implements TeamRequestRepository {
+    requests: (TeamRequestEntity & {
+        idempotencyKey: string
+        fingerprint: string
+        notification: "none" | "pending"
+    })[] = []
+    private sequence = 0
+    async findSubmission(guildId: string, idempotencyKey: string) {
+        const row = this.requests.find(
+            (entry) =>
+                entry.guildId === guildId &&
+                entry.idempotencyKey === idempotencyKey
+        )
+        return row ? { requestId: row.id, fingerprint: row.fingerprint } : null
+    }
+    async countPending(guildId: string) {
+        return this.requests.filter(
+            (entry) => entry.guildId === guildId && entry.status === "pending"
+        ).length
+    }
+    async get(requestId: string) {
+        const row = this.requests.find((entry) => entry.id === requestId)
+        if (!row) return null
+        const { idempotencyKey, fingerprint, notification, ...entity } = row
+        void idempotencyKey
+        void fingerprint
+        void notification
+        return { ...entity }
+    }
+    async insert(request: Parameters<TeamRequestRepository["insert"]>[0]) {
+        const stored = {
+            ...request,
+            id: `request-${++this.sequence}`,
+            status: "pending" as const,
+            reason: null,
+            resultTeamId: null,
+            decidedBy: null,
+            decidedAt: null,
+            updatedAt: request.createdAt,
+            notification: "none" as const,
+        }
+        this.requests.push(stored)
+        return (await this.get(stored.id))!
+    }
+    async decide(
+        request: TeamRequestEntity,
+        outcome: {
+            status: Exclude<TeamRequestStatus, "pending">
+            reason: string | null
+            resultTeamId: string | null
+            decidedBy: string | null
+            decidedAt: string
+            notify: boolean
+        }
+    ) {
+        const row = this.requests.find((entry) => entry.id === request.id)
+        if (!row) throw new Error("Request not found.")
+        Object.assign(row, {
+            status: outcome.status,
+            reason: outcome.reason,
+            resultTeamId: outcome.resultTeamId,
+            decidedBy: outcome.decidedBy,
+            decidedAt: outcome.decidedAt,
+            updatedAt: outcome.decidedAt,
+            notification: outcome.notify ? "pending" : row.notification,
+        })
+        return (await this.get(row.id))!
+    }
+}
+
+/** Request logo ownership per workspace and the references each request holds. */
+export class InMemoryTeamRequestLogos implements TeamRequestLogoPort {
+    references = new Map<string, string[]>()
     constructor(private readonly owned: Record<string, string>) {}
     async attachable(guildId: string, assetId: string) {
         return this.owned[assetId] === guildId ? assetId : null
     }
     async syncReferences(
-        guildId: string,
-        teamId: string,
+        _guildId: string,
+        requestId: string,
         assetIds: readonly string[]
     ) {
-        this.references.set(teamId, { guildId, assetIds: [...assetIds] })
+        this.references.set(requestId, [...assetIds])
     }
 }
 
-/** Event assignments, directory lookups and refresh audits held in memory. */
+/** Event assignments, catalogue lookups and refresh audits held in memory. */
 export class InMemoryMatchTeamSnapshots implements MatchTeamSnapshotPorts {
     saved = new Map<string, { matchTeams: MatchTeamAssignment[]; at: string }>()
     audits: { teamId: string; actor: string; eventId: string }[] = []
@@ -136,13 +250,7 @@ export class InMemoryMatchTeamSnapshots implements MatchTeamSnapshotPorts {
     ) {
         this.saved.set(eventId, { matchTeams, at: updatedAt })
     }
-    async auditRefresh(
-        guildId: string,
-        teamId: string,
-        actor: string,
-        eventId: string
-    ) {
-        if (this.directory.get(teamId)?.guildId === guildId)
-            this.audits.push({ teamId, actor, eventId })
+    async auditRefresh(teamId: string, actor: string, eventId: string) {
+        this.audits.push({ teamId, actor, eventId })
     }
 }

@@ -6,6 +6,7 @@ import type {
     EventStatus,
     SignupMembershipStatus,
 } from "./types"
+import { normalizeAttendanceReminderHours } from "./scheduled-job-policy"
 import type { MatchTeamAssignment } from "@/domain/teams/match-teams"
 import { normalizeParticipants } from "./participants"
 import type { GameId } from "@/domain/games/game"
@@ -59,6 +60,81 @@ export type EventUpsertInput = {
     }
     /** Resolved at the write boundary; never raw client input. Undefined preserves, [] clears. */
     matchTeams?: MatchTeamAssignment[]
+    /**
+     * Settings a match template gives. They are written when an event is
+     * created or a draft is published. On an update an omitted (undefined)
+     * setting keeps the saved value; [] clears the caps or the reminder
+     * offsets and "" clears the squad preset.
+     */
+    signupGroupLimits?: Array<{ groupId: string; max: number }>
+    attendanceReminderHours?: number[]
+    createParticipantRoles?: boolean
+    squadPresetId?: string
+}
+
+export const MAX_SIGNUP_GROUP_LIMIT = 100
+
+/**
+ * The creation-only settings, tidied: caps only for offered groups of a
+ * match, reminder offsets from the supported set (largest first) and the
+ * roster's squad preset for matches.
+ */
+export function buildEventCreationSettings(input: EventUpsertInput) {
+    const kind = input.kind ?? "match"
+    const offered = new Set(
+        kind === "match" ? normalizeOptionalArray(input.signupGroupIds) : []
+    )
+    const limits = new Map<string, number>()
+    for (const limit of normalizeOptionalArray(input.signupGroupLimits)) {
+        const groupId = limit.groupId.trim()
+        if (
+            offered.has(groupId) &&
+            Number.isInteger(limit.max) &&
+            limit.max >= 1 &&
+            limit.max <= MAX_SIGNUP_GROUP_LIMIT
+        )
+            limits.set(groupId, limit.max)
+    }
+    return {
+        signupGroupLimits: limits.size
+            ? [...limits].map(([groupId, max]) => ({ groupId, max }))
+            : undefined,
+        attendanceReminderHours: normalizeAttendanceReminderHours(
+            input.attendanceReminderHours
+        ),
+        createParticipantRoles: input.createParticipantRoles,
+        squadPresetId:
+            kind === "match"
+                ? input.squadPresetId?.trim() || undefined
+                : undefined,
+    }
+}
+
+/**
+ * The template settings an update changes: only those the caller sends, tidied
+ * like on creation. Undefined keeps the saved value. A lowered cap never
+ * removes anyone: players already holding a place keep it and only new
+ * sign-ups go to the reserve (`isSignupGroupFull`). New reminder offsets are
+ * scheduled by the caller's schedule refresh, as after a time change. Turning
+ * participant roles off makes the bot delete the roles it created; a new
+ * squad preset is only the default of a roster that does not exist yet.
+ */
+export function buildEventUpdateSettings(input: EventUpsertInput) {
+    const tidied = buildEventCreationSettings(input)
+    return {
+        ...(input.signupGroupLimits !== undefined
+            ? { signupGroupLimits: tidied.signupGroupLimits }
+            : {}),
+        ...(input.attendanceReminderHours !== undefined
+            ? { attendanceReminderHours: tidied.attendanceReminderHours }
+            : {}),
+        ...(input.createParticipantRoles !== undefined
+            ? { createParticipantRoles: input.createParticipantRoles }
+            : {}),
+        ...(input.squadPresetId !== undefined
+            ? { squadPresetId: tidied.squadPresetId }
+            : {}),
+    }
 }
 
 function trimOptional(value: string | undefined) {
@@ -136,7 +212,9 @@ export function buildEventBasePayload(input: EventUpsertInput) {
         signupReminderStatuses:
             kind === "match"
                 ? input.signupReminderStatuses === undefined
-                    ? ["member"]
+                    ? (["member"] as Array<
+                          "recruit" | "member" | "reserve_member"
+                      >)
                     : normalizeOptionalArray(
                           input.signupReminderStatuses
                       ).filter(
@@ -155,7 +233,10 @@ export function buildEventBasePayload(input: EventUpsertInput) {
 
 export function buildCreateEventRecord(input: EventUpsertInput, now: Date) {
     const nowIso = now.toISOString()
-    const base = buildEventBasePayload(input)
+    const base = {
+        ...buildEventBasePayload(input),
+        ...buildEventCreationSettings(input),
+    }
     const derivedStatus: EventStatus = deriveEventStatus(
         {
             registrationEnd: input.registrationEnd,
@@ -213,6 +294,7 @@ export function buildUpdateEventPatch(
 
     return {
         ...mutableBase,
+        ...buildEventUpdateSettings(input),
         // An edit without a game selector must not move a scoped event back to HLL.
         gameId: input.gameId ?? existing.gameId,
         announcementChannelId: existing.announcementChannelId,

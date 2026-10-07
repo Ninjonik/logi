@@ -33,6 +33,8 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             signupGroupIds: event.signupGroupIds,
             allowedSignupStatuses: event.allowedSignupStatuses,
             useGeneralSignup: event.useGeneralSignup,
+            signupGroupLimits: event.signupGroupLimits,
+            isDraft: event.isDraft,
             registrationEnd: event.registrationEnd,
             meetingStart: event.meetingStart,
             gameStart: event.gameStart,

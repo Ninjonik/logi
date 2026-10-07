@@ -194,3 +194,18 @@ test("upload messages show the retry wait in whole seconds, at least one", () =>
         "The image exceeds 2 MiB."
     )
 })
+
+test("a named file sends its name for the page to show later (P8-08)", async () => {
+    const calls: string[] = []
+    const file = new File([new Uint8Array([1, 2, 3])], "vlci public.png", {
+        type: "image/png",
+    })
+    await uploadImageAsset("server-1", "panel-banner", file, async (url) => {
+        calls.push(String(url))
+        return Response.json({ asset })
+    })
+    assert.equal(
+        calls[0],
+        "/api/servers/server-1/image-assets?kind=panel-banner&name=vlci%20public.png"
+    )
+})

@@ -5,6 +5,12 @@ import {
     type SyncResource,
 } from "../src/domain/integrations/change"
 import {
+    query,
+    internalMutation,
+    type MutationCtx,
+    type QueryCtx,
+} from "./_generated/server"
+import {
     authorizeMembership,
     membershipGuild,
     readMembershipRecord,
@@ -17,8 +23,7 @@ import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
-import { query, internalMutation, type QueryCtx } from "./_generated/server"
-import { projectIntegrationRow } from "./integrationMutation"
+import { projectIntegrationRow } from "./integrationProjection"
 import { integrationRecord } from "./integrationChangeLog"
 import { readPeopleProjection } from "./peopleProjection"
 import { readLeagueFixture } from "./leagueFixtureReads"
@@ -226,12 +231,7 @@ export const readSyncRecord = query({
                   }
                 : null
         if (resource === "teams") {
-            const data = await readTeamDto(
-                ctx,
-                key.guildId,
-                args.gameId,
-                args.id
-            )
+            const data = await readTeamDto(ctx, args.gameId, args.id)
             return data
                 ? {
                       ...identity,
@@ -304,34 +304,86 @@ export const readSyncRecord = query({
     },
 })
 
+/** Raises each guild's retention floor to the newest of the given revisions, one head write per guild. */
+async function raiseFloors(
+    ctx: MutationCtx,
+    rows: Array<{ guildId: string; revision: string }>
+) {
+    const newest = new Map<string, string>()
+    for (const row of rows) {
+        const current = newest.get(row.guildId)
+        if (
+            current === undefined ||
+            revisionOrder(row.revision) > revisionOrder(current)
+        )
+            newest.set(row.guildId, row.revision)
+    }
+    for (const [guildId, revision] of newest) {
+        const head = await ctx.db
+            .query("integrationHeads")
+            .withIndex("guildId", (q) => q.eq("guildId", guildId))
+            .unique()
+        if (head && revisionOrder(revision) > revisionOrder(head.floor))
+            await ctx.db.patch(head._id, { floor: revision })
+    }
+}
+const PRUNE_BATCH = 250
 export const prune = internalMutation({
     args: {},
     handler: async (ctx) => {
         const expired = await ctx.db
             .query("integrationChanges")
             .withIndex("expiresAt", (q) => q.lte("expiresAt", Date.now()))
-            .take(250)
-        for (const row of expired) {
-            const head = await ctx.db
-                .query("integrationHeads")
-                .withIndex("guildId", (q) => q.eq("guildId", row.guildId))
-                .unique()
-            if (head && revisionOrder(row.revision) > revisionOrder(head.floor))
-                await ctx.db.patch(head._id, { floor: row.revision })
-            await ctx.db.delete(row._id)
-        }
+            .take(PRUNE_BATCH)
+        // Every append patches the guild head too; one head write per guild
+        // and batch keeps this cron from conflicting with the writers.
+        await raiseFloors(ctx, expired)
+        for (const row of expired) await ctx.db.delete(row._id)
         const tombstones = await ctx.db
             .query("integrationRecords")
             .withIndex("expiresAt", (q) =>
                 q.gt("expiresAt", 0).lte("expiresAt", Date.now())
             )
-            .take(250)
+            .take(PRUNE_BATCH)
         for (const row of tombstones) await ctx.db.delete(row._id)
-        if (expired.length === 250 || tombstones.length === 250)
+        if (expired.length === PRUNE_BATCH || tombstones.length === PRUNE_BATCH)
             await ctx.scheduler.runAfter(
                 0,
                 makeFunctionReference<"mutation">("integrationChanges:prune"),
                 {}
             )
+    },
+})
+const RESET_BATCH = 500
+/**
+ * Operator recovery for a flooded change log: raises every guild's floor to
+ * its head, so each website consumer bootstraps again instead of missing
+ * changes, then empties the log in batches of {@link RESET_BATCH} rows,
+ * rescheduling itself until it is empty. Run with
+ * `npx convex run integrationChanges:resetFeed`.
+ */
+export const resetFeed = internalMutation({
+    args: { floorsRaised: v.optional(v.boolean()) },
+    handler: async (ctx, args) => {
+        if (!args.floorsRaised) {
+            const heads = await ctx.db.query("integrationHeads").collect()
+            for (const head of heads)
+                if (revisionOrder(head.revision) > revisionOrder(head.floor))
+                    await ctx.db.patch(head._id, { floor: head.revision })
+        }
+        const rows = await ctx.db
+            .query("integrationChanges")
+            .withIndex("expiresAt", (q) => q.gte("expiresAt", 0))
+            .take(RESET_BATCH)
+        for (const row of rows) await ctx.db.delete(row._id)
+        if (rows.length === RESET_BATCH)
+            await ctx.scheduler.runAfter(
+                0,
+                makeFunctionReference<"mutation">(
+                    "integrationChanges:resetFeed"
+                ),
+                { floorsRaised: true }
+            )
+        return { removed: rows.length, done: rows.length < RESET_BATCH }
     },
 })

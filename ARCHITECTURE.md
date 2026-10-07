@@ -134,12 +134,173 @@ A Convex mutation or query should ideally do only this:
 
 Convex files should not be the long-term home of business rules.
 
+Every exported `query`, `mutation` and `action` is reachable by anyone who
+knows the deployment URL, which the browser bundle contains. Each one must
+therefore establish its caller itself, in one of three ways:
+
+- the internal secret (`secret` argument checked with `assertInternalSecret`)
+  for calls from the Next server, the bot and scripts;
+- a dashboard session or actor gateway (`assertSessionGateway`,
+  `authorizeDashboardAdmin`, `authorizePlatformAdmin`) when the server acts for
+  a signed-in person;
+- a client grant (`verifyClientGrant` in `convex/clientGrants.ts`) for the few
+  live browser subscriptions and edits. The page signs it with
+  `issueClientGrant` after checking the session; Convex takes the user from the
+  grant, never from a browser-supplied `userId`.
+
+A caller-supplied user ID is only trustworthy behind the internal secret.
+Browser writes to workspace settings go through Next routes, not `useMutation`.
+Responses for members must leave out manager secrets such as stats-server tokens
+and the calendar feed capability, and unpublished rosters.
+
 Read modules should also be split by feature. For example:
 
 - `convex/serverContext.ts` for dashboard server context
 - `convex/users.ts` for user lookups
 - `convex/serverMetadata.ts` for focused metadata reads
 - `convex/serverRosters.ts` for roster-specific read models
+
+### Convex hot paths
+
+Production runs a self-hosted Convex backend that keeps every version of a
+document for the retention period. Reads and writes that recur on a timer, a
+cron or a live subscription therefore decide the backend's load, and a few
+careless ones can take the whole deployment down. These rules apply to every
+function that such a path calls:
+
+- No whole-table `.collect()` in anything that runs on a timer, a cron or a
+  subscription. `events`, `discordPublications` and similar tables grow for
+  as long as a clan exists; read them through an index that bounds the
+  result to what the pass needs (the weekly series, the matches that end
+  after a cutoff, one owner's publication keys).
+- Bound every periodic read with an index: an equality on the owner (guild,
+  series, connection) plus a range on the field the pass filters by, and a
+  `.take()` where the number of rows the pass can act on is limited anyway.
+  A string prefix becomes a range of `[prefix, prefix with its last
+character stepped up)` on the same index (`publicationKeyRange`).
+- A bot subscription (`convex.watchQuery`) re-runs on every write to every
+  table it reads, and the bot takes the whole result each time. It
+  therefore reads only the rows the bot acts on, through an index:
+  `discordSync:listEventSyncIndex` reads the events that are not
+  historical (every status but `concluded`, plus the concluded ones that
+  ended after a cutoff) through `status_gameEnd` and their rosters through
+  `eventId`, never the archive. Anything the bot needs only now and then
+  stays out of the subscription: a sign-up reminder's recipients are read
+  once, when the reminder is due (`listGuildAssignments`, through
+  `serverId`), not cached from a subscription over `userAssignments`.
+- A cron that reconciles derived rows walks what changed, not everything:
+  `peopleSummaries:reconcileResultLinks` keeps an `updatedAt` watermark of
+  its last complete run and reads the events updated since through the
+  `updatedAt` index, with one full walk a day for rows without the field.
+- Never rewrite a large document just to refresh a lease. A claim patches
+  the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
+  `retainUntil`); the payload is written once, when the read finished, and
+  dropped only when it stops being valid. Copying it back into the same
+  document on every lease stores a new version of it each time.
+- Prefer small status rows next to large payload rows. A table that is both
+  read every few seconds and holds a large payload (a live read, a message
+  cache) should keep the lease, timestamps and counters in a row of their
+  own, so the frequent readers and writers never touch the payload.
+- In the bot, run a pass that reads many rows on its own cadence (once at
+  start, then every 15 minutes for the recurrence pass), not on the
+  one-minute reconcile tick, and back off a pass whose backend call keeps
+  failing instead of retrying it every minute.
+- The request path never writes. A mutation that patches one document on
+  every API request (a `lastUsedAt`, a rate-limit counter) makes parallel
+  requests conflict on that document and retry inside Convex; the backend
+  degraded on exactly this. Authenticate through a query, count rate limits
+  in the web process, and record usage from a separate mutation that writes
+  at most once per interval and re-checks before it writes.
+- A change feed records what a consumer must re-fetch, never that a row was
+  rewritten. The tracked-mutation wrappers compare the fields the website
+  projections serve and leave bookkeeping out of the comparison: a
+  collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
+  `updatedAt`, a session's `fetchedAt`, a member observation's `observedAt`
+  and `receivedAt`. Two writers flooded the log to 666,000 rows: the bot's
+  membership reconciliation, which observes every member of a clan every
+  five minutes and stored each observation with a new revision and three
+  `membership-summaries` rows (one per game) whether or not anything
+  changed, and a history walk that commits once a second and rewrote its
+  connection and session rows each time. `storeMemberObservation` now
+  refreshes only the evidence fields when state, roles and epoch are the
+  same (`observationChanged`); a history commit patches a session only when
+  its content changed and records a visit (`fetchedAt`,
+  `historyLastSuccessAt`) at most once a minute
+  (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
+  each guild head once per batch, and `integrationChanges:resetFeed` is the
+  operator's way out of a flooded log: it raises every floor to its head so
+  consumers bootstrap again, then empties the log in batches.
+- Every table that gains a row per request or per window has a cron that
+  removes the expired rows in bounded batches through an expiry index:
+  `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per
+  Idempotency-Key, 24 h, with the stored response) and
+  `apiRateLimitBuckets` (one row per window), hourly. Tens of thousands of
+  dead rows in each were found in production because nothing removed them.
+- A per-request endpoint serves counts from a maintained summary document,
+  never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
+  enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
+  recomputes that row through the guild indexes at most once a minute, off
+  the request path (fired by the web gateway when the stored `computedAt`
+  is older than `CLAN_META_INTERVAL_MS`, throttled per clan in the web
+  process and re-checked by the mutation), synchronously only for a clan
+  that has no row yet. The same holds for the people a timed read names:
+  `discordSync:listSyncPayloads` reads the users its events and rosters
+  reference one by one through the `users` indexes, never the table.
+- A function pays for its whole module graph. Convex evaluates a function's
+  module, with everything it imports, on each fresh isolate, so under
+  parallel load a function in a 1.2 MB module costs about 100 ms of CPU
+  before it reads anything, while one in a 10 KB module costs a few
+  milliseconds. Keep what runs on every request or every tick in small
+  modules (`convex/apiKeyAuth.ts`), and keep Zod schemas, use-cases and
+  repositories out of modules that only project or read. Measure with
+  `npx esbuild convex/<module>.ts --bundle --platform=node --format=esm
+--external:convex --metafile=out.json`.
+- Zod is 537 KB once bundled and nothing of it tree-shakes, so one schema
+  defined at the top level of any imported file costs the whole library. A
+  domain file that exports both schemas and pure projections keeps the
+  schemas in a sibling `<name>.schema.ts` (`settings.schema.ts`,
+  `change.schema.ts`, `observation.schema.ts`); the pure file re-exports
+  the inferred types with `export type { … } from "./<name>.schema"`, which
+  is erased at runtime, and only the functions that validate import the
+  schema file. The same holds for Convex modules: a helper another module
+  calls inside its transaction lives in a module without function
+  definitions (`imageAssetStore.ts`, `membershipAccess.ts`,
+  `clanTeamStore.ts`), because `mutation({ … })` at the top level of a
+  module is a side effect that bundles the module's whole graph into every
+  importer. The website's per-request reads live in `publicApiReads.ts`;
+  the idempotent writes, their use-cases and the stratmap catalogue stay in
+  `publicApi.ts`.
+- A stored document is not validated again on read. The schema validates
+  every structured field on write (`convex/schema.ts` has validation on),
+  and a JSON payload is written only by Logi's own `finish` after the
+  action validated it, so a read uses a typed access to the row
+  (`projectSnapshot` reads `gameDataConnections.observation` as stored) or
+  a hand-written guard for a JSON payload (`hll-live-payload.ts`,
+  `warcon-payload.ts`, `snapshot-payload.ts`, `operator-sources.ts`) and
+  never a Zod `parse`. The Zod schema stays in the `*.schema.ts` sibling for
+  the write side and the tests. A module the bot calls on a timer
+  (`discordPublicPanels:forGuild`, `discordPanelBot`, `discordSeedBot`,
+  `hllLiveReads`, `warconReads`, `leagueDiscoveryPanels`,
+  `playerReports:pending`, `gameData`, `gameDataHistory`) holds no
+  validating mutation; those live in their own modules
+  (`discordPanelBotWrites.ts`, `discordPanelGraphicsWrites.ts`,
+  `discordPublicPanelsAdmin.ts`, `playerReportDrafts.ts`) and the bot calls
+  them by their new paths.
+- A cache that holds a large payload writes it only when it changed. The
+  HLL and Warcon live caches compare the new read, minus its times, with
+  the stored one (`hllLiveComparable`, `warconComparable`) and on a match
+  patch only the lease and the small freshness fields (`fetchedAt`,
+  `statusAt`, `playersAt`, `observedAt`); every reader merges those fields
+  into the served payload, so the response carries the latest read's times
+  while an idle server stores one version of its data instead of one per
+  refresh.
+
+Tests of these functions assert which index a read uses (see
+`src/infrastructure/convex/event-recurrence.test.ts` and
+`discord-sync-reads.test.ts`, with the `spyReads` helper in
+`testing/database.ts`) and which fields a claim patches
+(`hll-live-cache.test.ts`), so a later change cannot quietly bring a
+whole-table read back.
 
 ### `discord-bot/`
 

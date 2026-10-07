@@ -3,64 +3,19 @@ import {
     internalMutation as baseInternalMutation,
     type MutationCtx,
 } from "./_generated/server"
-import {
-    projectEventSummary,
-    projectMatchSummary,
-} from "../src/domain/api/event-summaries"
-import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
-import { projectResultSummary } from "../src/domain/api/result-summaries"
 import type { SyncResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import { assignmentDiscordSubject } from "./membershipSubject"
 import type { Doc, Id } from "./_generated/dataModel"
 import { withPeopleChanges } from "./peopleChanges"
 
+// The website projections of a tracked row live in `integrationProjection.ts`;
+// this wrapper runs inside every tracked mutation and compares stored fields
+// only, so it must not bundle the summary schemas (ARCHITECTURE.md, "Convex
+// hot paths").
 const tables = ["events", "gameDataConnections", "userAssignments"] as const
 type TrackedTable = (typeof tables)[number]
 type Row = Doc<"events"> | Doc<"gameDataConnections"> | Doc<"userAssignments">
-export function projectIntegrationRow(
-    table: TrackedTable,
-    row: Row | null,
-    now: number
-): Array<{
-    resource: SyncResource
-    data: { id: string; guildId: string; gameId: string }
-}> {
-    if (!row) return []
-    if (table === "userAssignments") return [] // Per-key membership projection is read separately.
-    if (table === "events") {
-        const event = row as Doc<"events">
-        return [
-            { resource: "event-summaries", data: projectEventSummary(event) },
-            ...((event.kind ?? "match") === "match"
-                ? [
-                      {
-                          resource: "match-summaries" as const,
-                          data: projectMatchSummary(event),
-                      },
-                      {
-                          resource: "result-summaries" as const,
-                          data: projectResultSummary(event),
-                      },
-                  ]
-                : []),
-        ]
-    }
-    const connection = {
-        ...(row as Doc<"gameDataConnections">),
-        id: String(row._id),
-    }
-    return [
-        {
-            resource: "server-snapshots",
-            data: projectSnapshot(connection, now),
-        },
-        {
-            resource: "integration-health",
-            data: projectHealth(connection, now),
-        },
-    ]
-}
 
 /** Tracks the initial and final projection, including nested repository writes. Flush shares the mutation transaction. */
 async function trackIntegrationChanges<T>(
@@ -230,17 +185,18 @@ async function trackIntegrationChanges<T>(
                           "reviewedResultGameId",
                           "matchTeams",
                       ]
-                    : [
+                    : // Bookkeeping times (`lastAttemptAt`, `nextAttemptAt`,
+                      // `historyLastSuccessAt`, `updatedAt`) advance on every
+                      // collector run, once a second while a history walk is
+                      // in progress; a feed entry per run flooded the change
+                      // log. The served record carries the current times.
+                      [
                           "provider",
                           "enabled",
                           "observation",
-                          "lastAttemptAt",
-                          "nextAttemptAt",
                           "errorCategory",
                           "historyCount",
-                          "historyLastSuccessAt",
                           "historyErrorCategory",
-                          "updatedAt",
                       ]
             const fingerprint = JSON.stringify(fields.map((key) => data[key]))
             const resources: SyncResource[] =

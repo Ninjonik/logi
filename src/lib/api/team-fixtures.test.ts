@@ -1,12 +1,16 @@
 import {
+    integrationChangeSchema,
+    syncRecordSchema,
+} from "@/domain/integrations/change.schema"
+import {
     matchTeamSummarySchema,
     validateMatchTeamInputs,
 } from "@/domain/teams/match-teams"
 import {
-    integrationChangeSchema,
-    syncRecordSchema,
-} from "@/domain/integrations/change"
-import { teamDtoSchema, teamPageSchema } from "@/domain/teams/team"
+    TEAM_LINKS_MAX,
+    teamDtoSchema,
+    teamPageSchema,
+} from "@/domain/teams/team"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
@@ -31,10 +35,24 @@ test("team detail fixtures are closed minimized DTOs with public logo URLs or ex
     assert.equal(withoutLogo.gameId, "wardogs")
     assert.equal(withoutLogo.logoUrl, null)
     assert.equal(withoutLogo.shortCode, null)
+    assert.equal(typeof withLogo.description, "string")
+    assert.ok(withLogo.links.length > 0)
+    assert.equal(withoutLogo.description, null)
+    assert.deepEqual(withoutLogo.links, [])
     for (const team of [withLogo, withoutLogo]) {
-        assert.equal("logoAssetId" in team, false)
-        assert.equal("archivedAt" in team, false)
-        assert.equal("guildId" in team, false)
+        // Catalogue administration fields never reach the website DTO.
+        for (const field of [
+            "logoAssetId",
+            "archivedAt",
+            "guildId",
+            "linkedGuildId",
+            "mergedIntoTeamId",
+            "createdBy",
+        ])
+            assert.equal(field in team, false, field)
+        assert.ok(team.links.length <= TEAM_LINKS_MAX)
+        for (const link of team.links)
+            assert.equal(new URL(link).protocol, "https:", link)
     }
 })
 
@@ -46,6 +64,11 @@ test("team collection fixture is a single-game page without a continuation", () 
     assert.equal(
         new Set(page.items.map((team) => team.id)).size,
         page.items.length
+    )
+    const detail = fixture("team").data as { id: string }
+    assert.deepEqual(
+        page.items.find((team) => team.id === detail.id),
+        detail
     )
 })
 
@@ -61,6 +84,30 @@ test("team change rows use the teams resource with upsert and remove operations"
     assert.equal(remove.resource, "teams")
     assert.equal(remove.operation, "remove")
     assert.ok(BigInt(remove.revision) > BigInt(upsert.revision))
+})
+
+test("a merge reaches each subscribed feed as a remove of the merged team followed by an upsert of the kept team", () => {
+    const fixtureData = fixture("team-change-merge").data as unknown[]
+    assert.equal(fixtureData.length, 2)
+    const [removed, kept] = fixtureData.map((row) =>
+        integrationChangeSchema.parse(row)
+    )
+    assert.equal(removed!.operation, "remove")
+    assert.equal(kept!.operation, "upsert")
+    assert.notEqual(removed!.id, kept!.id)
+    for (const field of ["guildId", "gameId", "resource"] as const)
+        assert.equal(removed![field], kept![field], field)
+    assert.equal(kept!.resource, "teams")
+    // Both rows are written in the merge transaction: consecutive revisions.
+    assert.equal(BigInt(kept!.revision), BigInt(removed!.revision) + BigInt(1))
+    const tombstone = syncRecordSchema.parse(
+        fixture("sync-record-team-removed").data
+    )
+    assert.equal(tombstone.operation, "remove")
+    assert.equal(tombstone.data, null)
+    assert.equal(tombstone.id, removed!.id)
+    assert.equal(tombstone.revision, removed!.revision)
+    assert.equal((fixture("team").data as { id: string }).id, kept!.id)
 })
 
 test("team sync record carries the same DTO as the detail read", () => {

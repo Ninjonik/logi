@@ -37,7 +37,7 @@ export function GameSelectionGate({
     }
 
     if (!games.length) {
-        const settingsHref = `${pathname.split("/").slice(0, 5).join("/")}/settings`
+        const settingsHref = `${pathname.split("/").slice(0, 5).join("/")}/settings/games`
         return (
             <div className="bg-background/60 absolute inset-0 z-50 grid place-items-center p-4 backdrop-blur-sm">
                 <section className="border-border bg-card w-full max-w-lg rounded-2xl border p-6 shadow-xl">

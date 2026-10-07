@@ -1,4 +1,5 @@
 import {
+    appliesAsRecruit,
     canExecuteManagedRoles,
     desiredMembershipRoles,
     managedRolePolicy,
@@ -17,7 +18,7 @@ import {
     resolveGameScope,
     type GameId,
 } from "../src/domain/games/game"
-import { assertMembershipSecret, memberObservation } from "./membership_shared"
+import { assertMembershipSecret, memberObservation } from "./membershipAccess"
 import { getGuildByDiscordId, getUserByIdentifier } from "./identity"
 import type { Doc } from "./_generated/dataModel"
 import { v } from "convex/values"
@@ -167,8 +168,11 @@ export async function enqueueManagedRoles(
                 : !assignment ||
                   assignment.status === "active" ||
                   (assignment.status === "recruit" &&
-                      (!policy.settings?.autoAssignRecruitOnApply ||
-                          assignment.type !== "member"))))
+                      !appliesAsRecruit(
+                          policy,
+                          assignment.membershipCategoryId,
+                          assignment.type
+                      ))))
     )
         throw new Error("Invalid self-application role intent.")
     const previousAssignment = await latest(ctx, guildId, gameId, userId)
@@ -210,7 +214,10 @@ export async function enqueueManagedRoles(
         assignmentFingerprint: roleAssignmentFingerprint(assignment),
         policyFingerprint: JSON.stringify(policy),
         allowedRoleIds: policy.roleIds,
-        desiredRoleIds: desiredMembershipRoles(policy, assignment),
+        // A submitted application waits without the clan role (N4-40).
+        desiredRoleIds: desiredMembershipRoles(policy, assignment, {
+            applicant: actor.kind === "application",
+        }),
         departureRevision: observation?.departureRevision ?? "0",
         status: discordUserId ? "pending" : "denied",
         attempts: 0,
@@ -289,9 +296,11 @@ async function evaluate(
                               current &&
                               (current.status === "pending" ||
                                   (current.status === "recruit" &&
-                                      current.type === "member" &&
-                                      policy.settings
-                                          ?.autoAssignRecruitOnApply))
+                                      appliesAsRecruit(
+                                          policy,
+                                          current.membershipCategoryId,
+                                          current.type
+                                      )))
                           ),
             })
         )
