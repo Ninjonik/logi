@@ -114,6 +114,16 @@ export const beginDrain = internalMutation({
             })
             if (retry) await wakeWebhookGuild(ctx, row.guildId)
         }
+        // Nothing due and nothing recovered: no lease, no write. The cron
+        // calls every minute, and a retry schedules its own drain.
+        if (
+            !abandoned.length &&
+            !(await ctx.db
+                .query("webhookDispatchGuilds")
+                .withIndex("wakeAt", (q) => q.lte("wakeAt", Date.now()))
+                .first())
+        )
+            return null
         const fence = current.fence + 1
         await ctx.db.patch(current._id, {
             fence,
