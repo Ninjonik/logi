@@ -68,21 +68,64 @@ export function isHistoryProgress(progress: {
 
 /**
  * How often a history run may rewrite a row that did not change, just to
- * record that it was seen (`gameSessions.fetchedAt`, the connection's
- * `historyLastSuccessAt`). A walk commits once a second; rewriting the row
- * each time stored a new version per second (ARCHITECTURE.md, "Convex hot
- * paths").
+ * record that it was seen (an unfinished session's `fetchedAt`, the
+ * connection's `historyLastSuccessAt`). A walk commits once a second;
+ * rewriting the row each time stored a new version per second
+ * (ARCHITECTURE.md, "Convex hot paths"). A complete session that did not
+ * change is never rewritten.
  */
 export const HISTORY_TOUCH_INTERVAL_MS = 60_000
+
+/**
+ * How often the Warcon history head may record `lastCollectedAt` when its
+ * revision did not change. The head is read as "data as of" by the history
+ * API, the dashboard and Discord `/stats`; ten minutes is precise enough.
+ */
+export const HISTORY_HEAD_TOUCH_INTERVAL_MS = 10 * 60_000
+
+/**
+ * How often a history cycle re-reads every session of a server, so a
+ * correction of an older game still arrives. The cycles in between stop at
+ * the first page whose sessions are all stored complete.
+ */
+export const HISTORY_FULL_WALK_INTERVAL_MS = 24 * 60 * 60_000
 
 /** Whether a seen-at time (ms or ISO string, or none) is old enough to record again. */
 export function historyTouchDue(
     lastAt: number | string | null | undefined,
-    now: number
+    now: number,
+    intervalMs: number = HISTORY_TOUCH_INTERVAL_MS
 ): boolean {
     if (lastAt == null) return true
     const at = typeof lastAt === "number" ? lastAt : Date.parse(lastAt)
-    return Number.isNaN(at) || now - at >= HISTORY_TOUCH_INTERVAL_MS
+    return Number.isNaN(at) || now - at >= intervalMs
+}
+
+/** Whether the next history cycle must re-read every session (none yet, or the last one is a day old). */
+export function historyFullWalkDue(
+    lastFullWalkAt: number | null | undefined,
+    now: number
+): boolean {
+    return historyTouchDue(lastFullWalkAt, now, HISTORY_FULL_WALK_INTERVAL_MS)
+}
+
+/** A session's own time for ordering: its start, else its end, else none. */
+function sessionTime(session: {
+    startedAt: string | null
+    endedAt: string | null
+}): number {
+    const at = Date.parse(session.startedAt ?? session.endedAt ?? "")
+    return Number.isNaN(at) ? Number.NEGATIVE_INFINITY : at
+}
+
+/** Orders sessions newest first by their own start (or end) time; sessions without a time go last. */
+export function newestSessionFirst(
+    left: { startedAt: string | null; endedAt: string | null },
+    right: { startedAt: string | null; endedAt: string | null }
+): number {
+    const a = sessionTime(left),
+        b = sessionTime(right)
+    return a === b ? 0 : a > b ? -1 : 1
 }
 
 /** Whether a stored session row differs from a freshly collected one in what the row serves. */

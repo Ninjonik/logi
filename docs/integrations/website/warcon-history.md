@@ -4,7 +4,7 @@ Logi retains completed server games independently of the live collector configur
 
 ## Collection and corrections
 
-The existing Warcon collector reads completed match details, then saves the normalized session and archive in the same Convex transaction. Scheduled history sweeps revisit provider history; enabling a source with existing sessions recollects their new metadata. Only successfully observed games can be retained. Logi cannot recover games already deleted upstream before import, or guarantee observation of every future game during an outage.
+The existing Warcon collector reads completed match details, then saves the normalized session and archive in the same Convex transaction. History cycles every five minutes collect new games and stop at the first provider page that is already stored; once a day a full sweep re-reads every game, so a provider correction arrives within a day. Enabling a source with existing sessions recollects their new metadata. Only successfully observed games can be retained. Logi cannot recover games already deleted upstream before import, or guarantee observation of every future game during an outage.
 
 Archive identity combines workspace, HTTPS origin, provider server ID and external match ID. It excludes credential references and nicknames. Replaying a game or rotating its key preserves the record ID. Changed facts replace that record and advance the workspace history revision; consumers rebuild its contribution instead of incrementing counters. A different start time under an existing provider match ID fails closed to protect the earlier game. This source-identity conflict requires operator investigation; it can block that history sweep until resolved.
 
@@ -25,7 +25,7 @@ GET /api/v1/clan/server-game-history?game=wardogs
 Authorization: Bearer <history-read-key>
 ```
 
-The response is `{ "data": { "items": [], "revision": "5", "nextCursor": null, "lastCollectedAt": "...Z" } }`. Each item is a versioned `HistoryRecord` with stable ID, opaque source ID, nullable server name, timestamps and a normalized session. `lastCollectedAt` is the most recent successful game import in the workspace, not evidence that every upstream game was observed or that a filtered source is healthy.
+The response is `{ "data": { "items": [], "revision": "5", "nextCursor": null, "lastCollectedAt": "...Z" } }`. Each item is a versioned `HistoryRecord` with stable ID, opaque source ID, nullable server name, timestamps and a normalized session. `lastCollectedAt` is the most recent successful game import in the workspace (a re-read that found an unchanged game refreshes it at most every ten minutes), not evidence that every upstream game was observed or that a filtered source is healthy.
 
 | Query           | Meaning                                                     |
 | --------------- | ----------------------------------------------------------- |

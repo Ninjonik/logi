@@ -192,6 +192,18 @@ character stepped up)` on the same index (`publicationKeyRange`).
   `peopleSummaries:reconcileResultLinks` keeps an `updatedAt` watermark of
   its last complete run and reads the events updated since through the
   `updatedAt` index, with one full walk a day for rows without the field.
+- A collector that walks a provider's history stops where it is caught up.
+  Each five-minute history cycle starts at page 1 (the newest games),
+  fetches only the sessions not yet stored complete for the current source
+  generation (`gameDataHistory:storedComplete`, one indexed lookup per ID,
+  called once per page) and ends at the first page that has none. A full
+  walk that re-reads every session runs at most once a day
+  (`lastFullWalkAt`, `HISTORY_FULL_WALK_INTERVAL_MS`) so provider
+  corrections still arrive. A complete, unchanged session is never
+  rewritten, and the Warcon history head rewrites an unchanged
+  `lastCollectedAt` at most every ten minutes. Re-walking the whole
+  history every cycle cost about 200,000 writes and as many provider calls
+  a day per connection.
 - Never rewrite a large document just to refresh a lease. A claim patches
   the lease fields only (`generation`, `fence`, `leaseUntil`, `nextAt`,
   `retainUntil`); the payload is written once, when the read finished, and
@@ -224,8 +236,8 @@ character stepped up)` on the same index (`publicationKeyRange`).
   connection and session rows each time. `storeMemberObservation` now
   refreshes only the evidence fields when state, roles and epoch are the
   same (`observationChanged`); a history commit patches a session only when
-  its content changed and records a visit (`fetchedAt`,
-  `historyLastSuccessAt`) at most once a minute
+  its content changed and records a visit (an unfinished session's
+  `fetchedAt`, `historyLastSuccessAt`) at most once a minute
   (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
   each guild head once per batch, and `integrationChanges:resetFeed` is the
   operator's way out of a flooded log: it raises every floor to its head so

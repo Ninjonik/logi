@@ -1814,6 +1814,9 @@ export default defineSchema({
         lastSuccessAt: v.union(v.string(), v.null()),
         lastCompletedAt: v.union(v.string(), v.null()),
         lastWasRevisit: v.boolean(),
+        // The current cycle re-reads every session; the last one that did (ms).
+        fullWalk: v.optional(v.boolean()),
+        lastFullWalkAt: v.optional(v.number()),
     })
         .index("connectionId", ["connectionId"])
         .index("nextAttemptAt", ["nextAttemptAt"]),

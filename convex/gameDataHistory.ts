@@ -1,4 +1,5 @@
 import {
+    historyFullWalkDue,
     historyTouchDue,
     isHistoryProgress,
     isProviderSessionWithinLimits,
@@ -11,9 +12,9 @@ import {
 } from "./gameDataValidators"
 import type { HistoryProgress } from "../src/application/game-data/collect-sessions"
 import type { ResolvedSource } from "../src/domain/game-data/credentials"
+import { internalQuery, type MutationCtx } from "./_generated/server"
 import { archiveWarconHistory } from "./gameHistoryStore"
 import { internalMutation } from "./integrationMutation"
-import { type MutationCtx } from "./_generated/server"
 import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
@@ -36,7 +37,13 @@ export async function resetHistory(
         errorCategory: null,
         lastWasRevisit: false,
     }
-    if (existing) await ctx.db.patch(existing._id, state)
+    // A new generation must recollect every session; record that cycle as
+    // the day's full walk instead of walking everything again later.
+    if (existing)
+        await ctx.db.patch(existing._id, {
+            ...state,
+            lastFullWalkAt: undefined,
+        })
     else
         await ctx.db.insert("gameDataHistoryRuns", {
             ...state,
@@ -61,6 +68,7 @@ type Claim = {
     connection: ResolvedSource
     progress: HistoryProgress
     revisitId: string | null
+    fullWalk: boolean
 }
 export const claimNext = internalMutation({
     args: {},
@@ -108,10 +116,20 @@ export const claimNext = internalMutation({
                       )
                       .first()
             const attempt = row.attempt >= 3 ? 1 : row.attempt + 1
+            // A cycle decides at page 1 whether it re-reads every session
+            // (once a day) or stops at the first page already stored; it
+            // keeps that decision until it ends. Rows from before the field
+            // finish their walk as a full one.
+            const fullWalk =
+                (progress.page === 1 && progress.pendingIds.length === 0) ||
+                row.fullWalk === undefined
+                    ? historyFullWalkDue(row.lastFullWalkAt, now)
+                    : row.fullWalk
             await ctx.db.patch(row._id, {
                 fence,
                 progress,
                 attempt,
+                fullWalk,
                 leaseUntil: now + 60_000,
                 nextAttemptAt: now + 60_000,
             })
@@ -124,6 +142,7 @@ export const claimNext = internalMutation({
                 connection: source,
                 progress,
                 revisitId: unfinished?.externalId ?? null,
+                fullWalk,
             }
         }
         return null
@@ -198,13 +217,17 @@ export const commit = internalMutation({
                 sourceGeneration: connection.generation,
                 updatedAt,
             }
-            // A walk revisits the same sessions every few minutes; rewriting
-            // an unchanged row stores a version and a change-feed entry per
-            // visit. Record the visit at most once a minute instead.
+            // Rewriting an unchanged row stores a version and a change-feed
+            // entry per visit. Only an unfinished session records its visit
+            // (at most once a minute): `fetchedAt` orders the revisits of
+            // unfinished sessions. A complete, unchanged one is not written.
             if (existing) {
                 if (sessionRecordChanged(existing, record))
                     await ctx.db.patch(existing._id, record)
-                else if (historyTouchDue(existing.fetchedAt, now))
+                else if (
+                    !record.complete &&
+                    historyTouchDue(existing.fetchedAt, now)
+                )
                     await ctx.db.patch(existing._id, { fetchedAt: now })
             } else {
                 await ctx.db.insert("gameSessions", {
@@ -225,6 +248,9 @@ export const commit = internalMutation({
             lastSuccessAt: updatedAt,
             lastWasRevisit: args.result.revisit ?? false,
             ...(args.result.completed ? { lastCompletedAt: updatedAt } : {}),
+            ...(args.result.completed && row.fullWalk
+                ? { lastFullWalkAt: now }
+                : {}),
             nextAttemptAt: now + (args.result.completed ? 300_000 : 1_000),
         })
         if (
@@ -244,6 +270,37 @@ export const commit = internalMutation({
             {}
         )
         return true
+    },
+})
+/**
+ * Which of a page's sessions are already stored complete for the
+ * connection's current source generation, so an incremental cycle neither
+ * fetches them from the provider again nor commits them. One indexed point
+ * read per ID, at most a page (50) per call.
+ */
+export const storedComplete = internalQuery({
+    args: {
+        connectionId: v.id("gameDataConnections"),
+        generation: v.number(),
+        externalIds: v.array(v.string()),
+    },
+    handler: async (ctx, args): Promise<string[]> => {
+        if (args.externalIds.length > 50)
+            throw new Error("Too many session IDs.")
+        const stored: string[] = []
+        for (const externalId of new Set(args.externalIds)) {
+            const row = await ctx.db
+                .query("gameSessions")
+                .withIndex("connection_external", (q) =>
+                    q
+                        .eq("connectionId", args.connectionId)
+                        .eq("externalId", externalId)
+                )
+                .first()
+            if (row?.complete && row.sourceGeneration === args.generation)
+                stored.push(externalId)
+        }
+        return stored
     },
 })
 export const fail = internalMutation({
