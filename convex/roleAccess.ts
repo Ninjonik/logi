@@ -26,7 +26,7 @@ export const getOverview = query({
         const guild = await ctx.db.get(args.serverId)
         if (!guild) return null
         const guildId = getGuildDiscordId(guild)
-        const [rows, config, runs] = await Promise.all([
+        const [rows, config, membership] = await Promise.all([
             ctx.db
                 .query("discordMemberAccess")
                 .withIndex("guildId", (q) => q.eq("guildId", guildId))
@@ -36,9 +36,9 @@ export const getOverview = query({
                 .withIndex("guildId", (q) => q.eq("guildId", guildId))
                 .unique(),
             ctx.db
-                .query("membershipSyncRuns")
+                .query("membershipGuilds")
                 .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                .collect(),
+                .unique(),
         ])
         const managers = dashboardManagers({
             rows,
@@ -56,12 +56,9 @@ export const getOverview = query({
                 }
             })
         )
-        // The last complete member sync; single updates move rows too.
-        const lastSync = runs
-            .filter((run) => run.status === "complete")
-            .map((run) => run.observedAt)
-            .sort()
-            .at(-1)
+        // The last complete member sync; single updates move rows too. A
+        // row's `updatedAt` moves only when that member's access changed.
+        const lastSync = membership?.lastFullSyncAt
         const lastUpdate = rows
             .map((row) => row.updatedAt)
             .sort()

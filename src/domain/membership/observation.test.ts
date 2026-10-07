@@ -1,4 +1,8 @@
-import { isFreshObservation, type StoredObservation } from "./observation"
+import {
+    isFreshObservation,
+    observationChange,
+    type StoredObservation,
+} from "./observation"
 import { projectMembership } from "./observation.schema"
 import assert from "node:assert/strict"
 import test from "node:test"
@@ -66,4 +70,30 @@ test("role changes invalidate the epoch and only configured roles may be returne
         ),
         false
     )
+})
+test("a newer epoch alone is an epoch change, never a member change", () => {
+    const stored = {
+        state: "present" as const,
+        roleIds: ["a", "b"],
+        epoch: "2",
+        unavailable: false,
+    }
+    assert.equal(observationChange(null, stored), "member")
+    assert.equal(observationChange(stored, { ...stored }), "none")
+    assert.equal(observationChange(stored, { ...stored, epoch: "3" }), "epoch")
+    // A legacy row without the availability flag reads as available.
+    assert.equal(
+        observationChange(
+            { state: "left", roleIds: [], epoch: "2" },
+            { state: "left", roleIds: [], epoch: "3", unavailable: false }
+        ),
+        "epoch"
+    )
+    for (const next of [
+        { ...stored, epoch: "3", roleIds: ["a"] },
+        { ...stored, roleIds: ["b", "a"] },
+        { ...stored, state: "left" as const, roleIds: [] },
+        { ...stored, unavailable: true },
+    ])
+        assert.equal(observationChange(stored, next), "member")
 })

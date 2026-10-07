@@ -2,9 +2,9 @@ import { syncDashboardAdminOverrides } from "../../../convex/discordMemberAccess
 import type { MutationCtx } from "../../../convex/_generated/server"
 import * as operations from "../../../convex/memberRoleOperations"
 import * as observations from "../../../convex/memberObservations"
+import { invoke, spyReads, testContext } from "./testing/database"
 import * as assignments from "../../../convex/userAssignments"
 import * as configuration from "../../../convex/discordConfig"
-import { invoke, testContext } from "./testing/database"
 import * as publicApi from "../../../convex/publicApi"
 import * as guilds from "../../../convex/guilds"
 import * as groups from "../../../convex/groups"
@@ -446,40 +446,260 @@ test("one game preserves an existing shared clan role but cannot grant on anothe
     )
 })
 
-test("periodic checks retain a bounded audit and expose only tenant-scoped operator details", async () => {
+/** Writes per table, from the fake's `table:n` ids, until `restore`. */
+function countWrites(ctx: ReturnType<typeof fixture>) {
+    const writes: Record<string, number> = {}
+    const count = (id: string) => {
+        const table = id.split(":")[0]
+        writes[table] = (writes[table] ?? 0) + 1
+    }
+    const insert = ctx.db.insert.bind(ctx.db),
+        patch = ctx.db.patch.bind(ctx.db),
+        remove = ctx.db.delete.bind(ctx.db)
+    ctx.db.insert = async (table: string, value: Record<string, unknown>) => {
+        count(`${table}:`)
+        return insert(table, value)
+    }
+    ctx.db.patch = async (id: string, value: Record<string, unknown>) => {
+        count(id)
+        return patch(id, value)
+    }
+    ctx.db.delete = async (id: string) => {
+        count(id)
+        return remove(id)
+    }
+    const restore = () => {
+        ctx.db.insert = insert
+        ctx.db.patch = patch
+        ctx.db.delete = remove
+    }
+    return { writes, restore }
+}
+const converged = () => ({
+    ...evidence(),
+    targetRoleIds: ["clan", "recruit"],
+})
+
+test("an applied operation is checked again after a day, and a check that changes nothing writes no attempt row", async () => {
     const ctx = fixture()
     let claim = await queued(ctx)
-    for (let i = 0; i < 25; i++) {
+    await invoke(operations.finish, ctx, {
+        secret,
+        ...claim,
+        outcome: "applied",
+        reason: "verified",
+        evidence: converged(),
+    })
+    const operation = () => ctx.db.tables.memberRoleOperations[0]
+    const dueIn = operation().nextAttemptAt - Date.now()
+    assert.ok(
+        dueIn > operations.REVERIFY_INTERVAL_MS - 5_000 &&
+            dueIn <= operations.REVERIFY_INTERVAL_MS,
+        "next check in 24 hours"
+    )
+    assert.equal(
+        await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: "111111111111111111",
+        }),
+        null,
+        "not due before then"
+    )
+    for (let i = 0; i < 24; i++) {
+        operation().nextAttemptAt = 0
+        const { writes, restore } = countWrites(ctx)
+        claim = await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: "111111111111111111",
+        })
         assert.equal(
             await invoke(operations.finish, ctx, {
                 secret,
                 ...claim,
                 outcome: "applied",
                 reason: "verified",
-                evidence: { ...evidence(), targetRoleIds: ["clan", "recruit"] },
+                evidence: converged(),
             }),
             true
         )
-        if (i < 24) {
-            ctx.db.tables.memberRoleOperations[0].nextAttemptAt = 0
-            claim = await invoke(operations.claimNext, ctx, {
-                secret,
-                guildId: "111111111111111111",
-            })
-        }
+        // Claim and finish: the lease on the lock and the operation, twice.
+        assert.deepEqual(writes, {
+            memberRoleLocks: 2,
+            memberRoleOperations: 2,
+        })
+        restore()
     }
-    assert.equal(ctx.db.tables.memberRoleAudits.length, 20)
+    assert.equal(operation().status, "applied")
+    assert.equal(ctx.db.tables.memberRoleAudits.length, 1)
+    // A check that does not end applied records its outcome.
+    operation().nextAttemptAt = 0
+    claim = await invoke(operations.claimNext, ctx, {
+        secret,
+        guildId: "111111111111111111",
+    })
+    await invoke(operations.finish, ctx, {
+        secret,
+        ...claim,
+        outcome: "retry_scheduled",
+        reason: "provider_unavailable",
+    })
     const [row] = await invoke(operations.listForGuild, ctx, {
         secret,
         guildId: "111111111111111111",
     })
-    assert.equal(row.attempts, 25)
+    assert.equal(row.attempts, 26)
     assert.deepEqual(
-        row.audit.map((entry: { attempt: number }) => entry.attempt),
-        [25, 24, 23, 22, 21]
+        row.audit.map((entry: { attempt: number; outcome: string }) => [
+            entry.attempt,
+            entry.outcome,
+        ]),
+        [
+            [26, "retry_scheduled"],
+            [1, "applied"],
+        ]
     )
     assert.equal("policyFingerprint" in row, false)
     assert.equal("allowedRoleIds" in row, false)
+})
+test("failing checks keep a bounded attempt history", async () => {
+    const ctx = fixture()
+    let claim = await queued(ctx)
+    const finish = (outcome: string) =>
+        invoke(operations.finish, ctx, {
+            secret,
+            ...claim,
+            outcome,
+            reason: outcome === "applied" ? "verified" : "provider_unavailable",
+            ...(outcome === "applied" ? { evidence: converged() } : {}),
+        })
+    const next = async () => {
+        ctx.db.tables.memberRoleOperations[0].nextAttemptAt = 0
+        claim = await invoke(operations.claimNext, ctx, {
+            secret,
+            guildId: "111111111111111111",
+        })
+    }
+    await finish("applied")
+    for (let i = 0; i < 15; i++) {
+        // The daily check fails, the retry confirms the roles again.
+        await next()
+        await finish("retry_scheduled")
+        await next()
+        await finish("applied")
+    }
+    assert.equal(ctx.db.tables.memberRoleAudits.length, 20)
+    assert.equal(ctx.db.tables.memberRoleOperations[0].status, "applied")
+})
+
+test("finished operations are removed 30 days after they finished, with their attempts and an unused lock", async () => {
+    const ctx = fixture()
+    const old = new Date(
+        Date.now() - operations.FINISHED_RETENTION_MS - 1000
+    ).toISOString()
+    const recent = new Date().toISOString()
+    const seedOperation = (
+        id: string,
+        discordUserId: string,
+        status: string,
+        updatedAt: string,
+        nextAttemptAt = Number.MAX_SAFE_INTEGER
+    ) => {
+        ctx.db.seed("memberRoleOperations", {
+            _id: `memberRoleOperations:${id}`,
+            guildId: "111111111111111111",
+            gameId: "hell_let_loose",
+            userId: discordUserId,
+            discordUserId,
+            version: 1,
+            actorId: "333333333333333333",
+            actorKind: "dashboard",
+            assignmentFingerprint: "",
+            policyFingerprint: "",
+            allowedRoleIds: [],
+            desiredRoleIds: [],
+            departureRevision: "0",
+            status,
+            attempts: 1,
+            failureCount: 0,
+            nextAttemptAt,
+            leaseUntil: 0,
+            fence: 1,
+            reason: "fixture",
+            createdAt: updatedAt,
+            updatedAt,
+        })
+        ctx.db.seed("memberRoleAudits", {
+            _id: `memberRoleAudits:${id}`,
+            operationId: `memberRoleOperations:${id}`,
+            guildId: "111111111111111111",
+            userId: discordUserId,
+            actorId: "333333333333333333",
+            fence: 1,
+            attempt: 1,
+            outcome: status,
+            reason: "fixture",
+            at: updatedAt,
+        })
+    }
+    const seedLock = (discordUserId: string) =>
+        ctx.db.seed("memberRoleLocks", {
+            _id: `memberRoleLocks:${discordUserId}`,
+            guildId: "111111111111111111",
+            discordUserId,
+            fence: 1,
+            leaseUntil: 0,
+        })
+    seedOperation("old-denied", "400000000000000001", "denied", old)
+    seedLock("400000000000000001")
+    // The member's newer request keeps the shared Discord lock.
+    seedOperation("old-superseded", "400000000000000002", "superseded", old)
+    seedOperation("current", "400000000000000002", "pending", old, 0)
+    seedLock("400000000000000002")
+    seedOperation("recent-failed", "400000000000000003", "failed", recent)
+    // Applied is never finished: the bot keeps checking it.
+    seedOperation("old-applied", "400000000000000004", "applied", old, 1)
+    const reads = spyReads(ctx)
+    const result = await invoke(operations.pruneFinished, ctx)
+    assert.deepEqual(result, {
+        operations: 2,
+        audits: 2,
+        locks: 1,
+        more: false,
+    })
+    assert.ok(
+        reads.some(
+            (read) =>
+                read.table === "memberRoleOperations" &&
+                read.index === "nextAttemptAt_updatedAt"
+        )
+    )
+    assert.deepEqual(
+        ctx.db.tables.memberRoleOperations.map((row) => row._id).sort(),
+        [
+            "memberRoleOperations:current",
+            "memberRoleOperations:old-applied",
+            "memberRoleOperations:recent-failed",
+        ]
+    )
+    assert.deepEqual(
+        ctx.db.tables.memberRoleAudits.map((row) => row._id).sort(),
+        [
+            "memberRoleAudits:current",
+            "memberRoleAudits:old-applied",
+            "memberRoleAudits:recent-failed",
+        ]
+    )
+    assert.deepEqual(
+        ctx.db.tables.memberRoleLocks.map((row) => row._id),
+        ["memberRoleLocks:400000000000000002"]
+    )
+    assert.equal(ctx.scheduler.calls.length, 0)
+    // A full batch reschedules itself until the backlog is gone.
+    for (let i = 0; i < 51; i++)
+        seedOperation(`backlog-${i}`, "400000000000000005", "denied", old)
+    assert.equal((await invoke(operations.pruneFinished, ctx)).more, true)
+    assert.equal(ctx.scheduler.calls.length, 1)
+    assert.equal((await invoke(operations.pruneFinished, ctx)).operations, 1)
 })
 
 test("dashboard and legacy group writers accept a group role a membership policy also uses", async () => {

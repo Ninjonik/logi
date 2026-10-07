@@ -37,16 +37,16 @@ Every response is `Cache-Control: no-store`.
 
 Success is `{ data: MembershipObservation }`:
 
-| Field                                | Meaning                                                                                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `guildId`, `discordUserId`, `gameId` | Exact source subject; retain your configured `sourceInstanceId` separately                                                                              |
-| `state`                              | `present`, `left` or `unknown`                                                                                                                          |
-| `roleIds`                            | Unique sorted intersection with the key's per-game allowlist, only when presence is fresh                                                               |
-| `assignment`                         | Nullable Logi `{ type, status }`, independent of Discord presence; never website-admin authority                                                        |
-| `observedAt`                         | Nullable time of provider evidence; failed refresh does not advance it; it advances without a revision change when state, roles and epoch are unchanged |
-| `receivedAt`                         | Nullable Logi ingestion time; does not confer freshness                                                                                                 |
-| `epoch`, `revision`                  | Canonical decimal strings, compare as integers, never JavaScript floating-point numbers                                                                 |
-| `completeness`                       | `verified_member`, `verified_absent` or `unavailable`                                                                                                   |
+| Field                                | Meaning                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `guildId`, `discordUserId`, `gameId` | Exact source subject; retain your configured `sourceInstanceId` separately                                                                       |
+| `state`                              | `present`, `left` or `unknown`                                                                                                                   |
+| `roleIds`                            | Unique sorted intersection with the key's per-game allowlist, only when presence is fresh                                                        |
+| `assignment`                         | Nullable Logi `{ type, status }`, independent of Discord presence; never website-admin authority                                                 |
+| `observedAt`                         | Nullable time of provider evidence; failed refresh does not advance it; it advances without a revision change when state and roles are unchanged |
+| `receivedAt`                         | Nullable Logi ingestion time; does not confer freshness                                                                                          |
+| `epoch`, `revision`                  | Canonical decimal strings, compare as integers, never JavaScript floating-point numbers                                                          |
+| `completeness`                       | `verified_member`, `verified_absent` or `unavailable`                                                                                            |
 
 Stale, failed or invalidated evidence returns `unknown`, `unavailable` and no
 roles. An old assignment may still be returned beside a departure; it must not
@@ -73,23 +73,36 @@ Fail closed for protected website actions in every unavailable/denied case.
   reserved epoch/revision/fence. A newer departure or role event defeats a slow
   response. Failure preserves old provider time and departure evidence.
 - Bot ingress serializes persistence per guild. Add/update/remove events write
-  observations; role updates/deletions, startup, unavailable/deleted guilds and
-  shard reconnect/disconnect/resume/ready events invalidate the guild epoch.
+  observations; startup and a new gateway session (shard ready), role deletions,
+  role updates that change the role's permissions, and available, joined,
+  unavailable or deleted guilds invalidate the guild epoch. A resumed session
+  replays the events it missed, so shard resume, disconnect and reconnecting
+  invalidate nothing, and neither do a role's position, colour or name.
   Recovered/available guilds request reconciliation. The event surface is
   documented by [Discord.js](https://discord.js.org/docs/packages/discord.js/14.27.0/Client:Class).
-- Full reconciliation starts its durable fence **before** fetching. It requires
-  a complete available guild response, matching member count, no partial members
-  and the bot itself. It commits batches of 100 and sweeps absence in pages of
-  100 only after every expected member was recorded. Later observations win.
+- An epoch change alone is not a member change. A member observed again with
+  the same state and roles under a newer epoch keeps its revision; the stored
+  observation takes the new epoch (freshness compares it) and no change-feed
+  entry is written. Consumers learn of the epoch from the cursor reset below.
+- Full reconciliation captures its durable fence (the guild epoch and revision)
+  **before** fetching, and inserts the run only after the fetch proved complete:
+  a complete available guild response, matching member count, no partial
+  members and the bot itself. It commits batches of 100 and sweeps absence in
+  pages of 100 only after every expected member was recorded. Each member the
+  run stored carries the run's mark; a member a newer event wrote during the run
+  is neither overwritten nor swept. Later observations win.
   A second bounded sweep reconciles pre-upgrade `discordMemberAccess` rows that
   have no observation yet. Absent old rows become departures and lose cached
   dashboard access. Each page rechecks the epoch; newer observations and legacy
   cache writes at/after the snapshot boundary survive. Deletions use a user-ID
   continuation so removing one page cannot skip the next.
-  Failure/partial fetch never becomes an empty guild. Runs expire after ten
-  minutes; minute maintenance removes expired scratch rows in bounded batches.
-- Successful periodic full syncs are throttled to five minutes; invalidation
-  removes that throttle. Direct REST freshness is independent of this cadence.
+  Failure/partial fetch never becomes an empty guild and writes nothing; the
+  bot then waits 15 minutes before fetching that guild again. Runs expire after
+  ten minutes; maintenance every ten minutes removes expired runs.
+- Successful full reconciliations are throttled to six hours; an invalidation
+  or a change of the dashboard manager role removes that throttle. Between
+  them, gateway add/update/remove events keep observations current. Direct
+  REST freshness is independent of this cadence.
 
 Departed subjects remain durable tombstones. No destructive expiry of member
 evidence is introduced in this milestone; operator privacy/retention procedures
@@ -149,8 +162,8 @@ Authenticated lookup and cursor polling are authoritative.
 Deploy schema/functions, web and the bot from the same reviewed version. New
 tables start empty; absence of evidence is unknown. Run normal Convex codegen for
 the target deployment; new code uses function references without hand-editing
-generated artifacts. The old bot full-sync endpoint retains its legacy cache
-behavior for compatibility but does not populate trustworthy observations.
+generated artifacts. The old bot full-sync endpoint (`discordSync:syncMemberAccess`)
+has been removed; no current bot called it.
 Restart the bot to adopt fenced batches and invalidate pre-restart observations.
 Verify `GuildMembers` intent, bot guild access and time synchronization in an
 authorized test environment. No new Discord role write is introduced by I1.

@@ -806,3 +806,426 @@ test("a reconciliation sweep leaves departed members untouched and departs only 
         "only the departure reaches the feed"
     )
 })
+
+/** Writes per table, from the fake's `table:n` ids, until `restore`. */
+function countWrites(ctx: ReturnType<typeof fixture>) {
+    const writes: Record<string, number> = {}
+    const count = (id: string) => {
+        const table = id.split(":")[0]
+        writes[table] = (writes[table] ?? 0) + 1
+    }
+    const insert = ctx.db.insert.bind(ctx.db),
+        patch = ctx.db.patch.bind(ctx.db),
+        remove = ctx.db.delete.bind(ctx.db)
+    ctx.db.insert = async (table: string, value: Record<string, unknown>) => {
+        count(`${table}:`)
+        return insert(table, value)
+    }
+    ctx.db.patch = async (id: string, value: Record<string, unknown>) => {
+        count(id)
+        return patch(id, value)
+    }
+    ctx.db.delete = async (id: string) => {
+        count(id)
+        return remove(id)
+    }
+    const restore = () => {
+        ctx.db.insert = insert
+        ctx.db.patch = patch
+        ctx.db.delete = remove
+    }
+    return { writes, restore }
+}
+type Fetched = {
+    discordUserId: string
+    roleIds: string[]
+    isAdmin?: boolean
+    hasDashboardAccess?: boolean
+}
+/** The bot's order: read the start, fetch, then insert the run. */
+async function startRun(ctx: ReturnType<typeof fixture>) {
+    const observedAt = new Date().toISOString()
+    const start = await invoke(members.reconciliationStart, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    return { ...start, observedAt }
+}
+async function beginRun(
+    ctx: ReturnType<typeof fixture>,
+    start: { epoch: string; revision: string; observedAt: string }
+) {
+    return invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch: start.epoch,
+        startedRevision: start.revision,
+        observedAt: start.observedAt,
+    })
+}
+async function finishRun(ctx: ReturnType<typeof fixture>, runId: string) {
+    let done = false,
+        calls = 0
+    while (!done && calls++ < 20)
+        done = (
+            await invoke(members.finishReconciliation, ctx, { secret, runId })
+        ).isDone
+    assert.equal(done, true)
+}
+async function reconcile(ctx: ReturnType<typeof fixture>, fetched: Fetched[]) {
+    const run = await beginRun(ctx, await startRun(ctx))
+    const batch = countWrites(ctx)
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: fetched.length,
+        members: fetched,
+    })
+    batch.restore()
+    const sweep = countWrites(ctx)
+    await finishRun(ctx, run.id)
+    sweep.restore()
+    return { run, batch: batch.writes, sweep: sweep.writes }
+}
+const botSecret = () =>
+    process.env.INTERNAL_AUTH_SECRET ?? "dev-internal-auth-secret"
+const access = (userId: string, roleIds: string[], isAdmin = false) => ({
+    discordUserId: userId,
+    roleIds,
+    isAdmin,
+    hasDashboardAccess: isAdmin,
+})
+
+test("a reconciliation of an unchanged member writes its observation's evidence and nothing else", async () => {
+    const ctx = fixture()
+    const discord = await import("../../../convex/discordSync")
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    await invoke(discord.upsertMemberAccess, ctx, {
+        secret: botSecret(),
+        guildId: "guild-a",
+        userId: "member-a",
+        roleIds: ["allowed", "other"],
+        isAdmin: false,
+        hasDashboardAccess: false,
+        observation: {
+            epoch,
+            observedAt: new Date(Date.now() - 1000).toISOString(),
+        },
+    })
+    const feedRows = ctx.db.tables.integrationChanges.length
+    const accessRow = structuredClone(ctx.db.tables.discordMemberAccess[0])
+    // Roles in another order are the same roles.
+    const { run, batch, sweep } = await reconcile(ctx, [
+        access("member-a", ["other", "allowed"]),
+    ])
+    assert.deepEqual(batch, {
+        memberObservations: 1,
+        membershipSyncRuns: 1,
+    })
+    assert.deepEqual(sweep, {
+        // sweeping → cache-sweeping → complete, and the dashboard's time.
+        membershipSyncRuns: 2,
+        membershipGuilds: 1,
+    })
+    assert.equal(ctx.db.tables.membershipSyncSubjects, undefined)
+    assert.deepEqual(ctx.db.tables.discordMemberAccess[0], accessRow)
+    assert.equal(ctx.db.tables.integrationChanges.length, feedRows)
+    assert.equal(ctx.db.tables.memberObservations[0].seenRunId, run.id)
+    assert.equal(
+        ctx.db.tables.membershipGuilds[0].lastFullSyncAt,
+        run.observedAt
+    )
+})
+
+test("after an invalidation an unchanged member takes the new epoch without a revision or a feed row", async () => {
+    const ctx = fixture()
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    for (const discordUserId of ["member-a", "member-b"])
+        await invoke(members.applyGateway, ctx, {
+            secret,
+            guildId: "guild-a",
+            discordUserId,
+            epoch,
+            state: "present",
+            roleIds: ["allowed"],
+            observedAt: new Date(Date.now() - 1000).toISOString(),
+        })
+    const row = (id: string) =>
+        ctx.db.tables.memberObservations.find(
+            (candidate) => candidate.discordUserId === id
+        )!
+    const before = {
+        feed: ctx.db.tables.integrationChanges.length,
+        revision: row("member-a").revision,
+        guildRevision: ctx.db.tables.membershipGuilds[0].revision,
+    }
+    const newEpoch = await invoke(members.invalidateGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    assert.notEqual(newEpoch, epoch)
+    assert.equal(
+        (await invoke(members.prepareLookup, ctx, lookup)).kind,
+        "refresh",
+        "an observation under the old epoch is not fresh"
+    )
+    ctx.db.tables.memberObservations.forEach((observation) => {
+        observation.refreshUntil = 0
+        observation.nextRefreshAt = 0
+    })
+    const { batch } = await reconcile(ctx, [
+        { discordUserId: "member-a", roleIds: ["allowed"] },
+    ])
+    assert.deepEqual(batch, {
+        memberObservations: 1,
+        membershipSyncRuns: 1,
+    })
+    assert.equal(row("member-a").epoch, newEpoch)
+    assert.equal(row("member-a").revision, before.revision)
+    assert.equal(
+        ctx.db.tables.membershipGuilds[0].revision !== before.guildRevision,
+        true,
+        "only member-b's departure moved the guild revision"
+    )
+    assert.deepEqual(
+        [
+            ...new Set(
+                ctx.db.tables.integrationChanges
+                    .slice(before.feed)
+                    .map((change) => change.id)
+            ),
+        ],
+        ["member-b"],
+        "the epoch alone adds no feed row"
+    )
+    const fresh = await invoke(members.prepareLookup, ctx, lookup)
+    assert.equal(fresh.kind, "cached")
+    assert.equal(fresh.data.state, "present")
+    assert.equal(fresh.data.epoch, newEpoch)
+    // A gateway event of the same roles under the new epoch: evidence only.
+    const third = await invoke(members.invalidateGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const feed = ctx.db.tables.integrationChanges.length
+    await invoke(members.applyGateway, ctx, {
+        secret,
+        guildId: "guild-a",
+        discordUserId: "member-a",
+        epoch: third,
+        state: "present",
+        roleIds: ["allowed"],
+        observedAt: new Date().toISOString(),
+    })
+    assert.equal(row("member-a").epoch, third)
+    assert.equal(row("member-a").revision, before.revision)
+    assert.equal(ctx.db.tables.integrationChanges.length, feed)
+})
+
+test("the sweep spares members a gateway event wrote during the run, and departs the unseen ones", async () => {
+    const ctx = fixture()
+    const discord = await import("../../../convex/discordSync")
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const gateway = (discordUserId: string, roleIds: string[]) =>
+        invoke(discord.upsertMemberAccess, ctx, {
+            secret: botSecret(),
+            guildId: "guild-a",
+            userId: discordUserId,
+            roleIds,
+            isAdmin: false,
+            hasDashboardAccess: false,
+            observation: { epoch, observedAt: new Date().toISOString() },
+        })
+    for (const id of ["changed", "unchanged", "departed"])
+        await gateway(id, ["allowed"])
+    const row = (id: string) =>
+        ctx.db.tables.memberObservations.find(
+            (candidate) => candidate.discordUserId === id
+        )
+    const start = await startRun(ctx)
+    // During the Discord fetch: a role change, and a member who joins after
+    // the fetch read the member list.
+    await gateway("changed", ["allowed", "new-role"])
+    await gateway("joined", ["allowed"])
+    const run = await beginRun(ctx, start)
+    // The fetch saw the role change's old roles and not the newcomer.
+    await invoke(members.applyReconciliationBatch, ctx, {
+        secret,
+        runId: run.id,
+        batch: 0,
+        expectedCount: 2,
+        members: [
+            access("changed", ["allowed"]),
+            access("unchanged", ["allowed"]),
+        ],
+    })
+    assert.equal(row("unchanged")!.seenRunId, run.id)
+    // A gateway event that changes nothing keeps the run's mark.
+    await gateway("unchanged", ["allowed"])
+    assert.equal(row("unchanged")!.seenRunId, run.id)
+    await finishRun(ctx, run.id)
+    assert.deepEqual(row("changed")!.roleIds, ["allowed", "new-role"])
+    assert.equal(row("changed")!.state, "present")
+    assert.equal(row("unchanged")!.state, "present")
+    assert.equal(row("joined")!.state, "present")
+    assert.equal(row("departed")!.state, "left")
+    assert.deepEqual(
+        ctx.db.tables.discordMemberAccess.map((entry) => entry.userId).sort(),
+        ["changed", "joined", "unchanged"]
+    )
+    // The duplicate check reads the run's mark instead of a scratch row.
+    const again = await beginRun(ctx, await startRun(ctx))
+    await assert.rejects(
+        invoke(members.applyReconciliationBatch, ctx, {
+            secret,
+            runId: again.id,
+            batch: 0,
+            expectedCount: 2,
+            members: [
+                access("unchanged", ["allowed"]),
+                access("unchanged", ["allowed"]),
+            ],
+        }),
+        /Duplicate/
+    )
+})
+
+test("a run starts from the revision read before the fetch, never from a later or stale one", async () => {
+    const ctx = fixture()
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const start = await startRun(ctx)
+    assert.deepEqual(
+        { epoch: start.epoch, revision: start.revision },
+        { epoch, revision: "0" }
+    )
+    const runs = () => ctx.db.tables.membershipSyncRuns ?? []
+    assert.equal(runs().length, 0, "reading the start writes nothing")
+    await assert.rejects(
+        beginRun(ctx, { ...start, revision: "5" }),
+        /Invalid reconciliation start/
+    )
+    await assert.rejects(
+        beginRun(ctx, {
+            ...start,
+            observedAt: new Date(Date.now() - 11 * 60_000).toISOString(),
+        }),
+        /Invalid reconciliation start/
+    )
+    // A bot clock ahead of the backend's cannot date evidence in the future.
+    const ahead = await beginRun(ctx, {
+        ...start,
+        observedAt: new Date(Date.now() + 60_000).toISOString(),
+    })
+    assert.ok(Date.parse(ahead.observedAt) <= Date.now())
+    const run = await beginRun(ctx, start)
+    assert.equal(run.observedAt, start.observedAt)
+    assert.equal(
+        runs().find((entry) => entry._id === run.id)?.startedRevision,
+        "0"
+    )
+    // An older bot without the start still begins at the current revision.
+    const legacy = await invoke(members.beginReconciliation, ctx, {
+        secret,
+        guildId: "guild-a",
+        epoch,
+    })
+    assert.ok(legacy.id)
+    // A newer epoch between the start and the begin: no run.
+    await invoke(members.invalidateGuild, ctx, { secret, guildId: "guild-a" })
+    assert.equal(await beginRun(ctx, start), null)
+})
+
+test("expired runs are pruned as single rows", async () => {
+    const ctx = fixture()
+    for (let i = 0; i < 3; i++)
+        ctx.db.seed("membershipSyncRuns", {
+            _id: `membershipSyncRuns:${i}`,
+            guildId: "guild-a",
+            epoch: "1",
+            startedRevision: "0",
+            observedAt: new Date().toISOString(),
+            seenCount: 0,
+            nextBatch: 0,
+            status: "complete",
+            cursor: null,
+            expiresAt: i === 2 ? Date.now() + 60_000 : Date.now() - 1,
+        })
+    await invoke(members.pruneReconciliations, ctx)
+    assert.deepEqual(
+        ctx.db.tables.membershipSyncRuns.map((run) => run._id),
+        ["membershipSyncRuns:2"]
+    )
+})
+
+test("member access is written only when roles or access change", async () => {
+    const ctx = fixture()
+    const discord = await import("../../../convex/discordSync")
+    const epoch = await invoke(members.ensureGuild, ctx, {
+        secret,
+        guildId: "guild-a",
+    })
+    const upsert = (roleIds: string[], isAdmin = false) =>
+        invoke(discord.upsertMemberAccess, ctx, {
+            secret: botSecret(),
+            guildId: "guild-a",
+            userId: "member-a",
+            roleIds,
+            isAdmin,
+            hasDashboardAccess: isAdmin,
+            observation: { epoch, observedAt: new Date().toISOString() },
+        })
+    const id = await upsert(["allowed", "other"])
+    const { writes, restore } = countWrites(ctx)
+    assert.equal(await upsert(["other", "allowed"]), id)
+    assert.deepEqual(writes, { memberObservations: 1 }, "evidence only")
+    restore()
+    await upsert(["other", "allowed"], true)
+    assert.equal(ctx.db.tables.discordMemberAccess[0].isAdmin, true)
+    await upsert(["allowed"], true)
+    assert.deepEqual(ctx.db.tables.discordMemberAccess[0].roleIds, ["allowed"])
+})
+
+test("the roles overview shows the last complete member sync, not the last access change", async () => {
+    const ctx = fixture()
+    const roleAccess = await import("../../../convex/roleAccess")
+    ctx.db.seed("guilds", {
+        _id: "guilds:a",
+        discordId: "guild-a",
+        adminIds: [],
+        adminAccessOverrides: {},
+    })
+    const old = new Date(Date.now() - 86_400_000).toISOString()
+    ctx.db.seed("discordMemberAccess", {
+        _id: "discordMemberAccess:a",
+        guildId: "guild-a",
+        userId: "member-a",
+        roleIds: ["allowed"],
+        isAdmin: false,
+        hasDashboardAccess: false,
+        createdAt: old,
+        updatedAt: old,
+    })
+    await invoke(members.ensureGuild, ctx, { secret, guildId: "guild-a" })
+    const overview = () =>
+        invoke(roleAccess.getOverview, ctx, {
+            secret: botSecret(),
+            serverId: "guilds:a",
+        })
+    assert.equal((await overview()).updatedAt, old)
+    const { run } = await reconcile(ctx, [access("member-a", ["allowed"])])
+    assert.equal(ctx.db.tables.discordMemberAccess[0].updatedAt, old)
+    assert.equal((await overview()).updatedAt, run.observedAt)
+})

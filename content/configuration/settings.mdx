@@ -550,7 +550,12 @@ switches, the errors channel and the panel switches together.
 members of the Discord server have it. People with the manager role can change
 settings, matches and rosters. **Who has access now** lists the people who can
 manage Logi and why: the Discord Administrator permission, the manager role, or
-being added in Logi. It shows when Logi last saw the server's members.
+being added in Logi. It shows when Logi last saw the server's members: the
+bot reads every member when it starts, after Discord reports a guild or role
+change that can affect access (a deleted role, a role whose permissions
+changed, a new connection), when the manager role changes, and otherwise at
+most every six hours; joins, leaves and role changes of single members arrive
+in between as they happen.
 **Reload from Discord** rebuilds manager access from the current members of the
 saved manager role; it is available once a manager role is saved and the page
 has no unsaved changes.

@@ -191,9 +191,6 @@ export const references = {
     setDiscordEventRoles: makeFunctionReference<"mutation">(
         "events:setDiscordEventRoles"
     ),
-    syncMemberAccess: makeFunctionReference<"mutation">(
-        "discordSync:syncMemberAccess"
-    ),
     upsertMemberAccess: makeFunctionReference<"mutation">(
         "discordSync:upsertMemberAccess"
     ),

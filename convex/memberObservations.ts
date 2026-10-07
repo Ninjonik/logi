@@ -25,8 +25,8 @@ import { applyObservation } from "../src/application/membership/read-membership"
 import { nextRevision, revisionOrder } from "../src/domain/integrations/change"
 import { isFreshObservation } from "../src/domain/membership/observation"
 import { allocateIntegrationRevision } from "./integrationChangeLog"
+import type { Doc, Id } from "./_generated/dataModel"
 import { isGameId } from "../src/domain/games/game"
-import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 
 const subject = {
@@ -308,23 +308,64 @@ export const applyGateway = mutation({
     },
 })
 
+/** How long a run may take from its start to its last sweep page. */
+const RUN_TTL_MS = 10 * 60_000
+
+/**
+ * The guild's epoch and revision before the bot fetches the members. The bot
+ * reads them first, fetches, and inserts a run (`beginReconciliation`) only
+ * when the fetch was complete, passing this revision as the run's start: an
+ * observation written after it is newer than the snapshot and survives the
+ * run, exactly as when the run was inserted before the fetch. A failed or
+ * partial fetch therefore writes nothing at all.
+ */
+export const reconciliationStart = query({
+    args: { secret: v.string(), guildId: v.string() },
+    handler: async (ctx, args) => {
+        assertMembershipSecret(args.secret)
+        const guild = await membershipGuild(ctx, args.guildId)
+        return guild ? { epoch: guild.epoch, revision: guild.revision } : null
+    },
+})
 export const beginReconciliation = mutation({
-    args: { secret: v.string(), guildId: v.string(), epoch: v.string() },
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        epoch: v.string(),
+        // From `reconciliationStart` and the bot's clock, both taken before
+        // the fetch. An older bot omits them and starts the run now.
+        startedRevision: v.optional(v.string()),
+        observedAt: v.optional(v.string()),
+    },
     handler: async (ctx, args) => {
         assertMembershipSecret(args.secret)
         const guild = await ensureMembershipGuild(ctx, args.guildId)
         if (guild.epoch !== args.epoch) return null
-        const observedAt = new Date().toISOString()
+        const now = Date.now(),
+            startedRevision = args.startedRevision ?? guild.revision,
+            started =
+                args.observedAt === undefined
+                    ? now
+                    : Date.parse(args.observedAt)
+        if (
+            revisionOrder(startedRevision) > revisionOrder(guild.revision) ||
+            !Number.isFinite(started) ||
+            now - started > RUN_TTL_MS
+        )
+            throw new Error("Invalid reconciliation start.")
+        // A bot clock slightly ahead of the backend's cannot date evidence
+        // in the future.
+        const observedAt = new Date(Math.min(started, now)).toISOString()
         const id = await ctx.db.insert("membershipSyncRuns", {
             guildId: args.guildId,
             epoch: guild.epoch,
-            startedRevision: guild.revision,
+            startedRevision,
             observedAt,
             seenCount: 0,
             nextBatch: 0,
             status: "collecting",
             cursor: null,
-            expiresAt: Date.now() + 10 * 60_000,
+            expiresAt: now + RUN_TTL_MS,
         })
         return { id: String(id), observedAt }
     },
@@ -336,7 +377,23 @@ async function reconciliation(ctx: MutationCtx, id: Id<"membershipSyncRuns">) {
     const guild = await membershipGuild(ctx, run.guildId)
     if (!guild || guild.epoch !== run.epoch)
         throw new Error("Reconciliation superseded.")
-    return run
+    return { run, guild }
+}
+/**
+ * Whether the run already accounts for this member: it stored the member
+ * (`seenRunId`), or a gateway event newer than the run's start did, which the
+ * run must neither overwrite nor sweep as departed.
+ */
+function accountedFor(
+    run: Doc<"membershipSyncRuns">,
+    observation: Doc<"memberObservations"> | null
+) {
+    return Boolean(
+        observation &&
+        (observation.seenRunId === run._id ||
+            revisionOrder(observation.revision) >
+                revisionOrder(run.startedRevision))
+    )
 }
 export const applyReconciliationBatch = mutation({
     args: {
@@ -355,7 +412,7 @@ export const applyReconciliationBatch = mutation({
     },
     handler: async (ctx, args) => {
         assertMembershipSecret(args.secret)
-        const run = await reconciliation(ctx, args.runId)
+        const { run } = await reconciliation(ctx, args.runId)
         if (args.batch < run.nextBatch) return { duplicate: true }
         if (
             run.status !== "collecting" ||
@@ -370,57 +427,48 @@ export const applyReconciliationBatch = mutation({
             throw new Error("Invalid reconciliation batch.")
         let count = run.seenCount
         const appliedMembers: Array<{ userId: string; roleIds: string[] }> = []
+        const inBatch = new Set<string>()
         for (const member of args.members) {
             if (member.roleIds.length > 250)
                 throw new Error("Invalid role observation.")
-            const seen = await ctx.db
-                .query("membershipSyncSubjects")
-                .withIndex("runId_discordUserId", (q) =>
-                    q
-                        .eq("runId", args.runId)
-                        .eq("discordUserId", member.discordUserId)
-                )
-                .unique()
-            if (seen) throw new Error("Duplicate reconciliation subject.")
-            await ctx.db.insert("membershipSyncSubjects", {
-                runId: args.runId,
-                discordUserId: member.discordUserId,
-            })
-            count++
             const current = await memberObservation(
                 ctx,
                 run.guildId,
                 member.discordUserId
             )
+            // The run's own mark on the observation proves an earlier batch
+            // stored this member; no scratch row per member is needed.
             if (
-                !current ||
-                revisionOrder(current.revision) <=
-                    revisionOrder(run.startedRevision)
+                inBatch.has(member.discordUserId) ||
+                current?.seenRunId === run._id
+            )
+                throw new Error("Duplicate reconciliation subject.")
+            inBatch.add(member.discordUserId)
+            count++
+            if (accountedFor(run, current)) continue
+            await storeMemberObservation(
+                ctx,
+                run.guildId,
+                member.discordUserId,
+                {
+                    state: "present",
+                    roleIds: member.roleIds,
+                    observedAt: run.observedAt,
+                },
+                run._id
+            )
+            if (
+                member.isAdmin !== undefined &&
+                member.hasDashboardAccess !== undefined
             ) {
-                await storeMemberObservation(
-                    ctx,
-                    run.guildId,
-                    member.discordUserId,
-                    {
-                        state: "present",
-                        roleIds: member.roleIds,
-                        observedAt: run.observedAt,
-                    },
-                    args.runId
-                )
-                if (
-                    member.isAdmin !== undefined &&
-                    member.hasDashboardAccess !== undefined
-                ) {
-                    const access = {
-                        userId: member.discordUserId,
-                        roleIds: member.roleIds,
-                        isAdmin: member.isAdmin,
-                        hasDashboardAccess: member.hasDashboardAccess,
-                    }
-                    await upsertDiscordMemberCache(ctx, run.guildId, access)
-                    appliedMembers.push(access)
+                const access = {
+                    userId: member.discordUserId,
+                    roleIds: member.roleIds,
+                    isAdmin: member.isAdmin,
+                    hasDashboardAccess: member.hasDashboardAccess,
                 }
+                await upsertDiscordMemberCache(ctx, run.guildId, access)
+                appliedMembers.push(access)
             }
         }
         if (count > args.expectedCount)
@@ -438,7 +486,7 @@ export const finishReconciliation = mutation({
     args: { secret: v.string(), runId: v.id("membershipSyncRuns") },
     handler: async (ctx, args) => {
         assertMembershipSecret(args.secret)
-        const run = await reconciliation(ctx, args.runId)
+        const { run, guild } = await reconciliation(ctx, args.runId)
         if (
             run.expectedCount === undefined ||
             run.seenCount !== run.expectedCount
@@ -464,36 +512,33 @@ export const finishReconciliation = mutation({
                     run.guildId,
                     row.userId
                 )
-                if (
-                    current &&
-                    revisionOrder(current.revision) >
-                        revisionOrder(run.startedRevision)
+                if (accountedFor(run, current)) continue
+                await storeMemberObservation(
+                    ctx,
+                    run.guildId,
+                    row.userId,
+                    {
+                        state: "left",
+                        roleIds: [],
+                        observedAt: run.observedAt,
+                    },
+                    run._id
                 )
-                    continue
-                const seen = await ctx.db
-                    .query("membershipSyncSubjects")
-                    .withIndex("runId_discordUserId", (q) =>
-                        q.eq("runId", run._id).eq("discordUserId", row.userId)
-                    )
-                    .unique()
-                if (!seen)
-                    await storeMemberObservation(
-                        ctx,
-                        run.guildId,
-                        row.userId,
-                        {
-                            state: "left",
-                            roleIds: [],
-                            observedAt: run.observedAt,
-                        },
-                        run._id
-                    )
+                // A member already recorded as departed writes no new
+                // departure, so the access row is removed here as well.
+                if (await ctx.db.get(row._id)) await ctx.db.delete(row._id)
             }
             const isDone = rows.length < 100
             await ctx.db.patch(run._id, {
                 status: isDone ? "complete" : "cache-sweeping",
                 cursor: isDone ? null : rows[rows.length - 1].userId,
             })
+            // The dashboard's "updated" time: the access rows themselves
+            // change only when a member's access does.
+            if (isDone)
+                await ctx.db.patch(guild._id, {
+                    lastFullSyncAt: run.observedAt,
+                })
             return { isDone }
         }
         const page = await ctx.db
@@ -501,31 +546,17 @@ export const finishReconciliation = mutation({
             .withIndex("guildId", (q) => q.eq("guildId", run.guildId))
             .paginate({ cursor: run.cursor, numItems: 100 })
         for (const row of page.page) {
-            // A member already recorded as departed stays departed: no
-            // subject lookup and no write for the thousands of former
-            // members a large server accumulates, on every run.
-            if (
-                row.state === "left" ||
-                row.seenRunId === run._id ||
-                revisionOrder(row.revision) > revisionOrder(run.startedRevision)
+            // A member already recorded as departed stays departed: no write
+            // for the thousands of former members a large server
+            // accumulates, on every run.
+            if (row.state === "left" || accountedFor(run, row)) continue
+            await storeMemberObservation(
+                ctx,
+                run.guildId,
+                row.discordUserId,
+                { state: "left", roleIds: [], observedAt: run.observedAt },
+                run._id
             )
-                continue
-            const seen = await ctx.db
-                .query("membershipSyncSubjects")
-                .withIndex("runId_discordUserId", (q) =>
-                    q
-                        .eq("runId", run._id)
-                        .eq("discordUserId", row.discordUserId)
-                )
-                .unique()
-            if (!seen)
-                await storeMemberObservation(
-                    ctx,
-                    run.guildId,
-                    row.discordUserId,
-                    { state: "left", roleIds: [], observedAt: run.observedAt },
-                    run._id
-                )
         }
         await ctx.db.patch(run._id, {
             status: page.isDone ? "cache-sweeping" : "sweeping",
@@ -627,20 +658,17 @@ export const configurePolicy = mutation({
         return { ok: true }
     },
 })
+/**
+ * Removes expired runs. A run is a single row now: the members it saw are
+ * marked on their observations (`seenRunId`), not in a scratch table.
+ */
 export const pruneReconciliations = internalMutation({
     args: {},
     handler: async (ctx) => {
         const runs = await ctx.db
             .query("membershipSyncRuns")
             .withIndex("expiresAt", (q) => q.lte("expiresAt", Date.now()))
-            .take(5)
-        for (const run of runs) {
-            const subjects = await ctx.db
-                .query("membershipSyncSubjects")
-                .withIndex("runId", (q) => q.eq("runId", run._id))
-                .take(200)
-            for (const row of subjects) await ctx.db.delete(row._id)
-            if (subjects.length < 200) await ctx.db.delete(run._id)
-        }
+            .take(50)
+        for (const run of runs) await ctx.db.delete(run._id)
     },
 })
