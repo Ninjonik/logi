@@ -250,11 +250,6 @@ test("valid manager writes and bot acknowledgements retain native tracked change
         userId: subject,
     })
     assert.equal(ctx.db.tables.rosters[0].squads[0].players[0].ack, true)
-    assert.ok(
-        ctx.db.tables.integrationChanges.some(
-            (row) => row.resource === "roster-summaries"
-        )
-    )
 })
 
 test("bot attendance rechecks current event, publication, target and tenant", async () => {

@@ -1,9 +1,9 @@
 import { matchUrl } from "./match-url"
-export const SCAN_MS = 10 * 60_000
-export const TRACK_MS = 5 * 60_000
+export const SCAN_MS = 15 * 60_000
+export const TRACK_MS = 15 * 60_000
 /** Index scan and tracked-detail refresh cadences a workspace may choose, in minutes. */
-export const SCAN_MINUTES = [10, 15, 30, 60] as const
-export const REFRESH_MINUTES = [5, 10, 15, 30] as const
+export const SCAN_MINUTES = [15, 30, 60] as const
+export const REFRESH_MINUTES = [15, 30] as const
 export const MAX_TRACKED = 500
 export const ADMIN_TRACKING_RESERVE = 50
 export const MAX_HUMAN_CANDIDATES = 50
@@ -25,15 +25,15 @@ export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
     teamCodes: ["VLK"],
     inputChannelId: null,
     outputChannelId: null,
-    scanMinutes: 10,
-    refreshMinutes: 5,
+    scanMinutes: 15,
+    refreshMinutes: 15,
 }
 type Cadence = { scanMinutes?: number; refreshMinutes?: number }
 export function scanIntervalMs(settings?: Cadence | null) {
-    return (settings?.scanMinutes ?? 10) * 60_000
+    return Math.max(15, settings?.scanMinutes ?? 15) * 60_000
 }
 export function refreshIntervalMs(settings?: Cadence | null) {
-    return (settings?.refreshMinutes ?? 5) * 60_000
+    return Math.max(15, settings?.refreshMinutes ?? 15) * 60_000
 }
 /** The shared index scan runs at the fastest cadence any enabled workspace asks for. */
 export function sharedScanIntervalMs(

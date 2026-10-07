@@ -286,6 +286,11 @@ website can safely cache and combine data from more than one game. The live,
 machine-readable contract is available at `/api/v1/openapi.json` and the
 interactive reference at `/api/v1/docs`.
 
+Each client IP may make **60 external `/api/v1` requests per second**. This
+does not apply to dashboard routes. A limited request returns `429` with
+`Retry-After` and `RateLimit-*` headers. Clients should back off and retry only
+after that delay.
+
 Start with the API key in an `Authorization` header; never put it in a URL or
 client-side bundle. The key is tenant-scoped: it can access only the workspace
 that created it and only operations permitted by its policy. A record ID from
@@ -745,23 +750,23 @@ been removed.
 
 ### Durable website synchronization
 
-Restricted integrations can recover changes with `GET /api/v1/clan/changes` and
-refetch minimal records atomically with their revision at
+Restricted integrations can capture a baseline revision with
+`GET /api/v1/clan/changes?start=now` and refetch a current record atomically at
 `GET /api/v1/clan/sync-records/{resource}/{id}?game=wardogs`. Both require explicit
-underlying read grants and one game. Capture `start=now` before a baseline sweep,
-then replay its signed cursor. Continue empty pages when `hasMore` is true.
-Store decimal revisions losslessly. After two days without recovery, a 410
-`reset_required` response requires a new baseline. Keep CMS/publication decisions
-in the website's own backend.
+underlying read grants and one game. Logi does not retain a replay log of every
+mutation: a cursor response is `410 reset_required`, so rebuild the integration's
+own baseline when recovery is needed. Keep CMS/publication decisions in the
+website's own backend.
 
 The registered projections are event summaries, match summaries and reviewed
-result summaries. Server snapshots and integration health are live state and are
-not in the change feed: read them from `/api/v1/clan/server-snapshots` and
-`/api/v1/clan/integration-health`. Logi keeps a clan's change feed only while the
-clan has a website key that can read it; a new key starts with `start=now`, so
-nothing is lost. The feed is polled: `integration.changed` webhooks are no longer
-sent, and a subscription that lists that event type keeps working for its other
-types. See `/api/v1/docs` for the contract.
+result summaries. Server snapshots and integration health are live state with no
+invalidations: read them from `/api/v1/clan/server-snapshots` and
+`/api/v1/clan/integration-health`. Optional `integration.changed` webhook subscriptions emit
+minimal invalidations from dashboard, API, bot, import and collector transactions.
+Use the existing administrator-session webhook endpoint to opt into that event
+type; existing subscriptions are unchanged. The queue processes bounded batches,
+honors Retry-After and recovers expired worker leases. Receivers must deduplicate
+and rebuild their own baseline after an outage. See `/api/v1/docs` for the contract.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
 

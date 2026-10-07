@@ -251,12 +251,14 @@ test("only published rosters expose native acknowledgements, no notes or guest n
         await tracked.db.patch("rosters:one" as never, { published: false })
     })
     assert.equal(await get(ctx, "roster-summaries", "rosters:one"), null)
-    const record = await invoke(feed.readSyncRecord, ctx, {
-        ...args,
-        resource: "roster-summaries",
-        id: "rosters:one",
-    })
-    assert.equal(record.operation, "remove")
+    assert.equal(
+        await invoke(feed.readSyncRecord, ctx, {
+            ...args,
+            resource: "roster-summaries",
+            id: "rosters:one",
+        }),
+        null
+    )
     await changed(ctx, async (tracked) => {
         await tracked.db.patch("rosters:one" as never, { published: true })
     })
@@ -274,14 +276,12 @@ test("only published rosters expose native acknowledgements, no notes or guest n
         await tracked.db.delete("rosters:one" as never)
     })
     assert.equal(
-        (
-            await invoke(feed.readSyncRecord, ctx, {
-                ...args,
-                resource: "roster-summaries",
-                id: "rosters:one",
-            })
-        ).operation,
-        "remove"
+        await invoke(feed.readSyncRecord, ctx, {
+            ...args,
+            resource: "roster-summaries",
+            id: "rosters:one",
+        }),
+        null
     )
 })
 test("session facts require current verified Steam ownership and preserve unknown metrics", async () => {
@@ -480,19 +480,13 @@ test("bounded list cursors preserve empty scoped pages and reset on dependency c
         /Invalid limit/
     )
 })
-test("session changes have revisions and deletion has a retained tombstone", async () => {
-    const ctx = fixture(),
-        before = await start(ctx)
+test("session details reflect current source data and disappear on deletion", async () => {
+    const ctx = fixture()
     await changed(ctx, async (tracked) => {
         await tracked.db.patch("gameSessions:one" as never, {
             fetchedAt: Date.now(),
         })
     })
-    assert.equal(
-        (await poll(ctx, before.peopleScopeVersion)).items.length,
-        0,
-        "a session seen again with the same content is not a change"
-    )
     await changed(ctx, async (tracked) => {
         const row = await tracked.db.get("gameSessions:one" as never)
         await tracked.db.patch(
@@ -505,9 +499,6 @@ test("session changes have revisions and deletion has a retained tombstone", asy
             } as never
         )
     })
-    const changes = await poll(ctx, before.peopleScopeVersion)
-    assert.equal(changes.resetRequired, false)
-    assert.equal(changes.items[0].resource, "player-stat-summaries")
     const record = await invoke(feed.readSyncRecord, ctx, {
         ...args,
         resource: "player-stat-summaries",
@@ -519,14 +510,12 @@ test("session changes have revisions and deletion has a retained tombstone", asy
         await tracked.db.delete("gameSessions:one" as never)
     })
     assert.equal(
-        (
-            await invoke(feed.readSyncRecord, ctx, {
-                ...args,
-                resource: "player-stat-summaries",
-                id: "gameSessions:one",
-            })
-        ).operation,
-        "remove"
+        await invoke(feed.readSyncRecord, ctx, {
+            ...args,
+            resource: "player-stat-summaries",
+            id: "gameSessions:one",
+        }),
+        null
     )
 })
 test("new native roster and verified identity mutation entrypoints use the tracked transaction", () => {
@@ -654,12 +643,6 @@ test("native attendance and account unlink writers change the served projection 
         (await get(ctx, "roster-summaries", "rosters:one")).squads[0].slots[0]
             .attendance,
         "acknowledged"
-    )
-    assert.equal(
-        (await poll(ctx, before.peopleScopeVersion)).items.some(
-            (row: { resource: string }) => row.resource === "roster-summaries"
-        ),
-        true
     )
     const identities = await import("../../../convex/platformIdentityLinks")
     await invoke(identities.unlink, ctx, {

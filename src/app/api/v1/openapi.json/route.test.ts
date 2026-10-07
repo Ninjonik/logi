@@ -399,7 +399,7 @@ test("OpenAPI documents beginner-safe API workflows", async () => {
     )
 })
 
-test("global team catalogue reads document explicit per-game grants, fan-out changes, archived/merged exclusion and snapshot delivery", async () => {
+test("global team catalogue reads document explicit per-game grants, no change log, archived/merged exclusion and snapshot delivery", async () => {
     const document = await (await GET()).json()
     const collection = document.paths["/clan/teams"].get,
         detail = document.paths["/clan/teams/{id}"].get
@@ -431,9 +431,8 @@ test("global team catalogue reads document explicit per-game grants, fan-out cha
         /key supplies the workspace and must still belong to the workspace that authenticated the request/i,
         /exactly one supported game/i,
         /archived and merged teams are excluded/i,
-        /fanned out to the change feed of every workspace that has an active restricted key with the teams grant/i,
-        /create, update, restore and request approval emit upsert, archive emits remove/i,
-        /merge emits remove for the merged team .* followed by upsert for the kept team/i,
+        /use the collection as the baseline and sync-records with resource teams/i,
+        /does not retain a per-workspace change log/i,
         /legacy broad keys do not acquire/i,
         /catalogue writes .*, logo uploads and team requests .* no bearer-key API \(documented API-parity exception\)/i,
         /matchTeams snapshots \(ClanMatchTeam\)/,

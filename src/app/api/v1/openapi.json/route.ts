@@ -1367,7 +1367,7 @@ paths["/clan/changes"] = {
         security: [{ clanApiKey: [] }],
         summary: "Read scoped transactional invalidations",
         description:
-            "Requires explicit underlying read grants. First obtain start=now before a baseline sweep, then replay the signed cursor. Keep resources and game fixed. Revisions are canonical decimal strings (compare as integers). Empty pages may have hasMore=true. The cursor remains usable for polling when hasMore=false. Retention is two days; 410 reset_required requires a new bootstrap. The feed is polled: it sends no integration.changed or membership.changed webhooks. A clan's feed is written only while it has a restricted key that can read it; a new key bootstraps with start=now. server-snapshots and integration-health are still accepted but are no longer carried by the feed (a page never lists them): they are live state, read from /clan/server-snapshots and /clan/integration-health. A league-fixtures change is appended only when the served fixture changes, not when only its revision, stale, ageSeconds, lastAttemptAt or snapshot fetchedAt moved. Existing records have revision zero. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
+            "Requires explicit underlying read grants. Obtain start=now before a baseline sweep and keep resources and game fixed. Logi intentionally retains no mutation replay log: any cursor returns 410 reset_required and requires a new baseline. Revisions are canonical decimal strings (compare as integers). Webhooks can notify consumers, but each consumer owns outage recovery. server-snapshots and integration-health are still accepted but are never notified: they are live state, read from /clan/server-snapshots and /clan/integration-health. A league-fixtures change is notified only when the served fixture changes, not when only its revision, stale, ageSeconds, lastAttemptAt or snapshot fetchedAt moved. The teams resource exists only for hell_let_loose and wardogs; requesting it with another game (alone or with other resources) is 400 invalid_query, not an empty page.",
         parameters: [
             ...syncParameters,
             {
@@ -1401,7 +1401,7 @@ paths["/clan/changes"] = {
         responses: {
             ...responses,
             "410": {
-                description: "reset_required: cursor predates retained history",
+                description: "reset_required: cursor replay is not retained",
                 content: { "application/json": { schema: error } },
             },
             "200": {
@@ -1452,7 +1452,7 @@ paths["/clan/sync-records/{resource}/{id}"] = {
         security: [{ clanApiKey: [] }],
         summary: "Atomically read a safe projection and its revision",
         description:
-            "Requires an explicit grant for the underlying resource and game. Returns an upsert projection or a retained scoped removal tombstone (kept two days). Unknown, foreign and expired-tombstone IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation. server-snapshots and integration-health records stay readable here, but the change feed no longer announces them; read their current state from /clan/server-snapshots and /clan/integration-health.",
+            "Requires an explicit grant for the underlying resource and game. Returns the current upsert projection. Logi keeps no removal tombstones: removed, unknown and foreign IDs return 404. Dynamic freshness is computed at read time, so consumers must also enforce observedAt age; passage of time does not emit an invalidation. server-snapshots and integration-health records stay readable here, but the change feed no longer announces them; read their current state from /clan/server-snapshots and /clan/integration-health.",
         parameters: [
             ...syncParameters,
             {
@@ -1471,7 +1471,7 @@ paths["/clan/sync-records/{resource}/{id}"] = {
         responses: {
             ...responses,
             "200": {
-                description: "Atomic projection or tombstone",
+                description: "Atomic current projection",
                 content: {
                     "application/json": {
                         schema: {
@@ -1551,7 +1551,7 @@ paths["/clan/league-fixtures"] = {
         tags: ["Clan API — Matches"],
         summary: "List this guild's tracked Wardogs League fixtures",
         description:
-            "Requires explicit league-fixtures and wardogs grants. Bounded collection of automatically watched or explicitly included fixtures, with optional native event binding, source provenance and independent freshness. Unknown results remain null. Use changes and sync-records with resource league-fixtures for updates/removals. Bootstrap the change cursor before paging the collection and then replay changes. A fixture ID is the external League match ID, not a native event ID. Administration, channel selection and native-event binding require a current dashboard administrator; service keys cannot grant or alter tracking policy. Native event writes retain their separate actor-backed event-commands contract. Responses are no-store.",
+            "Requires explicit league-fixtures and wardogs grants. Bounded collection of automatically watched or explicitly included fixtures, with optional native event binding, source provenance and independent freshness. Unknown results remain null. Use the collection as the baseline and sync-records with resource league-fixtures for current details; Logi retains no update/removal replay log. A fixture ID is the external League match ID, not a native event ID. Administration, channel selection and native-event binding require a current dashboard administrator; service keys cannot grant or alter tracking policy. Native event writes retain their separate actor-backed event-commands contract. Responses are no-store.",
         security: [{ clanApiKey: [] }],
         "x-logi-read-access": {
             resource: "league-fixtures",
@@ -1716,7 +1716,7 @@ paths["/clan/teams"] = {
         tags: ["Clan API — Teams"],
         summary: "List the global catalogue's active teams for one game",
         description:
-            "Requires an explicit teams grant for the requested game. The team catalogue is global: Logi's global administrators own one catalogue per game (hell_let_loose or wardogs), no workspace owns or keeps a private team list, and every workspace whose key holds the grant reads the same teams. The key supplies the workspace and must still belong to the workspace that authenticated the request; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns active teams ordered by normalized name as minimized DTOs (stable global catalogue ID, game, name, short code, public logo URL, description, up to three https links, revision, updated time) with absent optional values as null and links as an array; archived and merged teams are excluded. Use changes and sync-records with resource teams for updates. Every catalogue change is fanned out to the change feed of every workspace that has an active restricted key with the teams grant for that game when the change is written; a key granted later bootstraps from this collection with start=now first. Create, update, restore and request approval emit upsert, archive emits remove, and a merge emits remove for the merged team (when it was still active) followed by upsert for the kept team in the same transaction. Revisions are per workspace feed, and both collection and delta reads enforce the same grants. Legacy broad keys do not acquire this resource. Catalogue writes (create, edit, archive, restore, link, merge), logo uploads and team requests (submission, cancellation and moderation decisions) are session-bound Logi administration and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep the captured ID, labels and logo after a team is archived or merged, and receiving them does not grant the catalogue. Responses are no-store.",
+            "Requires an explicit teams grant for the requested game. The team catalogue is global: Logi's global administrators own one catalogue per game (hell_let_loose or wardogs), no workspace owns or keeps a private team list, and every workspace whose key holds the grant reads the same teams. The key supplies the workspace and must still belong to the workspace that authenticated the request; the caller cannot choose another one, and Convex rechecks key revocation, workspace and game grants on every read. Exactly one supported game is required and pagination is validated: limit 1–100 (default 50), opaque cursor at most 4,096 characters, no other parameters. Returns active teams ordered by normalized name as minimized DTOs (stable global catalogue ID, game, name, short code, public logo URL, description, up to three https links, revision, updated time) with absent optional values as null and links as an array; archived and merged teams are excluded. Use the collection as the baseline and sync-records with resource teams for current details; Logi does not retain a per-workspace change log. Legacy broad keys do not acquire this resource. Catalogue writes (create, edit, archive, restore, link, merge), logo uploads and team requests (submission, cancellation and moderation decisions) are session-bound Logi administration and deliberately have no bearer-key API (documented API-parity exception). Teams selected for a native match travel as immutable matchTeams snapshots (ClanMatchTeam) inside the event-summaries and match-summaries documents; those keep the captured ID, labels and logo after a team is archived or merged, and receiving them does not grant the catalogue. Responses are no-store.",
         security: [{ clanApiKey: [] }],
         "x-logi-read-access": teamReadAccess,
         parameters: [
@@ -2195,7 +2195,7 @@ export async function GET() {
             info: {
                 title: "Logi Clan API",
                 version: "1.11.0",
-                description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
+                description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. Each client IP may make 60 external \`/api/v1\` requests per second; a limited request returns \`429\` with \`Retry-After\` and \`RateLimit-*\` headers. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
 ### Authenticate and read
 

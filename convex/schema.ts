@@ -2277,31 +2277,10 @@ export default defineSchema({
     integrationHeads: defineTable({
         guildId: v.string(),
         revision: v.string(),
-        floor: v.string(),
+        // Retained only to validate heads created by the retired change-feed.
+        // New code neither reads nor writes this field.
+        floor: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
-    integrationChanges: defineTable({
-        guildId: v.string(),
-        gameId: v.string(),
-        resource: v.string(),
-        id: v.string(),
-        revision: v.string(),
-        revisionOrder: v.string(),
-        operation: v.union(v.literal("upsert"), v.literal("remove")),
-        expiresAt: v.number(),
-    })
-        .index("guildId_revisionOrder", ["guildId", "revisionOrder"])
-        .index("expiresAt", ["expiresAt"]),
-    integrationRecords: defineTable({
-        guildId: v.string(),
-        gameId: v.string(),
-        resource: v.string(),
-        id: v.string(),
-        revision: v.string(),
-        operation: v.union(v.literal("upsert"), v.literal("remove")),
-        expiresAt: v.optional(v.number()),
-    })
-        .index("identity", ["guildId", "gameId", "resource", "id"])
-        .index("expiresAt", ["expiresAt"]),
     webhookSubscriptions: defineTable({
         guildId: v.string(),
         url: v.string(),

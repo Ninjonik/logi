@@ -24,8 +24,8 @@ operation, data } }`. Upserts contain the existing minimal DTO; removals have
 6. Keep the returned cursor for polling even when `hasMore` is false. Signatures
    bind key, guild, game and resources. Tampering/filter changes return 400;
    missing grants return 403. All sync responses use `Cache-Control: no-store`.
-7. History and tombstones retain two days (seven until October 2026). Expired
-   cursors or cursors behind the durable retention floor return
+7. Logi keeps no change history or tombstones since 7 October 2026 (seven
+   days, then two, before that): every cursor returns
    **410 `reset_required`**. Capture a new start boundary and rebuild. Never
    interpret a missing list row as deletion.
 

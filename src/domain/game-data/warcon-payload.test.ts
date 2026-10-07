@@ -145,3 +145,9 @@ test("the normalised query reads back as the schema parsed it", () => {
     ])
         assert.equal(readWarconQueryPayload(bad), null, bad)
 })
+
+test("every Warcon view shares the one-minute cache policy", () => {
+    assert.equal(warconCacheMs({ view: "live" }), 60_000)
+    assert.equal(warconCacheMs({ view: "kills" }), 60_000)
+    assert.equal(warconCacheMs({ view: "catalog" }), 60_000)
+})

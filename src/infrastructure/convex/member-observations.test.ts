@@ -553,9 +553,10 @@ test("membership feed binds one subject and resets after policy or provider epoc
         membershipScopeVersion: start.membershipScopeVersion,
         issuedAt: Date.now(),
     }
-    const changes = await invoke(feed.readChanges, ctx, cursor)
-    assert.equal(changes.items.length, 1)
-    assert.equal(changes.items[0].id, "member-a")
+    assert.equal(
+        (await invoke(feed.readChanges, ctx, cursor)).resetRequired,
+        true
+    )
     assert.equal(ctx.db.tables.webhookDeliveries?.length ?? 0, 0)
     ctx.db.tables.membershipIntegrationPolicies[0].version = "50"
     assert.equal(
@@ -669,21 +670,17 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
             roleIds,
             observedAt,
         })
-    const feedRows = () => ctx.db.tables.integrationChanges?.length ?? 0
     const observation = () => ctx.db.tables.memberObservations[0]
     const guild = () => ctx.db.tables.membershipGuilds[0]
     const first = new Date(Date.now() - 20_000).toISOString(),
         second = new Date(Date.now() - 10_000).toISOString()
     await observe(["allowed", "other"], first)
     const written = {
-        feed: feedRows(),
         revision: observation().revision,
         guildRevision: guild().revision,
     }
-    assert.ok(written.feed > 0, "a first observation is a change")
     // The reconciliation path: same roles in a different order, newer evidence.
     await observe(["other", "allowed"], second)
-    assert.equal(feedRows(), written.feed, "no feed entry for unchanged roles")
     assert.equal(observation().revision, written.revision)
     assert.equal(guild().revision, written.guildRevision)
     assert.equal(observation().observedAt, second, "evidence is refreshed")
@@ -700,11 +697,6 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
         members: [{ discordUserId: "member-a", roleIds: ["allowed", "other"] }],
     })
     assert.equal(
-        feedRows(),
-        written.feed,
-        "a reconciliation of an unchanged member writes no feed entry"
-    )
-    assert.equal(
         observation().seenRunId,
         run.id,
         "the run still marks the member as seen"
@@ -713,7 +705,6 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
     // Evidence older than the reconciliation's is refused, so the change is
     // observed at the time of the call, never at a time captured earlier.
     await observe(["allowed"], new Date().toISOString())
-    assert.ok(feedRows() > written.feed, "a role change is a change")
     assert.notEqual(observation().revision, written.revision)
     assert.notEqual(guild().revision, written.guildRevision)
 })
@@ -795,15 +786,6 @@ test("a reconciliation sweep leaves departed members untouched and departs only 
         row("still-here").observedAt,
         old,
         "but its evidence is refreshed"
-    )
-    assert.deepEqual(
-        [
-            ...new Set(
-                ctx.db.tables.integrationChanges.map((change) => change.id)
-            ),
-        ],
-        ["vanished"],
-        "only the departure reaches the feed"
     )
 })
 
@@ -897,6 +879,23 @@ const access = (userId: string, roleIds: string[], isAdmin = false) => ({
     hasDashboardAccess: isAdmin,
 })
 
+/** The guild's change revision: every membership change allocates one. */
+function changeRevision(ctx: ReturnType<typeof fixture>) {
+    return ctx.db.tables.integrationHeads?.[0]?.revision ?? "0"
+}
+
+/** The members whose change a `membership.changed` webhook announced. */
+function announcedMembers(ctx: ReturnType<typeof fixture>) {
+    return (ctx.db.tables.webhookDeliveries ?? []).map(
+        (delivery) =>
+            (
+                JSON.parse(delivery.payload as string) as {
+                    resource: { id: string }
+                }
+            ).resource.id
+    )
+}
+
 test("a reconciliation of an unchanged member writes its observation's evidence and nothing else", async () => {
     const ctx = fixture()
     const discord = await import("../../../convex/discordSync")
@@ -916,7 +915,7 @@ test("a reconciliation of an unchanged member writes its observation's evidence 
             observedAt: new Date(Date.now() - 1000).toISOString(),
         },
     })
-    const feedRows = ctx.db.tables.integrationChanges.length
+    const revision = changeRevision(ctx)
     const accessRow = structuredClone(ctx.db.tables.discordMemberAccess[0])
     // Roles in another order are the same roles.
     const { run, batch, sweep } = await reconcile(ctx, [
@@ -933,7 +932,7 @@ test("a reconciliation of an unchanged member writes its observation's evidence 
     })
     assert.equal(ctx.db.tables.membershipSyncSubjects, undefined)
     assert.deepEqual(ctx.db.tables.discordMemberAccess[0], accessRow)
-    assert.equal(ctx.db.tables.integrationChanges.length, feedRows)
+    assert.equal(changeRevision(ctx), revision)
     assert.equal(ctx.db.tables.memberObservations[0].seenRunId, run.id)
     assert.equal(
         ctx.db.tables.membershipGuilds[0].lastFullSyncAt,
@@ -941,8 +940,15 @@ test("a reconciliation of an unchanged member writes its observation's evidence 
     )
 })
 
-test("after an invalidation an unchanged member takes the new epoch without a revision or a feed row", async () => {
+test("after an invalidation an unchanged member takes the new epoch without a revision or a change", async () => {
     const ctx = fixture()
+    ctx.db.seed("webhookSubscriptions", {
+        _id: "webhookSubscriptions:website",
+        guildId: "guild-a",
+        url: "https://website.invalid/hook",
+        enabled: true,
+        eventTypes: ["membership.changed"],
+    })
     const epoch = await invoke(members.ensureGuild, ctx, {
         secret,
         guildId: "guild-a",
@@ -962,7 +968,7 @@ test("after an invalidation an unchanged member takes the new epoch without a re
             (candidate) => candidate.discordUserId === id
         )!
     const before = {
-        feed: ctx.db.tables.integrationChanges.length,
+        announced: announcedMembers(ctx).length,
         revision: row("member-a").revision,
         guildRevision: ctx.db.tables.membershipGuilds[0].revision,
     }
@@ -995,15 +1001,9 @@ test("after an invalidation an unchanged member takes the new epoch without a re
         "only member-b's departure moved the guild revision"
     )
     assert.deepEqual(
-        [
-            ...new Set(
-                ctx.db.tables.integrationChanges
-                    .slice(before.feed)
-                    .map((change) => change.id)
-            ),
-        ],
+        [...new Set(announcedMembers(ctx).slice(before.announced))],
         ["member-b"],
-        "the epoch alone adds no feed row"
+        "the epoch alone is not a change"
     )
     const fresh = await invoke(members.prepareLookup, ctx, lookup)
     assert.equal(fresh.kind, "cached")
@@ -1014,7 +1014,7 @@ test("after an invalidation an unchanged member takes the new epoch without a re
         secret,
         guildId: "guild-a",
     })
-    const feed = ctx.db.tables.integrationChanges.length
+    const revision = changeRevision(ctx)
     await invoke(members.applyGateway, ctx, {
         secret,
         guildId: "guild-a",
@@ -1026,7 +1026,7 @@ test("after an invalidation an unchanged member takes the new epoch without a re
     })
     assert.equal(row("member-a").epoch, third)
     assert.equal(row("member-a").revision, before.revision)
-    assert.equal(ctx.db.tables.integrationChanges.length, feed)
+    assert.equal(changeRevision(ctx), revision)
 })
 
 test("the sweep spares members a gateway event wrote during the run, and departs the unseen ones", async () => {

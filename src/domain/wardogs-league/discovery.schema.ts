@@ -22,11 +22,9 @@ export const trackingSettingsSchema = z
         inputChannelId: channel,
         outputChannelId: channel,
         scanMinutes: z
-            .union([z.literal(10), z.literal(15), z.literal(30), z.literal(60)])
-            .default(10),
-        refreshMinutes: z
-            .union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)])
-            .default(5),
+            .union([z.literal(15), z.literal(30), z.literal(60)])
+            .default(15),
+        refreshMinutes: z.union([z.literal(15), z.literal(30)]).default(15),
     })
     .strict()
 export type TrackingSettings = z.infer<typeof trackingSettingsSchema>

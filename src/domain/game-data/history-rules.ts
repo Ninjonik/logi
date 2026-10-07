@@ -90,6 +90,18 @@ export const HISTORY_HEAD_TOUCH_INTERVAL_MS = 10 * 60_000
  */
 export const HISTORY_FULL_WALK_INTERVAL_MS = 24 * 60 * 60_000
 
+/**
+ * How many history steps (one session each) one cron tick of
+ * `gameDataCollector:collectHistoryDue` may run, one claim at a time and
+ * {@link HISTORY_STEP_PAUSE_MS} apart. The collector no longer schedules
+ * itself between steps, so without this a tick would collect one session
+ * and a daily full walk would hold back new games for days.
+ */
+export const HISTORY_STEPS_PER_TICK = 30
+
+/** The pause between two steps of a tick; a walk's next step is due a second after its commit. */
+export const HISTORY_STEP_PAUSE_MS = 1_100
+
 /** Whether a seen-at time (ms or ISO string, or none) is old enough to record again. */
 export function historyTouchDue(
     lastAt: number | string | null | undefined,

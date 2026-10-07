@@ -94,32 +94,34 @@ test("refresh bounds use source start or first observation and settings require 
     )
 })
 
-test("cadence settings default to the historical 10/5 minutes and accept only offered values", () => {
+test("cadence settings default to 15 minutes and do not accept shorter intervals", () => {
     const parsed = trackingSettingsSchema.parse({
         enabled: true,
         teamCodes: ["VLK"],
         inputChannelId: null,
         outputChannelId: null,
     })
-    assert.equal(parsed.scanMinutes, 10)
-    assert.equal(parsed.refreshMinutes, 5)
+    assert.equal(parsed.scanMinutes, 15)
+    assert.equal(parsed.refreshMinutes, 15)
     assert.ok(
-        !trackingSettingsSchema.safeParse({ ...parsed, scanMinutes: 7 }).success
+        !trackingSettingsSchema.safeParse({ ...parsed, scanMinutes: 10 })
+            .success
     )
     assert.ok(
-        !trackingSettingsSchema.safeParse({ ...parsed, refreshMinutes: 1 })
+        !trackingSettingsSchema.safeParse({ ...parsed, refreshMinutes: 10 })
             .success
     )
     assert.equal(refreshIntervalMs({ refreshMinutes: 15 }), 15 * 60_000)
-    assert.equal(refreshIntervalMs(undefined), 5 * 60_000)
+    assert.equal(refreshIntervalMs(undefined), 15 * 60_000)
+    assert.equal(refreshIntervalMs({ refreshMinutes: 5 }), 15 * 60_000)
 })
 
 test("the shared scan follows the fastest enabled workspace and each workspace keeps its own cadence", () => {
-    assert.equal(sharedScanIntervalMs([]), 10 * 60_000)
+    assert.equal(sharedScanIntervalMs([]), 15 * 60_000)
     assert.equal(
         sharedScanIntervalMs([
             { enabled: true, scanMinutes: 60 },
-            { enabled: false, scanMinutes: 10 },
+            { enabled: false, scanMinutes: 15 },
         ]),
         60 * 60_000
     )
@@ -152,7 +154,7 @@ test("the shared scan follows the fastest enabled workspace and each workspace k
     )
     assert.ok(
         indexDueForWorkspace(
-            { lastIndexAt: fetchedAt - 10 * 60_000 },
+            { lastIndexAt: fetchedAt - 15 * 60_000 },
             fetchedAt
         )
     )

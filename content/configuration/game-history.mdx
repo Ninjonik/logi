@@ -6,7 +6,7 @@ The overview shows faction wins, draws and games without a result. Player rankin
 
 These are in-game factions, not clan teams. A collected game does not confirm an official match or link a Steam player to a Discord member. Missing values appear as a dash; unknown results are not losses. Metric coverage is shown alongside totals.
 
-History survives disabling collection and credential rotation. Logi checks for new games every five minutes and re-reads every game once a day, so a correction made in Warcon updates the existing game within a day. Coverage starts with successfully imported games: Logi cannot reconstruct games that disappeared from Warcon before collection.
+History survives disabling collection and credential rotation. Logi checks for new games every ten minutes and re-reads every game once a day, so a correction made in Warcon updates the existing game within a day. Coverage starts with successfully imported games: Logi cannot reconstruct games that disappeared from Warcon before collection.
 
 **History retention** in the same section keeps retained games indefinitely by default. A manager can instead choose 90, 180, 365 or 730 days; games that ended before that window are deleted permanently in a nightly sweep (and immediately after the window is shortened). Deletion advances the history revision, so a website scanning `/api/v1/clan/server-game-history` receives `reset_required` and rebuilds its totals from the remaining games. Deleted games cannot be recovered from Logi.
 

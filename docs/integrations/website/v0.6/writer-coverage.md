@@ -20,14 +20,12 @@ throws commit nothing. Tests simulate rollback; Convex supplies the real guarant
 
 Event fields: name, kind, status, gameStart, gameEnd, updatedAt, eventResult,
 guildId and resolved gameId. `gameDataConnections` is not tracked: its
-observation and health change on every one-minute poll, so the feed no longer
-carries `server-snapshots` or `integration-health` (read
+observation and health change on every collector poll, so nothing announces `server-snapshots` or `integration-health` (read
 `/api/v1/clan/server-snapshots` and `/api/v1/clan/integration-health`). A
 session (`player-stat-summaries`) seen again with the same content (fetchedAt,
 updatedAt only) is not a change. A tracked League fixture (`league-fixtures`)
 is a change only when its served projection changes; the row revision, age,
-staleness, last attempt and the snapshot's `fetchedAt` move on every five-minute
-refresh and are left out of the comparison.
+staleness, last attempt and the snapshot's `fetchedAt` move on every refresh and are left out of the comparison.
 Kind/scope changes remove the old projection (e.g. match to training). Extra
 invalidations are harmless; private fields never enter the stream.
 
@@ -49,6 +47,6 @@ The standalone legacy HLL scope repository currently has no production caller;
 any future caller must use the decorator. Scheduled jobs call covered event
 handlers. Public previews, raw stats and recap bodies are not summary dependencies.
 
-Every append first checks, through the `apiKeys` `guildId` index, that the clan
-has a key that reads the feed (`readsChangeFeed`); without one nothing is
-written. No append enqueues a webhook.
+Logi keeps no change log (7 Oct): an append allocates the clan's next
+revision in `integrationHeads` and enqueues the `integration.changed` or
+`membership.changed` deliveries of the clan's webhook subscriptions.

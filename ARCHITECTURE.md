@@ -193,7 +193,7 @@ character stepped up)` on the same index (`publicationKeyRange`).
   its last complete run and reads the events updated since through the
   `updatedAt` index, with one full walk a day for rows without the field.
 - A collector that walks a provider's history stops where it is caught up.
-  Each five-minute history cycle starts at page 1 (the newest games),
+  Each history cycle starts at page 1 (the newest games),
   fetches only the sessions not yet stored complete for the current source
   generation (`gameDataHistory:storedComplete`, one indexed lookup per ID,
   called once per page) and ends at the first page that has none. A full
@@ -240,17 +240,20 @@ character stepped up)` on the same index (`publicationKeyRange`).
   `membershipScopeVersion`); a history commit patches a session only when
   its content changed and records a visit (an unfinished session's
   `fetchedAt`, `historyLastSuccessAt`) at most once a minute
-  (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
-  each guild head once per batch, and `integrationChanges:resetFeed` is the
-  operator's way out of a flooded log: it raises every floor to its head so
-  consumers bootstrap again, then empties the log in batches.
-- The change feed carries only what a website re-downloads, for clans that
-  read it. Live state stays out (`gameDataConnections` is not tracked;
+  (`HISTORY_TOUCH_INTERVAL_MS`).
+- The change feed keeps no log: `integrationChanges` and `integrationRecords`
+  were removed, `readChanges` answers every cursor with `reset_required`, and
+  `appendIntegrationChange` only allocates the clan's next revision and
+  enqueues its webhook deliveries. Only what a website re-downloads is
+  announced: live state is not tracked (`gameDataConnections`;
   `server-snapshots` and `integration-health` are read from their own
-  endpoints), a League refresh appends only when its served fixture changed,
-  `appendIntegrationChange` writes nothing for a clan without a key that reads
-  the feed (`readsChangeFeed`, through the `apiKeys` `guildId` index), it
-  enqueues no webhook, and changes and tombstones live two days.
+  endpoints), and a League refresh announces a fixture only when its served
+  projection changed.
+- The collectors run from their crons and never schedule themselves. A
+  history tick (`collectHistoryDue`, every ten minutes) runs up to
+  `HISTORY_STEPS_PER_TICK` steps of one session each in one action, a
+  second apart; an incremental cycle stops at the first page whose sessions
+  are stored complete, and a full walk runs once a day.
 - A pass over every member of a clan runs only when it can find something.
   The bot reads the reconciliation's start (`reconciliationStart`, a query)
   before the Discord fetch and inserts the run only after a complete fetch;

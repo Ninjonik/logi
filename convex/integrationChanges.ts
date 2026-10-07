@@ -1,16 +1,4 @@
 import {
-    CHANGE_RETENTION_MS,
-    revisionOrder,
-    SYNC_RESOURCES,
-    type SyncResource,
-} from "../src/domain/integrations/change"
-import {
-    query,
-    internalMutation,
-    type MutationCtx,
-    type QueryCtx,
-} from "./_generated/server"
-import {
     authorizeMembership,
     membershipGuild,
     readMembershipRecord,
@@ -20,15 +8,19 @@ import {
     type PeopleResource,
 } from "../src/domain/api/people-summaries"
 import {
+    SYNC_RESOURCES,
+    type SyncResource,
+} from "../src/domain/integrations/change"
+import {
     allowsApiKeyRead,
     isApiKeyReadAccess,
 } from "../src/domain/api/key-access"
 import { projectIntegrationRow } from "./integrationProjection"
-import { integrationRecord } from "./integrationChangeLog"
+import { integrationRevision } from "./integrationChangeLog"
+import { query, type QueryCtx } from "./_generated/server"
 import { readPeopleProjection } from "./peopleProjection"
 import { readLeagueFixture } from "./leagueFixtureReads"
 import { readHistoryRecord } from "./gameHistoryStore"
-import { makeFunctionReference } from "convex/server"
 import { isGameId } from "../src/domain/games/game"
 import { peopleGeneration } from "./peopleChanges"
 import { readTeamDto } from "./teamReads"
@@ -127,59 +119,10 @@ export const readChanges = query({
                     ? { peopleScopeVersion }
                     : {}),
             }
-        const after = args.afterRevision
-        if (
-            after === undefined ||
-            args.issuedAt === undefined ||
-            args.issuedAt > Date.now() ||
-            args.issuedAt <= Date.now() - CHANGE_RETENTION_MS ||
-            revisionOrder(after) < revisionOrder(head?.floor ?? "0") ||
-            revisionOrder(after) > revisionOrder(revision)
-        )
-            return { resetRequired: true }
-        // Limit scanned rows, not returned rows: even an empty filtered page may have a continuation.
-        const rows = await ctx.db
-            .query("integrationChanges")
-            .withIndex("guildId_revisionOrder", (q) =>
-                q
-                    .eq("guildId", key.guildId)
-                    .gt("revisionOrder", revisionOrder(after))
-            )
-            .take(args.limit)
-        if (rows.some((row) => row.expiresAt <= Date.now()))
-            return { resetRequired: true }
-        return {
-            items: rows
-                .filter(
-                    (row) =>
-                        row.gameId === args.gameId &&
-                        args.resources.includes(row.resource) &&
-                        (row.resource !== "membership-summaries" ||
-                            row.id === args.discordUserId)
-                )
-                .map(
-                    ({
-                        guildId,
-                        gameId,
-                        resource,
-                        id,
-                        operation,
-                        revision,
-                    }) => ({
-                        guildId,
-                        gameId,
-                        resource,
-                        id,
-                        operation,
-                        revision,
-                    })
-                ),
-            revision: rows.at(-1)?.revision ?? after,
-            ...(membershipScopeVersion ? { membershipScopeVersion } : {}),
-            ...(peopleScopeVersion !== undefined ? { peopleScopeVersion } : {}),
-            hasMore: rows.length === args.limit,
-            resetRequired: false,
-        }
+        // Change retention was intentionally removed. Consumers bootstrap their
+        // own collection after every cursor instead of Logi retaining a copy of
+        // each mutation solely to replay it later.
+        return { resetRequired: true }
     },
 })
 export const readSyncRecord = query({
@@ -220,22 +163,13 @@ export const readSyncRecord = query({
             resource,
             id: args.id,
         }
-        const stamp = await integrationRecord(ctx, identity)
-        if (stamp?.operation === "remove")
-            return stamp.expiresAt! > Date.now()
-                ? {
-                      ...identity,
-                      revision: stamp.revision,
-                      operation: "remove" as const,
-                      data: null,
-                  }
-                : null
+        const revision = await integrationRevision(ctx, key.guildId)
         if (resource === "teams") {
             const data = await readTeamDto(ctx, args.gameId, args.id)
             return data
                 ? {
                       ...identity,
-                      revision: stamp?.revision ?? "0",
+                      revision,
                       operation: "upsert" as const,
                       data,
                   }
@@ -252,7 +186,7 @@ export const readSyncRecord = query({
             return data
                 ? {
                       ...identity,
-                      revision: stamp?.revision ?? "0",
+                      revision,
                       operation: "upsert" as const,
                       data,
                   }
@@ -264,7 +198,7 @@ export const readSyncRecord = query({
             return data
                 ? {
                       ...identity,
-                      revision: stamp?.revision ?? "0",
+                      revision,
                       operation: "upsert" as const,
                       data,
                   }
@@ -276,14 +210,14 @@ export const readSyncRecord = query({
             return data
                 ? {
                       ...identity,
-                      revision: stamp?.revision ?? "0",
+                      revision,
                       operation: "upsert" as const,
                       data,
                   }
                 : null
         }
-        // `server-snapshots` and `integration-health` are no longer appended
-        // (`RETIRED_SYNC_RESOURCES`); their current record is still served.
+        // `server-snapshots` and `integration-health` are live state that no
+        // writer notifies (`RETIRED_SYNC_RESOURCES`); their record is served.
         const table =
             resource === "server-snapshots" || resource === "integration-health"
                 ? "gameDataConnections"
@@ -298,94 +232,10 @@ export const readSyncRecord = query({
         return projection
             ? {
                   ...identity,
-                  revision: stamp?.revision ?? "0",
+                  revision,
                   operation: "upsert" as const,
                   data: projection.data,
               }
             : null
-    },
-})
-
-/** Raises each guild's retention floor to the newest of the given revisions, one head write per guild. */
-async function raiseFloors(
-    ctx: MutationCtx,
-    rows: Array<{ guildId: string; revision: string }>
-) {
-    const newest = new Map<string, string>()
-    for (const row of rows) {
-        const current = newest.get(row.guildId)
-        if (
-            current === undefined ||
-            revisionOrder(row.revision) > revisionOrder(current)
-        )
-            newest.set(row.guildId, row.revision)
-    }
-    for (const [guildId, revision] of newest) {
-        const head = await ctx.db
-            .query("integrationHeads")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .unique()
-        if (head && revisionOrder(revision) > revisionOrder(head.floor))
-            await ctx.db.patch(head._id, { floor: revision })
-    }
-}
-const PRUNE_BATCH = 250
-export const prune = internalMutation({
-    args: {},
-    handler: async (ctx) => {
-        const expired = await ctx.db
-            .query("integrationChanges")
-            .withIndex("expiresAt", (q) => q.lte("expiresAt", Date.now()))
-            .take(PRUNE_BATCH)
-        // Every append patches the guild head too; one head write per guild
-        // and batch keeps this cron from conflicting with the writers.
-        await raiseFloors(ctx, expired)
-        for (const row of expired) await ctx.db.delete(row._id)
-        const tombstones = await ctx.db
-            .query("integrationRecords")
-            .withIndex("expiresAt", (q) =>
-                q.gt("expiresAt", 0).lte("expiresAt", Date.now())
-            )
-            .take(PRUNE_BATCH)
-        for (const row of tombstones) await ctx.db.delete(row._id)
-        if (expired.length === PRUNE_BATCH || tombstones.length === PRUNE_BATCH)
-            await ctx.scheduler.runAfter(
-                0,
-                makeFunctionReference<"mutation">("integrationChanges:prune"),
-                {}
-            )
-    },
-})
-const RESET_BATCH = 500
-/**
- * Operator recovery for a flooded change log: raises every guild's floor to
- * its head, so each website consumer bootstraps again instead of missing
- * changes, then empties the log in batches of {@link RESET_BATCH} rows,
- * rescheduling itself until it is empty. Run with
- * `npx convex run integrationChanges:resetFeed`.
- */
-export const resetFeed = internalMutation({
-    args: { floorsRaised: v.optional(v.boolean()) },
-    handler: async (ctx, args) => {
-        if (!args.floorsRaised) {
-            const heads = await ctx.db.query("integrationHeads").collect()
-            for (const head of heads)
-                if (revisionOrder(head.revision) > revisionOrder(head.floor))
-                    await ctx.db.patch(head._id, { floor: head.revision })
-        }
-        const rows = await ctx.db
-            .query("integrationChanges")
-            .withIndex("expiresAt", (q) => q.gte("expiresAt", 0))
-            .take(RESET_BATCH)
-        for (const row of rows) await ctx.db.delete(row._id)
-        if (rows.length === RESET_BATCH)
-            await ctx.scheduler.runAfter(
-                0,
-                makeFunctionReference<"mutation">(
-                    "integrationChanges:resetFeed"
-                ),
-                { floorsRaised: true }
-            )
-        return { removed: rows.length, done: rows.length < RESET_BATCH }
     },
 })

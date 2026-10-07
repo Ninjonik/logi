@@ -461,18 +461,30 @@ test("explicitly refreshing an archived unresolved match attempts one read witho
     assert.equal(await invoke(claimDue, ctx), null)
 })
 
-test("a tracked fixture refresh appends a feed change only when the fixture the website reads changed", async () => {
+test("a tracked fixture refresh notifies a change only when the fixture the website reads changed", async () => {
     const ctx = await setup()
-    ctx.db.seed("apiKeys", {
-        _id: "apiKeys:website",
+    ctx.db.seed("webhookSubscriptions", {
+        _id: "webhookSubscriptions:website",
         guildId,
-        keyHash: "website",
-        readAccess: { resources: ["league-fixtures"], gameIds: ["wardogs"] },
+        url: "https://website.invalid/hook",
+        enabled: true,
+        eventTypes: ["integration.changed"],
     })
     const fixtureChanges = () =>
-        (ctx.db.tables.integrationChanges ?? []).filter(
-            (row) => row.resource === "league-fixtures"
-        )
+        (ctx.db.tables.webhookDeliveries ?? [])
+            .map(
+                (row) =>
+                    (
+                        JSON.parse(row.payload as string) as {
+                            resource: {
+                                resource: string
+                                id: string
+                                operation: string
+                            }
+                        }
+                    ).resource
+            )
+            .filter((change) => change.resource === "league-fixtures")
     await invoke(manage, ctx, { ...access, sourceUrl, operation: "add" })
     await finish(ctx, await invoke(claimDue, ctx))
     assert.equal(ctx.db.tables.leagueTrackedMatches[0].tracked, true)
@@ -509,7 +521,7 @@ test("a tracked fixture refresh appends a feed change only when the fixture the 
     assert.deepEqual(
         fixtureChanges()
             .slice(first)
-            .map((row) => [row.id, row.operation]),
+            .map((change) => [change.id, change.operation]),
         [[matchId, "upsert"]],
         "a changed page is one change"
     )

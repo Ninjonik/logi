@@ -266,9 +266,7 @@ test("reviewed result participates in transactional changes, refetch and deletio
             await tracked.db.delete("events:a" as never)
         }
     )
-    const tombstone = await invoke(feed.readSyncRecord, ctx, query)
-    assert.equal(tombstone.operation, "remove")
-    assert.equal(tombstone.data, null)
+    assert.equal(await invoke(feed.readSyncRecord, ctx, query), null)
 })
 
 test("generic event reads cannot bypass the reviewed-result grant or game boundary", async () => {

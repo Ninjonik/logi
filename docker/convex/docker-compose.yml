@@ -37,7 +37,7 @@ services:
       # backend"). Each function-runner worker keeps a V8 isolate with up to
       # 96 MiB of heap for ISOLATE_IDLE_TIMEOUT_SECONDS after its last call;
       # the upstream pool allows 300 of them.
-      - MAX_ISOLATE_WORKERS=${MAX_ISOLATE_WORKERS:-300}
+      - MAX_ISOLATE_WORKERS=${MAX_ISOLATE_WORKERS:-16}
       - ISOLATE_IDLE_TIMEOUT_SECONDS=${ISOLATE_IDLE_TIMEOUT_SECONDS:-600}
       - ISOLATE_MAX_LIFETIME_SECONDS=${ISOLATE_MAX_LIFETIME_SECONDS:-3600}
       - UDF_CACHE_MAX_SIZE=${UDF_CACHE_MAX_SIZE:-104857600}

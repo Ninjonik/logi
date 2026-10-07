@@ -550,27 +550,8 @@ test("source changes and expired claims reject writes until a new generation is 
     assert.equal(ctx.db.tables.gameDataConnections[0].errorCategory, null)
 })
 
-/** A website key that reads the guild's change feed. */
-function seedFeedReader(ctx: ReturnType<typeof fixture>) {
-    ctx.db.tables.apiKeys.push({
-        _id: "feed-key",
-        keyHash: "feed",
-        guildId: "guild-a",
-        readAccess: {
-            resources: [
-                "event-summaries",
-                "player-stat-summaries",
-                "server-snapshots",
-                "integration-health",
-            ],
-            gameIds: ["wardogs", "hell_let_loose"],
-        },
-    })
-}
-
-test("a collector run that changes the observation and health writes no feed row", async (t) => {
+test("a collector run that changes the observation and health allocates no change revision", async (t) => {
     const ctx = fixture(t)
-    seedFeedReader(ctx)
     await handler(gameData.configure)(ctx, {
         secret: "synthetic-data-secret",
         guildId: "guild-a",
@@ -620,17 +601,11 @@ test("a collector run that changes the observation and health writes no feed row
         ).players,
         12
     )
-    for (const table of [
-        "integrationChanges",
-        "integrationRecords",
-        "integrationHeads",
-    ])
-        assert.equal(ctx.db.tables[table], undefined, table)
+    assert.equal(ctx.db.tables.integrationHeads, undefined)
 })
 
 test("history commit records an unchanged session and its connection at most once a minute, with no feed entry", async (t) => {
     const ctx = fixture(t)
-    seedFeedReader(ctx)
     const hll = {
         ...source,
         ref: "hll",
@@ -676,23 +651,15 @@ test("history commit records an unchanged session and its connection at most onc
             },
         })
     }
-    const feedRows = () => (ctx.db.tables.integrationChanges ?? []).length
     const row = () => ctx.db.tables.gameSessions[0]
     const connection = () => ctx.db.tables.gameDataConnections[0]
     assert.equal(await commit(), true)
     const written = {
-        feed: feedRows(),
         fetchedAt: row().fetchedAt,
         updatedAt: row().updatedAt,
         success: connection().historyLastSuccessAt,
     }
-    assert.equal(
-        written.feed,
-        0,
-        "the connection's history count is live state, not a feed change"
-    )
     assert.equal(await commit(), true)
-    assert.equal(feedRows(), written.feed, "a revisit is not a change")
     assert.equal(
         row().fetchedAt,
         written.fetchedAt,
@@ -717,7 +684,6 @@ test("history commit records an unchanged session and its connection at most onc
         "a visit alone keeps the content stamp"
     )
     assert.notEqual(connection().historyLastSuccessAt, staleSuccess)
-    assert.equal(feedRows(), written.feed, "recording a visit is not a change")
     assert.equal(await commit({ ...session, map: "Foy" }), true)
     assert.equal(
         (row().session as { map: string }).map,

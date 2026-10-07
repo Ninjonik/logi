@@ -10,13 +10,10 @@ import {
     observationChange,
     type ProviderObservation,
 } from "../src/domain/membership/observation"
-import {
-    appendIntegrationChange,
-    integrationRecord,
-} from "./integrationChangeLog"
 import { projectMembership } from "../src/domain/membership/observation.schema"
 import { nextRevision, revisionOrder } from "../src/domain/integrations/change"
 import { GAME_IDS, type GameId } from "../src/domain/games/game"
+import { appendIntegrationChange } from "./integrationChangeLog"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { readMembershipAssignment } from "./membershipSubject"
 import type { Doc } from "./_generated/dataModel"
@@ -43,17 +40,7 @@ export async function readMembershipRecord(
     const guild = await membershipGuild(ctx, args.guildId),
         raw = await memberObservation(ctx, args.guildId, args.discordUserId)
     const assignment = await readMembershipAssignment(ctx, args)
-    const stamp = await integrationRecord(ctx, {
-        guildId: args.guildId,
-        gameId: args.gameId,
-        resource: "membership-summaries",
-        id: args.discordUserId,
-    })
-    const revision = [
-        stamp?.revision ?? "0",
-        grant.policy.version,
-        guild?.epochRevision ?? "0",
-    ]
+    const revision = [grant.policy.version, guild?.epochRevision ?? "0"]
         .sort((a, b) => revisionOrder(a).localeCompare(revisionOrder(b)))
         .at(-1)!
     return projectMembership(

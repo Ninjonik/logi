@@ -33,7 +33,6 @@ import { projectHealth } from "../src/domain/game-data/policy"
 import { query, type MutationCtx } from "./_generated/server"
 import { applyConnectionSource } from "./gameData"
 import type { Doc } from "./_generated/dataModel"
-import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
 const access = {
@@ -193,19 +192,6 @@ export async function refreshConnectionCredential(
             nextAttemptAt: enabled ? now : null,
             errorCategory: null,
         })
-    if (enabled) {
-        await ctx.scheduler.runAfter(
-            0,
-            internal.gameDataCollector.collectDue,
-            {}
-        )
-        if (run)
-            await ctx.scheduler.runAfter(
-                0,
-                internal.gameDataCollector.collectHistoryDue,
-                {}
-            )
-    }
     return enabled
 }
 
