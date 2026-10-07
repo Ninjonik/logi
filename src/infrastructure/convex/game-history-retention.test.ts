@@ -47,16 +47,6 @@ test("pruning removes only this workspace's expired games, records deletions and
         ["serverGameHistory:fresh", "serverGameHistory:other"]
     )
     assert.equal(ctx.db.tables.serverGameHistoryHeads[0].revision, "8")
-    const changes = ctx.db.tables.integrationChanges ?? []
-    assert.equal(changes.length, 2)
-    assert.ok(
-        changes.every(
-            (change) =>
-                change.operation === "remove" &&
-                change.resource === "server-game-history" &&
-                change.guildId === "guild"
-        )
-    )
     assert.equal(ctx.scheduler.calls.length, 0)
 })
 

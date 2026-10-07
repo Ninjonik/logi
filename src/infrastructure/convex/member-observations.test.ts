@@ -553,9 +553,10 @@ test("membership feed binds one subject and resets after policy or provider epoc
         membershipScopeVersion: start.membershipScopeVersion,
         issuedAt: Date.now(),
     }
-    const changes = await invoke(feed.readChanges, ctx, cursor)
-    assert.equal(changes.items.length, 1)
-    assert.equal(changes.items[0].id, "member-a")
+    assert.equal(
+        (await invoke(feed.readChanges, ctx, cursor)).resetRequired,
+        true
+    )
     assert.equal(ctx.db.tables.webhookDeliveries?.length ?? 0, 0)
     ctx.db.tables.membershipIntegrationPolicies[0].version = "50"
     assert.equal(
@@ -669,21 +670,17 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
             roleIds,
             observedAt,
         })
-    const feedRows = () => ctx.db.tables.integrationChanges?.length ?? 0
     const observation = () => ctx.db.tables.memberObservations[0]
     const guild = () => ctx.db.tables.membershipGuilds[0]
     const first = new Date(Date.now() - 20_000).toISOString(),
         second = new Date(Date.now() - 10_000).toISOString()
     await observe(["allowed", "other"], first)
     const written = {
-        feed: feedRows(),
         revision: observation().revision,
         guildRevision: guild().revision,
     }
-    assert.ok(written.feed > 0, "a first observation is a change")
     // The reconciliation path: same roles in a different order, newer evidence.
     await observe(["other", "allowed"], second)
-    assert.equal(feedRows(), written.feed, "no feed entry for unchanged roles")
     assert.equal(observation().revision, written.revision)
     assert.equal(guild().revision, written.guildRevision)
     assert.equal(observation().observedAt, second, "evidence is refreshed")
@@ -700,11 +697,6 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
         members: [{ discordUserId: "member-a", roleIds: ["allowed", "other"] }],
     })
     assert.equal(
-        feedRows(),
-        written.feed,
-        "a reconciliation of an unchanged member writes no feed entry"
-    )
-    assert.equal(
         observation().seenRunId,
         run.id,
         "the run still marks the member as seen"
@@ -713,7 +705,6 @@ test("an observation with the same state, roles and epoch refreshes evidence wit
     // Evidence older than the reconciliation's is refused, so the change is
     // observed at the time of the call, never at a time captured earlier.
     await observe(["allowed"], new Date().toISOString())
-    assert.ok(feedRows() > written.feed, "a role change is a change")
     assert.notEqual(observation().revision, written.revision)
     assert.notEqual(guild().revision, written.guildRevision)
 })
@@ -795,14 +786,5 @@ test("a reconciliation sweep leaves departed members untouched and departs only 
         row("still-here").observedAt,
         old,
         "but its evidence is refreshed"
-    )
-    assert.deepEqual(
-        [
-            ...new Set(
-                ctx.db.tables.integrationChanges.map((change) => change.id)
-            ),
-        ],
-        ["vanished"],
-        "only the departure reaches the feed"
     )
 })

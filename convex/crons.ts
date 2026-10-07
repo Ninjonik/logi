@@ -6,7 +6,7 @@ import { internal } from "./_generated/api"
 const crons = cronJobs()
 crons.interval(
     "discover and refresh League fixtures",
-    { minutes: 1 },
+    { minutes: 15 },
     makeFunctionReference<"action">("leagueDiscoveryJobs:collectDue"),
     {}
 )
@@ -33,20 +33,14 @@ crons.interval(
     {}
 )
 crons.interval(
-    "prune integration change retention",
-    { hours: 1 },
-    makeFunctionReference<"mutation">("integrationChanges:prune"),
-    {}
-)
-crons.interval(
     "collect game server data",
-    { minutes: 1 },
+    { minutes: 5 },
     internal.gameDataCollector.collectDue,
     {}
 )
 crons.interval(
     "collect HLL history",
-    { minutes: 1 },
+    { minutes: 10 },
     internal.gameDataCollector.collectHistoryDue,
     {}
 )

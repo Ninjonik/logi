@@ -62,7 +62,7 @@ Single match cards are no longer posted; cards from earlier versions are deleted
 
 ## Data and freshness
 
-Logi reads the public fixtures and results lists on the scan cadence and every match page through one shared cache: the nearest and live matches as often as every five minutes, other fixtures every 30 minutes, finished ones until their places appear. All League reads share a budget of 20 page loads per minute and respect the site's rate limits, so busy periods can delay updates. A failed read keeps the last valid data. Times in Discord adapt to each reader; the dashboard uses Europe/Prague.
+Logi checks the public fixtures and results lists, and refreshes tracked match pages, no more often than every 15 minutes. The scan and refresh settings default to 15 minutes and cannot be set lower. All League reads share a budget of 20 page loads per minute and respect the site's rate limits, so busy periods can delay updates. A failed read keeps the last valid data. Times in Discord adapt to each reader; the dashboard uses Europe/Prague.
 
 ## Activation and limits
 

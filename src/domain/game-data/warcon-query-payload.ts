@@ -77,14 +77,6 @@ export function readWarconQueryPayload(json: string): WarconQuery | null {
     return value as WarconQuery
 }
 
-export function warconCacheMs(query: Pick<WarconQuery, "view">) {
-    return query.view === "live"
-        ? 10_000
-        : query.view === "kills"
-          ? 15_000
-          : ["catalog", "capabilities", "experiences", "alternators"].includes(
-                  query.view
-              )
-            ? 300_000
-            : 60_000
+export function warconCacheMs(_query: Pick<WarconQuery, "view">) {
+    return 60_000
 }

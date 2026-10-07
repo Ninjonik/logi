@@ -9,7 +9,7 @@ import type { Doc } from "./_generated/dataModel"
 
 /**
  * The website projections of one tracked row, read by the change feed
- * (`integrationChanges:readRecord`). Kept apart from `integrationMutation.ts`:
+ * (`integrationChanges:readSyncRecord`). Kept apart from `integrationMutation.ts`:
  * the mutation wrapper compares fingerprints and must not bundle the
  * summary schemas behind these projections.
  */

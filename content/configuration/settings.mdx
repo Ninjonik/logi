@@ -739,22 +739,21 @@ been removed.
 
 ### Durable website synchronization
 
-Restricted integrations can recover changes with `GET /api/v1/clan/changes` and
-refetch minimal records atomically with their revision at
+Restricted integrations can capture a baseline revision with
+`GET /api/v1/clan/changes?start=now` and refetch a current record atomically at
 `GET /api/v1/clan/sync-records/{resource}/{id}?game=wardogs`. Both require explicit
-underlying read grants and one game. Capture `start=now` before a baseline sweep,
-then replay its signed cursor. Continue empty pages when `hasMore` is true.
-Store decimal revisions losslessly. After seven days without recovery, a 410
-`reset_required` response requires a new baseline. Keep CMS/publication decisions
-in the website's own backend.
+underlying read grants and one game. Logi does not retain a replay log of every
+mutation: a cursor response is `410 reset_required`, so rebuild the integration's
+own baseline when recovery is needed. Keep CMS/publication decisions in the
+website's own backend.
 
 The registered projections are event summaries, match summaries, reviewed result
 summaries, server snapshots and integration health. Optional `integration.changed` webhook subscriptions emit
 minimal invalidations from dashboard, API, bot, import and collector transactions.
 Use the existing administrator-session webhook endpoint to opt into that event
 type; existing subscriptions are unchanged. The queue processes bounded batches,
-honors Retry-After and recovers expired worker leases. Receivers must deduplicate;
-the change feed remains the recovery source. See `/api/v1/docs` for the contract.
+honors Retry-After and recovers expired worker leases. Receivers must deduplicate
+and rebuild their own baseline after an outage. See `/api/v1/docs` for the contract.
 
 > **Screenshot placeholder — settings:** Show the server Settings page with the active workspace name, clearly separated settings sections, and a redacted example of any sensitive key field.
 

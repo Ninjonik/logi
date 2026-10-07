@@ -21,7 +21,6 @@ export type IntegrationChange = {
     id: string
     operation: "upsert" | "remove"
 }
-export const CHANGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 // The wire schemas (`integrationChangeSchema`, `syncRecordSchema`) live in
 // `change.schema.ts`: this module stays free of Zod for the mutation wrapper.
 
