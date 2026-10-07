@@ -10,7 +10,6 @@ import {
     filterByGameScope,
     resolveGameScope,
     type GameId,
-    type GameScope,
 } from "../src/domain/games/game"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"

@@ -181,13 +181,14 @@ export const reportEmoji = mutation({
         assertInternalSecret(args.secret)
         const report = panelEmojiReportSchema.parse(args.report)
         const row = await emojiReport(ctx)
-        const { checkedAt: _checkedAt, ...content } = report
+        // Every reported field but `checkedAt`; an older bot omits `installed`.
         const unchanged =
             row !== null &&
-            Object.entries(content).every(
+            Object.entries(report).every(
                 ([key, value]) =>
-                    canonicalJson(row[key as keyof typeof content]) ===
-                    canonicalJson(value)
+                    key === "checkedAt" ||
+                    canonicalJson(row[key as keyof typeof report]) ===
+                        canonicalJson(value)
             )
         const value = { key: "global" as const, ...report }
         if (!row) await ctx.db.insert("discordApplicationEmoji", value)
