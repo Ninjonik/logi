@@ -139,11 +139,10 @@ that cursor. Old logs may contain imported IDs that did not reach an exact-subje
 subscriber; this producer fix does not rewrite historical logs. Always follow
 `hasMore`, including when a filtered page contains no items.
 
-Membership notifications use the separate explicit **`membership.changed`**
-webhook subscription. Existing `integration.changed` subscribers never receive
-member IDs automatically. Notification bodies carry only subject/scope/revision;
-they are not permission to publish data or grant website access. Webhook delivery
-is supplementary; authenticated lookup and cursor polling remain authoritative.
+Membership changes are read by polling the feed. The **`membership.changed`**
+and `integration.changed` webhooks are no longer emitted (October 2026); a
+subscription that lists them is still accepted and receives nothing for them.
+Authenticated lookup and cursor polling are authoritative.
 
 ## Activation and remaining ownership
 

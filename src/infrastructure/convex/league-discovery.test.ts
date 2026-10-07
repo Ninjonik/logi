@@ -434,3 +434,57 @@ test("explicitly refreshing an archived unresolved match attempts one read witho
     assert.equal(ctx.db.tables.leagueTrackedMatches[0].state, "archived")
     assert.equal(await invoke(claimDue, ctx), null)
 })
+
+test("a tracked fixture refresh appends a feed change only when the fixture the website reads changed", async () => {
+    const ctx = await setup()
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:website",
+        guildId,
+        keyHash: "website",
+        readAccess: { resources: ["league-fixtures"], gameIds: ["wardogs"] },
+    })
+    const fixtureChanges = () =>
+        (ctx.db.tables.integrationChanges ?? []).filter(
+            (row) => row.resource === "league-fixtures"
+        )
+    await invoke(manage, ctx, { ...access, sourceUrl, operation: "add" })
+    await finish(ctx, await invoke(claimDue, ctx))
+    assert.equal(ctx.db.tables.leagueTrackedMatches[0].tracked, true)
+    const first = fixtureChanges().length
+    assert.ok(first > 0, "the first readable snapshot is a change")
+    const refresh = async (data = snapshot) => {
+        Object.assign(ctx.db.tables.leagueTrackedMatches[0], {
+            nextRefreshAt: 0,
+            leaseUntil: 0,
+        })
+        const job = await invoke(claimDue, ctx)
+        assert.ok(job)
+        await finish(ctx, job, data)
+    }
+    const revision = ctx.db.tables.leagueTrackedMatches[0].revision
+    await refresh({
+        ...snapshot,
+        fetchedAt: new Date(Date.now() + 1_000).toISOString(),
+    })
+    assert.ok(
+        ctx.db.tables.leagueTrackedMatches[0].revision > revision,
+        "the row itself was refreshed"
+    )
+    assert.equal(
+        fixtureChanges().length,
+        first,
+        "the same page read again (new fetchedAt, attempt and age) is not a change"
+    )
+    await refresh({
+        ...snapshot,
+        title: `${snapshot.title} (renamed)`,
+        fetchedAt: new Date(Date.now() + 2_000).toISOString(),
+    })
+    assert.deepEqual(
+        fixtureChanges()
+            .slice(first)
+            .map((row) => [row.id, row.operation]),
+        [[matchId, "upsert"]],
+        "a changed page is one change"
+    )
+})

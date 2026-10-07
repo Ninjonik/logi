@@ -120,15 +120,15 @@ Authorization: Bearer <restricted service key>
    revisions as `BigInt`, and commit the projection and checkpoint together.
    Reviewed-result versions and synchronization revisions are different counters.
 4. Apply explicit removals/tombstones. Missing list rows are not deletion proof.
-   History/tombstone retention is seven days; `410 reset_required` requires a new
+   History/tombstone retention is two days; `410 reset_required` requires a new
    boundary and rebuild that preserves website editorial/consent data.
 5. Authenticate webhook raw bytes with the separate HMAC secret and timestamp.
    Durably deduplicate by signed envelope ID plus source/guild, reject mismatch
    with the unsigned delivery header, enqueue refetch, then acknowledge. See the
    [signature/consumer contract](../v0.3/README.md#synchronization-acceptance-contract).
-6. Subscribe explicitly to `integration.changed`; membership uses the separate
-   opt-in `membership.changed`. Notifications carry invalidations, not publishing
-   payloads or website privileges. Keep periodic feed reconciliation.
+6. Poll the feed: `integration.changed` and `membership.changed` are no longer
+   emitted (October 2026). Read server snapshots and integration health from
+   their own endpoints; the feed no longer carries them.
 
 | Condition | Consumer behavior |
 | --- | --- |

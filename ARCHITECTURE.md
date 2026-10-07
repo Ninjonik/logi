@@ -230,6 +230,13 @@ character stepped up)` on the same index (`publicationKeyRange`).
   each guild head once per batch, and `integrationChanges:resetFeed` is the
   operator's way out of a flooded log: it raises every floor to its head so
   consumers bootstrap again, then empties the log in batches.
+- The change feed carries only what a website re-downloads, for clans that
+  read it. Live state stays out (`gameDataConnections` is not tracked;
+  `server-snapshots` and `integration-health` are read from their own
+  endpoints), a League refresh appends only when its served fixture changed,
+  `appendIntegrationChange` writes nothing for a clan without a key that reads
+  the feed (`readsChangeFeed`, through the `apiKeys` `guildId` index), it
+  enqueues no webhook, and changes and tombstones live two days.
 - Every table that gains a row per request or per window has a cron that
   removes the expired rows in bounded batches through an expiry index:
   `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per

@@ -163,7 +163,7 @@ changes and removals use positive revisions. Cover dashboard, bot, imports and A
 advertised resource. Existing unsupported deletions remain unsupported; record
 tombstones only for actual supported removals/visibility transitions. A scope move
 must invalidate the old scope as well as expose the new one. Keep tombstones seven
-days initially; an expired cursor returns explicit reset-required, never success
+days initially (two days since October 2026); an expired cursor returns explicit reset-required, never success
 with a silent gap. No promise of a sequence from the old custom Valkyria bot.
 
 For bootstrap, obtain a filtered current feed cursor before the baseline sweep,

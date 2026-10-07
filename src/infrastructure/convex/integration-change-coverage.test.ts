@@ -5,10 +5,25 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
+/** The feed is written only for a guild whose website key reads it. */
+function feedContext() {
+    const ctx = testContext()
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:website",
+        guildId: "guild-a",
+        keyHash: "website",
+        readAccess: {
+            resources: ["event-summaries", "membership-summaries"],
+            gameIds: ["wardogs"],
+        },
+    })
+    return ctx
+}
+
 test("actual bot event mutation appends all event summary invalidations", async () => {
     process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
     const events = await import("../../../convex/events")
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("events", {
         _id: "events:one",
         guildId: "guild-a",
@@ -28,7 +43,7 @@ test("actual bot event mutation appends all event summary invalidations", async 
 })
 
 test("assignment changes and identity relinks invalidate the exact Discord subjects, never imported IDs", async () => {
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("users", {
         _id: "users:imported",
         id: "imported-player",
@@ -93,7 +108,7 @@ test("assignment changes and identity relinks invalidate the exact Discord subje
 test("creating a Discord profile invalidates its pre-existing legacy assignment", async () => {
     process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
     const players = await import("../../../convex/players")
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("userAssignments", {
         _id: "userAssignments:legacy",
         serverId: "guild-a",
@@ -115,7 +130,7 @@ test("creating a Discord profile invalidates its pre-existing legacy assignment"
 })
 
 test("relinking to a legacy assignment alias invalidates the newly visible membership", async () => {
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("users", { _id: "users:imported", id: "imported-player" })
     ctx.db.seed("userAssignments", {
         _id: "userAssignments:legacy",
@@ -147,7 +162,7 @@ test("dashboard upsert, API upsert, result import and legacy migration emit tran
     const events = await import("../../../convex/events")
     const api = await import("../../../convex/publicApi")
     const migrations = await import("../../../convex/migrations")
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("guilds", { _id: "guilds:one", discordId: "guild-a" })
     const input = {
         kind: "match",
@@ -247,7 +262,7 @@ test("registered authoritative writers keep transaction tracking at their Convex
 test("assignment create and removal advance the exact membership projection", async () => {
     process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
     const assignments = await import("../../../convex/userAssignments")
-    const ctx = testContext()
+    const ctx = feedContext()
     ctx.db.seed("guilds", { _id: "guilds:one", discordId: "guild-a" })
     ctx.db.seed("users", { _id: "users:one", discordId: "member-a" })
     await invoke(assignments.upsertByServerDiscordId, ctx, {
@@ -282,7 +297,7 @@ for (const hasPrimaryAssignment of [false, true]) {
     test(`actual user merge invalidates ${hasPrimaryAssignment ? "deleted duplicate assignment" : "both reassigned subjects"} and event projections`, async () => {
         process.env.INTERNAL_AUTH_SECRET = "synthetic-sync-secret"
         const players = await import("../../../convex/players")
-        const ctx = testContext()
+        const ctx = feedContext()
         for (const discordId of ["primary", "secondary"])
             ctx.db.seed("users", {
                 _id: `users:${discordId}`,

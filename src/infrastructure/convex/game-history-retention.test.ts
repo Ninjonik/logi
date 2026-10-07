@@ -40,6 +40,15 @@ function fixture(t: TestContext, retentionDays: number | null) {
 
 test("pruning removes only this workspace's expired games, records deletions and advances the revision", async (t) => {
     const ctx = fixture(t, 90)
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:website",
+        guildId: "guild",
+        keyHash: "website",
+        readAccess: {
+            resources: ["server-game-history"],
+            gameIds: ["wardogs"],
+        },
+    })
     const result = await invoke(retention.prune, ctx, { guildId: "guild" })
     assert.deepEqual(result, { deleted: 2 })
     assert.deepEqual(

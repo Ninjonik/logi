@@ -3,7 +3,7 @@ import {
     internalMutation as baseInternalMutation,
     type MutationCtx,
 } from "./_generated/server"
-import type { SyncResource } from "../src/domain/integrations/change"
+import type { FeedResource } from "../src/domain/integrations/change"
 import { appendIntegrationChange } from "./integrationChangeLog"
 import { assignmentDiscordSubject } from "./membershipSubject"
 import type { Doc, Id } from "./_generated/dataModel"
@@ -13,9 +13,12 @@ import { withPeopleChanges } from "./peopleChanges"
 // this wrapper runs inside every tracked mutation and compares stored fields
 // only, so it must not bundle the summary schemas (ARCHITECTURE.md, "Convex
 // hot paths").
-const tables = ["events", "gameDataConnections", "userAssignments"] as const
+// `gameDataConnections` is not tracked: its observation and health are live
+// state, re-observed on every collector poll, and the website reads them from
+// `/clan/server-snapshots` and `/clan/integration-health`, not from the feed.
+const tables = ["events", "userAssignments"] as const
 type TrackedTable = (typeof tables)[number]
-type Row = Doc<"events"> | Doc<"gameDataConnections"> | Doc<"userAssignments">
+type Row = Doc<"events"> | Doc<"userAssignments">
 
 /** Tracks the initial and final projection, including nested repository writes. Flush shares the mutation transaction. */
 async function trackIntegrationChanges<T>(
@@ -168,61 +171,41 @@ async function trackIntegrationChanges<T>(
         }
         // Old migration input can predate the current DTO schema. Compare source
         // fields without parsing it; wire validation belongs to the read path.
-        const fingerprints = (row: Row | null) => {
+        const fingerprints = (row: Doc<"events"> | null) => {
             if (!row) return []
             const data = row as unknown as Record<string, unknown>
-            const fields =
-                table === "events"
-                    ? [
-                          "name",
-                          "kind",
-                          "status",
-                          "gameStart",
-                          "gameEnd",
-                          "updatedAt",
-                          "eventResult",
-                          "reviewedResult",
-                          "reviewedResultGameId",
-                          "matchTeams",
-                      ]
-                    : // Bookkeeping times (`lastAttemptAt`, `nextAttemptAt`,
-                      // `historyLastSuccessAt`, `updatedAt`) advance on every
-                      // collector run, once a second while a history walk is
-                      // in progress; a feed entry per run flooded the change
-                      // log. The served record carries the current times.
-                      [
-                          "provider",
-                          "enabled",
-                          "observation",
-                          "errorCategory",
-                          "historyCount",
-                          "historyErrorCategory",
-                      ]
-            const fingerprint = JSON.stringify(fields.map((key) => data[key]))
-            const resources: SyncResource[] =
-                table === "events"
-                    ? [
-                          "event-summaries",
-                          ...((data.kind ?? "match") === "match"
-                              ? [
-                                    "match-summaries" as const,
-                                    "result-summaries" as const,
-                                ]
-                              : []),
-                      ]
-                    : ["server-snapshots", "integration-health"]
+            const fingerprint = JSON.stringify(
+                [
+                    "name",
+                    "kind",
+                    "status",
+                    "gameStart",
+                    "gameEnd",
+                    "updatedAt",
+                    "eventResult",
+                    "reviewedResult",
+                    "reviewedResultGameId",
+                    "matchTeams",
+                ].map((key) => data[key])
+            )
+            const resources: FeedResource[] = [
+                "event-summaries",
+                ...((row.kind ?? "match") === "match"
+                    ? ["match-summaries" as const, "result-summaries" as const]
+                    : []),
+            ]
             return resources.map((resource) => ({
                 resource,
                 data: {
                     id,
-                    guildId: "guildId" in row ? row.guildId : row.serverId,
+                    guildId: row.guildId,
                     gameId: row.gameId ?? "hell_let_loose",
                     fingerprint,
                 },
             }))
         }
-        const oldRows = fingerprints(before)
-        const newRows = fingerprints(await ctx.db.get(id as Id<TrackedTable>))
+        const oldRows = fingerprints(before as Doc<"events"> | null)
+        const newRows = fingerprints(await ctx.db.get(id as Id<"events">))
         const identity = (row: (typeof oldRows)[number]) =>
             JSON.stringify([
                 row.data.guildId,
