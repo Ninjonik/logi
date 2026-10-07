@@ -217,19 +217,35 @@ character stepped up)` on the same index (`publicationKeyRange`).
   collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
   `updatedAt`, a session's `fetchedAt`, a member observation's `observedAt`
   and `receivedAt`. Two writers flooded the log to 666,000 rows: the bot's
-  membership reconciliation, which observes every member of a clan every
-  five minutes and stored each observation with a new revision and three
-  `membership-summaries` rows (one per game) whether or not anything
+  membership reconciliation, which then observed every member of a clan
+  every five minutes and stored each observation with a new revision and
+  three `membership-summaries` rows (one per game) whether or not anything
   changed, and a history walk that commits once a second and rewrote its
   connection and session rows each time. `storeMemberObservation` now
-  refreshes only the evidence fields when state, roles and epoch are the
-  same (`observationChanged`); a history commit patches a session only when
+  refreshes only the evidence fields when state and roles are the same,
+  and only adds the new epoch to them after an invalidation
+  (`observationChange`: consumers reset on the epoch itself, through
+  `membershipScopeVersion`); a history commit patches a session only when
   its content changed and records a visit (`fetchedAt`,
   `historyLastSuccessAt`) at most once a minute
   (`HISTORY_TOUCH_INTERVAL_MS`). `integrationChanges:prune` writes
   each guild head once per batch, and `integrationChanges:resetFeed` is the
   operator's way out of a flooded log: it raises every floor to its head so
   consumers bootstrap again, then empties the log in batches.
+- A pass over every member of a clan runs only when it can find something.
+  The bot reads the reconciliation's start (`reconciliationStart`, a query)
+  before the Discord fetch and inserts the run only after a complete fetch;
+  it reconciles at most every six hours unless the guild was invalidated (a
+  new gateway session, a guild becoming available, a deleted role or one
+  whose permissions changed, never a resumed session) or the manager role
+  changed, and waits 15 minutes after a failed fetch. Per unchanged member
+  a run writes the observation's evidence and nothing else: the observation
+  carries the run's mark (`seenRunId`) instead of a scratch row per member,
+  and `discordMemberAccess` is patched only when roles or access changed.
+  An applied managed role is checked again once a day, a check that
+  changes nothing writes no attempt row, and denied, superseded and failed
+  operations are removed 30 days after they finished
+  (`memberRoleOperations:pruneFinished`).
 - Every table that gains a row per request or per window has a cron that
   removes the expired rows in bounded batches through an expiry index:
   `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per
