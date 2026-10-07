@@ -68,6 +68,7 @@ import {
     type SeedPanelState,
 } from "../../../src/application/discord-seed/panel-state"
 import type { PanelGraphicsForBot } from "../../../src/domain/discord-publications/panel-graphics-settings"
+import { PUBLICATION_RECHECK_MS } from "../../../src/domain/discord-publications/publication-freshness"
 import { liveScoreImageModel } from "../../../src/domain/discord-publications/live-panel-image"
 import { combinedPanelView } from "../../../src/domain/discord-publications/combined-panel"
 import { panelImageCopy } from "../../../src/domain/discord-publications/panel-image-copy"
@@ -175,11 +176,18 @@ export type PublicationBinding = {
 }
 
 export type PanelRunPorts = {
+    /**
+     * Publishes one managed message. A timed refresh leaves a message that
+     * Discord already shows, confirmed within `PUBLICATION_RECHECK_MS`, alone
+     * (no Convex write, no Discord call); `force` (an admin request) always
+     * goes through.
+     */
     publish(input: {
         key: string
         revision: number
         channelId: string | null
         message: MessageCreateOptions
+        force?: boolean
     }): Promise<string | null | undefined>
     /**
      * The guild's managed publications whose key starts with `prefix`
@@ -263,8 +271,6 @@ export type PanelRunResult = {
 }
 
 const REFRESH_MS = 60_000
-/** A card unchanged since this long ago is re-checked in Discord anyway (L3-B01). */
-const RESULT_RECHECK_MS = 10 * 60_000
 
 /** The state of a panel that, when it changes, makes the bot look at once. */
 export function panelStateKey(panel: BotPanel) {
@@ -1052,7 +1058,7 @@ async function runResults(
                     binding.channelId === channelId &&
                     binding.hash === publicationHash(message) &&
                     binding.lastSuccessAt !== null &&
-                    pass.now - binding.lastSuccessAt < RESULT_RECHECK_MS
+                    pass.now - binding.lastSuccessAt < PUBLICATION_RECHECK_MS
                 )
                     return
                 await ports.publish({
@@ -1163,7 +1169,7 @@ async function withdraw(panel: BotPanel, ports: PanelRunPorts) {
 export async function runPanel(
     panel: BotPanel,
     pass: GuildPass,
-    ports: PanelRunPorts,
+    timedPorts: PanelRunPorts,
     memory: PanelRunMemory
 ): Promise<PanelRunResult | null> {
     const kind = normalizePanelKind(panel.kind)
@@ -1172,6 +1178,13 @@ export async function runPanel(
         panel.requestedAt,
         panel.status?.handledRequestAt
     )
+    // An admin request (send, refresh, retry) publishes every message anew.
+    const ports: PanelRunPorts = requestPending
+        ? {
+              ...timedPorts,
+              publish: (input) => timedPorts.publish({ ...input, force: true }),
+          }
+        : timedPorts
     const handledRequestAt = requestPending ? (panel.requestedAt ?? null) : null
     const stateKey = panelStateKey(panel)
     const work = panelWork({

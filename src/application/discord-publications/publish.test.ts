@@ -20,17 +20,24 @@ function fixture(initial: Partial<Publication> = {}) {
     }
     let locked = false
     const calls: string[] = []
+    /** Every durable write: a taken lease, a saved state, a release. */
+    const writes: string[] = []
     const messages = new Map<string, string>()
     const store: PublicationStore = {
         claim: async () => {
             if (locked) return null
             locked = true
+            writes.push("claim")
             return structuredClone(state)
         },
         save: async (next) => {
+            writes.push("save")
             state = structuredClone(next)
         },
-        finish: async () => {
+        // A successful finish stores the final state in its one write.
+        finish: async (next, error) => {
+            writes.push(error ? "finish:error" : "finish")
+            if (!error) state = structuredClone(next)
             locked = false
         },
     }
@@ -59,7 +66,7 @@ function fixture(initial: Partial<Publication> = {}) {
             messages.delete(`${channel}:${id}`)
         },
     }
-    return { store, transport, messages, calls, state: () => state }
+    return { store, transport, messages, calls, writes, state: () => state }
 }
 test("a restart edits the persisted message and unchanged data skips edits", async () => {
     const f = fixture({ channelId: "a", messageId: "original" })
@@ -133,4 +140,40 @@ test("a definite create rejection is retryable after configuration repair", asyn
     f.transport.create = create
     await publish(f.store, f.transport, "a", "v1")
     assert.equal(f.state().messageId, "new")
+})
+test("an edit is the claim and one finish; a create adds only the marker saved before the POST", async () => {
+    const edit = fixture({ channelId: "a", messageId: "original", hash: "v1" })
+    edit.messages.set("a:original", "owned")
+    await publish(edit.store, edit.transport, "a", "v2")
+    assert.deepEqual(edit.writes, ["claim", "finish"])
+    assert.equal(edit.state().hash, "v2")
+    // The same render past the recheck window: Discord is asked, nothing is edited.
+    await publish(edit.store, edit.transport, "a", "v2")
+    assert.deepEqual(edit.writes, ["claim", "finish", "claim", "finish"])
+    assert.equal(edit.calls.filter((c) => c.startsWith("edit")).length, 1)
+    const create = fixture()
+    await publish(create.store, create.transport, "a", "v1")
+    assert.deepEqual(create.writes, ["claim", "save", "finish"])
+    assert.equal(create.state().messageId, "new")
+    assert.equal(create.state().pending, null)
+})
+test("a current publication writes nothing and asks Discord nothing", async () => {
+    const f = fixture({ channelId: "a", messageId: "original", hash: "v1" })
+    f.messages.set("a:original", "owned")
+    f.store.claim = async () => ({ ...f.state(), current: true })
+    assert.equal(await publish(f.store, f.transport, "a", "v1"), "original")
+    assert.deepEqual(f.writes, [])
+    assert.deepEqual(f.calls, [])
+})
+test("a release that finds its lease expired records the failure instead of the state", async () => {
+    const f = fixture({ channelId: "a", messageId: "original", hash: "v1" })
+    f.messages.set("a:original", "owned")
+    const finish = f.store.finish
+    f.store.finish = async (value, error) => {
+        if (!error) throw new Error("Publication lease expired.")
+        await finish(value, error)
+    }
+    await assert.rejects(publish(f.store, f.transport, "a", "v2"), /lease/)
+    assert.equal(f.state().hash, "v1")
+    assert.deepEqual(f.writes, ["claim", "finish:error"])
 })

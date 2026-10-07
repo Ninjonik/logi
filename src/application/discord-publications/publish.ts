@@ -7,8 +7,18 @@ export type Publication = {
     hash: string | null
 }
 export class PublicationNotSent extends Error {}
+/**
+ * The durable side of one managed message. `claim` takes the lease and
+ * returns the stored state, null while another worker holds it, or the
+ * state with `current` when the message Discord shows is already this one
+ * (`publicationIsCurrent`), in which case nothing was written and nothing
+ * needs releasing. `save` stores an intermediate state under the lease (the
+ * pending marker before a create, a recovered or removed message).
+ * `finish` releases the lease; on success it stores `value` in the same
+ * write, under the same fence and lease check as `save`.
+ */
 export type PublicationStore = {
-    claim(): Promise<Publication | null>
+    claim(): Promise<(Publication & { current?: boolean }) | null>
     save(value: Publication): Promise<void>
     finish(value: Publication, error?: unknown): Promise<void>
 }
@@ -28,8 +38,11 @@ export async function publish(
     target: string | null,
     hash: string
 ) {
-    const state = await store.claim()
-    if (!state) return undefined
+    const claimed = await store.claim()
+    if (!claimed) return undefined
+    const { current, ...state } = claimed
+    // Discord already shows this render and confirmed it recently.
+    if (current) return state.messageId
     try {
         if (state.pending) {
             const recovered = await transport.recover(
@@ -77,7 +90,6 @@ export async function publish(
         }
         state.channelId = target
         state.hash = target ? hash : null
-        await store.save(state)
         await store.finish(state)
         return state.messageId
     } catch (error) {

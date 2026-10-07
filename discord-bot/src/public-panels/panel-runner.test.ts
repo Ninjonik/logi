@@ -105,6 +105,7 @@ type Published = {
     revision: number
     channelId: string | null
     message: MessageCreateOptions
+    force?: boolean
 }
 
 function fakes(overrides: Partial<PanelRunPorts> = {}) {
@@ -363,6 +364,7 @@ test("an unsent panel withdraws its message; a removed panel is purged", async (
             revision: 7,
             channelId: null,
             message: {},
+            force: true,
         },
     ])
     // Only this panel's keys were read, never the guild's whole table.
@@ -642,6 +644,68 @@ test("a competition posts one table per division and withdraws dropped ones", as
     )
     const { buttons } = render(fake.published[0]!.message)
     assert.equal(buttons[0]?.url, "https://logi.app/cs/competitions/ecl-2026")
+})
+
+test("a timed refresh lets the publication skip an unchanged message; an admin request always publishes", async () => {
+    const competition = {
+        kind: "competition",
+        competitionId: "competitions:1",
+        connectionId: undefined,
+        servers: [],
+    } as const
+    const tables = async () => ({
+        slug: "ecl-2026",
+        tables: [
+            {
+                divisionId: "d1",
+                competition: "ECL 2026",
+                division: "A",
+                gameName: "Hell Let Loose",
+                rows: [],
+                round: null,
+                nextMatch: null,
+                url: null,
+                updatedAt: now,
+            },
+        ],
+    })
+    for (const overrides of [{}, competition]) {
+        const timed = fakes({ competition: tables })
+        await runPanel(
+            panel(overrides),
+            pass,
+            timed.ports,
+            createPanelRunMemory()
+        )
+        assert.ok(timed.published.length)
+        assert.ok(timed.published.every((entry) => !entry.force))
+        const requested = fakes({ competition: tables })
+        await runPanel(
+            panel({ ...overrides, requestedAt: now }),
+            pass,
+            requested.ports,
+            createPanelRunMemory()
+        )
+        assert.ok(requested.published.length)
+        assert.ok(requested.published.every((entry) => entry.force === true))
+        // A request the bot already answered is a timed pass again.
+        const answered = fakes({ competition: tables })
+        await runPanel(
+            panel({
+                ...overrides,
+                requestedAt: now - 1,
+                status: {
+                    handledRequestAt: now - 1,
+                    passwordNotifiedAt: null,
+                    sentAt: now - 1,
+                },
+            }),
+            pass,
+            answered.ports,
+            createPanelRunMemory()
+        )
+        assert.ok(answered.published.every((entry) => !entry.force))
+    }
 })
 
 test("legacy scoreboard rows run as live server panels", async () => {
