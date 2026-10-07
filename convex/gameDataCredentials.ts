@@ -47,7 +47,12 @@ export const envelope = internalQuery({
     },
 })
 
-/** A sanitized reason a stored key could not be used, for the dashboard only. */
+/**
+ * A sanitized reason a stored key could not be used, for the dashboard only.
+ * Every collector run and live read that fails to decrypt reports it, so a
+ * failure the row already shows (the same category, after the connection's
+ * last success) is not stored again.
+ */
 export const reportFailure = internalMutation({
     args: { ...fence, category: gameDataCredentialFailure },
     handler: async (ctx, args): Promise<void> => {
@@ -58,10 +63,17 @@ export const reportFailure = internalMutation({
             current.connection.guildId,
             current.connection.sourceRef
         )
-        if (row)
-            await ctx.db.patch(row._id, {
-                failure: args.category,
-                failureAt: new Date().toISOString(),
-            })
+        if (!row) return
+        const lastSuccessAt = current.connection.observation?.observedAt ?? null
+        if (
+            row.failure === args.category &&
+            row.failureAt !== undefined &&
+            (lastSuccessAt === null || row.failureAt > lastSuccessAt)
+        )
+            return
+        await ctx.db.patch(row._id, {
+            failure: args.category,
+            failureAt: new Date(Date.now()).toISOString(),
+        })
     },
 })
