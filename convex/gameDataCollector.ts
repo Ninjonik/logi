@@ -121,16 +121,30 @@ export const collectHistoryDue = internalAction({
                     },
                 })
             } else {
-                await collectSessions(claim.progress, {
-                    readPage: (page) => readPage(claim.connection, page, http),
-                    readSession: (id) =>
-                        readSession(claim.connection, id, http),
-                    commit: (result) =>
-                        ctx.runMutation(internal.gameDataHistory.commit, {
-                            ...token,
-                            result,
-                        }),
-                })
+                await collectSessions(
+                    claim.progress,
+                    {
+                        readPage: (page) =>
+                            readPage(claim.connection, page, http),
+                        storedComplete: (ids) =>
+                            ctx.runQuery(
+                                internal.gameDataHistory.storedComplete,
+                                {
+                                    connectionId: claim.connectionId,
+                                    generation: claim.generation,
+                                    externalIds: ids,
+                                }
+                            ),
+                        readSession: (id) =>
+                            readSession(claim.connection, id, http),
+                        commit: (result) =>
+                            ctx.runMutation(internal.gameDataHistory.commit, {
+                                ...token,
+                                result,
+                            }),
+                    },
+                    { fullWalk: claim.fullWalk }
+                )
             }
         } catch (error) {
             // Storage failures leave the lease/checkpoint intact for cron recovery.

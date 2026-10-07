@@ -1,3 +1,4 @@
+import { collectSessions } from "../../application/game-data/collect-sessions"
 import { warconMatchDetail, warconServerId } from "../testing/warcon"
 import * as publicApiReads from "../../../convex/publicApiReads"
 import * as history from "../../../convex/gameDataHistory"
@@ -638,4 +639,336 @@ test("history commit records an unchanged session and its connection at most onc
         "Foy",
         "changed content is written"
     )
+})
+
+/** Counts the documents a handler writes, per table. */
+function countWrites(ctx: { db: Database }) {
+    const writes: Record<string, number> = {}
+    const table = (id: string) => id.slice(0, id.lastIndexOf("-"))
+    const { insert, patch } = ctx.db
+    ctx.db.insert = async (name, value) => {
+        writes[name] = (writes[name] ?? 0) + 1
+        return insert.call(ctx.db, name, value)
+    }
+    ctx.db.patch = async (id, value) => {
+        writes[table(id)] = (writes[table(id)] ?? 0) + 1
+        return patch.call(ctx.db, id, value)
+    }
+    return writes
+}
+const hll = {
+    ...source,
+    ref: "hll",
+    gameId: "hell_let_loose",
+    provider: "hll_crcon",
+    providerServerId: "1",
+}
+function completeSession(id: string) {
+    return {
+        externalId: id,
+        startedAt: "2026-10-01T10:00:00.000Z",
+        endedAt: "2026-10-01T11:00:00.000Z",
+        complete: true,
+        map: "Foy" as string | null,
+        participants: [],
+        players: [],
+        sourceDigest: "b".repeat(64),
+    }
+}
+type HistoryClaim = {
+    runId: string
+    generation: number
+    fence: number
+    connectionId: string
+    progress: { page: number; pendingIds: string[]; nextPage: number | null }
+    revisitId: string | null
+    fullWalk: boolean
+}
+async function enableHll(ctx: ReturnType<typeof fixture>) {
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([hll])
+    await handler(gameData.configure)(ctx, {
+        secret: "synthetic-data-secret",
+        guildId: "guild-a",
+        sourceRef: "hll",
+        enabled: true,
+    })
+}
+/** One collector step against the Convex handlers, with a counting provider fake. */
+async function historyStep(
+    ctx: ReturnType<typeof fixture>,
+    provider: { pages: string[][] },
+    calls: { pages: number[]; sessions: string[] }
+) {
+    ctx.db.tables.gameDataHistoryRuns[0].nextAttemptAt = 0
+    const claim = (await handler(history.claimNext)(ctx, {})) as HistoryClaim
+    assert.ok(claim)
+    const token = {
+        runId: claim.runId,
+        generation: claim.generation,
+        fence: claim.fence,
+    }
+    const result = await collectSessions(
+        claim.progress,
+        {
+            readPage: async (page) => {
+                calls.pages.push(page)
+                return {
+                    ids: provider.pages[page - 1] ?? [],
+                    nextPage: page < provider.pages.length ? page + 1 : null,
+                }
+            },
+            storedComplete: async (ids) =>
+                (await handler(history.storedComplete)(ctx, {
+                    connectionId: claim.connectionId,
+                    generation: claim.generation,
+                    externalIds: ids,
+                })) as string[],
+            readSession: async (id) => {
+                calls.sessions.push(id)
+                return completeSession(id)
+            },
+            commit: async (value) =>
+                (await handler(history.commit)(ctx, {
+                    ...token,
+                    result: value,
+                })) as boolean,
+        },
+        { fullWalk: claim.fullWalk }
+    )
+    return { claim, result }
+}
+async function historyCycle(
+    ctx: ReturnType<typeof fixture>,
+    provider: { pages: string[][] }
+) {
+    const calls = { pages: [] as number[], sessions: [] as string[] }
+    const modes: boolean[] = []
+    for (let step = 0; step < 20; step++) {
+        const { claim, result } = await historyStep(ctx, provider, calls)
+        modes.push(claim.fullWalk)
+        if (result === "completed") return { calls, modes }
+    }
+    throw new Error("The cycle did not complete.")
+}
+
+test("stored-session lookup names only complete sessions of the current source generation", async (t) => {
+    const ctx = fixture(t)
+    await enableHll(ctx)
+    const connection = ctx.db.tables.gameDataConnections[0]
+    const generation = connection.generation as number
+    for (const [externalId, complete, sourceGeneration] of [
+        ["45", true, generation],
+        ["44", true, generation - 1],
+        ["43", false, generation],
+        ["42", true, undefined],
+    ] as const)
+        await ctx.db.insert("gameSessions", {
+            connectionId: connection._id,
+            externalId,
+            complete,
+            sourceGeneration,
+            fetchedAt: 0,
+        })
+    await ctx.db.insert("gameSessions", {
+        connectionId: "gameDataConnections-other",
+        externalId: "41",
+        complete: true,
+        sourceGeneration: generation,
+        fetchedAt: 0,
+    })
+    assert.deepEqual(
+        await handler(history.storedComplete)(ctx, {
+            connectionId: connection._id,
+            generation,
+            externalIds: ["45", "44", "43", "42", "41", "40", "45"],
+        }),
+        ["45"]
+    )
+    await assert.rejects(
+        handler(history.storedComplete)(ctx, {
+            connectionId: connection._id,
+            generation,
+            externalIds: Array.from({ length: 51 }, (_, i) => String(i)),
+        }),
+        /Too many/
+    )
+})
+
+test("history walks everything once, then stops at the first stored page until the daily full walk", async (t) => {
+    const ctx = fixture(t)
+    await enableHll(ctx)
+    const run = () => ctx.db.tables.gameDataHistoryRuns[0]
+    const first = await historyCycle(ctx, { pages: [["3", "2"], ["1"]] })
+    assert.deepEqual(first.modes, [true, true, true], "the first walk is full")
+    assert.deepEqual(first.calls.sessions, ["3", "2", "1"])
+    const walkedAt = run().lastFullWalkAt as number
+    assert.ok(walkedAt > Date.now() - 1_000)
+    assert.equal(ctx.db.tables.gameSessions.length, 3)
+
+    const writes = countWrites(ctx)
+    const caughtUp = await historyCycle(ctx, { pages: [["3", "2"], ["1"]] })
+    assert.deepEqual(caughtUp.modes, [false])
+    assert.deepEqual(
+        caughtUp.calls,
+        { pages: [1], sessions: [] },
+        "a caught-up page reads no session"
+    )
+    assert.deepEqual(
+        { ...writes },
+        { gameDataHistoryRuns: 2 },
+        "only the claim and the commit are written"
+    )
+    assert.equal(run().lastFullWalkAt, walkedAt)
+    assert.equal((run().nextAttemptAt as number) > Date.now() + 200_000, true)
+
+    const added = await historyCycle(ctx, {
+        pages: [
+            ["5", "4", "3"],
+            ["2", "1"],
+        ],
+    })
+    assert.deepEqual(added.calls, { pages: [1, 2], sessions: ["5", "4"] })
+    assert.equal(ctx.db.tables.gameSessions.length, 5)
+    assert.equal(writes.gameSessions, 2, "two inserts, no rewrite")
+
+    run().lastFullWalkAt = Date.now() - 24 * 60 * 60_000 - 1
+    const daily = await historyCycle(ctx, {
+        pages: [
+            ["5", "4", "3"],
+            ["2", "1"],
+        ],
+    })
+    assert.ok(daily.modes.every(Boolean), "a day later the cycle walks all")
+    assert.deepEqual(daily.calls.sessions, ["5", "4", "3", "2", "1"])
+    assert.equal(writes.gameSessions, 2, "unchanged complete rows stay put")
+    assert.ok((run().lastFullWalkAt as number) > Date.now() - 1_000)
+})
+
+test("a cycle keeps its walk mode until it ends; a new source generation walks in full", async (t) => {
+    const ctx = fixture(t)
+    await enableHll(ctx)
+    const run = () => ctx.db.tables.gameDataHistoryRuns[0]
+    await historyCycle(ctx, { pages: [["2"], ["1"]] })
+    const calls = { pages: [] as number[], sessions: [] as string[] }
+    const provider = { pages: [["4", "3"], ["2"], ["1"]] }
+    let step = await historyStep(ctx, provider, calls)
+    assert.equal(step.claim.fullWalk, false)
+    step = await historyStep(ctx, provider, calls)
+    run().lastFullWalkAt = 0
+    step = await historyStep(ctx, provider, calls)
+    assert.equal(step.claim.fullWalk, false, "decided at page 1")
+    assert.equal(step.result, "completed")
+    assert.equal(
+        run().lastFullWalkAt,
+        0,
+        "an incremental cycle is no full walk"
+    )
+    run().lastFullWalkAt = Date.now()
+    await enableHll(ctx)
+    assert.equal(run().lastFullWalkAt, undefined)
+    const recollected = await historyCycle(ctx, provider)
+    assert.ok(recollected.modes.every(Boolean))
+    assert.deepEqual(recollected.calls.sessions, ["4", "3", "2", "1"])
+})
+
+test("history commit never rewrites a complete, unchanged session", async (t) => {
+    const ctx = fixture(t)
+    await enableHll(ctx)
+    const commit = async (value = completeSession("42")) => {
+        const run = ctx.db.tables.gameDataHistoryRuns[0]
+        run.nextAttemptAt = 0
+        run.leaseUntil = 0
+        const claim = (await handler(history.claimNext)(ctx, {})) as {
+            runId: string
+            generation: number
+            fence: number
+        }
+        return handler(history.commit)(ctx, {
+            runId: claim.runId,
+            generation: claim.generation,
+            fence: claim.fence,
+            result: {
+                session: value,
+                progress: { page: 2, pendingIds: [], nextPage: null },
+                completed: false,
+            },
+        })
+    }
+    await commit()
+    const row = ctx.db.tables.gameSessions[0]
+    row.fetchedAt = Date.now() - 10 * 60_000
+    const fetchedAt = row.fetchedAt
+    const writes = countWrites(ctx)
+    await commit()
+    assert.equal(writes.gameSessions, undefined, "no visit stamp")
+    assert.equal(row.fetchedAt, fetchedAt)
+    await commit({ ...completeSession("42"), map: "Carentan" })
+    assert.equal(writes.gameSessions, 1, "a change is still written")
+    assert.equal((row.session as { map: string }).map, "Carentan")
+})
+
+test("Warcon history head records an unchanged game at most every ten minutes", async (t) => {
+    const ctx = fixture(t)
+    const warcon = {
+        ...source,
+        provider: "wardogs_warcon",
+        providerServerId: warconServerId,
+    }
+    process.env.LOGI_GAME_DATA_SOURCES = JSON.stringify([warcon])
+    await handler(gameData.configure)(ctx, {
+        secret: "synthetic-data-secret",
+        guildId: source.guildId,
+        sourceRef: source.ref,
+        enabled: true,
+    })
+    const session = await readWarconSession(
+        warcon as Parameters<typeof readWarconSession>[0],
+        "7",
+        {
+            get: async () => ({
+                status: 200,
+                etag: null,
+                body: warconMatchDetail(),
+            }),
+        }
+    )
+    const commit = async (value = session) => {
+        const run = ctx.db.tables.gameDataHistoryRuns[0]
+        run.nextAttemptAt = 0
+        run.leaseUntil = 0
+        const claim = (await handler(history.claimNext)(ctx, {})) as {
+            runId: string
+            generation: number
+            fence: number
+        }
+        return handler(history.commit)(ctx, {
+            runId: claim.runId,
+            generation: claim.generation,
+            fence: claim.fence,
+            result: {
+                session: value,
+                progress: { page: 1, pendingIds: [], nextPage: null },
+                completed: true,
+            },
+        })
+    }
+    await commit()
+    const head = ctx.db.tables.serverGameHistoryHeads[0]
+    const first = { ...head }
+    const writes = countWrites(ctx)
+    await commit()
+    assert.equal(writes.serverGameHistoryHeads, undefined, "unchanged digest")
+    assert.deepEqual({ ...head }, first)
+    head.lastCollectedAt = new Date(Date.now() - 11 * 60_000).toISOString()
+    await commit()
+    assert.equal(writes.serverGameHistoryHeads, 1, "data-as-of refreshed")
+    assert.equal(head.revision, first.revision)
+    assert.ok(Date.parse(head.lastCollectedAt as string) > Date.now() - 1_000)
+    await commit({
+        ...session,
+        warcon: { ...session.warcon!, winner: "Alpha" },
+        sourceDigest: "f".repeat(64),
+    })
+    assert.equal(writes.serverGameHistoryHeads, 2, "a new revision is written")
+    assert.notEqual(head.revision, first.revision)
 })
