@@ -26,7 +26,7 @@ crons.interval(
 )
 crons.interval(
     "prune membership reconciliation metadata",
-    { minutes: 1 },
+    { minutes: 10 },
     makeFunctionReference<"mutation">(
         "memberObservations:pruneReconciliations"
     ),

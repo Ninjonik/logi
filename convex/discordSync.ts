@@ -7,10 +7,13 @@ import {
     normalizeGuildDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import {
+    syncDashboardAdminOverrides,
+    upsertDiscordMemberCache,
+} from "./discordMemberAccessStore"
 import { historicalConcludedEventCutoff } from "../src/application/discord-sync/relevance"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
-import { syncDashboardAdminOverrides } from "./discordMemberAccessStore"
 import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { applyGatewayObservation } from "./memberObservations"
 import { query, type QueryCtx } from "./_generated/server"
@@ -710,69 +713,6 @@ export const updateRosterUpdateMessage = mutation({
     },
 })
 
-export const syncMemberAccess = mutation({
-    args: {
-        secret: v.string(),
-        guildId: v.string(),
-        members: v.array(
-            v.object({
-                userId: v.string(),
-                roleIds: v.array(v.string()),
-                voiceChannelId: v.optional(v.string()),
-                isAdmin: v.boolean(),
-                hasDashboardAccess: v.boolean(),
-            })
-        ),
-    },
-    handler: async (ctx, args) => {
-        assertInternalSecret(args.secret)
-
-        const now = new Date().toISOString()
-        const existing = await ctx.db
-            .query("discordMemberAccess")
-            .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-            .collect()
-        const existingByUserId = new Map(
-            existing.map((item) => [item.userId, item])
-        )
-        const nextUserIds = new Set(args.members.map((member) => member.userId))
-
-        for (const member of args.members) {
-            const current = existingByUserId.get(member.userId)
-            if (current) {
-                await ctx.db.patch(current._id, {
-                    roleIds: member.roleIds,
-                    voiceChannelId: member.voiceChannelId,
-                    isAdmin: member.isAdmin,
-                    hasDashboardAccess: member.hasDashboardAccess,
-                    updatedAt: now,
-                })
-            } else {
-                await ctx.db.insert("discordMemberAccess", {
-                    guildId: args.guildId,
-                    userId: member.userId,
-                    roleIds: member.roleIds,
-                    voiceChannelId: member.voiceChannelId,
-                    isAdmin: member.isAdmin,
-                    hasDashboardAccess: member.hasDashboardAccess,
-                    createdAt: now,
-                    updatedAt: now,
-                })
-            }
-        }
-
-        for (const stale of existing) {
-            if (!nextUserIds.has(stale.userId)) {
-                await ctx.db.delete(stale._id)
-            }
-        }
-
-        await syncDashboardAdminOverrides(ctx, args.guildId, args.members)
-
-        return { ok: true }
-    },
-})
-
 export const upsertMemberAccess = mutation({
     args: {
         secret: v.string(),
@@ -798,33 +738,15 @@ export const upsertMemberAccess = mutation({
             }))
         )
             return null
-        const now = new Date().toISOString()
-        const existing = await ctx.db
-            .query("discordMemberAccess")
-            .withIndex("guildId_userId", (q) =>
-                q.eq("guildId", args.guildId).eq("userId", args.userId)
-            )
-            .unique()
-        const patch = {
-            roleIds: args.roleIds,
-            isAdmin: args.isAdmin,
-            hasDashboardAccess: args.hasDashboardAccess,
-            updatedAt: now,
-        }
-        let id: string
-        if (existing) {
-            await ctx.db.patch(existing._id, patch)
-            id = String(existing._id)
-        } else {
-            id = String(
-                await ctx.db.insert("discordMemberAccess", {
-                    guildId: args.guildId,
-                    userId: args.userId,
-                    ...patch,
-                    createdAt: now,
-                })
-            )
-        }
+        // Unchanged access writes nothing; a role or permission change does.
+        const id = String(
+            await upsertDiscordMemberCache(ctx, args.guildId, {
+                userId: args.userId,
+                roleIds: args.roleIds,
+                isAdmin: args.isAdmin,
+                hasDashboardAccess: args.hasDashboardAccess,
+            })
+        )
         await syncDashboardAdminOverrides(ctx, args.guildId, [args])
         return id
     },

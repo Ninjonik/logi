@@ -2170,6 +2170,8 @@ export default defineSchema({
         epochRevision: v.string(),
         refreshWindowAt: v.number(),
         refreshCount: v.number(),
+        // Snapshot time of the last complete reconciliation (dashboard).
+        lastFullSyncAt: v.optional(v.string()),
     }).index("guildId", ["guildId"]),
     memberObservations: defineTable({
         guildId: v.string(),
@@ -2286,12 +2288,6 @@ export default defineSchema({
     })
         .index("guildId", ["guildId"])
         .index("expiresAt", ["expiresAt"]),
-    membershipSyncSubjects: defineTable({
-        runId: v.id("membershipSyncRuns"),
-        discordUserId: v.string(),
-    })
-        .index("runId_discordUserId", ["runId", "discordUserId"])
-        .index("runId", ["runId"]),
     membershipRefreshLimits: defineTable({
         name: v.string(),
         until: v.number(),
