@@ -515,6 +515,7 @@ export type EventSyncContext = {
     event: EventRecord
     roster: Roster | null
     syncState: SyncState | null
+    userDisplayNames: Record<string, string>
 }
 
 export type EventInteractionContext = {

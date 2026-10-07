@@ -380,6 +380,20 @@ test("the sync payloads name the people the events and rosters reference, read t
     ])
 })
 
+test("one event sync context carries its referenced display names", async (t) => {
+    const discord = await import("../../../convex/discordSync")
+    const ctx = fixture(t)
+    const context = await invoke(discord.getEventSyncContext, ctx, {
+        secret,
+        eventId: "events:upcoming",
+    })
+
+    assert.deepEqual(context.userDisplayNames, {
+        "user-1": "Alpha of A",
+        "user-2": "Bravo",
+    })
+})
+
 test("the guild cache snapshot reads neither events nor assignments", async (t) => {
     const discord = await import("../../../convex/discordSync")
     const ctx = fixture(t)

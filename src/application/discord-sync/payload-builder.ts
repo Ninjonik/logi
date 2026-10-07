@@ -21,6 +21,7 @@ export type EventSyncContextLike<TEvent, TRoster, TSyncState> = {
     event: TEvent
     roster: TRoster | null
     syncState: TSyncState | null
+    userDisplayNames?: Readonly<Record<string, string>>
 }
 
 export function buildGuildPayload<
@@ -56,10 +57,12 @@ export function buildGuildPayload<
         guild: runtime.guild,
         config: runtime.config,
         groups: runtime.groups,
-        // The cache-backed sync path does not load every referenced user on
-        // each event update. Renderers therefore fall back to Discord
-        // mentions until a display-name projection is available.
-        userDisplayNames: {},
+        // Each event context includes just the users its event or roster
+        // references, avoiding a whole-table user read on every update.
+        userDisplayNames: Object.assign(
+            {},
+            ...filteredContexts.map((context) => context.userDisplayNames)
+        ),
         calendarItems: runtime.calendarItems ?? [],
         assignments: runtime.assignments ?? [],
         topicPresets: runtime.topicPresets,

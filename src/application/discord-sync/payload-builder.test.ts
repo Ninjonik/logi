@@ -22,6 +22,7 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
                 event: { id: "event-1" },
                 roster: { eventId: "event-1" },
                 syncState: { eventId: "event-1" },
+                userDisplayNames: { "user-1": "Alpha" },
             },
         ]
     )
@@ -30,7 +31,7 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
     assert.equal(payload.rosters.length, 1)
     assert.equal(payload.syncStates.length, 1)
     assert.deepEqual(payload.assignments, [{ userId: "user-1" }])
-    assert.deepEqual(payload.userDisplayNames, {})
+    assert.deepEqual(payload.userDisplayNames, { "user-1": "Alpha" })
 })
 
 test("buildGuildPayload never passes a draft to the bot", () => {
