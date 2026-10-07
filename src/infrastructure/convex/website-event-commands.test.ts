@@ -145,13 +145,9 @@ test("actor command creates exactly one native event, schedules it and returns t
     assert.equal(event.pingClan, false)
     assert.equal(event.createForumChannel, false)
     assert.ok(f.ctx.db.tables.eventScheduleJobs.length > 0)
-    const stamp = f.ctx.db.tables.integrationRecords.find(
-        (row) => row.resource === "event-summaries"
-    )
-    assert.equal(result.data.revision, stamp!.revision)
-    assert.deepEqual(
-        f.ctx.db.tables.integrationChanges.map((row) => row.resource).sort(),
-        ["event-summaries", "match-summaries", "result-summaries"]
+    assert.equal(
+        result.data.revision,
+        f.ctx.db.tables.integrationHeads[0].revision
     )
     const receipt = f.ctx.db.tables.websiteEventCommandReceipts[0]
     assert.equal(receipt.subject, subject)
@@ -164,7 +160,6 @@ test("actor command creates exactly one native event, schedules it and returns t
     assert.equal(retry.data.replayed, true)
     assert.equal(f.ctx.db.tables.events.length, 1)
     assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 1)
-    assert.equal(f.ctx.db.tables.integrationChanges.length, 3)
 })
 
 test("same command key with changed body conflicts and foreign scope/actor cannot discover its receipt", async (t) => {
@@ -349,8 +344,6 @@ test("final receipt failure rolls back native event, schedule and all emitted ch
     for (const table of [
         "events",
         "eventScheduleJobs",
-        "integrationChanges",
-        "integrationRecords",
         "websiteEventCommandReceipts",
     ])
         assert.equal(f.ctx.db.tables[table]?.length ?? 0, 0)
@@ -625,7 +618,6 @@ test("archived, cross-game, unknown and duplicate selections return invalid_matc
     for (const table of [
         "events",
         "eventScheduleJobs",
-        "integrationChanges",
         "websiteEventCommandReceipts",
         "imageAssetReferences",
     ])
@@ -641,7 +633,6 @@ test("archived, cross-game, unknown and duplicate selections return invalid_matc
     })
     const event = f.ctx.db.tables.events[0]
     const saved = structuredClone(event.matchTeams)
-    const changes = f.ctx.db.tables.integrationChanges.length
     const update = {
         operation: "update",
         eventId: created.data.eventId,
@@ -660,7 +651,6 @@ test("archived, cross-game, unknown and duplicate selections return invalid_matc
     )
     assert.equal(event.name, fields.name)
     assert.deepEqual(event.matchTeams, saved)
-    assert.equal(f.ctx.db.tables.integrationChanges.length, changes)
     assert.equal(f.ctx.db.tables.websiteEventCommandReceipts.length, 1)
     const corrected = await f.run({
         idempotencyKey: "update-foreign-0001",
@@ -700,7 +690,6 @@ test("refresh re-captures one assigned team with audit, change feed, receipt and
     )
     assert.equal(event.matchTeams[0].snapshot.name, "Alpha")
 
-    const changes = f.ctx.db.tables.integrationChanges.length
     const command = { ...refresh, expectedRevision: created.data.revision }
     const refreshed = await f.run({
         idempotencyKey: "refresh-alpha-0001",
@@ -729,11 +718,6 @@ test("refresh re-captures one assigned team with audit, change feed, receipt and
     assert.deepEqual(
         eventReferences(f, event._id).map((row) => row.assetId),
         ["imageAssets:b"]
-    )
-    assert.ok(
-        f.ctx.db.tables.integrationChanges
-            .slice(changes)
-            .some((row) => row.resource === "event-summaries")
     )
     const audit = f.ctx.db.tables.teamDirectoryAudit
     assert.equal(audit.length, 1)

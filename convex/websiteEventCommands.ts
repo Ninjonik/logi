@@ -43,8 +43,8 @@ import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
 import { currentEventStatus } from "../src/domain/events/status"
 import { withIntegrationChanges } from "./integrationMutation"
+import { integrationRevision } from "./integrationChangeLog"
 import { resolveGameScope } from "../src/domain/games/game"
-import { integrationRecord } from "./integrationChangeLog"
 import { DEFAULT_ROSTER_SCORE_SETTINGS } from "./guilds"
 import type { Doc, Id } from "./_generated/dataModel"
 import { resolveEventMatchTeams } from "./matchTeams"
@@ -131,16 +131,7 @@ async function authorize(
 }
 
 async function stamp(ctx: Pick<QueryCtx, "db">, event: Doc<"events">) {
-    return (
-        (
-            await integrationRecord(ctx, {
-                guildId: event.guildId,
-                gameId: resolveGameScope(event.gameId),
-                resource: "event-summaries",
-                id: String(event._id),
-            })
-        )?.revision ?? "0"
-    )
+    return integrationRevision(ctx, event.guildId)
 }
 function editableFields(event: Doc<"events">): WebsiteEventFields | null {
     const value = websiteEventFieldsSchema.safeParse({

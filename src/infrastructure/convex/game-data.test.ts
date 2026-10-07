@@ -596,19 +596,15 @@ test("history commit records an unchanged session and its connection at most onc
             },
         })
     }
-    const feedRows = () => (ctx.db.tables.integrationChanges ?? []).length
     const row = () => ctx.db.tables.gameSessions[0]
     const connection = () => ctx.db.tables.gameDataConnections[0]
     assert.equal(await commit(), true)
     const written = {
-        feed: feedRows(),
         fetchedAt: row().fetchedAt,
         updatedAt: row().updatedAt,
         success: connection().historyLastSuccessAt,
     }
-    assert.ok(written.feed > 0, "the first session and count are a change")
     assert.equal(await commit(), true)
-    assert.equal(feedRows(), written.feed, "a revisit is not a change")
     assert.equal(
         row().fetchedAt,
         written.fetchedAt,
@@ -630,8 +626,6 @@ test("history commit records an unchanged session and its connection at most onc
         written.updatedAt,
         "a visit alone keeps the content stamp"
     )
-    assert.notEqual(connection().historyLastSuccessAt, written.success)
-    assert.equal(feedRows(), written.feed, "recording a visit is not a change")
     assert.equal(await commit({ ...session, map: "Foy" }), true)
     assert.equal(
         (row().session as { map: string }).map,

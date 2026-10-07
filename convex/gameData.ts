@@ -21,7 +21,6 @@ import { mutation, internalMutation } from "./integrationMutation"
 import type { MutationCtx } from "./_generated/server"
 import { resetHistory } from "./gameDataHistory"
 import { query } from "./_generated/server"
-import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
 function assertSecret(secret: string) {
@@ -104,12 +103,6 @@ export async function applyConnectionSource(
         })
         if (["hll_crcon", "wardogs_warcon"].includes(existing.provider))
             await resetHistory(ctx, existing._id, args.enabled)
-        if (args.enabled)
-            await ctx.scheduler.runAfter(
-                0,
-                internal.gameDataCollector.collectDue,
-                {}
-            )
         return String(existing._id)
     }
     if (!source) throw new Error("Configured source not found.")
@@ -129,12 +122,6 @@ export async function applyConnectionSource(
     })
     if (["hll_crcon", "wardogs_warcon"].includes(source.provider))
         await resetHistory(ctx, id, args.enabled)
-    if (args.enabled)
-        await ctx.scheduler.runAfter(
-            0,
-            internal.gameDataCollector.collectDue,
-            {}
-        )
     return String(id)
 }
 
@@ -264,12 +251,6 @@ export const finishSnapshot = internalMutation({
             ...(!args.result.errorCategory ? { attempt: 0 } : {}),
             updatedAt: new Date(now).toISOString(),
         })
-        if (args.result.nextAttemptAt !== null)
-            await ctx.scheduler.runAfter(
-                Math.max(0, args.result.nextAttemptAt - now),
-                internal.gameDataCollector.collectDue,
-                {}
-            )
         return true
     },
 })

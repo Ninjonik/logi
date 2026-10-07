@@ -16,7 +16,6 @@ import { internalMutation } from "./integrationMutation"
 import { type MutationCtx } from "./_generated/server"
 import { connectionSource } from "./gameDataCatalog"
 import type { Id } from "./_generated/dataModel"
-import { internal } from "./_generated/api"
 import { v } from "convex/values"
 
 export async function resetHistory(
@@ -45,12 +44,6 @@ export async function resetHistory(
             lastSuccessAt: null,
             lastCompletedAt: null,
         })
-    if (enabled)
-        await ctx.scheduler.runAfter(
-            0,
-            internal.gameDataCollector.collectHistoryDue,
-            {}
-        )
 }
 type Claim = {
     runId: Id<"gameDataHistoryRuns">
@@ -238,11 +231,6 @@ export const commit = internalMutation({
                 historyErrorCategory: null,
                 updatedAt,
             })
-        await ctx.scheduler.runAfter(
-            args.result.completed ? 300_000 : 1_000,
-            internal.gameDataCollector.collectHistoryDue,
-            {}
-        )
         return true
     },
 })
@@ -264,12 +252,6 @@ export const fail = internalMutation({
             historyErrorCategory: args.errorCategory,
             updatedAt: new Date().toISOString(),
         })
-        if (args.nextAttemptAt !== null)
-            await ctx.scheduler.runAfter(
-                Math.max(0, args.nextAttemptAt - Date.now()),
-                internal.gameDataCollector.collectHistoryDue,
-                {}
-            )
         return true
     },
 })

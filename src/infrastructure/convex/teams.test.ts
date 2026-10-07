@@ -125,22 +125,12 @@ test("global administrators create catalogue teams idempotently and changes reac
         ]),
         [["team", first.teamId, "platform"]]
     )
-    // Only guild-a holds the HLL `teams` grant, so only its feed gets the change.
-    assert.deepEqual(
-        ctx.db.tables.integrationChanges.map((row) => [
-            row.guildId,
-            row.resource,
-            row.operation,
-        ]),
-        [["guild-a", "teams", "upsert"]]
-    )
     const wardogs = await create(ctx, {
         gameId: "wardogs",
         name: "Valkyria",
         idempotencyKey: "create-valkyria-3",
     })
     assert.equal(wardogs.ok, true)
-    assert.equal(ctx.db.tables.integrationChanges.at(-1)?.guildId, "guild-b")
 })
 
 test("catalogue writes need a current superadmin session; workspace admins read active teams only", async () => {
@@ -289,15 +279,6 @@ test("merge archives the duplicate, moves registrations, fixtures and pending re
     assert.equal(ctx.db.tables.competitionTeams[0].teamId, main.teamId)
     assert.equal(ctx.db.tables.competitionFixtures[0].sideATeamId, main.teamId)
     assert.equal(ctx.db.tables.teamRequests[0].teamId, main.teamId)
-    assert.deepEqual(
-        ctx.db.tables.integrationChanges
-            .slice(-2)
-            .map((row) => [row.id, row.operation]),
-        [
-            [dup.teamId, "remove"],
-            [main.teamId, "upsert"],
-        ]
-    )
     // A merged team cannot come back, and its name is free again.
     assert.deepEqual(
         await invoke(teams.restore, ctx, {

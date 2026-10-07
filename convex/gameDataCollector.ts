@@ -66,12 +66,6 @@ export const collectDue = internalAction({
                     }),
             },
         })
-        // A bounded action collects one source; the cron also recovers expired claims.
-        await ctx.scheduler.runAfter(
-            0,
-            internal.gameDataCollector.collectDue,
-            {}
-        )
         return { processed: 1 }
     },
 })
@@ -146,11 +140,6 @@ export const collectHistoryDue = internalAction({
                 nextAttemptAt: delay === null ? null : Date.now() + delay,
             })
         }
-        await ctx.scheduler.runAfter(
-            0,
-            internal.gameDataCollector.collectHistoryDue,
-            {}
-        )
         return { processed: 1 }
     },
 })
