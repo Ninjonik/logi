@@ -133,8 +133,9 @@ export function dmFrame(
 }
 
 /**
- * Display names of members, for cards that show names (never a ping). One
- * bounded fetch; unknown members fall back to a mention in the card.
+ * Display names of members, for cards that show names (never a ping). The
+ * current server display name wins over a stored projection; Discord's actual
+ * username is the fallback when a display name is unavailable.
  */
 export async function memberNames(
     guild: Guild | null | undefined,
@@ -142,11 +143,7 @@ export async function memberNames(
     known: Readonly<Record<string, string>> = {}
 ) {
     const ids = [
-        ...new Set(
-            [...userIds].filter(
-                (id) => /^\d{17,20}$/.test(id) && !known[id]?.trim()
-            )
-        ),
+        ...new Set([...userIds].filter((id) => /^\d{17,20}$/.test(id))),
     ]
     const names: Record<string, string> = { ...known }
     if (!guild || !ids.length) return names
@@ -154,7 +151,7 @@ export async function memberNames(
         .fetch({ user: ids.slice(0, 100) })
         .catch(() => null)
     for (const [id, member] of members ?? []) {
-        const name = member.displayName?.trim()
+        const name = member.displayName?.trim() || member.user.username?.trim()
         if (name) names[id] = name
     }
     return names

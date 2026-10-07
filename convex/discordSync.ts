@@ -155,6 +155,22 @@ async function usersByIdentifier(
     return new Map(found.filter((entry) => entry !== null))
 }
 
+/** The stored clan nickname, otherwise the Discord username, by every ID the bot may hold. */
+function userDisplayNamesFor(users: Iterable<Doc<"users">>, guildId: string) {
+    return Object.fromEntries(
+        [...users]
+            .map((user) => normalizeUserDoc(user, { guildId }))
+            .flatMap((user) => {
+                const displayName =
+                    user.name.trim() || user.discordId || user.id
+                return [
+                    [user.id, displayName],
+                    [user.discordId, displayName],
+                ] as const
+            })
+    )
+}
+
 /** What the bot needs of an assignment to pick a reminder's recipients. */
 function projectAssignment(assignment: Doc<"userAssignments">) {
     return {
@@ -272,24 +288,9 @@ export const listSyncPayloads = query({
                 if (user) clanUsers.set(String(user._id), user)
             }
 
-            const userDisplayNames = Object.fromEntries(
-                [...clanUsers.values()]
-                    .map((user) =>
-                        normalizeUserDoc(user, { guildId: config.guildId })
-                    )
-                    .flatMap((user) => {
-                        const nickname =
-                            user.nicknames?.[config.guildId]?.trim()
-                        const displayName =
-                            nickname ||
-                            user.name?.trim() ||
-                            user.discordId ||
-                            user.id
-                        return [
-                            [user.id, displayName],
-                            [user.discordId, displayName],
-                        ] as const
-                    })
+            const userDisplayNames = userDisplayNamesFor(
+                clanUsers.values(),
+                config.guildId
             )
 
             return {
@@ -441,6 +442,10 @@ export const getEventSyncContext = query({
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
                 .first(),
         ])
+        const users = await usersByIdentifier(
+            ctx,
+            referencedUserIds([event], roster ? [roster] : [])
+        )
 
         return {
             event: withCompetitionRound(
@@ -455,6 +460,10 @@ export const getEventSyncContext = query({
                 ? { ...normalizeDoc(roster), eventId: String(roster.eventId) }
                 : null,
             syncState: syncState ? normalizeDoc(syncState) : null,
+            userDisplayNames: userDisplayNamesFor(
+                users.values(),
+                event.guildId
+            ),
         }
     },
 })
