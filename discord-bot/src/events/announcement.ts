@@ -209,7 +209,7 @@ function groupIcon(group: Group) {
 export function announcementSignupRosterOf(
     event: EventRecord,
     groups: readonly Group[],
-    names: Readonly<Record<string, string>>,
+    names: Readonly<Record<string, string>> = {},
     locale = "en"
 ): AnnouncementSignupRoster {
     const offered = event.signupGroupIds ? new Set(event.signupGroupIds) : null

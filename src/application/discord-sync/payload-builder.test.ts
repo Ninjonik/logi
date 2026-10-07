@@ -30,6 +30,7 @@ test("buildGuildPayload folds contexts into a guild payload", () => {
     assert.equal(payload.rosters.length, 1)
     assert.equal(payload.syncStates.length, 1)
     assert.deepEqual(payload.assignments, [{ userId: "user-1" }])
+    assert.deepEqual(payload.userDisplayNames, {})
 })
 
 test("buildGuildPayload never passes a draft to the bot", () => {

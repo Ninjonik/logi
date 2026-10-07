@@ -155,6 +155,28 @@ test("the public card roster has every offered group and sorts names alphabetica
     )
 })
 
+test("the public card roster falls back to mentions without a name projection", () => {
+    const event = boardEvent({
+        participants: [
+            {
+                userId: "member",
+                status: "attending",
+                group: "inf",
+                updatedAt: "x",
+            },
+        ],
+    })
+
+    assert.deepEqual(announcementSignupRosterOf(event, boardGroups), {
+        groups: [
+            { name: "Pěchota", icon: "🟢", names: ["<@member>"] },
+            { name: "Tanky", icon: "🔵", names: [] },
+            { name: "Recon", icon: "🟠", names: [] },
+        ],
+        declined: [],
+    })
+})
+
 test("roster facts count places, reserves and confirmations", () => {
     const facts = rosterFactsOf(
         boardEvent({
