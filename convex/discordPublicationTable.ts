@@ -208,13 +208,18 @@ export const discordPanelServers = defineTable({
 })
     .index("guild_connection", ["guildId", "connectionId"])
     .index("slug", ["slug"])
-/** The bot's heartbeat: `bot` for the process, `guild:<id>` per served workspace. */
+/**
+ * The bot's heartbeat: one `bot` row with the workspaces it visited
+ * (`guildIds`); `guild:<id>` rows are the earlier per-workspace layout,
+ * read only while the `bot` row has no list.
+ */
 export const discordBotHeartbeats = defineTable({
     key: v.string(),
     version: v.string(),
     protocol: v.number(),
     startedAt: v.number(),
     seenAt: v.number(),
+    guildIds: v.optional(v.array(v.string())),
 }).index("key", ["key"])
 export const discordPublications = defineTable({
     guildId: v.string(),

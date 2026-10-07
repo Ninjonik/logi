@@ -194,6 +194,132 @@ test("save, Odeslat do kanálu, the bot's pass and the overview work end to end"
     assert.equal(view.sources[0]?.connectionId, "gameDataConnections:hll")
 })
 
+test("the heartbeat is one bot row with the visited workspaces, stored at most once a minute", async (t) => {
+    const { ctx, dashboard, advance } = fixture(t)
+    await invoke(panels.save, ctx, {
+        ...dashboard,
+        panelId: null,
+        settings: serverPanel,
+        send: true,
+        expectedRevision: null,
+    })
+    // Rows of the earlier layout: one per workspace.
+    for (const id of [guildId, "200000000000000099"])
+        ctx.db.seed("discordBotHeartbeats", {
+            _id: `discordBotHeartbeats:${id}`,
+            key: `guild:${id}`,
+            version: "1.0.268",
+            protocol: 2,
+            startedAt: now,
+            seenAt: now,
+        })
+    ctx.db.seed("discordBotHeartbeats", {
+        _id: "discordBotHeartbeats:bot",
+        key: "bot",
+        version: "1.0.268",
+        protocol: 2,
+        startedAt: now,
+        seenAt: now,
+    })
+    // Before the list exists, presence comes from the workspace's own row.
+    assert.equal(
+        (await invoke(panels.overview, ctx, dashboard)).botInServer,
+        true
+    )
+    const writes: string[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    ctx.db.patch = async (id, value) => {
+        writes.push(id)
+        return await patch(id, value)
+    }
+    const beat = {
+        secret,
+        heartbeat: { version: "1.1.0", protocol: 2, startedAt: now },
+        guildIds: [guildId],
+    }
+    advance(30_000)
+    await invoke(panelBotWrites.heartbeat, ctx, beat)
+    assert.deepEqual(writes, ["discordBotHeartbeats:bot"])
+    assert.deepEqual(
+        ctx.db.tables.discordBotHeartbeats!.map((row) => row.key),
+        ["bot"],
+        "the per-workspace rows are gone with the first list"
+    )
+    assert.deepEqual(ctx.db.tables.discordBotHeartbeats![0]!.guildIds, [
+        guildId,
+    ])
+    // A bot still beating every 30 s: stored once a minute.
+    advance(30_000)
+    await invoke(panelBotWrites.heartbeat, ctx, beat)
+    assert.equal(writes.length, 1)
+    advance(30_000)
+    await invoke(panelBotWrites.heartbeat, ctx, beat)
+    assert.equal(writes.length, 2)
+    let view = await invoke(panels.overview, ctx, dashboard)
+    assert.equal(view.bot.state, "online")
+    assert.equal(view.botInServer, true)
+    // The bot stopped visiting this workspace.
+    advance(90_000)
+    await invoke(panelBotWrites.heartbeat, ctx, { ...beat, guildIds: [] })
+    view = await invoke(panels.overview, ctx, dashboard)
+    assert.equal(view.botInServer, false)
+})
+
+test("a pass that changes nothing is reported without a write; ten minutes later it is stored", async (t) => {
+    const { ctx, dashboard, advance } = fixture(t)
+    const saved = await invoke(panels.save, ctx, {
+        ...dashboard,
+        panelId: null,
+        settings: serverPanel,
+        send: true,
+        expectedRevision: null,
+    })
+    const writes: string[] = []
+    const patch = ctx.db.patch.bind(ctx.db)
+    const insert = ctx.db.insert.bind(ctx.db)
+    ctx.db.patch = async (id, value) => {
+        writes.push(id.split(":")[0]!)
+        return await patch(id, value)
+    }
+    ctx.db.insert = async (table, value) => {
+        writes.push(table)
+        return await insert(table, value)
+    }
+    const report = (attempt: Record<string, unknown> = {}) =>
+        invoke(panelBotWrites.report, ctx, {
+            secret,
+            guildId,
+            panelId: saved.id,
+            attempt: {
+                attemptAt: Date.now(),
+                ok: true,
+                error: null,
+                nextAt: Date.now() + 60_000,
+                dataAt: Date.now() - 2_000,
+                handledRequestAt: null,
+                warnings: [],
+                messages: 1,
+                channelPrivate: false,
+                ...attempt,
+            },
+        })
+    await report()
+    assert.deepEqual(writes, ["discordPanelStatus"])
+    for (let minute = 1; minute < 10; minute++) {
+        advance(60_000)
+        await report()
+    }
+    assert.equal(writes.length, 1, "nine unchanged passes write nothing")
+    advance(60_000)
+    await report()
+    assert.equal(writes.length, 2, "the tenth minute refreshes the times")
+    advance(60_000)
+    await report({ warnings: ["attach_files_missing"] })
+    assert.equal(writes.length, 3, "a new warning is stored at once")
+    const status = ctx.db.tables.discordPanelStatus![0]!
+    assert.deepEqual(status.warnings, ["attach_files_missing"])
+})
+
 test("pause is a real flag kept across saves; the control message resumes by server", async (t) => {
     const { ctx, dashboard } = fixture(t)
     const saved = await invoke(panels.save, ctx, {

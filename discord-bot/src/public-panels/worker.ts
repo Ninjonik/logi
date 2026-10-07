@@ -45,8 +45,8 @@ import { convex } from "../convex"
 /**
  * The panel worker: every 15 s it visits each workspace the bot is in, runs
  * every panel that is due (a 60 s refresh, a changed setting or an admin
- * request), reports each pass to Logi and writes the bot heartbeat. One
- * failing workspace or panel never blocks the others.
+ * request), reports each pass to Logi and every 90 s writes the bot
+ * heartbeat. One failing workspace or panel never blocks the others.
  */
 
 function logWarn(...args: Parameters<typeof writeWarning>) {
@@ -251,6 +251,7 @@ export function startPublicPanelWorker(
                 revision: input.revision,
                 channelId: input.channelId,
                 message: input.message as MessageCreateOptions,
+                reuseCurrent: !input.force,
             }),
         bindings: async (prefix) =>
             (
@@ -463,14 +464,16 @@ export function startPublicPanelWorker(
         return true
     }
 
+    // Every workspace visited since the last beat, so one failed pass in a
+    // workspace does not read as "the bot is not in the server".
+    const visited = new Set<string>()
     const tick = async () => {
         if (running) return
         running = true
-        const visited: string[] = []
         try {
             for (const guild of client.guilds.cache.values()) {
                 try {
-                    if (await runGuild(guild)) visited.push(guild.id)
+                    if (await runGuild(guild)) visited.add(guild.id)
                 } catch (error) {
                     // One workspace's failure never blocks the others.
                     logWarn(
@@ -485,13 +488,15 @@ export function startPublicPanelWorker(
             }
             if (Date.now() - heartbeatAt >= BOT_HEARTBEAT_INTERVAL_MS) {
                 heartbeatAt = Date.now()
+                const guildIds = [...visited]
+                visited.clear()
                 await mutation("discordPanelBotWrites:heartbeat", {
                     heartbeat: {
                         version: env.botVersion,
                         protocol: PANEL_PROTOCOL,
                         startedAt,
                     },
-                    guildIds: visited,
+                    guildIds,
                 }).catch((error) =>
                     logWarn("public-panels", "Heartbeat failed", { error })
                 )
