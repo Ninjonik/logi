@@ -2,8 +2,8 @@ import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 
 import {
-    externalApiClientIp,
     checkExternalApiRateLimit,
+    externalApiRateLimitBucket,
     externalApiRateLimitResponse,
 } from "@/lib/api/external-api-rate-limit"
 import { routing } from "@/i18n/routing"
@@ -14,7 +14,7 @@ export default async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname
     if (pathname.startsWith("/api/v1/")) {
         const rateLimit = checkExternalApiRateLimit(
-            externalApiClientIp(request)
+            externalApiRateLimitBucket(request)
         )
         if (!rateLimit.allowed) return externalApiRateLimitResponse(rateLimit)
         return
