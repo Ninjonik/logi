@@ -219,9 +219,12 @@ messages; its own failed delivery → `error`; not posted yet → `waiting` (or
 `error` while the panel fails); a message confirmed after the pending request
 and after the panel's error → `published`.
 
-Bot heartbeat: written every 30 s with the bot version (`LOGI_BOT_VERSION`,
-else the version in the repository's `package.json` the bot ships in) and
-`PANEL_PROTOCOL`. Silence for 3 min is `offline`; a protocol below
+Bot heartbeat: written every 90 s with the bot version (`LOGI_BOT_VERSION`,
+else the version in the repository's `package.json` the bot ships in),
+`PANEL_PROTOCOL` and the workspaces visited since the last beat, all in the
+one `bot` row (the overview reads "bot in this server" from its
+`guildIds`; `guild:<id>` rows are the earlier layout). A repeated beat is
+stored at most once a minute. Silence for 3 min is `offline`; a protocol below
 `REQUIRED_PANEL_PROTOCOL` is `outdated` (P1-05, P1-06). The warning names the
 bot's version and `MINIMUM_BOT_VERSION` (1.1.0), the first release with the
 required protocol; raise both together with the package version.
@@ -300,8 +303,8 @@ Convex functions for the bot (internal secret):
 | Function                                      | Purpose                                                                                    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `discordPublicPanels:forGuild`                | Every panel with its servers (snapshot, seed plan, join details, `hasPassword`) and status |
-| `discordPanelBotWrites:heartbeat`             | Version, protocol, servers visited                                                         |
-| `discordPanelBotWrites:report`                | One pass: `panelAttemptSchema`; `passwordNotified` / `passwordReset`                       |
+| `discordPanelBotWrites:heartbeat`             | Version, protocol, servers visited (one `bot` row, at most once a minute)                  |
+| `discordPanelBotWrites:report`                | One pass: `panelAttemptSchema`; `passwordNotified` / `passwordReset`; stored on change     |
 | `discordPanelBotWrites:purge`                 | Deletes a removed panel once its messages are gone                                         |
 | `discordPanelBotWrites:act`                   | An action from Discord: `{ guildId, actorId, action, panelId? \| connectionId? }`          |
 | `discordPanelBot:calendarPanel`               | The calendar panel row and its handled request                                             |
