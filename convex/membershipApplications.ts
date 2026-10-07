@@ -191,14 +191,22 @@ async function previousPlayersFor(ctx: Ctx, guildId: string, name?: string) {
     return clanPlayersMatching(ctx, guildId, name, 3)
 }
 
-async function openApplicationOf(ctx: Ctx, guildId: string, userId: string) {
+async function openApplicationOf(
+    ctx: Ctx,
+    guildId: string,
+    userId: string,
+    gameId?: GameId
+) {
     const applications = await ctx.db
         .query("membershipApplicationThreads")
         .withIndex("guildId", (q) => q.eq("guildId", guildId))
         .collect()
     const open = applications.find(
         (application) =>
-            application.creatorId === userId && application.status === "open"
+            application.creatorId === userId &&
+            application.status === "open" &&
+            (gameId === undefined ||
+                (application.gameId ?? "hell_let_loose") === gameId)
     )
     return open
         ? { number: open.applicationNumber, threadId: open.threadId }
@@ -212,9 +220,15 @@ async function assignedGamesOf(ctx: Ctx, guildId: string, userId: string) {
             q.eq("serverId", guildId).eq("userId", userId)
         )
         .collect()
-    return assignments.map(
-        (assignment) => assignment.gameId ?? "hell_let_loose"
-    )
+    // Mercenaries may apply elsewhere. Only regular and reserve membership
+    // makes a game unavailable for another regular application.
+    return assignments
+        .filter(
+            (assignment) =>
+                assignment.type === "member" ||
+                assignment.type === "reserve_member"
+        )
+        .map((assignment) => assignment.gameId ?? "hell_let_loose")
 }
 
 /**
@@ -248,25 +262,19 @@ function definitionOf(
 async function applicationState(ctx: Ctx, guildId: string, userId: string) {
     const setup = await applicationSetup(ctx, guildId)
     if (!setup) return null
-    const [
-        guild,
-        draft,
-        verifiedSteamId,
-        openApplication,
-        assignedGames,
-        user,
-    ] = await Promise.all([
-        getGuildByDiscordId(ctx, guildId),
-        liveDraft(ctx, guildId, userId),
-        verifiedSteam(ctx, userId),
-        openApplicationOf(ctx, guildId, userId),
-        assignedGamesOf(ctx, guildId, userId),
-        getUserByDiscordId(ctx, userId),
-    ])
+    const [guild, draft, verifiedSteamId, assignedGames, user] =
+        await Promise.all([
+            getGuildByDiscordId(ctx, guildId),
+            liveDraft(ctx, guildId, userId),
+            verifiedSteam(ctx, userId),
+            assignedGamesOf(ctx, guildId, userId),
+            getUserByDiscordId(ctx, userId),
+        ])
     const answers = draft ? draftAnswers(draft) : EMPTY_APPLICATION_ANSWERS
     return {
         ...definitionOf(setup, guild),
-        openApplication,
+        // An open application is a conflict only after its game is known.
+        openApplication: null,
         assignedGames,
         draft: draft
             ? {
@@ -478,13 +486,13 @@ async function submissionCheck(
     const setup = await applicationSetup(ctx, draft.guildId)
     if (!setup?.settings.enabled) return { ok: false, reason: "disabled" }
     const answers = draftAnswers(draft)
-    const [verifiedSteamId, previousPlayers, open, assignedGames] =
-        await Promise.all([
+    const [verifiedSteamId, previousPlayers, assignedGames] = await Promise.all(
+        [
             verifiedSteam(ctx, draft.creatorId),
             previousPlayersFor(ctx, draft.guildId, answers.inGameName),
-            openApplicationOf(ctx, draft.guildId, draft.creatorId),
             assignedGamesOf(ctx, draft.guildId, draft.creatorId),
-        ])
+        ]
+    )
     const plan = planApplication({
         form: setup.form,
         categories: setup.categories,
@@ -498,8 +506,14 @@ async function submissionCheck(
             reason: "incomplete",
             windowId: missing?.id ?? "about",
         }
-    if (open) return { ok: false, reason: "open-application", ...open }
     const game: GameId = categoryGame(plan.category)
+    const open = await openApplicationOf(
+        ctx,
+        draft.guildId,
+        draft.creatorId,
+        game
+    )
+    if (open) return { ok: false, reason: "open-application", ...open }
     if (assignedGames.some((assigned) => matchesGameScope(assigned, game)))
         return { ok: false, reason: "in-clan" }
     return {
@@ -840,12 +854,6 @@ export const webApplicationStatus = query({
                 state: "failed" as const,
                 reason: draft.submissionError ?? "failed",
             }
-        const open = await openApplicationOf(
-            ctx,
-            args.guildId,
-            applicant.userId
-        )
-        if (open) return { state: "done" as const, ...open }
         return { state: "editing" as const }
     },
 })

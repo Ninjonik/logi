@@ -144,6 +144,11 @@ export function AppSidebar({
                                       isActive: within("matches"),
                                   },
                                   {
+                                      title: t.signupActivity,
+                                      url: `${base}/signup-activity`,
+                                      isActive: within("signup-activity"),
+                                  },
+                                  {
                                       title: t.topicPresets,
                                       url: `${base}/topic-presets`,
                                       isActive: within("topic-presets"),

@@ -267,7 +267,10 @@ function pickerOptions(context: EventInteractionContext): SignupPickerOption[] {
 export async function handleEventSignupPickerInteraction(
     interaction: ButtonInteraction
 ) {
-    const [, eventId, customIdGuildId] = interaction.customId.split(":")
+    const [, eventId, thirdPart, fourthPart] = interaction.customId.split(":")
+    // A legacy announcement's single signup button has an extra action
+    // segment (`signup:<event>:PRIMARY_GROUP:<guild>`).
+    const customIdGuildId = fourthPart ?? thirdPart
     const context = await loadSignupContext(
         interaction,
         eventId ?? "",
@@ -320,6 +323,20 @@ function groupNameOf(
         context.groups.find((item) => item.id === group || item.name === group)
             ?.name ?? group
     )
+}
+
+/** The first configured assignment that this match offers: primary, then secondary order. */
+function preferredSignupGroupId(
+    context: EventInteractionContext,
+    assignment: ReturnType<typeof membershipOf>["assignment"]
+) {
+    if (!assignment) return undefined
+    const offered = new Set(
+        context.event.signupGroupIds ?? context.groups.map((group) => group.id)
+    )
+    return [assignment.primaryGroupId, ...(assignment.secondaryGroupIds ?? [])]
+        .filter((groupId): groupId is string => Boolean(groupId))
+        .find((groupId) => offered.has(groupId))
 }
 
 /**
@@ -431,7 +448,7 @@ export async function handleEventButtonInteraction(
 ) {
     const [, eventId, encodedGroupId, customIdGuildId] =
         interaction.customId.split(":")
-    const requestedGroupId = interaction.isStringSelectMenu()
+    let requestedGroupId = interaction.isStringSelectMenu()
         ? (interaction.values[0] ?? "")
         : decodeURIComponent(encodedGroupId ?? "")
 
@@ -466,12 +483,6 @@ export async function handleEventButtonInteraction(
         return
     }
 
-    // The single "Přihlásit se" of an older announcement opens the picker.
-    if (interaction.isButton() && requestedGroupId === SIGNUP_PRIMARY_GROUP) {
-        await handleEventSignupPickerInteraction(interaction)
-        return
-    }
-
     const context = await loadSignupContext(
         interaction,
         eventId ?? "",
@@ -499,6 +510,20 @@ export async function handleEventButtonInteraction(
         const member = await resolveInteractionMember(interaction, guild)
         const membership = membershipOf(context, interaction.user.id)
         const kit = { ...kitOptions(context), replaceCard: true }
+        if (
+            interaction.isButton() &&
+            requestedGroupId === SIGNUP_PRIMARY_GROUP
+        ) {
+            const preferredGroupId = preferredSignupGroupId(
+                context,
+                membership.assignment
+            )
+            if (!preferredGroupId) {
+                await handleEventSignupPickerInteraction(interaction)
+                return
+            }
+            requestedGroupId = preferredGroupId
+        }
         const resolved = resolveEventSignupSelection({
             event: context.event,
             groups: context.groups,

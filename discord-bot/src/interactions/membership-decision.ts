@@ -56,6 +56,7 @@ import {
     type MessageKitOptions,
 } from "../ui/message-kit"
 import { checkCloseAuthority, type CloseAuthority } from "./close-authority"
+import { applicationStateCache } from "./membership-application-cache"
 import { replyPrivately, reportToErrorsChannel } from "../ui/replies"
 import { threadUrl } from "./membership-application-create"
 import { dmSettingsUrl } from "../events/match-context"
@@ -184,7 +185,7 @@ async function runDecision(
     let assignmentId = application.assignmentId
     let decidedGame = applicationGame
 
-    return await decideApplication(
+    const result = await decideApplication(
         {
             claim: async () => {
                 const claim = await claimApplicationDecision(
@@ -356,6 +357,12 @@ async function runDecision(
             },
         }
     )
+    // The panel opens from a short-lived applicant cache to meet Discord's
+    // interaction deadline. A decision changes both its open-application and
+    // membership facts, so never let that stale snapshot block a reapplication.
+    if (result.status === "decided")
+        applicationStateCache.forget(guild.id, application.creatorId)
+    return result
 }
 
 type Gate =

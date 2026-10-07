@@ -186,7 +186,7 @@ test("ToggleSignupUseCase supports training signups during starting before regis
     assert.equal(syncPort.calls.length, 1)
 })
 
-test("ToggleSignupUseCase resolves general match signup from the primary group and falls back to reserves", async () => {
+test("ToggleSignupUseCase resolves general match signup from the first offered primary or secondary group", async () => {
     const syncPort = new NoopEventWorkflowSyncPort()
     const events = new InMemoryEventWorkflowRepository(
         new Map([
@@ -211,7 +211,12 @@ test("ToggleSignupUseCase resolves general match signup from the primary group a
         new Map([
             [
                 "guild-1:user-1",
-                { primaryGroupId: "group-1", type: "member", status: "active" },
+                {
+                    primaryGroupId: "group-not-offered",
+                    secondaryGroupIds: ["group-1"],
+                    type: "member",
+                    status: "active",
+                },
             ],
             ["guild-1:user-2", { type: "member", status: "active" }],
         ]),

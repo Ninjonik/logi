@@ -96,13 +96,13 @@ export function applicantGames(
     answers: Pick<ApplicationAnswers, "games" | "categoryId">
 ): GameId[] {
     const clanGames = applicationGames(categories)
-    if (clanGames.length <= 1) return clanGames
     const category = categories.find((item) => item.id === answers.categoryId)
-    const games = new Set(
-        answers.games.filter((game) => clanGames.includes(game))
-    )
-    if (category) games.add(categoryGame(category))
-    return GAME_IDS.filter((game) => games.has(game))
+    // Applications have exactly one game and one category. The category is
+    // game-owned, so it is authoritative once selected; this also safely
+    // normalizes drafts created before the game picker became single-select.
+    if (category) return [categoryGame(category)]
+    const game = answers.games.find((item) => clanGames.includes(item))
+    return game ? [game] : clanGames.slice(0, 1)
 }
 
 const SUFFIXES = ["", "b", "c"] as const
@@ -290,11 +290,13 @@ export function submitWindow(
         const raw = input.values[field.id] ?? []
         switch (field.kind) {
             case "games": {
-                const games = GAME_IDS.filter((game) =>
-                    raw.some((value) => value === game)
-                ).filter((game) => clanGames.includes(game))
+                const games = GAME_IDS.filter(
+                    (item) => raw.includes(item) && clanGames.includes(item)
+                )
                 if (!games.length)
                     issues.push({ fieldId: field.id, issue: "required" })
+                else if (games.length > 1)
+                    issues.push({ fieldId: field.id, issue: "too-many" })
                 else next.games = games
                 break
             }
@@ -308,10 +310,7 @@ export function submitWindow(
                 }
                 next.categoryId = category.id
                 const game = categoryGame(category)
-                if (!next.games.includes(game))
-                    next.games = GAME_IDS.filter(
-                        (item) => item === game || next.games.includes(item)
-                    )
+                next.games = [game]
                 break
             }
             case "inGameName": {

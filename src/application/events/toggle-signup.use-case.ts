@@ -50,16 +50,20 @@ export class ToggleSignupUseCase {
             normalizedEvent.kind === "match" &&
             input.group === SIGNUP_GENERAL
         ) {
-            const primaryGroupId = assignment?.primaryGroupId
+            const groupIds = [
+                assignment?.primaryGroupId,
+                ...(assignment?.secondaryGroupIds ?? []),
+            ]
             const allowedGroupIds = new Set(
                 normalizedEvent.signupGroupIds ?? []
             )
-
-            if (primaryGroupId && allowedGroupIds.has(primaryGroupId)) {
-                nextGroup = await this.events.getGroupNameById(primaryGroupId)
-            } else {
-                nextGroup = null
-            }
+            const groupId = groupIds.find(
+                (candidate): candidate is string =>
+                    Boolean(candidate) && allowedGroupIds.has(candidate)
+            )
+            nextGroup = groupId
+                ? await this.events.getGroupNameById(groupId)
+                : null
         }
 
         // A capped group that is already full gives the player a reserve
