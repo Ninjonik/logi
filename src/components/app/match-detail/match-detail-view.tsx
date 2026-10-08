@@ -148,8 +148,6 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                 tabHref={model.tabHref}
                 tabCounts={{ attendance: model.signedUpCount }}
                 played={played}
-                // The attendance board (E3) goes straight from tabs to counts.
-                showProgress={activeTab !== "attendance"}
                 // After the match the announcement is history (E2, E3).
                 discordHref={played ? undefined : model.discordHref}
                 actions={
