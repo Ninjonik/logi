@@ -8,6 +8,8 @@ import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspa
 import { SettingsAttentionProvider } from "@/components/app/settings-attention"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { LocaleSwitcher } from "@/components/app/locale-switcher"
+import { ThemeSwitcher } from "@/components/app/theme-switcher"
 import { AppBreadcrumbs } from "@/components/app/breadcrumbs"
 import { SiteHeader } from "@/components/app/site-header"
 import { SiteFooter } from "@/components/app/site-footer"
@@ -74,6 +76,14 @@ export async function DashboardShell({
                             servers={visibleServers}
                             user={user}
                         />
+                        <div className="absolute top-3 right-4 z-20 hidden items-center gap-2 md:flex">
+                            <ThemeSwitcher dictionary={dictionary} />
+                            <LocaleSwitcher
+                                locale={locale}
+                                dictionary={dictionary}
+                                compact
+                            />
+                        </div>
                         <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
                             <AppBreadcrumbs
                                 locale={locale}

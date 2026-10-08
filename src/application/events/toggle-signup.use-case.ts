@@ -59,7 +59,8 @@ export class ToggleSignupUseCase {
             )
             const groupId = groupIds.find(
                 (candidate): candidate is string =>
-                    Boolean(candidate) && allowedGroupIds.has(candidate)
+                    typeof candidate === "string" &&
+                    allowedGroupIds.has(candidate)
             )
             nextGroup = groupId
                 ? await this.events.getGroupNameById(groupId)

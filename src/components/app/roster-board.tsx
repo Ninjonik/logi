@@ -1615,7 +1615,7 @@ export function RosterBoard({
                         <div
                             role="radiogroup"
                             aria-label={dictionary.matchDetail.roster.modeLabel}
-                            className="border-border/70 bg-muted/40 flex h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-xl border p-0.5 md:flex-none"
+                            className="border-border/70 bg-muted/40 order-last flex h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-xl border p-0.5 md:flex-none"
                         >
                             <Settings2
                                 className="text-muted-foreground mx-1.5 hidden size-4 shrink-0 md:block"

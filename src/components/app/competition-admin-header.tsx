@@ -33,7 +33,7 @@ export function CompetitionAdminHeader({
         <>
             <nav
                 aria-label={t.breadcrumb}
-                className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm"
+                className="text-muted-foreground hidden flex-wrap items-center gap-1.5 text-sm"
             >
                 <Link href={listHref} className="hover:text-foreground">
                     {dictionary.sidebar.competitions}

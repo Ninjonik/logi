@@ -194,7 +194,7 @@ export function SettingsSectionFrame({
             )}
             <nav
                 aria-label={hub.breadcrumbLabel}
-                className="text-muted-foreground hidden items-center gap-1.5 text-sm lg:flex"
+                className="text-muted-foreground hidden items-center gap-1.5 text-sm"
             >
                 <Link href={overviewHref} className="hover:text-foreground">
                     {hub.overview.title}
