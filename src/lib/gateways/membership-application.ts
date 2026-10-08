@@ -204,6 +204,9 @@ export async function submitWebApplication(
 export async function readWebApplicationStatus(
     actor: DashboardActor,
     guildId: string
-) {
-    return await fetchQuery(statusQuery, args(actor, guildId))
+): Promise<WebApplicationStatus> {
+    return (await fetchQuery(
+        statusQuery,
+        args(actor, guildId)
+    )) as WebApplicationStatus
 }

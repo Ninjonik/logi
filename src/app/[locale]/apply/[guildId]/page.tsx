@@ -82,15 +82,14 @@ export default async function WebApplicationPage({
         verifiedSteamId: state.verifiedSteamId ?? null,
         previousPlayers: state.previousPlayers,
         linkedPlatformIds: state.linkedPlatformIds,
-        status: state.openApplication
-            ? { state: "done", threadId: state.openApplication.threadId }
-            : status.state === "queued"
-              ? { state: "queued" }
-              : status.state === "failed"
-                ? { state: "failed", reason: status.reason }
-                : status.state === "done"
-                  ? { state: "done", threadId: status.threadId }
-                  : { state: "editing" },
+        status:
+            status.state === "queued"
+                ? { state: "queued" }
+                : status.state === "failed"
+                  ? { state: "failed", reason: status.reason }
+                  : status.state === "done"
+                    ? { state: "done", threadId: status.threadId }
+                    : { state: "editing" },
     }
     const dictionary = getDictionary(safeLocale)
     return (
