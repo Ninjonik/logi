@@ -99,7 +99,7 @@ function NavMenuItem({
                     asChild={!hasSubItems}
                     tooltip={item.title}
                     isActive={active}
-                    className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+                    className="h-8 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
                 >
                     {hasSubItems ? (
                         <CollapsibleTrigger className="flex w-full items-center gap-2">
@@ -174,45 +174,57 @@ function NavSubMenuItem({
 }) {
     const url = withGameQuery(item.url, gameQuery)
     const active = isActiveItem(item, pathname)
-    const showSubItems =
-        Boolean(item.items?.length) && hasActiveDescendant(item, pathname)
+    const hasSubItems = Boolean(item.items?.length)
+    const [open, setOpen] = useState(
+        hasSubItems && hasActiveDescendant(item, pathname)
+    )
 
     return (
-        <SidebarMenuSubItem>
-            <SidebarMenuSubButton
-                asChild
-                isActive={active}
-                className="h-9 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-7"
-            >
-                <Link
-                    href={url}
-                    prefetch={!isHeavyServerRoute(url)}
-                    aria-current={active ? "page" : undefined}
+        <Collapsible open={open} onOpenChange={setOpen} asChild>
+            <SidebarMenuSubItem>
+                <SidebarMenuSubButton
+                    asChild={!hasSubItems}
+                    isActive={active}
+                    className="h-7 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
                 >
-                    <span>{item.title}</span>
-                    {item.items?.length ? (
-                        <ChevronRight
-                            aria-hidden="true"
-                            className={`ml-auto size-3.5 shrink-0 transition-transform ${
-                                showSubItems ? "rotate-90" : ""
-                            }`}
-                        />
-                    ) : null}
-                </Link>
-            </SidebarMenuSubButton>
-            {showSubItems && item.items ? (
-                <SidebarMenuSub className="mr-0 pr-0">
-                    {item.items.map((subItem) => (
-                        <NavSubMenuItem
-                            key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
-                            item={subItem}
-                            pathname={pathname}
-                            gameQuery={gameQuery}
-                        />
-                    ))}
-                </SidebarMenuSub>
-            ) : null}
-        </SidebarMenuSubItem>
+                    {hasSubItems ? (
+                        <CollapsibleTrigger className="flex w-full items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate">
+                                {item.title}
+                            </span>
+                            <ChevronRight
+                                aria-hidden="true"
+                                className={`size-3.5 shrink-0 transition-transform ${
+                                    open ? "rotate-90" : ""
+                                }`}
+                            />
+                        </CollapsibleTrigger>
+                    ) : (
+                        <Link
+                            href={url}
+                            prefetch={!isHeavyServerRoute(url)}
+                            aria-current={active ? "page" : undefined}
+                        >
+                            <span>{item.title}</span>
+                        </Link>
+                    )}
+                </SidebarMenuSubButton>
+                {hasSubItems && item.items ? (
+                    <CollapsibleContent>
+                        <SidebarMenuSub className="mr-0 pr-0">
+                            {item.items.map((subItem) => (
+                                <NavSubMenuItem
+                                    key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
+                                    item={subItem}
+                                    pathname={pathname}
+                                    gameQuery={gameQuery}
+                                />
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                ) : null}
+            </SidebarMenuSubItem>
+        </Collapsible>
     )
 }
 
