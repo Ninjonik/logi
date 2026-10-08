@@ -97,64 +97,67 @@ function NavMenuItem({
             <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild={!hasSubItems}
-                tooltip={item.title}
-                isActive={active}
-                className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
-            >
-                {hasSubItems ? (
-                    <CollapsibleTrigger className="flex w-full items-center gap-2">
-                        <NavItemLabel item={item} open={open} />
-                    </CollapsibleTrigger>
-                ) : (
-                    <Link href={url} prefetch={!isHeavyServerRoute(url)} aria-current={active ? "page" : undefined}>
-                        <NavItemLabel item={item} open={false} />
-                    </Link>
-                )}
-            </SidebarMenuButton>
-            {hasSubItems && item.items ? (
-                <CollapsibleContent>
-                    <SidebarMenuSub className="mr-0 pr-0">
-                        {item.items.map((subItem) => (
-                            <NavSubMenuItem
-                                key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
-                                item={subItem}
-                                pathname={pathname}
-                                gameQuery={gameQuery}
-                            />
-                        ))}
-                    </SidebarMenuSub>
-                </CollapsibleContent>
-            ) : null}
+                    tooltip={item.title}
+                    isActive={active}
+                    className="h-10 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold md:h-8"
+                >
+                    {hasSubItems ? (
+                        <CollapsibleTrigger className="flex w-full items-center gap-2">
+                            <NavItemLabel item={item} open={open} />
+                        </CollapsibleTrigger>
+                    ) : (
+                        <Link
+                            href={url}
+                            prefetch={!isHeavyServerRoute(url)}
+                            aria-current={active ? "page" : undefined}
+                        >
+                            <NavItemLabel item={item} open={false} />
+                        </Link>
+                    )}
+                </SidebarMenuButton>
+                {hasSubItems && item.items ? (
+                    <CollapsibleContent>
+                        <SidebarMenuSub className="mr-0 pr-0">
+                            {item.items.map((subItem) => (
+                                <NavSubMenuItem
+                                    key={`${subItem.title}-${withGameQuery(subItem.url, gameQuery)}`}
+                                    item={subItem}
+                                    pathname={pathname}
+                                    gameQuery={gameQuery}
+                                />
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                ) : null}
             </SidebarMenuItem>
         </Collapsible>
     )
 }
 
 function NavItemLabel({ item, open }: { item: NavItem; open: boolean }) {
+    const hasBadge = Boolean(item.badge && item.badge.count > 0)
     return (
         <>
-                    {item.icon && <item.icon aria-hidden="true" />}
-                    <span className="min-w-0 flex-1 truncate">
-                        {item.title}
-                    </span>
-                    {hasBadge && item.badge ? (
-                        <AttentionBadge label={item.badge.label}>
-                            {item.badge.count}
-                        </AttentionBadge>
-                    ) : null}
-                    {item.note ? (
-                        <span className="text-status-info shrink-0 text-[11px] font-medium">
-                            {item.note}
-                        </span>
-                    ) : null}
-                    {item.items?.length ? (
-                        <ChevronRight
-                            aria-hidden="true"
-                            className={`size-4 shrink-0 transition-transform ${
-                                open ? "rotate-90" : ""
-                            }`}
-                        />
-                    ) : null}
+            {item.icon && <item.icon aria-hidden="true" />}
+            <span className="min-w-0 flex-1 truncate">{item.title}</span>
+            {hasBadge && item.badge ? (
+                <AttentionBadge label={item.badge.label}>
+                    {item.badge.count}
+                </AttentionBadge>
+            ) : null}
+            {item.note ? (
+                <span className="text-status-info shrink-0 text-[11px] font-medium">
+                    {item.note}
+                </span>
+            ) : null}
+            {item.items?.length ? (
+                <ChevronRight
+                    aria-hidden="true"
+                    className={`size-4 shrink-0 transition-transform ${
+                        open ? "rotate-90" : ""
+                    }`}
+                />
+            ) : null}
         </>
     )
 }

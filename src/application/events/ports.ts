@@ -41,6 +41,7 @@ export interface EventWorkflowRepository {
         gameId?: GameId
     ): Promise<{
         primaryGroupId?: string
+        secondaryGroupIds?: string[]
         type?: "member" | "reserve_member" | "mercenary"
         status?: "pending" | "recruit" | "active"
     } | null>

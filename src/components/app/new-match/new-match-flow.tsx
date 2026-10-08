@@ -1213,7 +1213,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             {isEdit ? (
                 <nav
                     aria-label={dictionary.matchDetail.breadcrumbLabel}
-                    className="text-muted-foreground -mb-2 flex min-w-0 items-center gap-1 text-sm"
+                    className="text-muted-foreground -mb-2 hidden min-w-0 items-center gap-1 text-sm"
                 >
                     <Link href={listHref} className="hover:text-foreground">
                         {listLabel}

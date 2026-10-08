@@ -1,9 +1,4 @@
-import {
-    ArrowLeft,
-    ChevronRight,
-    CircleCheck,
-    ExternalLink,
-} from "lucide-react"
+import { ArrowLeft, CircleCheck, ExternalLink } from "lucide-react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 
@@ -212,18 +207,8 @@ export function MatchDetailHeader({
                 {actions}
             </div>
 
-            <nav
-                aria-label={t.breadcrumbLabel}
-                className="text-muted-foreground hidden items-center gap-1 text-sm sm:flex"
-            >
-                <Link href={listHref} className="hover:text-foreground">
-                    {t.backToMatches}
-                </Link>
-                <ChevronRight className="size-3.5" aria-hidden />
-                <span aria-current="page" className="text-foreground truncate">
-                    {event.name}
-                </span>
-            </nav>
+            {/* DashboardShell owns the desktop breadcrumb. This header keeps
+                back navigation on phones only, avoiding duplicate trails. */}
             <header className="hidden items-start justify-between gap-3 sm:flex">
                 <div className="min-w-0 space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight break-words">
