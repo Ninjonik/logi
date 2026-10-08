@@ -1,13 +1,17 @@
 import type { ReactNode } from "react"
 
 import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+} from "@/components/ui/sidebar"
+import {
     getVisibleGuildsForLoggedInUser,
     isCurrentUserSuperadmin,
 } from "@/lib/auth"
 import { MissingBotWorkspaceWarning } from "@/components/app/missing-bot-workspace-warning"
 import { SettingsAttentionProvider } from "@/components/app/settings-attention"
 import { DashboardOnboarding } from "@/components/app/dashboard-onboarding"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { LocaleSwitcher } from "@/components/app/locale-switcher"
 import { ThemeSwitcher } from "@/components/app/theme-switcher"
 import { AppBreadcrumbs } from "@/components/app/breadcrumbs"
@@ -76,21 +80,28 @@ export async function DashboardShell({
                             servers={visibleServers}
                             user={user}
                         />
-                        <div className="absolute top-3 right-4 z-20 hidden items-center gap-2 md:flex">
-                            <ThemeSwitcher dictionary={dictionary} />
-                            <LocaleSwitcher
-                                locale={locale}
-                                dictionary={dictionary}
-                                compact
+                        <header className="bg-background hidden h-16 shrink-0 items-center gap-3 border-b px-4 md:flex">
+                            <SidebarTrigger />
+                            <div
+                                aria-hidden="true"
+                                className="bg-border h-5 w-px"
                             />
-                        </div>
-                        <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
                             <AppBreadcrumbs
                                 locale={locale}
                                 dictionary={dictionary}
                                 servers={visibleServers}
-                                className="max-md:hidden"
+                                className="min-w-0 flex-1 px-0"
                             />
+                            <div className="ml-auto flex shrink-0 items-center gap-2">
+                                <ThemeSwitcher dictionary={dictionary} />
+                                <LocaleSwitcher
+                                    locale={locale}
+                                    dictionary={dictionary}
+                                    compact
+                                />
+                            </div>
+                        </header>
+                        <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
                             <MissingBotWorkspaceWarning
                                 dictionary={dictionary}
                                 inviteUrlByGuildId={inviteUrlByGuildId}
