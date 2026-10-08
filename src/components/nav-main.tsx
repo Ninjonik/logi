@@ -91,21 +91,26 @@ function NavMenuItem({
     const [open, setOpen] = useState(
         hasSubItems && hasActiveDescendant(item, pathname)
     )
-    const hasBadge = Boolean(item.badge && item.badge.count > 0)
     return (
         <Collapsible open={open} onOpenChange={setOpen} asChild>
             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild={!hasSubItems}
-                    tooltip={item.title}
-                    isActive={active}
-                    className="h-8 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
-                >
-                    {hasSubItems ? (
-                        <CollapsibleTrigger className="flex w-full items-center gap-2">
+                {hasSubItems ? (
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            tooltip={item.title}
+                            isActive={active}
+                            className="h-8 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
+                        >
                             <NavItemLabel item={item} open={open} />
-                        </CollapsibleTrigger>
-                    ) : (
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                ) : (
+                    <SidebarMenuButton
+                        asChild
+                        tooltip={item.title}
+                        isActive={active}
+                        className="h-8 cursor-pointer gap-2 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
+                    >
                         <Link
                             href={url}
                             prefetch={!isHeavyServerRoute(url)}
@@ -113,8 +118,8 @@ function NavMenuItem({
                         >
                             <NavItemLabel item={item} open={false} />
                         </Link>
-                    )}
-                </SidebarMenuButton>
+                    </SidebarMenuButton>
+                )}
                 {hasSubItems && item.items ? (
                     <CollapsibleContent>
                         <SidebarMenuSub className="mr-0 pr-0">
@@ -182,13 +187,12 @@ function NavSubMenuItem({
     return (
         <Collapsible open={open} onOpenChange={setOpen} asChild>
             <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                    asChild={!hasSubItems}
-                    isActive={active}
-                    className="h-7 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
-                >
-                    {hasSubItems ? (
-                        <CollapsibleTrigger className="flex w-full items-center gap-2">
+                {hasSubItems ? (
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuSubButton
+                            isActive={active}
+                            className="h-7 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
+                        >
                             <span className="min-w-0 flex-1 truncate">
                                 {item.title}
                             </span>
@@ -198,8 +202,14 @@ function NavSubMenuItem({
                                     open ? "rotate-90" : ""
                                 }`}
                             />
-                        </CollapsibleTrigger>
-                    ) : (
+                        </SidebarMenuSubButton>
+                    </CollapsibleTrigger>
+                ) : (
+                    <SidebarMenuSubButton
+                        asChild
+                        isActive={active}
+                        className="h-7 rounded-lg px-2 text-sm data-[active=true]:font-semibold"
+                    >
                         <Link
                             href={url}
                             prefetch={!isHeavyServerRoute(url)}
@@ -207,8 +217,8 @@ function NavSubMenuItem({
                         >
                             <span>{item.title}</span>
                         </Link>
-                    )}
-                </SidebarMenuSubButton>
+                    </SidebarMenuSubButton>
+                )}
                 {hasSubItems && item.items ? (
                     <CollapsibleContent>
                         <SidebarMenuSub className="mr-0 pr-0">
