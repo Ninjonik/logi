@@ -4,7 +4,9 @@ import { getDictionary, type Dictionary } from "@/i18n/dictionaries"
 import { getLinkedClanTeams } from "@/lib/read-models/clan-teams"
 import { getEventDraft } from "@/lib/gateways/event-drafts"
 import { getServerContext } from "@/lib/server-context"
+import { makeFunctionReference } from "convex/server"
 import type { TeamDto } from "@/domain/teams/team"
+import { fetchQuery } from "convex/nextjs"
 import { isLocale } from "@/i18n/config"
 
 import { NewMatchFlow, type NewMatchFlowProps } from "./new-match-flow"
@@ -24,7 +26,7 @@ export function clanFlowProps(input: {
     linkedTeams: TeamDto[]
 }): Omit<
     NewMatchFlowProps,
-    "initialKind" | "initialGameId" | "draft" | "edit"
+    "initialKind" | "initialGameId" | "draft" | "edit" | "gameCatalogue"
 > & { enabledGames: GameId[] } {
     const { context } = input
     const enabledGames: GameId[] = context.server.enabledGames?.length
@@ -106,9 +108,10 @@ export async function NewMatchPage({
                 overviewHref={`/${locale}/dashboard/servers/${serverId}`}
             />
         )
-    const [draft, linkedTeams] = await Promise.all([
+    const [draft, linkedTeams, gameCatalogue] = await Promise.all([
         draftId ? getEventDraft(serverId, draftId) : Promise.resolve(null),
         getLinkedClanTeams(context.server.discordId),
+        fetchQuery(makeFunctionReference<"query">("gameCatalog:list"), {}),
     ])
     const shared = clanFlowProps({
         context,
@@ -128,6 +131,7 @@ export async function NewMatchPage({
             initialKind={draft?.kind ?? kind}
             initialGameId={initialGameId}
             draft={draft}
+            gameCatalogue={gameCatalogue as NewMatchFlowProps["gameCatalogue"]}
         />
     )
 }

@@ -1,4 +1,3 @@
-import { GAME_IDS } from "../games/game"
 import { z } from "zod"
 
 const status = z.enum([
@@ -17,7 +16,7 @@ export const memberRoleOperationsSchema = z
         z
             .object({
                 id: z.string().min(1).max(256),
-                gameId: z.enum(GAME_IDS),
+                gameId: z.string().min(1),
                 userId: z.string().min(1).max(256),
                 discordUserId: snowflake.nullable(),
                 actorId: snowflake,

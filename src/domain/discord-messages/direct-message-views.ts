@@ -611,7 +611,11 @@ export const recapButtonIds = {
  */
 export function matchRecapView(input: {
     event: Pick<DmEvent, "id" | "title" | "category" | "gameStart" | "mapLabel">
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?:
+        | "hell_let_loose"
+        | "hell_let_loose_vietnam"
+        | "wardogs"
+        | "world_of_warcraft_forever"
     place?: { squad: string; role?: string }
     result?: {
         outcome: "win" | "loss" | "draw"
@@ -724,7 +728,13 @@ export function matchRecapView(input: {
                     ]
                   : []),
           ]
-    const game = input.gameId ? copy.games[input.gameId] : undefined
+    const game = input.gameId
+        ? (
+              copy.games as Partial<
+                  Record<NonNullable<typeof input.gameId>, string>
+              >
+          )[input.gameId]
+        : undefined
     return {
         accent: "clan",
         header: {

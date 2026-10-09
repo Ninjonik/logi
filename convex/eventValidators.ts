@@ -21,13 +21,7 @@ const reminderStatus = v.union(
  * roster's squad preset (which `events:upsert` can also clear with null).
  */
 export const eventWriteFields = {
-    gameId: v.optional(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    ),
+    gameId: v.optional(v.string()),
     kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
     matchType: v.optional(v.string()),
     name: v.string(),

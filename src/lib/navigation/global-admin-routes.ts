@@ -2,6 +2,7 @@
 export const GLOBAL_ADMIN_SECTIONS = [
     "competitions",
     "teams",
+    "games",
     "team-requests",
     "bot",
     "platform-settings",

@@ -1123,17 +1123,6 @@ const OUTCOME_TONE: Record<ApplicationOutcome, MessageChip["tone"]> = {
     denied: "danger",
 }
 
-function rolesSentence(
-    copy: ApplicationCopy,
-    templates: { one: string; other: string },
-    roles: readonly string[],
-    format: (roleId: string) => string
-) {
-    return t(roles.length === 1 ? templates.one : templates.other, {
-        roles: joinList(copy.listAnd, roles.map(format)),
-    })
-}
-
 export type DecidedCardInput = {
     number: number
     applicantName: string
@@ -1176,26 +1165,6 @@ export function applicationDecidedCardView(
             kind: "text",
             markdown: `> ${escapeMarkdownText(input.reason.trim()).slice(0, 1000)}`,
         })
-    const lines: string[] = []
-    if (input.rolesAdded.length)
-        lines.push(
-            rolesSentence(
-                copy,
-                copy.card.rolesAdd,
-                input.rolesAfter,
-                (roleId) => `<@&${roleId}>`
-            )
-        )
-    if (input.rolesRemoved.length)
-        lines.push(
-            rolesSentence(
-                copy,
-                copy.card.rolesRemove,
-                input.rolesRemoved,
-                (roleId) => `<@&${roleId}>`
-            )
-        )
-    if (lines.length) blocks.push({ kind: "text", markdown: lines.join("\n") })
     blocks.push({ kind: "separator", divider: true, spacing: "small" })
     return {
         accent: "clan",
@@ -1209,14 +1178,6 @@ export function applicationDecidedCardView(
                     label: copy.card.outcome[input.outcome],
                     tone: OUTCOME_TONE[input.outcome],
                 },
-                ...(input.rolesAdded.length
-                    ? [
-                          {
-                              label: copy.card.rolesPending,
-                              tone: "warning" as const,
-                          },
-                      ]
-                    : []),
             ],
         },
         blocks,

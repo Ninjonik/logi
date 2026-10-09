@@ -1,7 +1,6 @@
 import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
 import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
 import { matchTeamInputsSchema } from "@/domain/teams/match-teams"
-import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
 
 const settingId = z.string().trim().min(1).max(64)
@@ -32,7 +31,7 @@ export const attendanceReminderHoursSchema = z
 
 export const eventSchema = z
     .object({
-        gameId: z.enum(GAME_IDS).optional(),
+        gameId: z.string().trim().min(1).optional(),
         kind: z.enum(["match", "training"]),
         matchType: z
             .string()

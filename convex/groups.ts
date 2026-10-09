@@ -22,14 +22,7 @@ export const listForGuild = query({
     args: {
         secret: v.string(),
         guildId: v.id("guilds"),
-        gameScope: v.optional(
-            v.union(
-                v.literal("all"),
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameScope: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -66,13 +59,7 @@ export const upsert = mutation({
         secret: v.string(),
         guildId: v.id("guilds"),
         groupId: v.optional(v.id("groups")),
-        gameId: v.optional(
-            v.union(
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameId: v.optional(v.string()),
         name: v.string(),
         color: v.string(),
         order: v.number(),

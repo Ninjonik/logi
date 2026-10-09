@@ -1,13 +1,13 @@
 import { z } from "zod"
 
 import { matchTeamSummarySchema, projectMatchTeams } from "../teams/match-teams"
-import { GAME_IDS, resolveGameScope } from "../games/game"
 import type { EventLike } from "../events/types"
+import { resolveGameScope } from "../games/game"
 
 const identity = {
     id: z.string(),
     guildId: z.string(),
-    gameId: z.enum(GAME_IDS),
+    gameId: z.string().min(1),
     title: z.string(),
     updatedAt: z.string().nullable(),
 }

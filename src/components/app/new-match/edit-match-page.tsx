@@ -15,8 +15,10 @@ import { ManagersOnlyState } from "@/components/app/managers-only-state"
 import { getLinkedClanTeams } from "@/lib/read-models/clan-teams"
 import { EmptyState } from "@/components/app/empty-state"
 import { getServerContext } from "@/lib/server-context"
+import { makeFunctionReference } from "convex/server"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { fetchQuery } from "convex/nextjs"
 import { isLocale } from "@/i18n/config"
 
 import { clanFlowProps } from "./new-match-page"
@@ -117,7 +119,10 @@ export async function EditMatchPage({
             </div>
         )
 
-    const linkedTeams = await getLinkedClanTeams(context.server.discordId)
+    const [linkedTeams, gameCatalogue] = await Promise.all([
+        getLinkedClanTeams(context.server.discordId),
+        fetchQuery(makeFunctionReference<"query">("gameCatalog:list"), {}),
+    ])
     const shared = clanFlowProps({
         context,
         dictionary,
@@ -149,6 +154,11 @@ export async function EditMatchPage({
             initialKind={event.kind}
             initialGameId={event.gameId ?? "hell_let_loose"}
             draft={null}
+            gameCatalogue={
+                gameCatalogue as Parameters<
+                    typeof NewMatchFlow
+                >[0]["gameCatalogue"]
+            }
             edit={{
                 event,
                 detailHref,

@@ -1,9 +1,8 @@
-import { GAME_IDS } from "@/domain/games/game"
 import { z } from "zod"
 
 export const userAssignmentSchema = z
     .object({
-        gameId: z.enum(GAME_IDS).optional(),
+        gameId: z.string().trim().min(1).optional(),
         userId: z.string().min(1, "Pick a player first."),
         type: z.enum(["member", "reserve_member", "mercenary"]),
         status: z.enum(["pending", "recruit", "active"]),

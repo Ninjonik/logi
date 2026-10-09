@@ -26,11 +26,5 @@ export const apiKeyReadAccess = v.object({
             v.literal("teams")
         )
     ),
-    gameIds: v.array(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    ),
+    gameIds: v.array(v.string()),
 })

@@ -7,7 +7,6 @@ import {
 } from "@/domain/events/match-templates"
 import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
 import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
-import { GAME_IDS } from "@/domain/games/game"
 
 const id = z.string().trim().min(1).max(64)
 const hours = z
@@ -25,7 +24,7 @@ export const matchTemplateSchema = z.strictObject({
     id,
     name: z.string().trim().min(1).max(60),
     kind: z.enum(["match", "training"]),
-    gameId: z.enum(GAME_IDS).optional(),
+    gameId: z.string().trim().min(1).optional(),
     categoryId: z.string().trim().max(64).optional(),
     announcementHoursBeforeStart: hours.optional(),
     registrationHoursBeforeMeeting: hours,

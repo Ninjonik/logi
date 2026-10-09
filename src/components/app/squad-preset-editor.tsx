@@ -16,6 +16,7 @@ import { toast } from "sonner"
 
 import {
     createHllStarterSquadPreset,
+    createWowForeverStarterSquadPreset,
     getRoleIconOptions,
     getSquadIconOptions,
 } from "@/lib/squad-preset-templates"
@@ -251,8 +252,15 @@ export function SquadPresetEditor({
 
     function applyStarterPreset() {
         draftNameRef.current =
-            draftNameRef.current || dictionary.presets.starterTemplateName
-        draftSquadsRef.current = toEditorSquads(createHllStarterSquadPreset())
+            draftNameRef.current ||
+            (gameId === "world_of_warcraft_forever"
+                ? dictionary.presets.wowForeverStarterTemplateName
+                : dictionary.presets.starterTemplateName)
+        draftSquadsRef.current = toEditorSquads(
+            gameId === "world_of_warcraft_forever"
+                ? createWowForeverStarterSquadPreset()
+                : createHllStarterSquadPreset()
+        )
         setIsEditing(true)
         syncRenderedDraft()
         toast.success(dictionary.presets.importStarterTemplate)

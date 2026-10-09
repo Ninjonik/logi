@@ -268,13 +268,7 @@ export const setEnabledGames = mutation({
         secret: v.string(),
         userId: v.string(),
         guildId: v.id("guilds"),
-        enabledGames: v.array(
-            v.union(
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        enabledGames: v.array(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)

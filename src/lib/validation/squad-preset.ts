@@ -19,11 +19,9 @@ const squadPresetSquadSchema = z.object({
         .min(1, "Each squad needs at least one role."),
 })
 
-const gameIdSchema = z.enum([
-    "hell_let_loose",
-    "hell_let_loose_vietnam",
-    "wardogs",
-])
+// Game IDs are owned by the platform catalogue. Keep this boundary open for
+// generalized games while the persistence layer enforces workspace access.
+const gameIdSchema = z.string().trim().min(1, "Game is required.")
 
 export const squadPresetSchema = z.object({
     gameId: gameIdSchema,

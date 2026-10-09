@@ -4,14 +4,9 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import {
-    DEFAULT_GAME_ID,
-    GAME_IDS,
-    GAME_LABELS,
-    type GameId,
-} from "@/domain/games/game"
 import { saveEnabledGames } from "@/components/app/settings/save-enabled-games"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DEFAULT_GAME_ID, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
@@ -20,10 +15,12 @@ import { Label } from "@/components/ui/label"
 export function GameSettingsForm({
     serverId,
     enabledGames,
+    games,
     dictionary,
 }: {
     serverId: string
     enabledGames?: GameId[]
+    games: Array<{ id: GameId; name: string }>
     dictionary: Dictionary
 }) {
     const router = useRouter()
@@ -49,19 +46,17 @@ export function GameSettingsForm({
                 <p className="text-muted-foreground text-sm">
                     {dictionary.games.description}
                 </p>
-                {GAME_IDS.map((gameId) => (
-                    <div key={gameId} className="flex items-center gap-2">
+                {games.map((game) => (
+                    <div key={game.id} className="flex items-center gap-2">
                         <Checkbox
-                            id={`game-${gameId}`}
-                            checked={selected.includes(gameId)}
+                            id={`game-${game.id}`}
+                            checked={selected.includes(game.id)}
                             disabled={isPending}
                             onCheckedChange={(checked) =>
-                                toggle(gameId, checked === true)
+                                toggle(game.id, checked === true)
                             }
                         />
-                        <Label htmlFor={`game-${gameId}`}>
-                            {GAME_LABELS[gameId]}
-                        </Label>
+                        <Label htmlFor={`game-${game.id}`}>{game.name}</Label>
                     </div>
                 ))}
                 <Button

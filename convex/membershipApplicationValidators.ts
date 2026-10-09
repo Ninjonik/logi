@@ -7,11 +7,7 @@ import { v } from "convex/values"
  * shape so older documents and new optional fields stay valid.
  */
 
-const gameIdValidator = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs")
-)
+const gameIdValidator = v.string()
 
 export const applicationQuestionValidator = v.object({
     id: v.string(),

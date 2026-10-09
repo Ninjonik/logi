@@ -23,11 +23,7 @@ import {
 import { selectPlayerMatchWindow } from "../src/domain/player-stats/match-window"
 import { assertInternalSecret } from "./discord_shared"
 
-const gameIdValidator = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs")
-)
+const gameIdValidator = v.string()
 
 function sortedMatches<T extends Record<string, unknown>>(matches: T[]): T[] {
     return [...matches].sort(

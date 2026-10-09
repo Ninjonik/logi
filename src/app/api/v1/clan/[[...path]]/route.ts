@@ -353,7 +353,10 @@ async function mutateGroup(
         ...(typeof body.gameId === "string"
             ? {
                   gameId: body.gameId as
-                      "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs",
+                      | "hell_let_loose"
+                      | "hell_let_loose_vietnam"
+                      | "wardogs"
+                      | "world_of_warcraft_forever",
               }
             : {}),
         ...(typeof body.name === "string" ? { name: body.name } : {}),

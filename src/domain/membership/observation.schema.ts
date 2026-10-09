@@ -3,14 +3,13 @@ import {
     type MembershipSubject,
     type StoredObservation,
 } from "./observation"
-import { GAME_IDS } from "../games/game"
 import { z } from "zod"
 
 export const membershipObservationSchema = z
     .object({
         guildId: z.string(),
         discordUserId: z.string(),
-        gameId: z.enum(GAME_IDS),
+        gameId: z.string().min(1),
         state: z.enum(["present", "left", "unknown"]),
         roleIds: z.array(z.string()),
         assignment: z

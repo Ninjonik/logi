@@ -178,9 +178,7 @@ const ticketCategoryWithTitleSchema = ticketCategorySchema.extend({
 })
 
 const membershipCategorySchema = ticketCategorySchema.extend({
-    gameId: z
-        .enum(["hell_let_loose", "hell_let_loose_vietnam", "wardogs"])
-        .optional(),
+    gameId: z.string().trim().min(1).optional(),
     recruitRoleIds: z
         .array(
             z

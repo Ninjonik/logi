@@ -90,6 +90,7 @@ import {
     gameGroups,
     newFlowValues,
     scheduleIsCoherent,
+    usesActivitySelection,
     type ChannelDefaults,
     type FlowValues,
 } from "./flow-values"
@@ -110,7 +111,6 @@ import { OpponentPicker } from "./opponent-picker"
 const NO_SIDE = "__none"
 const NONE = "__none"
 const AUTOSAVE_DELAY_MS = 2500
-
 type Metadata = {
     roles: DiscordSelectOption[]
     channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
@@ -145,6 +145,17 @@ export type NewMatchFlowProps = {
     initialKind: "match" | "training"
     initialGameId: GameId
     enabledGames: GameId[]
+    gameCatalogue: Array<{
+        id: GameId
+        name: string
+        capabilities: { maps: boolean; stratmaps: boolean }
+        eventSelection: {
+            primaryLabel: string
+            primaryOptions: string[]
+            targetLabel?: string
+            targetOptional: boolean
+        }
+    }>
     templates: MatchTemplate[]
     groups: Group[]
     squadPresets: SquadPreset[]
@@ -352,6 +363,21 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         startingValues(props)
     )
     const [values, setValues] = useState<FlowValues>(initial)
+    const gameDefinition = props.gameCatalogue.find(
+        (game) => game.id === values.gameId
+    )
+    const isActivityGame = gameDefinition
+        ? !gameDefinition.capabilities.maps
+        : usesActivitySelection(values.gameId)
+    const activityOptions = gameDefinition?.eventSelection.primaryOptions ?? []
+    const activityLabel =
+        gameDefinition?.eventSelection.primaryLabel ?? t.match.activity
+    const targetLabel =
+        gameDefinition?.eventSelection.targetLabel ?? t.match.target
+    const targetOptional = gameDefinition?.eventSelection.targetOptional ?? true
+    const hasStratmaps = gameDefinition
+        ? gameDefinition.capabilities.stratmaps
+        : ["hell_let_loose", "wardogs"].includes(values.gameId)
     // Saved team assignments; a snapshot refresh saves at once and updates them.
     const [storedTeams, setStoredTeams] = useState(edit?.event.matchTeams)
     const [refreshing, setRefreshing] = useState<string | null>(null)
@@ -850,6 +876,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             timeOfDay: "",
             mapMode: "",
             cap: "",
+            activity: "",
+            activityTarget: "",
             signupGroupIds: gameGroups(groups, gameId).map((group) => group.id),
             signupGroupLimits: [],
             announcementChannelId:
@@ -1515,7 +1543,74 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     )}
                                 </div>
                             )}
-                            {isMatch ? (
+                            {isMatch && isActivityGame ? (
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="flex min-w-0 flex-col gap-1.5">
+                                        <FieldLabel htmlFor="nm-activity">
+                                            {activityLabel}
+                                        </FieldLabel>
+                                        <Select
+                                            value={values.activity || NONE}
+                                            onValueChange={(activity) =>
+                                                update({
+                                                    activity:
+                                                        activity === NONE
+                                                            ? ""
+                                                            : activity,
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger
+                                                id="nm-activity"
+                                                className="h-9 w-full"
+                                            >
+                                                <SelectValue
+                                                    placeholder={
+                                                        t.match.chooseActivity
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={NONE}>
+                                                    {t.match.chooseActivity}
+                                                </SelectItem>
+                                                {(activityOptions.length
+                                                    ? activityOptions
+                                                    : [t.match.otherActivity]
+                                                ).map((activity) => (
+                                                    <SelectItem
+                                                        key={activity}
+                                                        value={activity}
+                                                    >
+                                                        {activity}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex min-w-0 flex-col gap-1.5">
+                                        <FieldLabel htmlFor="nm-activity-target">
+                                            {targetOptional
+                                                ? `${targetLabel} (optional)`
+                                                : targetLabel}
+                                        </FieldLabel>
+                                        <Input
+                                            id="nm-activity-target"
+                                            value={values.activityTarget}
+                                            maxLength={120}
+                                            placeholder={
+                                                t.match.targetPlaceholder
+                                            }
+                                            onChange={(event) =>
+                                                update({
+                                                    activityTarget:
+                                                        event.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            ) : isMatch ? (
                                 <div className="flex flex-col gap-2">
                                     <FieldLabel id="nm-teams">
                                         {t.match.teams}
@@ -1764,7 +1859,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     ) : null}
                                 </div>
                             ) : null}
-                            {isMatch ? (
+                            {isMatch && !isActivityGame ? (
                                 <div className="flex flex-col gap-2">
                                     <div
                                         className={cn(
@@ -2168,7 +2263,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                     </div>
                                                 ))}
                                             </div>
-                                            {isMatch ? (
+                                            {isMatch && hasStratmaps ? (
                                                 <div className="flex flex-col gap-1.5">
                                                     <FieldLabel id="nm-stratmaps">
                                                         {t.more.stratmaps}

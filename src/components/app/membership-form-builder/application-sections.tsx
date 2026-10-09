@@ -170,7 +170,9 @@ export function CategoriesSummary({
                                         </td>
                                         <td className="px-2 py-2.5">
                                             <RoleChip>
-                                                {gameShort[game]}
+                                                {(gameShort as Record<string, string>)[
+                                                    game
+                                                ] ?? game}
                                             </RoleChip>
                                         </td>
                                         <td className="px-2 py-2.5">

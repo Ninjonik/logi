@@ -231,13 +231,7 @@ const ticketCategory = v.object({
 const membershipCategory = v.object({
     id: v.string(),
     // Missing legacy values are Hell Let Loose.
-    gameId: v.optional(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    ),
+    gameId: v.optional(v.string()),
     emoji: v.optional(v.string()),
     label: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -343,11 +337,28 @@ const messageStyle = v.object({
 })
 
 // Optional everywhere so existing Hell Let Loose data remains valid.
-const gameId = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs")
-)
+// Game IDs are owned by the platform catalogue. Existing records preserve
+// their stable IDs and superadmins may add opaque IDs without a deployment.
+const gameId = v.string()
+
+/**
+ * Platform-owned game catalogue.  Legacy game IDs remain valid while new
+ * generalised games are defined here and gain capabilities explicitly.
+ */
+const gameCapabilities = v.object({
+    maps: v.boolean(),
+    stratmaps: v.boolean(),
+    serverData: v.boolean(),
+    playerStats: v.boolean(),
+    matchResults: v.boolean(),
+    competitions: v.boolean(),
+})
+const gameEventSelection = v.object({
+    primaryLabel: v.string(),
+    primaryOptions: v.array(v.string()),
+    targetLabel: v.optional(v.string()),
+    targetOptional: v.boolean(),
+})
 
 const gameDiscordOverrides = v.object({
     announcementsChannelId: v.optional(v.string()),
@@ -602,6 +613,22 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    // Global game definitions managed exclusively by platform administrators.
+    // `id` deliberately remains a string: new community-only games must not
+    // require a source-code deployment merely to exist in the catalogue.
+    gameCatalog: defineTable({
+        id: v.string(),
+        name: v.string(),
+        iconAssetId: v.union(v.id("imageAssets"), v.null()),
+        capabilities: gameCapabilities,
+        eventSelection: gameEventSelection,
+        starterPreset: v.optional(v.array(squadPresetSquad)),
+        archivedAt: v.union(v.string(), v.null()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+        createdBy: v.string(),
+        updatedBy: v.string(),
+    }).index("id", ["id"]),
     discordPublications,
     discordPublicPanels,
     discordPanelStatus,

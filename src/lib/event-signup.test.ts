@@ -4,6 +4,7 @@ import test from "node:test"
 import { SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
 
 import {
+    buildEventSignupActions,
     formatSignupResultMessage,
     resolveEventSignupSelection,
 } from "./event-signup"
@@ -113,6 +114,32 @@ test("unassigned users still need the linked Discord role to sign up", () => {
             discordRoleId: "role-1",
         },
     })
+})
+
+test("an explicitly empty group list creates an ungrouped signup action", () => {
+    const ungrouped = { ...event, signupGroupIds: [] }
+    const actions = buildEventSignupActions(ungrouped, [], labels)
+
+    assert.deepEqual(actions, [
+        { id: "GENERAL", label: "Sign up", kind: "general" },
+        { id: SIGNUP_NOT_ATTENDING, label: "Command", kind: "decline" },
+    ])
+
+    assert.deepEqual(
+        resolveEventSignupSelection({
+            event: ungrouped,
+            groups: [],
+            memberRoleIds: [],
+            membershipStatus: "member",
+            actionId: "GENERAL",
+            labels: signupLabels,
+        }),
+        {
+            ok: true,
+            group: "GENERAL",
+            successMessage: "Not attending",
+        }
+    )
 })
 
 test("refusals name their reason so Discord can explain the next step", () => {

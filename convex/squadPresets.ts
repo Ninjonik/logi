@@ -33,13 +33,7 @@ export const upsert = mutation({
         secret: v.string(),
         serverId: v.id("guilds"),
         presetId: v.optional(v.id("squadPresets")),
-        gameId: v.optional(
-            v.union(
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameId: v.optional(v.string()),
         name: v.string(),
         squads: v.array(squadPresetSquad),
     },

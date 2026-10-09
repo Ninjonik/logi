@@ -89,13 +89,7 @@ export const upsert = mutation({
         secret: v.string(),
         serverId: v.id("guilds"),
         eventId: v.optional(v.id("events")),
-        gameId: v.optional(
-            v.union(
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameId: v.optional(v.string()),
         kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
         matchType: v.optional(v.string()),
         name: v.string(),
