@@ -25,6 +25,17 @@ import {
 type EventIndexRecord = EventSyncIndex["events"][number]
 type RosterIndexRecord = EventSyncIndex["rosters"][number]
 
+// A player expects their own interaction to be reflected straight away. Once
+// a flush is already pending or writing to Discord, a short window still lets
+// concurrent clicks share that work instead of creating a message edit per
+// click.
+export function interactiveFlushDelay(input: {
+    isFlushing: boolean
+    hasScheduledFlush: boolean
+}) {
+    return input.isFlushing || input.hasScheduledFlush ? 250 : 0
+}
+
 export class DiscordSyncService {
     private readonly queuedEventIds = new Set<string>()
     private readonly queuedAttendanceReminderEventIds = new Set<string>()
@@ -154,6 +165,23 @@ export class DiscordSyncService {
 
     triggerSoon(delayMs = 2000) {
         logInfo("sync-service", "Triggering scheduled flush", {
+            delayMs,
+            queuedGuilds: this.queuedGuildIds.size,
+            queuedEvents: this.queuedEventIds.size,
+        })
+        this.scheduleFlush(delayMs)
+    }
+
+    /**
+     * Flush a player-driven event update immediately when idle. During an
+     * existing sync, retain a small coalescing window for simultaneous clicks.
+     */
+    triggerInteractiveFlush() {
+        const delayMs = interactiveFlushDelay({
+            isFlushing: this.isFlushing,
+            hasScheduledFlush: Boolean(this.flushTimer),
+        })
+        logInfo("sync-service", "Triggering interactive flush", {
             delayMs,
             queuedGuilds: this.queuedGuildIds.size,
             queuedEvents: this.queuedEventIds.size,

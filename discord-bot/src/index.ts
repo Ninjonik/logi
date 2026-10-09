@@ -55,8 +55,8 @@ function getWorkerExecArgv() {
 }
 
 function triggerPollSoon() {
-    logInfo("bot", "Requested near-term sync flush")
-    syncService.triggerSoon()
+    logInfo("bot", "Requested interactive sync flush")
+    syncService.triggerInteractiveFlush()
 }
 
 const interactionHandler = createInteractionHandler({

@@ -224,6 +224,9 @@ their own time zone.
   without a group, a group that needs a Discord role names the group, the role
   and where to ask for it, and closed sign-ups say when they closed. Every
   refusal is a short reason and the next step.
+  When a player saves a sign-up, changes group, or marks that they cannot
+  attend, the announcement count updates immediately while the bot is idle.
+  Concurrent changes are briefly grouped into one refresh.
 - **Show sign-ups** (private, for everyone): the players by group in sign-up
   order with their membership chip (Member, Reserve, Recruit, Mercenary) and
   sign-up time, "running late (20:15)" for a late notice, the reserves with the
