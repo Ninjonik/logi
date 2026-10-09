@@ -3,23 +3,36 @@ export const GAME_IDS = [
     "hell_let_loose",
     "hell_let_loose_vietnam",
     "wardogs",
+    "world_of_warcraft_forever",
 ] as const
 
-export type GameId = (typeof GAME_IDS)[number]
+/**
+ * Platform catalogue IDs are opaque strings. `GAME_IDS` retains the built-in
+ * legacy IDs for migrations and offline fallbacks, but does not restrict a
+ * superadmin-created game.
+ */
+export type KnownGameId = (typeof GAME_IDS)[number]
+export type GameId = string
 export type GameScope = GameId | "all"
 /** A read scope may select one game, every game, or an explicit set of games. */
 export type GameSelection = GameScope | readonly GameId[]
 
 export const DEFAULT_GAME_ID: GameId = "hell_let_loose"
 
-export const GAME_LABELS: Record<GameId, string> = {
+export const GAME_LABELS: Record<string, string> = {
     hell_let_loose: "Hell Let Loose",
     hell_let_loose_vietnam: "Hell Let Loose: Vietnam",
     wardogs: "Wardogs",
+    world_of_warcraft_forever: "World of Warcraft: Forever",
+}
+
+/** Built-ins have translated product names; custom catalogue games fall back to their ID. */
+export function gameLabel(gameId: GameId) {
+    return GAME_LABELS[gameId] ?? gameId
 }
 
 export function isGameId(value: string | null | undefined): value is GameId {
-    return Boolean(value && GAME_IDS.includes(value as GameId))
+    return Boolean(value?.trim())
 }
 
 export function resolveGameScope(gameId?: GameId): GameId {

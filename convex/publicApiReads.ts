@@ -162,22 +162,8 @@ const apiResource = v.union(
     v.literal("articles"),
     v.literal("users")
 )
-const apiGameScope = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs"),
-    v.literal("all")
-)
-const apiGameSelection = v.union(
-    apiGameScope,
-    v.array(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    )
-)
+const apiGameScope = v.string()
+const apiGameSelection = v.union(apiGameScope, v.array(v.string()))
 
 export const getClanPerformanceHistory = query({
     args: {

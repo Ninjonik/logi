@@ -1,6 +1,6 @@
 import type { ResultRevision } from "../match-results/result-revision"
 import { providerSchema, scoreSchema } from "../game-data/contracts"
-import { GAME_IDS, resolveGameScope } from "../games/game"
+import { resolveGameScope } from "../games/game"
 import { z } from "zod"
 
 export const RESULT_STORAGE_FIELDS = [
@@ -55,7 +55,7 @@ export const clanResultSummarySchema = z
         id: z.string(),
         eventId: z.string(),
         guildId: z.string(),
-        gameId: z.enum(GAME_IDS),
+        gameId: z.string().min(1),
         title: z.string(),
         updatedAt: z.string().nullable(),
         resultState: z.enum([
@@ -99,7 +99,7 @@ export function resultSummaryPayload(
 export function projectResultSummary(event: {
     _id: string
     guildId: string
-    gameId?: (typeof GAME_IDS)[number]
+    gameId?: string
     name: string
     updatedAt?: string
     reviewedResultGameId?: string

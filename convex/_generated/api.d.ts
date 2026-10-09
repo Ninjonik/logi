@@ -68,6 +68,7 @@ import type * as eventResultStore from "../eventResultStore.js";
 import type * as eventResults from "../eventResults.js";
 import type * as eventValidators from "../eventValidators.js";
 import type * as events from "../events.js";
+import type * as gameCatalog from "../gameCatalog.js";
 import type * as gameData from "../gameData.js";
 import type * as gameDataCatalog from "../gameDataCatalog.js";
 import type * as gameDataCollector from "../gameDataCollector.js";
@@ -243,6 +244,7 @@ declare const fullApi: ApiFromModules<{
   eventResults: typeof eventResults;
   eventValidators: typeof eventValidators;
   events: typeof events;
+  gameCatalog: typeof gameCatalog;
   gameData: typeof gameData;
   gameDataCatalog: typeof gameDataCatalog;
   gameDataCollector: typeof gameDataCollector;

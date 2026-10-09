@@ -8,13 +8,7 @@ const matchTemplateFields = {
     id: v.string(),
     name: v.string(),
     kind: v.union(v.literal("match"), v.literal("training")),
-    gameId: v.optional(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    ),
+    gameId: v.optional(v.string()),
     categoryId: v.optional(v.string()),
     announcementHoursBeforeStart: v.optional(v.number()),
     registrationHoursBeforeMeeting: v.number(),

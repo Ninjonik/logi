@@ -160,7 +160,11 @@ export function ApplicationFormBuilder({
             name: t.windowNames[window.kind],
         })
     const gameChip = (game: GameId | undefined) =>
-        game ? t.gameShort[game] : games.length > 2 ? t.allGames : t.bothGames
+        game
+            ? (t.gameShort[game as keyof typeof t.gameShort] ?? game)
+            : games.length > 2
+              ? t.allGames
+              : t.bothGames
     const issuesOf = (questionId: string) =>
         issues.filter((issue) => issue.questionId === questionId)
 
@@ -181,7 +185,10 @@ export function ApplicationFormBuilder({
           })
         : []
     const previewGame = applicant.category
-        ? (t.gameShort[applicant.category.gameId ?? "hell_let_loose"] ?? "")
+        ? (t.gameShort[
+              (applicant.category.gameId ??
+                  "hell_let_loose") as keyof typeof t.gameShort
+          ] ?? applicant.category.gameId ?? "")
         : ""
 
     return (
@@ -722,7 +729,9 @@ function fixedRows(
                 ? t.allGames
                 : games.length === 2
                   ? t.bothGames
-                  : t.gameShort[games[0] ?? "hell_let_loose"]
+                  : (t.gameShort[
+                        (games[0] ?? "hell_let_loose") as keyof typeof t.gameShort
+                    ] ?? games[0] ?? "")
         return [
             {
                 name: t.fixedFields.steam,

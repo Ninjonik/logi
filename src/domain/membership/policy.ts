@@ -1,9 +1,8 @@
-import { GAME_IDS } from "../games/game"
 import { z } from "zod"
 const games = z
     .array(
         z.strictObject({
-            gameId: z.enum(GAME_IDS),
+            gameId: z.string().min(1),
             roleIds: z
                 .array(z.string().regex(/^\d{17,20}$/))
                 .max(100)
@@ -11,7 +10,7 @@ const games = z
         })
     )
     .min(1)
-    .max(GAME_IDS.length)
+    .max(64)
     .refine(
         (values) =>
             new Set(values.map((value) => value.gameId)).size === values.length
@@ -26,7 +25,7 @@ export const membershipPolicySettingsSchema = z.array(
     z.strictObject({
         apiKeyId: z.string(),
         name: z.string(),
-        gameIds: z.array(z.enum(GAME_IDS)),
+        gameIds: z.array(z.string().min(1)),
         policy: z
             .strictObject({ enabled: z.boolean(), games, version: z.string() })
             .nullable(),

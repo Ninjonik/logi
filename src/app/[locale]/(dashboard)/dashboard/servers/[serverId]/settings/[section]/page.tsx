@@ -47,8 +47,10 @@ import { getRoleAccessOverview } from "@/lib/read-models/role-access"
 import { WebhookManager } from "@/components/app/webhook-manager"
 import { DEFAULT_GAME_ID, isGameId } from "@/domain/games/game"
 import { getServerContext } from "@/lib/server-context"
+import { makeFunctionReference } from "convex/server"
 import { getDictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { fetchQuery } from "convex/nextjs"
 import { isLocale } from "@/i18n/config"
 import { getSiteUrl } from "@/lib/env"
 
@@ -85,6 +87,10 @@ export default async function ServerSettingsSectionPage({
     const context = await getServerContext(serverId, gameId ?? "all")
     if (!context?.canAdmin) return null
     const { server, discordConfig } = context
+    const catalogueGames = await fetchQuery(
+        makeFunctionReference<"query">("gameCatalog:list"),
+        {}
+    )
     const snapshot = settingsSnapshot(server.enabledGames, discordConfig)
     if (
         !visibleSettingsSections(snapshot.enabledGames).some(
@@ -165,6 +171,12 @@ export default async function ServerSettingsSectionPage({
                 <GameSettingsForm
                     serverId={serverId}
                     enabledGames={server.enabledGames}
+                    games={catalogueGames.map(
+                        (game: { id: string; name: string }) => ({
+                            id: game.id,
+                            name: game.name,
+                        })
+                    )}
                     dictionary={dictionary}
                 />
             )

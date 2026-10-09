@@ -68,7 +68,7 @@ test("page query validates updatedSince only where the resource supports it", ()
     )
 })
 
-test("page query rejects unsupported limits and games", () => {
+test("page query rejects unsupported limits and accepts opaque game IDs", () => {
     assert.deepEqual(
         parseApiPageQuery(
             new Request("https://logi.test/api?limit=101"),
@@ -81,7 +81,7 @@ test("page query rejects unsupported limits and games", () => {
             new Request("https://logi.test/api?game=nope"),
             options
         ),
-        { error: "game must be a supported game ID or all." }
+        { limit: 25, cursor: null, sort: "createdAt", game: "nope" }
     )
 })
 

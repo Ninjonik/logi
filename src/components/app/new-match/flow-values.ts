@@ -62,6 +62,9 @@ export type FlowValues = {
     /** Game mode of the map preset ("warfare", "offensive", ...). */
     mapMode: string
     cap: string
+    /** WoW:F replaces tactical map/capture-point choices with these fields. */
+    activity: string
+    activityTarget: string
     name: string
     nameTouched: boolean
     date: string
@@ -229,6 +232,8 @@ export function applyTemplateValues(
                   timeOfDay: "",
                   mapMode: "",
                   cap: "",
+                  activity: "",
+                  activityTarget: "",
               }),
     }
 }
@@ -257,6 +262,8 @@ export function newFlowValues(input: {
         timeOfDay: "",
         mapMode: "",
         cap: "",
+        activity: "",
+        activityTarget: "",
         name: "",
         nameTouched: false,
         ...defaultStart(input.timezone, input.now),
@@ -363,6 +370,10 @@ export function flowValuesFromEvent(
         timeOfDay: selection?.time ?? "",
         mapMode: selection?.mode ?? "",
         cap: isMatch ? (event.cap ?? "") : "",
+        activity:
+            usesActivitySelection(gameId) && isMatch ? (event.cap ?? "") : "",
+        activityTarget:
+            usesActivitySelection(gameId) && isMatch ? (event.map ?? "") : "",
         name: event.name,
         nameTouched: Boolean(event.name),
         date,
@@ -513,11 +524,19 @@ type PayloadContext = {
     ownTeamId: string | null
 }
 
+/** Games without map support use the generic activity/target event fields. */
+export function usesActivitySelection(gameId: GameId) {
+    return !["hell_let_loose", "hell_let_loose_vietnam", "wardogs"].includes(
+        gameId
+    )
+}
+
 /** The event body of a draft or a new match (`/event-drafts`). */
 export function flowEventPayload(values: FlowValues, context: PayloadContext) {
     const isMatch = values.kind === "match"
     const schedule = flowSchedule(values, context.timezone)
     const mapCode = flowMapCode(values)
+    const isActivityGame = usesActivitySelection(values.gameId)
     return {
         gameId: values.gameId,
         kind: values.kind,
@@ -551,8 +570,16 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         server: values.server || undefined,
         serverPassword: values.serverPassword || undefined,
         side: isMatch ? (values.ownSide ?? undefined) : undefined,
-        map: isMatch ? mapCode || undefined : undefined,
-        cap: isMatch ? values.cap || undefined : undefined,
+        map: isMatch
+            ? isActivityGame
+                ? values.activityTarget || undefined
+                : mapCode || undefined
+            : undefined,
+        cap: isMatch
+            ? isActivityGame
+                ? values.activity || undefined
+                : values.cap || undefined
+            : undefined,
         topicPresetId: isMatch ? values.topicPresetId || undefined : undefined,
         stratmapIds: isMatch ? values.stratmapIds : [],
         requiredRoleIds: values.requiredRoleIds,

@@ -188,6 +188,7 @@ async function schedulePerformanceHistoryRefresh(
     ctx: MutationCtx,
     event: Pick<Doc<"events">, "_id" | "gameId" | "guildId">
 ) {
+    if (event.gameId !== "hell_let_loose" && event.gameId !== "wardogs") return
     // The scoreboard write can be close to Convex's document-size limit. Keep
     // this transaction focused on that durable write, then let the action run
     // the guild history and the histories of this match's players.
@@ -197,7 +198,7 @@ async function schedulePerformanceHistoryRefresh(
         {
             secret: internalAuthSecret(),
             guildId: event.guildId,
-            gameId: event.gameId ?? "hell_let_loose",
+            gameId: event.gameId,
             eventId: event._id,
         }
     )

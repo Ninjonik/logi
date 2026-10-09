@@ -1,5 +1,7 @@
+import { makeFunctionReference } from "convex/server"
 import { Map as MapIcon } from "lucide-react"
 import { notFound } from "next/navigation"
+import { fetchQuery } from "convex/nextjs"
 import Link from "next/link"
 
 import { TablePageLayout } from "@/components/app/table-page-layout"
@@ -18,6 +20,11 @@ import { Button } from "@/components/ui/button"
 import { formatDateTime } from "@/lib/format"
 import { isLocale } from "@/i18n/config"
 
+type GameCatalogueEntry = {
+    id: string
+    capabilities: { stratmaps: boolean }
+}
+
 export default async function StratmapsPage({
     params,
     searchParams,
@@ -32,11 +39,26 @@ export default async function StratmapsPage({
     const rawGame = resolvedSearchParams.game
     const requestedGame = Array.isArray(rawGame) ? rawGame[0] : rawGame
     const game = isGameId(requestedGame) ? requestedGame : undefined
-    const [stratmapList, context] = await Promise.all([
+    const [stratmapList, context, catalogueGames] = (await Promise.all([
         listServerStratmaps(serverId),
         getServerContext(serverId),
-    ])
+        game
+            ? fetchQuery(makeFunctionReference<"query">("gameCatalog:list"), {})
+            : Promise.resolve([]),
+    ])) as [
+        Awaited<ReturnType<typeof listServerStratmaps>>,
+        Awaited<ReturnType<typeof getServerContext>>,
+        GameCatalogueEntry[],
+    ]
     if (!stratmapList || !context) notFound()
+    if (
+        game &&
+        !catalogueGames.some(
+            (definition) =>
+                definition.id === game && definition.capabilities.stratmaps
+        )
+    )
+        notFound()
 
     const gameQuery = game ? `?game=${game}` : ""
     const createHref = `/${safeLocale}/dashboard/servers/${serverId}/stratmaps/create${gameQuery}`

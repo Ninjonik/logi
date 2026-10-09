@@ -87,6 +87,12 @@ export function AppSidebar({
         (resolvedServer.botInside || pathServerId || isSuperadmin)
     )
     const settingsAttention = useSettingsAttentionCount(resolvedServerId)
+    const selectedGame = searchParams.get("game")
+    // Tactical maps are currently a specialised HLL/Wardogs capability. New
+    // catalogue games default to map-free until the platform enables it.
+    const hasTacticalMaps = ["hell_let_loose", "wardogs"].includes(
+        selectedGame ?? "hell_let_loose"
+    )
 
     // On phones the menu is a sheet over the page; close it after navigating.
     useEffect(() => {
@@ -153,11 +159,15 @@ export function AppSidebar({
                                       url: `${base}/topic-presets`,
                                       isActive: within("topic-presets"),
                                   },
-                                  {
-                                      title: t.stratmaps,
-                                      url: `${base}/stratmaps`,
-                                      isActive: within("stratmaps"),
-                                  },
+                                  ...(hasTacticalMaps
+                                      ? [
+                                            {
+                                                title: t.stratmaps,
+                                                url: `${base}/stratmaps`,
+                                                isActive: within("stratmaps"),
+                                            },
+                                        ]
+                                      : []),
                                   {
                                       title: t.rosters,
                                       url: `${base}/rosters`,

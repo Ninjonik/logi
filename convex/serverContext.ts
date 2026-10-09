@@ -207,14 +207,7 @@ export const getServerContext = query({
         secret: v.string(),
         userId: v.string(),
         serverId: v.id("guilds"),
-        gameScope: v.optional(
-            v.union(
-                v.literal("all"),
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameScope: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -231,14 +224,7 @@ export const getServerContextInternal = query({
         secret: v.string(),
         userId: v.string(),
         serverId: v.id("guilds"),
-        gameScope: v.optional(
-            v.union(
-                v.literal("all"),
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameScope: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)

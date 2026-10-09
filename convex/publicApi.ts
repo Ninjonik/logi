@@ -642,7 +642,8 @@ export const mutateClanGroup = mutation({
             v.union(
                 v.literal("hell_let_loose"),
                 v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
+                v.literal("wardogs"),
+                v.literal("world_of_warcraft_forever")
             )
         ),
         name: v.optional(v.string()),
@@ -1124,7 +1125,11 @@ const assignmentStatus = v.union(
 async function hasAffectedRoster(
     ctx: MutationCtx,
     guildId: string,
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?:
+        | "hell_let_loose"
+        | "hell_let_loose_vietnam"
+        | "wardogs"
+        | "world_of_warcraft_forever"
 ) {
     const now = Date.now()
     const events = await ctx.db
@@ -1262,7 +1267,8 @@ export const mutateClanAssignment = mutation({
             v.union(
                 v.literal("hell_let_loose"),
                 v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
+                v.literal("wardogs"),
+                v.literal("world_of_warcraft_forever")
             )
         ),
         type: v.optional(assignmentType),
@@ -1298,7 +1304,7 @@ export const mutateClanAssignment = mutation({
                 const affectsRoster = await hasAffectedRoster(
                     ctx,
                     key.guildId,
-                    gameId
+                    gameId as never
                 )
                 const repository = new ConvexAssignmentCommandRepository(ctx)
                 const rosterSync = new ConvexAssignmentRosterSyncPort(ctx)

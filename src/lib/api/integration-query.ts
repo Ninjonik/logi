@@ -21,8 +21,7 @@ export function parseIntegrationQuery(request: Request) {
         !isGameId(params.get("game") ?? "")
     )
         return null
-    const gameId = params.get("game") as
-        "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    const gameId = params.get("game") as import("@/domain/games/game").GameId
     if (path[1] === "sync-records") {
         if (
             !path[2] ||

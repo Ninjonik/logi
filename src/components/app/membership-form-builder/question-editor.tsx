@@ -77,7 +77,8 @@ export function QuestionEditor({
         !games.includes("hell_let_loose_vietnam")
             ? "hell_let_loose"
             : (question.game ?? "all")
-    const shortGame = (game: GameId) => t.gameShort[game]
+    const shortGame = (game: GameId) =>
+        t.gameShort[game as keyof typeof t.gameShort] ?? game
 
     function optionKeys(event: KeyboardEvent, optionId: string) {
         if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return

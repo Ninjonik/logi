@@ -4,6 +4,7 @@ import {
     ArrowLeft,
     Bot,
     Inbox,
+    Gamepad2,
     Settings,
     Trophy,
     UsersRound,
@@ -95,6 +96,11 @@ export function AdminSidebar({
                     section: "teams",
                     title: dictionary.sidebar.teamCatalog,
                     icon: UsersRound,
+                },
+                {
+                    section: "games",
+                    title: dictionary.sidebar.games,
+                    icon: Gamepad2,
                 },
                 {
                     section: "team-requests",

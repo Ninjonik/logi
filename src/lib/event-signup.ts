@@ -147,8 +147,14 @@ export function buildEventSignupActions(
         ]
     }
 
+    // An explicitly empty group list is how the event editor represents games
+    // without squads. It is not the same as an older event with no saved
+    // group configuration, which continues to offer every available group.
+    const usesUngroupedSignup =
+        event.useGeneralSignup || event.signupGroupIds?.length === 0
+
     return [
-        ...(event.useGeneralSignup
+        ...(usesUngroupedSignup
             ? [
                   {
                       id: SIGNUP_GENERAL,
@@ -229,7 +235,10 @@ export function resolveEventSignupSelection(input: {
     const isTrainingAttend =
         input.event.kind === "training" && input.actionId === TRAINING_ATTEND
     const isGeneralSignup =
-        input.event.kind === "match" && input.actionId === SIGNUP_GENERAL
+        input.event.kind === "match" &&
+        input.actionId === SIGNUP_GENERAL &&
+        (input.event.useGeneralSignup ||
+            input.event.signupGroupIds?.length === 0)
     const selectedGroup =
         isGeneralSignup ||
         isTrainingAttend ||
@@ -273,14 +282,6 @@ export function resolveEventSignupSelection(input: {
             error: input.labels.missingRequiredRole,
             reason: "group_role" as const,
             group: selectedGroup,
-        }
-    }
-
-    if (isGeneralSignup && !input.event.useGeneralSignup) {
-        return {
-            ok: false as const,
-            error: input.labels.invalidSignupButton,
-            reason: "invalid" as const,
         }
     }
 

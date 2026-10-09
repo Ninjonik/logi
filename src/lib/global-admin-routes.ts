@@ -2,6 +2,7 @@
 export const GLOBAL_ADMIN_PAGES = [
     "competitions",
     "teams",
+    "games",
     "team-requests",
     "bot",
     "platform-settings",

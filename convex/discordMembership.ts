@@ -11,11 +11,7 @@ import { mutation, query } from "./_generated/server"
 import { getGuildByDiscordId } from "./identity"
 import { v } from "convex/values"
 
-const gameIdValidator = v.union(
-    v.literal("hell_let_loose"),
-    v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs")
-)
+const gameIdValidator = v.string()
 
 export const createTicketThread = mutation({
     args: {
@@ -86,13 +82,7 @@ export const createMembershipApplicationThread = mutation({
         parentChannelId: v.string(),
         creatorId: v.string(),
         categoryId: v.string(),
-        gameId: v.optional(
-            v.union(
-                v.literal("hell_let_loose"),
-                v.literal("hell_let_loose_vietnam"),
-                v.literal("wardogs")
-            )
-        ),
+        gameId: v.optional(v.string()),
         assignmentType: v.union(
             v.literal("member"),
             v.literal("reserve_member"),

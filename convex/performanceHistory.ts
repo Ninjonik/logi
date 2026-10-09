@@ -23,7 +23,8 @@ import { v } from "convex/values"
 const gameIdValidator = v.union(
     v.literal("hell_let_loose"),
     v.literal("hell_let_loose_vietnam"),
-    v.literal("wardogs")
+    v.literal("wardogs"),
+    v.literal("world_of_warcraft_forever")
 )
 
 type Snapshot = {
@@ -488,6 +489,8 @@ export const refreshInBackground = internalAction({
     handler: async (ctx, args): Promise<RefreshResult> => {
         if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
+        if (args.gameId === "world_of_warcraft_forever")
+            throw new Error("WoW:F does not collect player statistics.")
         const target = { guildId: args.guildId, gameId: args.gameId }
         return await refreshHistories(
             ctx,
@@ -523,6 +526,8 @@ export const refreshForDashboard = action({
     },
     handler: async (ctx, args): Promise<RefreshResult> => {
         assertSessionGateway(args.secret)
+        if (args.gameId === "world_of_warcraft_forever")
+            throw new Error("WoW:F does not collect player statistics.")
         await ctx.runQuery(internal.performanceHistory.authorizeRefresh, {
             secret: args.secret,
             guildId: args.guildId,

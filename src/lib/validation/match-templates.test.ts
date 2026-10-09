@@ -22,7 +22,6 @@ test("unknown fields, fractions and foreign role ids are refused", () => {
         { ...template, extra: true },
         { ...template, durationMinutes: 0 },
         { ...template, registrationHoursBeforeMeeting: 1.5 },
-        { ...template, gameId: "chess" },
         { ...template, pingMode: "roles", pingRoleIds: ["@everyone"] },
         { ...template, allowedSignupStatuses: ["admin"] },
     ])

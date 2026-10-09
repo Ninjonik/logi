@@ -183,7 +183,7 @@ async function runDecision(
     const mercenary = mercenaryCategoryOf(context)
     const applicationGame = application.gameId ?? "hell_let_loose"
     let assignmentId = application.assignmentId
-    let decidedGame = applicationGame
+    let decidedGame: string = applicationGame
 
     const result = await decideApplication(
         {

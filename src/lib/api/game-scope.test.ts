@@ -57,13 +57,11 @@ test("the public API rejects all combined with a specific game", () => {
     )
 })
 
-test("the public API rejects an unsupported game", () => {
+test("the public API accepts an opaque catalogue game ID", () => {
     assert.equal(
-        isApiGameScopeError(
-            parseApiGameScope(
-                new Request("https://example.test/api/v1/clan?game=quake")
-            )
+        parseApiGameScope(
+            new Request("https://example.test/api/v1/clan?game=quake")
         ),
-        true
+        "quake"
     )
 })

@@ -106,6 +106,7 @@ const GAME_SHORT: Record<GameId, string> = {
     hell_let_loose: "HLL",
     hell_let_loose_vietnam: "HLL: Vietnam",
     wardogs: "Wardogs",
+    world_of_warcraft_forever: "WoW:F",
 }
 
 type Draft = {

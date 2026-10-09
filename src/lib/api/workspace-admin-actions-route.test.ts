@@ -49,17 +49,24 @@ test("enabled games are saved as the signed-in administrator, not a body user", 
     assert.deepEqual(calls[1], { name: "revalidate", args: ["s1"] })
 })
 
-test("a supplied user ID or unknown game is rejected", async () => {
+test("a supplied user ID is rejected while opaque game IDs are accepted", async () => {
     const { calls, handlers } = setup()
     for (const body of [
         { enabledGames: ["wardogs"], userId: "222222222222222222" },
-        { enabledGames: ["chess"] },
         {},
     ]) {
         const response = await handlers.setEnabledGames(request(body), "s1")
         assert.equal(response.status, 400)
     }
-    assert.equal(calls.length, 0)
+    const accepted = await handlers.setEnabledGames(
+        request({ enabledGames: ["chess"] }),
+        "s1"
+    )
+    assert.equal(accepted.status, 200)
+    assert.deepEqual(calls[0], {
+        name: "setEnabledGames",
+        args: ["s1", "111111111111111111", ["chess"]],
+    })
 })
 
 test("other origins and non-administrators cannot write", async () => {

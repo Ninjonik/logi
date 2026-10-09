@@ -377,7 +377,7 @@ export async function mutateClanApiGroup(input: {
     methodPath: string
     operation: "create" | "update" | "delete"
     groupId?: string
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?: string
     name?: string
     color?: string
     order?: number
@@ -458,7 +458,7 @@ export async function mutateClanApiAssignment(input: {
     operation: "create" | "update" | "delete"
     assignmentId?: string
     userId?: string
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?: string
     type?: "member" | "reserve_member" | "mercenary"
     status?: "pending" | "recruit" | "active"
     primaryGroupId?: string

@@ -32,6 +32,55 @@ const wardogsRoleIconOptions = [
     "/img/roles/icn_wdtank.png",
 ] as const
 
+/**
+ * Class and specialisation artwork from github.com/orourkek/Wow-Icons,
+ * released under the Unlicense.  Keep this exhaustive so a guild can model
+ * future Forever class additions without waiting for a Logi release.
+ */
+const wowForeverRoleIconOptions = [
+    "/img/roles/wowf/class/deathknight.png",
+    "/img/roles/wowf/class/druid.png",
+    "/img/roles/wowf/class/hunter.png",
+    "/img/roles/wowf/class/mage.png",
+    "/img/roles/wowf/class/monk.png",
+    "/img/roles/wowf/class/paladin.png",
+    "/img/roles/wowf/class/priest.png",
+    "/img/roles/wowf/class/rogue.png",
+    "/img/roles/wowf/class/shaman.png",
+    "/img/roles/wowf/class/warlock.png",
+    "/img/roles/wowf/class/warrior.png",
+    "/img/roles/wowf/spec/blood.png",
+    "/img/roles/wowf/spec/frost.png",
+    "/img/roles/wowf/spec/unholy.png",
+    "/img/roles/wowf/spec/balance.png",
+    "/img/roles/wowf/spec/feral.png",
+    "/img/roles/wowf/spec/guardian.png",
+    "/img/roles/wowf/spec/restoration.png",
+    "/img/roles/wowf/spec/beastmastery.png",
+    "/img/roles/wowf/spec/marksman.png",
+    "/img/roles/wowf/spec/survival.png",
+    "/img/roles/wowf/spec/arcane.png",
+    "/img/roles/wowf/spec/fire.png",
+    "/img/roles/wowf/spec/brewmaster.png",
+    "/img/roles/wowf/spec/mistweaver.png",
+    "/img/roles/wowf/spec/windwalker.png",
+    "/img/roles/wowf/spec/holy.png",
+    "/img/roles/wowf/spec/protection.png",
+    "/img/roles/wowf/spec/retribution.png",
+    "/img/roles/wowf/spec/discipline.png",
+    "/img/roles/wowf/spec/shadow.png",
+    "/img/roles/wowf/spec/assassination.png",
+    "/img/roles/wowf/spec/combat.png",
+    "/img/roles/wowf/spec/subtlety.png",
+    "/img/roles/wowf/spec/elemental.png",
+    "/img/roles/wowf/spec/enhancement.png",
+    "/img/roles/wowf/spec/affliction.png",
+    "/img/roles/wowf/spec/demonology.png",
+    "/img/roles/wowf/spec/destruction.png",
+    "/img/roles/wowf/spec/arms.png",
+    "/img/roles/wowf/spec/fury.png",
+] as const
+
 const wardogsSquadIconOptions = [
     ...wardogsRoleIconOptions,
     "/stratmap/icons/wardogs/artillery.webp",
@@ -73,6 +122,7 @@ export const roleIconOptionsByGame: Record<GameId, readonly string[]> = {
     hell_let_loose: hllRoleIconOptions,
     hell_let_loose_vietnam: hllVietnamRoleIconOptions,
     wardogs: wardogsRoleIconOptions,
+    world_of_warcraft_forever: wowForeverRoleIconOptions,
 }
 
 export function getRoleIconOptions(gameId: GameId) {
@@ -376,4 +426,35 @@ export function createHllStarterSquadPreset(): SquadPresetSquad[] {
             ],
         },
     ]
+}
+
+/** A flexible 20-player raid layout: managers freely rename/add/remove slots. */
+export function createWowForeverStarterSquadPreset(): SquadPresetSquad[] {
+    return Array.from({ length: 4 }, (_, index) => ({
+        name: `Raid group ${index + 1}`,
+        group: "Raid",
+        order: index,
+        color: "#7c3aed",
+        icon: "/img/roles/wowf/class/priest.png",
+        roles: [
+            {
+                name: "Tank",
+                color: "#2563eb",
+                icon: "/img/roles/wowf/spec/protection.png",
+                count: 1,
+            },
+            {
+                name: "Healer",
+                color: "#16a34a",
+                icon: "/img/roles/wowf/spec/holy.png",
+                count: 1,
+            },
+            {
+                name: "Damage",
+                color: "#dc2626",
+                icon: "/img/roles/wowf/class/mage.png",
+                count: 3,
+            },
+        ],
+    }))
 }

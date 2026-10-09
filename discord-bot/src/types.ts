@@ -184,7 +184,11 @@ export type MembershipApplicationThreadRecord = {
     id: string
     guildId: string
     /** Missing values are legacy Hell Let Loose applications. */
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?:
+        | "hell_let_loose"
+        | "hell_let_loose_vietnam"
+        | "wardogs"
+        | "world_of_warcraft_forever"
     threadId: string
     parentChannelId: string
     creatorId: string
@@ -330,7 +334,11 @@ export type MatchTeamAssignment = {
 export type EventRecord = {
     id: string
     guildId: string
-    gameId?: "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs"
+    gameId?:
+        | "hell_let_loose"
+        | "hell_let_loose_vietnam"
+        | "wardogs"
+        | "world_of_warcraft_forever"
     kind: "match" | "training"
     matchType?: string
     /** The round of the competition fixture this match plays (L3-14). */

@@ -433,7 +433,7 @@ test("Ještě nerozhodnuto keeps the buttons and records who and when (L6-49)", 
     assert.match(body, /Rozhodnout můžou správci Logi/)
 })
 
-test("the decided card: closed label, outcome chips, roles line, no buttons (L6-48, L4-30)", () => {
+test("the decided card stays closed and does not promise asynchronous role changes (L6-48, L4-30)", () => {
     const view = applicationDecidedCardView(cs, {
         number: 42,
         applicantName: "Hráč 17",
@@ -450,13 +450,14 @@ test("the decided card: closed label, outcome chips, roles line, no buttons (L6-
     const body = text(view)
     assert.match(body, /PŘIHLÁŠKA #42 · UZAVŘENA/)
     assert.match(body, /### Hráč 17 je přijatý jako Člen/)
-    assert.match(body, /🟢 \*\*Člen\*\* · 🟡 \*\*Role se přidávají\*\*/)
+    assert.match(body, /🟢 \*\*Člen\*\*/)
+    assert.doesNotMatch(body, /Role se přidávají/)
     assert.match(
         body,
         /Rozhodl <@222222222222222222> · ne <t:\d+:d> · <t:\d+:t>/
     )
     assert.match(body, /> Pohovor proběhl, vítej mezi námi\./)
-    assert.match(body, /Role <@&888> a <@&999> přidá Logi do minuty\./)
+    assert.doesNotMatch(body, /přidá Logi do minuty/)
     assert.match(body, /Vlákno je zamčené a archivované · Spravováno v Logi/)
     assert.equal(buttons(view).length, 0)
     const denied = text(
@@ -473,7 +474,7 @@ test("the decided card: closed label, outcome chips, roles line, no buttons (L6-
         })
     )
     assert.match(denied, /🔴 \*\*Zamítnuto\*\*/)
-    assert.match(denied, /Roli <@&777> odebere Logi do minuty\./)
+    assert.doesNotMatch(denied, /odebere Logi do minuty/)
     assert.doesNotMatch(denied, /Nebyl uveden důvod/)
 })
 

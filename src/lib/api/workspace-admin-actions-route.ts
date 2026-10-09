@@ -1,10 +1,10 @@
-import { GAME_IDS, type GameId } from "@/domain/games/game"
+import type { GameId } from "@/domain/games/game"
 import { readBoundedJson } from "./request-json"
 import { z } from "zod"
 
 const MAX_BYTES = 1024
 const enabledGamesSchema = z.strictObject({
-    enabledGames: z.array(z.enum(GAME_IDS)).max(GAME_IDS.length),
+    enabledGames: z.array(z.string().trim().min(1)).max(64),
 })
 
 export type WorkspaceAdminActionPorts = {

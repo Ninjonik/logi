@@ -72,13 +72,7 @@ export const ticketCategoryValidator = v.object({
 
 export const membershipCategoryValidator = v.object({
     id: v.string(),
-    gameId: v.optional(
-        v.union(
-            v.literal("hell_let_loose"),
-            v.literal("hell_let_loose_vietnam"),
-            v.literal("wardogs")
-        )
-    ),
+    gameId: v.optional(v.string()),
     emoji: v.optional(v.string()),
     label: v.optional(v.string()),
     description: v.optional(v.string()),
