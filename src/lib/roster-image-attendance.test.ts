@@ -31,3 +31,19 @@ test("late and legacy notices do not become absences", () => {
     assert.equal(style({ ack: false }).indicator, null)
     assert.equal(style({ ack: true }).showCheck, false)
 })
+
+test("acknowledged reserves and squad players share green styling without an admin check", () => {
+    assert.deepEqual(style({ ack: true, confirmed: false }), {
+        background: "#166534",
+        showCheck: false,
+        indicator: null,
+    })
+})
+
+test("meeting confirmation shows a check even without a separate acknowledgement", () => {
+    assert.deepEqual(style({ ack: false, confirmed: true }), {
+        background: "#166534",
+        showCheck: true,
+        indicator: null,
+    })
+})

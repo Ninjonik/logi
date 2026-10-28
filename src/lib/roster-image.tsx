@@ -29,6 +29,11 @@ type RosterImageContext = {
     }
     roster: {
         updatedAt: string
+        reserveAttendances?: Array<{
+            userId: string
+            ack: boolean
+            confirmed?: boolean
+        }>
         reservePlayerIds: string[]
         notAttendingPlayerIds: string[]
         squads: Array<{
