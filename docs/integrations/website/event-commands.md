@@ -413,3 +413,15 @@ rostered players (excluding explicit absences), then deletes the forum and all
 its posts. Turning the flag off retains the forum and its debrief post. The
 workspace debrief message switch still applies. These operations use the same
 actor authorization, revision checks and idempotency receipts as other edits.
+
+### Meeting voice confirmation boundary
+
+The dashboard-only on-demand meeting voice confirmation remains excluded from
+`/api/v1` commands: it authorizes a live Discord attendance observation through
+the running bot, rather than accepting an integration caller’s claimed voice
+membership. It reads only assigned/reserve players through Discord’s current
+voice-state REST endpoint and confirms matches to the configured channel.
+No voice presence history is retained. Existing roster reads expose the resulting
+`reserveAttendances`, squad confirmation flags and `meetingAttendance`; their
+contract is unchanged. Network/permission failures do not produce empty-success
+results, and expired requests cannot apply attendance later.

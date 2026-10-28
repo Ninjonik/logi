@@ -9,6 +9,7 @@ type PendingRequest = {
     _id: string
     guildId: string
     rosterId: string
+    rosterUserIds: string[]
     meetingChannelId: string
 }
 
@@ -20,11 +21,7 @@ type AttendanceResult = {
     updatedUserIds: string[]
 }
 
-/**
- * Handles only dashboard-triggered confirmation requests. Discord.js maintains
- * this channel's member collection from the gateway voice-state cache; we do
- * not register a voiceStateUpdate handler or persist every voice transition.
- */
+/** Handles dashboard-triggered requests using fresh REST reads of roster candidates only. */
 export class MeetingAttendanceRequestService {
     private unsubscribe?: () => void
     private readonly processingRequestIds = new Set<string>()
@@ -88,7 +85,8 @@ export class MeetingAttendanceRequestService {
             const memberIdsInMeetingChannel = await getMeetingChannelMemberIds(
                 this.client,
                 claimed.guildId,
-                claimed.meetingChannelId
+                claimed.meetingChannelId,
+                claimed.rosterUserIds
             )
             const result = (await convex.mutation(
                 references.confirmRosterAttendanceFromMeetingChannel,
@@ -98,6 +96,7 @@ export class MeetingAttendanceRequestService {
                     rosterId: claimed.rosterId as never,
                     memberIdsInMeetingChannel,
                     expectedMeetingChannelId: claimed.meetingChannelId,
+                    requestId: claimed._id as never,
                 }
             )) as AttendanceResult
             await convex.mutation(references.completeMeetingAttendanceRequest, {
