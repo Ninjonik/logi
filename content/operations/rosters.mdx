@@ -236,6 +236,9 @@ image with **Show full roster**. The footer says when it was published.
 
 The roster image is uploaded to Discord. If image generation temporarily fails
 during an update, the existing card stays visible while the bot retries.
+Image generation reads the current published roster. Bundled role icons are
+loaded directly, and unavailable Discord avatars use a fallback so they do not
+block the update. The public roster image is refreshed when it is requested.
 Its player rows also show attendance directly: a clock for a player arriving
 late and a red X with a red row for a player who cannot attend, including reserves.
 The dashboard also highlights these rows in red and keeps the reason available
