@@ -101,6 +101,33 @@ function getFilledPlayerName(player: Player, userName?: string | null) {
 
 type AttendanceNoticeKind = "late" | "cannot_come"
 
+function AttendanceCheck() {
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                width: "20px",
+                height: "20px",
+                borderRadius: "999px",
+                background: "#22c55e",
+            }}
+        >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path
+                    d="M3 8.5L6.5 12L13 4"
+                    stroke="#0b1a10"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+        </div>
+    )
+}
+
 /** A public, word-free attendance marker for the generated roster image. */
 function AttendanceIndicator({ kind }: { kind: "late" | "absent" | null }) {
     if (!kind) return null
@@ -454,15 +481,6 @@ export async function GET(
             notice.kind === "cannot_come" ? "cannot_come" : "late",
         ])
     )
-    const attendanceIndicatorFor = (
-        userId?: string
-    ): "late" | "absent" | null => {
-        const notice = userId
-            ? attendanceNoticesByUserId.get(userId)
-            : undefined
-        return notice === "cannot_come" ? "absent" : notice ? "late" : null
-    }
-
     const sortedSquads = data.roster.squads
         .slice()
         .sort((a, b) => a.order - b.order)
@@ -526,6 +544,12 @@ export async function GET(
         (a, b) => a.squads[0].order - b.squads[0].order
     )
 
+    const reserveAttendanceByUserId = new Map(
+        (data.roster.reserveAttendances ?? []).map((entry) => [
+            entry.userId,
+            entry,
+        ])
+    )
     const reserveUsers = data.roster.reservePlayerIds
         .map((id) => usersById.get(id))
         .filter(Boolean)
@@ -1042,38 +1066,7 @@ export async function GET(
                                                                             />
                                                                             {user &&
                                                                             attendance.showCheck ? (
-                                                                                <div
-                                                                                    style={{
-                                                                                        display:
-                                                                                            "flex",
-                                                                                        alignItems:
-                                                                                            "center",
-                                                                                        justifyContent:
-                                                                                            "center",
-                                                                                        flexShrink: 0,
-                                                                                        width: "20px",
-                                                                                        height: "20px",
-                                                                                        borderRadius:
-                                                                                            "999px",
-                                                                                        background:
-                                                                                            "#22c55e",
-                                                                                    }}
-                                                                                >
-                                                                                    <svg
-                                                                                        width="14"
-                                                                                        height="14"
-                                                                                        viewBox="0 0 16 16"
-                                                                                        fill="none"
-                                                                                    >
-                                                                                        <path
-                                                                                            d="M3 8.5L6.5 12L13 4"
-                                                                                            stroke="#0b1a10"
-                                                                                            strokeWidth="2.4"
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                        />
-                                                                                    </svg>
-                                                                                </div>
+                                                                                <AttendanceCheck />
                                                                             ) : null}
                                                                         </div>
                                                                     )
@@ -1277,58 +1270,65 @@ export async function GET(
                     >
                         {messages.rosterImage.reserves}
                     </div>
-                    {reserveUsers.slice(0, 20).map((user) => (
-                        <div
-                            key={user!.id}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                fontSize: "13px",
-                                color: "#cbd5e1",
-                                background:
-                                    attendanceIndicatorFor(user!.discordId) ===
-                                    "absent"
-                                        ? "#991b1b"
-                                        : "#121b2c",
-                                borderRadius: "10px",
-                                padding: "6px 10px",
-                                minWidth: 0,
-                            }}
-                        >
-                            <img
-                                src={inlineAsset(
-                                    resolveRosterAvatarUrl(user!.avatar)
-                                )}
-                                alt=""
-                                width="22"
-                                height="22"
+                    {reserveUsers.slice(0, 20).map((user) => {
+                        const attendance = getRosterImageAttendanceStyle(
+                            reserveAttendanceByUserId.get(user!.discordId) ?? {
+                                ack: false,
+                            },
+                            attendanceNoticesByUserId.get(user!.discordId)
+                        )
+                        return (
+                            <div
+                                key={user!.id}
                                 style={{
                                     display: "flex",
-                                    width: "22px",
-                                    height: "22px",
-                                    borderRadius: "999px",
-                                    objectFit: "cover",
-                                    flexShrink: 0,
-                                }}
-                            />
-                            <span
-                                style={{
-                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    fontSize: "13px",
+                                    color: "#cbd5e1",
+                                    background: attendance.background,
+                                    borderRadius: "10px",
+                                    padding: "6px 10px",
                                     minWidth: 0,
-                                    flex: 1,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
                                 }}
                             >
-                                {user!.name}
-                            </span>
-                            <AttendanceIndicator
-                                kind={attendanceIndicatorFor(user!.discordId)}
-                            />
-                        </div>
-                    ))}
+                                <img
+                                    src={inlineAsset(
+                                        resolveRosterAvatarUrl(user!.avatar)
+                                    )}
+                                    alt=""
+                                    width="22"
+                                    height="22"
+                                    style={{
+                                        display: "flex",
+                                        width: "22px",
+                                        height: "22px",
+                                        borderRadius: "999px",
+                                        objectFit: "cover",
+                                        flexShrink: 0,
+                                    }}
+                                />
+                                <span
+                                    style={{
+                                        display: "flex",
+                                        minWidth: 0,
+                                        flex: 1,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {user!.name}
+                                </span>
+                                <AttendanceIndicator
+                                    kind={attendance.indicator}
+                                />
+                                {attendance.showCheck ? (
+                                    <AttendanceCheck />
+                                ) : null}
+                            </div>
+                        )
+                    })}
                     {reserveUsers.length === 0 ? (
                         <div
                             style={{
