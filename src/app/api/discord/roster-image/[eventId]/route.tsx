@@ -1,11 +1,11 @@
 import { getRosterImageAttendanceStyle } from "@/lib/roster-image-attendance"
+import { loadRosterImageAsset } from "@/lib/roster-image-assets"
 import { NextResponse } from "next/server"
 import { ImageResponse } from "next/og"
 import sharp from "sharp"
 
 import {
     getRosterImageContext,
-    getRosterImageContextCached,
     resolveRosterAvatarUrl,
     resolveSiteAssetUrl,
 } from "@/lib/roster-image"
@@ -18,7 +18,7 @@ import { getSiteUrl } from "@/lib/env"
 
 const contentType = "image/png"
 
-function createImageResponse(image: Uint8Array) {
+function createImageResponse(image: Uint8Array, versioned = false) {
     const body = new Uint8Array(image.byteLength)
     body.set(image)
     return new Response(body.buffer, {
@@ -26,7 +26,9 @@ function createImageResponse(image: Uint8Array) {
             "content-type": contentType,
             // `cb` is a content version, so every version is immutable. This lets
             // Discord retain the already-warmed image instead of re-rendering it.
-            "cache-control": "public, max-age=31536000, immutable",
+            "cache-control": versioned
+                ? "public, max-age=31536000, immutable"
+                : "no-store",
         },
     })
 }
@@ -395,23 +397,50 @@ export async function GET(
     const imageCacheKey = url.searchParams.get("cb")
     if (imageCacheKey) {
         const cachedImage = rosterImageCache.get(`${eventId}:${imageCacheKey}`)
-        if (cachedImage) return createImageResponse(cachedImage)
+        if (cachedImage) return createImageResponse(cachedImage, true)
     }
 
-    const useFreshData = url.searchParams.get("fresh") === "1"
-    const cachedOrFreshData = useFreshData
-        ? await getRosterImageContext(eventId)
-        : await getRosterImageContextCached(eventId)
-    const data =
-        cachedOrFreshData && !cachedOrFreshData.config
-            ? await getRosterImageContext(eventId)
-            : cachedOrFreshData
+    // Never freeze hour-old data under a new immutable image version.
+    const data = await getRosterImageContext(eventId)
     if (!data) {
         return NextResponse.json(
             { error: "Roster not available." },
             { status: 404 }
         )
     }
+
+    const sources = [
+        ...new Set(
+            [
+                ...data.users.map((user) =>
+                    resolveRosterAvatarUrl(user.avatar)
+                ),
+                ...data.roster.squads.flatMap((squad) => [
+                    resolveAssetUrl(squad.icon),
+                    ...squad.players.map((player) =>
+                        resolveAssetUrl(player.roleIcon)
+                    ),
+                ]),
+            ].filter((source): source is string => Boolean(source))
+        ),
+    ]
+    const assets = new Map(
+        await Promise.all(
+            sources.map(
+                async (source) =>
+                    [
+                        source,
+                        await loadRosterImageAsset(source, getSiteUrl()),
+                    ] as const
+            )
+        )
+    )
+    const fallbackAsset = await loadRosterImageAsset(
+        "/favicon.png",
+        getSiteUrl()
+    )
+    const inlineAsset = (source?: string) =>
+        (source ? assets.get(source) : undefined) ?? fallbackAsset
 
     const clanLanguage = data.config?.defaultLanguage ?? "en"
     const configTimezone = data.config?.timezone
@@ -718,8 +747,10 @@ export async function GET(
                                                         }}
                                                     >
                                                         <img
-                                                            src={resolveAssetUrl(
-                                                                squad.icon
+                                                            src={inlineAsset(
+                                                                resolveAssetUrl(
+                                                                    squad.icon
+                                                                )
                                                             )}
                                                             alt=""
                                                             width="16"
@@ -799,8 +830,10 @@ export async function GET(
                                                         >
                                                             {section.roleIcon ? (
                                                                 <img
-                                                                    src={resolveAssetUrl(
-                                                                        section.roleIcon
+                                                                    src={inlineAsset(
+                                                                        resolveAssetUrl(
+                                                                            section.roleIcon
+                                                                        )
                                                                     )}
                                                                     alt=""
                                                                     width="16"
@@ -881,8 +914,10 @@ export async function GET(
                                                                         >
                                                                             {user ? (
                                                                                 <img
-                                                                                    src={resolveRosterAvatarUrl(
-                                                                                        user.avatar
+                                                                                    src={inlineAsset(
+                                                                                        resolveRosterAvatarUrl(
+                                                                                            user.avatar
+                                                                                        )
                                                                                     )}
                                                                                     alt=""
                                                                                     width="28"
@@ -1255,14 +1290,16 @@ export async function GET(
                                     attendanceIndicatorFor(user!.discordId) ===
                                     "absent"
                                         ? "#991b1b"
-                                        : undefined,
+                                        : "#121b2c",
                                 borderRadius: "10px",
                                 padding: "6px 10px",
                                 minWidth: 0,
                             }}
                         >
                             <img
-                                src={resolveRosterAvatarUrl(user!.avatar)}
+                                src={inlineAsset(
+                                    resolveRosterAvatarUrl(user!.avatar)
+                                )}
                                 alt=""
                                 width="22"
                                 height="22"
@@ -1491,5 +1528,5 @@ export async function GET(
     const image = croppedImage
     if (imageCacheKey)
         rosterImageCache.set(`${eventId}:${imageCacheKey}`, image)
-    return createImageResponse(image)
+    return createImageResponse(image, Boolean(imageCacheKey))
 }
