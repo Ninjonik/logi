@@ -319,7 +319,7 @@ export function RosterBoard({
             new Map(
                 (event?.absenceNotices ?? []).map((notice) => [
                     notice.userId,
-                    notice.reason,
+                    { reason: notice.reason, kind: notice.kind },
                 ])
             ),
         [event?.absenceNotices]

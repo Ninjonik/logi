@@ -1,3 +1,4 @@
+import { getRosterImageAttendanceStyle } from "@/lib/roster-image-attendance"
 import { NextResponse } from "next/server"
 import { ImageResponse } from "next/og"
 import sharp from "sharp"
@@ -97,24 +98,6 @@ function getFilledPlayerName(player: Player, userName?: string | null) {
 }
 
 type AttendanceNoticeKind = "late" | "cannot_come"
-
-function getAttendanceStyle(player: Player, noticeKind?: AttendanceNoticeKind) {
-    const indicator: "late" | "absent" | null =
-        noticeKind === "cannot_come"
-            ? "absent"
-            : noticeKind === "late"
-              ? "late"
-              : null
-    if (player.confirmed) {
-        return { background: "#166534", showCheck: true, indicator }
-    }
-
-    if (player.ack) {
-        return { background: "#166534", showCheck: false, indicator }
-    }
-
-    return { background: "#18324a", showCheck: false, indicator }
-}
 
 /** A public, word-free attendance marker for the generated roster image. */
 function AttendanceIndicator({ kind }: { kind: "late" | "absent" | null }) {
@@ -864,7 +847,7 @@ export async function GET(
                                                                             user?.name
                                                                         )
                                                                     const attendance =
-                                                                        getAttendanceStyle(
+                                                                        getRosterImageAttendanceStyle(
                                                                             player,
                                                                             player.id
                                                                                 ? attendanceNoticesByUserId.get(
@@ -1033,8 +1016,8 @@ export async function GET(
                                                                                         justifyContent:
                                                                                             "center",
                                                                                         flexShrink: 0,
-                                                                                        width: "12px",
-                                                                                        height: "12px",
+                                                                                        width: "20px",
+                                                                                        height: "20px",
                                                                                         borderRadius:
                                                                                             "999px",
                                                                                         background:
@@ -1042,8 +1025,8 @@ export async function GET(
                                                                                     }}
                                                                                 >
                                                                                     <svg
-                                                                                        width="8"
-                                                                                        height="8"
+                                                                                        width="14"
+                                                                                        height="14"
                                                                                         viewBox="0 0 16 16"
                                                                                         fill="none"
                                                                                     >
@@ -1268,6 +1251,13 @@ export async function GET(
                                 gap: "8px",
                                 fontSize: "13px",
                                 color: "#cbd5e1",
+                                background:
+                                    attendanceIndicatorFor(user!.discordId) ===
+                                    "absent"
+                                        ? "#991b1b"
+                                        : undefined,
+                                borderRadius: "10px",
+                                padding: "6px 10px",
                                 minWidth: 0,
                             }}
                         >

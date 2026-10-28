@@ -433,6 +433,7 @@ export type EventRecord = {
     scoreAppliedAt?: Timestamp
     scoreResolution?: "applied" | "skipped"
     absenceNotices: {
+        kind?: "late" | "cannot_come"
         userId: string
         reason: string
         createdAt: Timestamp

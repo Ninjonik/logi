@@ -4,6 +4,7 @@ import { formatKd } from "@/lib/format"
 
 import {
     AlarmClock,
+    CircleX,
     Ban,
     CalendarClock,
     Check,
@@ -115,7 +116,10 @@ export function RosterBoardAttendeeLists({
     handleDropOnNotAttending: () => void
     setDragState: (state: DragState | null) => void
     serverDiscordId: string
-    noticeReasonByUserId: Map<string, string>
+    noticeReasonByUserId: Map<
+        string,
+        { reason: string; kind?: "late" | "cannot_come" }
+    >
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
     /** "Bez odpovědi: N členů · Připomenout" under the reserves (D3). */
     reminder?: ReactNode
@@ -478,7 +482,10 @@ function GroupedUserList({
     onDropUser: (userId: string) => void
     setDragState: (state: DragState | null) => void
     serverDiscordId: string
-    noticeReasonByUserId: Map<string, string>
+    noticeReasonByUserId: Map<
+        string,
+        { reason: string; kind?: "late" | "cannot_come" }
+    >
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
     slotOptions: Array<{ value: string; label: string }>
     assignUserToSlot: (
@@ -567,11 +574,15 @@ function GroupedUserList({
                                         }}
                                         onDragEnd={() => setDragState(null)}
                                         className={[
-                                            "border-border/70 bg-background flex min-h-10 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
+                                            "flex min-h-10 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
                                             isAssignmentMode && canAdmin
                                                 ? "cursor-grab"
                                                 : "",
-                                            muted ? "opacity-60" : "",
+                                            noticeReason?.kind === "cannot_come"
+                                                ? "border-red-500/70 bg-red-100 dark:bg-red-950/70"
+                                                : muted
+                                                  ? "border-border/70 bg-background opacity-60"
+                                                  : "border-border/70 bg-background",
                                         ].join(" ")}
                                     >
                                         {isAssignmentMode && canAdmin ? (
@@ -652,10 +663,24 @@ function GroupedUserList({
                                                         <HoverCardTrigger
                                                             asChild
                                                         >
-                                                            <AlarmClock className="size-3.5 text-red-500" />
+                                                            {noticeReason.kind ===
+                                                            "cannot_come" ? (
+                                                                <CircleX
+                                                                    aria-label={
+                                                                        dictionary
+                                                                            .roster
+                                                                            .moveToNotAttending
+                                                                    }
+                                                                    className="size-4 text-red-600 dark:text-red-400"
+                                                                />
+                                                            ) : (
+                                                                <AlarmClock className="size-3.5 text-red-500" />
+                                                            )}
                                                         </HoverCardTrigger>
                                                         <HoverCardContent className="max-w-64 text-xs whitespace-pre-wrap">
-                                                            {noticeReason}
+                                                            {
+                                                                noticeReason.reason
+                                                            }
                                                         </HoverCardContent>
                                                     </HoverCard>
                                                 ) : null}
