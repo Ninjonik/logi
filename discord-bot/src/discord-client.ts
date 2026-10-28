@@ -5,7 +5,6 @@ export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildVoiceStates,
         ...(env.leagueMessageContent
             ? [
                   GatewayIntentBits.GuildMessages,

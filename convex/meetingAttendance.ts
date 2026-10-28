@@ -44,7 +44,7 @@ export const requestMeetingAttendanceConfirmation = mutation({
             requestedAt: now.toISOString(),
             // A delayed request must never confirm attendance after the manager
             // has already been told that the bot was unavailable.
-            expiresAt: new Date(now.getTime() + 15_000).toISOString(),
+            expiresAt: new Date(now.getTime() + 45_000).toISOString(),
         })
     },
 })
@@ -89,7 +89,21 @@ export const claimMeetingAttendanceRequest = mutation({
             status: "processing",
             claimedAt: now.toISOString(),
         })
-        return request
+        const roster = await ctx.db.get(request.rosterId)
+        if (!roster) throw new Error("Roster not found.")
+        return {
+            ...request,
+            rosterUserIds: [
+                ...new Set([
+                    ...roster.reservePlayerIds,
+                    ...roster.squads.flatMap((squad) =>
+                        squad.players.flatMap((player) =>
+                            player.id ? [player.id] : []
+                        )
+                    ),
+                ]),
+            ],
+        }
     },
 })
 

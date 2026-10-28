@@ -169,9 +169,13 @@ attendance** on the match page. It checks only the
 people already assigned to a squad or reserve and marks those currently in the
 configured meeting voice/stage channel as confirmed. It does not inspect other
 voice channels, move people, add anyone to the roster, or prove that a person
-stayed for the event. The action asks the running bot for the current members
-of that one channel; it does not query every rostered person or track voice
-changes in Logi. The action needs a configured meeting channel and a running
+stayed for the event. The action asks the running bot to read each assigned player’s and reserve’s
+current voice state directly from Discord’s API, bypassing cached channel
+membership. Only those currently in the configured meeting channel are confirmed.
+It does not scan the server’s members or store voice states or join/leave logs.
+A disconnected player is skipped; permission, network or rate-limit failures
+fail the request rather than reporting that nobody is present. The request may
+take up to 45 seconds, and an expired request cannot apply a delayed result. The action needs a configured meeting channel and a running
 bot with access to read that channel; it is available to managers even if the
 roster is not published.
 

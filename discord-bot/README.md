@@ -241,3 +241,18 @@ attempt instead of continuing with stale Discord permissions.
 - `src/scheduled-events.ts` manages Discord scheduled events
 - `src/convex.ts`, `src/environment.ts`, `src/constants.ts`, and `src/types.ts` hold shared setup data
 - `src/utils.ts` contains formatting and reusable bot helpers
+
+## On-demand meeting attendance
+
+The dashboard’s meeting confirmation uses the existing Convex request queue.
+On claim the bot receives only that roster’s assigned and reserve Discord IDs.
+It reads `/guilds/{guild.id}/voice-states/{user.id}` directly through Discord REST,
+with five concurrent reads and a shared 30-second deadline, and confirms only
+players in the configured meeting room. It bypasses channel/member caches;
+Discord’s explicit Unknown Voice State is treated as disconnected, while other
+failures abort the result. Requests expire after 45 seconds and are checked
+again at the confirmation write. The bot no longer subscribes to the GuildVoiceStates gateway intent.
+No voice-state snapshots, server-wide voice
+membership lists, or join/leave logs are persisted. Only the existing requested
+roster attendance result is retained. Deploy the backend before restarting the
+updated bot; older backend claims lack the required candidate list.

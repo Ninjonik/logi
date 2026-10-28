@@ -80,9 +80,25 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         rosterId: v.id("rosters"),
         memberIdsInMeetingChannel: v.array(v.string()),
         expectedMeetingChannelId: v.optional(v.string()),
+        requestId: v.optional(v.id("meetingAttendanceRequests")),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
+        if (args.requestId) {
+            const request = await ctx.db.get(args.requestId)
+            if (
+                !request ||
+                request.status !== "processing" ||
+                request.guildId !== args.guildId ||
+                request.rosterId !== args.rosterId ||
+                request.meetingChannelId !== args.expectedMeetingChannelId ||
+                Date.parse(request.expiresAt) <= Date.now()
+            ) {
+                throw new Error(
+                    "Attendance request expired or changed. Please try again."
+                )
+            }
+        }
         const [config, roster] = await Promise.all([
             ctx.db
                 .query("discordConfigs")

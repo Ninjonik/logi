@@ -9,7 +9,7 @@ import { logNextError, logNextInfo } from "@/lib/system-logs"
 import { getServerContext } from "@/lib/server-context"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
-const BOT_RESPONSE_TIMEOUT_MS = 12_000
+const BOT_RESPONSE_TIMEOUT_MS = 45_000
 const BOT_RESPONSE_POLL_MS = 250
 
 export async function POST(
