@@ -288,7 +288,10 @@ export function SquadCard({
     canAdmin: boolean
     setDragState: (state: DragState | null) => void
     serverDiscordId: string
-    noticeReasonByUserId: Map<string, string>
+    noticeReasonByUserId: Map<
+        string,
+        { reason: string; kind?: "late" | "cannot_come" }
+    >
     /** Name of the player being dragged, for the "Drop here" hint. */
     draggedName?: string
     /** Whether the squad starts unfolded on phones. */
@@ -1378,7 +1381,7 @@ function FilledSlot({
     groupsById: Map<string, Group>
     signupRoleLabel: string | null
     isReserveMember: boolean
-    noticeReason?: string
+    noticeReason?: { reason: string; kind?: "late" | "cannot_come" }
     attendanceStatus: AttendanceStatus
     isAssignmentMode: boolean
     isViewMode: boolean
@@ -1416,7 +1419,9 @@ function FilledSlot({
             onDragEnd={onDragEnd}
             className={cn(
                 "border-border/60 bg-background flex min-h-10 min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1",
-                editable && slotUser && "cursor-grab"
+                editable && slotUser && "cursor-grab",
+                noticeReason?.kind === "cannot_come" &&
+                    "border-red-500/70 bg-red-100 dark:bg-red-950/70"
             )}
         >
             {editable && slotUser ? (
@@ -1569,10 +1574,19 @@ function FilledSlot({
                     {noticeReason ? (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <AlarmClock className="size-3.5 shrink-0 text-red-500" />
+                                {noticeReason.kind === "cannot_come" ? (
+                                    <CircleX
+                                        aria-label={
+                                            dictionary.roster.moveToNotAttending
+                                        }
+                                        className="size-4 shrink-0 text-red-600 dark:text-red-400"
+                                    />
+                                ) : (
+                                    <AlarmClock className="size-3.5 shrink-0 text-red-500" />
+                                )}
                             </TooltipTrigger>
                             <TooltipContent className="max-w-64 text-xs whitespace-pre-wrap">
-                                {noticeReason}
+                                {noticeReason.reason}
                             </TooltipContent>
                         </Tooltip>
                     ) : null}
