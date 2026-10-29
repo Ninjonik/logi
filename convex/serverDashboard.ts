@@ -8,37 +8,9 @@ import {
     getUserStableId,
 } from "./identity"
 import { hasRecentMatchResult } from "../src/domain/match-results/recent-result"
-import { resultFaction } from "../src/domain/match-results/result-sides"
-import { matchesGameScope } from "../src/domain/games/game"
+import { resolveGameScope, matchesGameScope } from "../src/domain/games/game"
+import { resolveTeamResult } from "../src/domain/match-results/team-result"
 import { internalAuthSecret } from "./discord_shared"
-
-function reviewedOutcome(event: {
-    side?: string
-    reviewedResult?: {
-        participants: Array<{ id: string; label: string; score: number | null }>
-    }
-}) {
-    const faction = resultFaction(event.side)
-    const scores = event.reviewedResult?.participants ?? []
-    const ours = scores.find(
-        (participant) =>
-            faction &&
-            (resultFaction(participant.id) === faction ||
-                resultFaction(participant.label) === faction)
-    )?.score
-    const others = scores
-        .filter((participant) => participant.score !== null)
-        .filter(
-            (participant) =>
-                !faction ||
-                (resultFaction(participant.id) !== faction &&
-                    resultFaction(participant.label) !== faction)
-        )
-        .map((participant) => participant.score!)
-    if (ours === null || ours === undefined || !others.length) return "draw"
-    const opponent = Math.max(...others)
-    return ours > opponent ? "victory" : ours < opponent ? "defeat" : "draw"
-}
 
 export const getRecentMatchSummaryInternal = query({
     args: {
@@ -78,7 +50,41 @@ export const getRecentMatchSummaryInternal = query({
         const eventsById = new Map(
             recentEvents.map((event) => [String(event._id), event])
         )
+        const linkedTeams = await ctx.db
+            .query("teamDirectory")
+            .withIndex("linkedGuildId", (q) => q.eq("linkedGuildId", guildId))
+            .take(20)
         const recentMatches = recentEvents.map((event) => {
+            const own = linkedTeams.find(
+                (team) =>
+                    team.gameId === resolveGameScope(event.gameId) &&
+                    !team.archivedAt &&
+                    !team.mergedIntoTeamId
+            )
+            const resolved = event.reviewedResult
+                ? resolveTeamResult({
+                      participants: event.reviewedResult.participants,
+                      teams: event.matchTeams,
+                      ownTeam: own
+                          ? {
+                                id: String(own._id),
+                                name: own.name,
+                                shortCode: own.shortCode,
+                            }
+                          : null,
+                      clanName: server.name,
+                      clanSide: event.side,
+                      imported: event.eventResult,
+                  })
+                : null
+            const reviewedOutcome =
+                resolved?.outcome === "win"
+                    ? "victory"
+                    : resolved?.outcome === "loss"
+                      ? "defeat"
+                      : resolved?.outcome === "draw"
+                        ? "draw"
+                        : null
             const reviewed = event.reviewedResult
             const scores = reviewed
                 ? reviewed.participants.map((participant) => participant.score)
@@ -96,8 +102,8 @@ export const getRecentMatchSummaryInternal = query({
                     reviewed?.reviewedAt ??
                     event.gameEnd,
                 outcome: reviewed
-                    ? reviewedOutcome(event)
-                    : (event.eventResult?.outcome ?? "draw"),
+                    ? reviewedOutcome
+                    : (event.eventResult?.outcome ?? null),
                 scores,
             }
         })
