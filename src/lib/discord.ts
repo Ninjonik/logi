@@ -303,6 +303,15 @@ export async function fetchDiscordGuildEmojis(guildId: string) {
     )
 }
 
+export async function fetchDiscordGuildMember(
+    guildId: string,
+    discordId: string
+) {
+    return await fetchDiscordBotJson<DiscordGuildMember>(
+        `/guilds/${encodeURIComponent(guildId)}/members/${encodeURIComponent(discordId)}`
+    )
+}
+
 export async function fetchDiscordGuildMembers(guildId: string) {
     const members: DiscordGuildMember[] = []
     let after = "0"

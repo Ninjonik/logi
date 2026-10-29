@@ -341,3 +341,13 @@ schema. Actor-backed updates preserve the existing routing, and recurrence
 copies it. The bot prefers an event's saved destination over the clan default.
 Generated artwork v2 preserves rectangular team logos without circles or
 backplates and uses a transparent Logi footer mark.
+
+### Player display-name recheck
+
+The dashboard's admin-only **Recheck display name** action reads one current
+Discord guild member and updates only that guild's saved display name. This
+operation is deliberately excluded from `/api/v1`: member-summary grants are
+read-only and do not authorize identity writes or a bot-backed Discord refresh.
+Exposing this action with existing directory keys would bypass the dashboard's
+current clan-admin authorization. Existing member-summary reads retain their current projection contract;
+their account display name is separate from this saved guild nickname.

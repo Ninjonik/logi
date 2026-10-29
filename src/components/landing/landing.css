@@ -1,0 +1,150 @@
+.logi-home .home-section {
+    scroll-margin-top: 6rem;
+}
+.logi-home .home-heading {
+    font-size: clamp(1.9rem, 3.7vw, 3rem);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+}
+.logi-home .home-body {
+    color: #65656e;
+    font-size: 1rem;
+    line-height: 1.75;
+    text-wrap: pretty;
+}
+.dark .logi-home .home-body {
+    color: #a1a1aa;
+}
+.logi-home .home-body.text-sm {
+    font-size: 0.875rem;
+}
+.home-hero-art {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    inset: 0 0 auto;
+    height: 780px;
+    overflow: hidden;
+    opacity: 0.5;
+    mask-image: linear-gradient(to bottom, #000 10%, transparent 95%);
+}
+.home-hero-art::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 55%, transparent, #fafafa 78%);
+}
+.home-hero-art span {
+    position: absolute;
+    display: block;
+    width: 155px;
+    height: 780px;
+    transform: rotate(-38deg);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #e8a33d22 65%,
+        #e8a33d42 98%,
+        transparent
+    );
+    border-right: 1px solid #e8a33d25;
+    filter: blur(0.3px);
+}
+.dark .home-hero-art {
+    opacity: 0.85;
+}
+.dark .home-hero-art::after {
+    background: radial-gradient(ellipse at 50% 55%, transparent, #090a0c 78%);
+}
+.dark .home-hero-art span {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #bd651018 55%,
+        #d77c293a 94%,
+        #e8a33d45 99%,
+        transparent
+    );
+}
+.home-hero-window::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+    inset: -35px -30px 30%;
+    background: radial-gradient(ellipse at 50% 0%, #e8a33d38, transparent 65%);
+    filter: blur(35px);
+}
+@media (prefers-reduced-motion: reduce) {
+    html:has(.logi-home) {
+        scroll-behavior: auto;
+    }
+    .logi-home *,
+    .logi-home *::before,
+    .logi-home *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Normal page scrolling advances the pinned example in both directions. */
+.logi-home .home-workflow-stage {
+    position: sticky;
+    --workflow-top: 80px;
+    top: var(--workflow-top);
+    padding-block: 12px 24px;
+    height: calc(100svh - var(--workflow-top));
+}
+.logi-home .home-workflow-layer {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 0.78fr 1.5fr;
+    align-items: center;
+    gap: 3rem;
+}
+.logi-home .home-workflow-visual {
+    height: 100%;
+    overflow: hidden;
+}
+.logi-home .home-workflow-visual > button {
+    height: 100%;
+}
+.logi-home .home-workflow-content img {
+    height: 100%;
+    object-fit: contain;
+}
+.logi-home .home-workflow-discord {
+    height: 100%;
+}
+@media (max-width: 1023px) {
+    .logi-home .home-workflow-copy ul {
+        display: none;
+    }
+    .logi-home .home-workflow-copy > span {
+        display: none;
+    }
+    .logi-home .home-workflow-copy h3 {
+        font-size: 1.35rem;
+    }
+    .logi-home .home-workflow-copy p {
+        margin-top: 8px;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    .logi-home .home-workflow-layer {
+        grid-template-columns: 1fr;
+        grid-template-rows: 130px minmax(0, 1fr);
+        align-items: start;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 639px) {
+    .logi-home .home-workflow-stage {
+        --workflow-top: 112px;
+    }
+}

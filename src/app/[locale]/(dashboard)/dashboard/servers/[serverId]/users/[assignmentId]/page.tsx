@@ -1,3 +1,4 @@
+import { RecheckPlayerNameButton } from "@/components/app/recheck-player-name-button"
 import { Activity, Shield, Skull, Swords, Target, Wrench } from "lucide-react"
 import { playerStatProfile } from "@/domain/player-stats/game-metrics"
 import { playerMetricLabels } from "@/lib/player-stat-presentation"
@@ -148,17 +149,24 @@ export default async function ServerUserDetailPage({
                     }
                     actions={
                         context.canAdmin ? (
-                            <PlayerAdminAccessButton
-                                serverId={server.id}
-                                playerId={user.discordId}
-                                playerName={user.name}
-                                initialIsAdmin={
-                                    server.adminAccessOverrides?.[
-                                        user.discordId
-                                    ] ?? false
-                                }
-                                dictionary={dictionary}
-                            />
+                            <div className="flex flex-wrap gap-2">
+                                <RecheckPlayerNameButton
+                                    serverId={server.id}
+                                    assignmentId={assignmentId}
+                                    dictionary={dictionary}
+                                />
+                                <PlayerAdminAccessButton
+                                    serverId={server.id}
+                                    playerId={user.discordId}
+                                    playerName={user.name}
+                                    initialIsAdmin={
+                                        server.adminAccessOverrides?.[
+                                            user.discordId
+                                        ] ?? false
+                                    }
+                                    dictionary={dictionary}
+                                />
+                            </div>
                         ) : undefined
                     }
                 />
