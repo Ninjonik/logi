@@ -6,9 +6,8 @@ browser to Logi; an active Logi session completes the redirect without another
 Discord sign-in. Cookies and signing secrets are never shared between sites.
 
 The provider is disabled by default. An operator must configure it and verify the
-target website before enabling it. Dashboard users need to sign in once after the
-durable-session upgrade. See the [operator contract](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/sso-provider-contract.md)
-for configuration, rollout, and validation requirements.
+target website before enabling it. See the [operator contract](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/sso-provider-contract.md)
+for configuration and session validation.
 
 ## Register a website
 
@@ -35,13 +34,13 @@ and creates a normal Logi session before returning to the website.
 
 ## Website integration
 
-| Purpose | Endpoint |
-| --- | --- |
-| OIDC discovery | `/.well-known/openid-configuration` |
-| Authorization | `/api/sso/authorize` |
-| Token exchange | `/api/sso/token` |
-| Userinfo | `/api/sso/userinfo` |
-| Public signing keys | `/api/sso/jwks` |
+| Purpose             | Endpoint                            |
+| ------------------- | ----------------------------------- |
+| OIDC discovery      | `/.well-known/openid-configuration` |
+| Authorization       | `/api/sso/authorize`                |
+| Token exchange      | `/api/sso/token`                    |
+| Userinfo            | `/api/sso/userinfo`                 |
+| Public signing keys | `/api/sso/jwks`                     |
 
 Use authorization code flow with PKCE **S256**, `openid profile` scopes, and fresh
 state and nonce values for each attempt. A maintained OIDC client should verify

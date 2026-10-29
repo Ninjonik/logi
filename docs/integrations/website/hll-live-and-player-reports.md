@@ -1,8 +1,5 @@
 # HLL live data and private player reports
 
-Implemented in PR #158. Production activation is separate from local acceptance.
-See the [Discord workflow evidence](evidence/2026-10-04-discord-workflows/README.md).
-
 ## HLL CRCON live contract
 
 `GET /api/v1/clan/hll-live/{connectionId}` requires an authenticated clan key with
@@ -104,14 +101,3 @@ private ticket text, reporter identities and Discord ticket side effects are
 **not exposed to website bearer keys**: they require live Discord membership,
 channel access and private-thread lifecycle checks. `/api/v1` has HLL live read
 parity; it does not gain a report export or a key-driven Discord reporting action.
-
-## Legacy workflow fixes in this increment
-
-`/notice` resolves canonical and legacy guild event keys, rejects conflicting
-guild aliases and requires bot authentication. Notice and `/link` interactions
-acknowledge privately before slow reads. `/close_ticket` refreshes guild ownership,
-role definitions and current staff membership before checking authority; a failed
-refresh withholds closure. Application closing cards show both outcome and reason. Platform
-link mutations require the exact linked Discord subject; imported numeric IDs
-cannot become account authority, and equivalent Steam aliases/verified ownership
-are checked before a manual link.

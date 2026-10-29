@@ -1,10 +1,6 @@
-# Website handoff 0.7 — scoped Discord membership
+# Scoped Discord membership
 
-Date: 2026-09-28. Extends [0.6 synchronization](../v0.6/README.md) and
-[0.5 game data](../v0.5/README.md). OpenAPI version: **1.5.0**.
-Implementation scope: W2 + I1. This is source and offline evidence, not hosted
-acceptance. PR #158 pins the exact tested revision. The website keeps its own
-backend, sessions, authorization rules and publication consent.
+Membership reads use explicit resource and game grants, exact Discord subjects, current role policy, and bounded observation freshness. Login, membership evidence, and public-profile consent are separate concerns.
 
 ## Configure the two access gates
 
@@ -104,10 +100,7 @@ Fail closed for protected website actions in every unavailable/denied case.
   them, gateway add/update/remove events keep observations current. Direct
   REST freshness is independent of this cadence.
 
-Departed subjects remain durable tombstones. No destructive expiry of member
-evidence is introduced in this milestone; operator privacy/retention procedures
-still require deployment acceptance. This does not create consent to publish
-member identities.
+Departed subjects retain departure evidence. Membership observations do not grant public-profile publication consent.
 
 The website should use at most 60-second observations for privileged writes and
 at most five minutes for protected reads, recheck age at the decision time, and
@@ -131,50 +124,6 @@ an `upsert` observation (including `left`/`unknown`), not a removal of its ident
 It computes 60-second freshness without a network refresh; use the direct lookup
 when fresh provider evidence is needed.
 
-Raw observations and projected assignment changes append transactional records.
-The assignment writers are `userAssignments` (including import/reassignment),
-`publicApi`, `groups`, `serverSetup`, `migrations` and `players.mergeUsers`; their mutations use the
-same integration decorator. Assignment deletion invalidates the membership
-projection with `upsert`, so the next record has `assignment: null`. Policy/epoch
-changes allocate a global revision and force cursor reset instead of fanout.
-The returned revision is the maximum of subject, policy and epoch revisions.
+Assignment projections resolve the explicit `users.discordId` binding and stable Logi assignment ID. Unlinked imported IDs are not Discord subjects. Conflicting aliases project `assignment: null` until repaired. Identity creation, relinking, unlinking, and deletion invalidate affected subjects.
 
-**Identity correction, 2026-09-30:** assignment projections resolve the explicit
-`users.discordId` binding and the corresponding stable Logi assignment ID.
-Unlinked imported IDs are never substituted for Discord subjects. Profile
-creation, relinking, unlinking and deletion invalidate affected old/new subjects,
-including existing legacy assignment aliases. Conflicting alias assignments
-project `assignment: null` until repaired. The wire DTO is unchanged.
-
-Consumers upgrading from an earlier PR checkpoint must capture a new `start=now`
-cursor, refetch each authorized exact-member scope, then drain all pages through
-that cursor. Old logs may contain imported IDs that did not reach an exact-subject
-subscriber; this producer fix does not rewrite historical logs. Always follow
-`hasMore`, including when a filtered page contains no items.
-
-Membership changes are read by polling the feed. The **`membership.changed`**
-and `integration.changed` webhooks are no longer emitted (October 2026); a
-subscription that lists them is still accepted and receives nothing for them.
-Authenticated lookup and cursor polling are authoritative.
-
-## Activation and remaining ownership
-
-Deploy schema/functions, web and the bot from the same reviewed version. New
-tables start empty; absence of evidence is unknown. Run normal Convex codegen for
-the target deployment; new code uses function references without hand-editing
-generated artifacts. The old bot full-sync endpoint (`discordSync:syncMemberAccess`)
-has been removed; no current bot called it.
-Restart the bot to adopt fenced batches and invalidate pre-restart observations.
-Verify `GuildMembers` intent, bot guild access and time synchronization in an
-authorized test environment. No new Discord role write is introduced by I1.
-
-The consumer owner implements I2 and W1/W3/W4 in `ValkyriaWDG/www`; no website
-files changed here. I3 managed-role reliability, I5 verified Steam linking and
-D4 reviewed results remain separate. Optional Logi OIDC remains under separate
-private acceptance; this milestone neither replaces Discord OAuth nor activates
-an SSO provider.
-
-Evidence: [synthetic wire examples](./fixtures.json), [validation](./validation.md),
-[actual component screenshots](./ui-validation.md),
-[delivery decisions](./delivery-decisions.md). Reject `differentGuild` when
-the configured source is the fixture guild, even if the Discord subject matches.
+The changes endpoint accepts a `start=now` boundary; replaying a cursor returns `410 reset_required`. Re-read the authorized exact-subject scope instead of relying on historical replay. `membership.changed` and `integration.changed` webhook subscriptions receive no deliveries for those event types. Use authenticated membership lookups for current authorization evidence.

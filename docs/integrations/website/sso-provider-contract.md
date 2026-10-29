@@ -1,8 +1,6 @@
 # Optional Logi identity provider contract
 
-Status: implementation for isolated qualification. Provider activation is an
-explicit, separate operator step. This document specifies the consumer contract;
-it does not establish production deployment or hosted acceptance.
+The provider is optional and enabled through explicit runtime configuration.
 
 ## Authentication and authorization
 
@@ -42,14 +40,14 @@ status, roles, imported aliases and platform accounts are separate data.
 
 ## Runtime configuration
 
-| Variable | Runtime | Requirement |
-| --- | --- | --- |
-| `SITE_URL` | Next.js | Fixed HTTPS issuer origin, no trailing slash/path/query |
-| `JWT_SECRET` | Next.js | Existing strong dashboard HMAC signing secret |
-| `INTERNAL_AUTH_SECRET` | Next.js and Convex | Matching secret for trusted internal gateways |
-| `LOGI_SSO_ENABLED` | Next.js and Convex | Exactly `true` to enable; absence/other values disable |
-| `LOGI_SSO_PRIVATE_JWK` | Next.js only | Private RSA JWK, 2048–8192 bits, unique `kid`, RS256 signing use |
-| `LOGI_SSO_ALLOW_LOOPBACK_HTTP` | Next.js and Convex | Default false; explicit isolated-development opt-in only |
+| Variable                       | Runtime            | Requirement                                                      |
+| ------------------------------ | ------------------ | ---------------------------------------------------------------- |
+| `SITE_URL`                     | Next.js            | Fixed HTTPS issuer origin, no trailing slash/path/query          |
+| `JWT_SECRET`                   | Next.js            | Existing strong dashboard HMAC signing secret                    |
+| `INTERNAL_AUTH_SECRET`         | Next.js and Convex | Matching secret for trusted internal gateways                    |
+| `LOGI_SSO_ENABLED`             | Next.js and Convex | Exactly `true` to enable; absence/other values disable           |
+| `LOGI_SSO_PRIVATE_JWK`         | Next.js only       | Private RSA JWK, 2048–8192 bits, unique `kid`, RS256 signing use |
+| `LOGI_SSO_ALLOW_LOOPBACK_HTTP` | Next.js and Convex | Default false; explicit isolated-development opt-in only         |
 
 The private RSA JWK must contain the private key material and a bounded key ID.
 The runtime imports and self-verifies the configured pair before enabling the
@@ -91,30 +89,11 @@ affected grants. User generations make all-session revocation constant-size.
 Expired codes, tokens and sessions are pruned in bounded batches after a one-day
 retention delay. Revocation is immediate; cleanup is not required for enforcement.
 
-## Coordinated rollout and rollback
+## Enablement and signing keys
 
-1. Keep the provider disabled. Back up configuration and register the target
-   consumer's exact callback; use a new client secret stored only by its backend.
-2. Deploy compatible Convex schema/functions and the dashboard together. Existing
-   unbound dashboard JWTs require one re-login. Existing unbound codes and access
-   tokens are not carried over; nullable migration fields permit the schema
-   upgrade without treating old records as authenticated sessions.
-3. Configure the operator signing key, fixed issuer and both enable flags. Run
-   local maintained-client interoperability, session replay/revocation and actual
-   Convex transaction contention checks before target activation.
-4. On the website, verify discovery/JWKS, state/nonce, ID-token claims, closed
-   userinfo binding, protected-request revalidation and scoped membership access.
-   Verify role loss and central logout while a website session already exists.
-5. Activate only after the actual hosted callback/cookie setup and role policies
-   have been accepted. Local synthetic or in-memory tests do not prove them.
+Register the consumer with its exact callback URL and a backend-held client secret. Configure the issuer and private RSA JWK, and set `LOGI_SSO_ENABLED=true` in both Next.js and Convex. Disabled or incomplete configuration returns 503.
 
-Disable both provider flags to stop new SSO issuance and subsequent userinfo
-validation. Websites must deny protected access when validation is unavailable.
-Keep the durable dashboard-session implementation and database records during
-rollback. Do not restore acceptance of obsolete session JWTs or grants. RSA key
-rotation currently replaces the active key; overlap of multiple signing keys is
-not implemented, so coordinate consumer re-login and caches rather than promising
-a seamless overlapping-key rollout.
+Disabling the provider stops new issuance and userinfo validation. Consumers deny protected access when current validation is unavailable. RSA rotation replaces the active signing key; there is no overlapping multi-key signing window. Consumers account for key caches and renewed sign-in when rotating keys.
 
 ## API surface decision
 

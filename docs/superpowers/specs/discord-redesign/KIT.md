@@ -1,16 +1,13 @@
-# Discord redesign: the W0 kit (developer note)
+# Discord message kit
 
-Everything the later workstreams build on: one message model, one bot adapter,
-one dashboard preview, the split clan-language copy, the interaction registry
-and the `/api/v1` settings slices. Read this before writing any bot message,
-command reply or Discord preview. Never hand-roll a container.
+The shared message model, bot adapter, dashboard preview, clan-language copy, interaction registry, and settings slices.
 
 ## 1. Layers
 
 ```text
 src/domain/discord-messages/message-view.ts        MessageView types, standard cards, panel frame, paging
 src/domain/discord-messages/message-layout.ts      view + clan copy -> Components V2 tree (shared text helpers)
-src/domain/discord-messages/message-validation.ts  board rules + Discord limits
+src/domain/discord-messages/message-validation.ts  message rules + Discord limits
 src/lib/clan-language/{core,events,panels,application,commands,system}.ts  copy in cs/en/de
 discord-bot/src/ui/message-kit.ts                  layout -> discord.js builders and payloads
 discord-bot/src/ui/replies.ts                      private replies, error path, errors-channel hook
@@ -68,14 +65,14 @@ const view = panelFrame({
 - **Accent:** `"clan"` (clan colour, default `#E8A33D`), `"system"` (grey
   `#80848E`, error log and service status only) or `{ custom: "#RRGGBB" }`.
   State never changes the bar; use chips. A paused view (`paused`) keeps its
-  bar and shows the grey (`neutral`) "Pozastaveno" chip (L3-54).
+  bar and shows the grey (`neutral`) "Pozastaveno" chip.
 - **Lead image:** `view.lead` (a `MessageMedia`) is a full-width image drawn
   above the header: the style A score image or the style B banner of a server
-  panel and of "Naše servery" (P7). It counts as content and is checked like
+  panel and of "Naše servery". It counts as content and is checked like
   any other media. `header` is optional: the compact style C has none.
 - **Chips:** tones `success`, `warning`, `danger`, `neutral`, `info`. The bot
   writes them as a tone emoji and the bold label (`🟢 **Živě**`); pass
-  installed application emoji with `chipIcons` (W2). The preview draws pills.
+  installed application emoji with `chipIcons`. The preview draws pills.
 - **Blocks:** `text` (markdown), `meta` (lines whose icons follow the clan's icon
   density: `{ text, line: "start" }` or `{ text, icon, iconAlways }`), `list`
   (`marker: "number" | "bullet" | "none"`), `fields` (title, chip, text, as the
@@ -106,7 +103,7 @@ import {
     replyUnknownError,
 } from "../ui/replies"
 
-const copy = getMembershipMessages(language) // your workstream's copy module
+const copy = getApplicationMessages(language) // membership copy
 await replyError(
     interaction,
     notAllowedCard({
@@ -123,7 +120,7 @@ await replyError(interaction, errorCard({ title, body, action: retryButton }), {
 }) // ≤ 1 button
 
 // Only an admin can fix it: the person reads "Správci dostali upozornění.",
-// the errors channel (error-reporting.ts, look unchanged until W9) gets the details.
+// the errors channel (error-reporting.ts) gets the details.
 await replyAdminFixableError(
     interaction,
     {
@@ -180,7 +177,7 @@ hand-written ↗ (Discord draws it), unique custom IDs, select and gallery
 limits, 4,000 characters of text and 40 components. Add your own checks to
 tests with `validateMessageView(view, messageKitLayoutOptions({ language }))`.
 
-Managed messages no longer carry the "Automatic updates" button (L1-B15):
+Managed messages no longer carry the "Automatic updates" button:
 ownership is the stored message ID, and an uncertain create is recovered by an
 invisible component `id` (`discord-bot/src/sync/publication-marker.ts`).
 
@@ -189,16 +186,16 @@ invisible component `id` (`discord-bot/src/sync/publication-marker.ts`).
 `src/lib/clan-language/` replaced `clan-language.ts`. Each module exports its
 typed copy and one getter; the getter adds `locale`.
 
-| Module           | Getter                                                                                                | Owner                                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `events.ts`      | `getEventMessages`                                                                                    | W6 (announcements, rosters, reminders, DMs)                                            |
-| `panels.ts`      | `getPanelMessages`                                                                                    | W1 (calendar panel)                                                                    |
-| `application.ts` | `getApplicationMessages`                                                                              | W7a (clan application, decisions, `/close_application`)                                |
-| `commands.ts`    | `getCommandMessages`                                                                                  | W8 (commands, stats, /server-status)                                                   |
-| `system.ts`      | `getSystemMessages`                                                                                   | W0 kit (`kit`, `paging`, `errors`, `publication`), W9 (team requests, system messages) |
-| `core.ts`        | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` | W0                                                                                     |
+| Module           | Getter                                                                                                | Coverage                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `events.ts`      | `getEventMessages`                                                                                    | (announcements, rosters, reminders, DMs)                                         |
+| `panels.ts`      | `getPanelMessages`                                                                                    | (calendar panel)                                                                 |
+| `application.ts` | `getApplicationMessages`                                                                              | (clan application, decisions, `/close_application`)                              |
+| `commands.ts`    | `getCommandMessages`                                                                                  | (commands, stats, /server-status)                                                |
+| `system.ts`      | `getSystemMessages`                                                                                   | kit (`kit`, `paging`, `errors`, `publication`), (team requests, system messages) |
+| `core.ts`        | `resolveClanLanguage`, `getIntlLocaleForClanLanguage`, `formatClanDateTime`, `formatClanRelativeTime` |                                                                                  |
 
-Edit only your module; keep cs (board verbatim), en and de in step; bot copy
+Edit only your module; keep cs, en and de in step; bot copy
 says "ty"/"du". There is no barrel: import the module you need.
 
 ## 6. Dashboard preview
@@ -304,7 +301,7 @@ in `docs/integrations/website/configuration-coverage.md`.
   both close commands.
 - `DEFAULT_MESSAGE_ACCENT_COLOR` / `DEFAULT_MESSAGE_ACCENT_HEX` (`#E8A33D`) and
   `SYSTEM_MESSAGE_ACCENT_COLOR` (`#80848E`) in `format.ts`.
-- `discordWeekdayTimestamp(iso, locale, timeZone)` in `format.ts`: the boards'
+- `discordWeekdayTimestamp(iso, locale, timeZone)` in `format.ts`: the shared
   "ne 11. 10. · 20:00" as `ne <t:…:d> · <t:…:t>` (weekday in the clan language
   and zone, date and time as Discord timestamps).
 - `factionEmblem(label, emoji)` (`faction-emblem.ts`): installed application
@@ -326,5 +323,5 @@ in `docs/integrations/website/configuration-coverage.md`.
 
 Panels (live servers, "Naše servery", results, calendar, competition tables)
 are built on `panelFrame` and documented, with their dashboard routes, Convex
-functions, bot worker and the hand-offs to W3, W4 and W5, in
+functions and bot worker in
 [PANELS-API.md](PANELS-API.md).

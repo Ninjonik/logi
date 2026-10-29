@@ -62,7 +62,7 @@ Warcon dashboard/Discord statistics retain their Wardogs behavior. The website
 can build its HLL presentation from this API; this change does not add another
 Logi dashboard screen or change public `/players` profile publication policy.
 
-## Collection, retention and activation
+## Collection and retention
 
 The existing `gameDataCollector:collectHistoryDue` CRCON walk remains the only
 upstream collector. Its fenced `gameDataHistory:commit` stores the normalized
@@ -93,17 +93,7 @@ is read-only and deliberately cannot request destructive retention writes. The
 backfill is deployment maintenance, not a website API command or dashboard
 action; no new public write grant is introduced.
 
-Operator activation requires deploying these functions/schema to the intended
-backend, a configured HLL source with the existing collector enabled, and the
-explicit website history grant. Enabling a website grant does not enable a
-collector or establish complete historical coverage. Verify actual public read
-pages and source health after deployment; local tests do not prove activation.
-
-During a rolling application/Convex deployment, both history read entrypoints
-and retention reads/writes omit the backend `gameId` argument for Wardogs, so
-the old deployed validators still accept their original RPC shape. HLL always
-sends `gameId: "hell_let_loose"`; an old backend returns honest unavailability
-until upgraded. There is no retry against the Wardogs default after a failure.
+Collection requires an enabled HLL source; website reads require their explicit history grant. Granting read access does not enable collection or guarantee complete historical coverage. Wardogs requests may omit `gameId`; HLL requests explicitly select `hell_let_loose` and never fall back to Wardogs after a failed read.
 
 ## Bounded seed from already collected sessions
 
@@ -159,65 +149,14 @@ administrator may also invoke the same internal function through their establish
 admin client. Do not infer
 a target from a developer's loopback configuration.
 
-## Maintainer deployment and readback
-
-Use the verified merged revision supplied with the release handoff. On the
-maintainer's configured host, select **one** target through a restricted file:
-for hosted production, a deployment-scoped production `CONVEX_DEPLOY_KEY` for
-the exact intended backend; for self-hosted, the explicit URL/admin-key pair
-above. Do not combine selectors or reuse a developer's loopback `.env.local`.
-No new website key is required when the existing key already grants
-`server-game-history` for `hell_let_loose` (including the existing `fullResults`
-configuration group). The earlier HLL 403 can come from the old hardcoded
-Wardogs authorization, so do not expand a key solely to mask an old deployment.
-
-From that verified checkout and with the target file outside the repository:
-
-```sh
-bun install --frozen-lockfile
-bunx convex deploy --env-file /secure/logi-production.env --dry-run
-bunx convex deploy --env-file /secure/logi-production.env
-```
-
-Inspect the printed backend target and schema/index changes before accepting
-deployment. These commands are for the deployment owner; this feature's local
-test run does not execute them. If the deployment tool cannot prove the intended
-target or needs missing credentials, stop. Do not fall back to plain
-`bunx convex deploy` or start a local deployment as a substitute.
-
-After deployment, run a complete dry-run backfill, then a complete apply scan
-using the matching target mode above. A budget exit is **incomplete**: resume
-with the saved cursor until `complete: true`. Review skipped rows; they are
-not promised as archived. Then use the existing backend website key to read:
-
-```http
-GET https://logibot.tech/api/v1/clan/server-game-history?game=hell_let_loose
-GET https://logibot.tech/api/v1/clan/server-game-history?game=wardogs
-Authorization: Bearer <existing-backend-history-key>
-```
-
-Keep that key in the existing secret store/environment, not shell arguments,
-screenshots or logs. Verify 200, the exact game/provider on every returned
-record, expected workspace, real map/time/player facts and original observation
-times. Follow **all** HLL cursors at one revision, including empty pages; on 410
-discard the partial scan and retry. Confirm `id` details for one retained record
-in its own game and denial/not-found under the other game. Verify the existing
-Wardogs retained records still read successfully. Compare scalar counts and
-oldest/newest retained times with the backfill summary; do not log raw IDs/names
-or claim upstream lifetime coverage from backfill completion. Finally activate
-the website history reader and verify both public views against these real
-responses. Backend deployment, data seeding and public website acceptance are
-three distinct checks.
-
 ## Exact public player identity when consuming reviewed statistics
 
 This history API is separate from the public profile totals. A website reading
 `/api/v1/public/players/{discordSubject}?game=hell_let_loose&identity=discord`
-now selects only a unique exact `users.discordId` record. It never falls back
+selects only a unique exact `users.discordId` record. It never falls back
 to a colliding legacy `users.id`; missing/duplicate exact records return 404.
-The underlying `publicProfiles:getPlayer` adds an optional `identifierKind:
-"discord"` argument. Default calls omit it, preserving the old Convex validator
-and historical lookup during a rolling deploy. The optional HTTP selector must
+The underlying `publicProfiles:getPlayer` accepts an optional `identifierKind:
+"discord"` argument. Default calls retain the historical identifier lookup. The optional HTTP selector must
 occur exactly once and the path subject must contain 17–20 decimal digits.
 
 An exact full profile additionally returns `identityBinding`, lowercase hex64:
@@ -239,25 +178,3 @@ identifier, selected game and exact/legacy mode. Its existing 24-hour/tagged
 cache and public HTTP 60-second policy remain unchanged; a new fetch is not a
 promise that a provider has just recollected gameplay. Totals retain their public
 qualification rules across teams; `recentMatches` stays limited to the latest 30.
-An older Convex deployment rejects the explicit selector and the new Next route
-returns 503 without a fallback. Deploy the matching Convex boundary before
-claiming exact identity statistics active. Local collision/duplicate/selector/
-cache/RPC-shape tests are synthetic evidence, not production verification.
-
-## Local verification
-
-Wardogs provider health remains a separate acceptance boundary. The last owner
-observation before this handoff returned 503 `provider_timeout` for both Warcon
-health and capabilities through the approved backend key. A stored-key connection
-test confirms credential acceptance only; it does not establish a live provider
-feed. The deployment owner should inspect Warcon's service health, upstream
-timeouts and collection logs, then re-read health/capabilities and actual live
-status before claiming recovery. This change does not restart Warcon or fabricate
-live status; existing retained Wardogs games remain usable during the outage.
-
-Synthetic tests cover provider/game pairing, ordered completion, unique players,
-zero/unknown metrics, absence of inferred results/playtime, explicit HTTP/Convex
-grants, game-bound cursors/details/revisions, legacy Wardogs compatibility,
-collector fencing/replay, bounded seed pagination, stale-generation skips,
-atomic identity-conflict rollback and per-game retention. Real production data,
-credential access and deployment are separate operator acceptance steps.

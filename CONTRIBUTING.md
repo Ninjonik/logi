@@ -2,7 +2,7 @@
 
 ## Principles
 
-Contributions should move the codebase toward:
+Contributions follow these principles:
 
 - isolated business logic
 - smaller framework entrypoints
@@ -36,11 +36,6 @@ Then edit the correct layer first.
 4. Keep Convex, web routes, and Discord handlers thin.
 5. Run tests and typecheck before finishing.
 6. Update the matching public wiki page in `content/` whenever a user-visible feature, permission, workflow, condition, or screen changes. Add new wiki coverage for new features.
-
-Convex validates existing documents during deployment. Keep retired persisted
-fields optional until their stored values have been migrated or expired and
-removed. Application drafts, for example, may still contain `completedQuestions`
-and `language`; current code uses `completedWindows` and the workspace language.
 
 ## Testing Commands
 
@@ -94,16 +89,6 @@ For business changes, include tests for:
 
 If a piece of code is hard to test, that is usually a sign it belongs in a different layer.
 
-## Refactor Guidance
-
-If you touch older framework-heavy code:
-
-1. avoid expanding the old pattern
-2. extract the rule into `src/domain` if practical
-3. let the old file delegate to the new rule
-
-Incremental migration is preferred over big rewrites.
-
 ## Current Runtime Split
 
 - `src/domain` owns pure rules such as event state, signup rules, roster sync, attendance transitions, and score calculation.
@@ -126,7 +111,7 @@ Incremental migration is preferred over big rewrites.
 - Put adapter and normalization tests in `src/infrastructure` when mapping is the risk.
 - Add integration tests only for important runtime wiring paths.
 
-## Current Exception
+## Namespace changes
 
 - No intentional compatibility shim should be preserved just to keep an old Convex module namespace alive. Update the callers instead.
 

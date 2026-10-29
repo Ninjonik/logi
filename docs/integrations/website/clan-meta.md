@@ -1,26 +1,18 @@
 # Clan meta: counts from a maintained summary
 
-`GET /api/v1/clan/meta` is the website's sync entry point: it is called often,
-by every connected website, before and between the resource sweeps. Until
-PR #191–#193 landed it counted the clan's `events` (with a roster read per
-event), `groups`, `userAssignments`, `calendarItems`, `stratmaps`,
-`topicPresets`, `squadPresets`, `matchStats`, `articles`, `apiKeys` and
-`guildGames` on **every call**, which cost about 1.1 s at p50 with five
-parallel callers and a thousand events on the self-hosted backend. The
-request now serves those counts from a per-clan summary document that Logi
-maintains off the request path (ARCHITECTURE.md, "Convex hot paths").
+`GET /api/v1/clan/meta` serves workspace identity, enabled games, limits, and counts from a maintained per-clan summary. Counts refresh off the request path at most once a minute.
 
 ## What the endpoint promises
 
-The response shape is unchanged; one field is added.
+The response includes the following fields.
 
 | Field                                     | Source                                           | Freshness                                                           |
 | ----------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
 | `guild.id`, `guild.guildId`, `guild.name` | the clan document                                | current on every call                                               |
 | `enabledGames`                            | `guildGames`, through the `guildId_gameId` index | current on every call                                               |
-| `updatedAt` (sync marker)                 | the clan document's own `updatedAt`              | current on every call; unchanged from before                        |
+| `updatedAt` (sync marker)                 | the clan document's own `updatedAt`              | current on every call; current record value                         |
 | `counts`                                  | the clan's `clanMetaSummaries` row               | recomputed at most once a minute; may lag the records by up to 60 s |
-| `computedAt` (**new**)                    | the same row                                     | when `counts` were computed (ISO 8601)                              |
+| `computedAt`                              | the same row                                     | when `counts` were computed (ISO 8601)                              |
 | `limits`, `serverTime`                    | the route                                        | current on every call                                               |
 
 `counts` keeps its thirteen keys (`events`, `groups`, `rosters`,
@@ -37,7 +29,7 @@ expect them to move only once a minute.
 
 - `clanMetaSummaries` (one row per clan: `guildId`, the stored tallies,
   `computedAt`, `revision`) is written only by `clanMeta:refreshClanMeta`,
-  which runs the old scan once, through the guild indexes, and stores the
+  which computes counts, through the guild indexes, and stores the
   result. It checks the stored `computedAt` again before it writes, so
   concurrent calls write once.
 - `publicApiReads:getClanMeta` reads the key (`apiKeys.keyHash`), the clan
@@ -60,11 +52,6 @@ expect them to move only once a minute.
 - Scoped keys without the `meta` grant, revoked and unknown keys are rejected
   by both the read and the refresh before any further read.
 
-## Operator notes
+## Summary initialization
 
-- Deploy with `bunx convex deploy`: the change adds the `clanMetaSummaries`
-  table and the `clanMeta` module. No migration: the first meta call of each
-  clan after the deployment computes its summary synchronously (one scan,
-  about what a single old call cost) and every later call reads the row.
-- Nothing recomputes a clan's summary while no website calls its meta, so an
-  idle clan costs nothing; a busy one costs one scan a minute at most.
+A missing summary is computed synchronously on its first request. Stale summaries refresh only when requested, so idle clans do not incur scheduled scans. Unknown or revoked keys and missing grants are rejected before summary access.

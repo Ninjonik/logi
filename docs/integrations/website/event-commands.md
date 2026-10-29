@@ -8,10 +8,7 @@ Create/update and editor reads accept `timeOfDay` (`day`, `morning`, `dusk`, `ev
 
 The website owns presentation, publication and its local session. Logi owns the
 operational event. A website write creates or changes the same native event used
-by the Logi dashboard and Discord workflows, then the existing revision feed
-invalidates its `event-summaries`, `match-summaries` and `result-summaries` records.
-Consumers persist the returned event ID and use the existing cursor/bootstrap
-protocol to project changes from any Logi writer. Do not mirror writes back into
+by the Logi dashboard and Discord workflows, and updates the corresponding summary projections. Consumers persist the returned event ID and refresh scoped collections; cursor replay returns `410 reset_required`. Do not mirror writes back into
 a second operational match table.
 
 This contract supports Hell Let Loose and Wardogs. It does not reduce a Wardogs
@@ -83,10 +80,10 @@ administrator checks apply to the form as to any other caller.
 
 The [generated OpenAPI endpoint](/api/v1/openapi.json) includes these operations:
 
-| Request                                                  | Purpose                                                   |
-| -------------------------------------------------------- | --------------------------------------------------------- |
+| Request                                                  | Purpose                                                           |
+| -------------------------------------------------------- | ----------------------------------------------------------------- |
 | `POST /api/v1/clan/event-commands?game=wardogs`          | Create, update, cancel, delete or refresh one match team snapshot |
-| `GET /api/v1/clan/event-commands/{eventId}?game=wardogs` | Read the bounded editor and current revision              |
+| `GET /api/v1/clan/event-commands/{eventId}?game=wardogs` | Read the bounded editor and current revision                      |
 
 Use `Authorization: Bearer <command-service-key>` and
 `X-Logi-Actor-Token: <current-opaque-SSO-access-token>` from the website backend.
@@ -189,13 +186,13 @@ when the event can no longer be edited. All output objects are closed schemas.
 Native match events can reference teams of Logi's global team catalogue (one
 per game, maintained by Logi's global administrators); the catalogue, its read
 grant and the consumer fixtures are described in the
-[global team catalogue handoff](v0.15/README.md). Team assignment adds one
+[global team catalogue reference](v0.15/README.md). Team assignment adds one
 optional event field, one operation and one error code. SSO actor checks,
 per-game event-write policy, `Idempotency-Key` and `expectedRevision` semantics
 are unchanged, and an API key alone is still not a writing actor: bearer-key
 `POST`/`PATCH /api/v1/clan/events` writes ignore `matchTeams` and keep the
 saved assignments (see the
-[handoff](v0.15/README.md#actor-backed-event-commands)).
+[team reference](v0.15/README.md#actor-backed-event-commands)).
 
 **`event.matchTeams` on create and update.** The `event` object of `create` and
 `update` accepts an optional `matchTeams` array. Each entry carries identity,
@@ -344,7 +341,7 @@ only. A reminder sends Discord DMs to clan members, so an API key must not be
 able to trigger it; excuses only change scoring, which the API does not do.
 Both are deliberately excluded from `/api/v1`. The match page's reminder
 delivery notice (which players a manual or scheduled sign-up or attendance
-reminder did not reach because their Discord DMs are closed, board L2-60..64)
+reminder did not reach because their Discord DMs are closed)
 is excluded with them: it names members' DM settings for the clan's managers
 in the dashboard and has no API lifecycle. Excuses stay visible to API
 readers: an excused player has an `absenceNotices` entry with an empty reason
@@ -352,55 +349,6 @@ and `excusedBy` set to the admin's Discord ID, and a roster read includes
 `meetingAttendance` (when attendance was last read from the meeting voice
 channel, the channel, how many people were in it and which roster players were
 found).
-
-## Verification and limits
-
-### Match deletion (2026-10-11)
-
-`operation: "delete"` takes `eventId` and `expectedRevision` and uses the same
-current SSO actor policy and idempotency key as an update. It is available after
-the meeting and after conclusion. A stale revision or a different workspace/game
-is rejected before any change. A successful receipt remains replayable after the
-event row is deleted; replays still recheck current authorization.
-
-Deletion removes the native event and event-owned operational data, roster and
-event-specific result records. Shared stratmaps and competition fixtures are
-detached. Existing occurrences are detached from a deleted series source and
-kept. Independently collected game sessions and aggregate player statistics are
-kept. Integration notifications include `remove` for the event summaries and
-other affected projections.
-
-Discord removal is asynchronous. The transaction snapshots only event-owned
-message IDs, threads, squad voice channels, scheduled events and attendee/reserve
-roles into `eventDeletionRequests`. The bot polls every 30 seconds, takes a fenced
-five-minute lease and removes resources idempotently (404 is success). Errors
-retry with backoff up to ten attempts; exhausted requests remain `failed` for
-operator inspection, including a bounded error code. Shared Discord channels
-and unrelated roles are never deletion targets. Local tests cover tenant/session
-denial, dependent cleanup, revision/replay, lease fencing and Discord failure
-retries; provider deletion requires live bot acceptance.
-
-Automated source tests cover domain validation; strict HTTP envelopes and
-credential hashing; policy setup/CSRF; final-transaction authorization; 11
-revocation scenarios on receipt replay; optimistic concurrency; rollback when
-receipt persistence fails; native hidden-field preservation; and cancellation
-without scoring. Run:
-
-```shell
-node --import tsx --test src/domain/events/website-command.test.ts src/infrastructure/convex/website-event-commands.test.ts src/infrastructure/convex/event-match-teams.test.ts src/lib/api/website-event-command-route.test.ts src/app/api/v1/openapi.json/route.test.ts
-npm run typecheck
-```
-
-On 2026-10-02, a guarded local Next HTTP server and fresh isolated Convex backend
-passed 22 runtime checks, including actual local SSO authorization/token
-exchange, eight concurrent identical creates producing one event/receipt,
-two concurrent updates with one winner/one conflict, replay denial after role,
-epoch, central session and service-key changes, cancellation and visibility
-through the summary API. The exact tested source hashes and sanitized HTTP
-assertions are in the [local acceptance bundle](v0.13/evidence/README.md); source
-hashes were stable through the run. Discord observations were synthetic trusted gateway fixtures.
-This proves the local HTTP/transaction path, not production deployment, live
-Discord role delivery, hosted SSO acceptance or website browser integration.
 
 ### Match forum cleanup
 

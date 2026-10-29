@@ -1,17 +1,10 @@
 # Game servers and API keys managed by workspaces
 
-- Date: 2026-10-04
-- Status: implemented and covered by synthetic tests; **not deployed**. Live
-  acceptance with real provider keys (Valkyria) is still to be done by the owner.
-- Scope: HLL CRCON and Wardogs Warcon/RCON sources, their provider keys, the
-  collectors and live reads that use them. Login/SSO and website permissions are
-  unchanged and out of scope.
-
 A workspace administrator connects a game server in **Settings → Game
 servers** with a name, the game, the provider, the HTTPS address, the server ID at
 the provider and the real API key. Logi tests the connection, stores the key
 encrypted and only then starts collection. No environment variable per team or
-server is needed, and no operator involvement after the one-time activation.
+server is needed, after the operator has configured the shared encryption keyring.
 
 ## Architecture
 
@@ -110,7 +103,7 @@ a URL, `localStorage`, server-rendered props, analytics or logs.
 | Operator catalog entry with `secretRef`, no stored key              | —                     | `legacy_env`   | yes, from that variable         |
 | Operator catalog entry without `secretRef`                          | —                     | `none`         | only providers that need no key |
 | Workspace registration created now                                  | `encrypted` or `none` | same           | needs a key that passed a test  |
-| Workspace registration from before this change, `secretRef` set     | absent                | `legacy_env`   | **no**                          |
+| Legacy workspace registration, `secretRef` set                      | absent                | `legacy_env`   | **no**                          |
 
 A pre-existing workspace registration named its variable itself, so it could
 have named another workspace's key (and pointed it at its own host). Such rows
@@ -160,8 +153,7 @@ returned.
 | Wardog Servers directory | the normal public read          | the server is listed                              |
 
 The CRCON check assumes the key's CRCON user may view connection information
-(`can_view_connection_info`); this is documented in the UI and is part of the
-pending live acceptance.
+(`can_view_connection_info`).
 
 ## Collection, rotation and removal
 
@@ -289,10 +281,6 @@ operator can: `npx convex run gameDataCredentialMigration:removeOperatorSourceKe
 deletes the stored key and stops collection; restart it deliberately with
 `gameData:configure`.
 
-A migration `conflict` caused by a registration from before this change that
-names the operator's variable is resolved by removing or re-keying that
-registration first.
-
 ### Recovery and rollback
 
 - A database backup is restorable only together with a keyring that contains
@@ -312,73 +300,3 @@ Credential management is deliberately **not** part of `/api/v1`: sending provide
 keys to websites or bots is exactly what this design forbids. The existing
 read-only snapshot and health resources are unchanged and never contain keys,
 ciphertext or addresses.
-
-## Security review
-
-| Threat                                              | Mitigation                                                                                                                                                       | Residual risk                                                                             |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| A workspace borrows another workspace's key         | No variable names from workspaces; legacy rows disabled; AAD binds workspace and source; workspace + reference checked on every path                             | none known                                                                                |
-| Key redirected to another host after an edit        | Identity is immutable; AAD includes canonical origin and server ID                                                                                               | none known                                                                                |
-| SSRF through the test                               | Collector transport: HTTPS, pinned DNS, public addresses only, no redirects, path allowlist, size and time limits, quotas; category-only answers                 | An administrator can probe allowlisted paths on public HTTPS hosts within the quota       |
-| Plaintext in Convex args, logs, errors or responses | Only ciphertext crosses into Convex; exceptions are mapped to codes; sentinel tests scan database rows, list results, reports, recorded calls and console output | The key is in Next and action memory during a request                                     |
-| Stale worker after rotation or removal              | Generation checks in the envelope query and every write                                                                                                          | none known                                                                                |
-| Database or backup leak                             | Ciphertext useless without the keyring, which is stored elsewhere                                                                                                | Whoever holds both runtimes' environment can decrypt                                      |
-| Keyring missing or wrong                            | Fail closed with a sanitized category; no plaintext writes when inactive                                                                                         | Collection stops until fixed                                                              |
-| Tampered ciphertext                                 | GCM authentication                                                                                                                                               | none known                                                                                |
-| Gateway attests "verified"                          | The gateway holds the internal secret and tests in the same request; Convex re-checks the session, admin rights, revision and identity                           | A compromised Next server could store an untested key for a workspace it already controls |
-| Late test result verifies a replaced key            | A stored-key test records only if the key row, version and nonce are unchanged                                                                                   | none known                                                                                |
-| Removing an optional key silently goes keyless      | Removing a key always stops collection                                                                                                                           | none known                                                                                |
-| Probing through many workspaces                     | Quotas per workspace, per source and per administrator, all-or-nothing                                                                                           | Bounded probing of public HTTPS hosts on any port                                         |
-| Rollback to an older ciphertext                     | Requires database write access                                                                                                                                   | Someone with database write access could restore an older key of the same source          |
-| Browser password managers                           | Masked key fields opt out of autofill and password-manager capture                                                                                               | A browser may still offer to save the value                                               |
-| Keyring in default-runtime mutations                | Mutations read only the key IDs to refuse undecryptable ciphertext; they never decode keys                                                                       | The keyring value is present in the Convex environment, as it must be for the actions     |
-
-## Evidence
-
-Synthetic tests (no real keys, hosts or workspaces):
-
-- `src/infrastructure/game-data/credential-cipher.test.ts`: round trip, nonce
-  uniqueness, tampering, wrong key and AAD, unknown key ID, missing keyring,
-  rotation, keyring validation without echo.
-- `src/domain/game-data/credentials.test.ts`: draft canonicalisation, AAD
-  format, key format, mode table including legacy rows, fingerprint
-  compatibility.
-- `src/infrastructure/game-data/credential-resolver.test.ts`,
-  `connection-test.test.ts`, `provider-http.test.ts`: one decryption per run,
-  no fallback, operator-named variable only, what each test proves, 401/403/429/5xx,
-  timeout, oversize, redirect, private and rebinding DNS answers, header
-  injection.
-- `src/infrastructure/convex/game-data-credentials.test.ts`: full flow,
-  workspace A/B isolation, 250 sources across 25 workspaces, rotation fencing,
-  delete during collection, legacy rows, migration (dry run, conflict,
-  confirmation, stale revision, idempotence), resumable compare-and-swap
-  re-encryption, stored-key test quota, leak sentinels.
-- `src/lib/api/game-data-sources-route.test.ts`: Origin, size limit, enable
-  only after a pass, disabled draft, no storage without encryption, key
-  validation without echo, test against the stored identity including operator
-  exceptions, typed failures.
-
-Secret-free screenshots of the component, rendered in isolation with synthetic
-data and the application's styles, are in
-[evidence/2026-10-04-game-server-credentials](./evidence/2026-10-04-game-server-credentials/).
-
-### Pending live acceptance (owner)
-
-With the keyring activated in a non-production deployment first, then in
-production. The identifiers below are for acceptance only; the keys are not in
-this repository and must not be added to it or to screenshots.
-
-|           | Value                                                                            |
-| --------- | -------------------------------------------------------------------------------- |
-| Workspace | `q57371ac8n5xzw0vref2hj2q018c4ft0`, guild `963323629242826762`                   |
-| Warcon    | `https://wardogs.valkyriahll.app`, server `b866b9c9-591f-4edb-97ee-d2595751f74c` |
-| HLL CRCON | `https://admin1.valkyriahll.app`, server number `1`                              |
-
-1. As a Valkyria administrator, connect both servers with their keys, run
-   **Test connection** and save with collection enabled.
-2. Confirm the list shows the key as stored and verified, collection runs and
-   live reads work.
-3. Change a key to a wrong value without `allowUnverified` and confirm nothing
-   changes; then remove and re-add a key.
-4. If the servers were operator catalog entries, run the migration dry run and
-   apply it, then delete the old variables.

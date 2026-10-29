@@ -1,11 +1,6 @@
-# Website handoff 0.8 — managed Discord membership roles
+# Managed Discord membership roles
 
-Date: 2026-09-29. Implements I3 on top of [0.7 membership observations](../v0.7/README.md),
-[0.6 synchronization](../v0.6/README.md) and [0.5 collectors](../v0.5/README.md).
-OpenAPI remains **1.5.0**: this milestone adds no bearer-key role command.
-[PR #158](https://github.com/Ninjonik/logi/pull/158) contains the entire delivery
-and pins the exact tested revision. Start with the [whole-PR review guide](./review-guide.md).
-Evidence is local and synthetic.
+Dashboard-authorized membership changes queue durable role operations. The bot checks current actor permission, target eligibility, and Discord role hierarchy before applying them. There is no bearer-key role-grant command.
 
 ## Staff workflow
 
@@ -44,8 +39,7 @@ Interrupted attempts now close in the same transaction as supersession, recovery
 or terminal denial/failure. A recovered expired attempt records
 `retry_scheduled / lease_expired`; it does not prove that Discord failed or that
 another retry is still pending. Already completed attempts are preserved, and
-`at` remains the attempt's start time. See the [reliability follow-up](../v0.10/reliability-follow-up.md)
-for regression proof, historical-row limits and operator screenshots.
+`at` remains the attempt's start time.
 
 ## Ownership and authority
 
@@ -128,34 +122,3 @@ effect. Fencing prevents recording stale success, and subsequent authorized work
 re-observes state, but this is not instantaneous revocation or automatic rollback
 of every partially applied denied operation. Operators must inspect denied/failed
 requests and reconcile them under current authority.
-
-## Compatibility and activation
-
-Additive tables: `memberRoleOperations`, `memberRoleLocks`, `memberRoleAudits`;
-optional `memberObservations.departureRevision`. No destructive data migration or
-bulk role backfill. Existing internal assignment callers may omit actor provenance
-and retain data-only semantics. Old operations are not fabricated from history.
-The new I3 tables have not been deployed in this delivery. If a pre-release I3
-runtime was independently installed, stop its workers before upgrading: older
-unbound operations are refused, and its former `userId` lock shape needs an explicit
-test-environment migration to the new `discordUserId` index. Do not infer links or
-copy numeric identifiers as proof. The pre-I3 production schema has no such records.
-
-For a separately authorized activation, deploy compatible Convex schema/functions,
-web and bot together, run target Convex codegen and restart the bot. Retire old bot
-and web writers before allowing staff actions; an old runtime cannot participate
-in the new queue/ownership checks. Existing Discord token/internal secret remain
-server-side. Verify GuildMembers intent, bot guild access, Manage Roles, hierarchy,
-restart recovery, real backend limits and isolated test roles before production use.
-Rolling back only the bot would restore the old immediate role writer and is not
-a safe mixed-version rollout. No such deployment or live Discord action was done.
-
-Public `/api/v1` assignments deliberately cannot issue these commands. Delegated
-website commands need a separately reviewed actor/session/guild/game/action/target
-contract. The website keeps OAuth sessions, authorization, CMS, consent and publication.
-I2 and W1/W3/W4 remain consumer-owned; I5 verified Steam linking and D4 reviewed results
-remain next Logi milestones. Optional OIDC acceptance stays in the private workstream.
-
-Evidence: [validation](./validation.md), [synthetic audit fixtures](./fixtures.json),
-[actual UI screenshots](./ui-validation.md), [review findings and disposition](./review.md),
-[delivery decisions](./delivery-decisions.md).

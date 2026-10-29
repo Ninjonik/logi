@@ -1,15 +1,12 @@
-# Website integration 0.9 — proof-backed Steam identity
+# Verified Steam identity
 
-Logi remains the data authority behind the website's own backend. This milestone
-adds account-owned Steam identity proof. It inherits the [0.8 role contract](../v0.8/README.md)
-and does not change existing summaries, recruitment, OAuth/OIDC, role grants or
-publication consent. Reviewed event results are documented in [D4 / 0.10](../v0.10/README.md).
+Account-owned Steam proof is separate from manually entered platform IDs, Discord roles, and publication consent. Reviewed results use current verified links for player attribution.
 
 ## Account lifecycle
 
 User settings separates manually entered platform IDs from **Verified Steam account**.
 Manual IDs remain claims, including IDs collected by the existing recruitment link.
-No migration verifies those claims, merges accounts, or creates a link implicitly.
+Manual claims do not verify ownership, merge accounts, or create a proof link.
 
 1. An authenticated account starts `POST /api/platform-links/steam/start` with
    `{ "locale": "cs" }`. Allowed locales are `en`, `cs`, `de`. A matching `Origin`
@@ -47,45 +44,4 @@ Responses use `Cache-Control: no-store`; callback redirects also use
 `Referrer-Policy: no-referrer`. Verification failure returns a generic status on
 the English account page; successful return preserves the initiating locale.
 Cookie logout attempts to cancel this session's challenges before deleting the
-cookie. This is not a new global JWT-revocation system; I4 remains separate.
-
-## Integration and deployment boundary
-
-There is deliberately **no `/api/v1` bearer operation** to start, complete or
-unlink account proof. A clan service key cannot stand in for the account holder.
-New result attribution will consume active proofs internally; web publication
-still requires a separate website policy/consent decision. Proof establishes
-control of an account, not a game license, Discord role, membership or result accuracy.
-
-Set `SITE_URL` to the canonical HTTPS origin without a path. HTTP is accepted
-only on loopback for development. No Steam Web API key is needed. Deployment must
-verify provider callback compatibility and cookie/proxy behavior on its real origin.
-This delivery uses synthetic assertions and never signs into a real Steam account.
-
-## Dependency review
-
-Pinned direct dependency: `passport-steam-openid@1.1.12`, MIT,
-[reviewed upstream commit](https://github.com/danocmx/passport-steam-openid/tree/c22ac9253b63a6e2bc9e10058b0153149c3fc94c).
-The middleware-independent `handleRequest`, `profile: false` and injected HTTP port
-are used; Passport login/session middleware is not enabled. Upstream declares no
-Node engine; local Node **24.21.0**, TypeScript and the focused transport tests are
-the compatibility evidence. Resolved dependencies: `passport@0.6.0`,
-`passport-strategy@1.0.0`, `pause@0.0.1`, `utils-merge@1.0.1` (MIT).
-The repository intentionally ignores its npm lockfile; the direct version is exact.
-
-The package requires Steam's specific HTTPS identity, signed-field sequence and
-association handle. Protocol drift fails closed and requires a reviewed update.
-`steam-signin@1.0.5` was evaluated but not selected because its verification request
-does not expose a bounded HTTP transport. See the official
-[Steam authentication documentation](https://partner.steamgames.com/doc/features/auth)
-for the distinction between OpenID identity and game ownership APIs.
-
-## Evidence
-
-- [Validation and decisions](validation.md)
-- [Synthetic identity fixtures](fixtures.json)
-- [Browser proof](ui-validation.md)
-- [Cumulative review guide through 0.8](../v0.8/review-guide.md)
-
-Real provider login, deployed Convex concurrency/load, hosting, website UI and
-private hosted SSO remain outside this source-only milestone.
+cookie. Dashboard session revocation follows the [session contract](../sso-provider-contract.md#durable-session-and-lifecycle).
