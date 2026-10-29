@@ -35,6 +35,7 @@ import { clanResultSummarySchema } from "@/domain/api/result-summaries"
 import { leagueFixtureSchema } from "@/domain/wardogs-league/fixture"
 import { leagueReadSchema } from "@/domain/wardogs-league/contracts"
 import { PANEL_WINDOW } from "@/domain/wardogs-league/all-fixtures"
+import { leaguePortalPaths } from "@/lib/api/league-portal-openapi"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
@@ -114,6 +115,19 @@ const publicCompetitionDivisionSchema = {
                     },
                     teamBId: {
                         type: "string",
+                    },
+                    hosting: {
+                        type: "object",
+                        required: ["kind", "label"],
+                        properties: {
+                            kind: {
+                                type: "string",
+                                enum: ["linked", "external"],
+                            },
+                            label: { type: "string" },
+                        },
+                        description:
+                            "Public match-server label. External hosting permits manual scores only and has no imported statistics.",
                     },
                     scoreA: {
                         type: "integer",
@@ -571,6 +585,22 @@ const paths: Record<string, unknown> = {
                                                             "wardogs",
                                                         ],
                                                     },
+                                                    registrationMode: {
+                                                        type: "string",
+                                                        enum: [
+                                                            "closed",
+                                                            "approval",
+                                                            "automatic",
+                                                        ],
+                                                    },
+                                                    minimumLinkedPlayers: {
+                                                        type: [
+                                                            "integer",
+                                                            "null",
+                                                        ],
+                                                        minimum: 1,
+                                                        maximum: 1000,
+                                                    },
                                                     slug: { type: "string" },
                                                     name: { type: "string" },
                                                     season: { type: "string" },
@@ -959,10 +989,15 @@ const eventMutation = {
                             type: "array",
                             items: { type: "string" },
                         },
+                        createDebriefThread: {
+                            type: "boolean",
+                            description:
+                                "Creates a private debrief thread and invites participants after conclusion, independently of forum deletion. Defaults to true, including existing matches; omission on update preserves the saved value.",
+                        },
                         deleteForumAfterConclusion: {
                             type: "boolean",
                             description:
-                                "Deletes the event forum after manual or automatic conclusion once a private debrief thread and participant invitations succeed. Parent priority: results, event info, registration. New matches default to true; omission on update preserves the stored value. Legacy events default to false.",
+                                "Deletes the event forum after manual or automatic conclusion. Debrief creation is independently controlled by createDebriefThread. New matches default to true; omission on update preserves the stored value. Legacy events default to false.",
                         },
                         createSignupThread: {
                             type: "boolean",
@@ -2474,6 +2509,13 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                     ...clanSettingsOpenApiSchemas(),
                 },
                 securitySchemes: {
+                    dashboardSession: {
+                        type: "apiKey",
+                        in: "cookie",
+                        name: "token",
+                        description:
+                            "Current first-party personal Logi session. State-changing league account calls also require the configured site Origin. Clan/service bearer keys and SSO actor tokens are not accepted as personal account authority.",
+                    },
                     clanApiKey: {
                         type: "http",
                         scheme: "bearer",
@@ -2494,6 +2536,7 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 ...paths,
                 ...websiteEventCommandPaths,
                 ...competitionEnrollmentPaths,
+                ...leaguePortalPaths,
                 ...externalRegistrationPaths,
             },
         },

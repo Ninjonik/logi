@@ -14,6 +14,7 @@ test("OpenAPI exposes the same planned map and time fields for writes and reads"
         const json = JSON.stringify(schema)
         for (const field of [
             "deleteForumAfterConclusion",
+            "createDebriefThread",
             "timeOfDay",
             "tacticalPlan",
             "controlZone",

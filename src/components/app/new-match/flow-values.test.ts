@@ -488,6 +488,13 @@ test("forum cleanup is checked for new matches and legacy edits remain unchecked
         channelDefaults: {},
         now: new Date("2026-10-10T10:00:00Z"),
     })
+    assert.equal(values.createDebriefThread, true)
+    assert.equal(flowValuesFromEvent(match(), zone).createDebriefThread, true)
+    assert.equal(
+        flowValuesFromEvent({ ...match(), createDebriefThread: false }, zone)
+            .createDebriefThread,
+        false
+    )
     assert.equal(values.deleteForumAfterConclusion, true)
     assert.equal(
         flowEventPayload(values, {

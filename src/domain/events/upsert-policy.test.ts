@@ -290,3 +290,33 @@ test("results routing is a trimmed creation-time choice just like event info", (
         undefined
     )
 })
+
+test("debrief defaults on for matches independently of forum cleanup and preserves omitted updates", () => {
+    const saved = buildCreateEventRecord(
+        { ...input, deleteForumAfterConclusion: false },
+        now
+    )
+    assert.equal(saved.createDebriefThread, true)
+    assert.equal(
+        buildCreateEventRecord({ ...input, kind: "training" }, now)
+            .createDebriefThread,
+        false
+    )
+    assert.equal(
+        buildCreateEventRecord({ ...input, createDebriefThread: false }, now)
+            .createDebriefThread,
+        false
+    )
+    assert.equal(
+        "createDebriefThread" in buildUpdateEventPatch(saved, input, now),
+        false
+    )
+    assert.equal(
+        buildUpdateEventPatch(
+            saved,
+            { ...input, createDebriefThread: false },
+            now
+        ).createDebriefThread,
+        false
+    )
+})

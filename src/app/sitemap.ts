@@ -11,6 +11,7 @@ import { locales } from "@/i18n/config"
 const localizedRoutes = [
     { path: "", changeFrequency: "weekly", priority: 1 },
     { path: "/community", changeFrequency: "daily", priority: 0.9 },
+    { path: "/leagues", changeFrequency: "daily", priority: 0.9 },
     { path: "/competitions", changeFrequency: "daily", priority: 0.8 },
     { path: "/competitions/ecl-2026", changeFrequency: "daily", priority: 0.8 },
     { path: "/privacy-policy", changeFrequency: "yearly", priority: 0.3 },

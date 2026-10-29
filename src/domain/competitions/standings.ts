@@ -3,6 +3,8 @@ export type CompetitionFixture = {
     divisionId?: string
     teamAId: string
     teamBId: string
+    participantTeamIds?: string[]
+    participantScores?: Array<number | null>
     scoreA?: number
     scoreB?: number
     status: "scheduled" | "final" | "forfeit"
@@ -42,26 +44,42 @@ export function deriveDivisionStandings(
     )
     for (const fixture of fixtures) {
         if (fixture.status !== "final" && fixture.status !== "forfeit") continue
-        if (fixture.scoreA === undefined || fixture.scoreB === undefined)
+        const ids = fixture.participantTeamIds?.length
+            ? fixture.participantTeamIds
+            : [fixture.teamAId, fixture.teamBId]
+        const scores = fixture.participantScores ?? [
+            fixture.scoreA,
+            fixture.scoreB,
+        ]
+        if (
+            ids.length < 2 ||
+            new Set(ids).size !== ids.length ||
+            scores.length !== ids.length
+        )
             continue
-        const left = rows.get(fixture.teamAId)
-        const right = rows.get(fixture.teamBId)
-        if (!left || !right) continue
-        left.capScore += fixture.scoreA
-        right.capScore += fixture.scoreB
-        left.totalMatches++
-        right.totalMatches++
-        if (fixture.status === "final") {
-            left.regularMatches++
-            right.regularMatches++
-        }
-        if (fixture.scoreA > fixture.scoreB) {
-            left.totalWins++
-            if (fixture.status === "final") left.regularWins++
-        }
-        if (fixture.scoreB > fixture.scoreA) {
-            right.totalWins++
-            if (fixture.status === "final") right.regularWins++
+        if (
+            scores.some(
+                (score) =>
+                    typeof score !== "number" ||
+                    !Number.isFinite(score) ||
+                    score < 0
+            ) ||
+            ids.some((id) => !rows.has(id))
+        )
+            continue
+        const highest = Math.max(...scores.map((score) => score ?? 0))
+        const uniqueWinner =
+            scores.filter((score) => score === highest).length === 1
+        for (let index = 0; index < ids.length; index++) {
+            const row = rows.get(ids[index])!
+            const score = scores[index]!
+            row.capScore += score
+            row.totalMatches++
+            if (fixture.status === "final") row.regularMatches++
+            if (uniqueWinner && score === highest) {
+                row.totalWins++
+                if (fixture.status === "final") row.regularWins++
+            }
         }
     }
     return [...rows.values()].sort(

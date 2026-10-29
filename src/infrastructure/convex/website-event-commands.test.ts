@@ -918,3 +918,41 @@ test("actor API reads and writes forum cleanup and preserves it on an omitted up
     assert.equal(preserved.data.operation, "update")
     assert.equal(f.ctx.db.tables.events[0].deleteForumAfterConclusion, true)
 })
+
+test("actor API reads, updates and preserves the independent debrief toggle", async (t) => {
+    const f = fixture(t)
+    const created = await f.run({
+        command: {
+            operation: "create",
+            event: { ...fields, deleteForumAfterConclusion: false },
+        },
+    })
+    assert.equal(f.ctx.db.tables.events[0].createDebriefThread, true)
+    const editor = await editorFor(f, created.data.eventId)
+    assert.equal(editor.data.event.createDebriefThread, true)
+    const updated = await f.run({
+        idempotencyKey: "disable-debrief-0001",
+        command: {
+            operation: "update",
+            eventId: created.data.eventId,
+            expectedRevision: created.data.revision,
+            event: {
+                ...fields,
+                createDebriefThread: false,
+                deleteForumAfterConclusion: true,
+            },
+        },
+    })
+    assert.equal(f.ctx.db.tables.events[0].createDebriefThread, false)
+    assert.equal(f.ctx.db.tables.events[0].deleteForumAfterConclusion, true)
+    await f.run({
+        idempotencyKey: "preserve-debrief-0001",
+        command: {
+            operation: "update",
+            eventId: created.data.eventId,
+            expectedRevision: updated.data.revision,
+            event: fields,
+        },
+    })
+    assert.equal(f.ctx.db.tables.events[0].createDebriefThread, false)
+})

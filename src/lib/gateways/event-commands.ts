@@ -89,6 +89,7 @@ export async function saveServerEventCommand(input: {
     pingRoleIds?: string[]
     createForumChannel: boolean
     createSignupThread?: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
     stratmapIds?: string[]
@@ -145,6 +146,7 @@ export async function saveServerEventCommand(input: {
         pingRoleIds: input.pingRoleIds,
         createForumChannel: input.createForumChannel,
         createSignupThread: input.createSignupThread,
+        createDebriefThread: input.createDebriefThread,
         deleteForumAfterConclusion: input.deleteForumAfterConclusion,
         topicPresetId: input.topicPresetId as never,
         stratmapIds: input.stratmapIds,

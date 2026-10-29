@@ -11,6 +11,7 @@ import {
     findForumPost,
     findRecoverableEventForum,
     pinForumPost,
+    syncForumChannel,
     type ForumPostCandidate,
 } from "./forum"
 import { forumTopicView } from "../../src/domain/discord-messages/match-forum"
@@ -234,6 +235,35 @@ const forumConfig = {
     defaultLanguage: "cs",
     timezone: "Europe/Prague",
 } as unknown as DiscordConfig
+
+for (const storedId of [undefined, "deleted-forum"]) {
+    test(`a concluded event never creates a missing forum (stored ID: ${storedId})`, async () => {
+        let creations = 0
+        const guild = {
+            channels: {
+                fetch: async (id?: string) => (id ? null : new Map()),
+                create: async () => {
+                    creations++
+                    throw new Error("Concluded events must not create forums")
+                },
+            },
+        }
+        const result = await syncForumChannel({
+            guild: guild as never,
+            event: concludedEvent,
+            config: forumConfig,
+            forumCategoryId: "forums",
+            forumChannelId: storedId,
+            infoMessageId: "old-info",
+            existingTopicMessageIds: ["old-topic"],
+        })
+        assert.equal(creations, 0)
+        assert.equal(result.forumChannelId, undefined)
+        assert.equal(result.infoMessageId, undefined)
+        assert.deepEqual(result.topicMessageIds, [])
+        assert.equal(result.stateChanged, Boolean(storedId))
+    })
+}
 
 test("a result confirmed after the Debrief was archived edits that Debrief, never a second one (L1-137)", async () => {
     const { forum, calls } = fakeForum([
@@ -505,4 +535,32 @@ test("a stored public debrief in the disposable forum is replaced by a private t
     await concludeEventForum({ ...f.input, existingThreadId: "old-debrief" })
     assert.ok(f.calls.includes("create"))
     assert.equal(f.calls.at(-1), "delete forum")
+})
+
+for (const createDebriefThread of [true, false]) {
+    for (const deleteForum of [true, false]) {
+        test(`debrief creation (${createDebriefThread}) and forum deletion (${deleteForum}) are independent`, async () => {
+            const f = privateDebriefFixture()
+            await concludeEventForum({
+                ...f.input,
+                event: { ...f.input.event, createDebriefThread },
+                deleteForum,
+            })
+            assert.equal(f.calls.includes("create"), createDebriefThread)
+            assert.equal(f.calls.includes("invite player"), createDebriefThread)
+            assert.equal(f.calls.includes("delete forum"), deleteForum)
+        })
+    }
+}
+
+test("debrief creation works without a match forum", async () => {
+    const f = privateDebriefFixture()
+    await concludeEventForum({
+        ...f.input,
+        forumChannelId: undefined,
+        deleteForum: false,
+    })
+    assert.ok(f.calls.includes("create"))
+    assert.ok(f.calls.includes("invite player"))
+    assert.equal(f.calls.includes("delete forum"), false)
 })

@@ -1,3 +1,4 @@
+import { getLeagueMessages } from "@/i18n/messages/leagues"
 import { BookOpen, Github } from "lucide-react"
 import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
@@ -15,7 +16,7 @@ import { Logo } from "@/components/logo"
 const githubHref = "https://github.com/ninjonik/logi"
 
 /** Public sections with their own navigation entry (designs J1, J2). */
-export type PublicSection = "community" | "competitions" | "wiki"
+export type PublicSection = "community" | "competitions" | "leagues" | "wiki"
 
 type NavigationItem = { href: string; label: string; section: PublicSection }
 
@@ -31,7 +32,12 @@ function NavigationLink({
     return (
         <Link
             href={item.href}
-            aria-current={item.section === current ? "page" : undefined}
+            aria-current={
+                item.section === current ||
+                (item.section === "leagues" && current === "competitions")
+                    ? "page"
+                    : undefined
+            }
             className={className}
         >
             {item.label}
@@ -61,9 +67,9 @@ export async function PublicSiteShell({
             section: "community",
         },
         {
-            href: `/${locale}/competitions`,
-            label: dictionary.competition.title,
-            section: "competitions",
+            href: `/${locale}/leagues`,
+            label: getLeagueMessages(locale).title,
+            section: "leagues",
         },
         {
             href: "/wiki",

@@ -4915,7 +4915,10 @@ export const csMessages = {
             forum: "Fórum k zápasu",
             deleteForumAfterConclusion: "Smazat fórum po ukončení zápasu",
             deleteForumAfterConclusionHint:
-                "Po ručním i automatickém ukončení pozvat účastníky do soukromého debrief vlákna v kanálu výsledků → informací → registrací a smazat fórum zápasu včetně příspěvků.",
+                "Po ručním i automatickém ukončení smazat fórum zápasu včetně příspěvků.",
+            createDebriefThread: "Vytvořit debrief vlákno po zápasu",
+            createDebriefThreadHint:
+                "Po ukončení pozvat účastníky do soukromého debrief vlákna v kanálu výsledků → informací → registrací, nezávisle na smazání fóra.",
             signupThread: "Diskuzní vlákno akce",
             signupThreadHint:
                 "Vytvoří veřejné vlákno pod oznámením a udržuje jeho členy podle přihlášek.",

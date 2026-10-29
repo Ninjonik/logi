@@ -153,6 +153,17 @@ only when the selected meeting channel is a voice or stage channel. If that
 channel is removed or is not a supported type, Logi cancels its linked
 scheduled event.
 
+Once an event concludes, the bot can update its existing match forum but never
+recreates a missing or deleted forum channel.
+
+**Create a debrief thread after the match** is a separate switch, enabled by
+default, including for existing matches. After manual or automatic conclusion,
+it invites participants to a private thread under results → event info →
+registration. It works independently of **Delete the forum after the match**,
+which only controls removing the match forum and its posts. Disabling debrief
+creation leaves any existing debrief in place. The workspace debrief message
+switch must also be enabled.
+
 The scheduled Discord event is written in the clan language: its name is the
 announcement title with the category ("VLK vs ROG · Friendly") and its
 description reads like "Friendly against ROG, we play Allies. / Meeting 19:30,

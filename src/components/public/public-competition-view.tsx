@@ -1,4 +1,5 @@
 import { CalendarDays, ChevronDown, Layers } from "lucide-react"
+import { getLeagueMessages } from "@/i18n/messages/leagues"
 import Link from "next/link"
 
 import {
@@ -49,6 +50,7 @@ export function PublicCompetitionView({
     now,
     locale,
     dictionary,
+    sectionPath = "competitions",
 }: {
     competition: PublicCompetition
     view: CompetitionView | null
@@ -57,6 +59,7 @@ export function PublicCompetitionView({
     now: number
     locale: Locale
     dictionary: Dictionary
+    sectionPath?: "competitions" | "leagues"
 }) {
     const t = dictionary.publicSite.competition
     const teams = new Map(
@@ -112,7 +115,7 @@ export function PublicCompetitionView({
                             {tabs.map((tab) => (
                                 <Link
                                     key={tab.id}
-                                    href={`/${locale}/competitions/${competition.slug}?division=${encodeURIComponent(tab.id)}`}
+                                    href={`/${locale}/${sectionPath}/${competition.slug}?division=${encodeURIComponent(tab.id)}`}
                                     scroll={false}
                                     aria-current={
                                         tab.current ? "page" : undefined
@@ -510,8 +513,21 @@ function FixtureGroups({
                                 : "–"}
                         </span>
                         <span className="min-w-0 flex-1 text-sm font-semibold break-words">
-                            {name(fixture.teamAId)} vs {name(fixture.teamBId)}
+                            {(fixture.participantTeamIds?.length
+                                ? fixture.participantTeamIds
+                                : [fixture.teamAId, fixture.teamBId]
+                            )
+                                .map(name)
+                                .join(" vs ")}
                         </span>
+                        {fixture.hosting && (
+                            <span className="text-muted-foreground max-w-48 text-xs">
+                                {fixture.hosting.label} ·{" "}
+                                {fixture.hosting.kind === "external"
+                                    ? getLeagueMessages(locale).external
+                                    : getLeagueMessages(locale).linked}
+                            </span>
+                        )}
                         {phase(fixture)}
                     </li>
                 ))}
@@ -541,13 +557,33 @@ function FixtureGroups({
                                 : "–"}
                         </span>
                         <span className="min-w-0 flex-[1_1_160px] text-sm font-semibold break-words">
-                            {name(fixture.teamAId)}{" "}
-                            <span className="tabular-nums">
-                                {fixture.scoreA ?? "–"} :{" "}
-                                {fixture.scoreB ?? "–"}
-                            </span>{" "}
-                            {name(fixture.teamBId)}
+                            {fixture.participantTeamIds &&
+                            fixture.participantTeamIds.length > 2 ? (
+                                fixture.participantTeamIds
+                                    .map(
+                                        (id, index) =>
+                                            `${name(id)} ${fixture.participantScores?.[index] ?? "–"}`
+                                    )
+                                    .join(" · ")
+                            ) : (
+                                <>
+                                    {name(fixture.teamAId)}{" "}
+                                    <span className="tabular-nums">
+                                        {fixture.scoreA ?? "–"} :{" "}
+                                        {fixture.scoreB ?? "–"}
+                                    </span>{" "}
+                                    {name(fixture.teamBId)}
+                                </>
+                            )}
                         </span>
+                        {fixture.hosting && (
+                            <span className="text-muted-foreground max-w-48 text-xs">
+                                {fixture.hosting.label} ·{" "}
+                                {fixture.hosting.kind === "external"
+                                    ? getLeagueMessages(locale).external
+                                    : getLeagueMessages(locale).linked}
+                            </span>
+                        )}
                         {phase(fixture)}
                         {fixture.status === "forfeit" ? (
                             <Badge variant="secondary">

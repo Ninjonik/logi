@@ -376,6 +376,9 @@ export const generatedOpenApiSchemas = {
             "createSignupThread": {
                 "type": "boolean"
             },
+            "createDebriefThread": {
+                "type": "boolean"
+            },
             "deleteForumAfterConclusion": {
                 "type": "boolean"
             },
@@ -855,6 +858,7 @@ export const generatedOpenApiSchemas = {
             ],
             "createForumChannel": true,
             "createSignupThread": true,
+            "createDebriefThread": true,
             "deleteForumAfterConclusion": true,
             "topicPresetId": "string",
             "stratmapIds": [
