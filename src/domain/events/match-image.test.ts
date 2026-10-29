@@ -210,3 +210,42 @@ test("editable participant labels do not break score matching by stable side IDs
         [100, 200]
     )
 })
+
+test("manual team-name results show all scores and the linked clan outcome", () => {
+    const original = input()
+    original.event.matchTeams = [team("a", ""), team("b", ""), team("c", "")]
+    original.ownTeam = { id: "a", name: "Team a", shortCode: "A" }
+    original.result = {
+        participants: [
+            { id: "manual-c", label: "Team c", score: 64 },
+            { id: "manual-a", label: "Team a", score: 100 },
+            { id: "manual-b", label: "Team b", score: 52 },
+        ],
+    }
+    let model = buildMatchImage(original)
+    assert.deepEqual(
+        model.teams.map((t) => t.score),
+        [100, 52, 64]
+    )
+    assert.equal(model.result?.outcome, "win")
+    original.ownTeam.id = "b"
+    model = buildMatchImage(original)
+    assert.equal(model.result?.outcome, "loss")
+    original.result.participants[1]!.score = null
+    assert.equal(buildMatchImage(original).result?.outcome, null)
+})
+
+test("ambiguous team labels never assign a score or outcome", () => {
+    const original = input()
+    original.event.matchTeams = [team("a", "")]
+    original.ownTeam = { id: "a", name: "Team a", shortCode: "A" }
+    original.result = {
+        participants: [
+            { label: "Team a", score: 100 },
+            { label: "Team a", score: 52 },
+        ],
+    }
+    const model = buildMatchImage(original)
+    assert.equal(model.teams[0]?.score, null)
+    assert.equal(model.result?.outcome, null)
+})
