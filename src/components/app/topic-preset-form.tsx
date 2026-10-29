@@ -511,9 +511,6 @@ export function TopicPresetForm({
                                 <h3 className="text-lg font-semibold">
                                     {dictionary.presets.topics}
                                 </h3>
-                                <p className="text-muted-foreground text-sm">
-                                    {dictionary.presets.topicEditorDescription}
-                                </p>
                             </div>
                             {canEdit ? (
                                 <Button

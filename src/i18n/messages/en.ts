@@ -3,8 +3,7 @@ import { enLanding } from "./landing"
 export const enMessages = {
     competitionEnrollment: {
         title: "Competitions",
-        description:
-            "Enroll your clan’s linked teams, follow approval, or withdraw while keeping match history.",
+        description: "Register your clan’s teams or manage their applications.",
         noTeams:
             "No team is linked to this clan. Request a team or ask a Logi administrator to link your existing team.",
         teamsLink: "Manage teams",
@@ -921,8 +920,7 @@ export const enMessages = {
     app: {
         name: "Logi",
         tagline: "Competitive event organizer",
-        description:
-            "Organize clan events, build rosters, publish briefings, and prepare Discord-connected operations.",
+        description: "Manage clan events, rosters and Discord announcements.",
     },
     games: {
         filterLabel: "Game filter",
@@ -962,7 +960,7 @@ export const enMessages = {
         liveOperations: "Operations, connected",
         commandCenter: "Your operation command center",
         commandCenterDescription:
-            "Events, rosters, Discord coordination, and public match history in one place.",
+            "Plan events, collect sign-ups and publish rosters to Discord.",
         eventsMetric: "events",
         playersMetric: "players",
         matchesMetric: "matches",
@@ -974,12 +972,12 @@ export const enMessages = {
         featureEventsDescription:
             "Plan every stage of an operation with clear times and Discord-ready announcements.",
         featureRostersDescription:
-            "Build lineups, coordinate attendance, and keep everyone on the same page.",
+            "Assign squads, manage reserves and track attendance.",
         featureStats: "Public match history",
         featureStatsDescription:
             "Share player profiles, results, and detailed match analysis with your community.",
         badge: "Discord operations for organized groups",
-        title: "Logi keeps community operations readable, structured, and in one place.",
+        title: "Clan management with Logi",
         description:
             "Logi is an open-source platform for groups that run events, rosters, trainings, matches, and Discord coordination.",
         featuresTitle: "What it actually does",
@@ -990,9 +988,9 @@ export const enMessages = {
         featureDiscord: "Discord-linked server administration",
         featureTools: "Shared tooling for organized communities",
         commsBadge: "LogiComms",
-        commsTitle: "Clear squad communication without the overhead.",
+        commsTitle: "Squad voice communication",
         commsDescription:
-            "LogiComms is a lightweight, fast desktop app for efficient in-squad communication. Set it up quickly and tailor it to how your unit operates.",
+            "LogiComms is a desktop app for squad voice communication.",
         commsDownload: "Download for Windows",
         commsUnavailable: "Windows download is temporarily unavailable.",
         freeToUse: "Free to use",
@@ -1003,21 +1001,20 @@ export const enMessages = {
         pillars: {
             operationsTitle: "Runs the boring parts",
             operationsDescription:
-                "Scheduling, signups, roster organization, match prep, and Discord coordination in one place.",
+                "Schedule matches, collect sign-ups and publish rosters.",
             communitiesTitle: "Built for real communities",
             communitiesDescription:
-                "Made for clans, units, and organized groups that need structure without extra ceremony.",
+                "For clans that organise matches and trainings on Discord.",
             contributorsTitle: "Open to contributors",
             contributorsDescription:
-                "Open source, open to pull requests, and improved in public with people who use it.",
+                "Report issues or contribute code on GitHub.",
         },
     },
     auth: {
-        loginTitle: "Deploy your next operation",
-        loginDescription:
-            "Sign in with Discord to manage clans, publish rosters, and keep every briefing in one place.",
+        loginTitle: "Sign in to Logi",
+        loginDescription: "Sign in with your Discord account.",
         loginButton: "Continue with Discord",
-        heroSubtitle: "Competitive team management made simple.",
+        heroSubtitle: "Clan events and rosters",
         contributeButton: "Contribute",
         featureRosterManagement: "Roster management",
         featurePlayerPerformance: "Player performance aggregation",
@@ -1033,23 +1030,19 @@ export const enMessages = {
         featureRostersBody:
             "Publish slot-ready lineups with reserves and acknowledgements.",
         featureBriefingsTitle: "Briefings",
-        featureBriefingsBody:
-            "Keep event notes, maps, and attachments attached to every operation.",
+        featureBriefingsBody: "Add notes, maps and attachments to events.",
         featureDiscordTitle: "Discord-ready",
-        featureDiscordBody:
-            "Prepare the web dashboard first, then plug in the bot layer later.",
+        featureDiscordBody: "Publish announcements and rosters to Discord.",
         englishEnabled: "English enabled",
         discordAccessOnly: "Discord access only",
         discordOauth: "Discord OAuth",
         discordOauthBody: "Single sign-on for clans, members, and mercs.",
-        plannedBackendHooks: "Planned backend hooks",
-        plannedBackendHooksBody:
-            "Convex documents, Discord identity sync, platform identity linking, clan-aware permissions, and roster publishing flows.",
+        plannedBackendHooks: "Account and clan access",
+        plannedBackendHooksBody: "Sign in with Discord to access your clans.",
     },
     dashboard: {
         title: "Your clans",
-        description:
-            "Everything you manage, represent, or fight alongside is grouped here.",
+        description: "Open a clan you manage or belong to.",
         greetingMorning: "Good morning",
         greetingAfternoon: "Good afternoon",
         greetingEvening: "Good evening",
@@ -1209,7 +1202,7 @@ export const enMessages = {
     teams: {
         title: "Teams",
         description:
-            "Browse the Logi team catalogue for each game. Logi administrators maintain it: request a missing team or suggest a change, and select approved teams in your matches.",
+            "Select teams for matches, request a missing team or suggest a change.",
         cancel: "Cancel",
         name: "Name",
         shortCode: "Short code",
@@ -2158,8 +2151,7 @@ export const enMessages = {
         descriptionRequired: "Enter a short description.",
         bodyRequired: "Write the article.",
         emptyTitle: "No articles yet",
-        emptyDescription:
-            "Articles share clan news and longer updates with every member.",
+        emptyDescription: "Publish your first article.",
         emptyMemberDescription:
             "Clan news and longer updates appear here once a manager publishes them.",
         publishedOn: "Published {date}",
@@ -2332,8 +2324,7 @@ export const enMessages = {
             "Erasure also removes your clan assignments, sign-ups, roster placements, and other account-linked records. Some data may be retained where legally required.",
         requestSubmitted: "Your privacy request has been submitted.",
         title: "User settings",
-        description:
-            "Manage your profile and platform identity used for imported match matching.",
+        description: "Edit your profile and game accounts.",
         profile: "Profile",
         discordName: "Discord name",
         discordId: "Discord ID",
@@ -2377,8 +2368,7 @@ export const enMessages = {
         accountDescription:
             "Your language, game accounts, bot messages and personal data.",
         signedInWith: "{name} · signed in with Discord",
-        autoSaveNote:
-            "Changes are saved straight away. Nothing needs a save button.",
+        autoSaveNote: "Changes are saved automatically.",
         changeAvatar: "Change avatar",
         avatarSaved: "Avatar saved.",
         lookTitle: "Language and appearance",
@@ -2427,7 +2417,7 @@ export const enMessages = {
         description: "Manage how this clan looks and who can run operations.",
         pageDescription:
             "Update the clan profile, Discord automation settings, and access controls for your workspace.",
-        frontendOnlyDescription: "Frontend-only clan configuration for now.",
+        frontendOnlyDescription: "Clan profile and Discord settings.",
         clanName: "Clan name",
         discordTitle: "Discord bot settings",
         discordDescription:
@@ -2531,7 +2521,7 @@ export const enMessages = {
         accessMembers:
             "Members and mercenaries: calendar visibility plus published rosters only.",
         accessBackend:
-            "Later backend work can connect these rules to Discord roles and Convex queries.",
+            "Access follows the configured Discord roles and clan assignments.",
     },
     integrationSettings: {
         cancel: "Cancel",
@@ -2706,7 +2696,7 @@ export const enMessages = {
         untitledCategory: "Untitled category",
         noCategoriesDescription:
             "Each category becomes a button in the panel, for example Report a player or Bot problem.",
-        saveNote: "Saves tickets only. Other settings stay as they are.",
+        saveNote: "Saves ticket settings.",
         saveAndRefresh: "Save and update the panel",
         discard: "Discard",
         unsaved: "Unsaved changes",
@@ -2867,7 +2857,7 @@ export const enMessages = {
         noCategoriesDescription:
             "Each category is one option in the application, for example main member, reserve or mercenary.",
         rolePlaceholder: "Add a role",
-        saveNote: "Saves membership only. Other settings stay as they are.",
+        saveNote: "Saves membership settings.",
         discard: "Discard",
         saveShort: "Save",
         unsaved: "Unsaved changes",
@@ -2913,8 +2903,7 @@ export const enMessages = {
         recruitRolePlaceholder: "Recruit role",
         finalRole: "Final role for this category",
         finalRolePlaceholder: "Final role",
-        modalQuestionsDescription:
-            "Up to 5 text inputs, just like the ticket modal flow.",
+        modalQuestionsDescription: "Up to 5 text fields.",
         noQuestions:
             "No modal questions yet. Leave this empty if the category should open the thread immediately after the precheck.",
         noCategories: "No application categories yet.",
@@ -2958,8 +2947,7 @@ export const enMessages = {
             "Unable to recheck the display name. Check that the player is in the Discord server and the bot can access them.",
         adminAccessUpdateFailed: "Unable to update player admin access.",
         title: "Players",
-        description:
-            "Add players from the existing system as main members or mercenaries while enforcing clan membership rules.",
+        description: "Manage clan members and mercenaries.",
         addMember: "Add as member",
         addReserveMember: "Add as reserve member",
         addMerc: "Add as mercenary",
@@ -2978,8 +2966,7 @@ export const enMessages = {
             "A player can only become a main member if they do not already belong to another main clan.",
         rulesMerc:
             "A player can be a mercenary for other clans, but cannot be both member and mercenary in the same clan.",
-        rulesSystem:
-            "Search only returns players already present in our system, ready for backend autocomplete later.",
+        rulesSystem: "Search finds players with an existing Logi account.",
         tablePlayer: "Player",
         tableType: "Type",
         tableGroup: "Group",
@@ -3178,8 +3165,7 @@ export const enMessages = {
     },
     calendarPage: {
         title: "Calendar",
-        description:
-            "Use the calendar to browse upcoming and past events, then jump into full event details or the published roster.",
+        description: "Open an event to see its details or roster.",
         monthView: "Monthly operations view",
         moreEvents: "more events",
         allDay: "All day",
@@ -3215,13 +3201,11 @@ export const enMessages = {
     },
     settingsHub: {
         title: "Clan settings",
-        description:
-            "Everything Logi needs to know about your clan, grouped by topic. Open a card to change it.",
+        description: "Configure your clan, Discord bot and integrations.",
         setupTitle: "First setup",
         setupProgress: "{done} of {total} required settings done",
         setupNext: "Next step: {item}",
-        setupDone:
-            "The required settings are done. Optional features can be switched on any time.",
+        setupDone: "Required setup complete.",
         continueSetup: "Continue",
         backToOverview: "All settings",
         sectionNavLabel: "Settings sections",
@@ -3270,8 +3254,7 @@ export const enMessages = {
         },
         overview: {
             title: "Settings",
-            description:
-                "Clan, Discord, game data and connected websites in one place.",
+            description: "Clan profile, Discord settings and integrations.",
             searchLabel: "Search settings",
             searchPlaceholder: "Search: channel, role, API key…",
             noResults: "Nothing found",
@@ -3723,7 +3706,7 @@ export const enMessages = {
         messagesPage: {
             title: "Messages and panels in Discord",
             description:
-                "Everything the bot sends: where, whether at all and how it looks. It writes in the clan language and with the clan colour.",
+                "Choose which messages the bot sends and how they look.",
             lookTitle: "Look of all messages",
             lookIntro:
                 "Applies to announcements, panels, DMs and command replies. Bot errors for managers have a grey bar.",
@@ -3767,7 +3750,7 @@ export const enMessages = {
             previewTime: "today at 18:02",
             listTitle: "What the bot sends",
             listIntro:
-                "Every channel is edited in one place. A channel with a lock belongs to another page, and the link takes you there. A channel with a picker is edited right here.",
+                "Locked channels are configured on the linked settings page.",
             groups: {
                 matches: "Matches",
                 direct: "Private messages",
@@ -4050,7 +4033,7 @@ export const enMessages = {
             messages: {
                 title: "Messages and panels",
                 description:
-                    "Everything the bot sends: where, whether at all and how it looks. It writes in the clan language and with the clan colour.",
+                    "Choose which messages the bot sends and how they look.",
             },
             channels: {
                 title: "Channels and language",
@@ -4162,8 +4145,7 @@ export const enMessages = {
                 },
                 games: {
                     heading: "Which games does your clan play?",
-                    description:
-                        "Logi then only shows the options that belong to these games. You can change this at any time.",
+                    description: "Select the games your clan plays.",
                     groupLabel: "Clan games",
                     required: "Choose at least one game.",
                 },
@@ -4223,7 +4205,7 @@ export const enMessages = {
             finished: {
                 title: "Done. Logi is ready.",
                 description:
-                    "You can change everything later in Settings. There you'll also find options for the website, panels and commands.",
+                    "Open Settings to configure panels, commands and website integrations.",
                 openSettings: "Open Settings",
                 again: "Go through again",
             },
@@ -4630,8 +4612,7 @@ export const enMessages = {
             "Drag a player onto a slot or squad. Use the assign button to choose a slot.",
 
         title: "Roster",
-        listDescription:
-            "Browse event rosters, check squad counts, and see which lineups are already published.",
+        listDescription: "Event rosters and their publication status.",
         modeView: "Overview",
         modeLayout: "Squad editor",
         modeAssignment: "Roster editor",
@@ -4738,8 +4719,7 @@ export const enMessages = {
     newMatch: {
         title: "New match",
         titleTraining: "New training",
-        description:
-            "A template fills in most of it. On the right you see how players will see the match in Discord.",
+        description: "Use a template or enter the match details.",
         autosave: {
             idle: "Work in progress is saved as a draft",
             saving: "Saving draft…",
@@ -4749,7 +4729,7 @@ export const enMessages = {
         deleteDraft: "Delete draft",
         deleteDraftTitle: "Delete the draft {name}?",
         deleteDraftDescription:
-            "The draft disappears from the match list. Nothing was sent to Discord, so players will not notice anything.",
+            "Delete this draft? It has not been published to Discord.",
         draftDeleted: "Draft deleted.",
         untitled: "Untitled",
         steps: {
@@ -5118,10 +5098,8 @@ export const enMessages = {
         },
         overview: {
             title: "Overview",
-            description:
-                "How the match is set up and how players see it in Discord.",
-            descriptionTraining:
-                "How the training is set up and how players see it in Discord.",
+            description: "Match details and Discord announcement.",
+            descriptionTraining: "Training details and Discord announcement.",
             edit: "Edit",
             readOnly: "Only clan managers can change the match.",
             stratmaps: "Tactical maps",
@@ -5335,7 +5313,7 @@ export const enMessages = {
             whoHint: "By the member status from Membership settings.",
             groups: "Groups",
             groupsHint:
-                "What a player picks when signing up. Caps are new: once a group is full, a reserve place is offered.",
+                "Players choose a group when signing up. Full groups offer a reserve place.",
             noGroups: "This game has no signup groups yet.",
             groupsAllGames:
                 "A template for all games offers every signup group of the match's game. Choose a game to pick groups.",
@@ -5423,8 +5401,7 @@ export const enMessages = {
             note: "Built from the same fields as the bot's announcement. Signed-up players and the forum link appear once the match exists.",
             today: "Today",
         },
-        createDescription:
-            "Most of it comes from a template. On the right you see how players will see the match in Discord.",
+        createDescription: "Set the defaults for new matches.",
     },
     event: {
         signupStatusSignedUpAs: "You are signed up as: {type}.",
@@ -5432,25 +5409,21 @@ export const enMessages = {
         signupStatusDeclined: "You marked yourself as not attending.",
         signupStatusNotSignedUp: "You have not signed up for this event yet.",
         infoTitle: "Event information",
-        infoDescription:
-            "This page stays view-first for everyone, and admins can toggle it into edit mode without changing routes.",
-        listDescription:
-            "Track planned operations, meeting times, map details, and publication settings in one place.",
+        infoDescription: "Schedule, sign-ups and Discord settings.",
+        listDescription: "Upcoming and past clan events.",
         createTitle: "Create event",
         created: "Event created.",
         saved: "Event saved.",
         createDescription:
             "Set up the event details, schedule, and Discord options before publishing it to your clan.",
         createPageDescription:
-            "Create a new event with the same fields you can manage later from the event detail page.",
+            "Set the schedule, sign-up rules and Discord channels.",
         relatedRoster: "Related roster",
         showRoster: "Show roster",
-        rosterPublishedHint:
-            "This event has a published roster. Open it from here when needed.",
+        rosterPublishedHint: "The roster is published.",
         rosterDraftHint:
             "A roster is assigned, but it is still hidden from regular members.",
-        rosterMissingHint:
-            "No roster is assigned yet. Add one later when you are ready to organize squads for this event.",
+        rosterMissingHint: "No roster assigned.",
         detailMetaTitle: "Event details",
         requiredLabel: "Required",
         optionalLabel: "Optional",
@@ -5660,15 +5633,13 @@ export const enMessages = {
     presets: {
         topicTitle: "Topic presets",
         topicDescription:
-            "Preset briefings are reference data. Events can copy them so later preset changes do not rewrite old matches.",
+            "Reusable briefing topics. Editing a preset does not change existing matches.",
         squadTitle: "Squad presets",
-        squadDescription:
-            "These define the initial roster shape. New rosters copy from them so past events stay stable.",
+        squadDescription: "Reusable squads, roles and slots for new rosters.",
         createTopicTitle: "Create topic preset",
-        createTopicDescription: "Create and edit topic structure in one place.",
+        createTopicDescription: "Add briefing topics and their content.",
         createSquadTitle: "Create squad preset",
-        createSquadDescription:
-            "Create and reshape the preset structure in one place.",
+        createSquadDescription: "Add squads, roles and slots.",
         presetDetails: "Preset details",
         presetCreateMode: "Create mode starts directly in edit mode.",
         squadPresetPageDescription:
@@ -5679,16 +5650,14 @@ export const enMessages = {
         topics: "Topics",
         squadStructure: "Squad structure",
         presetSetup: "Preset setup",
-        presetSetupDescription:
-            "Preset information and squad structure live in one editor so the whole setup stays together.",
+        presetSetupDescription: "Squads, roles and slots.",
         addTopic: "Add topic",
         role: "Role",
         roleNote: "Role note",
         addRole: "Add role",
         squadBlock: "Squad block",
         presetName: "Preset name",
-        topicEditorDescription:
-            "Briefing topics are editable in the same admin edit flow as the preset details.",
+        topicEditorDescription: "Topic names and briefing messages.",
         attachmentPlaceholder: "One attachment URL per line",
         attachmentCountSuffix: "attachment(s)",
         newTopic: "New topic",
@@ -5700,8 +5669,7 @@ export const enMessages = {
         shortNote: "Note",
         untitledPreset: "Untitled preset",
         topicPresetMetaFallback: "Topic preset",
-        topicPresetPageDescription:
-            "Same structure as events, but focused on reusable briefing content.",
+        topicPresetPageDescription: "Briefing topics to reuse in matches.",
         squadPresetMetaFallback: "Squad preset",
         fields: {
             name: "Name",
@@ -5843,7 +5811,7 @@ export const enMessages = {
             other: "{count} membership applications waiting",
         },
         applicationsOldest: "oldest since {date}",
-        nothingWaiting: "Nothing is waiting. Everything is done.",
+        nothingWaiting: "No pending tasks.",
         setupProgress: "Clan setup: {done} of {total} done",
         weekTitle: "This week",
         todayLabel: "today",
@@ -5935,15 +5903,12 @@ export const enMessages = {
         visibilityTitle: "Who can see what",
         visibilityBody:
             "Calendar is visible to logged-in users in this clan. Events, presets, and unpublished rosters remain admin-only.",
-        backendTitle: "Backend prep",
-        backendBody:
-            "Pages are wired around mock data and typed for Convex documents so we can drop in real queries later.",
+        backendTitle: "Data",
+        backendBody: "Clan events, members and rosters.",
         languageTitle: "Language",
-        languageBody:
-            "Locale routing is active with English dictionaries, so additional languages can be added without rewriting page structure.",
+        languageBody: "Choose the app language in your account settings.",
         importsTitle: "Imports",
-        importsBody:
-            "Bulk event, player, and platform identity imports live here so admin-only data tasks stay in one place.",
+        importsBody: "Import events, players and platform IDs.",
         helperDataTitle: "Helper data",
         helperDataBody:
             "Groups, squad presets, and topic presets are copy sources only. Resetting them never rewrites old events or rosters.",
@@ -6015,17 +5980,14 @@ export const enMessages = {
     },
     workspacePages: {
         managersOnlyTitle: "Only managers can open this page",
-        managersOnlyDescription:
-            "Ask a clan manager if you need access. Everything you can use is in the menu.",
+        managersOnlyDescription: "Ask a clan manager for access.",
         backToOverview: "Back to the overview",
     },
     stratmaps: {
         title: "Stratmaps",
         createTitle: "Create Stratmap",
-        pageDescription:
-            "Saved realtime tactical maps for competitive match planning.",
-        createDescription:
-            "Create a saved realtime tactical sketch that can later be attached to match briefings.",
+        pageDescription: "Tactical maps for match briefings.",
+        createDescription: "Choose a map and add your tactical plan.",
         detailDescription:
             "Realtime tactical map collaboration for match planning.",
         viewMap: "View interactive stratmap and tactical planning.",
@@ -6139,7 +6101,7 @@ export const enMessages = {
         importSkipped: "; {count} unsupported item(s) skipped",
         emptyTitle: "No stratmaps yet",
         emptyDescription:
-            "A stratmap is a shared tactical map with slides. Attach it to a match briefing so the squad sees the plan.",
+            "Create a tactical map and attach it to a match briefing.",
         emptyMemberDescription:
             "Tactical maps for upcoming matches appear here once a manager creates them.",
         deleteAction: "Delete stratmap",
@@ -6162,14 +6124,13 @@ export const enMessages = {
         skip: "Skip tour",
         saveError: "We could not save your tour progress. Please try again.",
         setupWelcome: {
-            title: "Welcome to your command center",
-            description:
-                "This short setup guide appears once. Choose a workspace first, then Logi will show the menus that apply to you.",
+            title: "Set up Logi",
+            description: "Choose your clan to get started.",
         },
         setupWorkspace: {
             title: "Choose a workspace",
             description:
-                "Use the workspace switcher in the left sidebar to open the community you belong to or manage. Each workspace has separate events, members, and Discord settings.",
+                "Open your clan using the workspace switcher in the left sidebar.",
         },
         setupBot: {
             title: "Invite the Discord bot",
@@ -6180,13 +6141,12 @@ export const enMessages = {
             "The bot needs the permissions required by the features you enable. Place its Discord role above every role it must manage.",
         setupNext: {
             title: "Open your workspace tour",
-            description:
-                "After you select a workspace, Logi will show a short tour tailored to your access: a member tour or a manager tour.",
+            description: "Open the member or manager tour for your workspace.",
         },
         memberWelcome: {
             title: "This is your workspace",
             description:
-                "The sidebar now shows the areas available in this community. Use the workspace switcher any time you need to move to another community.",
+                "Use the sidebar to open your clan’s pages or switch clans.",
         },
         memberOperations: {
             title: "Follow operations",
@@ -6194,14 +6154,14 @@ export const enMessages = {
                 "Events, matches, trainings, rosters, and briefings are where you check schedules, sign up, see your assignment, and review plans shared by your managers.",
         },
         memberAccount: {
-            title: "Keep your account ready",
+            title: "Your account",
             description:
-                "Open your account menu to update your avatar and platform IDs. A platform ID may be required before you can submit a membership application.",
+                "Update your avatar and game accounts from the account menu. Some membership applications require a game account.",
         },
         managerWelcome: {
             title: "You can manage this workspace",
             description:
-                "Your sidebar includes the operational and configuration areas for this community. Changes here affect this workspace only.",
+                "Use the sidebar to manage events, members and clan settings.",
         },
         managerOperations: {
             title: "Plan and publish operations",
@@ -6209,9 +6169,9 @@ export const enMessages = {
                 "Create events, matches, trainings, rosters, topic presets, and stratmaps from Operations. Draft first, then publish only after you have checked the Discord configuration and audience.",
         },
         managerConfiguration: {
-            title: "Configure before automating",
+            title: "Clan settings",
             description:
-                "Members, membership applications, groups, tickets, and Server settings control what the bot can do. Configure channels and roles before enabling Discord-dependent workflows.",
+                "Set up Discord channels and roles before publishing events or opening applications.",
         },
     },
     shared: {
@@ -6234,7 +6194,7 @@ export const enMessages = {
         rosterMetaDescription:
             "Roster board with reserves, role slots, publish state, and acknowledgements.",
         rosterPageDescription:
-            "Inspired by competitive roster boards: grouped squads, visible reserves, assignment status, and a future-ready acknowledgement flow.",
+            "Choose the event and squad preset for this roster.",
     },
     rosterPublish: {
         publishTitle: "Publish roster",
@@ -6249,8 +6209,7 @@ export const enMessages = {
         variantPhotoTextDescription:
             "The roster image with the squads as text below it. Searchable and readable on a phone.",
         variantPhoto: "Photo only",
-        variantPhotoDescription:
-            "Only the roster image, as the old bot posted it.",
+        variantPhotoDescription: "Only the roster image.",
         defaultChip: "default",
         defaultNote: "Set the default look in",
         defaultNoteLink: "Messages and panels → Roster",
@@ -6265,7 +6224,7 @@ export const enMessages = {
             many: "The event attendee role will be mentioned once.",
             other: "The event attendee role will be mentioned once.",
         },
-        mentionRepeatHint: "Repeating it only disturbs; the DMs are enough.",
+        mentionRepeatHint: "Players are notified by DM.",
         laterNote:
             "Change DMs and the change summary are offered from the next publish.",
         dmLabel: "Tell players about changes by DM",

@@ -66,9 +66,6 @@ export function TopicEditor({
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                     <CardTitle>{dictionary.presets.topics}</CardTitle>
-                    <p className="text-muted-foreground mt-2 text-sm">
-                        {dictionary.presets.topicEditorDescription}
-                    </p>
                 </div>
                 {canEdit ? (
                     <div className="flex gap-2">
