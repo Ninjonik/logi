@@ -101,20 +101,32 @@ export function buildMatchImage(input: MatchImageInput): MatchImage {
         })
     }
     const participants = input.result?.participants ?? []
+    const participantFor = (team: (typeof assigned)[number]) => {
+        // Prefer stable side identity; manual results may instead name the team.
+        for (const identities of [
+            [team.side],
+            [team.teamId],
+            [team.snapshot.name, team.snapshot.shortCode],
+        ]) {
+            const keys = identities.map(normalized).filter(Boolean)
+            const matches = participants.filter(
+                (p) =>
+                    keys.includes(normalized(p.id)) ||
+                    keys.includes(normalized(p.label))
+            )
+            if (matches.length)
+                return matches.length === 1 ? matches[0] : undefined
+        }
+        return undefined
+    }
     const teams: MatchImageTeam[] = assigned.length
         ? assigned.slice(0, event.gameId === "wardogs" ? 3 : 2).map((team) => ({
               name: clean(team.snapshot.name) || "—",
               code: clean(team.snapshot.shortCode, 20),
               logoUrl: team.snapshot.logoUrl,
               side: clean(team.side),
-              // Never map scores by position: reviewed participants are ordered independently.
-              score:
-                  participants.find(
-                      (p) =>
-                          (normalized(p.id) === normalized(team.side) ||
-                              normalized(p.label) === normalized(team.side)) &&
-                          !!normalized(team.side)
-                  )?.score ?? null,
+              // Reviewed participants are ordered independently of team slots.
+              score: participantFor(team)?.score ?? null,
           }))
         : [
               {
@@ -129,13 +141,25 @@ export function buildMatchImage(input: MatchImageInput): MatchImage {
         ? assigned.find((team) => team.teamId === input.ownTeam?.id)
         : undefined
     const clanSide = ownAssignment?.side || event.side
-    const clanParticipant = clanSide
-        ? participants.find(
-              (p) =>
-                  normalized(p.id) === normalized(clanSide) ||
-                  normalized(p.label) === normalized(clanSide)
-          )
-        : undefined
+    const clanParticipant =
+        (ownAssignment && participantFor(ownAssignment)) ??
+        (clanSide
+            ? participants.find(
+                  (p) =>
+                      normalized(p.id) === normalized(clanSide) ||
+                      normalized(p.label) === normalized(clanSide)
+              )
+            : undefined) ??
+        participants.find(
+            (p) =>
+                [input.ownTeam?.name, input.ownTeam?.shortCode, input.clan.name]
+                    .map(normalized)
+                    .filter(Boolean)
+                    .includes(normalized(p.label)) &&
+                participants.filter(
+                    (other) => normalized(other.label) === normalized(p.label)
+                ).length === 1
+        )
     const outcome = input.result
         ? resolveClanOutcome({
               participants,
