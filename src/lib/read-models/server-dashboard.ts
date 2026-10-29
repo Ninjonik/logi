@@ -14,7 +14,7 @@ export type RecentMatchSummary = {
         id: string
         name: string
         endedAt: string
-        outcome: "victory" | "defeat" | "draw"
+        outcome: "victory" | "defeat" | "draw" | null
         scores: Array<number | null>
     }>
     wins: number
@@ -36,7 +36,7 @@ export async function getRecentMatchSummary(
     gameScope: GameScope = "all"
 ): Promise<RecentMatchSummary | null> {
     return await cachedRead(
-        ["server-recent-match-summary:v6", serverId, gameScope],
+        ["server-recent-match-summary:v7", serverId, gameScope],
         [appCacheTags.serverContext(serverId), appCacheTags.matches(serverId)],
         async () =>
             (await fetchQuery(getRecentMatchSummaryReference, {

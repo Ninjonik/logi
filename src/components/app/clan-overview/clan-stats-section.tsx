@@ -227,10 +227,16 @@ export function ClanStatsSection({
                                             <span
                                                 className={cn(
                                                     "text-sm font-medium",
-                                                    outcomeTone[match.outcome]
+                                                    match.outcome
+                                                        ? outcomeTone[
+                                                              match.outcome
+                                                          ]
+                                                        : "text-muted-foreground"
                                                 )}
                                             >
-                                                {outcomes[match.outcome]}
+                                                {match.outcome
+                                                    ? outcomes[match.outcome]
+                                                    : "—"}
                                             </span>
                                             <span className="font-semibold tabular-nums">
                                                 {match.scores
