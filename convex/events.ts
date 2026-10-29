@@ -36,6 +36,7 @@ import { refreshEventSchedule } from "../src/infrastructure/convex/event-schedul
 import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
+import { permitsFixtureStatistics } from "../src/domain/leagues/portal"
 import { currentEventStatus } from "../src/domain/events/status"
 import { queueEventDiscordDeletion } from "./eventDeletionQueue"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
@@ -162,6 +163,7 @@ export const upsert = mutation({
         pingRoleIds: v.optional(v.array(v.string())),
         createForumChannel: v.optional(v.boolean()),
         createSignupThread: v.optional(v.boolean()),
+        createDebriefThread: v.optional(v.boolean()),
         deleteForumAfterConclusion: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
@@ -601,7 +603,7 @@ export const setResult = mutation({
                       score: args.eventResult.score,
                   })
                 : null
-        if (fixture && score)
+        if (fixture && score && permitsFixtureStatistics(fixture.hosting))
             await ctx.db.patch(fixture._id, {
                 ...score,
                 status: "final",

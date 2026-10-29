@@ -156,6 +156,7 @@ function editableFields(event: Doc<"events">): WebsiteEventFields | null {
         ...(event.registrationStart !== undefined
             ? { registrationStart: event.registrationStart }
             : {}),
+        createDebriefThread: event.createDebriefThread ?? true,
         deleteForumAfterConclusion: event.deleteForumAfterConclusion ?? false,
         registrationEnd: event.registrationEnd,
         meetingStart: event.meetingStart,
@@ -389,6 +390,10 @@ export const execute = mutation({
                                     fields.createSignupThread ??
                                     current?.createSignupThread ??
                                     false,
+                                createDebriefThread:
+                                    fields.createDebriefThread ??
+                                    current?.createDebriefThread ??
+                                    true,
                                 deleteForumAfterConclusion:
                                     fields.deleteForumAfterConclusion ??
                                     current?.deleteForumAfterConclusion ??

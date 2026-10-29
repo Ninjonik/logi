@@ -52,6 +52,7 @@ function seriesInput(source: Doc<"events">) {
         pingMode: source.pingMode,
         pingRoleIds: source.pingRoleIds,
         createForumChannel: source.createForumChannel,
+        createDebriefThread: source.createDebriefThread,
         deleteForumAfterConclusion: source.deleteForumAfterConclusion,
         topicPresetId: source.topicPresetId
             ? String(source.topicPresetId)

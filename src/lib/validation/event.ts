@@ -84,6 +84,7 @@ export const eventSchema = z
         pingRoleIds: z.array(z.string().trim()).default([]),
         createForumChannel: z.boolean().default(false),
         createSignupThread: z.boolean().default(false),
+        createDebriefThread: z.boolean().optional(),
         deleteForumAfterConclusion: z.boolean().optional(),
         topicPresetId: z.string().trim().optional(),
         stratmapIds: z.array(z.string().trim()).default([]),

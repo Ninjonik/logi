@@ -4938,7 +4938,10 @@ export const enMessages = {
             forum: "Match forum",
             deleteForumAfterConclusion: "Delete the forum after the match",
             deleteForumAfterConclusionHint:
-                "After manual or automatic conclusion, invite participants to a private debrief thread in results → event info → registration, then delete the match forum and its posts.",
+                "After manual or automatic conclusion, delete the match forum and its posts.",
+            createDebriefThread: "Create a debrief thread after the match",
+            createDebriefThreadHint:
+                "After conclusion, invite participants to a private debrief thread in results → event info → registration, independently of forum deletion.",
             signupThread: "Event discussion thread",
             signupThreadHint:
                 "Create a public thread under the announcement and keep its members in sync with sign-ups.",

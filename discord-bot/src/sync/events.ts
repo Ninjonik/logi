@@ -231,6 +231,7 @@ export async function syncPayloadEvents(
 
         if (
             !event.deleteForumAfterConclusion &&
+            event.createDebriefThread === false &&
             !(
                 event.eventResultsChannelId ??
                 payload.config.eventResultsChannelId
@@ -400,10 +401,14 @@ async function syncEvent(
 
     if (
         event.status === "concluded" &&
-        event.createForumChannel &&
-        event.deleteForumAfterConclusion
+        event.kind === "match" &&
+        ((event.createForumChannel && event.deleteForumAfterConclusion) ||
+            event.createDebriefThread !== false)
     ) {
         debriefMessageId = await concludeEventForum({
+            deleteForum: Boolean(
+                event.createForumChannel && event.deleteForumAfterConclusion
+            ),
             guild,
             event,
             config: payload.config,
@@ -441,9 +446,11 @@ async function syncEvent(
                 })
             },
         })
-        forumChannelId = undefined
-        infoMessageId = undefined
-        topicMessageIds = []
+        if (event.createForumChannel && event.deleteForumAfterConclusion) {
+            forumChannelId = undefined
+            infoMessageId = undefined
+            topicMessageIds = []
+        }
     } else if (
         (registrationAnnouncementDue ||
             (event.status === "concluded" && Boolean(forumChannelId))) &&

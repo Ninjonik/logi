@@ -119,3 +119,64 @@ need to sign in again to establish that evidence.
 available when signup closes. Signing up again follows the current registration
 policy and minimum. Logi administrators can still organise catalogue teams that
 do not use Logi, independently of clan self-service signup.
+
+## League directory and basic teams
+
+Open **Leagues** in the public navigation to browse all published Logi leagues,
+filter by game, and search by name or season. Each league links to its divisions,
+standings, fixtures and rules. The registration badge distinguishes closed signup,
+automatic acceptance and applications requiring organiser approval.
+
+**Register team** opens the account registration page for that league. Sign in
+with Discord to identify your account; a Discord server, bot installation and
+full clan workspace are not required. Under **My league teams**, create a basic
+team with its game, name and optional short code and description. An account can
+own up to five basic profiles. Existing catalogue names cannot be claimed by
+creating a duplicate; ask a Logi organiser to link an existing catalogue team
+through its clan if it already represents your community. Basic account profiles
+cannot be merged through catalogue administration: merging must not silently
+transfer ownership or invalidate player membership.
+
+Teams linked to clans you currently administer appear alongside basic profiles.
+Only a team owner or current clan administrator can register, withdraw, choose a
+fixture server or report scores. Team players do not gain management permission.
+Use **Join a team** to enter an invitation link or code from your team owner.
+Basic-team owners can copy a private player invitation. Anyone with the invitation
+can sign in and explicitly join; share it only with your players. Each account
+counts once toward a league's minimum, and joining twice does not add another
+member. Clan-linked teams continue to use the existing distinct signed-in clan
+member count. Admission and division assignment follow the organiser's existing
+policy. Invitations and pending reports are not public.
+
+### Fixture hosting and results
+
+The league registration page includes fixtures for your teams; Logi organisers
+can manage all fixtures in the selected league. Before there are linked events,
+score reports or a final result, choose the match server:
+
+- **Connected Logi server:** select a connection from a clan you administer. It
+  must be enabled, online, error-free, support match history, and have a successful
+  observation within the last 15 minutes. This does not require a Discord bot for
+  the basic team. If another clan supplies the server, its administrator selects
+  the connection. Normal match imports and organiser event-linking supply the
+  recorded match statistics; choosing a server does not create a match event.
+- **External server:** enter its display name. Only manual scores are supported;
+  no statistics or match-event links are imported for this fixture. Names are
+  labels, never provider URLs, passwords or credentials.
+
+For an external fixture, each team owner reports the scores in the displayed team
+order. Scores affect standings only when all participants submit the same values,
+or a Logi organiser approves one report. Conflicting reports remain pending. If the organiser changes the participating
+teams or their order, old reports must be submitted again and cannot be approved
+for the new pairing.
+Two-team and three-team fixtures are supported. Final results lock further team
+reports; organisers can correct a final score using competition administration.
+Changing hosting after reports, event links or results is blocked so an existing
+result cannot silently be moved to another server.
+
+The public league pages show the server type and label, never connection IDs,
+provider addresses, invitations or provisional score reports. Basic-team actions
+are available through the personal session API at `/api/v1/me/leagues`; clan
+service keys cannot grant account ownership. The public league catalogue is
+available at `/api/v1/public/leagues` and league details keep the existing
+`/api/v1/public/competitions/{slug}` contract.

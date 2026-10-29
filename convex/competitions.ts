@@ -47,6 +47,7 @@ import {
 } from "../src/domain/competitions/enrollment"
 import { adoptCatalogueTeam } from "../src/application/competitions/adopt-catalogue-team.use-case"
 import { query, type MutationCtx, type QueryCtx } from "./_generated/server"
+import { permitsFixtureStatistics } from "../src/domain/leagues/portal"
 import { dashboardActor, type DashboardActor } from "./dashboardActor"
 import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { resolveGameScope } from "../src/domain/games/game"
@@ -257,6 +258,7 @@ export const getPublic = query({
             name: competition.name,
             season: competition.season,
             description: competition.description ?? null,
+            ...enrollmentPolicy(competition),
             divisions: await Promise.all(
                 divisions.map(async (division) => ({
                     id: String(division._id),
@@ -287,6 +289,14 @@ export const getPublic = query({
                             const [teamAId, teamBId] = fixtureSides(row)
                             return {
                                 id: String(row._id),
+                                ...(row.hosting
+                                    ? {
+                                          hosting: {
+                                              kind: row.hosting.kind,
+                                              label: row.hosting.label,
+                                          },
+                                      }
+                                    : {}),
                                 phase: row.phase,
                                 teamAId,
                                 teamBId,
@@ -1243,6 +1253,11 @@ export const linkEvent = mutation({
             ? await ctx.db.get(fixture.competitionId)
             : null
         if (!fixture || !competition) return fail("not_found")
+        if (
+            parsed.data.eventId !== null &&
+            !permitsFixtureStatistics(fixture.hosting)
+        )
+            return fail("invalid_competition")
         if (parsed.data.eventId === null) {
             for (const eventId of fixtureEventIds(fixture))
                 await releaseEvent(ctx, eventId, fixture._id)

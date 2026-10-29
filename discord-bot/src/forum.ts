@@ -485,6 +485,16 @@ export async function syncForumChannel(input: {
                 })
                 return null
             })
+    } else if (event.status === "concluded") {
+        // A stored ID can outlive a deleted forum. Conclusion permits updating
+        // an existing forum, but must never provision a replacement.
+        return {
+            forumChannelId: undefined,
+            infoMessageId: undefined,
+            debriefMessageId,
+            stateChanged: Boolean(forumChannelId),
+            topicMessageIds: [],
+        }
     } else {
         forumChannel = (await guild.channels
             .create({
@@ -863,7 +873,11 @@ export async function finalizeForumAfterConclusion(
     } = {}
 ): Promise<string | undefined> {
     // "Debrief ve fóru" is a clan switch on "Zprávy a panely" (N1-14).
-    if (!isMessageEnabled(config, "debriefPost")) return extra.debriefMessageId
+    if (
+        event.createDebriefThread === false ||
+        !isMessageEnabled(config, "debriefPost")
+    )
+        return extra.debriefMessageId
     const copy = getRosterMessages(config.defaultLanguage)
     const { post: found, active: existingPosts } =
         await findForumPost<AnyThreadChannel>(
@@ -1037,7 +1051,10 @@ export async function syncPrivateDebrief(input: {
     participantIds: readonly string[]
     rememberThread: (id: string) => Promise<void>
 }) {
-    if (!isMessageEnabled(input.config, "debriefPost"))
+    if (
+        input.event.createDebriefThread === false ||
+        !isMessageEnabled(input.config, "debriefPost")
+    )
         return input.existingThreadId
     const { guild, event, config } = input
     let thread = input.existingThreadId
@@ -1165,10 +1182,10 @@ export async function fetchEventChannel(
 
 /** Preserve the original forum until its replacement and invitations succeed. */
 export async function concludeEventForum(
-    input: Parameters<typeof syncPrivateDebrief>[0]
+    input: Parameters<typeof syncPrivateDebrief>[0] & { deleteForum?: boolean }
 ) {
     const debriefId = await syncPrivateDebrief(input)
-    if (input.forumChannelId) {
+    if (input.deleteForum !== false && input.forumChannelId) {
         const forum = await fetchEventChannel(input.guild, input.forumChannelId)
         if (forum) {
             if (forum.type !== ChannelType.GuildForum)

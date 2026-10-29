@@ -5063,7 +5063,10 @@ export const deMessages = {
             forum: "Match-Forum",
             deleteForumAfterConclusion: "Forum nach dem Spiel löschen",
             deleteForumAfterConclusionHint:
-                "Nach manuellem oder automatischem Abschluss Teilnehmer in einen privaten Debrief-Thread unter Ergebnisse → Event-Info → Anmeldung einladen und das Spielforum mit allen Beiträgen löschen.",
+                "Nach manuellem oder automatischem Abschluss das Spielforum mit allen Beiträgen löschen.",
+            createDebriefThread: "Debrief-Thread nach dem Spiel erstellen",
+            createDebriefThreadHint:
+                "Nach Abschluss Teilnehmer in einen privaten Debrief-Thread unter Ergebnisse → Event-Info → Anmeldung einladen, unabhängig vom Löschen des Forums.",
             signupThread: "Diskussions-Thread zum Event",
             signupThreadHint:
                 "Erstellt einen öffentlichen Thread unter der Ankündigung und synchronisiert seine Mitglieder mit den Anmeldungen.",

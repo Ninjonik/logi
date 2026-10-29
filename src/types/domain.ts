@@ -372,6 +372,7 @@ export type EventRecord = {
     createForumChannel: boolean
     /** Opt-in public discussion thread attached to the announcement. */
     createSignupThread?: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
     stratmapIds: string[]

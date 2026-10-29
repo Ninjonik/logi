@@ -92,6 +92,7 @@ export type FlowValues = {
     pingRoleIds: string[]
     createForumChannel: boolean
     createSignupThread: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     createSquadVoiceChannels: boolean
     server: string
@@ -224,6 +225,7 @@ export function applyTemplateValues(
         pingRoleIds: template.pingRoleIds,
         createForumChannel: isMatch && template.createForumChannel,
         createSignupThread: false,
+        createDebriefThread: true,
         deleteForumAfterConclusion: true,
         createSquadVoiceChannels: template.createSquadVoiceChannels,
         matchType: template.categoryId ?? values.matchType,
@@ -316,6 +318,7 @@ export function newFlowValues(input: {
         pingRoleIds: [],
         createForumChannel: kind === "match",
         createSignupThread: false,
+        createDebriefThread: true,
         deleteForumAfterConclusion: true,
         createSquadVoiceChannels: false,
         server: "",
@@ -446,6 +449,7 @@ export function flowValuesFromEvent(
         pingRoleIds: event.pingRoleIds ?? [],
         createForumChannel: event.createForumChannel,
         createSignupThread: event.createSignupThread ?? false,
+        createDebriefThread: event.createDebriefThread ?? true,
         deleteForumAfterConclusion: event.deleteForumAfterConclusion ?? false,
         createSquadVoiceChannels: event.createSquadVoiceChannels ?? false,
         server: event.server ?? "",
@@ -596,6 +600,7 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         createForumChannel: isMatch && values.createForumChannel,
         createSignupThread: isMatch && values.createSignupThread,
+        createDebriefThread: isMatch && (values.createDebriefThread ?? true),
         deleteForumAfterConclusion:
             isMatch && (values.deleteForumAfterConclusion ?? true),
         createSquadVoiceChannels: values.createSquadVoiceChannels,
@@ -832,6 +837,7 @@ export function flowEditPayload(
         pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         createForumChannel: isMatch && values.createForumChannel,
         createSignupThread: isMatch && values.createSignupThread,
+        createDebriefThread: isMatch && (values.createDebriefThread ?? true),
         deleteForumAfterConclusion:
             isMatch && (values.deleteForumAfterConclusion ?? true),
         createSquadVoiceChannels: values.createSquadVoiceChannels,

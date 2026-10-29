@@ -384,6 +384,7 @@ export type EventRecord = {
     pingRoleIds?: string[]
     createForumChannel: boolean
     createSignupThread?: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
     stratmapIds?: string[]

@@ -512,6 +512,8 @@ export type PublicCompetitionTeam = {
     withdrawn: boolean
 }
 export type PublicCompetitionFixture = {
+    hosting?: { kind: "linked" | "external"; label: string }
+
     id: string
     phase: FixturePhase
     teamAId: string
@@ -530,6 +532,9 @@ export type PublicCompetitionFixture = {
 }
 /** Public pages and `GET /api/v1/public/competitions/{slug}`; published competitions only. */
 export type PublicCompetition = {
+    registrationMode?: import("./enrollment").RegistrationMode
+    minimumLinkedPlayers?: number | null
+
     id: string
     gameId: GameId
     slug: string

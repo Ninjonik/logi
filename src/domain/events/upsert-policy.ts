@@ -55,6 +55,7 @@ export type EventUpsertInput = {
     createForumChannel?: boolean
     /** Opt-in only. Missing also means off for existing events. */
     createSignupThread?: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
     stratmapIds?: string[]
@@ -116,6 +117,8 @@ export function buildEventCreationSettings(input: EventUpsertInput) {
             input.attendanceReminderHours
         ),
         createParticipantRoles: input.createParticipantRoles,
+        createDebriefThread:
+            kind === "match" && (input.createDebriefThread ?? true),
         deleteForumAfterConclusion:
             kind === "match" && (input.deleteForumAfterConclusion ?? true),
         squadPresetId:
@@ -142,6 +145,9 @@ export function buildEventUpdateSettings(input: EventUpsertInput) {
             : {}),
         ...(input.attendanceReminderHours !== undefined
             ? { attendanceReminderHours: tidied.attendanceReminderHours }
+            : {}),
+        ...(input.createDebriefThread !== undefined
+            ? { createDebriefThread: tidied.createDebriefThread }
             : {}),
         ...(input.deleteForumAfterConclusion !== undefined
             ? { deleteForumAfterConclusion: tidied.deleteForumAfterConclusion }

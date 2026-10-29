@@ -1005,6 +1005,7 @@ export default defineSchema({
         createForumChannel: v.optional(v.boolean()),
         // Opt-in only: absent legacy events must not get a thread.
         createSignupThread: v.optional(v.boolean()),
+        createDebriefThread: v.optional(v.boolean()),
         deleteForumAfterConclusion: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),
         stratmapIds: v.optional(v.array(v.id("stratmaps"))),
@@ -1121,7 +1122,49 @@ export default defineSchema({
         .index("teamId", ["teamId"])
         .index("competitionId_guildId", ["competitionId", "guildId"])
         .index("competitionId_teamId", ["competitionId", "teamId"]),
+    leagueTeamProfiles: defineTable({
+        teamId: v.id("teamDirectory"),
+        ownerUserId: v.id("users"),
+        inviteToken: v.string(),
+        createdAt: v.string(),
+    })
+        .index("teamId", ["teamId"])
+        .index("ownerUserId", ["ownerUserId"])
+        .index("inviteToken", ["inviteToken"]),
+    leagueTeamMembers: defineTable({
+        teamId: v.id("teamDirectory"),
+        userId: v.id("users"),
+        joinedAt: v.string(),
+    })
+        .index("teamId", ["teamId"])
+        .index("userId", ["userId"])
+        .index("teamId_userId", ["teamId", "userId"]),
+    leagueScoreReports: defineTable({
+        fixtureId: v.id("competitionFixtures"),
+        teamId: v.id("teamDirectory"),
+        userId: v.id("users"),
+        participantTeamIds: v.optional(v.array(v.id("teamDirectory"))),
+        scores: v.array(v.number()),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("fixtureId", ["fixtureId"])
+        .index("fixtureId_teamId", ["fixtureId", "teamId"]),
     competitionFixtures: defineTable({
+        hosting: v.optional(
+            v.union(
+                v.object({ kind: v.literal("external"), label: v.string() }),
+                v.object({
+                    kind: v.literal("linked"),
+                    sourceRef: v.string(),
+                    guildId: v.string(),
+                    label: v.string(),
+                })
+            )
+        ),
+        hostingUpdatedBy: v.optional(v.string()),
+        manualResultApprovedBy: v.optional(v.string()),
+
         competitionId: v.id("competitions"),
         divisionId: v.optional(v.id("competitionDivisions")),
         phase: v.union(

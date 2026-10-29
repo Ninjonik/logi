@@ -40,6 +40,14 @@ The bot calls Convex through `discord-bot/src/convex.ts`. Its workers coordinate
 
 Discord OAuth creates durable dashboard sessions in Convex. Session validation checks current identity, expiry, and revocation. Optional OIDC uses its own protocol routes and registered clients; bearer integration keys cannot create login sessions.
 
+The personal league boundary `/api/v1/me/leagues` instead requires the live
+first-party account session and same-origin validation for writes. Basic league
+profiles are account-owned catalogue teams, with private invitation membership
+and fixture score reports in separate league tables. Clan service keys and
+clan-scoped SSO actors cannot grant global personal-team ownership. Connected
+fixture hosts retain their clan's server-management authority; external hosts
+never accept imported statistics.
+
 The `/api/v1` surface uses scoped integration keys and, for actor-backed operations, current actor authorization. Public presentation, verified platform identity, membership evidence, and authorization are separate concerns. See the [integration reference](docs/integrations/website/README.md).
 
 ## Convex hot paths

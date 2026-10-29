@@ -22,6 +22,7 @@ import { rankSourceCandidates } from "../src/domain/match-results/source-candida
 import type { ResultRevision } from "../src/domain/match-results/result-revision"
 import { confirmResult } from "../src/application/match-results/confirm-result"
 import { providerSessionSchema } from "../src/domain/game-data/contracts"
+import { permitsFixtureStatistics } from "../src/domain/leagues/portal"
 import { saveCollectedPlayerStats } from "./collectedPlayerStatsStore"
 import { resolveGameScope, isGameId } from "../src/domain/games/game"
 import { assertMembershipSecret } from "./membershipAccess"
@@ -173,7 +174,7 @@ async function applyReviewedResultToFixture(
 ) {
     if (revision.status === "provisional" || !event.competitionFixtureId) return
     const fixture = await ctx.db.get(event.competitionFixtureId)
-    if (!fixture) return
+    if (!fixture || !permitsFixtureStatistics(fixture.hosting)) return
     const participantIds =
         fixture.participantTeamIds?.map(String) ??
         [

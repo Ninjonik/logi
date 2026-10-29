@@ -355,11 +355,16 @@ found).
 `event.deleteForumAfterConclusion` is available through the actor-backed create
 and update commands and the event editor read. It defaults to `true` for new
 matches; omission on update preserves the saved value, with `false` for legacy
-events. After manual or automatic conclusion, the bot creates a private debrief
-under results → event info → registration, invites attending signups and
-rostered players (excluding explicit absences), then deletes the forum and all
-its posts. Turning the flag off retains the forum and its debrief post. The
-workspace debrief message switch still applies. These operations use the same
+events. After manual or automatic conclusion, the bot deletes the forum and all
+its posts when this flag is enabled.
+
+`event.createDebriefThread` independently controls creating a private debrief
+under results → event info → registration and inviting attending signups and
+rostered players (excluding explicit absences). It defaults to `true`, including
+existing matches, and omission on update preserves the saved value. It works
+whether or not a forum exists or is deleted. Turning it off prevents debrief
+creation but does not delete an existing debrief. The workspace debrief message
+switch still applies. These operations use the same
 actor authorization, revision checks and idempotency receipts as other edits.
 
 ### Meeting voice confirmation boundary

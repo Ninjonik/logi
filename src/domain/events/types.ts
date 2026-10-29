@@ -86,6 +86,7 @@ export type EventLike = {
     createForumChannel?: boolean
     /** Whether the announcement owns an opt-in public signup discussion thread. */
     createSignupThread?: boolean
+    createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     status?: EventStatus
     statusUpdatedAt?: string

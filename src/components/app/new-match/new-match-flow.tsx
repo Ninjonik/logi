@@ -3420,6 +3420,16 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         </>
                                     )
                                 ) : null}
+                                {isMatch
+                                    ? switchRow(
+                                          "nm-debrief",
+                                          t.discord.createDebriefThread,
+                                          values.createDebriefThread ?? true,
+                                          (createDebriefThread) =>
+                                              update({ createDebriefThread }),
+                                          t.discord.createDebriefThreadHint
+                                      )
+                                    : null}
                                 {isMatch && values.createForumChannel
                                     ? switchRow(
                                           "nm-delete-forum",

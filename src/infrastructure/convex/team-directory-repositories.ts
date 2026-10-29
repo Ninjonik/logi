@@ -313,6 +313,17 @@ export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
         const team = this.ctx.db.normalizeId("teamDirectory", teamId)
         const other = this.ctx.db.normalizeId("teamDirectory", otherTeamId)
         if (!team || !other) return false
+        // A catalogue merge must not silently transfer a personal team or orphan its invites.
+        // Account-owned teams need an explicit ownership-transfer lifecycle before merging.
+        for (const id of [team, other]) {
+            if (
+                await this.ctx.db
+                    .query("leagueTeamProfiles")
+                    .withIndex("teamId", (q) => q.eq("teamId", id))
+                    .first()
+            )
+                return true
+        }
         const registrations = await this.ctx.db
             .query("competitionTeams")
             .withIndex("teamId", (q) => q.eq("teamId", team))
