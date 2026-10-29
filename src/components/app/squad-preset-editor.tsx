@@ -321,9 +321,6 @@ export function SquadPresetEditor({
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                     <CardTitle>{dictionary.presets.presetSetup}</CardTitle>
-                    <p className="text-muted-foreground mt-2 text-sm">
-                        {dictionary.presets.presetSetupDescription}
-                    </p>
                 </div>
                 {canEdit ? (
                     <div className="flex flex-wrap gap-2">

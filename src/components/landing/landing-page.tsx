@@ -395,9 +395,6 @@ export function LandingPage({
                     <Reveal className="mx-auto max-w-2xl text-center">
                         <Eyebrow>{copy.workflow.eyebrow}</Eyebrow>
                         <h2 className="home-heading">{copy.workflow.title}</h2>
-                        <p className="home-body mt-5">
-                            {copy.workflow.description}
-                        </p>
                     </Reveal>
                     <div
                         ref={workflowTrack}
@@ -543,9 +540,6 @@ export function LandingPage({
                                 locale={locale}
                                 dictionary={dictionary}
                             />
-                            <p className="mt-3 px-1 text-[10px] leading-5 text-zinc-500">
-                                {copy.discord.note}
-                            </p>
                         </div>
                     </div>
                     <div className="order-1 lg:order-2">
@@ -610,7 +604,6 @@ export function LandingPage({
                 <Reveal className="max-w-2xl">
                     <Eyebrow>{copy.explore.eyebrow}</Eyebrow>
                     <h2 className="home-heading">{copy.explore.title}</h2>
-                    <p className="home-body mt-5">{copy.explore.description}</p>
                 </Reveal>
                 <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {renderFeature(0)}

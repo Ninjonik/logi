@@ -4,7 +4,7 @@ export const deMessages = {
     competitionEnrollment: {
         title: "Wettbewerbe",
         description:
-            "Verknüpfte Clanteams anmelden, Genehmigungen verfolgen oder unter Beibehaltung der Spielhistorie zurückziehen.",
+            "Melde die Teams deines Clans an oder verwalte ihre Bewerbungen.",
         noTeams:
             "Kein Team ist mit diesem Clan verknüpft. Beantrage ein Team oder bitte einen Logi-Administrator, dein bestehendes Team zu verknüpfen.",
         teamsLink: "Teams verwalten",
@@ -950,7 +950,7 @@ export const deMessages = {
         name: "Logi",
         tagline: "Event-Organisator",
         description:
-            "Organisiere Clan-Events, erstelle Roster, veröffentliche Briefings und bereite Discord-verbundene Operationen vor.",
+            "Verwalte Clan-Events, Aufstellungen und Discord-Ankündigungen.",
     },
     games: {
         filterLabel: "Spielfilter",
@@ -990,7 +990,7 @@ export const deMessages = {
         liveOperations: "Operationen, vernetzt",
         commandCenter: "Deine Operations-Leitzentrale",
         commandCenterDescription:
-            "Events, Roster, Discord-Koordination und öffentliche Match-Historie an einem Ort.",
+            "Plane Events, sammle Anmeldungen und veröffentliche Aufstellungen auf Discord.",
         eventsMetric: "Events",
         playersMetric: "Spieler",
         matchesMetric: "Matches",
@@ -1002,12 +1002,12 @@ export const deMessages = {
         featureEventsDescription:
             "Plane jede Phase einer Operation mit klaren Zeiten und Discord-fertigen Ankündigungen.",
         featureRostersDescription:
-            "Erstelle Aufstellungen, koordiniere Anwesenheit und halte alle auf dem gleichen Stand.",
+            "Teile Squads ein, verwalte Reserven und erfasse die Anwesenheit.",
         featureStats: "Öffentliche Match-Historie",
         featureStatsDescription:
             "Teile Spielerprofile, Ergebnisse und detaillierte Match-Analysen mit deiner Community.",
         badge: "Discord-Operationen für organisierte Gruppen",
-        title: "Logi hält Community-Operationen lesbar, strukturiert und an einem Ort.",
+        title: "Clanverwaltung mit Logi",
         description:
             "Logi ist eine Open-Source-Plattform für Gruppen, die Events, Roster, Trainings, Matches und Discord-Koordination betreiben.",
         featuresTitle: "Was es wirklich kann",
@@ -1018,9 +1018,9 @@ export const deMessages = {
         featureDiscord: "Discord-verbundene Serververwaltung",
         featureTools: "Geteilte Tools für organisierte Communities",
         commsBadge: "LogiComms",
-        commsTitle: "Klare Squad-Kommunikation ohne Overhead.",
+        commsTitle: "Sprachkommunikation im Squad",
         commsDescription:
-            "LogiComms ist eine leichte, schnelle Desktop-App für effiziente Squad-interne Kommunikation. Schnell eingerichtet und anpassbar an deine Einheit.",
+            "LogiComms ist eine Desktop-App für die Sprachkommunikation im Squad.",
         commsDownload: "Für Windows herunterladen",
         commsUnavailable: "Windows-Download vorübergehend nicht verfügbar.",
         freeToUse: "Kostenlos nutzbar",
@@ -1031,21 +1031,20 @@ export const deMessages = {
         pillars: {
             operationsTitle: "Erledigt das Langweilige",
             operationsDescription:
-                "Planung, Anmeldungen, Roster-Organisation, Match-Vorbereitung und Discord-Koordination an einem Ort.",
+                "Plane Spiele, sammle Anmeldungen und veröffentliche Aufstellungen.",
             communitiesTitle: "Gebaut für echte Communities",
             communitiesDescription:
-                "Gemacht für Clans, Einheiten und organisierte Gruppen, die Struktur ohne Zeremonie brauchen.",
+                "Für Clans, die Spiele und Trainings auf Discord organisieren.",
             contributorsTitle: "Offen für Mitwirkende",
             contributorsDescription:
-                "Open Source, offen für Pull Requests und öffentlich verbessert mit den Menschen, die es nutzen.",
+                "Melde Fehler oder steuere Code auf GitHub bei.",
         },
     },
     auth: {
-        loginTitle: "Plane deine nächste Operation",
-        loginDescription:
-            "Melde dich mit Discord an, um Clans zu verwalten, Roster zu veröffentlichen und jedes Briefing an einem Ort zu halten.",
+        loginTitle: "Bei Logi anmelden",
+        loginDescription: "Melde dich mit deinem Discord-Konto an.",
         loginButton: "Mit Discord fortfahren",
-        heroSubtitle: "Team-Management leicht gemacht.",
+        heroSubtitle: "Clan-Events und Aufstellungen",
         contributeButton: "Mitwirken",
         featureRosterManagement: "Roster-Verwaltung",
         featurePlayerPerformance: "Spielerleistungs-Aggregation",
@@ -1061,23 +1060,22 @@ export const deMessages = {
         featureRostersBody:
             "Veröffentliche slotfertige Aufstellungen mit Reserven und Bestätigungen.",
         featureBriefingsTitle: "Briefings",
-        featureBriefingsBody:
-            "Halte Event-Notizen, Maps und Anhänge bei jeder Operation.",
+        featureBriefingsBody: "Füge Events Notizen, Karten und Anhänge hinzu.",
         featureDiscordTitle: "Discord-ready",
         featureDiscordBody:
-            "Bereite zuerst das Web-Dashboard vor und binde die Bot-Ebene später an.",
+            "Veröffentliche Ankündigungen und Aufstellungen auf Discord.",
         englishEnabled: "Englisch aktiviert",
         discordAccessOnly: "Nur Discord-Zugang",
         discordOauth: "Discord OAuth",
         discordOauthBody: "Single Sign-On für Clans, Mitglieder und Mercs.",
-        plannedBackendHooks: "Geplante Backend-Hooks",
+        plannedBackendHooks: "Konto und Clanzugriff",
         plannedBackendHooksBody:
-            "Convex-Dokumente, Discord-Identitäts-Sync, Plattform-Identitäts-Verknüpfung, Clan-bewusste Berechtigungen und Roster-Publishing-Flows.",
+            "Melde dich mit Discord an, um auf deine Clans zuzugreifen.",
     },
     dashboard: {
         title: "Deine Clans",
         description:
-            "Alles, was du verwaltest, vertrittst oder wofür du kämpfst, ist hier gruppiert.",
+            "Öffne einen Clan, den du verwaltest oder dem du angehörst.",
         greetingMorning: "Guten Morgen",
         greetingAfternoon: "Guten Tag",
         greetingEvening: "Guten Abend",
@@ -1239,7 +1237,7 @@ export const deMessages = {
     teams: {
         title: "Teams",
         description:
-            "Durchsuche den Logi-Teamkatalog für jedes Spiel. Logi-Administratoren pflegen ihn: Beantrage fehlende Teams oder schlage Änderungen vor und wähle freigegebene Teams in deinen Matches aus.",
+            "Wähle Teams für Spiele aus, beantrage ein fehlendes Team oder schlage eine Änderung vor.",
         cancel: "Abbrechen",
         name: "Name",
         shortCode: "Kürzel",
@@ -2236,8 +2234,7 @@ export const deMessages = {
         descriptionRequired: "Gib eine Kurzbeschreibung ein.",
         bodyRequired: "Schreib den Artikel.",
         emptyTitle: "Noch keine Artikel",
-        emptyDescription:
-            "Artikel bringen allen Mitgliedern Clan-News und längere Updates.",
+        emptyDescription: "Veröffentliche deinen ersten Artikel.",
         emptyMemberDescription:
             "Clan-News und längere Updates erscheinen hier, sobald ein Manager sie veröffentlicht.",
         publishedOn: "Veröffentlicht {date}",
@@ -2412,8 +2409,7 @@ export const deMessages = {
             "Die Löschung entfernt auch deine Clan-Zuweisungen, Anmeldungen, Roster-Platzierungen und andere kontoverknüpfte Datensätze. Manche Daten können bleiben, wo gesetzlich erforderlich.",
         requestSubmitted: "Deine Datenschutzanfrage wurde übermittelt.",
         title: "Benutzereinstellungen",
-        description:
-            "Verwalte dein Profil und deine Plattform-Identität für importiertes Match-Matching.",
+        description: "Bearbeite dein Profil und deine Spielkonten.",
         profile: "Profil",
         discordName: "Discord-Name",
         discordId: "Discord-ID",
@@ -2457,8 +2453,7 @@ export const deMessages = {
         accountDescription:
             "Deine Sprache, Spielkonten, Bot-Nachrichten und persönlichen Daten.",
         signedInWith: "{name} · über Discord angemeldet",
-        autoSaveNote:
-            "Änderungen werden sofort gespeichert. Du musst nichts mit einem Button bestätigen.",
+        autoSaveNote: "Änderungen werden automatisch gespeichert.",
         changeAvatar: "Avatar ändern",
         avatarSaved: "Avatar gespeichert.",
         lookTitle: "Sprache und Darstellung",
@@ -2509,7 +2504,7 @@ export const deMessages = {
             "Verwalte Aussehen dieses Clans und wer Operationen leiten darf.",
         pageDescription:
             "Aktualisiere Clan-Profil, Discord-Automatisierung und Zugriffskontrollen für deinen Workspace.",
-        frontendOnlyDescription: "Vorläufig nur Frontend-Clan-Konfiguration.",
+        frontendOnlyDescription: "Clanprofil und Discord-Einstellungen.",
         clanName: "Clan-Name",
         discordTitle: "Discord-Bot-Einstellungen",
         discordDescription:
@@ -2614,7 +2609,7 @@ export const deMessages = {
         accessMembers:
             "Mitglieder und Mercenaries: Kalendersicht plus nur veröffentlichte Roster.",
         accessBackend:
-            "Spätere Backend-Arbeit kann diese Regeln mit Discord-Rollen und Convex-Queries verbinden.",
+            "Der Zugriff richtet sich nach den konfigurierten Discord-Rollen und Clanzuweisungen.",
     },
     integrationSettings: {
         cancel: "Abbrechen",
@@ -2793,8 +2788,7 @@ export const deMessages = {
         untitledCategory: "Kategorie ohne Titel",
         noCategoriesDescription:
             "Jede Kategorie wird ein Button im Panel, zum Beispiel Spieler melden oder Problem mit dem Bot.",
-        saveNote:
-            "Speichert nur die Tickets. Andere Einstellungen bleiben, wie sie sind.",
+        saveNote: "Speichert die Ticket-Einstellungen.",
         saveAndRefresh: "Speichern und Panel aktualisieren",
         discard: "Verwerfen",
         unsaved: "Ungespeicherte Änderungen",
@@ -2956,8 +2950,7 @@ export const deMessages = {
         noCategoriesDescription:
             "Jede Kategorie ist eine Option in der Bewerbung, zum Beispiel Hauptmitglied, Reserve oder Söldner.",
         rolePlaceholder: "Rolle hinzufügen",
-        saveNote:
-            "Speichert nur die Mitgliedschaft. Andere Einstellungen bleiben, wie sie sind.",
+        saveNote: "Speichert die Mitgliedschaftseinstellungen.",
         discard: "Verwerfen",
         saveShort: "Speichern",
         unsaved: "Ungespeicherte Änderungen",
@@ -3003,8 +2996,7 @@ export const deMessages = {
         recruitRolePlaceholder: "Rekruten-Rolle",
         finalRole: "Finale Rolle für diese Kategorie",
         finalRolePlaceholder: "Finale Rolle",
-        modalQuestionsDescription:
-            "Bis zu 5 Texteingaben, genau wie der Ticket-Modal-Flow.",
+        modalQuestionsDescription: "Bis zu 5 Textfelder.",
         noQuestions:
             "Noch keine Modal-Fragen. Leer lassen, wenn die Kategorie den Thread sofort nach dem Precheck öffnen soll.",
         noCategories: "Noch keine Bewerbungskategorien.",
@@ -3050,8 +3042,7 @@ export const deMessages = {
         adminAccessUpdateFailed:
             "Spieler-Admin-Zugriff konnte nicht aktualisiert werden.",
         title: "Spieler",
-        description:
-            "Füge Spieler aus dem bestehenden System als Hauptmitglieder oder Mercenaries hinzu und setze dabei Clan-Mitgliedsregeln durch.",
+        description: "Verwalte Clanmitglieder und Söldner.",
         addMember: "Als Mitglied hinzufügen",
         addReserveMember: "Als Reservemitglied hinzufügen",
         addMerc: "Als Mercenary hinzufügen",
@@ -3071,7 +3062,7 @@ export const deMessages = {
         rulesMerc:
             "Ein Spieler kann Mercenary für andere Clans sein, aber nicht gleichzeitig Mitglied und Mercenary im selben Clan.",
         rulesSystem:
-            "Die Suche gibt nur Spieler zurück, die bereits in unserem System sind, bereit für Backend-Autocomplete später.",
+            "Die Suche findet Spieler mit einem bestehenden Logi-Konto.",
         tablePlayer: "Spieler",
         tableType: "Typ",
         tableGroup: "Gruppe",
@@ -3278,7 +3269,7 @@ export const deMessages = {
     calendarPage: {
         title: "Kalender",
         description:
-            "Nutze den Kalender, um bevorstehende und vergangene Events zu durchsuchen, dann springe in volle Event-Details oder das veröffentlichte Roster.",
+            "Öffne ein Event, um Details oder die Aufstellung zu sehen.",
         monthView: "Monatliche Operations-Ansicht",
         moreEvents: "weitere Events",
         allDay: "Ganztägig",
@@ -3318,12 +3309,11 @@ export const deMessages = {
     settingsHub: {
         title: "Clan-Einstellungen",
         description:
-            "Alles, was Logi über euren Clan wissen muss, nach Themen geordnet. Öffne eine Karte, um etwas zu ändern.",
+            "Konfiguriere deinen Clan, den Discord-Bot und Integrationen.",
         setupTitle: "Ersteinrichtung",
         setupProgress: "{done} von {total} Pflichteinstellungen erledigt",
         setupNext: "Nächster Schritt: {item}",
-        setupDone:
-            "Die Pflichteinstellungen sind erledigt. Optionale Funktionen lassen sich jederzeit einschalten.",
+        setupDone: "Erforderliche Einrichtung abgeschlossen.",
         continueSetup: "Weiter",
         backToOverview: "Alle Einstellungen",
         sectionNavLabel: "Bereiche der Einstellungen",
@@ -3372,8 +3362,7 @@ export const deMessages = {
         },
         overview: {
             title: "Einstellungen",
-            description:
-                "Clan, Discord, Spieldaten und verbundene Websites an einem Ort.",
+            description: "Clanprofil, Discord-Einstellungen und Integrationen.",
             searchLabel: "Einstellungen durchsuchen",
             searchPlaceholder: "Suchen: Kanal, Rolle, API-Schlüssel…",
             noResults: "Nichts gefunden",
@@ -3834,7 +3823,7 @@ export const deMessages = {
         messagesPage: {
             title: "Nachrichten und Panels in Discord",
             description:
-                "Alles, was der Bot sendet: wohin, ob überhaupt und wie es aussieht. Er schreibt in der Clansprache und mit der Clanfarbe.",
+                "Wähle, welche Nachrichten der Bot sendet und wie sie aussehen.",
             lookTitle: "Aussehen aller Nachrichten",
             lookIntro:
                 "Gilt für Ankündigungen, Panels, DMs und Befehlsantworten. Bot-Fehler für Admins haben einen grauen Balken.",
@@ -3878,7 +3867,7 @@ export const deMessages = {
             previewTime: "heute um 18:02",
             listTitle: "Was der Bot sendet",
             listIntro:
-                "Jeder Kanal wird an genau einer Stelle bearbeitet. Ein Kanal mit Schloss gehört zu einer anderen Seite, der Link führt Sie dorthin. Einen Kanal mit Auswahl bearbeiten Sie direkt hier.",
+                "Gesperrte Kanäle werden auf der verlinkten Einstellungsseite konfiguriert.",
             groups: {
                 matches: "Matches",
                 direct: "Private Nachrichten",
@@ -4164,7 +4153,7 @@ export const deMessages = {
             messages: {
                 title: "Nachrichten und Panels",
                 description:
-                    "Alles, was der Bot sendet: wohin, ob überhaupt und wie es aussieht. Er schreibt in der Clansprache und mit der Clanfarbe.",
+                    "Wähle, welche Nachrichten der Bot sendet und wie sie aussehen.",
             },
             channels: {
                 title: "Kanäle und Sprache",
@@ -4278,8 +4267,7 @@ export const deMessages = {
                 },
                 games: {
                     heading: "Welche Spiele spielt dein Clan?",
-                    description:
-                        "Logi zeigt dann nur die Optionen, die zu diesen Spielen gehören. Du kannst das jederzeit ändern.",
+                    description: "Wähle die Spiele, die dein Clan spielt.",
                     groupLabel: "Spiele des Clans",
                     required: "Wähle mindestens ein Spiel.",
                 },
@@ -4339,7 +4327,7 @@ export const deMessages = {
             finished: {
                 title: "Fertig. Logi ist bereit.",
                 description:
-                    "Du kannst alles später in den Einstellungen ändern. Dort findest du auch Optionen für die Website, Panels und Befehle.",
+                    "Konfiguriere Panels, Befehle und Website-Integrationen unter Einstellungen.",
                 openSettings: "Einstellungen öffnen",
                 again: "Noch einmal durchgehen",
             },
@@ -4753,8 +4741,7 @@ export const deMessages = {
             "Spieler auf einen Platz oder Trupp ziehen. Mit der Zuweisungsschaltfläche einen Platz auswählen.",
 
         title: "Roster",
-        listDescription:
-            "Durchsuche Event-Roster, prüfe Squad-Stärken und sieh, welche Aufstellungen bereits veröffentlicht sind.",
+        listDescription: "Event-Aufstellungen und ihr Veröffentlichungsstatus.",
         modeView: "Übersicht",
         modeLayout: "Squad-Editor",
         modeAssignment: "Roster-Editor",
@@ -4862,8 +4849,7 @@ export const deMessages = {
     newMatch: {
         title: "Neues Match",
         titleTraining: "Neues Training",
-        description:
-            "Das meiste füllt die Vorlage aus. Rechts siehst du, wie die Spieler das Match in Discord sehen.",
+        description: "Nutze eine Vorlage oder gib die Spieldetails ein.",
         autosave: {
             idle: "Angefangenes wird als Entwurf gespeichert",
             saving: "Entwurf wird gespeichert…",
@@ -4873,7 +4859,7 @@ export const deMessages = {
         deleteDraft: "Entwurf löschen",
         deleteDraftTitle: "Entwurf {name} löschen?",
         deleteDraftDescription:
-            "Der Entwurf verschwindet aus der Matchliste. Nach Discord wurde nichts gesendet, die Spieler merken also nichts.",
+            "Diesen Entwurf löschen? Er wurde noch nicht auf Discord veröffentlicht.",
         draftDeleted: "Entwurf gelöscht.",
         untitled: "Ohne Namen",
         steps: {
@@ -5246,10 +5232,8 @@ export const deMessages = {
         },
         overview: {
             title: "Übersicht",
-            description:
-                "Wie das Match eingerichtet ist und wie Spieler es in Discord sehen.",
-            descriptionTraining:
-                "Wie das Training eingerichtet ist und wie Spieler es in Discord sehen.",
+            description: "Spieldetails und Discord-Ankündigung.",
+            descriptionTraining: "Trainingsdetails und Discord-Ankündigung.",
             edit: "Bearbeiten",
             readOnly: "Nur Clan-Manager können das Match ändern.",
             stratmaps: "Taktikkarten",
@@ -5466,7 +5450,7 @@ export const deMessages = {
             whoHint: "Nach dem Status aus den Mitgliedschaftseinstellungen.",
             groups: "Gruppen",
             groupsHint:
-                "Was ein Spieler bei der Anmeldung wählt. Neu sind Limits: Ist eine Gruppe voll, wird ein Reserveplatz angeboten.",
+                "Spieler wählen bei der Anmeldung eine Gruppe. Volle Gruppen bieten einen Reserveplatz an.",
             noGroups: "Dieses Spiel hat noch keine Anmeldegruppen.",
             groupsAllGames:
                 "Eine Vorlage für alle Spiele bietet alle Anmeldegruppen des Spiels des Matches an. Wähle ein Spiel, um Gruppen auszuwählen.",
@@ -5556,8 +5540,7 @@ export const deMessages = {
             note: "Aus denselben Feldern wie die Ankündigung des Bots. Angemeldete Spieler und der Forumslink erscheinen, sobald das Match existiert.",
             today: "Heute",
         },
-        createDescription:
-            "Das meiste füllt eine Vorlage aus. Rechts siehst du, wie Spieler das Match in Discord sehen.",
+        createDescription: "Lege die Vorgaben für neue Spiele fest.",
     },
     event: {
         signupStatusSignedUpAs: "Du bist angemeldet als: {type}.",
@@ -5566,25 +5549,21 @@ export const deMessages = {
         signupStatusNotSignedUp:
             "Du hast dich noch nicht für dieses Event angemeldet.",
         infoTitle: "Event-Informationen",
-        infoDescription:
-            "Diese Seite bleibt für alle ansichtsorientiert, und Admins können sie in den Bearbeitungsmodus schalten, ohne Routen zu wechseln.",
-        listDescription:
-            "Verfolge geplante Operationen, Meeting-Zeiten, Map-Details und Veröffentlichungseinstellungen an einem Ort.",
+        infoDescription: "Zeitplan, Anmeldungen und Discord-Einstellungen.",
+        listDescription: "Kommende und vergangene Clan-Events.",
         createTitle: "Event erstellen",
         created: "Event erstellt.",
         saved: "Event gespeichert.",
         createDescription:
             "Richte Event-Details, Zeitplan und Discord-Optionen ein, bevor du es an deinen Clan veröffentlichst.",
         createPageDescription:
-            "Erstelle ein neues Event mit denselben Feldern, die du später auf der Event-Detailseite verwalten kannst.",
+            "Lege Zeitplan, Anmelderegeln und Discord-Kanäle fest.",
         relatedRoster: "Zugehöriges Roster",
         showRoster: "Roster anzeigen",
-        rosterPublishedHint:
-            "Dieses Event hat ein veröffentlichtes Roster. Öffne es bei Bedarf von hier.",
+        rosterPublishedHint: "Die Aufstellung ist veröffentlicht.",
         rosterDraftHint:
             "Ein Roster ist zugewiesen, aber noch vor regulären Mitgliedern verborgen.",
-        rosterMissingHint:
-            "Noch kein Roster zugewiesen. Füge später eines hinzu, wenn du bereit bist, Squads für dieses Event zu organisieren.",
+        rosterMissingHint: "Keine Aufstellung zugewiesen.",
         detailMetaTitle: "Event-Details",
         requiredLabel: "Erforderlich",
         optionalLabel: "Optional",
@@ -5800,16 +5779,14 @@ export const deMessages = {
     presets: {
         topicTitle: "Themen-Presets",
         topicDescription:
-            "Preset-Briefings sind Referenzdaten. Events können sie kopieren, sodass spätere Preset-Änderungen alte Matches nicht überschreiben.",
+            "Wiederverwendbare Briefing-Themen. Änderungen an der Vorlage ändern keine bestehenden Spiele.",
         squadTitle: "Squad-Presets",
         squadDescription:
-            "Diese definieren die anfängliche Roster-Struktur. Neue Roster kopieren daraus, damit vergangene Events stabil bleiben.",
+            "Wiederverwendbare Squads, Rollen und Plätze für neue Aufstellungen.",
         createTopicTitle: "Themen-Preset erstellen",
-        createTopicDescription:
-            "Erstelle und bearbeite Themenstrukturen an einem Ort.",
+        createTopicDescription: "Füge Briefing-Themen und ihre Inhalte hinzu.",
         createSquadTitle: "Squad-Preset erstellen",
-        createSquadDescription:
-            "Erstelle und passe die Preset-Struktur an einem Ort an.",
+        createSquadDescription: "Füge Squads, Rollen und Plätze hinzu.",
         presetDetails: "Preset-Details",
         presetCreateMode:
             "Erstellungsmodus startet direkt im Bearbeitungsmodus.",
@@ -5821,16 +5798,14 @@ export const deMessages = {
         topics: "Themen",
         squadStructure: "Squad-Struktur",
         presetSetup: "Preset-Setup",
-        presetSetupDescription:
-            "Preset-Informationen und Squad-Struktur liegen in einem Editor, damit das gesamte Setup zusammenbleibt.",
+        presetSetupDescription: "Squads, Rollen und Plätze.",
         addTopic: "Thema hinzufügen",
         role: "Rolle",
         roleNote: "Rollennotiz",
         addRole: "Rolle hinzufügen",
         squadBlock: "Squad-Block",
         presetName: "Preset-Name",
-        topicEditorDescription:
-            "Briefing-Themen sind im selben Admin-Bearbeitungsflow wie die Preset-Details editierbar.",
+        topicEditorDescription: "Themennamen und Briefing-Nachrichten.",
         attachmentPlaceholder: "Eine Anhang-URL pro Zeile",
         attachmentCountSuffix: "Anhang/Anhänge",
         newTopic: "Neues Thema",
@@ -5843,7 +5818,7 @@ export const deMessages = {
         untitledPreset: "Unbenanntes Preset",
         topicPresetMetaFallback: "Themen-Preset",
         topicPresetPageDescription:
-            "Gleiche Struktur wie Events, aber fokussiert auf wiederverwendbare Briefing-Inhalte.",
+            "Briefing-Themen zur Wiederverwendung in Spielen.",
         squadPresetMetaFallback: "Squad-Preset",
         fields: {
             name: "Name",
@@ -5991,7 +5966,7 @@ export const deMessages = {
             other: "{count} Mitgliedsanträge warten",
         },
         applicationsOldest: "der älteste seit {date}",
-        nothingWaiting: "Nichts wartet. Alles ist erledigt.",
+        nothingWaiting: "Keine offenen Aufgaben.",
         setupProgress: "Clan-Einrichtung: {done} von {total} erledigt",
         weekTitle: "Diese Woche",
         todayLabel: "heute",
@@ -6089,15 +6064,12 @@ export const deMessages = {
         visibilityTitle: "Wer was sehen kann",
         visibilityBody:
             "Der Kalender ist für angemeldete Nutzer dieses Clans sichtbar. Events, Presets und unveröffentlichte Roster bleiben nur für Admins.",
-        backendTitle: "Backend-Vorbereitung",
-        backendBody:
-            "Seiten sind um Mock-Daten verdrahtet und für Convex-Dokumente typisiert, sodass wir später echte Abfragen einhängen können.",
+        backendTitle: "Daten",
+        backendBody: "Clan-Events, Mitglieder und Aufstellungen.",
         languageTitle: "Sprache",
-        languageBody:
-            "Locale-Routing ist mit englischen Wörterbüchern aktiv, sodass weitere Sprachen ohne Umbau der Seitenstruktur ergänzt werden können.",
+        languageBody: "Wähle die App-Sprache in deinen Kontoeinstellungen.",
         importsTitle: "Importe",
-        importsBody:
-            "Massenimporte für Events, Spieler und Plattform-Identitäten liegen hier, damit reine Admin-Datenaufgaben an einem Ort bleiben.",
+        importsBody: "Importiere Events, Spieler und Plattform-IDs.",
         helperDataTitle: "Hilfsdaten",
         helperDataBody:
             "Gruppen, Squad-Presets und Themen-Presets dienen nur als Kopiervorlagen. Das Zurücksetzen überschreibt niemals alte Events oder Roster.",
@@ -6170,17 +6142,15 @@ export const deMessages = {
     },
     workspacePages: {
         managersOnlyTitle: "Nur Manager können diese Seite öffnen",
-        managersOnlyDescription:
-            "Frag einen Clan-Manager, wenn du Zugriff brauchst. Alles, was du nutzen kannst, findest du im Menü.",
+        managersOnlyDescription: "Bitte einen Clanmanager um Zugriff.",
         backToOverview: "Zurück zur Übersicht",
     },
     stratmaps: {
         title: "Stratmaps",
         createTitle: "Stratmap erstellen",
-        pageDescription:
-            "Gespeicherte Echtzeit-Taktikkarten für die Spiel-Matchplanung.",
+        pageDescription: "Taktische Karten für Spielbriefings.",
         createDescription:
-            "Erstelle eine gespeicherte Echtzeit-Taktikskizze, die später an Match-Briefings angehängt werden kann.",
+            "Wähle eine Karte und füge deinen taktischen Plan hinzu.",
         detailDescription:
             "Echtzeit-Kollaboration auf Taktikkarten für die Matchplanung.",
         viewMap: "Interaktive Stratmap und Taktikplanung anzeigen.",
@@ -6295,7 +6265,7 @@ export const deMessages = {
         importSkipped: "; {count} nicht unterstützte Elemente übersprungen",
         emptyTitle: "Noch keine Stratmaps",
         emptyDescription:
-            "Eine Stratmap ist eine geteilte taktische Karte mit Folien. Hänge sie an ein Match-Briefing, damit der Trupp den Plan sieht.",
+            "Erstelle eine taktische Karte und füge sie einem Spielbriefing hinzu.",
         emptyMemberDescription:
             "Taktische Karten für kommende Matches erscheinen hier, sobald ein Manager sie erstellt.",
         deleteAction: "Stratmap löschen",
@@ -6320,14 +6290,13 @@ export const deMessages = {
         saveError:
             "Der Fortschritt konnte nicht gespeichert werden. Bitte versuche es erneut.",
         setupWelcome: {
-            title: "Willkommen in deiner Einsatzzentrale",
-            description:
-                "Diese kurze Einrichtungshilfe erscheint einmal. Wähle zuerst einen Workspace; danach zeigt Logi die für dich relevanten Menüs.",
+            title: "Logi einrichten",
+            description: "Wähle deinen Clan, um zu beginnen.",
         },
         setupWorkspace: {
             title: "Workspace auswählen",
             description:
-                "Nutze den Workspace-Wechsler in der linken Seitenleiste. Jeder Workspace hat eigene Events, Mitglieder und Discord-Einstellungen.",
+                "Öffne deinen Clan über den Arbeitsbereich-Umschalter in der linken Seitenleiste.",
         },
         setupBot: {
             title: "Discord-Bot einladen",
@@ -6339,12 +6308,12 @@ export const deMessages = {
         setupNext: {
             title: "Workspace-Tour öffnen",
             description:
-                "Nach der Workspace-Auswahl zeigt Logi eine kurze, auf deinen Zugriff zugeschnittene Tour.",
+                "Öffne die Tour für Mitglieder oder Manager deines Arbeitsbereichs.",
         },
         memberWelcome: {
             title: "Das ist dein Workspace",
             description:
-                "Die Seitenleiste zeigt die Bereiche dieser Community. Mit dem Workspace-Wechsler wechselst du jederzeit die Community.",
+                "Öffne die Seiten deines Clans oder wechsle den Clan über die Seitenleiste.",
         },
         memberOperations: {
             title: "Einsätze verfolgen",
@@ -6352,14 +6321,14 @@ export const deMessages = {
                 "In Events, Matches, Trainings, Rostern und Briefings prüfst du Termine, Meldungen, Aufstellungen und Pläne.",
         },
         memberAccount: {
-            title: "Konto bereithalten",
+            title: "Dein Konto",
             description:
-                "Über dein Kontomenü aktualisierst du Avatar und Plattform-IDs. Eine Plattform-ID kann für Mitgliedsanträge erforderlich sein.",
+                "Aktualisiere deinen Avatar und deine Spielkonten im Kontomenü. Manche Clanbewerbungen erfordern ein Spielkonto.",
         },
         managerWelcome: {
             title: "Du kannst diesen Workspace verwalten",
             description:
-                "Deine Seitenleiste enthält Operations- und Konfigurationsbereiche. Änderungen gelten nur für diese Community.",
+                "Verwalte Events, Mitglieder und Clan-Einstellungen über die Seitenleiste.",
         },
         managerOperations: {
             title: "Einsätze planen und veröffentlichen",
@@ -6367,9 +6336,9 @@ export const deMessages = {
                 "Erstelle Events, Matches, Trainings, Roster, Vorlagen und Stratmaps. Prüfe zuerst die Discord-Konfiguration.",
         },
         managerConfiguration: {
-            title: "Vor der Automatisierung konfigurieren",
+            title: "Clan-Einstellungen",
             description:
-                "Mitglieder, Anträge, Gruppen, Tickets und Server-Einstellungen bestimmen die Bot-Funktionen. Richte Kanäle und Rollen zuerst ein.",
+                "Richte Discord-Kanäle und Rollen ein, bevor du Events veröffentlichst oder Bewerbungen öffnest.",
         },
     },
     shared: {
@@ -6392,7 +6361,7 @@ export const deMessages = {
         rosterMetaDescription:
             "Roster-Board mit Reserven, Rollen-Slots, Veröffentlichungsstatus und Bestätigungen.",
         rosterPageDescription:
-            "Inspiriert von kompetitiven Roster-Boards: gruppierte Squads, sichtbare Reserven, Zuweisungsstatus und zukunftsfähiger Bestätigungs-Flow.",
+            "Wähle das Event und die Squad-Vorlage für diese Aufstellung.",
     },
     rosterPublish: {
         publishTitle: "Aufstellung veröffentlichen",
@@ -6407,8 +6376,7 @@ export const deMessages = {
         variantPhotoTextDescription:
             "Das Aufstellungsbild und darunter die Squads als Text. Durchsuchbar und auch am Handy lesbar.",
         variantPhoto: "Nur Foto",
-        variantPhotoDescription:
-            "Nur das Aufstellungsbild, wie es der alte Bot geschickt hat.",
+        variantPhotoDescription: "Nur das Aufstellungsbild.",
         defaultChip: "Standard",
         defaultNote: "Die Standardansicht legen Sie fest unter",
         defaultNoteLink: "Nachrichten und Panels → Aufstellung",
@@ -6423,7 +6391,7 @@ export const deMessages = {
             many: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
             other: "Die Nachricht erwähnt alle {count} Spieler der Aufstellung.",
         },
-        mentionRepeatHint: "Beim Wiederholen stört es nur; die DMs genügen.",
+        mentionRepeatHint: "Spieler werden per Direktnachricht benachrichtigt.",
         laterNote:
             "DMs zu Änderungen und die Änderungsübersicht gibt es ab der nächsten Veröffentlichung.",
         dmLabel: "Spieler per DM über Änderungen informieren",

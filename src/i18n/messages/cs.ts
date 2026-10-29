@@ -3,8 +3,7 @@ import { csLanding } from "./landing"
 export const csMessages = {
     competitionEnrollment: {
         title: "Soutěže",
-        description:
-            "Přihlaste propojené týmy klanu, sledujte schválení nebo odstupte se zachováním historie zápasů.",
+        description: "Přihlaste týmy klanu nebo spravujte jejich přihlášky.",
         noTeams:
             "S klanem není propojen žádný tým. Požádejte o tým nebo o propojení existujícího týmu správce Logi.",
         teamsLink: "Spravovat týmy",
@@ -911,8 +910,7 @@ export const csMessages = {
     app: {
         name: "Logi",
         tagline: "Organizátor akcí pro kompetitivní hry",
-        description:
-            "Organizujte klanové akce, stavte soupisky, publikujte briefingy a připravujte operace propojené s Discordem.",
+        description: "Spravujte klanové akce, sestavy a oznámení na Discordu.",
     },
     games: {
         filterLabel: "Filtr her",
@@ -952,7 +950,7 @@ export const csMessages = {
         liveOperations: "Operace propojené",
         commandCenter: "Velitelské centrum operací",
         commandCenterDescription:
-            "Akce, soupisky, koordinace přes Discord a veřejná historie zápasů na jednom místě.",
+            "Plánujte akce, sbírejte přihlášky a zveřejňujte sestavy na Discordu.",
         eventsMetric: "akcí",
         playersMetric: "hráčů",
         matchesMetric: "zápasů",
@@ -964,12 +962,12 @@ export const csMessages = {
         featureEventsDescription:
             "Naplánujte každý krok operace s jasnými časy a oznámeními připravenými pro Discord.",
         featureRostersDescription:
-            "Sestavujte lineupy, koordinujte účast a udržte celý tým v obraze.",
+            "Rozdělujte hráče do čet, spravujte zálohy a sledujte docházku.",
         featureStats: "Veřejná historie zápasů",
         featureStatsDescription:
             "Sdílejte profily hráčů, výsledky a detailní analýzu zápasů s komunitou.",
         badge: "Discord operace pro organizované skupiny",
-        title: "Logi udržuje komunitní operace přehledné, strukturované a na jednom místě.",
+        title: "Správa klanu s Logi",
         description:
             "Logi je open-source platforma pro skupiny, které pořádají akce, spravují soupisky, tréninky, zápasy a koordinaci přes Discord.",
         featuresTitle: "Co skutečně umí",
@@ -980,9 +978,9 @@ export const csMessages = {
         featureDiscord: "Správa serveru propojená s Discordem",
         featureTools: "Sdílené nástroje pro organizované komunity",
         commsBadge: "LogiComms",
-        commsTitle: "Jasná komunikace jednotky bez zbytečné režie.",
+        commsTitle: "Hlasová komunikace v četě",
         commsDescription:
-            "LogiComms je lehká a rychlá desktopová aplikace pro efektivní komunikaci v jednotce. Nastavíte ji rychle a přizpůsobíte fungování své jednotky.",
+            "LogiComms je desktopová aplikace pro hlasovou komunikaci v četě.",
         commsDownload: "Stáhnout pro Windows",
         commsUnavailable: "Stažení pro Windows je dočasně nedostupné.",
         freeToUse: "Zdarma k použití",
@@ -993,21 +991,20 @@ export const csMessages = {
         pillars: {
             operationsTitle: "Řeší nudné věci",
             operationsDescription:
-                "Plánování, přihlášky, organizace soupisek, příprava zápasů a Discord koordinace na jednom místě.",
+                "Plánujte zápasy, sbírejte přihlášky a zveřejňujte sestavy.",
             communitiesTitle: "Pro skutečné komunity",
             communitiesDescription:
-                "Pro klany, jednotky a organizované skupiny, které potřebují strukturu bez zbytečné složitosti.",
+                "Pro klany, které organizují zápasy a tréninky na Discordu.",
             contributorsTitle: "Otevřené pro přispěvatele",
             contributorsDescription:
-                "Open source, otevřené pull requesty a veřejné zlepšování s lidmi, kteří jej používají.",
+                "Hlaste chyby nebo přispějte kódem na GitHubu.",
         },
     },
     auth: {
-        loginTitle: "Naplánujte svou další operaci",
-        loginDescription:
-            "Přihlaste se přes Discord a spravujte klany, publikujte soupisky a mějte všechny briefingy na jednom místě.",
+        loginTitle: "Přihlášení do Logi",
+        loginDescription: "Přihlaste se svým Discord účtem.",
         loginButton: "Pokračovat přes Discord",
-        heroSubtitle: "Správa kompetitivního týmu bez zbytečné složitosti.",
+        heroSubtitle: "Klanové akce a sestavy",
         contributeButton: "Přispět",
         featureRosterManagement: "Správa soupisek",
         featurePlayerPerformance: "Agregace výkonu hráčů",
@@ -1023,23 +1020,20 @@ export const csMessages = {
         featureRostersBody:
             "Publikujte sestavy s volnými sloty, náhradníky a potvrzením účasti.",
         featureBriefingsTitle: "Briefingy",
-        featureBriefingsBody:
-            "Mějte taktické poznámky, mapy a přílohy po ruce u každé operace.",
+        featureBriefingsBody: "Přidejte k akcím poznámky, mapy a přílohy.",
         featureDiscordTitle: "Připraveno pro Discord",
-        featureDiscordBody:
-            "Nejprve se připraví webový panel, bot se integruje později.",
+        featureDiscordBody: "Zveřejňujte oznámení a sestavy na Discordu.",
         englishEnabled: "Angličtina zapnuta",
         discordAccessOnly: "Přístup pouze přes Discord",
         discordOauth: "Discord OAuth",
         discordOauthBody: "Jednotné přihlašování pro klany, členy i žoldáky.",
-        plannedBackendHooks: "Plánovaná backendová propojení",
+        plannedBackendHooks: "Účet a přístup ke klanu",
         plannedBackendHooksBody:
-            "Convex dokumenty, synchronizace Discord identity, propojení platformní identity, klanová oprávnění a procesy pro publikování soupisek.",
+            "Přihlaste se přes Discord pro přístup ke svým klanům.",
     },
     dashboard: {
         title: "Vaše klany",
-        description:
-            "Vše, co spravujete, kde hrajete nebo s kým bojujete, najdete přehledně zde.",
+        description: "Otevřete klan, který spravujete nebo do kterého patříte.",
         greetingMorning: "Dobré ráno",
         greetingAfternoon: "Dobré odpoledne",
         greetingEvening: "Dobrý večer",
@@ -1200,7 +1194,7 @@ export const csMessages = {
     teams: {
         title: "Týmy",
         description:
-            "Procházejte katalog týmů Logi pro jednotlivé hry. Spravují ho administrátoři Logi: o chybějící tým požádejte nebo navrhněte změnu a schválené týmy vybírejte ve svých zápasech.",
+            "Vyberte týmy pro zápasy, požádejte o chybějící tým nebo navrhněte změnu.",
         cancel: "Zrušit",
         name: "Název",
         shortCode: "Zkratka",
@@ -2146,8 +2140,7 @@ export const csMessages = {
         descriptionRequired: "Vyplňte krátký popis.",
         bodyRequired: "Napište text článku.",
         emptyTitle: "Zatím žádný článek",
-        emptyDescription:
-            "Články přinášejí členům klanu novinky a delší zprávy.",
+        emptyDescription: "Zveřejněte první článek.",
         emptyMemberDescription:
             "Novinky klanu a delší zprávy se tu objeví, jakmile je správce zveřejní.",
         publishedOn: "Zveřejněno {date}",
@@ -2321,8 +2314,7 @@ export const csMessages = {
             "Výmaz také odstraní vaše přiřazení ke klanům, přihlášky, umístění v soupiskách a další záznamy propojené s účtem. Některá data mohou být uchována, pokud to vyžaduje zákon.",
         requestSubmitted: "Vaše žádost o soukromí byla odeslána.",
         title: "Nastavení uživatele",
-        description:
-            "Spravujte svůj profil a platformní identitu používanou pro párování importovaných zápasů.",
+        description: "Upravte svůj profil a herní účty.",
         profile: "Profil",
         discordName: "Discord jméno",
         discordId: "Discord ID",
@@ -2365,8 +2357,7 @@ export const csMessages = {
         accountTitle: "Můj účet",
         accountDescription: "Jazyk, herní účty, zprávy od bota a osobní data.",
         signedInWith: "{name} · přihlášen přes Discord",
-        autoSaveNote:
-            "Změny se ukládají hned. Nic se nemusí potvrzovat tlačítkem.",
+        autoSaveNote: "Změny se ukládají automaticky.",
         changeAvatar: "Změnit avatar",
         avatarSaved: "Avatar uložen.",
         lookTitle: "Jazyk a vzhled",
@@ -2416,7 +2407,7 @@ export const csMessages = {
             "Správa vzhledu klanu a nastavení práv pro správu operací.",
         pageDescription:
             "Upravte profil klanu, nastavení Discord automatizace a přístupová pravidla pro tento workspace.",
-        frontendOnlyDescription: "Zatím pouze frontendová konfigurace klanu.",
+        frontendOnlyDescription: "Profil klanu a nastavení Discordu.",
         clanName: "Název klanu",
         discordTitle: "Nastavení Discord bota",
         discordDescription:
@@ -2520,7 +2511,7 @@ export const csMessages = {
         accessMembers:
             "Členové a žoldáci: vidí pouze kalendář a publikované soupisky.",
         accessBackend:
-            "Pozdější backendové úpravy propojí tato pravidla s rolemi na Discordu a Convex dotazy.",
+            "Přístup se řídí nastavenými Discord rolemi a přiřazením ke klanu.",
     },
     integrationSettings: {
         cancel: "Zpět",
@@ -2693,7 +2684,7 @@ export const csMessages = {
         untitledCategory: "Kategorie bez názvu",
         noCategoriesDescription:
             "Každá kategorie je jedno tlačítko v panelu, třeba Nahlásit hráče nebo Problém s botem.",
-        saveNote: "Uloží jen tickety. Ostatní nastavení zůstane, jak je.",
+        saveNote: "Uloží nastavení tiketů.",
         saveAndRefresh: "Uložit a obnovit panel",
         discard: "Zahodit",
         unsaved: "Neuložené změny",
@@ -2854,7 +2845,7 @@ export const csMessages = {
         noCategoriesDescription:
             "Každá kategorie je jedna možnost v přihlášce, třeba hlavní člen, záloha nebo žoldák.",
         rolePlaceholder: "Přidat roli",
-        saveNote: "Uloží jen členství. Ostatní nastavení zůstane, jak je.",
+        saveNote: "Uloží nastavení členství.",
         discard: "Zahodit",
         saveShort: "Uložit",
         unsaved: "Neuložené změny",
@@ -2900,8 +2891,7 @@ export const csMessages = {
         recruitRolePlaceholder: "Recruit role",
         finalRole: "Finální role pro tuto kategorii",
         finalRolePlaceholder: "Finální role",
-        modalQuestionsDescription:
-            "Až 5 textových vstupů, stejně jako u ticket modal flow.",
+        modalQuestionsDescription: "Až 5 textových polí.",
         noQuestions:
             "Zatím tu nejsou žádné modal otázky. Nechte to prázdné, pokud má kategorie otevřít thread hned po prechecku.",
         noCategories: "Zatím tu nejsou žádné kategorie přihlášek.",
@@ -2945,8 +2935,7 @@ export const csMessages = {
             "Jméno se nepodařilo ověřit. Zkontrolujte, že je hráč na Discord serveru a bot k němu má přístup.",
         adminAccessUpdateFailed: "Přístup admina se nepodařilo změnit.",
         title: "Hráči",
-        description:
-            "Přidávejte hráče ze stávajícího systému jako kmenové členy nebo žoldáky v souladu s klanovými pravidly.",
+        description: "Spravujte členy klanu a žoldáky.",
         addMember: "Přidat jako člena",
         addReserveMember: "Přidat jako rezervního člena",
         addMerc: "Přidat jako žoldáka",
@@ -2965,8 +2954,7 @@ export const csMessages = {
             "Hráč se může stát kmenovým členem pouze tehdy, pokud již nepatří do jiného hlavního klanu.",
         rulesMerc:
             "Hráč může působit jako žoldák v jiných klanech, ale nemůže být v jednom klanu členem i žoldákem zároveň.",
-        rulesSystem:
-            "Vyhledávání vrací pouze hráče, kteří již v našem systému existují – připraveno pro budoucí backendové našeptávání.",
+        rulesSystem: "Hledání najde hráče s existujícím účtem Logi.",
         tablePlayer: "Hráč",
         tableType: "Typ",
         tableGroup: "Skupina",
@@ -3167,8 +3155,7 @@ export const csMessages = {
     },
     calendarPage: {
         title: "Kalendář",
-        description:
-            "Pomocí kalendáře můžete procházet nadcházející i proběhlé akce a následně si zobrazit detaily akce nebo publikovanou soupisku.",
+        description: "Otevřete akci pro zobrazení podrobností nebo sestavy.",
         monthView: "Měsíční přehled operací",
         moreEvents: "další akce",
         allDay: "Celý den",
@@ -3206,13 +3193,11 @@ export const csMessages = {
     },
     settingsHub: {
         title: "Nastavení klanu",
-        description:
-            "Vše, co Logi potřebuje vědět o vašem klanu, rozdělené podle témat. Otevřete kartu a změňte, co potřebujete.",
+        description: "Nastavte klan, Discord bota a integrace.",
         setupTitle: "První nastavení",
         setupProgress: "Hotovo {done} z {total} povinných nastavení",
         setupNext: "Další krok: {item}",
-        setupDone:
-            "Povinná nastavení jsou hotová. Volitelné funkce můžete zapnout kdykoli.",
+        setupDone: "Povinné nastavení dokončeno.",
         continueSetup: "Pokračovat",
         backToOverview: "Všechna nastavení",
         sectionNavLabel: "Části nastavení",
@@ -3260,8 +3245,7 @@ export const csMessages = {
         },
         overview: {
             title: "Nastavení",
-            description:
-                "Klan, Discord, herní data a připojené weby na jednom místě.",
+            description: "Profil klanu, nastavení Discordu a integrace.",
             searchLabel: "Hledat v nastavení",
             searchPlaceholder: "Hledat: kanál, role, API klíč…",
             noResults: "Nic nenalezeno",
@@ -3712,8 +3696,7 @@ export const csMessages = {
         },
         messagesPage: {
             title: "Zprávy a panely v Discordu",
-            description:
-                "Všechno, co bot posílá: kam, jestli vůbec a jak to vypadá. Píše v jazyce klanu a s barvou klanu.",
+            description: "Vyberte zprávy, které bot posílá, a jejich vzhled.",
             lookTitle: "Vzhled všech zpráv",
             lookIntro:
                 "Platí pro ohlášení, panely, DM i odpovědi příkazů. Chyby bota pro správce mají šedý pruh.",
@@ -3756,7 +3739,7 @@ export const csMessages = {
             previewTime: "dnes v 18:02",
             listTitle: "Co bot posílá",
             listIntro:
-                "Každý kanál se upravuje na jednom místě. Kanál se zámkem patří jiné stránce, odkaz vás tam dovede. Kanál s výběrem upravíte rovnou tady.",
+                "Uzamčené kanály nastavíte na odkazované stránce nastavení.",
             groups: {
                 matches: "Zápasy",
                 direct: "Soukromé zprávy",
@@ -4036,7 +4019,7 @@ export const csMessages = {
             messages: {
                 title: "Zprávy a panely",
                 description:
-                    "Všechno, co bot posílá: kam, jestli vůbec a jak to vypadá. Píše v jazyce klanu a s barvou klanu.",
+                    "Vyberte zprávy, které bot posílá, a jejich vzhled.",
             },
             channels: {
                 title: "Kanály a jazyk",
@@ -4145,8 +4128,7 @@ export const csMessages = {
                 },
                 games: {
                     heading: "Které hry váš klan hraje?",
-                    description:
-                        "Logi pak ukáže jen volby, které k těmto hrám patří. Změnit to můžete kdykoli.",
+                    description: "Vyberte hry, které váš klan hraje.",
                     groupLabel: "Hry klanu",
                     required: "Vyberte alespoň jednu hru.",
                 },
@@ -4206,7 +4188,7 @@ export const csMessages = {
             finished: {
                 title: "Hotovo. Logi je připravené.",
                 description:
-                    "Všechno můžete později změnit v Nastavení. Tam najdete i volby pro web, panely a příkazy.",
+                    "V Nastavení upravíte panely, příkazy a propojení s webem.",
                 openSettings: "Otevřít Nastavení",
                 again: "Projít znovu",
             },
@@ -4609,8 +4591,7 @@ export const csMessages = {
             "Přetáhněte hráče na pozici nebo jednotku. Tlačítkem přiřazení vyberete konkrétní pozici.",
 
         title: "Soupiska",
-        listDescription:
-            "Procházejte soupisky akcí, kontrolujte počty jednotek a hned vidíte, které sestavy jsou publikované.",
+        listDescription: "Sestavy akcí a stav jejich zveřejnění.",
         modeView: "Přehled",
         modeLayout: "Editor jednotek",
         modeAssignment: "Editor soupisky",
@@ -4717,8 +4698,7 @@ export const csMessages = {
     newMatch: {
         title: "Nový zápas",
         titleTraining: "Nový trénink",
-        description:
-            "Většinu vyplní šablona. Vpravo vidíte, jak zápas uvidí hráči v Discordu.",
+        description: "Použijte šablonu nebo zadejte údaje o zápase.",
         autosave: {
             idle: "Rozpracováno se ukládá jako koncept",
             saving: "Ukládá se koncept…",
@@ -4728,7 +4708,7 @@ export const csMessages = {
         deleteDraft: "Smazat koncept",
         deleteDraftTitle: "Smazat koncept {name}?",
         deleteDraftDescription:
-            "Koncept zmizí ze seznamu zápasů. Do Discordu se z něj nic neposlalo, takže hráči nic nepoznají.",
+            "Smazat tento koncept? Nebyl zveřejněn na Discordu.",
         draftDeleted: "Koncept smazán.",
         untitled: "Bez názvu",
         steps: {
@@ -5091,10 +5071,8 @@ export const csMessages = {
         },
         overview: {
             title: "Přehled",
-            description:
-                "Jak je zápas nastavený a jak ho hráči vidí v Discordu.",
-            descriptionTraining:
-                "Jak je trénink nastavený a jak ho hráči vidí v Discordu.",
+            description: "Údaje o zápase a oznámení na Discordu.",
+            descriptionTraining: "Údaje o tréninku a oznámení na Discordu.",
             edit: "Upravit",
             readOnly: "Zápas mohou měnit jen správci klanu.",
             stratmaps: "Taktické mapy",
@@ -5308,7 +5286,7 @@ export const csMessages = {
             whoHint: "Podle stavu v Nastavení členství.",
             groups: "Skupiny",
             groupsHint:
-                "Co si hráč vybírá při přihlášení. Limit je nový: po naplnění se nabídne záloha.",
+                "Hráči si při přihlášení vyberou skupinu. Plné skupiny nabídnou místo v záloze.",
             noGroups: "Tato hra zatím nemá žádné skupiny pro přihlášky.",
             groupsAllGames:
                 "Šablona pro všechny hry nabídne všechny skupiny hry daného zápasu. Pro výběr skupin zvolte hru.",
@@ -5393,8 +5371,7 @@ export const csMessages = {
             note: "Sestaveno ze stejných údajů jako ohlášení bota. Přihlášení hráči a odkaz na fórum se objeví po založení zápasu.",
             today: "Dnes",
         },
-        createDescription:
-            "Většinu vyplní šablona. Vpravo vidíte, jak zápas uvidí hráči v Discordu.",
+        createDescription: "Nastavte výchozí hodnoty pro nové zápasy.",
     },
     event: {
         signupStatusSignedUpAs: "Jste přihlášeni jako: {type}.",
@@ -5402,25 +5379,21 @@ export const csMessages = {
         signupStatusDeclined: "Označili jste, že se nezúčastníte.",
         signupStatusNotSignedUp: "Na tuto akci zatím nejste přihlášeni.",
         infoTitle: "Informace o akci",
-        infoDescription:
-            "Tato stránka zůstává pro běžné uživatele pouze ke čtení. Admini ji mohou přepnout do režimu úprav bez nutnosti měnit adresu URL.",
-        listDescription:
-            "Mějte přehled o plánovaných operacích, časech srazu, mapách a nastavení publikace na jednom místě.",
+        infoDescription: "Harmonogram, přihlášky a nastavení Discordu.",
+        listDescription: "Nadcházející a minulé klanové akce.",
         createTitle: "Vytvořit akci",
         created: "Akce byla vytvořena.",
         saved: "Akce byla uložena.",
         createDescription:
             "Tento proces vytvoření záměrně odpovídá editační obrazovce, aby byl budoucí kód backendu čistý a znovupoužitelný (DRY).",
         createPageDescription:
-            "Vytvoření nové akce využívající stejná pole a mechanismy úprav jako stránka s detaily.",
+            "Nastavte harmonogram, pravidla přihlašování a Discord kanály.",
         relatedRoster: "Přiřazená soupiska",
         showRoster: "Zobrazit soupisku",
-        rosterPublishedHint:
-            "Tato akce má publikovanou soupisku. V případě potřeby ji odsud otevřete.",
+        rosterPublishedHint: "Sestava je zveřejněna.",
         rosterDraftHint:
             "Soupiska je přiřazena, ale pro běžné členy je stále skrytá.",
-        rosterMissingHint:
-            "Zatím není přiřazena žádná soupiska. Budoucí backend ji může automaticky vygenerovat ze šablony jednotek pro tuto akci.",
+        rosterMissingHint: "Není přiřazena sestava.",
         detailMetaTitle: "Detaily akce",
         requiredLabel: "Povinné",
         optionalLabel: "Volitelné",
@@ -5632,16 +5605,14 @@ export const csMessages = {
     presets: {
         topicTitle: "Šablony témat",
         topicDescription:
-            "Šablony briefingů slouží jako referenční data. Akce je zkopírují, takže pozdější změny v šablonách nepřepíšou staré zápasy.",
+            "Opakovaně použitelná témata briefingu. Úprava předlohy nezmění existující zápasy.",
         squadTitle: "Šablony jednotek",
         squadDescription:
-            "Tyto šablony definují výchozí podobu soupisky. Nové soupisky se z nich kopírují, aby historické akce zůstaly beze změn.",
+            "Opakovaně použitelné čety, role a sloty pro nové sestavy.",
         createTopicTitle: "Vytvořit šablonu tématu",
-        createTopicDescription:
-            "Vytvářejte a upravujte strukturu témat na jednom místě.",
+        createTopicDescription: "Přidejte témata briefingu a jejich obsah.",
         createSquadTitle: "Vytvořit šablonu jednotek",
-        createSquadDescription:
-            "Vytvářejte a upravujte strukturu šablon na jednom místě.",
+        createSquadDescription: "Přidejte čety, role a sloty.",
         presetDetails: "Detaily šablony",
         presetCreateMode: "Režim vytvoření začíná přímo v režimu úprav.",
         squadPresetPageDescription:
@@ -5653,16 +5624,14 @@ export const csMessages = {
         topics: "Témata",
         squadStructure: "Struktura jednotek",
         presetSetup: "Nastavení šablony",
-        presetSetupDescription:
-            "Informace o šabloně a struktura jednotek jsou v jednom editoru, takže celé nastavení drží pohromadě.",
+        presetSetupDescription: "Čety, role a sloty.",
         addTopic: "Přidat téma",
         role: "Role",
         roleNote: "Poznámka k roli",
         addRole: "Přidat roli",
         squadBlock: "Blok jednotky",
         presetName: "Název šablony",
-        topicEditorDescription:
-            "Témata briefingu jsou upravitelná ve stejném administrátorském rozhraní jako detaily šablony.",
+        topicEditorDescription: "Názvy témat a zprávy briefingu.",
         attachmentPlaceholder: "Jedna URL přílohy na řádek",
         attachmentCountSuffix: "příloha/y",
         newTopic: "Nové téma",
@@ -5675,7 +5644,7 @@ export const csMessages = {
         untitledPreset: "Nepojmenovaná šablona",
         topicPresetMetaFallback: "Šablona tématu",
         topicPresetPageDescription:
-            "Stejná struktura jako u akcí, ale zaměřená na znovupoužitelný obsah briefingu.",
+            "Témata briefingu pro opakované použití v zápasech.",
         squadPresetMetaFallback: "Šablona jednotek",
         fields: {
             name: "Název",
@@ -5816,7 +5785,7 @@ export const csMessages = {
             other: "{count} žádostí o vstup čeká",
         },
         applicationsOldest: "nejstarší od {date}",
-        nothingWaiting: "Nic nečeká. Všechno je vyřízené.",
+        nothingWaiting: "Žádné čekající úkoly.",
         setupProgress: "Nastavení prostoru: {done} z {total} hotovo",
         weekTitle: "Tento týden",
         todayLabel: "dnes",
@@ -5908,18 +5877,15 @@ export const csMessages = {
         visibilityTitle: "Kdo co vidí",
         visibilityBody:
             "Kalendář je viditelný pro přihlášené uživatele v tomto klanu. Akce, šablony a nepublikované soupisky zůstávají přístupné pouze adminům.",
-        backendTitle: "Příprava backendu",
-        backendBody:
-            "Stránky jsou postaveny na testovacích datech (mock data) a typovány pro Convex dokumenty, takže později stačí napojit reálné dotazy.",
+        backendTitle: "Data",
+        backendBody: "Klanové akce, členové a sestavy.",
         languageTitle: "Jazyk",
-        languageBody:
-            "Směrování lokalizace je aktivní s anglickými slovníky, takže další jazyky lze přidávat bez nutnosti měnit strukturu stránek.",
+        languageBody: "Jazyk aplikace zvolíte v nastavení účtu.",
         helperDataTitle: "Pomocná data",
         helperDataBody:
             "Skupiny, šablony jednotek a šablony témat slouží jen jako zdroje pro kopírování. Jejich reset nikdy nepřepíše staré akce ani soupisky.",
         importsTitle: "Importy",
-        importsBody:
-            "Hromadné importy akcí, hráčů a platformních identit jsou tady na jednom místě, aby admin nástroje nebyly rozházené po aplikaci.",
+        importsBody: "Importujte akce, hráče a ID platforem.",
         systemTitle: "Systém",
         systemBody: "API klíče klanu a nástroje údržby.",
         websiteApi: "Webové API",
@@ -5988,17 +5954,14 @@ export const csMessages = {
     },
     workspacePages: {
         managersOnlyTitle: "Tuto stránku otevřou jen správci",
-        managersOnlyDescription:
-            "Pokud potřebujete přístup, napište správci klanu. Vše, co můžete používat, najdete v menu.",
+        managersOnlyDescription: "Požádejte správce klanu o přístup.",
         backToOverview: "Zpět na přehled",
     },
     stratmaps: {
         title: "Stratmapy",
         createTitle: "Vytvořit Stratmapu",
-        pageDescription:
-            "Uložené realtime taktické mapy pro plánování kompetitivních zápasů.",
-        createDescription:
-            "Vytvořte uložený realtime taktický náčrt, který půjde později připojit k match briefingu.",
+        pageDescription: "Taktické mapy pro briefingy zápasů.",
+        createDescription: "Vyberte mapu a přidejte taktický plán.",
         detailDescription:
             "Realtime spolupráce nad taktickou mapou pro plánování zápasu.",
         viewMap: "Zobrazit interaktivní stratmapu a taktické plánování.",
@@ -6113,7 +6076,7 @@ export const csMessages = {
         importSkipped: "; přeskočeno nepodporovaných položek: {count}",
         emptyTitle: "Zatím žádná stratmapa",
         emptyDescription:
-            "Stratmapa je sdílená taktická mapa se snímky. Připojte ji k briefingu zápasu, aby jednotka viděla plán.",
+            "Vytvořte taktickou mapu a připojte ji k briefingu zápasu.",
         emptyMemberDescription:
             "Taktické mapy pro nadcházející zápasy se tu objeví, jakmile je správce vytvoří.",
         deleteAction: "Smazat stratmapu",
@@ -6137,14 +6100,13 @@ export const csMessages = {
         saveError:
             "Postup průvodce se nepodařilo uložit. Zkuste to prosím znovu.",
         setupWelcome: {
-            title: "Vítejte v operačním centru",
-            description:
-                "Tento krátký průvodce se zobrazí jednou. Nejprve vyberte workspace; Logi pak ukáže nabídky podle vašeho přístupu.",
+            title: "Nastavení Logi",
+            description: "Začněte výběrem svého klanu.",
         },
         setupWorkspace: {
             title: "Vyberte workspace",
             description:
-                "Použijte přepínač workspace v levém panelu. Každý workspace má vlastní události, členy a Discord nastavení.",
+                "Otevřete svůj klan pomocí přepínače pracovních prostorů v levém menu.",
         },
         setupBot: {
             title: "Pozvěte Discord bota",
@@ -6156,12 +6118,12 @@ export const csMessages = {
         setupNext: {
             title: "Otevřete průvodce workspace",
             description:
-                "Po výběru workspace Logi zobrazí krátkého průvodce podle vašeho přístupu.",
+                "Otevřete průvodce pro členy nebo správce svého pracovního prostoru.",
         },
         memberWelcome: {
             title: "Toto je váš workspace",
             description:
-                "Levý panel nyní ukazuje oblasti dostupné v této komunitě. Přepínač workspace můžete použít kdykoliv.",
+                "V bočním menu otevřete stránky klanu nebo přepněte klan.",
         },
         memberOperations: {
             title: "Sledujte operace",
@@ -6169,14 +6131,14 @@ export const csMessages = {
                 "V událostech, zápasech, trénincích, rostrech a briefinzích kontrolujete termíny, přihlášky, sestavy a plány.",
         },
         memberAccount: {
-            title: "Udržujte účet připravený",
+            title: "Váš účet",
             description:
-                "V nabídce účtu upravíte avatar a platformní ID. Platformní ID může být nutné pro žádost o členství.",
+                "V nabídce účtu upravte avatar a herní účty. Některé přihlášky do klanu vyžadují herní účet.",
         },
         managerWelcome: {
             title: "Tento workspace můžete spravovat",
             description:
-                "Váš panel obsahuje oblasti pro operace a konfiguraci. Změny platí pouze pro tuto komunitu.",
+                "V bočním menu spravujte akce, členy a nastavení klanu.",
         },
         managerOperations: {
             title: "Plánujte a publikujte operace",
@@ -6184,9 +6146,9 @@ export const csMessages = {
                 "Vytvářejte události, zápasy, tréninky, rostery, předvolby a stratmapy. Nejdříve ověřte Discord konfiguraci.",
         },
         managerConfiguration: {
-            title: "Před automatizací nastavte konfiguraci",
+            title: "Nastavení klanu",
             description:
-                "Členové, žádosti, skupiny, tickety a nastavení serveru určují funkce bota. Nejdříve nastavte kanály a role.",
+                "Před zveřejněním akcí nebo spuštěním přihlášek nastavte Discord kanály a role.",
         },
     },
     shared: {
@@ -6208,8 +6170,7 @@ export const csMessages = {
         showingResults: "Zobrazeno {from}-{to} z {total}",
         rosterMetaDescription:
             "Tabule soupisky se zálohami, sloty rolí, stavem publikování a potvrzeními o účasti.",
-        rosterPageDescription:
-            "Inspirováno tabulemi kompetitivních týmů: seskupené jednotky, viditelné zálohy, stav zařazení a systém pro potvrzování účasti připravený na budoucí integraci.",
+        rosterPageDescription: "Vyberte akci a předlohu čet pro tuto sestavu.",
     },
     rosterPublish: {
         publishTitle: "Publikovat soupisku",
@@ -6224,8 +6185,7 @@ export const csMessages = {
         variantPhotoTextDescription:
             "Obrázek soupisky a pod ním čety textem. Jde vyhledávat a číst i na telefonu.",
         variantPhoto: "Jen fotka",
-        variantPhotoDescription:
-            "Jen obrázek soupisky, jako ho posílal starý bot.",
+        variantPhotoDescription: "Pouze obrázek sestavy.",
         defaultChip: "výchozí",
         defaultNote: "Výchozí podobu nastavíte v",
         defaultNoteLink: "Zprávy a panely → Soupiska",
@@ -6240,7 +6200,7 @@ export const csMessages = {
             many: "Role hráčů události dostane jednu zmínku.",
             other: "Role hráčů události dostane jednu zmínku.",
         },
-        mentionRepeatHint: "Při opakování zbytečně ruší; DM stačí.",
+        mentionRepeatHint: "Hráči jsou upozorněni soukromou zprávou.",
         laterNote:
             "DM o změnách a přehled změn se nabídnou až při dalším zveřejnění.",
         dmLabel: "Oznámit hráčům změny do DM",
