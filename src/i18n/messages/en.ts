@@ -1,3 +1,5 @@
+import { enLanding } from "./landing"
+
 export const enMessages = {
     competitionEnrollment: {
         title: "Competitions",
@@ -997,173 +999,7 @@ export const enMessages = {
         sourceAvailable: "Source available on GitHub",
         contributionsWelcome: "Contributions welcome",
         noMarketingFiller: "No marketing filler",
-        landing: {
-            heroEyebrow: "The operating system for your community",
-            heroLineOne: "Every player.",
-            heroLineAccent: "Every operation.",
-            heroLineThree: "In formation.",
-            heroDescription:
-                "Logi turns the beautiful chaos of running a competitive community into one living, breathing command center.",
-            deployCommunity: "Deploy your community",
-            seeEverything: "See everything it does",
-            playersConfirmed: "31 players confirmed",
-            marquee: [
-                "Operations",
-                "Rosters",
-                "Matches",
-                "Briefings",
-                "Members",
-                "Discord",
-                "Analytics",
-            ],
-            arsenalEyebrow: "The complete arsenal",
-            arsenalTitle:
-                "Not a landing page full of promises. A real command center, screen by screen.",
-            arsenalDescription:
-                "Every module is already part of Logi. Explore the whole system below.",
-            features: {
-                dashboard: {
-                    title: "Operations dashboard",
-                    description:
-                        "Your community’s pulse: events, performance, players and the next thing to run.",
-                },
-                calendar: {
-                    title: "Calendar & events",
-                    description:
-                        "Plan trainings, matches and community nights without the Discord scavenger hunt.",
-                },
-                roster: {
-                    title: "Roster builder",
-                    description:
-                        "Build squads visually, fill every role, and know exactly who is ready.",
-                },
-                briefing: {
-                    title: "Briefings & maps",
-                    description:
-                        "Put the plan, the map and the orders where every player can find them.",
-                },
-                matches: {
-                    title: "Match history",
-                    description:
-                        "Keep the record: results, scorelines, performance and moments that matter.",
-                },
-                members: {
-                    title: "Member directory",
-                    description:
-                        "A real view of your people, roles, attendance and community health.",
-                },
-                event: {
-                    title: "Event command",
-                    description:
-                        "From a simple signup to a full operational brief, every event gets its own home.",
-                },
-                presets: {
-                    title: "Squad presets",
-                    description:
-                        "Set your unit structure once. Spin up a familiar formation in seconds.",
-                },
-                assignments: {
-                    title: "Assignments",
-                    description:
-                        "Move players into the right place with a workflow built for commanders.",
-                },
-                matchData: {
-                    title: "Match data",
-                    description:
-                        "Keep the detail behind every result close at hand for leaders, analysts, and players.",
-                },
-                api: {
-                    title: "Public API & docs",
-                    description:
-                        "Extensive API reference and documentation for server admins, integrations, and contributors.",
-                },
-                wiki: {
-                    title: "Community wiki",
-                    description:
-                        "Practical guides for every Logi feature, from your first workspace to daily operations.",
-                },
-            },
-            botEyebrow: "Discord, in the loop",
-            botTitle: "The bot brings the operation to your server.",
-            botDescription:
-                "Give members the actions they need without making Discord the place where information gets lost.",
-            botFeatures: {
-                clanRegistration: {
-                    title: "Clan applications",
-                    description:
-                        "Let recruits choose an application type and start a structured membership request from Discord.",
-                },
-                eventInfo: {
-                    title: "Event information",
-                    description:
-                        "Publish the schedule, briefing, roster, server details and calendar action in one event post.",
-                },
-                matchSignup: {
-                    title: "Match sign-ups",
-                    description:
-                        "Show available roster slots and let players sign up, decline or check their status in seconds.",
-                },
-                attendance: {
-                    title: "Attendance acknowledgements",
-                    description:
-                        "Ask confirmed players to reconfirm before a meeting and give them a clear way to report a delay.",
-                },
-                tickets: {
-                    title: "Support tickets",
-                    description:
-                        "Turn a Discord panel into a guided private ticket, with the details staff need from the start.",
-                },
-            },
-            workflowEyebrow: "From briefing to debrief",
-            workflowTitle: "The work flows. So should your tools.",
-            workflowDescription:
-                "A proper operation is not one screen. It is a rhythm that Logi keeps together.",
-            workflow: [
-                {
-                    title: "Plan",
-                    description:
-                        "Create an event, choose the map, publish the brief.",
-                },
-                {
-                    title: "Fill",
-                    description:
-                        "Open signups, shape the roster, assign every slot.",
-                },
-                {
-                    title: "Run",
-                    description: "Give leaders a live, shared source of truth.",
-                },
-                {
-                    title: "Remember",
-                    description:
-                        "Record results, follow performance, build the story.",
-                },
-            ],
-            ownershipEyebrow: "Yours, forever",
-            ownershipTitle: "Free to run. Free to own. Free to build on.",
-            ownershipDescription:
-                "Use Logi on our hosted platform at no cost, or run the full stack on your own infrastructure when data ownership is non-negotiable.",
-            values: {
-                hosted: {
-                    title: "Hosted, free forever",
-                    description:
-                        "Start running your community immediately. Our hosted version is free — no feature gate, no surprise upgrade.",
-                },
-                selfHosted: {
-                    title: "Self-host when it matters",
-                    description:
-                        "Want complete control over your data, environment, and deployment? Run Logi yourself and keep the keys.",
-                },
-                openSource: {
-                    title: "Open source, deeply documented",
-                    description:
-                        "Explore the code, contribute improvements, and use extensive API documentation to connect Logi to your own tools.",
-                },
-            },
-            finalTitle: "Your next operation is already waiting.",
-            finalDescription:
-                "Build the place your players trust before the first “ready check”.",
-        },
+        landing: enLanding,
         pillars: {
             operationsTitle: "Runs the boring parts",
             operationsDescription:
@@ -3114,6 +2950,12 @@ export const enMessages = {
         removeAdminAccess: "Remove admin access",
         adminAccessGranted: "Player is now an admin.",
         adminAccessRemoved: "Player admin access removed.",
+        recheckDisplayName: "Recheck display name",
+        recheckingDisplayName: "Checking display name…",
+        displayNameUpdated: "Display name updated.",
+        displayNameUnchanged: "Display name is already up to date.",
+        displayNameRecheckFailed:
+            "Unable to recheck the display name. Check that the player is in the Discord server and the bot can access them.",
         adminAccessUpdateFailed: "Unable to update player admin access.",
         title: "Players",
         description:

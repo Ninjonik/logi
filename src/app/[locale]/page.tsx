@@ -5,6 +5,7 @@ import { defaultLocale, isLocale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getLocalizedCanonical } from "@/lib/seo"
 import { getCurrentPlayer } from "@/lib/auth"
+import "@/components/landing/landing.css"
 import type { Metadata } from "next"
 
 export async function generateMetadata({
@@ -12,9 +13,16 @@ export async function generateMetadata({
 }: {
     params: Promise<{ locale: string }>
 }): Promise<Metadata> {
-    const { locale } = await params
+    const { locale } = (await params) ?? { locale: defaultLocale }
     const safeLocale = isLocale(locale) ? locale : defaultLocale
-    return { alternates: getLocalizedCanonical(safeLocale, "") }
+    const copy = getDictionary(safeLocale).home.landing
+    return {
+        title: { absolute: copy.metaTitle },
+        description: copy.metaDescription,
+        openGraph: { title: copy.metaTitle, description: copy.metaDescription },
+        twitter: { title: copy.metaTitle, description: copy.metaDescription },
+        alternates: getLocalizedCanonical(safeLocale, ""),
+    }
 }
 
 export default async function LocaleHomePage({

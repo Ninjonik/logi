@@ -223,3 +223,13 @@ separate verified account card records proof and the verification time. **Unlink
 Steam** stops future attribution while keeping recent link history. Merging
 accounts or changing the associated Discord identity requires fresh verification.
 This does not grant Discord roles, confirm game ownership or publish a website profile.
+
+## Refresh a player's Discord display name
+
+On a player's member detail page, administrators can choose **Recheck display
+name**. Logi reads that person from this Discord server and updates their saved
+server display name if it changed. It uses their server nickname, then Discord
+display name, then username. Other servers' names, assignments and roles are
+unchanged. The page refreshes after the check and reports whether the name changed.
+The player must have a linked Discord account, still be in the server, and be
+readable by the bot; a failed check leaves the saved name unchanged.
