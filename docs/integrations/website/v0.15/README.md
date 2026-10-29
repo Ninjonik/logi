@@ -1,35 +1,22 @@
-# Global team catalogue handoff
+# Global team catalogue
 
 Logi keeps **one team catalogue per game**, owned by Logi's global
 administrators. Workspaces select teams from it when preparing a native match
 and ask for new teams or changes through requests that the global
-administrators decide. This handoff describes what the connected website can
+administrators decide. This reference describes what the connected website can
 read about those teams and how it assigns them to native matches: the explicit
 `teams` read grant, the collection/detail endpoints, the fan-out change feed,
 merge semantics, the immutable `matchTeams` snapshots inside event/match
 summaries and the actor-backed event command fields.
 
-The design is the
-[global teams and competitions specification](../../../superpowers/specs/2026-10-04-global-teams-and-competitions-design.md),
-which supersedes the ownership model of the earlier
-[workspace team directory specification](../../../superpowers/specs/2026-10-03-team-directory-design.md);
-that document's snapshot, logo, website and Discord rules still apply unless
-the newer one changes them. The authoritative closed schemas are
-[`team.ts`](../../../../src/domain/teams/team.ts) and
-[`match-teams.ts`](../../../../src/domain/teams/match-teams.ts).
-
-The [fixtures](fixtures/) are synthetic consumer examples, not real teams,
-workspaces, assets or proof of hosted acceptance.
+Closed schemas are defined in [`team.ts`](../../../../src/domain/teams/team.ts) and [`match-teams.ts`](../../../../src/domain/teams/match-teams.ts). The [fixtures](fixtures/) are synthetic consumer examples.
 
 ## Ownership and identity
 
 - The catalogue is **global**. Logi's global administrators (the superadmins in
   the operator configuration, attested by the authenticated web gateway) own
   it. No workspace owns a team or keeps a private team list, and every
-  workspace whose key holds the `teams` grant reads the same teams. Records
-  created by the earlier per-workspace directory belong to the catalogue of
-  their game; the workspace that created them is internal provenance only and
-  is never exposed.
+  workspace whose key holds the `teams` grant reads the same teams.
 - Teams are **separated by game**: `hell_let_loose` and `wardogs`. Hell Let
   Loose: Vietnam has no team catalogue; requests for it are invalid rather than
   empty. Names are unique per game after normalization; the same name in both
@@ -43,9 +30,7 @@ workspaces, assets or proof of hosted acceptance.
   workspace and every consumer, and it is never a Discord guild ID or a League
   code. The IDs in native-match `matchTeams` snapshots and the team IDs of the
   public competition API (`GET /api/v1/public/competitions/{slug}`) are global
-  catalogue IDs. Persist it; it is the identity anchor that a later league
-  adapter can map provider team identities onto by explicit administrator
-  decision.
+  catalogue IDs. Persist it as the catalogue identity.
 - **No league inference.** Existing Wardogs League cards and watched-team
   filters keep working independently. A similar name or short code never links
   a catalogue team to an external identity, and no external codes are converted
@@ -63,7 +48,7 @@ workspaces, assets or proof of hosted acceptance.
 | Submit a new-team or change request; cancel a pending request       | Workspace administrators, at most 20 pending per workspace      | Logi workspace **Teams** page                       |
 | Approve (optionally edited), merge a new-team request, or reject it | Global administrators; a rejection needs a reason               | Logi team request queue                             |
 | Notify the requester of a decision                                  | Logi bot: one Discord DM per decision, retried with backoff     | Discord DM in the requesting workspace's language   |
-| Read active teams                                                   | Website backend with a restricted key holding the `teams` grant | `GET /api/v1/clan/teams` (this handoff)             |
+| Read active teams                                                   | Website backend with a restricted key holding the `teams` grant | `GET /api/v1/clan/teams`                            |
 
 Merging archives the duplicate (source) team, records internally which team
 replaced it and moves its competition registrations, competition fixtures and
@@ -201,71 +186,9 @@ data are never included.
 | 429    | `rate_limited`                       | Shared key rate limit; respect `Retry-After`                                                                                                                                                                                             |
 | 503    | `unavailable`                        | Convex read failed or returned an unexpected shape                                                                                                                                                                                       |
 
-## Change feed for `teams`
+## Team synchronization
 
-`teams` is a registered `SYNC_RESOURCES` entry, so the existing
-[synchronization protocol](../v0.6/README.md) applies with the same grants as
-the collection. As on the collection, a game without a team catalogue (Hell Let
-Loose: Vietnam) is `400 invalid_query` for `resources` that include `teams` and
-for `sync-records/teams/…`, never an empty page:
-
-```http
-GET /api/v1/clan/changes?game=hell_let_loose&resources=teams&start=now
-GET /api/v1/clan/sync-records/teams/<team-id>?game=hell_let_loose
-```
-
-**Fan-out.** The change feed is per workspace, while the catalogue is global.
-Every catalogue change is therefore appended to the feed of **every workspace
-that has an active restricted API key with the `teams` grant for that game at
-the moment the change is written**, in the same transaction as the catalogue
-write. Revisions are per workspace feed, so the same catalogue change carries
-different revision numbers in different workspaces. A workspace whose key
-gains the grant later receives only later changes: bootstrap the cursor with
-`start=now` before paging the collection, then replay changes and hydrate
-upserts from sync records, exactly as for the other resources.
-
-| Catalogue change                                 | Feed rows                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Create, edit (including a link change), restore  | `upsert` of the team                                                            |
-| Approved new-team or change request              | `upsert` of the created or changed team                                         |
-| Archive                                          | `remove` of the team                                                            |
-| Merge of an active team into another active team | `remove` of the merged team, then `upsert` of the kept team, in one transaction |
-| Merge of an already archived team                | `upsert` of the kept team only (the archive already emitted the `remove`)       |
-| Request rejected, cancelled or merged; DM sent   | Nothing                                                                         |
-
-The sync record for an upsert carries the same `ClanTeam` DTO as the detail
-read; a removal is a retained tombstone with `data: null`, and an expired
-tombstone or an unknown ID is `404`. Catalogue changes do **not** emit invented
-match changes. A native match whose team is later renamed, archived or merged
-keeps its snapshot; only an explicit `refresh_match_team` or an assignment
-change advances that event's own `event-summaries`/`match-summaries` revision.
-
-### Merge semantics for consumers
-
-A merge reaches the feed as a `remove` of the merged team followed by an
-`upsert` of the kept team (see
-[`team-change-merge.json`](fixtures/team-change-merge.json)). The feed and the
-reads deliberately do not disclose which team replaced a merged one, so treat
-every `remove` the same way:
-
-1. **On a `remove`, refetch.** Read the sync record (a tombstone) or the detail
-   (`404`), drop the team from your active catalogue and pickers, and refetch
-   any of your own views that list teams through another resource. In
-   particular, refetch a public competition's detail: a merge moves its
-   registrations and fixtures to the kept team, so the competition then
-   reports the kept team's global ID.
-2. **Apply the following `upsert`** of the kept team like any other upsert; its
-   `revision` has advanced even if its visible fields did not change.
-3. **Match snapshots keep old IDs.** Saved `matchTeams` snapshots are never
-   rewritten, so a snapshot's `teamId` may point to an archived or merged team
-   whose detail read is `404`. Render the snapshot's captured `name`,
-   `shortCode` and `logoUrl`; never drop or relabel a historical match because
-   its team ID no longer resolves. An explicit `refresh_match_team` of a merged
-   team adopts the replacement's ID and presentation, and that event's
-   summaries then carry the new ID.
-4. **Competition team IDs are global catalogue IDs.** The public competition
-   API returns the same IDs as this catalogue, so a team in a competition and a
-   team in a native match can be correlated by ID.
+The `teams` resource requires its explicit game-scoped grant. Catalogue changes allocate revisions for authorized consumers. `/clan/changes` cursor replay returns `410 reset_required`; rebuild the active catalogue rather than relying on replay or retained merge tombstones. Archived and merged teams disappear from active reads; historical match snapshots keep their saved identity and presentation. See [synchronization](../v0.6/README.md).
 
 ## Match snapshots in summaries
 
@@ -391,14 +314,13 @@ workspace administrators to Logi to request a missing team. Assigning existing c
 teams to a native match is not part of the exception: it is available through
 the actor-backed event commands above.
 
-The add-only league directory import is part of this same global-administrator
+The league directory import is part of this same global-administrator
 exception. `POST /api/superadmin/teams/scrape` accepts only
 `{ "gameId": "wardogs" | "hell_let_loose" }`, requires a current global-admin
-session and the dashboard origin, and returns `{ created, skipped, failed }`
+session and the dashboard origin, and returns `{ created, updated, skipped, failed }`
 (`failed` lists team names). The fixed sources are Wardogs League's
 `/teams?all=1` and HeLO's public `/v3/series/2024/teams` data behind its 2024
-team page. Names or codes matching existing entries (including archived/merged
-entries) are skipped per game; existing records are never updated. New logos
+team page. A unique active name/code match refreshes the logo while retaining team identity and other metadata. Unchanged images reuse their asset. Missing or failed images preserve the old logo; ambiguous and archived/merged matches are skipped. New logos
 are normalized and stored with the same platform ownership, references, audit
 and website fan-out as ordinary catalogue creation. Websites see imported
 teams through the existing `/api/v1` catalogue reads with the `teams` grant;
@@ -442,7 +364,7 @@ return the newly registered teams through the existing public API.
 
 ## Fixtures
 
-All fixtures live in [`fixtures/`](fixtures/) and are parsed by
+The fixture files include examples of change and tombstone envelopes for schema tests; those examples do not establish a replay log. All fixtures live in [`fixtures/`](fixtures/) and are parsed by
 [`team-fixtures.test.ts`](../../../../src/lib/api/team-fixtures.test.ts):
 
 | File                                                                      | Schema                                                                 |
@@ -457,75 +379,3 @@ All fixtures live in [`fixtures/`](fixtures/) and are parsed by
 | [`sync-record-team-removed.json`](fixtures/sync-record-team-removed.json) | `IntegrationSyncRecord` tombstone of the merged team                   |
 | [`match-teams-hll.json`](fixtures/match-teams-hll.json)                   | `matchTeams` excerpt: two slots, Allies/Axis                           |
 | [`match-teams-wardogs.json`](fixtures/match-teams-wardogs.json)           | `matchTeams` excerpt: three slots, all factions                        |
-
-## Verification
-
-This increment was verified locally with synthetic tests and static checks
-only:
-
-```shell
-node --import tsx --test src/lib/api/teams-route.test.ts src/lib/api/team-fixtures.test.ts src/lib/api/authenticated-clan-route.test.ts src/lib/api/integration-query.test.ts src/app/api/v1/openapi.json/route.test.ts src/application/teams/*.test.ts src/infrastructure/convex/teams.test.ts src/infrastructure/convex/teams-authorization.test.ts src/infrastructure/convex/image-assets.test.ts
-npm run generate:openapi && node scripts/generate-convex-api-offline.mjs
-npx tsc --noEmit -p tsconfig.json
-npm run test
-```
-
-Covered: query and ID parsing; gateway grant decisions for scoped,
-other-resource and legacy keys; HTTP mapping of Convex grant refusal, absent
-(unknown, archived or merged) record and failure to `403`/`404`/`503`,
-including a backend DTO without `description`/`links` as `503`; generic error
-envelopes with `no-store` and rate-limit headers; signed collection cursors;
-the Vietnam refusal on the `teams` change feed; the OpenAPI paths, schemas, tag
-and descriptions and the `teams` entries in the `changes`/`sync-records`
-enumerations; and fixture conformance to the Zod contracts, including the merge
-change pair and its tombstone. The route tests mock Convex over HTTP. The
-Convex handlers are exercised in-process by
-[`teams.test.ts`](../../../../src/infrastructure/convex/teams.test.ts): global
-catalogue reads for the granted game only, changes reaching subscribed
-workspaces, merge, request approval with logo adoption and decision DMs.
-[`teams-authorization.test.ts`](../../../../src/infrastructure/convex/teams-authorization.test.ts)
-refuses workspace administrators on global handlers, expired, revoked and
-forged sessions, out-of-scope logos and requests, and revoked, legacy and
-ungranted keys on the reads and the `teams` sync record. The catalogue writes,
-requests and the merge-aware snapshot refresh are application use-cases tested
-with fakes in [`src/application/teams`](../../../../src/application/teams).
-
-The event command fields, `refresh_match_team`, `invalid_match_teams` and the
-summary/editor `matchTeams` fields are covered by
-[`website-event-commands.test.ts`](../../../../src/infrastructure/convex/website-event-commands.test.ts),
-[`event-match-teams.test.ts`](../../../../src/infrastructure/convex/event-match-teams.test.ts),
-[`website-event-command-route.test.ts`](../../../../src/lib/api/website-event-command-route.test.ts)
-and [`website-command.test.ts`](../../../../src/domain/events/website-command.test.ts).
-
-No Convex deployment, production data or migration, hosted SSO acceptance,
-connected-website (www) deployment, public logo serving or live Discord
-rendering or DM delivery is claimed by this document. Runtime acceptance on the
-isolated Convex instance, in a browser and in the Discord test channel is still
-pending (see below).
-
-## Remaining owner tasks
-
-| Work                                                                                              | Owner                        |
-| ------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Catalogue picker, team rendering, description/links and snapshot display in the connected website | Website frontend/backend     |
-| Consume `teams` changes and sync records, including the merge `remove`/`upsert` pair              | Website backend              |
-| Adopt global catalogue team IDs from the public competition API                                   | Website frontend/backend     |
-| Issue a restricted key with `teams` and the required games; keep it server-side                   | Workspace administrator      |
-| Merge legacy duplicate teams listed by `npx convex run teamMigrations:legacyCollisionReport`      | Global administrators        |
-| Deploy the compatible Convex backend, dashboard and bot together before relying on the reads      | Operators                    |
-| Runtime acceptance on the authorized isolated Convex instance and Discord test channel            | Maintainers                  |
-| Explicit league identity mapping and import UI                                                    | Later provider-contract work |
-
-The public wiki covers the workspace view of the catalogue and requests
-([Teams](../../../../content/operations/teams.mdx)), the team picker in
-[Matches](../../../../content/operations/matches.mdx), the API notes in
-[Settings](../../../../content/configuration/settings.mdx) and the global
-administration tools in the
-[Administrator reference](../../../../content/administration.mdx).
-
-Provider scraping remains a global-admin dashboard operation under the existing
-catalogue-write API exception. It now refreshes logos on a unique active
-name/code match, retaining team identity and all other metadata. Responses add
-`updated` alongside `created`, `skipped` and `failed`; unchanged images reuse
-the existing asset, while failed/missing images preserve the old logo. Saved
-match snapshots are never rewritten by scraping.

@@ -69,7 +69,7 @@ Changing or removing an assignment rebuilds the workspace membership summary and
 
 ### Bulk member tools: what they do and do not do
 
-Authenticated assignment changes and the membership-status migration now queue
+Authenticated assignment changes queue
 durable membership-role operations. Check **Settings → Membership → Role changes** for the actual Discord outcome, current reason and recent attempts.
 Retries recheck the original actor's current permissions; saving assignment data
 does not mean the roles have been applied. Unlinked players remain editable, with
@@ -207,7 +207,7 @@ the retry; Discord hierarchy restrictions still apply.
 Unavailable or stale Discord data is explicitly unknown. The website must enforce
 freshness and its own permissions; successful OAuth login, Logi assignment or guild
 presence alone does not grant website administration. Disabling the policy or revoking
-the key denies subsequent reads. See the [membership handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.7/README.md)
+the key denies subsequent reads. See the [membership reference](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.7/README.md)
 for the exact-subject API, freshness windows and consumer responsibilities.
 
 ## Verified Steam accounts

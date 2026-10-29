@@ -1,17 +1,6 @@
-# Warcon read integration · 0.11
+# Warcon gameplay reads
 
-Logi can read the Warcon panel's gameplay data, collect its server snapshot and
-completed matches, and serve fifteen typed views to the website backend. The
-dashboard includes a live scoreboard. This extends PR #158; the website retains
-its own backend, authentication, publishing policy and presentation.
-
-Read the [design](warcon-design.md) and [verification record](verification.md).
-The [October 3 history/analytics follow-up](history-analytics-gap.md) records
-actual populated match and leaderboard reads, the current durable-storage gap,
-and the proposed independent website analytics.
-The earlier [provider probe](../v0.10/live-provider-probe.md) describes the state
-before this implementation. Production activation and website adoption are
-separate from the local and provider acceptance recorded here.
+Logi reads fifteen Warcon gameplay views, displays a live scoreboard, and collects completed matches into retained history. On-demand views use bounded caches. See [retained Warcon history](../warcon-history.md) for durable completed-game reports.
 
 ## What is available
 
@@ -19,23 +8,23 @@ Use `GET /api/v1/clan/warcon-data/{connectionId}?game=wardogs&view=...`.
 `connectionId` is the Logi connection ID returned by `server-snapshots`, not the
 Warcon panel UUID or the game's join code. Every row below uses the same route.
 
-| View | Data | Optional selectors (defaults) |
-| --- | --- | --- |
-| `live` | Player names/Steam IDs, factions, kills, deaths, cash, ping; counts, scores, map, experiences, lighting, join code, limits when known, observation timestamps | None |
-| `analytics` | Population and cash series, uptime, maps, wins, activity by hour, players, matches, nullable combat summary | `range=24h` (`7d`, `30d`) |
-| `cash` | Timestamped total and faction cash, preserving missing samples | `since` ISO timestamp; upstream defaults to one hour, clamps to 24 hours/latest 3,000 samples |
-| `matches` | Current and completed match summaries, final scores, winner, counts | `page=1`; 50 rows/page |
-| `match` | Completed match, players, timeline, awards, scores and kill-feed availability | **Required** `matchId`; ongoing or absent detail returns `data:null` |
-| `leaderboard` | Server-scoped ranks, play/seed time, kills/deaths, cash, match results, feed statistics | `range=30d` (`7d`, `90d`, `all`), `sort=kills`, `dir=desc`, `page=1`, `minMinutes=60` |
-| `players` | Players seen on this server, first/last seen, sessions, time, kills/deaths, online state | `q`, `since=0` days, `sort=lastSeen`, `dir=desc`, `offset=0`, `limit=50` (1–100) |
-| `career` | Match outcomes, maps/factions, play time, combat aggregates, recent matches | **Required** `steamId`; upstream key must see exactly the configured server |
-| `kills` | Event IDs/time, killer/victim, factions, cause, range, headshot/team-kill/suicide flags, tags | `limit=50` (1–200), `before`, `beforeTime`, `match`, `player`, `killer`, `victim`, `cause`, `kind`, `minM` |
-| `catalog` | Map, lighting and experience IDs/display labels | None |
-| `rotation` | Rotation mode, current/next indices and entries | None |
-| `health` | Game API status, uptime, connections and queue counters | None |
-| `capabilities` | Available game API routes and feature flags | None; this does not grant command execution |
-| `experiences` | Available game-mode IDs/display labels | `map` catalog ID |
-| `alternators` | Available zone-alternator tags/display labels | **Required** `map` catalog ID |
+| View           | Data                                                                                                                                                          | Optional selectors (defaults)                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `live`         | Player names/Steam IDs, factions, kills, deaths, cash, ping; counts, scores, map, experiences, lighting, join code, limits when known, observation timestamps | None                                                                                                       |
+| `analytics`    | Population and cash series, uptime, maps, wins, activity by hour, players, matches, nullable combat summary                                                   | `range=24h` (`7d`, `30d`)                                                                                  |
+| `cash`         | Timestamped total and faction cash, preserving missing samples                                                                                                | `since` ISO timestamp; upstream defaults to one hour, clamps to 24 hours/latest 3,000 samples              |
+| `matches`      | Current and completed match summaries, final scores, winner, counts                                                                                           | `page=1`; 50 rows/page                                                                                     |
+| `match`        | Completed match, players, timeline, awards, scores and kill-feed availability                                                                                 | **Required** `matchId`; ongoing or absent detail returns `data:null`                                       |
+| `leaderboard`  | Server-scoped ranks, play/seed time, kills/deaths, cash, match results, feed statistics                                                                       | `range=30d` (`7d`, `90d`, `all`), `sort=kills`, `dir=desc`, `page=1`, `minMinutes=60`                      |
+| `players`      | Players seen on this server, first/last seen, sessions, time, kills/deaths, online state                                                                      | `q`, `since=0` days, `sort=lastSeen`, `dir=desc`, `offset=0`, `limit=50` (1–100)                           |
+| `career`       | Match outcomes, maps/factions, play time, combat aggregates, recent matches                                                                                   | **Required** `steamId`; upstream key must see exactly the configured server                                |
+| `kills`        | Event IDs/time, killer/victim, factions, cause, range, headshot/team-kill/suicide flags, tags                                                                 | `limit=50` (1–200), `before`, `beforeTime`, `match`, `player`, `killer`, `victim`, `cause`, `kind`, `minM` |
+| `catalog`      | Map, lighting and experience IDs/display labels                                                                                                               | None                                                                                                       |
+| `rotation`     | Rotation mode, current/next indices and entries                                                                                                               | None                                                                                                       |
+| `health`       | Game API status, uptime, connections and queue counters                                                                                                       | None                                                                                                       |
+| `capabilities` | Available game API routes and feature flags                                                                                                                   | None; this does not grant command execution                                                                |
+| `experiences`  | Available game-mode IDs/display labels                                                                                                                        | `map` catalog ID                                                                                           |
+| `alternators`  | Available zone-alternator tags/display labels                                                                                                                 | **Required** `map` catalog ID                                                                              |
 
 Leaderboard sorts: `kills`, `deaths`, `kd`, `perHour`, `playtime`, `seeded`,
 `matches`, `wins`, `winRate`, `cash`. Seen-player sorts: `lastSeen`, `firstSeen`,
@@ -64,8 +53,11 @@ the Warcon credential. For example, from the website backend:
 
 ```ts
 const response = await fetch(
-  `${process.env.LOGI_URL}/api/v1/clan/warcon-data/${connectionId}?game=wardogs&view=live`,
-  { headers: { Authorization: `Bearer ${process.env.LOGI_API_KEY}` }, cache: "no-store" },
+    `${process.env.LOGI_URL}/api/v1/clan/warcon-data/${connectionId}?game=wardogs&view=live`,
+    {
+        headers: { Authorization: `Bearer ${process.env.LOGI_API_KEY}` },
+        cache: "no-store",
+    }
 )
 if (!response.ok) throw new Error(`Logi read failed: ${response.status}`)
 const { data } = await response.json()
@@ -133,8 +125,7 @@ server-scoped paths. Projected cached responses are capped at 512 KiB.
 
 Only snapshots and completed match sessions enter durable collection. Other
 views are on-demand cache data and are not additions to the existing change feed
-or webhook payload. Poll those views directly. Clients may refresh snapshot and
-health views through the established change-feed flow.
+or webhook payload. Poll those views directly. Poll snapshot and health endpoints directly.
 
 Completed matches use the existing resumable history collector and are stored
 as `wardogs` sessions. Ongoing matches are skipped; they do not become results.
@@ -144,43 +135,9 @@ or link a Steam account: the existing manager review and verified-identity workf
 still applies. Read DTOs preserve Warcon's `hasFeed`, `configured` and nullable
 combat fields; a zero counter alone is not proof of feed coverage.
 
-## Operator setup and activation
+## Connection setup
 
-Provision the Warcon key only in the Convex runtime environment. Example source
-catalog entry (all values below are placeholders):
-
-> **Superseded for keys (2026-10-04):** workspaces now enter provider keys in the
-> dashboard, stored encrypted. `secretRef` variables remain only for operator
-> catalog entries until migrated; see
-> [game-server credentials](../game-server-credentials.md).
-
-```json
-{
-  "ref": "wardogs-warcon-primary",
-  "guildId": "DISCORD_GUILD_ID",
-  "gameId": "wardogs",
-  "provider": "wardogs_warcon",
-  "providerServerId": "11111111-1111-4111-8111-111111111111",
-  "origin": "https://warcon.example.org",
-  "secretRef": "LOGI_GAME_DATA_WARCON_TOKEN",
-  "allowedAddresses": []
-}
-```
-
-Put the entry in `LOGI_GAME_DATA_SOURCES` and store the token under the referenced
-variable. Public origins use normal address validation. Private-network sources
-require the existing explicit address allowlist and a valid TLS certificate.
-No client receives these settings. Use the panel UUID from `/s/{uuid}`, not the
-game join code. A direct game listener belongs to `wardogs_rcon`, not this adapter.
-
-After deploying this revision to the intended Logi runtime, enable the prepared
-source in **System → Game server data**. Select one provider per actual server to
-avoid duplicate observations. Check snapshot/history health, open **Live Warcon
-scoreboard**, and test the scoped website key. Disable the connection to stop
-reads/collection and reject old-generation results. No feed, moderation or server
-settings are changed by activation. `/server-status game:wardogs` uses the stored
-snapshot and now labels the source **Wardogs Warcon**; it has no live player-list
-command and does not initiate an upstream request.
+Workspace administrators connect servers in **Settings → Game servers**. Provider keys are encrypted with the operator-configured keyring and are not returned to clients. Choose the correct provider and stable server identifier; the Warcon panel UUID differs from the game's join code. Test the connection, enable collection, and inspect its health and observation timestamps. See [game-server credentials](../game-server-credentials.md) for credential modes, encryption, operator sources, and rotation.
 
 ## Upstream documentation and deliberate exclusions
 

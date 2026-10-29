@@ -1,513 +1,65 @@
 # Architecture
 
-## Purpose
-
-This repository serves three runtimes:
-
-- the Next.js dashboard in `src/app`
-- Convex cloud functions in `convex/`
-- the Discord bot in `discord-bot/`
-
-The architecture goal is to keep business behavior understandable without having to understand all three runtimes at once.
-
-## Rule Of Thumb
-
-Code should flow inward:
-
-1. frameworks receive input
-2. adapters load and save data
-3. application use-cases orchestrate work
-4. domain modules decide behavior
-
-Domain code must not depend on Next.js, Convex, or Discord.js.
+Logi has three cooperating runtimes: a Next.js App Router dashboard and public site in `src/app`, Convex functions and persistence in `convex`, and a Discord.js bot in `discord-bot`.
 
 ## Layers
 
-### `src/domain`
-
-This is the business core. It should contain:
-
-- entities and value-oriented types
-- pure policies
-- validation rules
-- derivations and state transitions
-
-It must not contain:
-
-- `ctx.db`
-- `NextRequest`
-- `discord.js`
-- cache invalidation
-- HTTP response logic
-
-Current domain modules:
-
-- `src/domain/events`
-- `src/domain/rosters`
-- `src/domain/assignments`
-- `src/domain/shared`
-
-Examples:
-
-- `deriveEventStatus`
-- `toggleSignup`
-- `upsertNotice`
-- `mergeRosterWithEventState`
-- `setRosterAttendanceStatus`
-
-### `src/application`
-
-This layer coordinates use-cases. It depends on interfaces rather than framework APIs directly.
-
-It should contain:
-
-- use-case classes
-- ports and repository interfaces
-- orchestration between multiple domain modules
-
-It should not contain low-level storage details or Discord API details.
-
-Current application modules:
-
-- `src/application/assignments`
-- `src/application/discord-sync`
-- `src/application/events`
-- `src/application/ports`
-- `src/application/rosters`
-
-Example:
-
-- `UpsertAssignmentUseCase`
-- `RemoveAssignmentUseCase`
-- `ToggleSignupUseCase`
-- `UpsertNoticeUseCase`
-- `SyncRosterMembershipForEventUseCase`
-- `SyncRosterMembershipForUserUseCase`
-
-### `src/infrastructure`
-
-This layer adapts external systems to the application and domain layers.
-
-It should contain:
-
-- Convex repository implementations
-- Discord gateways
-- testing fakes
-- clock/logger implementations
-
-Current infrastructure modules:
-
-- `src/infrastructure/convex`
-- `src/infrastructure/testing`
-
-### `src/app` and `src/lib`
-
-These are the web-facing layers.
-
-`src/app` should own:
-
-- pages
-- route handlers
-- request parsing
-- response formatting
-
-`src/lib` contains web-facing wrappers and utility modules. Its role should stay narrow:
-
-- web-specific gateways
-- presentation helpers
-- cache orchestration
-
-Business rules should not live in `src/lib/server-*` modules. Those files should delegate to read-models, gateways, and use-cases.
-
-### `convex/`
-
-Convex files are cloud function entrypoints and persistence adapters.
-
-A Convex mutation or query should ideally do only this:
-
-1. validate input
-2. authenticate or verify internal secret
-3. load data using `ctx.db`
-4. delegate rule decisions to shared domain/application modules
-5. save changes
-6. return serialized results
-
-Convex files should not be the long-term home of business rules.
-
-Every exported `query`, `mutation` and `action` is reachable by anyone who
-knows the deployment URL, which the browser bundle contains. Each one must
-therefore establish its caller itself, in one of three ways:
-
-- the internal secret (`secret` argument checked with `assertInternalSecret`)
-  for calls from the Next server, the bot and scripts;
-- a dashboard session or actor gateway (`assertSessionGateway`,
-  `authorizeDashboardAdmin`, `authorizePlatformAdmin`) when the server acts for
-  a signed-in person;
-- a client grant (`verifyClientGrant` in `convex/clientGrants.ts`) for the few
-  live browser subscriptions and edits. The page signs it with
-  `issueClientGrant` after checking the session; Convex takes the user from the
-  grant, never from a browser-supplied `userId`.
-
-A caller-supplied user ID is only trustworthy behind the internal secret.
-Browser writes to workspace settings go through Next routes, not `useMutation`.
-Responses for members must leave out manager secrets such as stats-server tokens
-and the calendar feed capability, and unpublished rosters.
-
-Read modules should also be split by feature. For example:
-
-- `convex/serverContext.ts` for dashboard server context
-- `convex/users.ts` for user lookups
-- `convex/serverMetadata.ts` for focused metadata reads
-- `convex/serverRosters.ts` for roster-specific read models
-
-### Convex hot paths
-
-Production runs a self-hosted Convex backend that keeps every version of a
-document for the retention period. Reads and writes that recur on a timer, a
-cron or a live subscription therefore decide the backend's load, and a few
-careless ones can take the whole deployment down. These rules apply to every
-function that such a path calls:
-
-- No whole-table `.collect()` in anything that runs on a timer, a cron or a
-  subscription. `events`, `discordPublications` and similar tables grow for
-  as long as a clan exists; read them through an index that bounds the
-  result to what the pass needs (the weekly series, the matches that end
-  after a cutoff, one owner's publication keys).
-- Bound every periodic read with an index: an equality on the owner (guild,
-  series, connection) plus a range on the field the pass filters by, and a
-  `.take()` where the number of rows the pass can act on is limited anyway.
-  A string prefix becomes a range of `[prefix, prefix with its last
-character stepped up)` on the same index (`publicationKeyRange`).
-- A bot subscription (`convex.watchQuery`) re-runs on every write to every
-  table it reads, and the bot takes the whole result each time. It
-  therefore reads only the rows the bot acts on, through an index:
-  `discordSync:listEventSyncIndex` reads the events that are not
-  historical (every status but `concluded`, plus the concluded ones that
-  ended after a cutoff) through `status_gameEnd` and their rosters through
-  `eventId`, never the archive. Anything the bot needs only now and then
-  stays out of the subscription: a sign-up reminder's recipients are read
-  once, when the reminder is due (`listGuildAssignments`, through
-  `serverId`), not cached from a subscription over `userAssignments`.
-- A cron that reconciles derived rows walks what changed, not everything:
-  `peopleSummaries:reconcileResultLinks` keeps an `updatedAt` watermark of
-  its last complete run and reads the events updated since through the
-  `updatedAt` index, with one full walk a day for rows without the field.
-- A collector that walks a provider's history stops where it is caught up.
-  Each history cycle starts at page 1 (the newest games),
-  fetches only the sessions not yet stored complete for the current source
-  generation (`gameDataHistory:storedComplete`, one indexed lookup per ID,
-  called once per page) and ends at the first page that has none. A full
-  walk that re-reads every session runs at most once a day
-  (`lastFullWalkAt`, `HISTORY_FULL_WALK_INTERVAL_MS`) so provider
-  corrections still arrive. A complete, unchanged session is never
-  rewritten, and the Warcon history head rewrites an unchanged
-  `lastCollectedAt` at most every ten minutes. Re-walking the whole
-  history every cycle cost about 200,000 writes and as many provider calls
-  a day per connection.
-- Never rewrite a large document just to refresh a lease. A patch stores
-  the whole document again, whichever fields it names, so a lease, a time
-  or a counter never shares a row with a large payload; the claim writes
-  only the small row (`generation`, `fence`, `leaseUntil`, `nextAt`,
-  `retainUntil`).
-- Prefer small status rows next to large payload rows. A table that is both
-  read every few seconds and holds a large payload (a live read, a message
-  cache) should keep the lease, timestamps and counters in a row of their
-  own, so the frequent readers and writers never touch the payload.
-- In the bot, run a pass that reads many rows on its own cadence (once at
-  start, then every 15 minutes for the recurrence pass), not on the
-  one-minute reconcile tick, and back off a pass whose backend call keeps
-  failing instead of retrying it every minute.
-- The request path never writes. A mutation that patches one document on
-  every API request (a `lastUsedAt`, a rate-limit counter) makes parallel
-  requests conflict on that document and retry inside Convex; the backend
-  degraded on exactly this. Authenticate through a query, count rate limits
-  in the web process, and record usage from a separate mutation that writes
-  at most once per interval and re-checks before it writes.
-- A change feed records what a consumer must re-fetch, never that a row was
-  rewritten. The tracked-mutation wrappers compare the fields the website
-  projections serve and leave bookkeeping out of the comparison: a
-  collector's `lastAttemptAt`, `nextAttemptAt`, `historyLastSuccessAt` and
-  `updatedAt`, a session's `fetchedAt`, a member observation's `observedAt`
-  and `receivedAt`. Two writers flooded the log to 666,000 rows: the bot's
-  membership reconciliation, which then observed every member of a clan
-  every five minutes and stored each observation with a new revision and
-  three `membership-summaries` rows (one per game) whether or not anything
-  changed, and a history walk that commits once a second and rewrote its
-  connection and session rows each time. `storeMemberObservation` now
-  refreshes only the evidence fields when state and roles are the same,
-  and only adds the new epoch to them after an invalidation
-  (`observationChange`: consumers reset on the epoch itself, through
-  `membershipScopeVersion`); a history commit patches a session only when
-  its content changed and records a visit (an unfinished session's
-  `fetchedAt`, `historyLastSuccessAt`) at most once a minute
-  (`HISTORY_TOUCH_INTERVAL_MS`).
-- The change feed keeps no log: `integrationChanges` and `integrationRecords`
-  were removed, `readChanges` answers every cursor with `reset_required`, and
-  `appendIntegrationChange` only allocates the clan's next revision and
-  enqueues its webhook deliveries. Only what a website re-downloads is
-  announced: live state is not tracked (`gameDataConnections`;
-  `server-snapshots` and `integration-health` are read from their own
-  endpoints), and a League refresh announces a fixture only when its served
-  projection changed.
-- The collectors run from their crons and never schedule themselves. A
-  history tick (`collectHistoryDue`, every ten minutes) runs up to
-  `HISTORY_STEPS_PER_TICK` steps of one session each in one action, a
-  second apart; an incremental cycle stops at the first page whose sessions
-  are stored complete, and a full walk runs once a day.
-- A pass over every member of a clan runs only when it can find something.
-  The bot reads the reconciliation's start (`reconciliationStart`, a query)
-  before the Discord fetch and inserts the run only after a complete fetch;
-  it reconciles at most every six hours unless the guild was invalidated (a
-  new gateway session, a guild becoming available, a deleted role or one
-  whose permissions changed, never a resumed session) or the manager role
-  changed, and waits 15 minutes after a failed fetch. Per unchanged member
-  a run writes the observation's evidence and nothing else: the observation
-  carries the run's mark (`seenRunId`) instead of a scratch row per member,
-  and `discordMemberAccess` is patched only when roles or access changed.
-  An applied managed role is checked again once a day, a check that
-  changes nothing writes no attempt row, and denied, superseded and failed
-  operations are removed 30 days after they finished
-  (`memberRoleOperations:pruneFinished`).
-- Every table that gains a row per request or per window has a cron that
-  removes the expired rows in bounded batches through an expiry index:
-  `apiHousekeeping:pruneExpired` for `apiIdempotencyKeys` (one row per
-  Idempotency-Key, 24 h, with the stored response) and
-  `apiRateLimitBuckets` (one row per window), hourly. Tens of thousands of
-  dead rows in each were found in production because nothing removed them.
-- Every table that grows with history has a retention and an index-driven
-  prune. `housekeeping:pruneHistory` runs daily, about 250 rows per table
-  and transaction, rescheduled while a batch was full and deleted rows
-  (windows in `src/domain/housekeeping/retention.ts`): 30 days for
-  delivered or failed `webhookDeliveries` (`status_nextAttemptAt`),
-  `websiteEventCommandReceipts` (`createdAt`), `eventReminderRequests`
-  (`requestedAt`), `automaticReminderOutcomes` (`sentAt`), ended
-  `discordSeedRuns` with their delivered call row in `discordSeedMessages`
-  (`status_startedAt`), and `signupActivities` (`occurredAt`) and finished
-  `rosterChangeRequests` (`status_requestedAt`) once their match ended 30
-  days ago; a day after expiry for `meetingAttendanceRequests` and
-  `platformLinkChallenges` (`expiresAt`); 14 days for `leagueMessageRefs`,
-  which get an `expiresAt` at intake. `webhooks:remove` deletes the
-  subscription's deliveries. Match statistics (`gameSessions`,
-  `serverGameHistory`, `playerStats`, `matchStats`,
-  `eventResultRevisions`) and `matchRecaps` keep no limit.
-- A per-request endpoint serves counts from a maintained summary document,
-  never from a scan. `/api/v1/clan/meta` reads the key, the clan, its
-  enabled games and one `clanMetaSummaries` row; `clanMeta:refreshClanMeta`
-  recomputes that row through the guild indexes at most once a minute, off
-  the request path (fired by the web gateway when the stored `computedAt`
-  is older than `CLAN_META_INTERVAL_MS`, throttled per clan in the web
-  process and re-checked by the mutation), synchronously only for a clan
-  that has no row yet. The same holds for the people a timed read names:
-  `discordSync:listSyncPayloads` reads the users its events and rosters
-  reference one by one through the `users` indexes, never the table.
-- A function pays for its whole module graph. Convex evaluates a function's
-  module, with everything it imports, on each fresh isolate, so under
-  parallel load a function in a 1.2 MB module costs about 100 ms of CPU
-  before it reads anything, while one in a 10 KB module costs a few
-  milliseconds. Keep what runs on every request or every tick in small
-  modules (`convex/apiKeyAuth.ts`), and keep Zod schemas, use-cases and
-  repositories out of modules that only project or read. Measure with
-  `npx esbuild convex/<module>.ts --bundle --platform=node --format=esm
---external:convex --metafile=out.json`.
-- Zod is 537 KB once bundled and nothing of it tree-shakes, so one schema
-  defined at the top level of any imported file costs the whole library. A
-  domain file that exports both schemas and pure projections keeps the
-  schemas in a sibling `<name>.schema.ts` (`settings.schema.ts`,
-  `change.schema.ts`, `observation.schema.ts`); the pure file re-exports
-  the inferred types with `export type { … } from "./<name>.schema"`, which
-  is erased at runtime, and only the functions that validate import the
-  schema file. The same holds for Convex modules: a helper another module
-  calls inside its transaction lives in a module without function
-  definitions (`imageAssetStore.ts`, `membershipAccess.ts`,
-  `clanTeamStore.ts`), because `mutation({ … })` at the top level of a
-  module is a side effect that bundles the module's whole graph into every
-  importer. The website's per-request reads live in `publicApiReads.ts`;
-  the idempotent writes, their use-cases and the stratmap catalogue stay in
-  `publicApi.ts`.
-- A stored document is not validated again on read. The schema validates
-  every structured field on write (`convex/schema.ts` has validation on),
-  and a JSON payload is written only by Logi's own `finish` after the
-  action validated it, so a read uses a typed access to the row
-  (`projectSnapshot` reads `gameDataConnections.observation` as stored) or
-  a hand-written guard for a JSON payload (`hll-live-payload.ts`,
-  `warcon-payload.ts`, `snapshot-payload.ts`, `operator-sources.ts`) and
-  never a Zod `parse`. The Zod schema stays in the `*.schema.ts` sibling for
-  the write side and the tests. A module the bot calls on a timer
-  (`discordPublicPanels:forGuild`, `discordPanelBot`, `discordSeedBot`,
-  `hllLiveReads`, `warconReads`, `leagueDiscoveryPanels`,
-  `playerReports:pending`, `gameData`, `gameDataHistory`) holds no
-  validating mutation; those live in their own modules
-  (`discordPanelBotWrites.ts`, `discordPanelGraphicsWrites.ts`,
-  `discordPublicPanelsAdmin.ts`, `playerReportDrafts.ts`) and the bot calls
-  them by their new paths.
-- A cache that holds a large payload keeps it in a row of its own and
-  writes it only when it changed. `hllLiveCache` and `warconReadCache` hold
-  the lease and the freshness fields (`fetchedAt`, `statusAt`, `playersAt`,
-  `observedAt`); the provider data is in `hllLivePayloads` and
-  `warconReadPayloads` (`liveReadPayloads.ts`), rewritten only when the new
-  read, minus its times, differs (`hllLiveComparable`, `warconComparable`).
-  Every reader merges the small row's times into the payload, so the
-  response carries the latest read's times while an idle server stores two
-  small rows per refresh. The Warcon read budget is a small row per
-  connection (`warconReadLimits`), not a counter on `gameDataConnections`.
-  Patching only the small fields of a row that also held the payload, as
-  before, still stored the payload on every claim and finish.
-- A timed writer stores only what changed. A panel publish whose render is
-  the one Discord shows, confirmed within ten minutes, is `current` without
-  a write (`publicationIsCurrent`), and an edit is the claim plus a
-  `finish` that carries the state; a pass report is stored only when the
-  error, warnings, messages, request, claim or privacy changed, or ten
-  minutes after the stored one (`panelStatusNeedsWrite`); the bot heartbeat
-  is one `bot` row with the visited workspaces every 90 s
-  (`botHeartbeatNeedsWrite`). The platform status state, an idle webhook
-  drain, the emoji report, a repeated key failure, an unchanged performance
-  history and a cached League match's access time (hourly) write nothing.
-
-Tests of these functions assert which index a read uses (see
-`src/infrastructure/convex/event-recurrence.test.ts` and
-`discord-sync-reads.test.ts`, with the `spyReads` helper in
-`testing/database.ts`) and which fields a claim patches
-(`hll-live-cache.test.ts`), so a later change cannot quietly bring a
-whole-table read back.
-
-### `discord-bot/`
-
-The bot is a runtime adapter. It should:
-
-- listen to Discord events and interactions
-- load or write data through Convex
-- render messages, components, and embeds
-- call shared business logic where behavior is not Discord-specific
-
-The bot should not own the core rules for rosters, signups, or membership state.
-
-## How Runtimes Communicate
-
-### Dashboard
-
-The dashboard reads data either:
-
-- through Convex-backed server helpers in `src/lib`
-- through Next.js API routes
-
-The dashboard should not contain business rules beyond simple UI state and formatting.
-
-### Convex
-
-Convex is the persistence and transaction boundary.
-
-This means:
-
-- domain logic can be pure and stateless
-- use-cases can be framework-agnostic
-- the actual read/write transaction still happens inside the Convex function
-
-### Discord Bot
-
-The bot talks to Convex using function references in `discord-bot/src/convex.ts`. Shared scheduling, payload, and rule decisions should live in `src/domain` or `src/application`, leaving bot files focused on Discord API work.
-
-## Domain Split
-
-The current target split is:
-
-- `events`
-- `rosters`
-- `assignments`
-- `discord-sync`
-- `match-results`
-- `membership/tickets`
-- `users`
-
-Migration order matters. The highest-priority slices are:
-
-1. events
-2. rosters
-3. assignments
-4. discord-sync
-
-## Testing Strategy
-
-There are three intended test layers.
-
-### Unit Tests
-
-Unit tests target `src/domain`. These should be the majority of the suite.
-
-Good unit test targets:
-
-- event status transitions
-- signup behavior
-- notice windows
-- roster merge behavior
-- assignment validation
-
-### Use-Case Tests
-
-Use-case tests target `src/application` with fakes or in-memory adapters.
-
-These tests verify orchestration:
-
-- which repositories are called
-- which objects are saved
-- multi-step business workflows
-
-### Integration Tests
-
-Integration tests are most useful for:
-
-- Convex entrypoints
-- Next route handlers
-- Discord interaction flows
-
-These tests should be fewer and focused on wiring, not every edge case.
-
-## File Placement Rules
-
-When adding new code:
-
-- pure business rule: put it in `src/domain/<module>`
-- workflow spanning repositories or multiple domain policies: put it in `src/application/<module>`
-- adapter to Convex/Discord/HTTP/cache: put it in `src/infrastructure` or runtime-specific folders
-- React UI concern: put it in `src/components` or `src/app`
-
-If a file needs `ctx.db`, `NextRequest`, or `discord.js`, it is not domain code.
-
-## Adding A New Module
-
-For a new domain such as `notifications`:
-
-1. create `src/domain/notifications`
-2. add types and pure policies first
-3. add tests beside those policies
-4. create `src/application/notifications` if orchestration is needed
-5. add adapters from Convex or the bot only after the domain behavior is defined
-
-Recommended pattern:
-
 ```text
-src/domain/notifications/
-  notification.types.ts
-  notification-policy.ts
-  notification-policy.test.ts
-
-src/application/notifications/
-  send-notification.use-case.ts
-
-src/application/ports/
-  notification-repository.ts
+HTTP / React / Discord entrypoint
+  -> runtime adapter
+  -> application use-case
+  -> domain rule
 ```
 
-## Editing Existing Behavior
+| Location                     | Responsibility                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `src/domain`                 | Shared types, validation, normalization, policies, calculations, and state transitions      |
+| `src/application`            | Workflows and explicit repository/external-capability ports                                 |
+| `src/infrastructure/convex`  | Repository implementations and persistence mapping                                          |
+| `src/infrastructure/testing` | Fakes and in-memory adapters                                                                |
+| `convex`                     | Authentication, input validation, transactions, schema, scheduled work, and use-case wiring |
+| `src/app`                    | Next.js pages, layouts, and HTTP route adapters                                             |
+| `src/lib/read-models`        | Web-facing read projections                                                                 |
+| `src/lib/gateways`           | Web workflow and external-service gateways                                                  |
+| `src/components`             | Rendering, interaction, and reusable UI primitives                                          |
+| `discord-bot/src`            | Discord interaction parsing, workers, synchronization, and message rendering                |
 
-When changing an existing feature:
+Domain modules are independent of React, Next.js, Convex, Discord.js, environment variables, and persistence clients. Application workflows receive persistence and external capabilities through ports. Convex owns database transactions, including the reads and writes performed by repository adapters.
 
-1. find the domain rule first
-2. update or add tests
-3. update the application use-case if orchestration changed
-4. update Convex/web/bot adapters only if required
+Feature modules cover events, rosters, assignments, membership, identity, teams, competitions, game data, results, Discord publications, seeding, and integrations. The directory tree contains the full module inventory; features share domain/application behavior across runtimes.
 
-If the change currently lives only in a Convex file, prefer extracting the rule into `src/domain` before adding more logic there.
+## Runtime communication
 
-## Transitional State
+The dashboard reads through Convex-backed read models and HTTP adapters, and writes through authenticated gateways. Client interactivity lives in React components; shared decisions live in domain or application modules.
 
-Remaining exceptions should be rare, explicit, and documented. There should be no intentional grab-bag Convex read module.
+Convex functions validate their inputs and authenticate through an internal secret, a dashboard-session gateway, or a scoped integration grant. Browser-supplied user IDs do not establish authority. Queries and mutations retain workspace and game scoping.
+
+The bot calls Convex through `discord-bot/src/convex.ts`. Its workers coordinate announcements, rosters, panels, reminders, applications, tickets, roles, and League tracking. Discord payloads and network effects live in the bot; shared policy lives in `src/domain` and `src/application`.
+
+## Identity and access
+
+Discord OAuth creates durable dashboard sessions in Convex. Session validation checks current identity, expiry, and revocation. Optional OIDC uses its own protocol routes and registered clients; bearer integration keys cannot create login sessions.
+
+The `/api/v1` surface uses scoped integration keys and, for actor-backed operations, current actor authorization. Public presentation, verified platform identity, membership evidence, and authorization are separate concerns. See the [integration reference](docs/integrations/website/README.md).
+
+## Convex hot paths
+
+Frequently called reads use indexed lookups and bounded pages. Large payloads are stored separately from leases and counters: live cache status lives in `hllLiveCache` and `warconReadCache`, while provider data lives in their payload tables. Unchanged payloads are not rewritten on every refresh.
+
+Collectors run from crons. History collection performs bounded steps and stops incremental scans at already-complete sessions. Discord membership reconciliation uses current observations, bounded retries, and periodic refresh; unchanged observations do not create a new logical membership change.
+
+Request authentication uses queries. Process-local limits and throttled usage writes avoid per-request contention on shared documents. `/api/v1/clan/meta` serves `clanMetaSummaries`; missing summaries are computed synchronously, while stale summaries refresh off the request path at most once per minute.
+
+The changes endpoint accepts `start=now` for a boundary; replaying a cursor returns `410 reset_required`, so consumers rebuild their scoped resources. There is no persistent integration change log. Revisions and queued webhooks signal relevant projection changes.
+
+Housekeeping prunes expired idempotency records, rate-limit buckets, completed delivery work, and other bounded history through expiry indexes. Game history follows its configured retention. Match statistics, result revisions, and recaps have their own persistence lifecycles.
+
+Convex module size affects isolate startup. Read-only modules keep validation schemas and write workflows outside their runtime graph where possible. Pure projections and runtime schemas have separate modules. Stored structured fields are validated on write; JSON payload readers use focused guards.
+
+Panel publication and heartbeat writes are throttled and compare served state before writing. Tests in `src/infrastructure/convex` cover indexed reads, lease patches, projection changes, and retention behavior. Self-hosted configuration is documented in [self-hosting](docs/self-hosting.md).
+
+## Tests and documentation
+
+Colocated `*.test.ts` files use `node:test` and `node:assert` through `tsx`. Domain tests exercise pure behavior; application tests exercise workflows through fakes; adapter tests cover mapping, authorization, and runtime wiring.
+
+[CONTRIBUTING.md](CONTRIBUTING.md) documents placement rules and validation commands. `content/` contains the public product wiki; `docs/` contains technical references. `public/docs/` contains legal content.

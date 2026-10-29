@@ -1,15 +1,8 @@
 # Discord public panels
 
-Public server/score panels and reviewed results are configured in the Discord
-settings of a Logi workspace. This implementation follows the
-[approved compact design](roadmap/discord-public-panels.md) and, since the
-Discord redesign, the panel contract in
-[PANELS-API.md](../../superpowers/specs/discord-redesign/PANELS-API.md).
+Public server panels and reviewed results are configured in the Discord settings of a Logi workspace. The [panel API contract](../../superpowers/specs/discord-redesign/PANELS-API.md) describes the model, routes, worker protocol, and join page.
 
-## Panels in Discord (redesign)
-
-The redesign (spec `docs/superpowers/specs/2026-10-05-discord-redesign-design.md`,
-boards L3, P4–P8) turns the panels into one model with explicit delivery:
+## Panel model
 
 - **Kinds**: `server` (one per game server; live score and server status are
   one kind, old `scoreboard` rows read as `server`), `servers` ("Naše servery"),
@@ -177,9 +170,7 @@ Discord and Convex do not share a transaction: this is conservative recovery,
 not a claim of unconditional exactly-once delivery across arbitrary failures.
 
 Existing stored message IDs are adopted. Historic messages whose IDs were already
-lost are not guessed by title. A legacy ticket/recruitment ID does not record its
-old channel; reconcile any pre-migration move manually before enabling the new
-worker. New moves use the durable channel binding.
+lost are not guessed by title. New moves use the durable channel binding.
 Per-game recruitment configurations own their message IDs even before their first
 publication; they never inherit another game's ID. Legacy event announcements
 adopt the old channel recorded in their sync state before moving to a new one.
@@ -204,7 +195,7 @@ The transport also reads the freshly fetched, bot-owned component's
 [`attachment_id`](https://docs.discord.com/developers/components/reference#unfurled-media-item).
 An exact catalog filename on Discord's attachment CDN is retained with both ID
 and filename; signed CDN query strings are not persisted. Disabling artwork clears
-the old attachment. Real Discord acceptance verified this update/restart path.
+the old attachment.
 
 Map images are the existing tactical artwork, not newly licensed promotional
 banners; a workspace may upload its own banner (see [Appearance](#appearance)).
@@ -288,15 +279,15 @@ editor's step **Vzhled** (banner, bar colour, style A/B/C; the default style
 comes from Grafika panelů) and validated by
 `src/domain/discord-publications/panel-presentation.ts`:
 
-| Field                                                   | Values                                                                                                                         | Rendering                                                                                                                                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `layout.showMap`                                        | boolean, default `true`                                                                                                        | Map line and map thumbnail. The thumbnail still needs `artwork`; hidden maps upload no artwork.                                                                                                        |
-| `layout.showScoreboard`                                 | boolean, default `true`                                                                                                        | Faction/team score section of live panels, including per-team leaders.                                                                                                                                 |
-| `layout.showPlayerCount`                                | boolean, default `true`                                                                                                        | Connected players / capacity in the live header.                                                                                                                                                       |
-| `layout.compact`                                        | boolean, default `false`                                                                                                       | Two-line header with subtext facts, inline scores, no separators; results use a condensed title.                                                                                                       |
-| `accentColor`                                           | `#RRGGBB` or `null`                                                                                                            | Replaces the green live color and the result color. Stale cards keep the amber warning chip; paused cards keep the colour with a grey Pozastaveno chip. The HLL private player embed uses it too.      |
-| `bannerAssetId` / `bannerUrl`                           | image asset ID or `null`; the URL is server-resolved                                                                           | An HTTPS banner is a Components V2 media gallery above the header and replaces the map thumbnail and its upload. A non-HTTPS URL (local development) is ignored and artwork rules apply.               |
-| `factionEmoji.{allies,axis,valkyra,manticore,lonestar}` | one Unicode emoji (Extended_Pictographic, flag pair, skin tone, up to three ZWJ joins) or `<:name:id>` / `<a:name:id>`, max 64 | **Retired (P8-B06).** The editor no longer offers it and always saves `{}`, so a stored override is cleared on the panel's next save. The redesigned renderers draw fixed faction signs and ignore it. |
+| Field                                                   | Values                                                                                                                         | Rendering                                                                                                                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout.showMap`                                        | boolean, default `true`                                                                                                        | Map line and map thumbnail. The thumbnail still needs `artwork`; hidden maps upload no artwork.                                                                                                   |
+| `layout.showScoreboard`                                 | boolean, default `true`                                                                                                        | Faction/team score section of live panels, including per-team leaders.                                                                                                                            |
+| `layout.showPlayerCount`                                | boolean, default `true`                                                                                                        | Connected players / capacity in the live header.                                                                                                                                                  |
+| `layout.compact`                                        | boolean, default `false`                                                                                                       | Two-line header with subtext facts, inline scores, no separators; results use a condensed title.                                                                                                  |
+| `accentColor`                                           | `#RRGGBB` or `null`                                                                                                            | Replaces the green live color and the result color. Stale cards keep the amber warning chip; paused cards keep the colour with a grey Pozastaveno chip. The HLL private player embed uses it too. |
+| `bannerAssetId` / `bannerUrl`                           | image asset ID or `null`; the URL is server-resolved                                                                           | An HTTPS banner is a Components V2 media gallery above the header and replaces the map thumbnail and its upload. A non-HTTPS URL (local development) is ignored and artwork rules apply.          |
+| `factionEmoji.{allies,axis,valkyra,manticore,lonestar}` | one Unicode emoji (Extended_Pictographic, flag pair, skin tone, up to three ZWJ joins) or `<:name:id>` / `<a:name:id>`, max 64 | **Retired.** The editor no longer offers it and always saves `{}`, so a stored override is cleared on the panel's next save. The redesigned renderers draw fixed faction signs and ignore it.     |
 
 Records without `presentation` resolve to the defaults, and the renderers are
 byte-identical for a missing and a fully defaulted appearance. A save without
@@ -357,21 +348,3 @@ reads for a third-party guild and require the current interactive
 administrator, including revocation checks. There is no new bearer management
 endpoint or broadened key scope. Game-data and reviewed-result read APIs remain
 unchanged.
-
-Deploy the schema/functions to the intended backend, deploy the matching bot and
-dashboard (the bot provisions its application emoji on start), then configure
-the desired panels. Keep the old bot stopped during rollout. Production activation is separate from local
-test acceptance; this PR does not authorize production Convex writes.
-
-## Verification
-
-Behavioral tests cover restart/edit reuse, lost create recovery, definite versus
-ambiguous failure, move failure, concurrent claims, stale acknowledgements,
-current actor/source scope, Warcon panel read restrictions, redaction/freshness,
-semantic faction mapping and idempotent emoji provisioning. Runtime evidence is
-recorded separately with the exact tested revision; do not reuse older PR test
-totals as evidence for these changes.
-
-See the [2026-10-03 acceptance and review record](evidence/2026-10-03-public-panels/README.md)
-for commands, assertions, genuine Discord web screenshots, the reported loading
-bug and its repair, security scope, and explicit deployment limitations.

@@ -66,7 +66,7 @@ The **Settings → Game servers** section shows retained history, filters, facti
 - Numeric totals sum known values only. Each metric exposes `knownGames`; feed-only values without provider feed capability remain unknown. Cash can be negative.
 - Rankings cover **retained completed games**, not Warcon's session-based/live leaderboard. Their eligibility totals can differ because provider session playtime includes different coverage.
 
-This delivers Logi's archive, dashboard and backend contract. It does not deploy a Valkyria www history page or start production collection. Production activation needs the existing operator source configuration and an explicit website key. The workspace team directory remains a separate approved design awaiting implementation.
+Collection requires an enabled source configuration. Website history reads require the explicit game-scoped history grant. Team catalogue and match snapshots are documented in the [team reference](v0.15/README.md).
 
 ## Reviewed player statistics
 
@@ -95,11 +95,6 @@ It reads one event per transaction, checks the original source digest, and
 reports only counts. Changed/unavailable sources are skipped; repair their
 source through the reviewed-result correction workflow. This is a data write,
 so run it only for an authorized deployment.
-
-## Verification
-
-See [local acceptance evidence](evidence/2026-10-03-warcon-history/README.md). The live collector was exercised against the authorized Warcon origin into an isolated loopback Convex database. Screenshots use a separate synthetic workspace dataset. No provider write, production database deployment or real player export is part of the proof.
-
 
 ## Reviewed Wardogs reports and recaps
 

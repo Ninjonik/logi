@@ -121,7 +121,7 @@ Private reports require complete, current permission checks. Unrelated people
 with Manage Threads can see private threads, so remove that access or designate
 the appropriate support staff before enabling this feature. The bot checks the
 actual thread members before writing the report. The website API does not export
-private reports. See the [implementation and operational limits](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/hll-live-and-player-reports.md).
+private reports. See the [implementation and operational limits](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/hll-live-and-player-reports.md).
 
 ### Membership application flow
 
@@ -157,7 +157,7 @@ the bot checks an applied request again once a day, and a check that finds the r
 still matching adds no attempt to the history. After six consecutive failures, correct
 the cause and save a new authorized member request. Denied, superseded and failed
 requests are removed, with their attempts, 30 days after they finished. Importing members does not create role grants. Details and activation
-requirements are in the [managed-role handoff](https://github.com/Ninjonik/logi/blob/feat/valkyria-integration/docs/integrations/website/v0.8/README.md).
+requirements are in the [managed-role reference](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.8/README.md).
 
 The bot verifies current Discord permissions before changing roles. A newly granted
 dashboard admin role must reach Discord first; old login/access caches cannot authorize

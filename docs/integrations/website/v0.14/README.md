@@ -8,7 +8,7 @@ introduce a website roster or attendance writer.
 The authoritative closed schemas are
 [`people-summaries.ts`](../../../../src/domain/api/people-summaries.ts); the
 [synthetic fixture](fixtures.json) is a consumer contract example, not a real
-player, guild, game round or proof of hosted acceptance.
+player, guild, or game round.
 
 ## Access and HTTP contract
 
@@ -45,14 +45,13 @@ An empty page can still have a continuation. Follow the signed cursor until
 generation. `sort=createdAt` selects native creation order, which stays stable
 when a collected session is refreshed. Continue with the opaque provider cursor;
 it is not a client-side timestamp filter.
-The existing changes feed retains its separate `hasMore` polling contract.
+The changes endpoint returns `410 reset_required` on cursor replay; rebuild the scoped collections.
 
 There is no implicit history cutoff: every eligible collected session is paged.
 A large history can exceed a consumer's bounded synchronization time budget. In
 that case keep public facts unavailable and continue/retry reconciliation; never
 drop older pages, publish an incomplete baseline, or present an expired earlier
-attribution check as current. An explicit future time-window contract would need
-to identify its coverage separately. The bounded producer favors predictable
+attribution check as current. The bounded producer favors predictable
 database work over an unbounded single request.
 
 An unknown, foreign, unpublished or unavailable-source detail returns 404;
@@ -138,51 +137,10 @@ reviewed records and prevents overlapping passes with a generation/lease.
 
 ## Synchronization and freshness
 
-Native assignment, roster and collected-session writes emit transactional
-revisions. Deletion, roster unpublishing and direct scope moves emit retained
-tombstones. Identity/name deletion or rebinding, groups, membership changes,
-verified account links, source enable/generation changes and event
-scope/participation/reviewed-result changes atomically advance a shared people
-dependency generation. Existing people collection/change cursors then return 410. The generation is global and may conservatively reset another guild; this
-keeps invalidation bounded instead of rewriting an unbounded player history.
+Native assignments, roster publication, collected sessions, identity bindings, groups, membership, verified account links, source configuration, and reviewed-result changes affect the people dependency generation. Cursors bind that generation and return `410 reset_required` when it changes. This generation is global and can conservatively reset another workspace.
 
-Capture `changes?start=now` **before** the baseline, page the three collections,
-read atomic sync records, and replay changes before publishing the new local
-generation. A reset must discard the in-progress baseline and suppress old
-public people rows until a successful rebuild. Polling is required even with
-webhooks: a generation reset is detected by polling, not an unbounded fanout of
-webhook payloads. Webhook hints contain IDs/revisions only.
+Page each permitted collection to completion with fixed scope and filters. Empty pages can carry a continuation. Read individual projections through the atomic sync-record routes when needed. The changes endpoint accepts a `start=now` boundary, but cursor replay returns `410 reset_required`; there is no retained replay log or deletion tombstone store. Rebuild the scoped projection rather than attempting to drain historical changes.
 
-Also perform a full reconciliation at least every five minutes. A public
-consumer must fail closed on failed refreshes, a non-live checkpoint, missing
-current member binding/consent, or stale/future attribution checks. Fresh
-Discord roles do not refresh statistics attribution or publication consent.
-Historical `fetchedAt` is not relabeled as recent when account binding is checked.
+Perform a full reconciliation at least every five minutes. Suppress public facts when a rebuild fails, the current member binding or consent is absent, or attribution checks are stale. Fresh Discord roles do not refresh statistics attribution or publication consent. Historical `fetchedAt` is not relabeled as recent when account binding is checked.
 
-Collected rows now record `sourceGeneration`. Existing rows without it, or from
-a previous connection generation, stay unavailable until the collector
-re-fetches them under the active source configuration. This avoids presenting
-old-server facts after a connection is repointed. Source enablement, credentials
-and actual live collection remain operator-controlled; this change activates
-none of them by itself.
-
-## Verification
-
-Focused tests cover closed fixtures, null/signed metrics, exact/scoped identities,
-legacy/revoked grants, published roster transitions and tombstones, Steam proof
-revocation, source generation, duplicate players, reviewed digest associations,
-cross-row generation resets, empty cursor pages, signed HTTP cursor scope and
-OpenAPI. They are local synthetic tests; actual provider credentials, production
-collection and website publication consent are not implied by those passes.
-
-```text
-node --import tsx --test src/domain/api/people-summaries.test.ts src/infrastructure/convex/people-summaries.test.ts src/lib/api/people-route.test.ts src/app/api/v1/openapi.json/route.test.ts
-npm run typecheck
-```
-
-See the [PR review and repaired-runtime verification](evidence/2026-10-03-pr-review/README.md)
-for 753 passing tests, 98 local HTTP assertions, CI, the security review and
-deployment boundaries. The [earlier 3 October local acceptance evidence](evidence/2026-10-03/README.md)
-records the 725-test run, typecheck/build results, actual people and native roster
-HTTP checklists, the 44-file SHA-256 manifest and the boundary between synthetic
-fixtures and live-provider acceptance.
+Collected rows record `sourceGeneration`. Rows without a matching active generation stay unavailable until recollected. Repointing a server connection therefore does not expose old-server facts as current data. Source enablement and credential configuration remain separate administrator actions.

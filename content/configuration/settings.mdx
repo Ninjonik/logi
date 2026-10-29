@@ -243,8 +243,8 @@ administrator session.
 Restricted keys do not grant metadata, settings, raw users, calendar items,
 presets or performance history in this first release. Read-only records still
 require publication review: never publish raw API responses. The
-[versioned website handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.5/README.md)
-describes field allowlists, safe synchronization, fixtures and rollout order.
+[game data collection reference](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.5/README.md)
+describes field allowlists, safe synchronization, fixtures and connection setup.
 Deploy the compatible backend before using these new policies; an older backend
 does not enforce them.
 
@@ -273,7 +273,7 @@ which keep their names and logos after a team is renamed, archived or merged.
 Logi's global administrators create, edit, archive, merge and restore catalogue
 teams and upload their logos; workspaces request additions and changes. None of
 these has an API-key equivalent. The
-[team directory handoff](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.15/README.md)
+[team catalogue reference](https://github.com/Ninjonik/logi/blob/main/docs/integrations/website/v0.15/README.md)
 describes the change feed, fixtures and match assignment commands.
 
 Website integrations use the versioned API at `/api/v1`. Clan API requests
@@ -505,17 +505,17 @@ are set on **Membership** and **Tickets**.
 
 The switches on this page:
 
-| Message                                            | Default | What turning it off does                                                                                  |
-| -------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| Roster changes                                     | On      | **Roster changes** is no longer pre-selected in the Publish dialog; it can still be chosen there.         |
-| Debrief in the forum                               | On      | No debrief is created after the match, including the private thread used when automatic forum deletion is enabled.                                     |
-| Absences and late notices in the match thread      | Off     | When on, `/notice`, **Running late** and **Can't make it** post who, late or absent and the arrival time. |
-| Discord event                                      | On      | The bot does not keep a Discord scheduled event with the meeting time.                                    |
-| Match recap                                        | On      | No player gets the recap DM. When on, each player can still turn it off.                                  |
-| Training result                                    | On      | Participants do not get the training result DM.                                                           |
-| Assignment change                                  | On      | **Assignment changes** is no longer pre-selected in the Publish dialog.                                   |
-| DM to the applicant when the application is closed | On      | The result card stays in the application thread, but the applicant gets no DM.                            |
-| DM to the author when the ticket is closed         | On      | The closing card stays in the ticket thread, but the author gets no DM.                                   |
+| Message                                            | Default | What turning it off does                                                                                           |
+| -------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| Roster changes                                     | On      | **Roster changes** is no longer pre-selected in the Publish dialog; it can still be chosen there.                  |
+| Debrief in the forum                               | On      | No debrief is created after the match, including the private thread used when automatic forum deletion is enabled. |
+| Absences and late notices in the match thread      | Off     | When on, `/notice`, **Running late** and **Can't make it** post who, late or absent and the arrival time.          |
+| Discord event                                      | On      | The bot does not keep a Discord scheduled event with the meeting time.                                             |
+| Match recap                                        | On      | No player gets the recap DM. When on, each player can still turn it off.                                           |
+| Training result                                    | On      | Participants do not get the training result DM.                                                                    |
+| Assignment change                                  | On      | **Assignment changes** is no longer pre-selected in the Publish dialog.                                            |
+| DM to the applicant when the application is closed | On      | The result card stays in the application thread, but the applicant gets no DM.                                     |
+| DM to the author when the ticket is closed         | On      | The closing card stays in the ticket thread, but the author gets no DM.                                            |
 
 The absence and late posts never contain the reason; only the leaders see it,
 on the web. The **Roster** row also sets the **Default look** of the roster

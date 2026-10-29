@@ -39,6 +39,3 @@ When moving to an upstream version with an equivalent fix, remove the override
 and patch together, refresh `bun.lock`, and rerun these tests plus authorized live
 gateway/restart acceptance. Do not silently carry a patch across SDK versions or
 use a process-wide uncaught-exception handler to suppress the failure.
-
-See the [runtime review](../docs/integrations/website/v0.10/runtime-review.md)
-for clean-install evidence and the limits of live acceptance.

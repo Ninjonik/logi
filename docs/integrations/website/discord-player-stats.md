@@ -47,7 +47,7 @@ ID collisions are never adopted as a Discord identity. Multiple legacy Steam
 IDs require the owner to choose explicitly. Other platform IDs remain intact.
 
 The compatibility duplicate scan is bounded at 5,000 users and fails closed above
-that size; an operator must resolve the index/migration before allowing new links
+that size; an operator must resolve the identity index conflict before allowing new links
 there. Existing linked statistics reads are unaffected. Concurrent form changes
 use the expected previous Steam IDs, so an older form cannot overwrite a newer
 link. Source outage and empty history never remove a link or pretend it is absent.
@@ -103,16 +103,9 @@ provider-wide. HTTP 403 backs off for 15 minutes. Other failures back off for a
 minute. The last successful profile is kept with its original timestamp and an
 explicit stale label. These caches are process-local.
 
-**Provider acceptance remains separate:** on 2026-10-04 the public profile rendered
-in the user's browser, but an ordinary server HTTP request was blocked by Bunny
-Shield with HTTP 403. The command reports that condition and provides the public
-profile link. The parser, controls and cache are implemented; unattended live HLL
-success is not claimed. A provider-supported API or permission for automated
-access is needed to remove this gate. No browser cookies or challenge bypass are
-part of this implementation. HLL coverage is limited to servers tracked by
-[HLL Records](https://hllrecords.com/about), not every HLL game.
+HLL Records can reject automated server requests with HTTP 403. The command reports provider failures and provides a public profile link. There is no browser-cookie or challenge bypass. Coverage is limited to servers tracked by [HLL Records](https://hllrecords.com/about).
 
-## Website/API parity and rollout
+## Website/API boundaries
 
 Wardogs facts and ranking semantics remain available through the existing
 `GET /api/v1/clan/server-game-history?game=wardogs` contract and shared
@@ -125,11 +118,3 @@ the Discord-author-bound legacy Steam modal have no bearer/dashboard-equivalent
 lifecycle and must not become API-key account-linking operations. HLL Records is
 not exported as a new stable `/api/v1` resource while provider access is unresolved;
 this change does not claim durable HLL history synchronization for the website.
-
-Deploy compatible Convex functions and restart the bot to register `/stats`.
-Configure the guild's Discord settings in Logi and enable Server Members Intent.
-No new secret is needed for HLL Records. Production deployment requires its own
-acceptance; the implementation evidence uses an isolated local database and the
-authorized test Discord guild only.
-
-See [test and visual evidence](evidence/2026-10-04-player-stats/README.md).

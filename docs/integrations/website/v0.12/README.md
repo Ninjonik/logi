@@ -1,4 +1,4 @@
-# Wardogs League public match reader · 0.12
+# Wardogs League public match reader
 
 Logi can read a public Wardogs League detail URL and return a typed preview to
 the dashboard or another website backend. It uses anonymous server-rendered HTML;
@@ -34,18 +34,18 @@ slashes normalize to the same ID. Unknown or repeated query parameters fail.
 
 ## What the data means
 
-| Field                                                                | Public observation                                                                                                                                                                                                                                                     |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `snapshot.id`, `fixtureNumber`, `title`, `type`, `status`, `request` | URL ID, fixture number, heading, match type/status and originating request                                                                                                                                                                                             |
-| `scheduledAt`                                                        | Exact UTC ISO date from header/briefing; conflicting or invalid dates become null                                                                                                                                                                                      |
-| `teams`                                                              | Profile code/link/name, displayed nations and member count, faction and ready-check text                                                                                                                                                                               |
-| `map`                                                                | Name, zone, lighting from briefing definitions                                                                                                                                                                                                                         |
-| `hosting`, `moderator`                                               | Allowlisted public hosting mode/team and moderator state                                                                                                                                                                                                               |
-| `mapVote`                                                            | Public state, separate UTC closing time, choices keyed by team code                                                                                                                                                                                                    |
-| `rules`                                                              | Public summary and choices keyed by team code                                                                                                                                                                                                                          |
-| `readyCheck`, `progress`, `scoringRule`                              | Preparation state and published scoring rule, not actual awarded points                                                                                                                                                                                                |
-| `results`                                                            | Nullable `{placements: [{place, teamCode}], confirmed}`; always null in parser version 1 because no finished page has been captured (see [League-wide collection](../league-discovery.md#results-parser-not-available-yet)); no inferred placements or no-show results |
-| `sourceUrl`, `fetchedAt`, `parserVersion`, `warnings`                | Canonical source, actual observation time and parsing provenance                                                                                                                                                                                                       |
+| Field                                                                | Public observation                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `snapshot.id`, `fixtureNumber`, `title`, `type`, `status`, `request` | URL ID, fixture number, heading, match type/status and originating request                                                                                                                                                                                      |
+| `scheduledAt`                                                        | Exact UTC ISO date from header/briefing; conflicting or invalid dates become null                                                                                                                                                                               |
+| `teams`                                                              | Profile code/link/name, displayed nations and member count, faction and ready-check text                                                                                                                                                                        |
+| `map`                                                                | Name, zone, lighting from briefing definitions                                                                                                                                                                                                                  |
+| `hosting`, `moderator`                                               | Allowlisted public hosting mode/team and moderator state                                                                                                                                                                                                        |
+| `mapVote`                                                            | Public state, separate UTC closing time, choices keyed by team code                                                                                                                                                                                             |
+| `rules`                                                              | Public summary and choices keyed by team code                                                                                                                                                                                                                   |
+| `readyCheck`, `progress`, `scoringRule`                              | Preparation state and published scoring rule, not actual awarded points                                                                                                                                                                                         |
+| `results`                                                            | Nullable confirmed placements parsed from explicit final ranks and matching completed confirmation/admin progress; see [League results](../league-discovery.md#league-wide-collection-for-the-wd-league-panels). Unknown or ambiguous result states remain null |
+| `sourceUrl`, `fetchedAt`, `parserVersion`, `warnings`                | Canonical source, actual observation time and parsing provenance                                                                                                                                                                                                |
 
 All optional missing fields are **null**, including missing collections. Team
 membership is not the roster or match player count. The reference fixture has
@@ -60,8 +60,7 @@ and an optional fixed `error` category. Keep these alongside the snapshot.
 
 - Cache keys use the match ID. Public snapshots are deliberately shared across
   authorized clans; each request still checks its own key, guild and game grant.
-- Refresh is **on demand**, at most once per five minutes. There is no background
-  match discovery or automatic event import. Consumers should poll every 5–10 minutes.
+- Refresh is **on demand**, at most once per five minutes. This on-demand reader is separate from [scheduled discovery](../league-discovery.md) and does not automatically import native events. Consumers should poll every 5–10 minutes.
 - A failed refresh preserves the last valid snapshot and its original `fetchedAt`.
   HTTP 200 can therefore contain `stale: true`; never treat HTTP 200 alone as fresh.
 - With no prior snapshot, upstream/rate errors return 429 or 503 with retry metadata
@@ -99,24 +98,3 @@ missing sections, ordering changes, conflicting/invalid dates and a Completed
 label to verify the unsupported-state warning only. No real completed, canceled,
 live, disputed, no-show, placement or result page has been verified. Results
 support requires real public fixtures before extending the contract.
-
-## Reproduce and activate
-
-```sh
-node --import tsx scripts/smoke-league-match.ts
-node --import tsx --test "src/domain/wardogs-league/*.test.ts" "src/application/wardogs-league/*.test.ts" "src/infrastructure/wardogs-league/*.test.ts" src/infrastructure/convex/league-cache.test.ts src/lib/api/league-match-route.test.ts
-npm run test
-npm run typecheck
-npm run build
-```
-
-The smoke command makes one anonymous GET and prints only the public normalized
-snapshot. It needs no environment file. Runtime activation needs the new Convex
-functions/schema and matching Next build, the existing internal-auth wiring and
-outbound HTTPS/DNS to League. No new secret or provider source is required.
-No production deployment is performed by this PR. The consuming Valkyria website
-still needs its own call, presentation and cache/error policy.
-
-See [design](design.md), [verification](verification.md),
-[stored evidence](evidence/2026-10-02-league/README.md) and the
-[public wiki](../../../../content/configuration/settings.mdx).

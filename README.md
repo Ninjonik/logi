@@ -1,200 +1,98 @@
 # Logi
 
-Logi is an open-source operations platform for **Hell Let Loose communities**. It brings the public community site, manager dashboard, event planning, rosters, and Discord coordination into one place.
+Logi is an open-source community operations platform with a public site, a manager dashboard, a Convex backend, and a Discord bot. Communities use it to manage events, matches, sign-ups, rosters, attendance, members, and competitions.
 
-Our goal is to make running a community less manual: give players a clear place to find events and information, while giving organisers reliable tools for planning, communication, and membership operations. Contributions are very welcome—whether you improve the product, documentation, tests, accessibility, or deployment experience.
+## Features
 
-## What Logi can do
+- Discord-backed sign-in and role-aware community workspaces.
+- Events, matches, training, recurring schedules, registration, and reminders.
+- Squad rosters, reserves, tactical plans, attendance, and reviewed results.
+- Membership applications, groups, tickets, and managed Discord roles.
+- Discord announcements, forum posts, scheduled events, public panels, and server seeding.
+- Game-specific capabilities, including HLL CRCON, Warcon, retained game history, and Wardogs League tracking.
+- Global team catalogues, competitions, and public community and player pages.
+- Scoped `/api/v1` integrations, OpenAPI documentation, webhooks, and optional SSO.
 
-- Manage one or more Discord-community workspaces, with role-aware dashboard access.
-- Plan events, matches, and trainings with schedules, registration windows, game-specific configuration, sign-ups, attendance, and conclusion workflows.
-- Build, publish, and maintain event rosters with squads, player slots, reserves, and attendance status.
-- Coordinate events in Discord through announcements, interactive sign-up buttons, forum posts, scheduled events, calendar panels, reminders, and temporary event roles.
-- Organise members with groups, membership assignments, Discord role integrations, tickets, and membership-application workflows.
-- Publish community, clan, player, match, and competition information for visitors.
-- Support Hell Let Loose, Hell Let Loose: Vietnam, and Wardogs in a shared community workspace.
-- Provide an authenticated `/api/v1` integration surface, OpenAPI documentation, API keys, idempotent writes, and webhooks.
-- Collect configured HLL CRCON and Wardogs server data for scoped website reads; see the [collector handoff](./docs/integrations/website/v0.5/README.md) for setup and verification limits.
-- Read Warcon live scoreboards, analytics, player statistics, kills, catalogs and completed matches; see [Warcon handoff 0.11](./docs/integrations/website/v0.11/README.md) for all fifteen views and the explicit website grant.
-- Preview public Wardogs League match links in System / Imports and through the scoped website API; see [League handoff 0.12](./docs/integrations/website/v0.12/README.md) for parsing, freshness and verification limits.
-- Synchronize scoped changes and observe Discord membership with per-key role policies; see [handoff 0.7](./docs/integrations/website/v0.7/README.md) for freshness, revocation and offline evidence.
-- Queue, verify and audit managed membership roles with current actor and hierarchy checks; see [handoff 0.8](./docs/integrations/website/v0.8/README.md) for ownership, retries and activation limits.
+The [product wiki](content/index.mdx) explains the screens and workflows. The [technical documentation](docs/README.md) covers integrations and operation.
 
-The [wiki](./content/index.mdx) has practical guides for players, managers, events, rosters, settings, and [Discord bot setup](./content/discord-bot-setup.mdx).
-
-The cumulative website/Discord integration has a [delivery handbook](./docs/integrations/website/v0.10/pr-handbook.md) with the complete web/API and Discord command catalogs, stored verification output, captioned screenshots, review, activation requirements and remaining owner tasks.
-
-## Architecture
-
-Logi consists of three cooperating runtimes:
-
-- a Next.js dashboard and public site;
-- [Convex](https://www.convex.dev/) functions and persistence; and
-- a Discord.js bot.
-
-Business logic is progressively being moved into framework-independent domain rules and application use-cases so the dashboard, Convex functions, and bot can share behavior safely. Read [ARCHITECTURE.md](./ARCHITECTURE.md) for the current layering and migration direction.
+## Project structure
 
 ```text
 src/
-  app/               Next.js App Router pages and API route adapters
-  components/        React UI
-  domain/            Shared business rules and pure policies
-  application/       Use-cases and ports
+  app/               Next.js App Router pages, layouts, and API routes
+  components/        React components and UI primitives
+  domain/            Shared business rules, types, and validation
+  application/       Use-cases and repository ports
   infrastructure/    Adapters and test doubles
-  lib/               Focused web gateways, read models, and helpers
-
-convex/              Convex functions, schema, and persistence wiring
-discord-bot/         Discord.js runtime and handlers
+  lib/               Web gateways, read models, and helpers
+  i18n/              Locale routing and translations
+  hooks/, contexts/  Client state and behavior
+convex/              Backend functions, schema, and persistence
+discord-bot/         Discord.js runtime
 content/             Public product wiki
+config/              Checked-in application configuration
+scripts/             Maintenance, generation, and verification tools
+public/              Static assets and legal content
+docker/convex/       Self-hosted Convex Compose configuration
+patches/             Dependency patches applied during installation
 ```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for runtime boundaries and [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions.
 
 ## Run locally
 
-### Prerequisites
-
-- Node.js and npm
-- A [Convex](https://www.convex.dev/) deployment, or a self-hosted Convex instance
-- A Discord application when working on sign-in or the bot
-
-Install dependencies:
+Install Node.js and npm, and provide a Convex deployment. Discord sign-in requires a Discord application; running the bot also requires its token.
 
 ```bash
 npm install
 ```
 
-Create a private `.env.local` file at the repository root. Do not commit it. The exact variables depend on the parts of Logi you run:
+Create a private `.env.local` at the repository root. Configure the variables for the runtimes you use:
 
-| Variable                                     | Used for                                                                                                                             |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_CONVEX_URL`                     | Convex endpoint used by the dashboard and optionally the bot                                                                         |
-| `CONVEX_SELF_HOSTED_URL`                     | Alternative endpoint for a self-hosted Convex backend                                                                                |
-| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private Convex CLI administration key for a self-hosted backend                                                                      |
-| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                                                |
-| `DISCORD_REDIRECT_URI` or `SITE_URL`         | OAuth callback and public site URLs                                                                                                  |
-| `JWT_SECRET`                                 | Dashboard session signing                                                                                                            |
-| `SITE_URL`                                   | Fixed dashboard/OIDC issuer origin, without a trailing slash                                                                         |
-| `LOGI_SSO_ENABLED`                           | Explicit opt-in for the optional SSO provider in Next.js and Convex; disabled unless `true`                                          |
-| `LOGI_SSO_PRIVATE_JWK`                       | Operator-managed private RSA JWK with a `kid`, only in Next.js; its public counterpart is exposed at `/api/sso/jwks`                 |
-| `LOGI_SSO_ALLOW_LOOPBACK_HTTP`               | Development-only opt-in for explicit localhost/127.0.0.1/IPv6 loopback issuer and callbacks; ordinary HTTP remains rejected          |
-| `INTERNAL_AUTH_SECRET`                       | Shared secret for trusted dashboard/bot-to-Convex operations                                                                         |
-| `DISCORD_BOT_TOKEN`                          | Required when running the Discord bot                                                                                                |
-| `DISCORD_SUPPORT_URL`                        | Public Discord support-server invite shown in Logi navigation                                                                        |
-| `LOGI_CREDENTIAL_KEYRING`                    | Operator keyring for encrypted game-server keys; identical in Convex and the Next server, never public (see the credentials runbook) |
-| `LOGI_GAME_DATA_SOURCES`                     | Optional operator-owned provider catalog in Convex; workspaces connect their own servers in Settings → Game servers                  |
-| `LOGI_GAME_DATA_<NAME>_TOKEN`                | Legacy provider token in Convex for operator catalog entries; migrate it to an encrypted key                                         |
+| Variable                                     | Purpose                                                                                                    |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CONVEX_URL`                     | Dashboard Convex endpoint                                                                                  |
+| `CONVEX_SELF_HOSTED_URL`                     | Self-hosted endpoint; also accepted by the bot                                                             |
+| `CONVEX_SELF_HOSTED_ADMIN_KEY`               | Private administration key for self-hosted CLI operations                                                  |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth sign-in                                                                                      |
+| `DISCORD_REDIRECT_URI`                       | Discord OAuth callback URL                                                                                 |
+| `SITE_URL`                                   | Public dashboard origin and SSO issuer                                                                     |
+| `JWT_SECRET`                                 | Dashboard session signing secret                                                                           |
+| `INTERNAL_AUTH_SECRET`                       | Matching trusted-runtime secret in the dashboard, bot, and Convex                                          |
+| `DISCORD_BOT_TOKEN`                          | Discord bot token                                                                                          |
+| `DISCORD_SUPPORT_URL`                        | Support-server link in navigation                                                                          |
+| `LOGI_CREDENTIAL_KEYRING`                    | Game-server credential encryption; see [credentials](docs/integrations/website/game-server-credentials.md) |
 
-Start the dashboard:
+Dashboard sessions are stored in Convex. Configure `SITE_URL`, `JWT_SECRET`, and matching `INTERNAL_AUTH_SECRET` before signing in. Optional SSO configuration is documented in the [provider contract](docs/integrations/website/sso-provider-contract.md).
 
 ```bash
-npm run dev
+npm run dev       # dashboard at http://localhost:3000
+npm run dev:all   # dashboard and Discord bot
 ```
 
-Dashboard sign-in now creates a durable session in Convex. `SITE_URL`, `JWT_SECRET`
-and matching `INTERNAL_AUTH_SECRET` must be configured before sign-in. A coordinated
-upgrade requires one re-login for existing dashboard users. The optional SSO
-provider remains disabled until separately configured and qualified; see the
-[provider contract and rollout](./docs/integrations/website/sso-provider-contract.md).
-
-Start the dashboard and bot together:
-
-```bash
-npm run dev:all
-```
-
-The bot’s configuration and operational responsibilities are documented in [discord-bot/README.md](./discord-bot/README.md). For a full Discord installation checklist, see the [bot setup guide](./content/discord-bot-setup.mdx).
-
-## Self-host Convex
-
-Logi can use Convex Cloud or a self-hosted Convex backend. This repository includes a Docker Compose configuration at [docker/convex/docker-compose.yml](./docker/convex/docker-compose.yml) for running the Convex backend and dashboard locally or as the starting point for your own deployment.
-
-For a local instance:
-
-```bash
-cd docker/convex
-docker compose up -d
-docker compose exec backend ./generate_admin_key.sh
-```
-
-By default, the backend is available at `http://127.0.0.1:3210` and the Convex dashboard at `http://127.0.0.1:6791`. Configure the Logi dashboard with a reachable backend URL, for example:
-
-```bash
-NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210
-CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210
-CONVEX_SELF_HOSTED_ADMIN_KEY=your-generated-admin-key
-```
-
-With those private values configured, use `npx convex dev` to push Convex functions to a development instance; use the deployment process appropriate to your environment for production. Keep the Docker data volume persistent in production, configure public origins and TLS for your host, and set the same `INTERNAL_AUTH_SECRET` for Logi’s runtime and Convex functions. Never commit keys or secrets.
-
-Two settings matter for a production install, because Logi’s bot and panels write to Convex every few seconds:
-
-- `DOCUMENT_RETENTION_DELAY` is how long the backend keeps every superseded version of a document, in seconds. The compose file defaults to `172800` (48 hours), which suits a development instance; for a write-heavy self-hosted install set `DOCUMENT_RETENTION_DELAY=21600` (6 hours) in the backend’s environment so lease refreshes and cache writes do not pile up for two days.
-- The website change feed keeps no log any more: `integrationChanges` and `integrationRecords` left the schema. A backend that still holds their rows keeps them, untyped, until the operator empties each table with `npx convex import --table <name> --format jsonLines --replace -y empty.jsonl` and an empty file (an atomic table swap; measured 2.4 s for 150,000 rows), with the self-hosted URL and admin key in the environment. Retained versions of the removed rows are released after `DOCUMENT_RETENTION_DELAY`; the SQLite file shrinks only after a `VACUUM` with the backend stopped.
-- Use Postgres (`POSTGRES_URL`) instead of the default SQLite file for production. SQLite serialises writes and slows down as the retained versions accumulate; Postgres keeps the dashboard responsive under the bot’s steady write load.
-
-The compose file publishes the backend on `3210`/`3211` on every interface. A production host that keeps the backend behind a reverse proxy sets `PORT` and `SITE_PROXY_PORT` in the compose `.env` (and binds them to `127.0.0.1` in its own override); never copy this file over a customised one without diffing the ports first.
-
-### Memory of a self-hosted backend
-
-The backend's resident memory is not one thing, and only one of its parts is a leak if it never comes back down:
-
-- **Isolate heaps.** Every function runs in a V8 isolate held by a function-runner worker. An isolate keeps up to 64 MiB of user heap plus 32 MiB of extras, is reused, and is dropped only after `ISOLATE_IDLE_TIMEOUT_SECONDS` (upstream default 600) of idleness or after `ISOLATE_MAX_LIFETIME_SECONDS` (3600). The pool allows `MAX_ISOLATE_WORKERS` (300) of them upstream, so a burst of concurrent calls can leave many GiB of heap idle for ten minutes. The Compose default is a conservative `MAX_ISOLATE_WORKERS=16`; set the same value explicitly in the backend's `.env` when it already overrides the default. Raise it only after measuring stable memory use. `ISOLATE_IDLE_TIMEOUT_SECONDS=120` is a reasonable starting point.
-- **Bounded caches.** Query results (`UDF_CACHE_MAX_SIZE`, 100 MiB), the index cache (`INDEX_CACHE_SIZE`, 512 MiB), module and code caches (750 MB together), the write log (50 MiB) and source maps (100 MB). About 1.5 GiB in all; they fill and stay.
-- **The SQLite file's page cache.** Reads and writes of the database file are cached by the kernel inside the container's cgroup, so `docker stats` counts them, and a backend that scans a large file (a snapshot export, the retention worker clearing a backlog after `DOCUMENT_RETENTION_DELAY` was lowered, a bulk delete) can show tens of GiB. This memory is reclaimable, not leaked, but without a container limit it is only reclaimed when the host runs out.
-
-To tell the parts apart on the host:
-
-```bash
-docker stats --no-stream convex-backend-1
-docker exec convex-backend-1 sh -c 'grep -E "^(anon|file|file_mapped|active_file|inactive_file) " /sys/fs/cgroup/memory.stat'
-docker exec convex-backend-1 ls -la /convex/data
-docker inspect -f '{{.RestartCount}} oom={{.State.OOMKilled}}' convex-backend-1
-```
-
-`anon` is the backend's own memory (isolates, caches); `file` is the page cache. A large `file` with a large database is expected until the file is compacted (`VACUUM` with the backend stopped, after the retention worker has caught up) or the data moves to Postgres. A large and growing `anon` with a stable workload is a leak to report upstream with the backend version; a restart releases it. A memory limit in the compose file (`deploy.resources.limits.memory`, commented example in `docker/convex/docker-compose.yml`) caps the page cache at the limit and turns a runaway into an OOM restart instead of a frozen host.
-
-The code-level rules that keep this load bounded are in [ARCHITECTURE.md](./ARCHITECTURE.md) under “Convex hot paths”.
-
-For current production guidance, storage options, upgrades, and limitations, follow Convex’s official [self-hosting guide](https://docs.convex.dev/self-hosting) and [self-hosted backend instructions](https://github.com/get-convex/convex-backend/tree/main/self-hosted).
-
-## Contribute
-
-We welcome contributions of all sizes. Before opening a change:
-
-1. Read [CONTRIBUTING.md](./CONTRIBUTING.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
-2. Search for existing behavior and nearby tests before adding a new pattern.
-3. Keep shared rules in `src/domain` or `src/application`; keep Next.js, Convex, and Discord entrypoints focused on integration.
-4. Add or update tests when behavior changes, including invalid and edge cases where relevant.
-5. Update the matching page under `content/` when a user-visible feature, permission, workflow, or screen changes.
-
-A typical contribution workflow is:
-
-```bash
-git checkout -b your-descriptive-branch
-npm run test
-npm run typecheck
-npm run format:check
-```
-
-Then open a pull request describing the user impact, implementation, validation performed, and any follow-up work. Please keep changes focused and avoid unrelated refactors. You can use [GitHub Issues](https://github.com/Ninjonik/logi/issues) to report bugs or discuss an idea before investing in a larger change.
+See [discord-bot/README.md](discord-bot/README.md) for bot configuration and [the installation guide](content/discord-bot-setup.mdx) for Discord permissions and intents. See [self-hosting](docs/self-hosting.md) for the included Convex Docker setup.
 
 ## Commands
 
-```bash
-npm run dev             # Next.js dashboard
-npm run dev:all         # dashboard and Discord bot
-npm run bot:dev         # Discord bot only
-npm run test            # dashboard and bot tests
-npm run test:domain     # domain tests only
-npm run bot:test        # bot tests only
-npm run test:coverage   # all tests with coverage
-npm run typecheck       # TypeScript without emitting files
-npm run format          # format the repository
-npm run format:check    # verify formatting
-npm run build           # production build
-```
+Run from the repository root:
 
-Run the narrowest relevant test while iterating, then run the checks appropriate for the scope of your change. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full expectations.
+```bash
+npm run dev                    # development dashboard
+npm run dev:all                # dashboard and bot
+npm run bot:dev                # bot only
+npm run test                   # src and bot tests
+npm run test:domain            # domain tests
+npm run bot:test               # bot tests
+npm run test:coverage          # test coverage
+npm run typecheck             # TypeScript without emit
+npm run check:convex-bundles   # check Convex runtime bundles
+npm run lint                  # ESLint
+npm run format:check          # verify formatting
+npm run build                 # production Next.js build
+npm run start                 # serve the production build
+npm run generate:openapi       # regenerate OpenAPI schemas
+```
 
 ## License
 
-Logi is licensed under the [MIT License](./LICENSE.MD).
+[MIT](LICENSE.MD).
