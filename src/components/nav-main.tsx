@@ -93,7 +93,7 @@ function NavMenuItem({
     )
     return (
         <Collapsible open={open} onOpenChange={setOpen} asChild>
-            <SidebarMenuItem>
+            <SidebarMenuItem data-tour-route={item.url}>
                 {hasSubItems ? (
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton

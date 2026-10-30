@@ -1,3 +1,7 @@
+import {
+    OnboardingPage,
+    OnboardingLiveOnly,
+} from "@/components/app/onboarding/onboarding-page"
 import type { ReactNode } from "react"
 
 import {
@@ -56,6 +60,8 @@ export async function DashboardShell({
             servers={visibleServers}
             onboarding={user.onboarding}
             userId={user.discordId}
+            locale={locale}
+            inviteUrlByGuildId={inviteUrlByGuildId}
         >
             <SettingsAttentionProvider>
                 {/*
@@ -102,13 +108,20 @@ export async function DashboardShell({
                             </div>
                         </header>
                         <div className="relative flex flex-1 flex-col gap-4 pt-4 pb-6 max-sm:has-[[data-mobile-action-bar]]:pb-28 md:gap-5 md:pt-6 md:pb-8">
-                            <MissingBotWorkspaceWarning
+                            <OnboardingLiveOnly>
+                                <MissingBotWorkspaceWarning
+                                    dictionary={dictionary}
+                                    inviteUrlByGuildId={inviteUrlByGuildId}
+                                    servers={visibleServers}
+                                    userDiscordId={user.discordId}
+                                />
+                            </OnboardingLiveOnly>
+                            <OnboardingPage
                                 dictionary={dictionary}
-                                inviteUrlByGuildId={inviteUrlByGuildId}
-                                servers={visibleServers}
-                                userDiscordId={user.discordId}
-                            />
-                            {children}
+                                locale={locale}
+                            >
+                                {children}
+                            </OnboardingPage>
                         </div>
                         <SiteFooter
                             dictionary={dictionary}

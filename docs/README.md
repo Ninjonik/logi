@@ -12,6 +12,7 @@ Logi's documentation is organized by audience and runtime:
 | [Website integrations](integrations/website/README.md)                 | Scoped API, identity, events, membership, teams, and game data         |
 | [Discord message kit](superpowers/specs/discord-redesign/KIT.md)       | Shared message model, rendering, previews, and interaction routing     |
 | [Discord panels API](superpowers/specs/discord-redesign/PANELS-API.md) | Panel model, dashboard routes, bot protocol, and public join pages     |
+| [Dashboard tours](onboarding.md) | Tour selection, example isolation, accessibility and progress |
 | [Product wiki](../content/index.mdx)                                   | User and administrator workflows                                       |
 | [Dependency patches](../patches/README.md)                             | Discord gateway patch and its regression checks                        |
 

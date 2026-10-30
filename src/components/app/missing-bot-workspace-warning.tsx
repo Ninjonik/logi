@@ -38,6 +38,7 @@ export function MissingBotWorkspaceWarning({
 
     return (
         <section
+            data-tour-bot-setup=""
             className="border-status-warning-border bg-status-warning-muted mx-4 rounded-[14px] border p-4 sm:p-5 lg:mx-6"
             role="alert"
         >

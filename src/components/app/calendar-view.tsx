@@ -73,7 +73,7 @@ export function CalendarView({
         formatDateTime(value, timezone, intlLocale)
 
     return (
-        <div className="space-y-6">
+        <div data-tour-calendar="" className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {timezone ? (
                     <p className="text-muted-foreground text-sm">
