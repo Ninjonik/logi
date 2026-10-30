@@ -12,6 +12,7 @@ export function RestartTourButton({
 }) {
     return (
         <button
+            id="onboarding-restart-tour"
             type="button"
             onClick={() =>
                 window.dispatchEvent(new Event("logi:restart-onboarding"))

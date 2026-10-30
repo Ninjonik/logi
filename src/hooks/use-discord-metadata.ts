@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 
 import type { DiscordSelectOption } from "@/components/app/discord-entity-select"
 
@@ -9,6 +9,10 @@ export type DiscordMetadata = {
     channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
     emojis: DiscordSelectOption[]
 }
+
+/** Optional local metadata for isolated previews; regular pages keep the authenticated read. */
+export const DiscordMetadataPreviewContext =
+    createContext<DiscordMetadata | null>(null)
 
 export type DiscordMetadataState =
     | { status: "loading"; metadata: null }
@@ -23,12 +27,14 @@ export function useDiscordMetadataState(
     serverId: string,
     version = 0
 ): DiscordMetadataState {
+    const preview = useContext(DiscordMetadataPreviewContext)
     const key = `${serverId}:${version}`
     const [state, setState] = useState<{
         key: string
         value: DiscordMetadataState
     }>({ key, value: { status: "loading", metadata: null } })
     useEffect(() => {
+        if (preview) return
         let active = true
         fetch(`/api/servers/${serverId}/discord-metadata`)
             .then(async (response) => {
@@ -56,7 +62,8 @@ export function useDiscordMetadataState(
         return () => {
             active = false
         }
-    }, [serverId, key])
+    }, [serverId, key, preview])
+    if (preview) return { status: "ready", metadata: preview }
     return state.key === key
         ? state.value
         : { status: "loading", metadata: null }

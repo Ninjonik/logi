@@ -1,21 +1,14 @@
+import { PlayersTable } from "@/components/app/players-table"
 import { notFound } from "next/navigation"
 import { formatKd } from "@/lib/format"
 import type { Metadata } from "next"
 
-import {
-    getServerUserAssignments,
-    getUsersByIds,
-} from "@/lib/server-user-management"
 import { getPlayersPerformanceHistories } from "@/lib/read-models/performance-history"
-import { PlayerTrendIndicators } from "@/components/app/player-trend-indicators"
-import { ResourceTable, StatusBadge } from "@/components/app/resource-table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MergeUsersButton } from "@/components/app/merge-users-button"
-import { PlatformIdList } from "@/components/app/platform-id-display"
 import { TablePageLayout } from "@/components/app/table-page-layout"
 import { isGameId, resolveGameScope } from "@/domain/games/game"
+import { getUsersByIds } from "@/lib/server-user-management"
 import { PageHeader } from "@/components/app/page-header"
-import { getGuildMetadata } from "@/lib/server-metadata"
 import { getUserScoreForGuild } from "@/lib/user-scores"
 import { getServerContext } from "@/lib/server-context"
 import { getDictionary } from "@/i18n/dictionaries"
@@ -169,142 +162,59 @@ export default async function ServerUsersPage({
                 />
             }
         >
-            <ResourceTable
-                className="h-full"
+            <PlayersTable
                 dictionary={dictionary}
-                rows={paginated.rows}
+                locale={safeLocale}
                 page={paginated.page}
                 pageSize={paginated.pageSize}
                 pageCount={paginated.pageCount}
                 totalRows={paginated.totalRows}
                 search={paginated.search}
-                searchPlaceholder={dictionary.userManagement.searchPlaceholder}
-                gameColumn={{
-                    show: !(typeof game === "string" && isGameId(game)),
-                    getGameId: (assignment) => assignment.gameId,
-                }}
-                getHref={(assignment) =>
-                    `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}?game=${encodeURIComponent(assignment.gameId ?? "hell_let_loose")}`
-                }
-                columns={[
-                    {
-                        key: "player",
-                        title: dictionary.userManagement.tablePlayer,
-                        render: (assignment) => {
-                            const user = assignmentUserMap.get(
-                                assignment.userId
-                            )
-                            if (!user) return dictionary.common.unknown
-
-                            return (
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="size-9 rounded-lg">
-                                        <AvatarImage
-                                            src={user.avatar}
-                                            alt={user.name}
-                                        />
-                                        <AvatarFallback>
-                                            {user.name.slice(0, 2)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="font-medium">
-                                            {user.name}
-                                        </div>
-                                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                                            <span>{user.discordId}</span>
-                                            {user.platformIds.length ? (
-                                                <PlatformIdList
-                                                    platformIds={
-                                                        user.platformIds
-                                                    }
-                                                    dictionary={dictionary}
-                                                    compact
-                                                />
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        },
-                    },
-                    {
-                        key: "type",
-                        title: dictionary.userManagement.tableType,
-                        render: (assignment) =>
+                showGame={!(typeof game === "string" && isGameId(game))}
+                rows={paginated.rows.map((assignment) => {
+                    const user = assignmentUserMap.get(assignment.userId)
+                    const matches = getAssignmentPerformance(assignment)
+                    const score = user
+                        ? getUserScoreForGuild(
+                              user,
+                              context.server.discordId,
+                              assignment.gameId
+                          )
+                        : 0
+                    const kd = matches.length
+                        ? matches.reduce((sum, match) => sum + match.kd, 0) /
+                          matches.length
+                        : null
+                    return {
+                        id: assignment.id,
+                        gameId: assignment.gameId,
+                        name: user?.name ?? dictionary.common.unknown,
+                        avatar: user?.avatar ?? "",
+                        discordId: user?.discordId ?? "",
+                        platformIds: user?.platformIds ?? [],
+                        type:
                             assignment.type === "member"
                                 ? dictionary.userManagement.memberLabel
                                 : assignment.type === "reserve_member"
                                   ? dictionary.userManagement.reserveMemberLabel
                                   : dictionary.userManagement.mercLabel,
-                    },
-                    {
-                        key: "group",
-                        title: dictionary.userManagement.tableGroup,
-                        render: (assignment) =>
-                            assignment.primaryGroupId
-                                ? (groupNameById.get(
-                                      assignment.primaryGroupId
-                                  ) ?? dictionary.userManagement.none)
-                                : dictionary.userManagement.none,
-                    },
-                    {
-                        key: "score",
-                        title: dictionary.userManagement.tableScore,
-                        render: (assignment) => {
-                            const user = assignmentUserMap.get(
-                                assignment.userId
-                            )
-                            if (!user) {
-                                return 0
-                            }
-
-                            const score = getUserScoreForGuild(
-                                user,
-                                context.server.discordId,
-                                assignment.gameId
-                            )
-                            const matches = getAssignmentPerformance(assignment)
-                            const kd = matches.length
-                                ? matches.reduce(
-                                      (sum, match) => sum + match.kd,
-                                      0
-                                  ) / matches.length
-                                : null
-                            return kd !== null
+                        group:
+                            groupNameById.get(
+                                assignment.primaryGroupId ?? ""
+                            ) ?? dictionary.userManagement.none,
+                        score:
+                            kd !== null
                                 ? `${score} • ${dictionary.userManagement.matchKd} ${formatKd(kd, safeLocale)}`
-                                : score
-                        },
-                    },
-                    {
-                        key: "trends",
-                        title: dictionary.clan.playerPerformanceTrend,
-                        render: (assignment) => (
-                            <PlayerTrendIndicators
-                                matches={getAssignmentPerformance(assignment)}
-                                locale={safeLocale}
-                                dictionary={dictionary}
-                            />
+                                : score,
+                        status: getAssignmentStatusLabel(
+                            assignment,
+                            dictionary
                         ),
-                    },
-                    {
-                        key: "status",
-                        title: dictionary.userManagement.tableStatus,
-                        render: (assignment) => (
-                            <StatusBadge
-                                active={assignment.status === "active"}
-                                activeLabel={getAssignmentStatusLabel(
-                                    assignment,
-                                    dictionary
-                                )}
-                                inactiveLabel={getAssignmentStatusLabel(
-                                    assignment,
-                                    dictionary
-                                )}
-                            />
-                        ),
-                    },
-                ]}
+                        active: assignment.status === "active",
+                        matches,
+                        href: `/${locale}/dashboard/servers/${serverId}/users/${assignment.id}?game=${encodeURIComponent(assignment.gameId ?? "hell_let_loose")}`,
+                    }
+                })}
             />
         </TablePageLayout>
     )

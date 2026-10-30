@@ -55,7 +55,10 @@ export function WorkspaceMode({
         }
     }
     return (
-        <Card className={onboarding ? "mx-4 mb-5 lg:mx-6" : "mb-5"}>
+        <Card
+            data-tour-workspace-mode=""
+            className={onboarding ? "mx-4 mb-5 lg:mx-6" : "mb-5"}
+        >
             <CardHeader>
                 <CardTitle>{onboarding ? t.modeTitle : t.modeLabel}</CardTitle>
                 <p className="text-muted-foreground text-sm">

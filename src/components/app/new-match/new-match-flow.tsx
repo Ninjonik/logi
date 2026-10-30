@@ -114,7 +114,7 @@ import { OpponentPicker } from "./opponent-picker"
 const NO_SIDE = "__none"
 const NONE = "__none"
 const AUTOSAVE_DELAY_MS = 2500
-type Metadata = {
+export type NewMatchMetadata = {
     roles: DiscordSelectOption[]
     channels: Array<DiscordSelectOption & { type: number; parentId?: string }>
 }
@@ -139,6 +139,15 @@ export type NewMatchEditContext = {
 }
 
 export type NewMatchFlowProps = {
+    /** Isolated walkthrough adapter: controlled values, local metadata and no persistence. */
+    demo?: {
+        values: FlowValues
+        step: NewMatchStep
+        metadata: NewMatchMetadata
+        onContinue(): void
+        onPublish(): void
+    }
+
     serverId: string
     locale: string
     dictionary: Dictionary
@@ -365,7 +374,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const [initial, setInitial] = useState<FlowValues>(() =>
         startingValues(props)
     )
-    const [values, setValues] = useState<FlowValues>(initial)
+    const [localValues, setValues] = useState<FlowValues>(initial)
+    const values = props.demo?.values ?? localValues
     const valuesRef = useRef(values)
     valuesRef.current = values
     const [groups, setGroups] = useState(initialGroups)
@@ -387,7 +397,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     // Saved team assignments; a snapshot refresh saves at once and updates them.
     const [storedTeams, setStoredTeams] = useState(edit?.event.matchTeams)
     const [refreshing, setRefreshing] = useState<string | null>(null)
-    const [step, setStep] = useState<NewMatchStep>(edit?.initialStep ?? "match")
+    const [localStep, setStep] = useState<NewMatchStep>(
+        edit?.initialStep ?? "match"
+    )
+    const step = props.demo?.step ?? localStep
     const [draftId, setDraftId] = useState<string | null>(
         props.draft?.id ?? null
     )
@@ -401,7 +414,9 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const [busy, setBusy] = useState<"publish" | "draft" | "save" | null>(null)
     const [editingTimes, setEditingTimes] = useState(isEdit)
     const [moreOpen, setMoreOpen] = useState(false)
-    const [metadata, setMetadata] = useState<Metadata | null>(null)
+    const [metadata, setMetadata] = useState<NewMatchMetadata | null>(
+        props.demo?.metadata ?? null
+    )
     const [requestOpen, setRequestOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [leaveOpen, setLeaveOpen] = useState(false)
@@ -451,15 +466,16 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     )
 
     useEffect(() => {
+        if (props.demo) return
         fetch(`/api/servers/${serverId}/discord-metadata`)
             .then(async (response) => {
-                const body = (await response.json()) as Metadata
+                const body = (await response.json()) as NewMatchMetadata
                 if (!response.ok || !Array.isArray(body?.channels))
                     throw new Error()
                 setMetadata(body)
             })
             .catch(() => setMetadata(null))
-    }, [serverId])
+    }, [serverId, props.demo])
 
     const isMatch = values.kind === "match"
     const teamGame = matchTeamGame(values.gameId)
@@ -642,6 +658,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     const write = useCallback(
         async (publish: boolean) => {
+            if (props.demo)
+                return { ok: true, body: { eventId: "onboarding-example" } }
             const response = await fetch(
                 `/api/servers/${serverId}/event-drafts`,
                 {
@@ -668,7 +686,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             } | null
             return { ok: response.ok && Boolean(body?.eventId), body }
         },
-        [serverId, values, name, timezone, ownTeam?.id]
+        [serverId, values, name, timezone, ownTeam?.id, props.demo]
     )
 
     const rememberDraft = useCallback((eventId: string) => {
@@ -682,6 +700,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     const saveDraft = useCallback(
         async (manual: boolean) => {
+            if (props.demo) return
             if (!schedule) return
             setSaveState({ kind: "saving" })
             const sentEdits = edits.current
@@ -711,14 +730,18 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     // Autosave a little after the last change; edit mode saves only on purpose.
     useEffect(() => {
-        if (isEdit || !dirty || busy) return
+        if (props.demo || isEdit || !dirty || busy) return
         const timer = setTimeout(() => {
             if (!saving.current) void saveDraft(false)
         }, AUTOSAVE_DELAY_MS)
         return () => clearTimeout(timer)
-    }, [isEdit, busy, dirty, saveDraft, values])
+    }, [isEdit, busy, dirty, saveDraft, values, props.demo])
 
     async function publish() {
+        if (props.demo) {
+            props.demo.onPublish()
+            return
+        }
         setBusy("publish")
         try {
             if (saving.current) await saving.current.catch(() => undefined)
@@ -751,6 +774,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     }
 
     async function deleteDraft() {
+        if (props.demo) return
         if (!draftId) return
         const response = await fetch(
             `/api/servers/${serverId}/event-drafts/${draftId}`,
@@ -771,6 +795,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     /** Saves an edit through the event update route; the bot updates the announcement. */
     async function saveChanges() {
+        if (props.demo) return
         if (!edit) return
         if (!name.trim()) {
             toast.error(t.errors.nameRequired)
@@ -838,6 +863,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
      * at once (like before); a merged team moves to the surviving one.
      */
     async function refreshTeam(teamId: string) {
+        if (props.demo) return
         if (!edit) return
         const slot = storedTeams?.find((team) => team.teamId === teamId)?.slot
         setRefreshing(teamId)
@@ -1424,7 +1450,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
             <div className="flex flex-wrap items-start gap-6">
                 <section
-                    aria-live="polite"
+                    aria-live={props.demo ? "off" : "polite"}
                     aria-labelledby="new-match-step"
                     className="bg-card text-card-foreground border-border flex min-w-0 flex-[999_1_440px] flex-col gap-[22px] rounded-[14px] border p-5 shadow-xs sm:p-7"
                 >
@@ -3697,8 +3723,13 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 <Button
                                     type="button"
                                     variant={isEdit ? "outline" : "default"}
+                                    id="onboarding-match-continue"
                                     onClick={() =>
-                                        setStep(NEW_MATCH_STEPS[stepIndex + 1])
+                                        props.demo
+                                            ? props.demo.onContinue()
+                                            : setStep(
+                                                  NEW_MATCH_STEPS[stepIndex + 1]
+                                              )
                                     }
                                 >
                                     {t.next}
@@ -3717,6 +3748,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     <Button
                                         type="button"
                                         disabled={busy !== null}
+                                        data-onboarding-publish=""
                                         onClick={() => void publish()}
                                     >
                                         <Send aria-hidden />
