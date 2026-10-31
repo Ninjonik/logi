@@ -1,5 +1,10 @@
+import { TeamWorkspaceLinks } from "@/components/leagues/team-workspace-links"
+import { readLeagueAccount } from "@/lib/gateways/league-portal"
+import { getLeagueMessages } from "@/i18n/messages/leagues"
+import { Button } from "@/components/ui/button"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import {
     getCurrentPlayer,
@@ -67,12 +72,32 @@ export default async function DashboardHomePage({
         return null
     }
 
-    const showClanList =
-        (await searchParams)[CLAN_LIST_QUERY.key] === CLAN_LIST_QUERY.value
+    const query = await searchParams
+    const showClanList = query[CLAN_LIST_QUERY.key] === CLAN_LIST_QUERY.value
     const [superadmin, visibleGuilds] = await Promise.all([
         isCurrentUserSuperadmin(),
         getVisibleGuildsForLoggedInUser(),
     ])
+    const leagueAccount = await readLeagueAccount(null)
+    if (
+        query.teamLinkSetup !== "skip" &&
+        leagueAccount?.teams.some((t) => t.accountOwner && !t.clanLinked) &&
+        leagueAccount.workspaces.some((w) => !w.teamId)
+    ) {
+        const t = getLeagueMessages(safeLocale)
+        return (
+            <div className="mx-auto w-full max-w-3xl space-y-5 p-6">
+                <TeamWorkspaceLinks view={leagueAccount} locale={safeLocale} />
+                <Button asChild>
+                    <Link
+                        href={`/${safeLocale}/dashboard?teamLinkSetup=skip${showClanList ? `&${CLAN_LIST_QUERY.key}=${CLAN_LIST_QUERY.value}` : ""}`}
+                    >
+                        {t.continueDashboard}
+                    </Link>
+                </Button>
+            </div>
+        )
+    }
     // Redirect only into a clan the person can still see; a stale stored
     // default falls back to the resolved one, then to this clan list.
     const visibleWorkspaceIds = new Set(visibleGuilds.map((guild) => guild.id))

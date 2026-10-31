@@ -10,8 +10,12 @@ import {
 } from "lucide-react"
 import { getLeagueMessages, type LeagueMessages } from "@/i18n/messages/leagues"
 import type { LeagueCommand, LeaguePortalView } from "@/domain/leagues/portal"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getTeamManagementMessages } from "@/i18n/messages/team-management"
 import type { PublicCompetition } from "@/domain/competitions/competition"
 import { useRef, useState, useTransition, type FormEvent } from "react"
+import { TeamWorkspaceLinks } from "./team-workspace-links"
+import { TeamProfileEditor } from "./team-profile-editor"
 import { GAME_LABELS } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -21,13 +25,14 @@ import type { Locale } from "@/i18n/config"
 import Link from "next/link"
 import { z } from "zod"
 const resultSchema = z.union([
-    z.object({ ok: z.literal(true) }),
+    z.object({ ok: z.literal(true), registrationError: z.string().optional() }),
     z.object({ error: z.string() }),
 ])
 const selectClass =
     "flex h-10 w-full rounded-md border bg-background px-3 text-sm"
 function errorMessage(code: string, t: LeagueMessages) {
     if (code === "forbidden" || code === "team_not_owned") return t.forbidden
+    if (code === "revision_conflict") return t.error
     if (code === "duplicate_name") return t.duplicate
     if (code === "minimum_players") return t.minimumError
     if (code === "registration_closed") return t.closed
@@ -45,11 +50,13 @@ export function LeagueAccount({
     competition,
     locale,
     invite,
+    workspaceGuildId,
 }: {
     view: LeaguePortalView
     competition: PublicCompetition | null
     locale: Locale
     invite?: string
+    workspaceGuildId?: string
 }) {
     const t = getLeagueMessages(locale),
         router = useRouter()
@@ -57,6 +64,10 @@ export function LeagueAccount({
         [refreshing, startTransition] = useTransition(),
         [message, setMessage] = useState<string | null>(null),
         [failed, setFailed] = useState(false)
+    const m = getTeamManagementMessages(locale)
+    const visibleTeams = workspaceGuildId
+        ? view.teams.filter((team) => team.linkedGuildId === workspaceGuildId)
+        : view.teams
     const pending = busy || refreshing
     const owned = view.teams.filter(
         (team) =>
@@ -75,17 +86,28 @@ export function LeagueAccount({
             const parsed = resultSchema.safeParse(await response.json())
             if (!response.ok || !parsed.success || "error" in parsed.data) {
                 setFailed(true)
+                const code =
+                    parsed.success && "error" in parsed.data
+                        ? parsed.data.error
+                        : "unavailable"
                 setMessage(
-                    errorMessage(
-                        parsed.success && "error" in parsed.data
-                            ? parsed.data.error
-                            : "unavailable",
-                        t
-                    )
+                    code === "revision_conflict"
+                        ? m.stale
+                        : errorMessage(code, t)
                 )
                 return false
             }
-            setMessage(t.done)
+            const registrationError = parsed.data.registrationError
+            setFailed(Boolean(registrationError))
+            setMessage(
+                registrationError === "minimum_players"
+                    ? m.createdNeedsPlayers
+                    : registrationError
+                      ? m.createdRegistrationFailed
+                      : input.action === "createAndEnroll"
+                        ? m.teamCreated
+                        : t.done
+            )
             startTransition(() => router.refresh())
             return true
         } catch {
@@ -106,6 +128,10 @@ export function LeagueAccount({
                     {message}
                 </p>
             )}
+            {invite && (
+                <JoinTeam initial={invite} t={t} run={run} pending={pending} />
+            )}
+
             {competition && (
                 <section className="bg-card rounded-2xl border p-6">
                     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -224,44 +250,78 @@ export function LeagueAccount({
                     </ul>
                 </section>
             )}
-            <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
+            {!workspaceGuildId && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border p-4">
+                    <Button asChild variant="outline">
+                        <Link href={`/${locale}/leagues`}>{t.browse}</Link>
+                    </Button>
+                    <p className="text-muted-foreground text-sm">
+                        {t.browseHint}
+                    </p>
+                </div>
+            )}
+            {!workspaceGuildId && (
+                <p className="text-muted-foreground text-sm leading-6">
+                    {t.playerSteps}
+                </p>
+            )}
+            <div
+                className={
+                    workspaceGuildId && visibleTeams.length
+                        ? "space-y-6"
+                        : "grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]"
+                }
+            >
                 <section className="space-y-4">
                     <div>
                         <h2 className="text-xl font-semibold">
-                            {t.accountTitle}
+                            {workspaceGuildId ? m.title : t.accountTitle}
                         </h2>
-                        <p className="text-muted-foreground mt-2 text-sm leading-6">
-                            {t.existingHint}
-                        </p>
                     </div>
-                    {view.teams.map((team) => (
+                    {visibleTeams.map((team) => (
                         <TeamCard
-                            key={team.id}
+                            key={`${team.id}-${team.revision}`}
                             team={team}
                             locale={locale}
                             t={t}
+                            view={view}
+                            run={run}
+                            pending={pending}
                         />
                     ))}
-                    {!view.teams.length && (
+                    {!visibleTeams.length && (
                         <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
                             <Users className="mx-auto mb-3 size-6" />
-                            {t.noTeams}
+                            {workspaceGuildId ? m.noClanTeam : t.noTeams}
                         </div>
                     )}
                 </section>
                 <div className="space-y-5">
-                    <CreateTeam
-                        gameId={competition?.gameId ?? "hell_let_loose"}
-                        t={t}
-                        run={run}
-                        pending={pending}
-                    />
-                    <JoinTeam
-                        initial={invite ?? ""}
-                        t={t}
-                        run={run}
-                        pending={pending}
-                    />
+                    {!invite && (!workspaceGuildId || !visibleTeams.length) && (
+                        <CreateTeam
+                            competition={competition}
+                            guildId={workspaceGuildId}
+                            locale={locale}
+                            t={t}
+                            run={run}
+                            pending={pending}
+                        />
+                    )}
+                    {workspaceGuildId && !visibleTeams.length && (
+                        <TeamWorkspaceLinks
+                            view={view}
+                            locale={locale}
+                            guildId={workspaceGuildId}
+                        />
+                    )}
+                    {!invite && !workspaceGuildId && (
+                        <JoinTeam
+                            initial=""
+                            t={t}
+                            run={run}
+                            pending={pending}
+                        />
+                    )}
                 </div>
             </div>
             {competition && (
@@ -293,21 +353,41 @@ function TeamCard({
     team,
     locale,
     t,
+    view,
+    run,
+    pending,
 }: {
+    run: Run
+    pending: boolean
+    view: LeaguePortalView
     team: LeaguePortalView["teams"][number]
     locale: Locale
     t: LeagueMessages
 }) {
+    const m = getTeamManagementMessages(locale)
+    const entries = view.registrations.filter(
+        (row) => row.teamId === team.id && row.competitionSlug
+    )
     const [copied, setCopied] = useState(false),
         [copyError, setCopyError] = useState(false)
     return (
         <article className="bg-card rounded-xl border p-5">
             <div className="flex items-start gap-3">
-                <span className="bg-muted flex size-11 shrink-0 items-center justify-center rounded-lg font-mono text-sm font-semibold">
-                    {team.shortCode ?? team.name.slice(0, 2).toUpperCase()}
-                </span>
+                <Avatar className="size-14 rounded-xl">
+                    <AvatarImage src={team.logoUrl ?? undefined} alt="" />
+                    <AvatarFallback>
+                        {team.shortCode ?? team.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
                 <div>
-                    <h3 className="font-semibold">{team.name}</h3>
+                    <h3 className="font-semibold">
+                        {team.name}{" "}
+                        {team.shortCode && (
+                            <span className="text-muted-foreground ml-2 text-xs">
+                                {team.shortCode}
+                            </span>
+                        )}
+                    </h3>
                     <p className="text-muted-foreground mt-1 text-xs">
                         {team.gameId === "wardogs"
                             ? "Wardogs"
@@ -316,13 +396,92 @@ function TeamCard({
                     </p>
                 </div>
                 <span className="ml-auto rounded-md border px-2 py-1 text-xs">
-                    {team.owner ? t.owner : t.member}
+                    {team.accountOwner
+                        ? t.owner
+                        : team.owner
+                          ? m.clanAdministrator
+                          : t.member}
                 </span>
             </div>
             <p className="text-muted-foreground mt-4 flex items-center gap-2 text-sm">
                 <Users className="size-4" />
                 {t.members.replace("{count}", String(team.members))}
             </p>
+            {team.description && (
+                <p className="text-muted-foreground mt-3 text-sm">
+                    {team.description}
+                </p>
+            )}
+            {team.owner && (
+                <div className="mt-4">
+                    <TeamProfileEditor
+                        team={team}
+                        locale={locale}
+                        run={run}
+                        pending={pending}
+                    />
+                </div>
+            )}
+            <section className="mt-5 space-y-3 border-t pt-4">
+                <h4 className="font-medium">{m.entries}</h4>
+                {!entries.length && (
+                    <p className="text-muted-foreground text-sm">
+                        {m.noEntries}
+                    </p>
+                )}
+                {entries.map((entry) => (
+                    <Link
+                        key={entry.competitionId}
+                        className="hover:bg-muted/50 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm"
+                        href={`/${locale}/leagues/${entry.competitionSlug}/join`}
+                    >
+                        <span>
+                            {entry.competitionName}{" "}
+                            <span className="text-muted-foreground">
+                                {entry.season}
+                            </span>
+                        </span>
+                        <span>
+                            {t[entry.withdrawn ? "withdrawn" : entry.status]}
+                        </span>
+                    </Link>
+                ))}
+                <Button asChild variant="outline" size="sm">
+                    <Link href={`/${locale}/leagues`}>
+                        {m.browseCompetitions}
+                    </Link>
+                </Button>
+            </section>
+            {team.accountOwner && !team.clanLinked && (
+                <details className="mt-5 border-t pt-4">
+                    <summary className="cursor-pointer font-medium">
+                        {m.connection}
+                    </summary>
+                    <p className="text-muted-foreground my-3 text-sm">
+                        {m.connectionHint}
+                    </p>
+                    <TeamWorkspaceLinks
+                        view={{ ...view, teams: [team] }}
+                        locale={locale}
+                        compact
+                    />
+                </details>
+            )}
+            {team.linkedGuildId &&
+                (() => {
+                    const workspace = view.workspaces.find(
+                        (w) => w.guildId === team.linkedGuildId
+                    )
+                    return workspace ? (
+                        <Button asChild variant="outline" className="mt-4">
+                            <Link
+                                href={`/${locale}/dashboard/servers/${workspace.workspaceId}/competitions`}
+                            >
+                                {t.linkedWorkspace}: {workspace.name}
+                            </Link>
+                        </Button>
+                    ) : null
+                })()}
             {team.inviteToken && (
                 <div className="mt-4 border-t pt-4">
                     <Button
@@ -364,32 +523,49 @@ function TeamCard({
     )
 }
 function CreateTeam({
-    gameId,
+    competition,
+    guildId,
+    locale,
     t,
     run,
     pending,
 }: {
-    gameId: string
+    competition: PublicCompetition | null
+    guildId?: string
+    locale: Locale
     t: LeagueMessages
     run: Run
     pending: boolean
 }) {
+    const m = getTeamManagementMessages(locale)
     const key = useRef<string | null>(null)
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         const form = event.currentTarget,
             data = new FormData(form)
         key.current ??= crypto.randomUUID()
-        const game = data.get("game")
+        const game = competition?.gameId ?? data.get("game")
         if (game !== "hell_let_loose" && game !== "wardogs") return
-        const ok = await run({
-            action: "createTeam",
-            gameId: game,
+        const details = {
             name: String(data.get("name") ?? ""),
             shortCode: String(data.get("code") ?? "").trim() || null,
             description: String(data.get("about") ?? "").trim() || null,
             idempotencyKey: key.current,
-        })
+        }
+        const ok = await run(
+            competition
+                ? {
+                      ...details,
+                      action: "createAndEnroll",
+                      competitionId: competition.id,
+                  }
+                : {
+                      ...details,
+                      action: "createTeam",
+                      gameId: game,
+                      ...(guildId ? { guildId } : {}),
+                  }
+        )
         if (ok) {
             key.current = null
             form.reset()
@@ -399,26 +575,43 @@ function CreateTeam({
         <section className="bg-muted/20 rounded-xl border p-5">
             <h2 className="flex items-center gap-2 font-semibold">
                 <Plus className="size-4" />
-                {t.create}
+                {competition
+                    ? m.createAndEnroll
+                    : guildId
+                      ? m.createAndConnect
+                      : t.create}
             </h2>
             <p className="text-muted-foreground mt-2 text-sm leading-6">
-                {t.createHint}
+                {competition ? m.createAndEnrollHint : t.createHint}
             </p>
             <form onSubmit={submit} className="mt-5 space-y-4">
-                <fieldset disabled={pending} className="space-y-4">
-                    <Label className="grid gap-2">
-                        {t.game}
-                        <select
-                            name="game"
-                            className={selectClass}
-                            defaultValue={gameId}
-                        >
-                            <option value="hell_let_loose">
-                                Hell Let Loose
-                            </option>
-                            <option value="wardogs">Wardogs</option>
-                        </select>
-                    </Label>
+                <fieldset
+                    disabled={
+                        pending ||
+                        (competition?.registrationMode ?? "automatic") ===
+                            "closed"
+                    }
+                    className="space-y-4"
+                >
+                    {competition ? (
+                        <p className="text-muted-foreground text-sm">
+                            {GAME_LABELS[competition.gameId]}
+                        </p>
+                    ) : (
+                        <Label className="grid gap-2">
+                            {t.game}
+                            <select
+                                name="game"
+                                className={selectClass}
+                                defaultValue="hell_let_loose"
+                            >
+                                <option value="hell_let_loose">
+                                    Hell Let Loose
+                                </option>
+                                <option value="wardogs">Wardogs</option>
+                            </select>
+                        </Label>
+                    )}
                     <Label className="grid gap-2">
                         {t.name}
                         <Input
@@ -442,7 +635,11 @@ function CreateTeam({
                         ) : (
                             <Plus className="size-4" />
                         )}
-                        {t.create}
+                        {competition
+                            ? m.createAndEnroll
+                            : guildId
+                              ? m.createAndConnect
+                              : t.create}
                     </Button>
                 </fieldset>
             </form>

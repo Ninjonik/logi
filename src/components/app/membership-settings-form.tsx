@@ -814,7 +814,7 @@ export function MembershipSettingsForm({
                 </TabsList>
 
                 <TabsContent value="application" className="space-y-6 pt-4">
-                    <SectionCard title={a.panel.title}>
+                    <SectionCard title={a.panel.title} id="membership-panel">
                         <PanelSection
                             serverId={serverId}
                             channels={channels}

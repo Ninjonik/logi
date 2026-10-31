@@ -1,5 +1,8 @@
-import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
+import { ConvexGroupRepository } from "../src/infrastructure/convex/group-repository"
+import { GroupCommands } from "../src/application/groups/group-commands"
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { matchesGameScope } from "../src/domain/games/game"
+import { systemClock } from "../src/domain/shared/clock"
 import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
@@ -71,80 +74,13 @@ export const upsert = mutation({
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
 
-        const trimmedName = args.name.trim()
-        if (!trimmedName) {
-            throw new Error("Group name is required.")
-        }
         const guild = await getGuildById(ctx, args.guildId)
-        if (!guild) {
-            throw new Error("Server not found.")
-        }
-        const guildDiscordId = getGuildDiscordId(guild)
-
-        if (args.parentId) {
-            const parent = await ctx.db.get(args.parentId)
-            if (
-                !parent ||
-                parent.guildId !== guildDiscordId ||
-                resolveGameScope(parent.gameId) !==
-                    resolveGameScope(args.gameId)
-            ) {
-                throw new Error("Parent group not found.")
-            }
-        }
-
-        const duplicates = await ctx.db
-            .query("groups")
-            .withIndex("guildId_name", (q) =>
-                q.eq("guildId", guildDiscordId).eq("name", trimmedName)
-            )
-            .collect()
-
-        const duplicate = duplicates.find(
-            (group) =>
-                matchesGameScope(group.gameId, args.gameId) &&
-                group._id !== args.groupId
-        )
-
-        if (duplicate) {
-            throw new Error("A group with this name already exists.")
-        }
-
-        const now = new Date().toISOString()
-
-        if (args.groupId) {
-            const existing = await ctx.db.get(args.groupId)
-            if (!existing || existing.guildId !== guildDiscordId) {
-                throw new Error("Group not found.")
-            }
-            await ctx.db.patch(args.groupId, {
-                name: trimmedName,
-                color: args.color,
-                order: args.order,
-                parentId: args.parentId,
-                description: args.description,
-                discordRoleId: args.discordRoleId?.trim() || undefined,
-                discordEmoji: args.discordEmoji?.trim() || undefined,
-                updatedAt: now,
-            })
-            return String(args.groupId)
-        }
-
-        const groupId = await ctx.db.insert("groups", {
-            guildId: guildDiscordId,
-            gameId: args.gameId,
-            name: trimmedName,
-            color: args.color,
-            order: args.order,
-            parentId: args.parentId,
-            description: args.description,
-            discordRoleId: args.discordRoleId?.trim() || undefined,
-            discordEmoji: args.discordEmoji?.trim() || undefined,
-            createdAt: now,
-            updatedAt: now,
-        })
-
-        return String(groupId)
+        if (!guild) throw new Error("Server not found.")
+        const saved = await new GroupCommands(
+            new ConvexGroupRepository(ctx),
+            systemClock
+        ).save({ ...args, guildId: getGuildDiscordId(guild) })
+        return saved.id
     },
 })
 
@@ -161,37 +97,9 @@ export const remove = mutation({
         if (!guild) {
             throw new Error("Server not found.")
         }
-        const group = await ctx.db.get(args.groupId)
-        if (!group || group.guildId !== getGuildDiscordId(guild)) {
-            throw new Error("Group not found.")
-        }
-
-        const assignments = await ctx.db
-            .query("userAssignments")
-            .withIndex("serverId", (q) => q.eq("serverId", group.guildId))
-            .collect()
-        const affectedAssignments = assignments.filter(
-            (assignment) =>
-                assignment.primaryGroupId === args.groupId ||
-                (assignment.secondaryGroupIds ?? []).some(
-                    (secondaryGroupId) => secondaryGroupId === args.groupId
-                )
-        )
-
-        const now = new Date().toISOString()
-        for (const assignment of affectedAssignments) {
-            await ctx.db.patch(assignment._id, {
-                primaryGroupId:
-                    assignment.primaryGroupId === args.groupId
-                        ? undefined
-                        : assignment.primaryGroupId,
-                secondaryGroupIds: (assignment.secondaryGroupIds ?? []).filter(
-                    (secondaryGroupId) => secondaryGroupId !== args.groupId
-                ),
-                updatedAt: now,
-            })
-        }
-
-        await ctx.db.delete(args.groupId)
+        await new GroupCommands(
+            new ConvexGroupRepository(ctx),
+            systemClock
+        ).remove(getGuildDiscordId(guild), args.groupId)
     },
 })

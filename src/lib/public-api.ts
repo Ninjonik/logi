@@ -276,10 +276,11 @@ export async function mutateClanApiSettings(input: {
     /** Validated feature settings slices by key. */
     slices?: Record<string, unknown>
 }) {
+    const { key, ...args } = input
     return (await fetchMutation(mutateClanSettingsReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
     })) as { status: number; body: string } | null
 }
 
@@ -326,10 +327,11 @@ export async function mutateClanApiArticle(input: {
     body?: string
     attachments?: string[]
 }) {
+    const { key, ...args } = input
     return (await fetchMutation(mutateArticleReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
         ...(input.articleId ? { articleId: input.articleId as never } : {}),
     })) as { status: number; body: string } | null
 }
@@ -392,10 +394,11 @@ export async function mutateClanApiGroup(input: {
     discordRoleId?: string
     discordEmoji?: string
 }) {
+    const { key, ...args } = input
     return (await fetchMutation(mutateGroupReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
         ...(input.groupId ? { groupId: input.groupId as never } : {}),
         ...(input.parentId ? { parentId: input.parentId as never } : {}),
     })) as { status: number; body: string } | null
@@ -411,10 +414,11 @@ export async function mutateClanApiCalendarItem(
         calendarItemId?: string
     }
 ) {
+    const { key, ...args } = input
     return (await fetchMutation(mutateCalendarItemReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
         ...(input.calendarItemId
             ? { calendarItemId: input.calendarItemId as never }
             : {}),
@@ -431,10 +435,11 @@ export async function mutateClanApiPreset(input: {
     presetId?: string
     payload: Record<string, unknown>
 }) {
+    const { key, ...args } = input
     return (await fetchMutation(mutatePresetReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
         ...(input.presetId ? { presetId: input.presetId as never } : {}),
     })) as { status: number; body: string } | null
 }
@@ -448,10 +453,11 @@ export async function mutateClanApiRoster(input: {
     rosterId: string
     payload?: Record<string, unknown>
 }) {
+    const { key, ...args } = input
     return (await fetchMutation(mutateRosterReference, {
         secret: getInternalAuthSecret(),
-        ...input,
-        keyHash: hashApiKey(input.key),
+        ...args,
+        keyHash: hashApiKey(key),
         rosterId: input.rosterId as never,
     })) as { status: number; body: string } | null
 }

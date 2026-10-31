@@ -1,6 +1,13 @@
 // Type inventory only. Does not contact, configure or deploy a Convex backend.
 // Target acceptance must still run the normal deployment-aware Convex generator.
-import { apiCodegen } from "../node_modules/convex/dist/esm/cli/codegen_templates/api.js"
+import {
+    importPath,
+    moduleIdentifier,
+} from "../node_modules/convex/dist/esm/cli/codegen_templates/api.js"
+import {
+    apiComment,
+    header,
+} from "../node_modules/convex/dist/esm/cli/codegen_templates/common.js"
 import { readFile, readdir, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -22,7 +29,24 @@ if (!components)
     throw new Error(
         "Unexpected components declaration; run target Convex codegen"
     )
-const generated = apiCodegen(modules).DTS + "\n" + components[0] + "\n"
+// Match Convex's dynamic component API declarations, used by deployment codegen.
+// The legacy apiCodegen template has different import ordering and API comments.
+const generated = `
+${header("Generated `api` utility.")}
+${modules.map((name) => `import type * as ${moduleIdentifier(name)} from "../${importPath(name)}.js";`).join("\n")}
+
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
+
+declare const fullApi: ApiFromModules<{
+${modules.map((name) => `"${importPath(name)}": typeof ${moduleIdentifier(name)},`).join("\n")}
+}>;
+${apiComment("api", "public")}
+export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
+${apiComment("internal", "internal")}
+export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
+
+${components[0]}
+`
 await writeFile(
     path,
     await format(generated, { parser: "typescript", semi: true, tabWidth: 2 })

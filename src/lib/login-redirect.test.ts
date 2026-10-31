@@ -10,7 +10,7 @@ import {
 test("the login error keeps the language the sign-in started from", () => {
     assert.equal(
         loginErrorPath("/cs/dashboard", "oauth-state"),
-        "/cs/login?error=oauth-state"
+        "/cs/login?error=oauth-state&redirectTo=%2Fcs%2Fdashboard"
     )
     assert.equal(
         loginErrorPath("/de/dashboard/servers/abc?tab=1", "discord-login"),

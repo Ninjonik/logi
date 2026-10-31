@@ -9,8 +9,11 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getLeagueMessages } from "@/i18n/messages/leagues"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { initialsOf } from "@/lib/initials"
+import { isLocale } from "@/i18n/config"
+import { Users } from "lucide-react"
 
 /** The person's account at the bottom of the sidebar; opens "My account". */
 export function NavUser({
@@ -36,6 +39,20 @@ export function NavUser({
 
     return (
         <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <Link href={`/${locale}/league-teams`}>
+                        <Users />
+                        <span>
+                            {
+                                getLeagueMessages(
+                                    isLocale(locale) ? locale : "en"
+                                ).manage
+                            }
+                        </span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild

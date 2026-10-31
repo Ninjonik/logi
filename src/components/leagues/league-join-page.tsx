@@ -42,7 +42,11 @@ export async function LeagueJoinPage({
                     </Link>
                     <header className="max-w-3xl">
                         <h1 className="text-3xl font-semibold tracking-tight">
-                            {competition ? t.joinTitle : t.accountTitle}
+                            {competition
+                                ? t.joinTitle
+                                : invite
+                                  ? t.joinInvite
+                                  : t.accountTitle}
                         </h1>
                         <p className="text-muted-foreground mt-3 leading-7">
                             {t.setupDescription}
@@ -71,6 +75,9 @@ export async function LeagueJoinPage({
                             </h2>
                             <p className="text-muted-foreground mt-3 mb-6 text-sm leading-6">
                                 {t.signInHint}
+                            </p>
+                            <p className="text-muted-foreground mb-5 text-sm leading-6">
+                                {t.playerSteps}
                             </p>
                             <DiscordSignInButton
                                 redirectTo={returnTo}

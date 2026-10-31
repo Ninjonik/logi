@@ -34,6 +34,16 @@ function setup() {
     }
     const reports: Array<{ id: string; teamId: string; scores: number[] }> = []
     const ports: LeaguePortalPorts = {
+        competitionForSignup: async () => ({
+            gameId: "wardogs",
+            published: true,
+            registrationMode: "automatic",
+            slug: "cup",
+        }),
+        workspaceForTeam: async () => ({ admin: false, occupied: false }),
+        updateTeam: async () => ({ ok: true }),
+        linkFacts: async () => null,
+        saveTeamLink: async () => ({ ok: true }),
         createTeam: async () => ({ ok: true }),
         joinTeam: async () => ({ ok: true }),
         enrollmentFacts: async () => facts,

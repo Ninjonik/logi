@@ -18,6 +18,25 @@ function fixture() {
     }
 }
 
+test("legacy adoption preserves another game team without linking it to an occupied server", async () => {
+    const { repository, ports } = fixture()
+    await adoptCatalogueTeam(ports, actor, {
+        gameId: "hell_let_loose",
+        name: "First",
+        linkedGuildId: snowflake,
+    })
+    assert.deepEqual(
+        await adoptCatalogueTeam(ports, actor, {
+            gameId: "wardogs",
+            name: "Second",
+            linkedGuildId: snowflake,
+        }),
+        { ok: true, teamId: "team-2", created: true, linked: false }
+    )
+    assert.equal(repository.teams.length, 2)
+    assert.equal(repository.teams[1].linkedGuildId, null)
+})
+
 test("creates a catalogue team once per normalized name and game", async () => {
     const { repository, ports } = fixture()
     const first = await adoptCatalogueTeam(ports, actor, {

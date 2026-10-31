@@ -36,6 +36,7 @@ export const SUPERADMIN_IMAGE_ASSETS_ENDPOINT = "/api/superadmin/image-assets"
 
 /** Every code the catalogue route answers with; each has a localized message. */
 export const TEAM_ADMIN_ERROR_CODES = [
+    "guild_already_linked",
     "invalid_team",
     "invalid_query",
     "game_disabled",
@@ -69,6 +70,7 @@ export const TEAM_REQUEST_ADMIN_ERROR_CODES = [
     "archived",
     "not_archived",
     "asset_unavailable",
+    "guild_already_linked",
     "invalid_team",
     "invalid_merge",
     "game_disabled",

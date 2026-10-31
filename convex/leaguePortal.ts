@@ -8,12 +8,20 @@ import {
     assertSessionGateway,
 } from "./dashboardSessionStore"
 import { executeLeagueCommand } from "../src/application/leagues/portal.use-case"
+import { authorizeTeamProfile } from "./teamProfileAccess"
 import type { DashboardActor } from "./dashboardActor"
 import type { QueryCtx } from "./_generated/server"
 import { dashboardActor } from "./dashboardActor"
 import { mutation } from "./integrationMutation"
 import { query } from "./_generated/server"
 import { v } from "convex/values"
+export const profileAccess = query({
+    args: { secret: v.string(), actor: dashboardActor, teamId: v.string() },
+    handler: async (ctx, args) => {
+        await authorizeTeamProfile(ctx, args)
+        return { allowed: true }
+    },
+})
 const access = {
     secret: v.string(),
     actor: dashboardActor,

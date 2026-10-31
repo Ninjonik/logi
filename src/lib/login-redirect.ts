@@ -25,7 +25,6 @@ export function localeOfPath(path: string): Locale {
 export function loginErrorPath(redirectTo: string, error: LoginError): string {
     const locale = localeOfPath(redirectTo)
     const query = new URLSearchParams({ error })
-    if (redirectTo !== `/${locale}/dashboard`)
-        query.set("redirectTo", redirectTo)
+    query.set("redirectTo", redirectTo)
     return `/${locale}/login?${query.toString()}`
 }

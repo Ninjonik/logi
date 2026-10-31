@@ -116,8 +116,10 @@ export function SectionExamples({
     ) => (
         <>
             {header(title, action)}
-            <div data-tour-section="" className="space-y-5 px-4 pb-24 lg:px-6">
-                {children}
+            <div className="px-4 pb-24 lg:px-6">
+                <div data-tour-section={chapter} className="space-y-5">
+                    {children}
+                </div>
             </div>
         </>
     )
@@ -274,7 +276,7 @@ export function SectionExamples({
                     now: data.now,
                 })
                 content = (
-                    <div data-tour-section="">
+                    <div data-tour-section={training ? "training" : undefined}>
                         <MatchListView
                             dictionary={d}
                             title={training ? s.training : d.matchList.title}
@@ -303,7 +305,10 @@ export function SectionExamples({
                             }}
                         />
                         {chapter === "signups" && (
-                            <div className="px-4 lg:px-6">
+                            <div
+                                data-tour-section="signups"
+                                className="px-4 lg:px-6"
+                            >
                                 {table(
                                     [s.players, s.squad, s.status],
                                     data.users.map((p, i) => [
@@ -315,7 +320,10 @@ export function SectionExamples({
                             </div>
                         )}
                         {chapter === "results" && (
-                            <div className="px-4 lg:px-6">
+                            <div
+                                data-tour-section="results"
+                                className="px-4 lg:px-6"
+                            >
                                 {table(
                                     [s.team, s.score, s.status],
                                     [

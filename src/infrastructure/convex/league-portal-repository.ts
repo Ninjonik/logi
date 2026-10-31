@@ -23,16 +23,40 @@ import {
     type DashboardActor,
 } from "../../../convex/dashboardActor"
 import {
+    createTeam,
+    updateTeam,
+} from "../../application/teams/team-directory.use-case"
+import {
+    assetPublicUrl,
+    attachableAsset,
+} from "../../../convex/imageAssetStore"
+import {
     getGuildByDiscordId,
     getGuildDiscordId,
 } from "../../../convex/identity"
 import type { LeaguePortalPorts } from "../../application/leagues/portal.use-case"
 import { linkedPlayerCount } from "../../../convex/competitionEnrollmentStore"
 import type { MutationCtx, QueryCtx } from "../../../convex/_generated/server"
-import { createTeam } from "../../application/teams/team-directory.use-case"
 import type { Doc } from "../../../convex/_generated/dataModel"
+import { teamGameSchema } from "../../domain/teams/team"
 
 type Db = Pick<QueryCtx, "db">
+class TeamProfileLogos extends ConvexTeamLogoPort {
+    constructor(
+        private readonly profileCtx: MutationCtx,
+        private readonly teamId: string
+    ) {
+        super(profileCtx)
+    }
+    async attachable(assetId: string) {
+        const asset = await attachableAsset(this.profileCtx, {
+            assetId,
+            guildId: `team:${this.teamId}`,
+            kind: "team-logo",
+        })
+        return asset ? String(asset._id) : null
+    }
+}
 export type LeagueActor = {
     actor: DashboardActor
     secret: string
@@ -114,6 +138,77 @@ export class ConvexLeaguePortalRepository implements LeaguePortalPorts {
         private readonly ownership: Awaited<ReturnType<typeof leagueOwnership>>,
         private readonly now: string
     ) {}
+    async competitionForSignup(id: string) {
+        const cid = this.ctx.db.normalizeId("competitions", id)
+        const competition = cid ? await this.ctx.db.get(cid) : null
+        if (!competition) return null
+        const game = teamGameSchema.safeParse(
+            competition.gameId ?? "hell_let_loose"
+        )
+        if (!game.success) return null
+        return {
+            gameId: game.data,
+            published: isCompetitionPublished(competition),
+            registrationMode: enrollmentPolicy(competition).registrationMode,
+            slug: competition.slug,
+        }
+    }
+    async workspaceForTeam(guildId: string) {
+        return {
+            admin: this.ownership.guilds.some(
+                (g) => getGuildDiscordId(g) === guildId
+            ),
+        }
+    }
+    async updateTeam(input: Extract<LeagueCommand, { action: "updateTeam" }>) {
+        if (!this.ownership.own.has(input.teamId)) return { error: "forbidden" }
+        const {
+            teamId,
+            expectedRevision,
+            name,
+            shortCode,
+            description,
+            logoAssetId,
+        } = input
+        const patch = {
+            expectedRevision,
+            name,
+            shortCode,
+            description,
+            logoAssetId,
+        }
+        const result = await updateTeam(
+            {
+                repository: new ConvexTeamDirectoryRepository(this.ctx),
+                logos: new TeamProfileLogos(this.ctx, teamId),
+                now: () => this.now,
+            },
+            { actor: this.access.actor.subject },
+            teamId,
+            patch
+        )
+        if ("error" in result) return result
+        const id = this.ctx.db.normalizeId("teamDirectory", teamId)
+        const team = id ? await this.ctx.db.get(id) : null
+        const registrations = id
+            ? await this.ctx.db
+                  .query("competitionTeams")
+                  .withIndex("teamId", (q) => q.eq("teamId", id))
+                  .take(500)
+            : []
+        const competitionSlugs: string[] = []
+        for (const row of registrations) {
+            const competition = await this.ctx.db.get(row.competitionId)
+            if (competition && isCompetitionPublished(competition))
+                competitionSlugs.push(competition.slug)
+        }
+        return {
+            ok: true as const,
+            teamId,
+            competitionSlugs,
+            ...(team?.linkedGuildId ? { guildId: team.linkedGuildId } : {}),
+        }
+    }
     async createTeam(input: Extract<LeagueCommand, { action: "createTeam" }>) {
         const repository = new ConvexTeamDirectoryRepository(this.ctx)
         const idempotencyKey = `league_${this.access.actor.subject}_${input.idempotencyKey}`
@@ -136,7 +231,7 @@ export class ConvexLeaguePortalRepository implements LeaguePortalPorts {
                 description: input.description,
                 logoAssetId: null,
                 links: [],
-                linkedGuildId: null,
+                linkedGuildId: input.guildId ?? null,
                 idempotencyKey,
             }
         )
@@ -162,7 +257,46 @@ export class ConvexLeaguePortalRepository implements LeaguePortalPorts {
                 joinedAt: this.now,
             })
         }
+        this.ownership.own.add(String(teamId))
         return { ok: true as const, teamId: String(teamId) }
+    }
+    async linkFacts(teamId: string, guildId: string) {
+        const id = this.ctx.db.normalizeId("teamDirectory", teamId)
+        const team = id ? await this.ctx.db.get(id) : null
+        if (!team) return null
+        const linked = await this.ctx.db
+            .query("teamDirectory")
+            .withIndex("linkedGuildId", (q) => q.eq("linkedGuildId", guildId))
+            .collect()
+        return {
+            accountOwner: this.ownership.profiles.some(
+                (p) => String(p.teamId) === teamId
+            ),
+            workspaceAdmin: this.ownership.guilds.some(
+                (g) => getGuildDiscordId(g) === guildId
+            ),
+            active: !team.archivedAt && !team.mergedIntoTeamId,
+            linkedGuildId: team.linkedGuildId ?? null,
+            guildId,
+            occupied: linked.some(
+                (t) => String(t._id) !== teamId && !t.mergedIntoTeamId
+            ),
+        }
+    }
+    async saveTeamLink(teamId: string, guildId: string) {
+        const repository = new ConvexTeamDirectoryRepository(this.ctx)
+        const team = await repository.get(teamId)
+        if (!team) return { error: "not_found" }
+        return updateTeam(
+            {
+                repository,
+                logos: new ConvexTeamLogoPort(this.ctx),
+                now: () => this.now,
+            },
+            { actor: this.access.actor.subject },
+            teamId,
+            { expectedRevision: team.revision, linkedGuildId: guildId }
+        )
     }
     async joinTeam(token: string) {
         const profile = await this.ctx.db
@@ -469,6 +603,12 @@ export async function leaguePortalView(
             members,
             inviteToken: profile?.inviteToken ?? null,
             clanLinked: Boolean(team.linkedGuildId),
+            linkedGuildId: team.linkedGuildId ?? null,
+            accountOwner: Boolean(profile),
+            description: team.description ?? null,
+            logoAssetId: team.logoAssetId ? String(team.logoAssetId) : null,
+            logoUrl: await assetPublicUrl(ctx, team.logoAssetId),
+            revision: team.revision,
         })
     }
     const registrations: LeaguePortalView["registrations"] = []
@@ -479,13 +619,19 @@ export async function leaguePortalView(
             .query("competitionTeams")
             .withIndex("teamId", (q) => q.eq("teamId", tid))
             .take(500)
-        for (const row of rows)
+        for (const row of rows) {
+            const competition = await ctx.db.get(row.competitionId)
+            const visible = competition && isCompetitionPublished(competition)
             registrations.push({
                 competitionId: String(row.competitionId),
                 teamId: team.id,
                 status: row.status ?? "approved",
                 withdrawn: row.withdrawn,
+                competitionName: visible ? competition.name : null,
+                competitionSlug: visible ? competition.slug : null,
+                season: visible ? competition.season : null,
             })
+        }
     }
     const fixtures: LeaguePortalView["fixtures"] = []
     const cid = competitionId
@@ -553,8 +699,23 @@ export async function leaguePortalView(
             })
         }
     }
+    const workspaces: LeaguePortalView["workspaces"] = []
+    for (const guild of ownership.guilds) {
+        const guildId = getGuildDiscordId(guild)
+        const linked = await ctx.db
+            .query("teamDirectory")
+            .withIndex("linkedGuildId", (q) => q.eq("linkedGuildId", guildId))
+            .collect()
+        workspaces.push({
+            guildId,
+            workspaceId: String(guild._id),
+            name: guild.name ?? guildId,
+            teamId: linked.find((t) => !t.mergedIntoTeamId)?._id ?? null,
+        })
+    }
     return {
         teams,
+        workspaces,
         registrations,
         servers: await leagueServers(ctx, ownership.guilds, Date.now()),
         fixtures,

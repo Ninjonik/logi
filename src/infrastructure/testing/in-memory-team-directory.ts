@@ -64,6 +64,14 @@ export class InMemoryTeamDirectory implements TeamDirectoryRepository {
         )
         return rows.find((team) => !team.archivedAt) ?? rows[0] ?? null
     }
+    async guildOccupied(guildId: string, exceptTeamId?: string) {
+        return this.teams.some(
+            (t) =>
+                t.linkedGuildId === guildId &&
+                t.id !== exceptTeamId &&
+                !t.mergedIntoTeamId
+        )
+    }
     async count(gameId: TeamGame) {
         return Math.min(
             this.teams.filter((team) => team.gameId === gameId).length,

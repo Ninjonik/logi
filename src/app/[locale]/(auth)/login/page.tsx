@@ -34,7 +34,7 @@ export default async function LoginPage({
     const loginError = parseLoginError(error)
     const redirectTo = sanitizeLocalRedirect(
         requestedRedirect,
-        `/${safeLocale}/dashboard`
+        `/${safeLocale}`
     )
     const dictionary = getDictionary(safeLocale)
     if (await getCurrentPlayer()) {

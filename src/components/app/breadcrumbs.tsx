@@ -1,5 +1,6 @@
 "use client"
 
+import { getTeamManagementMessages } from "@/i18n/messages/team-management"
 import { Fragment, useEffect, useMemo, useState } from "react"
 import { usePathname, useParams } from "next/navigation"
 import Link from "next/link"
@@ -75,7 +76,10 @@ export function useDashboardPageTrail({
     const serverId =
         typeof params.serverId === "string" ? params.serverId : undefined
     const server = servers.find((item) => item.id === serverId)
-    const labels = useMemo(() => crumbLabels(dictionary), [dictionary])
+    const labels = useMemo(
+        () => crumbLabels(dictionary, locale),
+        [dictionary, locale]
+    )
     return useMemo(() => {
         const crumbs = buildDashboardBreadcrumbs({
             locale,
@@ -139,7 +143,10 @@ export function AppBreadcrumbs({
 }
 
 /** Translated labels for every dashboard route segment and record kind. */
-function crumbLabels(dictionary: Dictionary): DashboardCrumbLabels {
+function crumbLabels(
+    dictionary: Dictionary,
+    locale: Locale
+): DashboardCrumbLabels {
     const sidebar = dictionary.sidebar
     const crumbs = sidebar.crumbs
     const settingsHub = dictionary.settingsHub
@@ -160,7 +167,7 @@ function crumbLabels(dictionary: Dictionary): DashboardCrumbLabels {
             members: sidebar.members,
             memberships: sidebar.memberships,
             tickets: sidebar.tickets,
-            teams: sidebar.teams,
+            teams: getTeamManagementMessages(locale).title,
             settings: sidebar.settings,
             "signup-activity": sidebar.signupActivity,
             system: sidebar.system,

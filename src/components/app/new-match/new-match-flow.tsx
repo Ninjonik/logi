@@ -61,7 +61,6 @@ import type { DiscordSelectOption } from "@/components/app/discord-entity-select
 import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
 import type { MessageStyle } from "@/domain/discord-messages/message-style"
 import { DiscordMarkdownTextarea } from "@/components/app/discord-markdown"
-import { TeamRequestDialog } from "@/components/app/team-request-dialog"
 import { ManageGroupsLink } from "@/components/app/manage-groups-link"
 import { TacticalPlanEditor, TacticalPlanMap } from "./tactical-plan"
 import { matchTeamGame } from "@/lib/teams/match-team-selection"
@@ -417,7 +416,6 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const [metadata, setMetadata] = useState<NewMatchMetadata | null>(
         props.demo?.metadata ?? null
     )
-    const [requestOpen, setRequestOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [leaveOpen, setLeaveOpen] = useState(false)
     const saving = useRef<Promise<unknown> | null>(null)
@@ -1888,38 +1886,6 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                 }
                                             />
                                         )
-                                    ) : null}
-                                    {teamGame ? (
-                                        <span className="text-muted-foreground text-[13px]">
-                                            {t.match.missingTeam}{" "}
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setRequestOpen(true)
-                                                }
-                                                className="text-foreground underline underline-offset-[3px]"
-                                            >
-                                                {t.match.requestTeam}
-                                            </button>
-                                        </span>
-                                    ) : null}
-                                    {teamGame ? (
-                                        <TeamRequestDialog
-                                            serverId={serverId}
-                                            dictionary={dictionary}
-                                            open={requestOpen}
-                                            onOpenChange={setRequestOpen}
-                                            target={{
-                                                kind: "create",
-                                                gameId: teamGame,
-                                            }}
-                                            onSubmitted={() => {
-                                                setRequestOpen(false)
-                                                toast.success(
-                                                    t.match.requestSent
-                                                )
-                                            }}
-                                        />
                                     ) : null}
                                 </div>
                             ) : null}

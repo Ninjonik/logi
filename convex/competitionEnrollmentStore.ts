@@ -9,10 +9,10 @@ import {
     isCompetitionPublished,
 } from "../src/domain/competitions/competition"
 import { clanEnrollmentCommandSchema } from "../src/domain/competitions/enrollment.schema"
+import { getUserByIdentifier, getGuildDiscordId } from "./identity"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { resolveGameScope } from "../src/domain/games/game"
 import type { Doc } from "./_generated/dataModel"
-import { getUserByIdentifier } from "./identity"
 
 /** Distinct members with evidence of dashboard login; imported/bot-only profiles do not count. */
 export async function linkedPlayerCount(
@@ -28,7 +28,23 @@ export async function linkedPlayerCount(
             .map((row) => row.id),
     ])
     const counted = new Set<string>()
-    let count = 0
+    // Linking keeps invitation membership; deduplicate it with signed-in clan members.
+    const teams = await ctx.db
+        .query("teamDirectory")
+        .withIndex("linkedGuildId", (q) =>
+            q.eq("linkedGuildId", getGuildDiscordId(guild))
+        )
+        .take(100)
+    for (const team of teams.filter(
+        (t) => !t.mergedIntoTeamId && !t.archivedAt
+    )) {
+        const members = await ctx.db
+            .query("leagueTeamMembers")
+            .withIndex("teamId", (q) => q.eq("teamId", team._id))
+            .take(1000)
+        for (const member of members) counted.add(String(member.userId))
+    }
+    let count = counted.size
     for (const id of ids) {
         const user = await getUserByIdentifier(ctx, id)
         if (!user || counted.has(String(user._id))) continue

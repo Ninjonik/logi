@@ -168,7 +168,7 @@ test("legacy registrations become global teams: real workspaces linked, ghosts u
         fixturesConverted: 0,
         teamsCreated: 3,
         teamsMatched: 2,
-        teamsLinked: 2,
+        teamsLinked: 1,
         unresolved: 0,
         done: false,
         nextCursor: "fixtures:",
@@ -187,9 +187,9 @@ test("legacy registrations become global teams: real workspaces linked, ghosts u
     const [valkyria] = teamNamed(ctx, "valkyria")
     assert.equal(valkyria._id, "teamDirectory:valkyria")
     assert.equal(valkyria.revision, 3)
-    // The Wardogs competition gets its own Wardogs team for the same workspace.
+    // Preserve the Wardogs team and registration without attaching a second team.
     const [dogsOmen] = teamNamed(ctx, "omen", "wardogs")
-    assert.equal(dogsOmen.linkedGuildId, REAL_GUILD)
+    assert.equal(dogsOmen.linkedGuildId, null)
 
     const registrations = Object.fromEntries(
         ctx.db.tables.competitionTeams.map((row) => [row._id, row])

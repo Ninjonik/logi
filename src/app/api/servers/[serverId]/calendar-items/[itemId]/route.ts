@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 
 import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
 import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
-import { saveGuildFrontendSettings } from "@/lib/server-guild-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { removeCalendarItem } from "@/lib/gateways/calendar-items"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
 export async function DELETE(
@@ -20,24 +20,12 @@ export async function DELETE(
         return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
-    const calendarItems = (context.server.calendarItems ?? []).filter(
-        (item) => item.id !== itemId
-    )
-    if (calendarItems.length === (context.server.calendarItems ?? []).length) {
+    if (!(await removeCalendarItem(context.server.discordId, itemId))) {
         return NextResponse.json(
             { error: "Calendar item not found." },
             { status: 404 }
         )
     }
-
-    await saveGuildFrontendSettings({
-        guildId: serverId,
-        name: context.server.name,
-        avatar: context.server.avatar,
-        description: context.server.description,
-        eventCategories: context.server.eventCategories,
-        calendarItems,
-    })
     revalidateCacheEntries([
         appCacheTags.server(serverId),
         appCacheTags.serverContext(serverId),

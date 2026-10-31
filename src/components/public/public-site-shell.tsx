@@ -1,5 +1,7 @@
 import { getLeagueMessages } from "@/i18n/messages/leagues"
+import { PublicAccountMenu } from "./public-account-menu"
 import { BookOpen, Github } from "lucide-react"
+import { getCurrentPlayer } from "@/lib/auth"
 import { SiDiscord } from "react-icons/si"
 import Link from "next/link"
 
@@ -48,17 +50,18 @@ function NavigationLink({
 export async function PublicSiteShell({
     children,
     locale,
-    dashboardHref,
     current,
 }: {
     children: React.ReactNode
     locale: Locale
-    dashboardHref?: string
     /** The section the page belongs to, marked in the navigation. */
     current?: PublicSection
 }) {
     const dictionary = getDictionary(locale)
-    const status = await getLogiStatus()
+    const [status, user] = await Promise.all([
+        getLogiStatus(),
+        getCurrentPlayer(),
+    ])
     const discordSupportUrl = getDiscordSupportUrl()
     const navigation: NavigationItem[] = [
         {
@@ -122,10 +125,19 @@ export async function PublicSiteShell({
                             dictionary={dictionary}
                             compact
                         />
+                        <PublicAccountMenu
+                            locale={locale}
+                            user={
+                                user
+                                    ? {
+                                          name: user.name,
+                                          avatar: user.avatar ?? null,
+                                      }
+                                    : null
+                            }
+                        />
                         <Button asChild size="sm">
-                            <Link
-                                href={dashboardHref ?? `/${locale}/dashboard`}
-                            >
+                            <Link href={`/${locale}/dashboard`}>
                                 {dictionary.home.openApp}
                             </Link>
                         </Button>

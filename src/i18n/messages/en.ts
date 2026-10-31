@@ -1245,6 +1245,8 @@ export const enMessages = {
                 "The uploaded logo is no longer available. Upload it again.",
             limit_reached:
                 "This game's catalogue has reached its limit of 2000 teams.",
+            guild_already_linked:
+                "This Discord server is already linked to a team.",
             invalid_merge: "These teams cannot be merged.",
             forbidden: "You do not have access to the team catalogue here.",
             unavailable: "The team catalogue is temporarily unavailable.",
@@ -1579,6 +1581,8 @@ export const enMessages = {
             asset_unavailable:
                 "The logo is no longer available. Upload it again.",
             limit_reached: "The catalogue for this game is full.",
+            guild_already_linked:
+                "This Discord server is already linked to a team.",
             invalid_merge:
                 "These teams cannot be merged. Choose an active team of the same game that never played this team in a competition; a merged team cannot be restored or merged again.",
             forbidden:
@@ -1753,6 +1757,8 @@ export const enMessages = {
             asset_unavailable:
                 "The logo is no longer available. Upload it again or remove it.",
             invalid_team: "Check the team details and try again.",
+            guild_already_linked:
+                "This Discord server is already linked to a team.",
             invalid_merge: "The request cannot be merged into this team.",
             game_disabled: "This game is not available in the team catalogue.",
             forbidden: "Only global administrators can decide team requests.",

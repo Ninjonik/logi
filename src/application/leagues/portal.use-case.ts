@@ -1,5 +1,6 @@
 import {
     agreedManualScores,
+    teamLinkError,
     hostChangeError,
     leagueCommandSchema,
     type FixtureHost,
@@ -10,11 +11,20 @@ import {
     type EnrollmentStatus,
     type RegistrationMode,
 } from "../../domain/competitions/enrollment"
+import type { TeamGame } from "../../domain/teams/team"
 
 type Create = Extract<LeagueCommand, { action: "createTeam" }>
 export type LeagueFailure = { error: string }
 export type LeagueResult =
-    { ok: true; teamId?: string; slug?: string } | LeagueFailure
+    | {
+          ok: true
+          teamId?: string
+          slug?: string
+          registrationError?: string
+          competitionSlugs?: string[]
+          guildId?: string
+      }
+    | LeagueFailure
 export type EnrollmentFacts = {
     owned: boolean
     active: boolean
@@ -42,6 +52,21 @@ export type FixtureFacts = {
 }
 export interface LeaguePortalPorts {
     createTeam(input: Create): Promise<LeagueResult>
+    competitionForSignup(id: string): Promise<{
+        gameId: TeamGame
+        published: boolean
+        registrationMode: RegistrationMode
+        slug: string
+    } | null>
+    workspaceForTeam(guildId: string): Promise<{ admin: boolean }>
+    updateTeam(
+        input: Extract<LeagueCommand, { action: "updateTeam" }>
+    ): Promise<LeagueResult>
+    linkFacts(
+        teamId: string,
+        guildId: string
+    ): Promise<Parameters<typeof teamLinkError>[0] | null>
+    saveTeamLink(teamId: string, guildId: string): Promise<LeagueResult>
     joinTeam(token: string): Promise<LeagueResult>
     enrollmentFacts(
         teamId: string,
@@ -82,7 +107,51 @@ export async function executeLeagueCommand(
     const parsed = leagueCommandSchema.safeParse(raw)
     if (!parsed.success) return { error: "invalid_input" }
     const input = parsed.data
-    if (input.action === "createTeam") return ports.createTeam(input)
+    if (input.action === "createTeam") {
+        if (input.guildId) {
+            const workspace = await ports.workspaceForTeam(input.guildId)
+            if (!workspace.admin) return { error: "forbidden" }
+        }
+        return ports.createTeam(input)
+    }
+    if (input.action === "updateTeam") return ports.updateTeam(input)
+    if (input.action === "createAndEnroll") {
+        const competition = await ports.competitionForSignup(
+            input.competitionId
+        )
+        if (!competition || !competition.published)
+            return { error: "not_found" }
+        if (competition.registrationMode === "closed")
+            return { error: "registration_closed" }
+        const { competitionId, ...details } = input
+        const created = await ports.createTeam({
+            ...details,
+            action: "createTeam",
+            gameId: competition.gameId,
+        })
+        if ("error" in created || !created.teamId) return created
+        const enrolled = await executeLeagueCommand(ports, {
+            action: "enroll",
+            competitionId,
+            teamId: created.teamId,
+        })
+        return "error" in enrolled
+            ? {
+                  ok: true,
+                  teamId: created.teamId,
+                  slug: competition.slug,
+                  registrationError: enrolled.error,
+              }
+            : { ...enrolled, teamId: created.teamId }
+    }
+    if (input.action === "linkTeam") {
+        const facts = await ports.linkFacts(input.teamId, input.guildId)
+        if (!facts) return { error: "forbidden" }
+        const error = teamLinkError(facts)
+        if (error) return { error }
+        if (facts.linkedGuildId === input.guildId) return { ok: true }
+        return ports.saveTeamLink(input.teamId, input.guildId)
+    }
     if (input.action === "joinTeam") return ports.joinTeam(input.token)
     if (input.action === "enroll" || input.action === "withdraw") {
         const facts = await ports.enrollmentFacts(

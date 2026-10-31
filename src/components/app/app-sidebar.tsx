@@ -1,4 +1,5 @@
 "use client"
+import { getTeamManagementMessages } from "@/i18n/messages/team-management"
 
 import {
     CalendarDays,
@@ -330,7 +331,7 @@ export function AppSidebar({
                     isActive: within("competitions"),
                 },
                 {
-                    title: dictionary.teams.title,
+                    title: getTeamManagementMessages(locale).title,
                     url: `${base}/teams`,
                     icon: Shield,
                     isActive: within("teams"),

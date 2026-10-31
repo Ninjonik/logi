@@ -1,4 +1,8 @@
 import {
+    topicPresetRepository,
+    squadPresetRepository,
+} from "../src/infrastructure/convex/preset-repositories"
+import {
     applyClanSettingsSlicePatches,
     readClanSettingsSlices,
 } from "../src/domain/api/settings-slices"
@@ -7,9 +11,24 @@ import {
     assertInternalSecret,
     safeDiscordConfigOf,
 } from "./publicApiShared"
+import { ConvexCalendarItemRepository } from "../src/infrastructure/convex/calendar-item-repository"
+import {
+    saveTopicPreset,
+    saveSquadPreset,
+} from "../src/application/presets/save-preset"
+import { ConvexStratmapRepository } from "../src/infrastructure/convex/stratmap-repository"
+import { CalendarItemCommands } from "../src/application/calendar/calendar-item-commands"
+import { ConvexArticleRepository } from "../src/infrastructure/convex/article-repository"
+import { ConvexGroupRepository } from "../src/infrastructure/convex/group-repository"
+import { ArticleCommands } from "../src/application/articles/article-commands"
 import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
+import { stratmapMutationSchema } from "../src/domain/api/preset-mutation"
+import { saveStratmap } from "../src/application/stratmaps/save-stratmap"
+import { GroupCommands } from "../src/application/groups/group-commands"
 import { wakeWebhookGuild, scheduleWebhookDrain } from "./webhookQueue"
+import { topicPresetSchema } from "../src/lib/validation/topic-preset"
+import { squadPresetSchema } from "../src/lib/validation/squad-preset"
 import { prepareExternalClanSettings } from "./clanSettingsStores"
 import { readExternalClanSettings } from "./clanSettingsReads"
 import type { MutationCtx } from "./_generated/server"
@@ -34,19 +53,16 @@ import {
 import { ConvexRosterCommandRepository } from "../src/infrastructure/convex/roster-command-repositories"
 import { UpsertAssignmentUseCase } from "../src/application/assignments/upsert-assignment.use-case"
 import { RemoveAssignmentUseCase } from "../src/application/assignments/remove-assignment.use-case"
-import {
-    buildDefaultStratmapState,
-    stringifyStratmapState,
-} from "../src/lib/stratmaps"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { ApplyEventScoreUseCase } from "../src/application/events/apply-event-score.use-case"
-import { UpsertRosterUseCase } from "../src/application/rosters/roster-commands.use-case"
 import { ConcludeEventUseCase } from "../src/application/events/conclude-event.use-case"
 import { ToggleSignupUseCase } from "../src/application/events/toggle-signup.use-case"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertCommand } from "../src/application/events/command-ports"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
+import { rosterMutationSchema } from "../src/domain/api/roster-mutation"
+import { ManageRoster } from "../src/application/rosters/manage-roster"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { currentEventStatus } from "../src/domain/events/status"
 import { requestRegistrationAfterSave } from "./discordCommands"
@@ -150,7 +166,9 @@ export const mutateClanArticle = mutation({
                 }
                 eventType = ""
             } else {
-                await ctx.db.delete(article._id)
+                await new ArticleCommands(new ConvexArticleRepository(ctx), {
+                    now: () => new Date(createdAt),
+                }).remove(key.guildId, String(article._id))
                 response = { data: { id: String(article._id), deleted: true } }
                 eventType = "article.deleted"
             }
@@ -168,18 +186,18 @@ export const mutateClanArticle = mutation({
                 }
                 eventType = ""
             } else {
-                const value = {
+                const commands = new ArticleCommands(
+                    new ConvexArticleRepository(ctx),
+                    { now: () => new Date(createdAt) }
+                )
+                const fields = {
                     title,
                     description,
                     body,
-                    tags: (args.tags ?? [])
-                        .map((tag) => tag.trim())
-                        .filter(Boolean)
-                        .slice(0, 20),
-                    attachments: (args.attachments ?? [])
-                        .map((attachment) => attachment.trim())
-                        .filter(Boolean),
-                    updatedAt: createdAt,
+                    tags: args.tags ?? [],
+                    attachments: args.attachments ?? [],
+                    guildId: key.guildId,
+                    authorId: `api:${key._id}`,
                 }
                 if (args.operation === "update") {
                     const article = args.articleId
@@ -195,7 +213,17 @@ export const mutateClanArticle = mutation({
                         }
                         eventType = ""
                     } else {
-                        await ctx.db.patch(article._id, value)
+                        const saved = await commands.save({
+                            ...fields,
+                            articleId: String(article._id),
+                        })
+                        const {
+                            id: _id,
+                            guildId: _guild,
+                            authorId: _author,
+                            createdAt: _created,
+                            ...value
+                        } = saved
                         response = {
                             data: {
                                 id: String(article._id),
@@ -207,21 +235,8 @@ export const mutateClanArticle = mutation({
                         eventType = "article.updated"
                     }
                 } else {
-                    const articleId = await ctx.db.insert("articles", {
-                        guildId: key.guildId,
-                        authorId: `api:${key._id}`,
-                        createdAt,
-                        ...value,
-                    })
-                    response = {
-                        data: {
-                            id: String(articleId),
-                            ...value,
-                            guildId: key.guildId,
-                            authorId: `api:${key._id}`,
-                            createdAt,
-                        },
-                    }
+                    const saved = await commands.save(fields)
+                    response = { data: saved }
                     status = 201
                     eventType = "article.created"
                 }
@@ -581,41 +596,15 @@ export const mutateClanGroup = mutation({
                 error: { code: "not_found", message: "Group not found." },
             }
         } else if (args.operation === "delete") {
-            const assignments = await ctx.db
-                .query("userAssignments")
-                .withIndex("serverId", (q) => q.eq("serverId", key.guildId))
-                .collect()
-            for (const assignment of assignments) {
-                if (
-                    assignment.primaryGroupId === group!._id ||
-                    (assignment.secondaryGroupIds ?? []).some(
-                        (id) => id === group!._id
-                    )
-                )
-                    await ctx.db.patch(assignment._id, {
-                        primaryGroupId:
-                            assignment.primaryGroupId === group!._id
-                                ? undefined
-                                : assignment.primaryGroupId,
-                        secondaryGroupIds: (
-                            assignment.secondaryGroupIds ?? []
-                        ).filter((id) => id !== group!._id),
-                        updatedAt: createdAt,
-                    })
-            }
-            await ctx.db.delete(group!._id)
+            await new GroupCommands(new ConvexGroupRepository(ctx), {
+                now: () => new Date(createdAt),
+            }).remove(key.guildId, String(group!._id))
             response = { data: { id: String(group!._id), deleted: true } }
         } else {
             const name = args.name?.trim() ?? ""
             const color = args.color
             const order = args.order
-            if (
-                !name ||
-                !color ||
-                !/^#[0-9A-Fa-f]{6}$/.test(color) ||
-                typeof order !== "number" ||
-                !Number.isInteger(order)
-            ) {
+            if (!name || !color || typeof order !== "number") {
                 status = 400
                 response = {
                     error: {
@@ -625,111 +614,46 @@ export const mutateClanGroup = mutation({
                     },
                 }
             } else {
-                const gameId = group?.gameId ?? args.gameId
-                if (args.parentId) {
-                    const parent = await ctx.db.get(args.parentId)
-                    if (
-                        !parent ||
-                        parent.guildId !== key.guildId ||
-                        resolveGameScope(parent.gameId) !==
-                            resolveGameScope(gameId)
-                    ) {
-                        status = 400
+                try {
+                    const saved = await new GroupCommands(
+                        new ConvexGroupRepository(ctx),
+                        { now: () => new Date(createdAt) }
+                    ).save({
+                        guildId: key.guildId,
+                        groupId: group ? String(group._id) : undefined,
+                        gameId: group?.gameId ?? args.gameId,
+                        name,
+                        color,
+                        order,
+                        parentId: args.parentId,
+                        description: args.description?.trim() || undefined,
+                        discordRoleId: args.discordRoleId,
+                        discordEmoji: args.discordEmoji,
+                    })
+                    if (group) {
+                        const { id: _id, ...fields } = saved
                         response = {
-                            error: {
-                                code: "validation_error",
-                                message: "Parent group not found.",
+                            data: apiDocument({ ...group, ...fields }),
+                        }
+                    } else {
+                        status = 201
+                        response = {
+                            data: {
+                                ...saved,
+                                gameId: resolveGameScope(saved.gameId),
                             },
                         }
                     }
-                }
-                if (!response!) {
-                    const sameName = await ctx.db
-                        .query("groups")
-                        .withIndex("guildId_name", (q) =>
-                            q.eq("guildId", key.guildId).eq("name", name)
-                        )
-                        .collect()
-                    const duplicate = sameName.some(
-                        (candidate) =>
-                            candidate._id !== group?._id &&
-                            resolveGameScope(candidate.gameId) ===
-                                resolveGameScope(gameId)
-                    )
-                    if (duplicate) {
-                        status = 400
-                        response = {
-                            error: {
-                                code: "validation_error",
-                                message:
-                                    "A group with this name already exists.",
-                            },
-                        }
-                    } else if (group) {
-                        await ctx.db.patch(group._id, {
-                            name,
-                            color: args.color,
-                            order: args.order,
-                            parentId: args.parentId,
-                            description: args.description?.trim() || undefined,
-                            discordRoleId:
-                                args.discordRoleId?.trim() || undefined,
-                            discordEmoji:
-                                args.discordEmoji?.trim() || undefined,
-                            updatedAt: createdAt,
-                        })
-                        response = {
-                            data: apiDocument({
-                                ...group,
-                                name,
-                                color,
-                                order,
-                                parentId: args.parentId,
-                                description:
-                                    args.description?.trim() || undefined,
-                                discordRoleId:
-                                    args.discordRoleId?.trim() || undefined,
-                                discordEmoji:
-                                    args.discordEmoji?.trim() || undefined,
-                                updatedAt: createdAt,
-                            }),
-                        }
-                    } else {
-                        const groupId = await ctx.db.insert("groups", {
-                            guildId: key.guildId,
-                            gameId,
-                            name,
-                            color,
-                            order,
-                            parentId: args.parentId,
-                            description: args.description?.trim() || undefined,
-                            discordRoleId:
-                                args.discordRoleId?.trim() || undefined,
-                            discordEmoji:
-                                args.discordEmoji?.trim() || undefined,
-                            createdAt,
-                            updatedAt: createdAt,
-                        })
-                        response = {
-                            data: {
-                                id: String(groupId),
-                                guildId: key.guildId,
-                                gameId: resolveGameScope(gameId),
-                                name,
-                                color,
-                                order,
-                                parentId: args.parentId,
-                                description:
-                                    args.description?.trim() || undefined,
-                                discordRoleId:
-                                    args.discordRoleId?.trim() || undefined,
-                                discordEmoji:
-                                    args.discordEmoji?.trim() || undefined,
-                                createdAt,
-                                updatedAt: createdAt,
-                            },
-                        }
-                        status = 201
+                } catch (error) {
+                    status = 400
+                    response = {
+                        error: {
+                            code: "validation_error",
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Unable to save group.",
+                        },
                     }
                 }
             }
@@ -780,12 +704,6 @@ export const mutateClanPreset = mutation({
         if (idempotency.kind === "unauthorized") return null
         if (idempotency.kind === "complete") return idempotency.result
         const { key, idempotencyId, createdAt } = idempotency
-        const table =
-            args.resource === "stratmaps"
-                ? "stratmaps"
-                : args.resource === "topic-presets"
-                  ? "topicPresets"
-                  : "squadPresets"
         const current = args.presetId ? await ctx.db.get(args.presetId) : null
         const resourceMatches =
             current &&
@@ -806,199 +724,51 @@ export const mutateClanPreset = mutation({
             }
         } else {
             try {
-                const payload = args.payload as Record<string, unknown>
-                let value: Record<string, unknown>
-                if (args.resource === "stratmaps") {
-                    const stratmap = current as
-                        | (typeof current & {
-                              gameId?:
-                                  | "hell_let_loose"
-                                  | "hell_let_loose_vietnam"
-                                  | "wardogs"
-                              state?: string
-                          })
-                        | null
-                    const eventId =
-                        typeof payload.eventId === "string" && payload.eventId
-                            ? (payload.eventId as Id<"events">)
-                            : undefined
-                    const event = eventId ? await ctx.db.get(eventId) : null
-                    const gameId =
-                        stratmap?.gameId ??
-                        (payload.gameId as
-                            | "hell_let_loose"
-                            | "hell_let_loose_vietnam"
-                            | "wardogs"
-                            | undefined) ??
-                        "hell_let_loose"
-                    if (eventId && !event)
-                        throw new Error("Referenced event was not found.")
-                    if (
-                        event &&
-                        (event.guildId !== key.guildId || isDraftEvent(event))
-                    )
-                        throw new Error("Referenced event was not found.")
-                    if (
-                        event &&
-                        gameId &&
-                        resolveGameScope(event.gameId) !==
-                            resolveGameScope(gameId)
-                    )
-                        throw new Error(
-                            "Referenced event must use the same game as the stratmap."
-                        )
-                    if (
-                        args.operation === "update" &&
-                        payload.gameId !== undefined &&
-                        resolveGameScope(stratmap!.gameId) !==
-                            resolveGameScope(
-                                payload.gameId as
-                                    | "hell_let_loose"
-                                    | "hell_let_loose_vietnam"
-                                    | "wardogs"
-                            )
-                    )
-                        throw new Error("A stratmap game cannot be changed.")
-                    const title = String(payload.title ?? "").trim()
-                    const baseMapId = String(payload.baseMapId ?? "").trim()
-                    if (!title || !baseMapId)
-                        throw new Error(
-                            "Stratmap title and base map are required."
-                        )
-                    const state =
-                        typeof payload.state === "string"
-                            ? payload.state
-                            : (stratmap?.state ??
-                              stringifyStratmapState(
-                                  buildDefaultStratmapState(baseMapId)
-                              ))
-                    value = {
-                        gameId,
-                        eventId,
-                        title,
-                        description:
-                            typeof payload.description === "string" &&
-                            payload.description.trim()
-                                ? payload.description.trim()
-                                : undefined,
-                        baseMapId,
-                        side:
-                            typeof payload.side === "string" &&
-                            payload.side.trim()
-                                ? payload.side.trim()
-                                : undefined,
-                        strongpointId:
-                            typeof payload.strongpointId === "string" &&
-                            payload.strongpointId.trim()
-                                ? payload.strongpointId.trim()
-                                : undefined,
-                        state,
-                    }
-                } else if (args.resource === "topic-presets") {
-                    const name = String(payload.name ?? "").trim()
-                    const topics = Array.isArray(payload.topics)
-                        ? payload.topics
-                        : []
-                    if (
-                        !name ||
-                        !topics.length ||
-                        topics.some(
-                            (topic) =>
-                                !topic ||
-                                typeof topic !== "object" ||
-                                !String(
-                                    (topic as { title?: unknown }).title ?? ""
-                                ).trim()
-                        )
-                    )
-                        throw new Error(
-                            "Preset name and at least one named topic are required."
-                        )
-                    value = {
-                        name,
-                        side:
-                            typeof payload.side === "string" &&
-                            payload.side.trim()
-                                ? payload.side.trim()
-                                : undefined,
-                        map:
-                            typeof payload.map === "string" &&
-                            payload.map.trim()
-                                ? payload.map.trim()
-                                : undefined,
-                        cap:
-                            typeof payload.cap === "string" &&
-                            payload.cap.trim()
-                                ? payload.cap.trim()
-                                : undefined,
-                        notes:
-                            typeof payload.notes === "string" &&
-                            payload.notes.trim()
-                                ? payload.notes.trim()
-                                : undefined,
-                        topics,
-                    }
-                } else {
-                    const name = String(payload.name ?? "").trim()
-                    const squads = Array.isArray(payload.squads)
-                        ? payload.squads
-                        : []
-                    if (!name || !squads.length)
-                        throw new Error(
-                            "Preset name and at least one squad are required."
-                        )
-                    const gameId =
-                        current && "gameId" in current
-                            ? resolveGameScope(current.gameId)
-                            : (payload.gameId as
-                                  | "hell_let_loose"
-                                  | "hell_let_loose_vietnam"
-                                  | "wardogs")
-                    if (
-                        current &&
-                        payload.gameId !== undefined &&
-                        resolveGameScope(
-                            "gameId" in current ? current.gameId : undefined
-                        ) !== resolveGameScope(payload.gameId as never)
-                    )
-                        throw new Error(
-                            "A squad preset game cannot be changed."
-                        )
-                    value = { gameId, name, squads }
+                const binding = {
+                    guildId: key.guildId,
+                    presetId: current ? String(current._id) : undefined,
                 }
-                if (current) {
-                    await ctx.db.patch(current._id, {
-                        ...value,
-                        updatedAt: createdAt,
-                    })
+                const clock = { now: () => new Date(createdAt) }
+                if (args.resource === "stratmaps") {
+                    const fields = stratmapMutationSchema.parse(args.payload)
+                    const saved = await saveStratmap(
+                        new ConvexStratmapRepository(ctx),
+                        clock,
+                        {
+                            ...fields,
+                            guildId: key.guildId,
+                            stratmapId: binding.presetId,
+                            createdBy: `api:${key._id}`,
+                        }
+                    )
                     response = {
-                        data: apiDocument({
-                            ...current,
-                            ...value,
-                            updatedAt: createdAt,
-                        }),
+                        data: current
+                            ? apiDocument({ ...current, ...saved })
+                            : saved,
                     }
                 } else {
-                    const id = await ctx.db.insert(table, {
-                        guildId: key.guildId,
-                        ...(args.resource === "stratmaps"
-                            ? { createdBy: `api:${key._id}` }
-                            : {}),
-                        ...value,
-                        createdAt,
-                        updatedAt: createdAt,
-                    } as never)
+                    const saved =
+                        args.resource === "topic-presets"
+                            ? await saveTopicPreset(
+                                  topicPresetRepository(ctx),
+                                  clock,
+                                  {
+                                      ...topicPresetSchema.parse(args.payload),
+                                      ...binding,
+                                  }
+                              )
+                            : await saveSquadPreset(
+                                  squadPresetRepository(ctx),
+                                  clock,
+                                  {
+                                      ...squadPresetSchema.parse(args.payload),
+                                      ...binding,
+                                  }
+                              )
                     response = {
-                        data: {
-                            id: String(id),
-                            guildId: key.guildId,
-                            ...(args.resource === "stratmaps"
-                                ? { createdBy: `api:${key._id}` }
-                                : {}),
-                            ...value,
-                            createdAt,
-                            updatedAt: createdAt,
-                        },
+                        data: current
+                            ? apiDocument({ ...current, ...saved })
+                            : saved,
                     }
                 }
             } catch (error) {
@@ -1099,36 +869,24 @@ export const mutateClanRoster = mutation({
                     },
                 }
             } else {
-                await ctx.db.delete(roster._id)
+                await new ManageRoster(new ConvexRosterCommandRepository(ctx), {
+                    now: () => new Date(createdAt),
+                }).deleteDraft(String(roster._id), key.guildId)
                 response = { data: { id: String(roster._id), deleted: true } }
             }
         } else {
             try {
-                const payload = args.payload as Record<string, unknown>
+                const payload = rosterMutationSchema.parse(args.payload)
                 if (payload.eventId !== String(roster.eventId))
                     throw new Error(
                         "A roster cannot be moved to another event."
                     )
-                if (payload.squadPresetId) {
-                    const preset = await ctx.db.get(
-                        payload.squadPresetId as Id<"squadPresets">
-                    )
-                    if (!preset || preset.guildId !== key.guildId)
-                        throw new Error("Squad preset not found.")
-                }
-                await new UpsertRosterUseCase(
-                    new ConvexRosterCommandRepository(ctx)
-                ).execute({
+                await new ManageRoster(new ConvexRosterCommandRepository(ctx), {
+                    now: () => new Date(createdAt),
+                }).save({
+                    ...payload,
                     rosterId: String(roster._id),
-                    eventId: String(roster.eventId),
-                    squadPresetId: payload.squadPresetId as string | undefined,
-                    squads: payload.squads as never,
-                    reservePlayerIds: payload.reservePlayerIds as string[],
-                    reserveAttendances: payload.reserveAttendances as never,
-                    notAttendingPlayerIds:
-                        payload.notAttendingPlayerIds as string[],
-                    streamerId: payload.streamerId as string | undefined,
-                    published: payload.published as boolean,
+                    guildId: key.guildId,
                 })
                 const saved = await ctx.db.get(roster._id)
                 response = { data: apiDocument(saved!) }
@@ -1355,7 +1113,10 @@ export const mutateClanCalendarItem = mutation({
                 },
             }
         } else if (args.operation === "delete") {
-            await ctx.db.delete(item!._id)
+            await new CalendarItemCommands(
+                new ConvexCalendarItemRepository(ctx),
+                { now: () => new Date(createdAt) }
+            ).remove(key.guildId, String(item!._id))
             response = { data: { id: String(item!._id), deleted: true } }
         } else {
             const title = args.title?.trim() ?? ""
@@ -1365,18 +1126,9 @@ export const mutateClanCalendarItem = mutation({
             if (
                 !title ||
                 !color ||
-                !/^#[0-9A-Fa-f]{6}$/.test(color) ||
                 !startAt ||
                 !endAt ||
-                Number.isNaN(Date.parse(startAt)) ||
-                Number.isNaN(Date.parse(endAt)) ||
-                Date.parse(endAt) < Date.parse(startAt) ||
-                args.allDay === undefined ||
-                (args.recurrence &&
-                    (!Number.isInteger(args.recurrence.interval) ||
-                        args.recurrence.interval < 1 ||
-                        (args.recurrence.until &&
-                            Number.isNaN(Date.parse(args.recurrence.until)))))
+                args.allDay === undefined
             ) {
                 status = 400
                 response = {
@@ -1387,49 +1139,41 @@ export const mutateClanCalendarItem = mutation({
                     },
                 }
             } else {
-                const value = {
-                    title,
-                    description: args.description?.trim() || undefined,
-                    color,
-                    emoji: args.emoji?.trim() || undefined,
-                    label: args.label?.trim() || undefined,
-                    startAt,
-                    endAt,
-                    allDay: args.allDay,
-                    recurrence: args.recurrence,
-                }
-                if (item) {
-                    await ctx.db.patch(item._id, {
-                        ...value,
-                        updatedAt: createdAt,
+                try {
+                    const saved = await new CalendarItemCommands(
+                        new ConvexCalendarItemRepository(ctx),
+                        { now: () => new Date(createdAt) }
+                    ).save({
+                        guildId: key.guildId,
+                        calendarItemId: item ? String(item._id) : undefined,
+                        title,
+                        color,
+                        startAt,
+                        endAt,
+                        allDay: args.allDay,
+                        recurrence: args.recurrence,
+                        description: args.description,
+                        emoji: args.emoji,
+                        label: args.label,
                     })
-                    response = {
-                        data: apiDocument({
-                            ...item,
-                            ...value,
-                            updatedAt: createdAt,
-                        }),
+                    if (item) {
+                        const { id: _id, ...fields } = saved
+                        response = { data: apiDocument({ ...item, ...fields }) }
+                    } else {
+                        response = { data: saved }
+                        status = 201
                     }
-                } else {
-                    const calendarItemId = await ctx.db.insert(
-                        "calendarItems",
-                        {
-                            guildId: key.guildId,
-                            ...value,
-                            createdAt,
-                            updatedAt: createdAt,
-                        }
-                    )
+                } catch (error) {
+                    status = 400
                     response = {
-                        data: {
-                            id: String(calendarItemId),
-                            guildId: key.guildId,
-                            ...value,
-                            createdAt,
-                            updatedAt: createdAt,
+                        error: {
+                            code: "validation_error",
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Unable to save calendar item.",
                         },
                     }
-                    status = 201
                 }
             }
         }

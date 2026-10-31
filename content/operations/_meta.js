@@ -1,7 +1,7 @@
 export default {
     events: "Events",
     matches: "Matches",
-    teams: "Teams",
+    teams: "Team profile",
     trainings: "Trainings",
     rosters: "Rosters",
     "briefings-and-stratmaps": "Briefings and stratmaps",

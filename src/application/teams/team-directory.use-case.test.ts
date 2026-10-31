@@ -37,6 +37,36 @@ const createInput = {
     idempotencyKey: "create-valkyria-1",
 }
 
+test("catalogue administration cannot attach two teams to one Discord server, including across games", async () => {
+    const { ports, repository } = fixture()
+    const guild = "300000000000000003"
+    const first = await createTeam(ports, scope, {
+        ...createInput,
+        linkedGuildId: guild,
+    })
+    assert.ok("ok" in first)
+    const other = {
+        ...createInput,
+        name: "Other",
+        gameId: "wardogs",
+        idempotencyKey: "other-team-key",
+    }
+    assert.deepEqual(
+        await createTeam(ports, scope, { ...other, linkedGuildId: guild }),
+        { error: "guild_already_linked" }
+    )
+    const second = await createTeam(ports, scope, other)
+    assert.ok("ok" in second)
+    assert.deepEqual(
+        await updateTeam(ports, scope, second.teamId, {
+            expectedRevision: 1,
+            linkedGuildId: guild,
+        }),
+        { error: "guild_already_linked" }
+    )
+    assert.equal(repository.teams[1].linkedGuildId, null)
+})
+
 test("create writes the team, its logo reference, audit and upsert, and replays by key", async () => {
     const { repository, logos, ports } = fixture()
     const created = await createTeam(ports, scope, createInput)

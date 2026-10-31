@@ -113,6 +113,12 @@
 .logi-home .home-workflow-visual > button {
     height: 100%;
 }
+.logi-home .home-workflow-visual:has(> button) {
+    align-self: center;
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 1045 / 810;
+}
 .logi-home .home-workflow-content img {
     height: 100%;
     object-fit: contain;

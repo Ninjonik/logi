@@ -37,12 +37,10 @@ export default async function LocaleHomePage({
         getCurrentPlayer(),
         getLatestLogiCommsWindowsDownload(),
     ])
-    const dashboardHref = user?.defaultWorkspaceRecordId
-        ? `/${resolvedLocale}/dashboard/servers/${user.defaultWorkspaceRecordId}`
-        : undefined
+    const dashboardHref = `/${resolvedLocale}/dashboard`
 
     return (
-        <PublicSiteShell locale={resolvedLocale} dashboardHref={dashboardHref}>
+        <PublicSiteShell locale={resolvedLocale}>
             <LandingPage
                 dictionary={dictionary}
                 locale={resolvedLocale}

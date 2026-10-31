@@ -22,6 +22,7 @@ const REQUEST_ERRORS = {
 } as const satisfies Record<TeamRequestError, true>
 /** Every TeamCommandError; a submission can surface catalogue errors such as an unavailable logo. */
 const CATALOGUE_ERRORS = {
+    guild_already_linked: true,
     invalid_team: true,
     game_disabled: true,
     duplicate_name: true,
