@@ -32,6 +32,16 @@ Feature modules cover events, rosters, assignments, membership, identity, teams,
 
 The dashboard reads through Convex-backed read models and HTTP adapters, and writes through authenticated gateways. Client interactivity lives in React components; shared decisions live in domain or application modules.
 
+Dashboard and `/api/v1` writes share application commands and Convex repository
+adapters for articles, groups, calendar items, roster management, squad/topic
+presets, and stratmap metadata. Authentication, HTTP responses, integration
+idempotency, and dashboard-only publication choices remain adapter concerns.
+Preset saves preserve submitted squad order values and topic/message structures;
+they do not synthesize topic IDs or message blocks. Calendar add/delete commands
+change individual records; the explicit frontend-settings collection editor
+retains its whole-list replacement contract. Successful generic clan API writes
+invalidate the corresponding dashboard and public read caches, including replays.
+
 Convex functions validate their inputs and authenticate through an internal secret, a dashboard-session gateway, or a scoped integration grant. Browser-supplied user IDs do not establish authority. Queries and mutations retain workspace and game scoping.
 
 The bot calls Convex through `discord-bot/src/convex.ts`. Its workers coordinate announcements, rosters, panels, reminders, applications, tickets, roles, and League tracking. Discord payloads and network effects live in the bot; shared policy lives in `src/domain` and `src/application`.

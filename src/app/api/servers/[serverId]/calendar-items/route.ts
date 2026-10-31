@@ -3,8 +3,8 @@ import { NextResponse } from "next/server"
 import { getServerContextUncached as getServerContext } from "@/lib/read-models/server-context"
 import { isDashboardWriteOrigin } from "@/lib/api/dashboard-write-origin"
 import { calendarItemCreateSchema } from "@/lib/validation/calendar-item"
-import { saveGuildFrontendSettings } from "@/lib/server-guild-settings"
 import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import { createCalendarItem } from "@/lib/gateways/calendar-items"
 import { readBoundedJson } from "@/lib/api/request-json"
 import { handleIfNotLoggedIn } from "@/lib/auth"
 
@@ -35,27 +35,7 @@ export async function POST(
         )
     }
     const body = parsed.data
-    await saveGuildFrontendSettings({
-        guildId: serverId,
-        name: context.server.name,
-        avatar: context.server.avatar,
-        description: context.server.description,
-        eventCategories: context.server.eventCategories,
-        calendarItems: [
-            ...(context.server.calendarItems ?? []),
-            {
-                id: `calendar-item-${crypto.randomUUID()}`,
-                guildId: serverId,
-                title: body.title,
-                color: "#7c3aed",
-                startAt: new Date(body.startAt).toISOString(),
-                endAt: new Date(body.endAt).toISOString(),
-                allDay: Boolean(body.allDay),
-                createdAt: "",
-                updatedAt: "",
-            },
-        ],
-    })
+    await createCalendarItem(context.server.discordId, body)
     revalidateCacheEntries([
         appCacheTags.server(serverId),
         appCacheTags.serverContext(serverId),

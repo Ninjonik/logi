@@ -133,6 +133,7 @@ export const teamMergeSchema = z.strictObject({
 export type TeamMergeInput = z.infer<typeof teamMergeSchema>
 
 export type TeamCommandError =
+    | "guild_already_linked"
     | "invalid_team"
     | "game_disabled"
     | "duplicate_name"

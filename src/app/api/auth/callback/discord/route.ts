@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const expectedState = cookieStore.get(STATE_COOKIE)?.value
     const redirectTo = sanitizeLocalRedirect(
         cookieStore.get(REDIRECT_COOKIE)?.value,
-        "/en/dashboard"
+        "/en"
     )
     const requestedGuildId = cookieStore.get(GUILD_COOKIE)?.value
 

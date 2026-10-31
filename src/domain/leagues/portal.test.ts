@@ -4,9 +4,57 @@ import {
     leagueCommandSchema,
     permitsFixtureStatistics,
     usableLeagueServer,
+    teamLinkError,
 } from "./portal"
 import assert from "node:assert/strict"
 import test from "node:test"
+
+test("linking requires both authorities and reserves one team per Discord server", () => {
+    const facts = {
+        accountOwner: true,
+        workspaceAdmin: true,
+        active: true,
+        linkedGuildId: null,
+        guildId: "100000000000000001",
+        occupied: false,
+    }
+    assert.equal(teamLinkError(facts), null)
+    assert.equal(teamLinkError({ ...facts, accountOwner: false }), "forbidden")
+    assert.equal(
+        teamLinkError({ ...facts, workspaceAdmin: false }),
+        "forbidden"
+    )
+    assert.equal(teamLinkError({ ...facts, active: false }), "not_found")
+    assert.equal(
+        teamLinkError({ ...facts, occupied: true }),
+        "guild_already_linked"
+    )
+    assert.equal(
+        teamLinkError({ ...facts, linkedGuildId: "100000000000000002" }),
+        "team_already_linked"
+    )
+    assert.equal(
+        teamLinkError({ ...facts, linkedGuildId: facts.guildId }),
+        null
+    )
+    assert.equal(
+        leagueCommandSchema.safeParse({
+            action: "linkTeam",
+            teamId: "team",
+            guildId: "not-discord",
+        }).success,
+        false
+    )
+    assert.equal(
+        leagueCommandSchema.safeParse({
+            action: "linkTeam",
+            teamId: "team",
+            guildId: facts.guildId,
+            accountOwner: true,
+        }).success,
+        false
+    )
+})
 test("external fixtures never accept imported statistics", () => {
     assert.equal(permitsFixtureStatistics({ kind: "external" }), false)
     assert.equal(permitsFixtureStatistics({ kind: "linked" }), true)

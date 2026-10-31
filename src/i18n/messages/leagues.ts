@@ -1,5 +1,25 @@
 import type { Locale } from "../config"
 const en = {
+    login: "Sign in",
+    logout: "Sign out",
+    linkTitle: "Connect your team to a Discord server",
+    linkHint:
+        "Link a team you own to a workspace you administer. Each Discord server can represent one team. Your players, invitations and league history stay with the team.",
+    linkTeam: "Link team",
+    selectWorkspace: "Discord server",
+    chooseWorkspace: "Choose a server",
+    noWorkspaces:
+        "No unlinked servers are available. Use an account with workspace administrator access, or connect another server in the dashboard.",
+    linkedWorkspace: "Connected server",
+    linkConflict:
+        "This team or Discord server is already linked. Refresh to see the current connection.",
+    continueDashboard: "Continue to dashboard",
+    manageLater: "You can also connect teams later from My league teams.",
+    playerSteps:
+        "Playing for a team? Ask its owner for an invitation, sign in with Discord, and choose Join team. You do not need a dashboard or administrator access.",
+    browseHint:
+        "Choose a league to register an existing team, check its registration or manage fixtures.",
+
     title: "Leagues",
     description: "Find a league, follow the season and register your team.",
     allGames: "All games",
@@ -123,6 +143,26 @@ const en = {
 }
 export type LeagueMessages = { [K in keyof typeof en]: string }
 const cs: LeagueMessages = {
+    login: "Přihlásit se",
+    logout: "Odhlásit se",
+    linkTitle: "Propojit tým s Discord serverem",
+    linkHint:
+        "Propojte vlastní tým s pracovním prostorem, který spravujete. Každý Discord server může zastupovat jeden tým. Hráči, pozvánky a ligová historie zůstanou zachovány.",
+    linkTeam: "Propojit tým",
+    selectWorkspace: "Discord server",
+    chooseWorkspace: "Vyberte server",
+    noWorkspaces:
+        "Žádný volný server není k dispozici. Použijte účet se správcovským přístupem nebo připojte další server v dashboardu.",
+    linkedWorkspace: "Propojený server",
+    linkConflict:
+        "Tým nebo Discord server už je propojený. Obnovte stránku pro aktuální stav.",
+    continueDashboard: "Pokračovat do dashboardu",
+    manageLater: "Týmy můžete propojit i později na stránce Moje ligové týmy.",
+    playerSteps:
+        "Chcete hrát za tým? Požádejte vlastníka o pozvánku, přihlaste se přes Discord a zvolte Připojit se k týmu. Dashboard ani správcovský přístup nepotřebujete.",
+    browseHint:
+        "Vyberte ligu pro registraci existujícího týmu, kontrolu přihlášky nebo správu zápasů.",
+
     title: "Ligy",
     description: "Najděte ligu, sledujte sezónu a přihlaste svůj tým.",
     allGames: "Všechny hry",
@@ -242,6 +282,26 @@ const cs: LeagueMessages = {
         "Pozvánky a nepotvrzené výsledky vidíte pouze vy a váš tým.",
 }
 const de: LeagueMessages = {
+    login: "Anmelden",
+    logout: "Abmelden",
+    linkTitle: "Team mit einem Discord-Server verbinden",
+    linkHint:
+        "Verbinde dein Team mit einem Workspace, den du verwaltest. Jeder Discord-Server kann ein Team vertreten. Spieler, Einladungen und Ligaverlauf bleiben erhalten.",
+    linkTeam: "Team verbinden",
+    selectWorkspace: "Discord-Server",
+    chooseWorkspace: "Server wählen",
+    noWorkspaces:
+        "Keine freien Server verfügbar. Verwende ein Konto mit Workspace-Administratorzugriff oder verbinde einen weiteren Server im Dashboard.",
+    linkedWorkspace: "Verbundener Server",
+    linkConflict:
+        "Dieses Team oder dieser Discord-Server ist bereits verbunden. Lade die Seite neu.",
+    continueDashboard: "Weiter zum Dashboard",
+    manageLater: "Du kannst Teams auch später unter Meine Ligateams verbinden.",
+    playerSteps:
+        "Du möchtest für ein Team spielen? Bitte den Besitzer um eine Einladung, melde dich mit Discord an und wähle Team beitreten. Du brauchst weder Dashboard noch Administratorzugriff.",
+    browseHint:
+        "Wähle eine Liga, um ein bestehendes Team anzumelden, den Status zu prüfen oder Begegnungen zu verwalten.",
+
     title: "Ligen",
     description: "Finde eine Liga, verfolge die Saison und melde dein Team an.",
     allGames: "Alle Spiele",

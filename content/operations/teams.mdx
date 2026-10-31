@@ -1,158 +1,94 @@
 ---
-title: Teams
-description: Browse the Logi team catalogue, request missing teams or changes, and follow your workspace's requests.
+title: Team profile
+description: Create and edit your team, invite players, enter competitions and connect a Discord clan.
 ---
 
 import { Callout, Steps } from "nextra/components"
 
-# Teams
+# Team profile
 
-Logi keeps one **team catalogue** for every workspace. Each entry is one
-sporting team in one game, with a name, an optional short code, logo,
-description and up to three links. Hell Let Loose and Wardogs have separate
-catalogues: a team called the same in both games is two separate entries.
-Teams do not need a Logi account or a Discord community.
+A team is a reusable profile for one game. The same team can enter several
+competitions for that game, with a separate registration and fixtures in each.
+You do not need a Discord server or Logi bot to own and manage a team.
 
-For self-service league participation, a signed-in player can create a basic
-account-owned team under **Leagues → My league teams**. That profile needs no
-Discord server or bot and can invite signed-in players, enroll in published
-leagues, and manage fixture hosting and external score reports. It creates a
-new catalogue entry; existing catalogue names cannot be claimed by making a
-duplicate. See [league registration](/wiki/public/matches-and-competitions#league-directory-and-basic-teams).
+## Create a team from a competition
 
-The workspace catalogue workflow below remains administrator-reviewed; owning a
-basic league profile grants no access to a clan workspace or another team.
+Open **Leagues**, select a competition and choose **Register team**. Select an
+existing team or use **Create team and register**. The competition determines
+the game; there is no game picker in this form. Creating a new team also submits
+its registration. Automatic competitions accept it immediately; approval-based
+competitions show **Awaiting approval**.
 
-Logi's global administrators maintain the catalogue. Workspaces do not create
-or edit teams themselves: they browse the catalogue, select teams in their
-matches, and **request** a missing team or **suggest a change** to an existing
-one. A Logi administrator reviews each request.
+If the new team has too few players, Logi saves the profile and explicitly says
+that registration is not complete. Copy the player invitation, invite enough
+players, then register the existing team. Closed and unpublished competitions
+do not create teams through this registration form.
 
-Open **Configuration → Teams** in the workspace navigation. The page is
-available to workspace administrators only.
+You can also create a standalone profile under **My league teams**, choosing its
+game there, or create and connect one directly from your clan's **Team profile**.
+An account can own up to five basic profiles. Existing catalogue names cannot
+be claimed by creating a duplicate; ask an organiser to resolve an existing
+unowned catalogue profile rather than creating another copy.
 
-## Choose the game
+## Edit branding and invite players
 
-The page follows the game selector in the sidebar:
+Open **My league teams** from the public account menu or dashboard sidebar.
+Clan administrators can instead open **Team profile** in their clan navigation.
+**Edit profile** changes the name, short code, description and avatar immediately,
+without requesting approval or installing the bot. Team owners and current
+administrators of the linked clan can edit; ordinary players cannot.
 
-- **All games** shows one section for Hell Let Loose and one for Wardogs. The
-  two catalogues are never mixed.
-- **Hell Let Loose** or **Wardogs** shows only that game's catalogue.
-- **Hell Let Loose: Vietnam** has no team catalogue; the page says so.
+Names are unique within the game's global catalogue. Upload PNG, JPEG or WebP
+up to 2 MiB for the avatar; animated images are rejected. Logi normalizes the
+image to at most 512 by 512 pixels. Save the profile to apply the upload, or use
+**Remove avatar** and save. Conflicting edits require a refresh. The game's
+identity, ownership and Discord link are not editable branding fields.
+Existing match snapshots keep their recorded name and logo.
 
-A section for a game that is not enabled in the workspace's clan settings still
-lists the catalogue and accepts requests, with a note and a link to the
-settings: its teams can be used in matches only after the game is enabled.
+The owner can copy the private player invitation. Players open it, sign in with
+Discord and explicitly choose **Join team**. They count once toward league
+minimums and gain no team-management or clan-workspace permission.
 
-## Browse the catalogue
+## Connect the team to a Discord clan
 
-Each team shows its logo (or, without one, its short code or the initials of
-the first two words of its name), name, short code, description and links.
-Links open in a new tab. Archived and merged teams are not listed.
+In the team's profile, expand **Discord connection** and select a workspace you
+administer. You must own the team and currently have workspace administrator
+access. Each Discord server can represent one team across games; occupied
+servers cannot be selected. An already connected team cannot be moved through
+this action. No bot installation is required for linking.
 
-Search matches names and short codes. Lists load 50 teams at a time; use
-**Load more** for the next page. A search shows the 50 best matches.
+On a clan's empty **Team profile** page, choose **Create and connect team** or
+connect an existing owned team. Dashboard entry also offers linking when an
+unlinked team and an available workspace exist. New teams can use these same
+connection controls later.
 
-Catalogue reads, team requests and snapshot refreshes are limited to 120
-requests per minute for each administrator in a workspace. Above that, Logi
-asks you to wait a moment and try again.
+Linking keeps the team's ID, players, invitations, registrations and fixtures.
+The owner retains management and linked-clan administrators gain management
+of that team's profile and participation. Invited players and signed-in clan
+members count once each; invitation membership does not grant clan access.
+Legacy competition adoption preserves extra game teams and their history in
+the catalogue without attaching them to an occupied server.
 
-## Request a new team
+## Competitions for your clan
 
-<Steps>
+Open **Competitions** in the clan sidebar. **Your competitions** lists current
+registered and pending entries first, with status, withdrawal and a link to
+registration and fixture management. **Join a competition** lists other
+published competitions suitable for the connected team's game. A separate
+history section keeps rejected applications and withdrawn entries available.
 
-### Open the request
+The same registration is used on the public league page and in the dashboard.
+Joining another competition reuses the team. Withdrawing affects only that
+competition and retains its results and fixtures. Player minimums and organiser
+approval still apply, and organisers assign divisions.
 
-Select **Request a new team** in the game's section, or **Request a new team**
-in a match's team picker (see [Matches → Teams](/wiki/operations/matches#teams)).
+## Team requests have been replaced
 
-### Enter the team's details
-
-The name is required and may have up to 120 characters. The optional short code
-(up to 16 characters) is shown where space is tight. The optional description
-may have up to 500 characters, and you can add up to three `https` links, such
-as the team's website or Discord invite. Leading, trailing and repeated spaces
-are removed.
-
-### Upload a logo (optional)
-
-Choose a PNG, JPEG or WebP image of at most 2 MiB and at most 4096×4096
-pixels. Animated images are rejected. Logi stores a normalized copy no larger
-than 512×512 and shows it as a preview. **Remove logo** detaches it. Each
-administrator can upload 10 images every 10 minutes in a workspace, counting
-team logos and public panel banners together; above that, the form says how
-many seconds to wait before uploading again.
-
-### Add a note and send
-
-The optional **Note for the administrators** (up to 500 characters) can explain
-anything that helps the review. Select **Send request**. If the connection
-fails, select **Send request** again in the same form: the retry is recognised
-and does not create a second request. Your inputs stay in the form after any
-error.
-
-</Steps>
-
-If a team with the same name already exists in that game's catalogue (ignoring
-letter case and repeated spaces; accents still count), the form says so instead
-of sending the request: select that team, or suggest a change to it.
-
-## Suggest a change
-
-Select **Suggest a change** next to a team. The form starts with the team's
-current details; change what should be different and add a note. A change
-request must change at least one detail; the note alone is not a change. The
-current logo stays proposed unless you upload a new one or remove it.
-
-## Your team requests
-
-**Your team requests**, below the catalogue, lists the requests sent from this
-workspace, newest first. Each shows the team, whether it is a new team or a
-change, the game, when it was requested and decided, your note, and its status:
-
-| Status        | Meaning                                                                        |
-| ------------- | ------------------------------------------------------------------------------ |
-| **Pending**   | Waiting for a Logi administrator.                                              |
-| **Approved**  | The team was added, or the change applied. **Resulting team** names the team.  |
-| **Merged**    | The team already existed; the request was merged into it (**Resulting team**). |
-| **Rejected**  | Not accepted. **Reason** explains why.                                         |
-| **Cancelled** | Withdrawn by the workspace.                                                    |
-
-A Logi administrator may edit the proposed details before approving them, so
-the resulting team can differ slightly from your request. A workspace can have
-at most 20 pending requests; **Cancel request** withdraws a pending one.
-
-<Callout type="info">
-    Every approval, merge or rejection sends the person who submitted the
-    request a Discord direct message, in the workspace's language, with the
-    outcome and the reason or the resulting team. If their direct messages are
-    closed, the decision still appears in **Your team requests**.
-</Callout>
-
-The catalogue has no separate page per team. **Open team in Logi** in an
-approval or merge message opens this page for the team's game with the team's
-name already in the search; **Open Teams in Logi** in a rejection opens the
-game's list.
-
-## Archived and merged teams
-
-Logi administrators can archive a team or merge a duplicate into the team that
-stays. Archived and merged teams leave the catalogue and cannot be newly
-selected, but nothing is deleted: matches that already used the team keep the
-name and logo they saved. Refreshing the snapshot of a merged team on a match
-uses the team it was merged into.
-
-<Callout type="info">
-    A connected website can read the active catalogue only when its key has the
-    separate **Team directory** (`teams`) grant. That grant never allows the
-    website to change the catalogue or to send team requests.
-</Callout>
-
-## Use teams in a match
-
-The match editor has a **Teams** section for Hell Let Loose and Wardogs
-matches. See [Matches → Teams](/wiki/operations/matches#teams) for slots, sides,
-snapshots and when the selection is frozen.
+Clan administrators create and edit their own team profiles directly. The old
+catalogue request form, change-request form and match-editor request action
+are no longer available. The former workspace request endpoint returns 410.
+Global administrators retain historical requests and catalogue moderation.
+Shared opponent selection in match editors still reads the global catalogue.
 
 ## Import teams from league directories (global administrators)
 
@@ -217,7 +153,7 @@ other clan tools. Withdrawal preserves the team's competition history. See
 
 Administrators opening a new, unconfigured clan are asked whether to use the
 full Logi toolset or **Competitions only**. The latter keeps the sidebar focused
-on the dashboard, competitions, teams, players and settings. It changes
+on the dashboard, competitions, the team profile, players and settings. It changes
 navigation rather than permissions, stops no integrations and deletes no data.
 You can change the clan-wide preference at any time in **Clan settings →
 Workspace mode**, including when an existing clan wants the simpler menu.

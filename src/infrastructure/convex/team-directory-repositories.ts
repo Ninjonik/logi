@@ -204,6 +204,15 @@ export class ConvexTeamDirectoryRepository implements TeamDirectoryRepository {
         return row ? teamEntity(row) : null
     }
 
+    async guildOccupied(guildId: string, exceptTeamId?: string) {
+        const teams = await this.ctx.db
+            .query("teamDirectory")
+            .withIndex("linkedGuildId", (q) => q.eq("linkedGuildId", guildId))
+            .collect()
+        return teams.some(
+            (t) => String(t._id) !== exceptTeamId && !t.mergedIntoTeamId
+        )
+    }
     async count(gameId: TeamGame) {
         const known = this.counts.get(gameId)
         if (known !== undefined) return known

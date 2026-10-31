@@ -1,6 +1,9 @@
-import { DISCORD_MESSAGE_MAX_ATTACHMENTS } from "../src/domain/discord-sync/attachment-limits"
+import { topicPresetRepository } from "../src/infrastructure/convex/preset-repositories"
 import { eventsBlockingTopicPresetDeletion } from "../src/domain/events/preset-deletion"
+import { saveTopicPreset } from "../src/application/presets/save-preset"
+import { topicPresetSchema } from "../src/lib/validation/topic-preset"
 import { getGuildById, getGuildDiscordId } from "./identity"
+import { systemClock } from "../src/domain/shared/clock"
 import { internalAuthSecret } from "./discord_shared"
 import { mutation } from "./_generated/server"
 import { v } from "convex/values"
@@ -46,81 +49,17 @@ export const upsert = mutation({
         if (!guild) {
             throw new Error("Server not found.")
         }
-        const guildDiscordId = getGuildDiscordId(guild)
-
-        const name = args.name.trim()
-        if (!name) {
-            throw new Error("Preset name is required.")
-        }
-
-        const topics = args.topics.map((item) => {
-            const body = item.body?.trim() || undefined
-            const attachments = item.attachments
-                .map((attachment) => attachment.trim())
-                .filter(Boolean)
-            return {
-                id: item.id?.trim() || crypto.randomUUID(),
-                title: item.title.trim(),
-                body,
-                attachments,
-                messages: item.messages?.map((message) => ({
-                    id: message.id,
-                    body: message.body?.trim() || undefined,
-                    attachments: message.attachments
-                        .map((attachment) => attachment.trim())
-                        .filter(Boolean),
-                })) ?? [{ id: crypto.randomUUID(), body, attachments }],
+        const fields = topicPresetSchema.parse(args)
+        const saved = await saveTopicPreset(
+            topicPresetRepository(ctx),
+            systemClock,
+            {
+                ...fields,
+                guildId: getGuildDiscordId(guild),
+                presetId: args.presetId,
             }
-        })
-
-        if (!topics.length || topics.some((item) => !item.title)) {
-            throw new Error("Every preset needs at least one named topic.")
-        }
-        if (
-            topics.some(
-                (item) =>
-                    item.attachments.length > DISCORD_MESSAGE_MAX_ATTACHMENTS ||
-                    item.messages.some(
-                        (message) =>
-                            message.attachments.length >
-                            DISCORD_MESSAGE_MAX_ATTACHMENTS
-                    )
-            )
-        ) {
-            throw new Error(
-                `A Discord message can have at most ${DISCORD_MESSAGE_MAX_ATTACHMENTS} attachments.`
-            )
-        }
-
-        const payload = {
-            guildId: guildDiscordId,
-            name,
-            side: args.side?.trim() || undefined,
-            map: args.map?.trim() || undefined,
-            cap: args.cap?.trim() || undefined,
-            notes: args.notes?.trim() || undefined,
-            topics,
-            updatedAt: new Date().toISOString(),
-        }
-
-        if (args.presetId) {
-            const existing = await ctx.db.get(args.presetId)
-            if (!existing || existing.guildId !== guildDiscordId) {
-                throw new Error("Topic preset not found.")
-            }
-
-            await ctx.db.patch(args.presetId, payload)
-            return String(args.presetId)
-        }
-
-        const now = new Date().toISOString()
-        const presetId = await ctx.db.insert("topicPresets", {
-            ...payload,
-            createdAt: now,
-            updatedAt: now,
-        })
-
-        return String(presetId)
+        )
+        return saved.id
     },
 })
 

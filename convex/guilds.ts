@@ -1,11 +1,14 @@
+import { ConvexCalendarItemRepository } from "../src/infrastructure/convex/calendar-item-repository"
 import {
     getGuildByDiscordId,
     getGuildDiscordId,
     getUserByDiscordId,
 } from "./identity"
+import { CalendarItemCommands } from "../src/application/calendar/calendar-item-commands"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
 import { normalizeMatchTemplates } from "../src/domain/events/match-templates"
 import { matchTemplateValidator } from "./matchTemplateValidators"
+import { systemClock } from "../src/domain/shared/clock"
 import { mutation, query } from "./_generated/server"
 import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
@@ -540,78 +543,10 @@ export const updateFrontendSettings = mutation({
             }
         }
 
-        const existingCalendarItems = await ctx.db
-            .query("calendarItems")
-            .withIndex("guildId", (q) =>
-                q.eq("guildId", getGuildDiscordId(guild))
-            )
-            .collect()
-        const normalizedCalendarItems = (args.calendarItems ?? [])
-            .map((item) => ({
-                id: item.id.trim(),
-                title: item.title.trim(),
-                description: item.description?.trim() || undefined,
-                color: item.color.trim(),
-                emoji: item.emoji?.trim() || undefined,
-                label: item.label?.trim() || undefined,
-                startAt: item.startAt,
-                endAt: item.endAt,
-                allDay: item.allDay,
-                recurrence: item.recurrence
-                    ? {
-                          frequency: item.recurrence.frequency,
-                          interval: Math.max(
-                              1,
-                              Math.floor(item.recurrence.interval)
-                          ),
-                          until: item.recurrence.until,
-                      }
-                    : undefined,
-            }))
-            .filter((item) => item.id && item.title && item.color)
-        const nextIds = new Set(normalizedCalendarItems.map((item) => item.id))
-
-        for (const existingItem of existingCalendarItems) {
-            if (!nextIds.has(String(existingItem._id))) {
-                await ctx.db.delete(existingItem._id)
-            }
-        }
-
-        const existingById = new Map(
-            existingCalendarItems.map((item) => [String(item._id), item])
-        )
-        for (const item of normalizedCalendarItems) {
-            const existingItem = existingById.get(item.id)
-            if (existingItem) {
-                await ctx.db.patch(existingItem._id, {
-                    title: item.title,
-                    description: item.description,
-                    color: item.color,
-                    emoji: item.emoji,
-                    label: item.label,
-                    startAt: item.startAt,
-                    endAt: item.endAt,
-                    allDay: item.allDay,
-                    recurrence: item.recurrence,
-                    updatedAt: now,
-                })
-            } else {
-                await ctx.db.insert("calendarItems", {
-                    guildId: getGuildDiscordId(guild),
-                    title: item.title,
-                    description: item.description,
-                    color: item.color,
-                    emoji: item.emoji,
-                    label: item.label,
-                    startAt: item.startAt,
-                    endAt: item.endAt,
-                    allDay: item.allDay,
-                    recurrence: item.recurrence,
-                    createdAt: now,
-                    updatedAt: now,
-                })
-            }
-        }
+        await new CalendarItemCommands(
+            new ConvexCalendarItemRepository(ctx),
+            systemClock
+        ).replace(getGuildDiscordId(guild), args.calendarItems ?? [])
 
         return String(guild._id)
     },

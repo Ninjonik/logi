@@ -40,6 +40,7 @@ import {
 import { authorizePlatformAdmin, PLATFORM_SCOPE } from "./platformAdmin"
 import { imageAssetKind, imageContentType } from "./teamValidators"
 import { assertSessionGateway } from "./dashboardSessionStore"
+import { authorizeTeamProfile } from "./teamProfileAccess"
 import type { Doc, Id } from "./_generated/dataModel"
 import { makeFunctionReference } from "convex/server"
 import { v } from "convex/values"
@@ -69,6 +70,12 @@ async function authorizeAssetScope(
     ctx: Db,
     input: { secret: string; guildId: string; actor: DashboardActor }
 ): Promise<{ subject: string }> {
+    if (input.guildId.startsWith("team:")) {
+        return authorizeTeamProfile(ctx, {
+            ...input,
+            teamId: input.guildId.slice(5),
+        })
+    }
     if (input.guildId === PLATFORM_SCOPE) {
         const admin = await authorizePlatformAdmin(ctx, input)
         return { subject: admin.session.subject }
@@ -119,7 +126,11 @@ export const reserveUpload = mutation({
     handler: async (ctx, args) => {
         const admin = await authorizeAssetScope(ctx, args)
         // The platform scope holds catalogue team logos only.
-        if (args.guildId === PLATFORM_SCOPE && args.kind !== "team-logo")
+        if (
+            (args.guildId === PLATFORM_SCOPE ||
+                args.guildId.startsWith("team:")) &&
+            args.kind !== "team-logo"
+        )
             return { error: "invalid_kind" as const }
         const attempt = await consumeUploadAttempt(
             ctx,
@@ -232,6 +243,8 @@ export const record = internalMutation({
         const admin = await authorizeAssetScope(ctx, args)
         const asset = args.asset,
             bounds = IMAGE_OUTPUT[asset.kind]
+        if (args.guildId.startsWith("team:") && asset.kind !== "team-logo")
+            return { error: "invalid_asset" }
         if (
             !imagePublicIdSchema.safeParse(asset.publicId).success ||
             !/^[a-f0-9]{64}$/.test(asset.sha256) ||

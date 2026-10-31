@@ -16,6 +16,7 @@ import type { GameId } from "@/domain/games/game"
 
 export type RosterCommandRecord = {
     id: string
+    guildId?: string
     eventId: string
     gameId?: GameId
     squadPresetId?: string

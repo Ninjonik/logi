@@ -51,6 +51,8 @@ export interface TeamDirectoryRepository {
         gameId: TeamGame,
         normalizedName: string
     ): Promise<TeamEntity | null>
+    /** A server is reserved by at most one unmerged team, across games. */
+    guildOccupied(guildId: string, exceptTeamId?: string): Promise<boolean>
     /** Entries of one game, counted up to just past the catalogue limit. */
     count(gameId: TeamGame): Promise<number>
     get(teamId: string): Promise<TeamEntity | null>

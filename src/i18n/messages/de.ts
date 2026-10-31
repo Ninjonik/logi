@@ -1281,6 +1281,8 @@ export const deMessages = {
                 "Das hochgeladene Logo ist nicht mehr verfügbar. Lade es erneut hoch.",
             limit_reached:
                 "Der Katalog dieses Spiels hat sein Limit von 2000 Teams erreicht.",
+            guild_already_linked:
+                "Dieser Discord-Server ist bereits mit einem Team verbunden.",
             invalid_merge: "Diese Teams können nicht zusammengeführt werden.",
             forbidden: "Du hast hier keinen Zugriff auf den Teamkatalog.",
             unavailable: "Der Teamkatalog ist vorübergehend nicht verfügbar.",
@@ -1633,6 +1635,8 @@ export const deMessages = {
             asset_unavailable:
                 "Das Logo ist nicht mehr verfügbar. Lade es erneut hoch.",
             limit_reached: "Der Katalog für dieses Spiel ist voll.",
+            guild_already_linked:
+                "Dieser Discord-Server ist bereits mit einem Team verbunden.",
             invalid_merge:
                 "Diese Teams können nicht zusammengeführt werden. Wähle ein aktives Team desselben Spiels, das in keinem Wettbewerb gegen dieses Team gespielt hat; ein zusammengeführtes Team kann weder wiederhergestellt noch erneut zusammengeführt werden.",
             forbidden:
@@ -1825,6 +1829,8 @@ export const deMessages = {
             asset_unavailable:
                 "Das Logo ist nicht mehr verfügbar. Lade es erneut hoch oder entferne es.",
             invalid_team: "Prüfe die Teamangaben und versuche es erneut.",
+            guild_already_linked:
+                "Dieser Discord-Server ist bereits mit einem Team verbunden.",
             invalid_merge:
                 "Die Anfrage kann nicht mit diesem Team zusammengeführt werden.",
             game_disabled: "Dieses Spiel ist im Teamkatalog nicht verfügbar.",

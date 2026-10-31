@@ -1,3 +1,6 @@
+import { ConvexArticleRepository } from "../src/infrastructure/convex/article-repository"
+import { ArticleCommands } from "../src/application/articles/article-commands"
+import { systemClock } from "../src/domain/shared/clock"
 import { mutation, query } from "./_generated/server"
 import { internalAuthSecret } from "./discord_shared"
 import { v } from "convex/values"
@@ -40,33 +43,11 @@ export const save = mutation({
     },
     handler: async (ctx, args) => {
         check(args.secret)
-        const now = new Date().toISOString()
-        const value = {
-            title: args.title.trim(),
-            description: args.description.trim(),
-            tags: args.tags
-                .map((x) => x.trim())
-                .filter(Boolean)
-                .slice(0, 20),
-            body: args.body,
-            attachments: args.attachments.map((x) => x.trim()).filter(Boolean),
-            updatedAt: now,
-        }
-        if (!value.title || !value.description || !value.body)
-            throw new Error("Title, description, and body are required.")
-        if (args.articleId) {
-            const existing = await ctx.db.get(args.articleId)
-            if (!existing || existing.guildId !== args.guildId)
-                throw new Error("Article not found.")
-            await ctx.db.patch(args.articleId, value)
-            return args.articleId
-        }
-        return await ctx.db.insert("articles", {
-            guildId: args.guildId,
-            authorId: args.authorId,
-            createdAt: now,
-            ...value,
-        })
+        const saved = await new ArticleCommands(
+            new ConvexArticleRepository(ctx),
+            systemClock
+        ).save(args)
+        return saved.id
     },
 })
 export const remove = mutation({
@@ -77,9 +58,9 @@ export const remove = mutation({
     },
     handler: async (ctx, args) => {
         check(args.secret)
-        const item = await ctx.db.get(args.articleId)
-        if (!item || item.guildId !== args.guildId)
-            throw new Error("Article not found.")
-        await ctx.db.delete(args.articleId)
+        await new ArticleCommands(
+            new ConvexArticleRepository(ctx),
+            systemClock
+        ).remove(args.guildId, args.articleId)
     },
 })

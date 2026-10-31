@@ -1,6 +1,9 @@
+import { ConvexStratmapRepository } from "../src/infrastructure/convex/stratmap-repository"
+import { saveStratmap } from "../src/application/stratmaps/save-stratmap"
 import { clientGrantScopes } from "../src/domain/identity/client-grant"
 import { readClientGrant, verifyClientGrant } from "./clientGrants"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
+import { systemClock } from "../src/domain/shared/clock"
 import { mutation, query } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
@@ -21,10 +24,6 @@ import {
     findEventsLinkingStratmap,
     withoutStratmap,
 } from "../src/domain/stratmaps/stratmap-references"
-import {
-    buildDefaultStratmapState,
-    stringifyStratmapState,
-} from "../src/lib/stratmaps"
 import { assertInternalSecret } from "./discord_shared"
 
 async function resolveGuildAccess(
@@ -215,27 +214,14 @@ export const create = mutation({
             throw new Error("Only admins can create stratmaps.")
         }
 
-        const now = new Date().toISOString()
-        const stratmapId = await ctx.db.insert("stratmaps", {
-            guildId: guildDiscordId,
-            gameId: args.gameId,
-            eventId: args.eventId,
-            title: args.title.trim(),
-            description: args.description?.trim() || undefined,
-            baseMapId: args.baseMapId,
-            side: args.side?.trim() || undefined,
-            strongpointId: args.strongpointId?.trim() || undefined,
-            state:
-                args.state ??
-                stringifyStratmapState(
-                    buildDefaultStratmapState(args.baseMapId)
-                ),
-            createdBy: userId,
-            createdAt: now,
-            updatedAt: now,
-        })
-
-        return String(stratmapId)
+        return (
+            await saveStratmap(new ConvexStratmapRepository(ctx), systemClock, {
+                ...args,
+                guildId: guildDiscordId,
+                createdBy: userId,
+                allowDraftEvent: true,
+            })
+        ).id
     },
 })
 
@@ -270,14 +256,11 @@ export const updateMeta = mutation({
             throw new Error("Only admins can edit stratmaps.")
         }
 
-        await ctx.db.patch(args.stratmapId, {
-            title: args.title.trim(),
-            description: args.description?.trim() || undefined,
-            baseMapId: args.baseMapId,
-            side: args.side?.trim() || undefined,
-            strongpointId: args.strongpointId?.trim() || undefined,
-            eventId: args.eventId,
-            updatedAt: new Date().toISOString(),
+        await saveStratmap(new ConvexStratmapRepository(ctx), systemClock, {
+            ...args,
+            guildId: stratmap.guildId,
+            createdBy: stratmap.createdBy,
+            allowDraftEvent: true,
         })
     },
 })

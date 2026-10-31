@@ -6,6 +6,12 @@ import {
     hashApiKey,
     readBearerToken,
     mutateClanApiAssignment,
+    mutateClanApiArticle,
+    mutateClanApiGroup,
+    mutateClanApiCalendarItem,
+    mutateClanApiPreset,
+    mutateClanApiRoster,
+    mutateClanApiSettings,
 } from "./public-api"
 
 test("hashApiKey is deterministic and does not return the secret", () => {
@@ -69,4 +75,53 @@ test("assignment gateway sends only hashed API key to Convex", async (t) => {
         paused: false,
     })
     assert.equal(call.mock.callCount(), 1)
+})
+
+test("generic v1 gateways never send the raw bearer key as a Convex argument", async (t) => {
+    const originalUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+    process.env.NEXT_PUBLIC_CONVEX_URL = "https://synthetic.convex.cloud"
+    t.after(() => {
+        if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_CONVEX_URL
+        else process.env.NEXT_PUBLIC_CONVEX_URL = originalUrl
+    })
+    const call = t.mock.method(
+        ConvexHttpClient.prototype,
+        "mutation",
+        async (_reference: unknown, args: Record<string, unknown>) => {
+            assert.equal("key" in args, false)
+            assert.equal(args.keyHash, hashApiKey("synthetic-key"))
+            return { status: 200, body: "{}" }
+        }
+    )
+    const binding = {
+        key: "synthetic-key",
+        idempotencyKey: "one",
+        bodyHash: "hash",
+        methodPath: "test",
+    }
+    await mutateClanApiArticle({
+        ...binding,
+        operation: "create",
+        title: "Article",
+    })
+    await mutateClanApiGroup({ ...binding, operation: "create", name: "Group" })
+    await mutateClanApiCalendarItem({
+        ...binding,
+        operation: "create",
+        title: "Calendar",
+    })
+    await mutateClanApiPreset({
+        ...binding,
+        resource: "topic-presets",
+        operation: "create",
+        payload: {},
+    })
+    await mutateClanApiRoster({
+        ...binding,
+        operation: "update",
+        rosterId: "rosters:one",
+        payload: {},
+    })
+    await mutateClanApiSettings({ ...binding, name: "Clan" })
+    assert.equal(call.mock.callCount(), 6)
 })

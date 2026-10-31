@@ -1235,6 +1235,8 @@ export const csMessages = {
             asset_unavailable:
                 "Nahrané logo již není dostupné. Nahrajte ho znovu.",
             limit_reached: "Katalog této hry dosáhl limitu 2000 týmů.",
+            guild_already_linked:
+                "Tento Discord server už je propojený s týmem.",
             invalid_merge: "Tyto týmy nelze sloučit.",
             forbidden: "Nemáte zde přístup ke katalogu týmů.",
             unavailable: "Katalog týmů je dočasně nedostupný.",
@@ -1572,6 +1574,8 @@ export const csMessages = {
             not_archived: "Tento tým není archivovaný.",
             asset_unavailable: "Logo už není dostupné. Nahrajte ho znovu.",
             limit_reached: "Katalog pro tuto hru je plný.",
+            guild_already_linked:
+                "Tento Discord server už je propojený s týmem.",
             invalid_merge:
                 "Tyto týmy nelze sloučit. Vyberte aktivní tým stejné hry, který proti tomuto týmu nikdy nehrál v soutěži; sloučený tým nelze obnovit ani znovu sloučit.",
             forbidden:
@@ -1747,6 +1751,8 @@ export const csMessages = {
             asset_unavailable:
                 "Logo už není dostupné. Nahrajte ho znovu nebo ho odeberte.",
             invalid_team: "Zkontrolujte údaje týmu a zkuste to znovu.",
+            guild_already_linked:
+                "Tento Discord server už je propojený s týmem.",
             invalid_merge: "Žádost nelze sloučit s tímto týmem.",
             game_disabled: "Tato hra není v katalogu týmů dostupná.",
             forbidden:

@@ -217,7 +217,7 @@ export function CommandRow({
         roles?.find((role) => role.id === roleId)?.name ?? roleId
     const someChannels = entry.channelIds.length > 0
     return (
-        <li className="space-y-4 px-4 py-5 sm:px-5">
+        <li data-tour-command={command} className="space-y-4 px-4 py-5 sm:px-5">
             <RowHeader
                 command={command}
                 badge={command === "help" ? text.new : undefined}

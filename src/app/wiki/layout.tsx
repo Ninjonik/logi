@@ -1,5 +1,7 @@
+import { PublicAccountMenu } from "@/components/public/public-account-menu"
 import { WikiSearch } from "@/components/wiki/wiki-search"
 import { Footer, Layout, Navbar } from "nextra-theme-docs"
+import { getCurrentPlayer } from "@/lib/auth"
 import { getPageMap } from "nextra/page-map"
 import "nextra-theme-docs/style.css"
 import Link from "next/link"
@@ -11,6 +13,7 @@ export default async function WikiLayout({
 }: {
     children: React.ReactNode
 }) {
+    const user = await getCurrentPlayer()
     // The wiki is written in English and renders its own document.
     return (
         <RootDocument lang="en">
@@ -19,7 +22,17 @@ export default async function WikiLayout({
                     <Navbar
                         logo={<b>Logi Wiki</b>}
                         projectLink="https://github.com/Ninjonik/logi/tree/main/src/app/wiki"
-                    />
+                    >
+                        <PublicAccountMenu
+                            locale="en"
+                            user={
+                                user
+                                    ? { name: user.name, avatar: user.avatar }
+                                    : null
+                            }
+                        />
+                        <Link href="/en/dashboard">Open app</Link>
+                    </Navbar>
                 }
                 pageMap={await getPageMap("/wiki")}
                 footer={

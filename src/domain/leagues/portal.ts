@@ -3,6 +3,8 @@ import {
     teamNameSchema,
     teamShortCodeSchema,
     teamDescriptionSchema,
+    teamRevisionSchema,
+    imageAssetIdSchema,
 } from "../teams/team"
 import type { PublicCompetitionFixture } from "../competitions/competition"
 import { z } from "zod"
@@ -18,6 +20,21 @@ export const leagueHostSchema = z.discriminatedUnion("kind", [
         label: z.string().trim().min(1).max(120),
     }),
 ])
+export function teamLinkError(input: {
+    accountOwner: boolean
+    workspaceAdmin: boolean
+    active: boolean
+    linkedGuildId: string | null
+    guildId: string
+    occupied: boolean
+}) {
+    if (!input.accountOwner || !input.workspaceAdmin) return "forbidden"
+    if (!input.active) return "not_found"
+    if (input.linkedGuildId && input.linkedGuildId !== input.guildId)
+        return "team_already_linked"
+    if (input.occupied) return "guild_already_linked"
+    return null
+}
 export const leagueCommandSchema = z.discriminatedUnion("action", [
     z.strictObject({
         action: z.literal("createTeam"),
@@ -26,6 +43,32 @@ export const leagueCommandSchema = z.discriminatedUnion("action", [
         gameId: teamGameSchema,
         description: teamDescriptionSchema.nullable(),
         idempotencyKey: z.string().uuid(),
+        guildId: z
+            .string()
+            .regex(/^\d{17,20}$/)
+            .optional(),
+    }),
+    z.strictObject({
+        action: z.literal("createAndEnroll"),
+        competitionId: id,
+        name: teamNameSchema,
+        shortCode: teamShortCodeSchema.nullable(),
+        description: teamDescriptionSchema.nullable(),
+        idempotencyKey: z.string().uuid(),
+    }),
+    z.strictObject({
+        action: z.literal("updateTeam"),
+        teamId: id,
+        expectedRevision: teamRevisionSchema,
+        name: teamNameSchema,
+        shortCode: teamShortCodeSchema.nullable(),
+        description: teamDescriptionSchema.nullable(),
+        logoAssetId: imageAssetIdSchema.nullable(),
+    }),
+    z.strictObject({
+        action: z.literal("linkTeam"),
+        teamId: id,
+        guildId: z.string().regex(/^\d{17,20}$/),
     }),
     z.strictObject({
         action: z.literal("joinTeam"),
@@ -77,14 +120,29 @@ export type LeaguePortalTeam = {
     members: number
     inviteToken: string | null
     clanLinked: boolean
+    linkedGuildId: string | null
+    accountOwner: boolean
+    description: string | null
+    logoAssetId: string | null
+    logoUrl: string | null
+    revision: number
 }
 export type LeaguePortalView = {
     teams: LeaguePortalTeam[]
+    workspaces: Array<{
+        guildId: string
+        workspaceId: string
+        name: string
+        teamId: string | null
+    }>
     registrations: Array<{
         competitionId: string
         teamId: string
         status: "pending" | "approved" | "rejected"
         withdrawn: boolean
+        competitionName: string | null
+        competitionSlug: string | null
+        season: string | null
     }>
     servers: Array<{
         sourceRef: string

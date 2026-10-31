@@ -45,8 +45,12 @@ export async function POST(request: Request) {
         revalidateCacheEntries([
             appCacheTags.publicDiscovery(),
             result.slug ? appCacheTags.competition(result.slug) : null,
+            ...(result.competitionSlugs ?? []).map(appCacheTags.competition),
+            result.guildId ? appCacheTags.publicClan(result.guildId) : null,
         ])
         revalidatePath("/[locale]/leagues", "layout")
+        revalidatePath("/[locale]/league-teams", "page")
+        revalidatePath("/[locale]/dashboard", "layout")
         return reply(result)
     } catch {
         return reply({ error: "unavailable" }, 503)

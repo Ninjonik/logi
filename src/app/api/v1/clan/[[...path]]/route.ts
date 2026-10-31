@@ -1,3 +1,4 @@
+import { clanMutationResponse } from "@/lib/gateways/clan-write-cache"
 import { handleIntegrationRead } from "@/lib/api/integration-route"
 import { handleMembershipRead } from "@/lib/api/membership-route"
 import { PEOPLE_RESOURCES } from "@/domain/api/people-summaries"
@@ -116,10 +117,7 @@ async function mutateArticle(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateEventSignup(request: Request, eventId: string) {
@@ -176,10 +174,7 @@ async function mutateEventSignup(request: Request, eventId: string) {
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateEvent(
@@ -260,10 +255,7 @@ async function mutateEvent(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateSettings(request: Request) {
@@ -307,10 +299,7 @@ async function mutateSettings(request: Request) {
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateGroup(
@@ -382,10 +371,7 @@ async function mutateGroup(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateCalendarItem(
@@ -467,10 +453,7 @@ async function mutateCalendarItem(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutatePreset(
@@ -527,10 +510,7 @@ async function mutatePreset(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateRoster(
@@ -587,10 +567,7 @@ async function mutateRoster(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 async function mutateAssignment(
@@ -658,10 +635,7 @@ async function mutateAssignment(
             401,
             auth.headers
         )
-    return new NextResponse(result.body, {
-        status: result.status,
-        headers: { ...auth.headers, "Content-Type": "application/json" },
-    })
+    return clanMutationResponse(result, auth)
 }
 
 export async function POST(

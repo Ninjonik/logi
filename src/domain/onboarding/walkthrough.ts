@@ -28,6 +28,8 @@ export type WalkStep = {
     watch?: boolean
 }
 const page = "#onboarding-page"
+const section = (chapter: ChapterId) =>
+    `${page} [data-tour-section="${chapter}"]`
 export function walkthroughSteps(
     kind: TourKind,
     botInside: boolean
@@ -86,7 +88,7 @@ export function walkthroughSteps(
                     id: "match-watch",
                     chapter,
                     path: "/matches/create",
-                    selector: 'section[aria-labelledby="new-match-step"]',
+                    selector: `${page} section[aria-labelledby="new-match-step"]`,
                     mock: "match",
                     formStep: "match",
                     watch: true,
@@ -106,7 +108,7 @@ export function walkthroughSteps(
                     id: "match-time",
                     chapter,
                     path: "/matches/create",
-                    selector: 'section[aria-labelledby="new-match-step"]',
+                    selector: `${page} section[aria-labelledby="new-match-step"]`,
                     mock: "match",
                     formStep: "time",
                     instruction: "matchTime",
@@ -125,7 +127,7 @@ export function walkthroughSteps(
                     id: "match-signups",
                     chapter,
                     path: "/matches/create",
-                    selector: 'section[aria-labelledby="new-match-step"]',
+                    selector: `${page} section[aria-labelledby="new-match-step"]`,
                     mock: "match",
                     formStep: "signups",
                     instruction: "matchSignups",
@@ -144,7 +146,7 @@ export function walkthroughSteps(
                     id: "match-discord",
                     chapter,
                     path: "/matches/create",
-                    selector: 'section[aria-labelledby="new-match-step"]',
+                    selector: `${page} section[aria-labelledby="new-match-step"]`,
                     mock: "match",
                     formStep: "discord",
                     instruction: "matchDiscord",
@@ -163,7 +165,7 @@ export function walkthroughSteps(
                     id: "match-review",
                     chapter,
                     path: "/matches/create",
-                    selector: 'section[aria-labelledby="new-match-step"]',
+                    selector: `${page} section[aria-labelledby="new-match-step"]`,
                     mock: "match",
                     formStep: "review",
                     instruction: "matchReview",
@@ -172,7 +174,7 @@ export function walkthroughSteps(
                     id: "match-publish",
                     chapter,
                     path: "/matches/create",
-                    selector: "[data-onboarding-publish]",
+                    selector: `${page} [data-onboarding-publish]`,
                     mock: "match",
                     formStep: "review",
                     instruction: "matchPublish",
@@ -183,36 +185,43 @@ export function walkthroughSteps(
             chapter === "mode" || chapter === "bot"
                 ? "/settings"
                 : (chapterPath(chapter) ?? "")
-        const selectors: Partial<Record<ChapterId, string>> = {
+        // Explain a named section; only explicit click-to-advance steps target
+        // individual actions. Avoid selecting an incidental first switch/card.
+        const selectors: Record<
+            Exclude<ChapterId, "players" | "performance" | "match">,
+            string
+        > = {
             finish: "#onboarding-restart-tour",
-            bot: "[data-tour-bot-setup]",
-            articles: `${page} a[href*="/articles/create"]`,
-            training: `${page} a[href*="/trainings/create"]`,
-            maps: `${page} a[href*="/stratmaps/create"]`,
-            presets: `${page} a[href*="/squad-presets/create"]`,
-            membership: `${page} [role="switch"]`,
-            tickets: `${page} [role="switch"]`,
-            commands: `${page} [role="switch"]`,
-            teams: `${page} [data-slot="table-container"]`,
-            competitions: `${page} [data-slot="card"]`,
+            bot: `${page} [data-tour-bot-setup]`,
+            articles: section("articles"),
+            training: section("training"),
+            maps: section("maps"),
+            presets: section("presets"),
+            membership: `${page} #membership-panel`,
+            tickets: `${page} section[aria-labelledby="ticket-panel-title"]`,
+            commands: `${page} [data-tour-command="stats"]`,
+            teams: section("teams"),
+            competitions: section("competitions"),
             welcome: "#onboarding-workspace-switcher",
             workspace: "#onboarding-workspace-switcher",
             mode: `${page} [data-tour-workspace-mode]`,
             account: "#onboarding-account-menu",
             overview:
                 kind === "competitions" || kind === "competition-member"
-                    ? `${page} [data-tour-section]`
-                    : '[aria-labelledby="overview-next-match"]',
+                    ? section("overview")
+                    : `${page} [aria-labelledby="overview-next-match"]`,
             calendar: `${page} [data-tour-calendar]`,
-            roster: `${page} [data-tour-section]`,
-            attendance: `${page} [data-tour-section]`,
-            settings: `${page} input[type="search"]`,
-            panels: `${page} [data-slot="card"]`,
-            seeding: `${page} [data-slot="card"]`,
-            tracking: `${page} [data-slot="card"]`,
+            roster: section("roster"),
+            attendance: section("attendance"),
+            signups: section("signups"),
+            results: section("results"),
+            settings: `${page} section[aria-labelledby="settings-group-clan"]`,
+            panels: section("panels"),
+            seeding: section("seeding"),
+            tracking: section("tracking"),
             history: `${page} #game-history`,
-            servers: `${page} [data-slot="card"]`,
-            integrations: `${page} [data-slot="card"]`,
+            servers: section("servers"),
+            integrations: section("integrations"),
         }
         return [
             {
@@ -220,7 +229,7 @@ export function walkthroughSteps(
                 mock: "section",
                 chapter,
                 path,
-                selector: selectors[chapter] ?? `${page} h1`,
+                selector: selectors[chapter],
             },
         ]
     })

@@ -67,6 +67,11 @@ export async function createTeam(
                   replayed: true,
               }
             : fail("idempotency_conflict")
+    if (
+        input.linkedGuildId &&
+        (await ports.repository.guildOccupied(input.linkedGuildId))
+    )
+        return fail("guild_already_linked")
     const existing = await ports.repository.findByNormalizedName(
         input.gameId,
         normalizeTeamName(input.name)
@@ -111,6 +116,15 @@ export async function updateTeam(
     if (!parsed.success) return fail("invalid_team")
     const team = await ports.repository.get(teamId)
     if (!team) return fail("not_found")
+    if (
+        parsed.data.linkedGuildId &&
+        parsed.data.linkedGuildId !== team.linkedGuildId &&
+        (await ports.repository.guildOccupied(
+            parsed.data.linkedGuildId,
+            teamId
+        ))
+    )
+        return fail("guild_already_linked")
     const conflicting = await ports.repository.findByNormalizedName(
         team.gameId,
         normalizeTeamName(parsed.data.name ?? team.name)

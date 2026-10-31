@@ -1,75 +1,32 @@
-import type { Metadata } from "next"
-
-import { DEFAULT_GAME_ID, GAME_LABELS, isGameId } from "@/domain/games/game"
-import { matchTeamGame } from "@/lib/teams/match-team-selection"
-import { TeamDirectory } from "@/components/app/team-directory"
-import { ConfigNotice } from "@/components/app/config-notice"
-import { teamSearchParam } from "@/domain/teams/team-links"
+import { getTeamManagementMessages } from "@/i18n/messages/team-management"
+import { LeagueAccount } from "@/components/leagues/league-account"
+import { readLeagueAccount } from "@/lib/gateways/league-portal"
 import { PageHeader } from "@/components/app/page-header"
 import { getServerContext } from "@/lib/server-context"
-import { getDictionary } from "@/i18n/dictionaries"
-import { TEAM_GAMES } from "@/domain/teams/team"
 import { isLocale } from "@/i18n/config"
-
-export const metadata: Metadata = {
-    title: "Teams",
-    description:
-        "Browse the Logi team catalogue and request new teams or changes.",
-}
 
 export default async function ServerTeamsPage({
     params,
-    searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{
-        game?: string | string[]
-        search?: string | string[]
-    }>
 }) {
     const { locale, serverId } = await params
-    const { game, search } = await searchParams
-    const resolvedLocale = isLocale(locale) ? locale : "en"
-    const dictionary = getDictionary(resolvedLocale)
+    const safeLocale = isLocale(locale) ? locale : "en"
     const context = await getServerContext(serverId, "all")
     if (!context?.canAdmin) return null
-
-    const selected = typeof game === "string" && isGameId(game) ? game : null
-    // The all-games view lists each catalogue game separately; HLL: Vietnam has no catalogue.
-    const games = selected ? [matchTeamGame(selected)] : TEAM_GAMES
-    const enabledGames = context.server.enabledGames ?? [DEFAULT_GAME_ID]
-
+    const view = await readLeagueAccount(null)
+    if (!view) return null
+    const m = getTeamManagementMessages(safeLocale)
     return (
         <>
-            <PageHeader
-                title={dictionary.teams.title}
-                description={dictionary.teams.description}
-            />
-            <div className="space-y-6 px-4 lg:px-6">
-                {selected && !matchTeamGame(selected) ? (
-                    <ConfigNotice tone="info" title={GAME_LABELS[selected]}>
-                        {dictionary.teams.notAvailableForGame}
-                    </ConfigNotice>
-                ) : (
-                    <TeamDirectory
-                        serverId={serverId}
-                        locale={resolvedLocale}
-                        dictionary={dictionary}
-                        settingsHref={`/${locale}/dashboard/servers/${serverId}/settings/games`}
-                        initialSearch={teamSearchParam(search)}
-                        sections={games.flatMap((gameId) =>
-                            gameId
-                                ? [
-                                      {
-                                          gameId,
-                                          enabled:
-                                              enabledGames.includes(gameId),
-                                      },
-                                  ]
-                                : []
-                        )}
-                    />
-                )}
+            <PageHeader title={m.title} description={m.description} />
+            <div className="space-y-6 px-4 pb-6 lg:px-6">
+                <LeagueAccount
+                    view={view}
+                    locale={safeLocale}
+                    competition={null}
+                    workspaceGuildId={context.server.discordId}
+                />
             </div>
         </>
     )

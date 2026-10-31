@@ -27,14 +27,16 @@ const ADOPTION_KEY = "competition-adoption"
  *
  * `linkedGuildId` records the Logi workspace the team represents: a new team
  * gets it, and a found active team without a link gains it. An existing link
- * is never replaced and linking grants no permissions.
+ * is never replaced and linking grants no permissions. If the server is already
+ * reserved by another team, adoption preserves the catalogue identity without
+ * attaching a second team; the result explicitly reports linked: false.
  */
 export async function adoptCatalogueTeam(
     ports: AdoptCatalogueTeamPorts,
     actor: string,
     input: { gameId: TeamGame; name: string; linkedGuildId: string | null }
 ): Promise<AdoptCatalogueTeamResult> {
-    const linkedGuildId = linkedGuildIdSchema.safeParse(input.linkedGuildId)
+    let linkedGuildId = linkedGuildIdSchema.safeParse(input.linkedGuildId)
         .success
         ? input.linkedGuildId
         : null
@@ -49,6 +51,16 @@ export async function adoptCatalogueTeam(
         parsed.data.gameId,
         normalizeTeamName(parsed.data.name)
     )
+    if (
+        linkedGuildId &&
+        (!existing || (!existing.linkedGuildId && !existing.archivedAt)) &&
+        (await ports.repository.guildOccupied(linkedGuildId, existing?.id))
+    ) {
+        // Preserve legacy competition records as catalogue teams, while reserving
+        // the server for its first team. The receipt reports linked: false.
+        linkedGuildId = null
+        parsed.data.linkedGuildId = null
+    }
     if (existing) {
         if (!linkedGuildId || existing.linkedGuildId || existing.archivedAt)
             return {

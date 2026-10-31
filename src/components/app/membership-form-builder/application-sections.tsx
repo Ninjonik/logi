@@ -34,13 +34,18 @@ export function SectionCard({
     title,
     description,
     children,
+    id,
 }: {
     title: string
     description?: string
     children: ReactNode
+    id?: string
 }) {
     return (
-        <section className="bg-card space-y-4 rounded-2xl border p-4 sm:p-5">
+        <section
+            id={id}
+            className="bg-card space-y-4 rounded-2xl border p-4 sm:p-5"
+        >
             <div className="space-y-1">
                 <h2 className="text-lg font-semibold">{title}</h2>
                 {description ? (
@@ -170,9 +175,12 @@ export function CategoriesSummary({
                                         </td>
                                         <td className="px-2 py-2.5">
                                             <RoleChip>
-                                                {(gameShort as Record<string, string>)[
-                                                    game
-                                                ] ?? game}
+                                                {(
+                                                    gameShort as Record<
+                                                        string,
+                                                        string
+                                                    >
+                                                )[game] ?? game}
                                             </RoleChip>
                                         </td>
                                         <td className="px-2 py-2.5">

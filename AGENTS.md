@@ -93,6 +93,44 @@ Keep framework entrypoints thin. Do not add shared business rules directly to `c
 
 Do not introduce grab-bag server modules or compatibility shims solely to preserve an obsolete Convex namespace. Prefer focused, feature-named modules and update callers.
 
+### Shared dashboard, API, and bot operations
+
+Implement each business operation once beneath its runtime entrypoints. The
+dashboard's server actions/routes, `/api/v1` integration routes, and bot handlers
+may use different authenticated Convex functions, but equivalent writes must
+delegate to the same application command and Convex repository adapter. Do not
+make SSR or server actions call Logi's own public HTTP API just to share logic.
+
+- Put deterministic policies in `src/domain/<feature>`, workflows and repository
+  ports in `src/application/<feature>`, and persistence implementations in
+  `src/infrastructure/convex`. Run shared writes inside the caller's Convex
+  transaction, including dependent updates and publication state.
+- Keep session/grant/API-key authentication, request parsing, rate limits,
+  idempotency, HTTP status/envelopes, and cache invalidation in the appropriate
+  adapters. Pass verified tenant/game scope to the shared command; enforce
+  resource ownership and cross-resource invariants there rather than repeating
+  them in each writer. Never substitute an internal secret for user authority.
+- Reuse the existing article, group, calendar-item, roster-management, preset,
+  and stratmap commands. Add new behavior there first and wire every applicable
+  caller to it. Supply clocks and external capabilities through ports.
+- Preserve established `/api/v1` paths and input/output contracts during an
+  internal consolidation. Do not introduce a new API version to hide duplicated
+  logic. If equivalent writers disagree on product behavior and the intended
+  rule is unclear, ask the maintainer before choosing one; document deliberate
+  capability differences instead of silently broadening access.
+- Squad preset saves preserve supplied `order` values. Topic preset saves retain
+  supplied IDs and optional messages; they do not generate missing IDs or default
+  message blocks. Calendar add/delete commands affect individual records; only
+  the explicit collection editor replaces the submitted list.
+- Separate dashboard aggregates, paginated API projections, and live Convex
+  reads are appropriate when their contracts differ. Share policies and mapping
+  where useful; retain each boundary's authorization and data redaction.
+- Test equivalent dashboard and v1 writes through their adapters against the
+  same invariants, including tenant/game rejection, dependent updates,
+  publication effects, and idempotent replay. Verify successful API writes also
+  invalidate affected cached dashboard/public reads. See
+  [CONTRIBUTING.md](./CONTRIBUTING.md#shared-write-infrastructure) for examples.
+
 ## Where New Work Goes
 
 | Change                                   | Primary location                             | Typical validation                                                       |

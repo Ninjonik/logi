@@ -12,7 +12,7 @@ const GUILD_COOKIE = "discord_oauth_guild"
 export async function GET(request: NextRequest) {
     const redirectTo = sanitizeLocalRedirect(
         request.nextUrl.searchParams.get("redirectTo"),
-        "/en/dashboard"
+        "/en"
     )
     const guildId = request.nextUrl.searchParams.get("guildId")
     const state = randomBytes(24).toString("hex")
