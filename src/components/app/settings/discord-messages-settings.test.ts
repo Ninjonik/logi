@@ -109,7 +109,7 @@ test("the page shows the board's sections and rows in Czech (N1-02..44)", () => 
     const page = text(render())
     for (const copy of [
         "Zprávy a panely v Discordu",
-        "Všechno, co bot posílá: kam, jestli vůbec a jak to vypadá. Píše v jazyce klanu a s barvou klanu.",
+        "Vyberte zprávy, které bot posílá, a jejich vzhled.",
         "Vzhled všech zpráv",
         "Platí pro ohlášení, panely, DM i odpovědi příkazů. Chyby bota pro správce mají šedý pruh.",
         "Barva klanu",
