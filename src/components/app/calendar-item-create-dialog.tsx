@@ -15,10 +15,18 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     validateCalendarItemInput,
     type CalendarItemRangeError,
 } from "@/domain/calendar/calendar-display"
 import { fromDateTimeLocalInTimeZone } from "@/lib/timezone-datetime"
+import type { CalendarItemRecurrence } from "@/types/domain"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -50,6 +58,20 @@ export function CalendarItemCreateDialog({
     const [title, setTitle] = useState("")
     const [startAt, setStartAt] = useState("")
     const [endAt, setEndAt] = useState("")
+    const [color, setColor] = useState("#7c3aed")
+    const [frequency, setFrequency] = useState<
+        CalendarItemRecurrence["frequency"] | "none"
+    >("none")
+    const [interval, setInterval] = useState("1")
+    const [until, setUntil] = useState("")
+    const settings = dictionary.serverSettings
+    const frequencies = [
+        ["none", settings.recurrenceNone],
+        ["weekly", settings.recurrenceWeekly],
+        ["monthly_date", settings.recurrenceMonthlyDate],
+        ["monthly_nth_weekday", settings.recurrenceMonthlyNthWeekday],
+        ["yearly", settings.recurrenceYearly],
+    ] as const
     const [open, setOpen] = useState(false)
     const [pending, setPending] = useState(false)
     const [errors, setErrors] = useState<
@@ -84,6 +106,20 @@ export function CalendarItemCreateDialog({
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
                         title: title.trim(),
+                        color,
+                        recurrence:
+                            frequency === "none"
+                                ? undefined
+                                : {
+                                      frequency,
+                                      interval: Number(interval),
+                                      until: until
+                                          ? (toInstant(
+                                                `${until}T23:59`,
+                                                timezone
+                                            ) ?? undefined)
+                                          : undefined,
+                                  },
                         startAt: startInstant,
                         endAt: endInstant,
                     }),
@@ -98,6 +134,10 @@ export function CalendarItemCreateDialog({
             setTitle("")
             setStartAt("")
             setEndAt("")
+            setColor("#7c3aed")
+            setFrequency("none")
+            setInterval("1")
+            setUntil("")
             router.refresh()
         } finally {
             setPending(false)
@@ -131,7 +171,7 @@ export function CalendarItemCreateDialog({
                     {dictionary.serverSettings.addCalendarItem}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl">
+            <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                     <DialogTitle>
                         {dictionary.serverSettings.addCalendarItem}
@@ -147,7 +187,6 @@ export function CalendarItemCreateDialog({
                 </DialogHeader>
                 <form
                     className="space-y-4"
-                    noValidate
                     onSubmit={(event) => {
                         event.preventDefault()
                         void submit()
@@ -207,6 +246,77 @@ export function CalendarItemCreateDialog({
                         />
                         {fieldError("endAt")}
                     </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="calendar-item-color">
+                            {dictionary.groups.color}
+                        </Label>
+                        <Input
+                            id="calendar-item-color"
+                            type="color"
+                            value={color}
+                            onChange={(event) => setColor(event.target.value)}
+                            className="h-10 w-20 cursor-pointer"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="calendar-item-recurrence">
+                            {settings.calendarItemRecurrence}
+                        </Label>
+                        <Select
+                            value={frequency}
+                            onValueChange={(value) => {
+                                const option = frequencies.find(
+                                    ([key]) => key === value
+                                )
+                                if (option) setFrequency(option[0])
+                            }}
+                        >
+                            <SelectTrigger id="calendar-item-recurrence">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {frequencies.map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {frequency !== "none" ? (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="calendar-item-interval">
+                                    {settings.calendarItemRecurrenceInterval}
+                                </Label>
+                                <Input
+                                    id="calendar-item-interval"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    required
+                                    value={interval}
+                                    onChange={(event) =>
+                                        setInterval(event.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="calendar-item-until">
+                                    {settings.calendarItemRecurrenceUntil}
+                                </Label>
+                                <Input
+                                    id="calendar-item-until"
+                                    type="date"
+                                    min={startAt.slice(0, 10) || undefined}
+                                    value={until}
+                                    onChange={(event) =>
+                                        setUntil(event.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                    ) : null}
                     <DialogFooter>
                         <Button
                             type="button"

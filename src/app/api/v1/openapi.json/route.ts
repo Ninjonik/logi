@@ -1216,7 +1216,12 @@ const calendarItemMutation = {
 }
 paths["/clan/calendar-items"] = {
     get: (paths["/clan/calendar-items"] as { get: unknown }).get,
-    post: { summary: "Create a calendar item", ...calendarItemMutation },
+    post: {
+        summary: "Create a calendar item",
+        description:
+            "Supports custom colors and weekly, monthly by date, monthly by weekday, or yearly recurrence, matching the dashboard calendar. Monthly weekday patterns are derived from startAt.",
+        ...calendarItemMutation,
+    },
 }
 paths["/clan/calendar-items/{id}"] = {
     get: (paths["/clan/calendar-items/{id}"] as { get: unknown }).get,

@@ -290,6 +290,41 @@ test("calendar item commands preserve concurrent API additions and recheck live 
     assert.equal(ctx.db.tables.calendarItems.length, 2)
 })
 
+test("dashboard and API calendar writes preserve color and monthly weekday recurrence", async () => {
+    const { ctx, actor } = fixture()
+    const fields = {
+        title: "Clan meeting",
+        startAt: "2030-01-01T18:00:00Z",
+        endAt: "2030-01-01T19:00:00Z",
+        allDay: false,
+        color: "#123abc",
+        recurrence: {
+            frequency: "monthly_nth_weekday" as const,
+            interval: 1,
+            until: "2030-12-31T23:59:00Z",
+        },
+    }
+    const nativeId = await invoke(calendarItems.create, ctx, {
+        secret,
+        guildId,
+        actor,
+        ...fields,
+    })
+    const response = await invoke(publicApi.mutateClanCalendarItem, ctx, {
+        ...api("calendar"),
+        operation: "create",
+        ...fields,
+    })
+    assert.equal(response.status, 201)
+    const apiId = JSON.parse(response.body).data.id
+    for (const id of [nativeId, apiId]) {
+        const stored = await ctx.db.get(id)
+        assert.ok(stored)
+        assert.equal(stored.color, fields.color)
+        assert.deepEqual(stored.recurrence, fields.recurrence)
+    }
+})
+
 test("v1 roster writes reject cross-game presets and stamp publication exactly once on replay", async () => {
     const { ctx } = fixture()
     ctx.db.seed("events", {
