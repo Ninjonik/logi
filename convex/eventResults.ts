@@ -18,6 +18,7 @@ import {
     publicPlatformLink,
 } from "./platformIdentityStore"
 import { canAdminServerContext } from "../src/infrastructure/convex/server-read-model"
+import { applyResultAttendance } from "../src/infrastructure/convex/result-attendance"
 import { rankSourceCandidates } from "../src/domain/match-results/source-candidates"
 import type { ResultRevision } from "../src/domain/match-results/result-revision"
 import { confirmResult } from "../src/application/match-results/confirm-result"
@@ -298,6 +299,7 @@ export const review = mutation({
             }
         )
         await saveCollectedPlayerStats(ctx, event, revision, previous)
+        await applyResultAttendance(ctx, event, revision)
         await applyReviewedResultToFixture(ctx, event, revision)
         return revision
     },
