@@ -4,6 +4,7 @@ import type { MutationCtx } from "../../../convex/_generated/server"
 import { invoke, spyReads, testContext } from "./testing/database"
 import * as publicApiReads from "../../../convex/publicApiReads"
 import * as links from "../../../convex/platformIdentityLinks"
+import { applyAttendanceEvidence } from "./result-attendance"
 import * as feed from "../../../convex/integrationChanges"
 import * as results from "../../../convex/eventResults"
 import assert from "node:assert/strict"
@@ -112,6 +113,97 @@ const confirm = (ctx: ReturnType<typeof fixture>, expectedRevision = 1) =>
         ...base,
         command: { action: "confirm", expectedRevision },
     })
+
+test("review confirmation reconciles roster attendance from provider names only after review", async () => {
+    const ctx = fixture()
+    await ctx.db.patch("users:a", { name: "Štěpán CZ" })
+    await ctx.db.patch("platformIdentityLinks:a", {
+        active: false,
+        revokedAt: 2,
+    })
+    const row = await ctx.db.get("gameSessions:a")
+    await ctx.db.patch("gameSessions:a", {
+        session: {
+            ...row?.session,
+            players: [
+                {
+                    platform: "steam",
+                    platformId: "76561198000000001",
+                    name: "[CLAN] stepan-cz",
+                    metrics: {},
+                },
+            ],
+        },
+    })
+    ctx.db.seed("rosters", {
+        _id: "rosters:a",
+        eventId: "events:a",
+        guildId: "guild",
+        gameId: "hell_let_loose",
+        squads: [
+            {
+                name: "A",
+                group: "A",
+                order: 0,
+                color: "red",
+                players: [
+                    { id: "player", ack: false },
+                    { id: "admin-marked", ack: true, confirmed: true },
+                ],
+            },
+        ],
+        reservePlayerIds: [],
+        notAttendingPlayerIds: [],
+        published: true,
+    })
+    await stage(ctx)
+    assert.equal(
+        (await ctx.db.get("rosters:a"))?.squads[0].players[0].confirmed,
+        undefined
+    )
+    await confirm(ctx)
+    const players = (await ctx.db.get("rosters:a"))?.squads[0].players
+    assert.equal(players[0].confirmed, true)
+    assert.equal(players[1].confirmed, true)
+})
+test("import evidence respects closed matches and tenant/game scope and is idempotent", async () => {
+    for (const patch of [
+        {},
+        { status: "concluded" },
+        { scoreAppliedAt: "2026-10-01T00:00:00Z" },
+        { guildId: "other" },
+        { gameId: "wardogs" },
+    ]) {
+        const ctx = fixture()
+        await ctx.db.patch("users:a", { name: "Player" })
+        ctx.db.seed("rosters", {
+            _id: "rosters:a",
+            eventId: "events:a",
+            guildId: "guild",
+            gameId: "hell_let_loose",
+            squads: [],
+            reservePlayerIds: ["player"],
+            notAttendingPlayerIds: [],
+            published: true,
+        })
+        await ctx.db.patch("events:a", patch)
+        const event = await ctx.db.get("events:a")
+        const evidence = [
+            { key: "steam:1", logiUserId: null, name: "[CLAN] Player" },
+        ]
+        for (let i = 0; i < 2; i++)
+            await applyAttendanceEvidence(
+                ctx as unknown as MutationCtx,
+                event as never,
+                evidence,
+                "2026-10-01T00:00:00Z"
+            )
+        const attendance = (await ctx.db.get("rosters:a"))?.reserveAttendances
+        assert.equal(attendance?.length ?? 0, Object.keys(patch).length ? 0 : 1)
+        if (attendance?.length) assert.equal(attendance[0].confirmed, true)
+    }
+})
+
 test("explicit session/event link freezes provisional data; confirm/correction append with CAS", async () => {
     const ctx = fixture()
     const provisional = await stage(ctx)

@@ -23,8 +23,19 @@ transaction; concurrent or stale commands conflict rather than overwrite.
 Confirmation records the authenticated reviewer and timestamp. Correction records
 its reason and superseded version; earlier rows remain intact. The management UI
 shows the latest 20 revisions; this is a read bound, not deletion of old revisions.
-No automatic promotion, bulk identity verification, nickname match, destructive
+No automatic promotion, bulk identity verification, destructive
 history edit or result-retraction command is included.
+
+For open, unscored matches, scoreboard-link imports, confirmation and correction also reconcile roster
+and reserve attendance in the same transaction. Verified linked accounts take
+priority; otherwise unique normalized names (profile, clan nickname or Steam
+name) can supply attendance evidence. Bracketed tags, accents, case and punctuation
+are ignored. Ambiguous names and existing confirmations remain unchanged. This
+does not establish verified identity or change public player attribution.
+Provisional results, scores without player evidence and closed matches do not
+change attendance. The `/api/v1` result summaries remain read-only; review writes
+require the existing first-party reviewer lifecycle and are deliberately excluded
+from integration-key operations.
 
 An HLL source link is explicit and binds a stored session ID, provider, external
 ID, digest, map, time range and completeness to the event's guild/game. Confirmation

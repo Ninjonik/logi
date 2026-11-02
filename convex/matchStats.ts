@@ -1,3 +1,4 @@
+import { applyAttendanceEvidence } from "../src/infrastructure/convex/result-attendance"
 import { storeMatchPreview } from "./publicPreviewStore"
 import type { MutationCtx } from "./_generated/server"
 import { internalAuthSecret } from "./discord_shared"
@@ -215,6 +216,16 @@ export const upsertForEvent = mutation({
             .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
             .unique()
         const now = new Date().toISOString()
+        await applyAttendanceEvidence(
+            ctx,
+            event,
+            args.raw.player_stats.map((player) => ({
+                key: player.player_id,
+                logiUserId: null,
+                name: player.player,
+            })),
+            now
+        )
 
         if (existing) {
             await ctx.db.patch(existing._id, {
