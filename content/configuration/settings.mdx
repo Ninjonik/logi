@@ -831,8 +831,14 @@ your signed-in server administrator session; API keys cannot change it.
 
 ### Event discussion defaults
 
-On **Channels and language**, set the clan's match forum creation, automatic
-forum deletion, debrief switch, destination, and debrief forum channel. Each
+On **Channels and language → Text channels**, the **Debrief forum channel** uses
+the same clan-wide picker and game exception rows as announcements and event
+information. Adding or removing a channel exception affects only that channel;
+it preserves the game's other discussion settings. A game without a channel
+exception inherits the clan-wide debrief forum.
+
+Under **Event discussion defaults**, set the clan's match forum creation, automatic
+forum deletion, debrief switch, and destination. Each
 enabled game can use clan defaults or its own override. New events copy these
 settings, and each event can override them without changing clan defaults.
 

@@ -23,12 +23,14 @@ export function EventDiscussionFields({
     dictionary,
     channels,
     includeForum = false,
+    includeDebriefForumChannel = true,
 }: {
     value: EventDiscussionSettings
     onChange(value: EventDiscussionSettings): void
     dictionary: Dictionary
     channels: readonly SelectableDiscordChannel[]
     includeForum?: boolean
+    includeDebriefForumChannel?: boolean
 }) {
     const id = useId()
     const t = dictionary.newMatch.discord
@@ -145,7 +147,8 @@ export function EventDiscussionFields({
                             {t.debriefResultsWarning}
                         </p>
                     ) : null}
-                    {destination === "debrief_forum" ? (
+                    {destination === "debrief_forum" &&
+                    includeDebriefForumChannel ? (
                         <div className="space-y-2">
                             <Label htmlFor={`${id}-forum`}>
                                 {t.debriefForumChannel}

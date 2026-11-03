@@ -5032,6 +5032,8 @@ export const plMessages = {
             debriefSeparateForum: "Temat na osobnym forum podsumowań",
             debriefLegacyPrivate: "Istniejące prywatne podsumowanie",
             debriefForumChannel: "Kanał forum podsumowań",
+            debriefForumChannelHint:
+                "Dla podsumowań na osobnym forum. Ustaw kanał klanu i dodaj wyjątki dla gier; pozostałe ustawienia dyskusji znajdują się poniżej.",
             debriefResultsWarning:
                 "Podsumowanie pod wynikiem wymaga opublikowania wyniku po meczu. Forum meczu pozostaje do czasu utworzenia podsumowania.",
             discussionDefaults: "Domyślne dyskusje wydarzeń",

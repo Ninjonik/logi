@@ -52,6 +52,14 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
+type RoutingChannelField = GameExceptionChannelField | "debriefForumChannelId"
+
+function hasDiscussionBehaviorOverride(settings?: EventDiscussionSettings) {
+    return Object.entries(settings ?? {}).some(
+        ([key, value]) => key !== "debriefForumChannelId" && value !== undefined
+    )
+}
+
 type Exceptions = Record<
     GameExceptionChannelField,
     Partial<Record<GameId, string>>
@@ -68,7 +76,8 @@ type Values = {
     eventResultsChannelId?: string
 } & Record<GameExceptionChannelField, string | undefined>
 
-const KINDS: Record<GameExceptionChannelField, ChannelKind> = {
+const KINDS: Record<RoutingChannelField, ChannelKind> = {
+    debriefForumChannelId: "forum",
     announcementsChannelId: "text",
     eventInfoChannelId: "text",
     forumCategoryId: "category",
@@ -245,7 +254,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function picker(
-        field: GameExceptionChannelField,
+        field: RoutingChannelField,
         kind: ChannelKind,
         value: string | undefined,
         onChange: (value?: string) => void,
@@ -259,7 +268,7 @@ export function DiscordChannelSettingsForm({
                 options={channelOptions(channels, kind)}
                 kind={kind}
                 placeholder={
-                    kind === "text" || kind === "voice"
+                    kind !== "category"
                         ? text.selectChannel
                         : text.selectCategory
                 }
@@ -275,15 +284,39 @@ export function DiscordChannelSettingsForm({
         )
     }
 
-    function exceptionRows(field: GameExceptionChannelField) {
-        if (!multiGame) return null
-        const rows = enabledGames.filter((game) => game in exceptions[field])
-        const addable = enabledGames.filter(
-            (game) => !(game in exceptions[field])
-        )
-        const set = (next: Partial<Record<GameId, string>>) =>
-            setExceptions((current) => ({ ...current, [field]: next }))
-        const add = (game: GameId) => set({ ...exceptions[field], [game]: "" })
+    function exceptionRows(field: RoutingChannelField) {
+        const entries =
+            field === "debriefForumChannelId"
+                ? Object.fromEntries(
+                      enabledGames.flatMap((game) => {
+                          const channel =
+                              discussionGames[game]?.debriefForumChannelId
+                          return channel !== undefined ? [[game, channel]] : []
+                      })
+                  )
+                : exceptions[field]
+        if (!multiGame && Object.keys(entries).length === 0) return null
+        const rows = enabledGames.filter((game) => game in entries)
+        const addable = enabledGames.filter((game) => !(game in entries))
+        const set = (entries: Partial<Record<GameId, string>>) => {
+            if (field !== "debriefForumChannelId") {
+                setExceptions((current) => ({ ...current, [field]: entries }))
+                return
+            }
+            setDiscussionGames((current) => {
+                const next = { ...current }
+                for (const game of enabledGames) {
+                    const settings = { ...next[game] }
+                    if (game in entries)
+                        settings.debriefForumChannelId = entries[game]
+                    else delete settings.debriefForumChannelId
+                    if (Object.keys(settings).length) next[game] = settings
+                    else delete next[game]
+                }
+                return next
+            })
+        }
+        const add = (game: GameId) => set({ ...entries, [game]: "" })
         const addLabel =
             KINDS[field] === "category"
                 ? text.addCategoryException
@@ -300,10 +333,10 @@ export function DiscordChannelSettingsForm({
                             {picker(
                                 field,
                                 KINDS[field],
-                                exceptions[field][game] || undefined,
+                                entries[game] || undefined,
                                 (next) =>
                                     set({
-                                        ...exceptions[field],
+                                        ...entries,
                                         [game]: next ?? "",
                                     })
                             )}
@@ -318,7 +351,7 @@ export function DiscordChannelSettingsForm({
                                 GAME_LABELS[game]
                             )}
                             onClick={() => {
-                                const next = { ...exceptions[field] }
+                                const next = { ...entries }
                                 delete next[game]
                                 set(next)
                             }}
@@ -368,7 +401,7 @@ export function DiscordChannelSettingsForm({
     }
 
     function routingRow(
-        field: GameExceptionChannelField,
+        field: RoutingChannelField,
         label: ReactNode,
         help: string
     ) {
@@ -378,8 +411,16 @@ export function DiscordChannelSettingsForm({
                     {picker(
                         field,
                         KINDS[field],
-                        values[field],
-                        (value) => setValue(field, value),
+                        field === "debriefForumChannelId"
+                            ? discussion.debriefForumChannelId
+                            : values[field],
+                        (value) =>
+                            field === "debriefForumChannelId"
+                                ? setDiscussion((current) => ({
+                                      ...current,
+                                      debriefForumChannelId: value,
+                                  }))
+                                : setValue(field, value),
                         {
                             id: `channels-${field}`,
                             attention:
@@ -587,6 +628,11 @@ export function DiscordChannelSettingsForm({
                     </SettingsField>
                 </Row>
                 {routingRow("forumCategoryId", text.forum, text.forumHelp)}
+                {routingRow(
+                    "debriefForumChannelId",
+                    dictionary.newMatch.discord.debriefForumChannel,
+                    dictionary.newMatch.discord.debriefForumChannelHint
+                )}
             </Card>
 
             <Card
@@ -600,6 +646,7 @@ export function DiscordChannelSettingsForm({
                     dictionary={dictionary}
                     channels={channels}
                     includeForum
+                    includeDebriefForumChannel={false}
                     value={{
                         createForumChannel: true,
                         createDebriefThread: true,
@@ -614,20 +661,38 @@ export function DiscordChannelSettingsForm({
                         <div className="flex items-center gap-3">
                             <Switch
                                 id={`discussion-${game}`}
-                                checked={Boolean(discussionGames[game])}
+                                checked={hasDiscussionBehaviorOverride(
+                                    discussionGames[game]
+                                )}
                                 onCheckedChange={(checked) =>
                                     setDiscussionGames((current) => {
                                         const next = { ...current }
-                                        if (checked)
+                                        if (checked) {
+                                            const {
+                                                debriefForumChannelId:
+                                                    _inheritedChannel,
+                                                ...behaviorDefaults
+                                            } = discussion
                                             next[game] = {
                                                 createForumChannel: true,
                                                 createDebriefThread: true,
                                                 deleteForumAfterConclusion: true,
                                                 debriefDestination:
                                                     "results_thread",
-                                                ...discussion,
+                                                ...behaviorDefaults,
+                                                ...current[game],
                                             }
-                                        else delete next[game]
+                                        } else if (
+                                            current[game]
+                                                ?.debriefForumChannelId !==
+                                            undefined
+                                        ) {
+                                            next[game] = {
+                                                debriefForumChannelId:
+                                                    current[game]
+                                                        ?.debriefForumChannelId,
+                                            }
+                                        } else delete next[game]
                                         return next
                                     })
                                 }
@@ -640,16 +705,31 @@ export function DiscordChannelSettingsForm({
                                 }
                             </Label>
                         </div>
-                        {discussionGames[game] ? (
+                        {hasDiscussionBehaviorOverride(
+                            discussionGames[game]
+                        ) ? (
                             <EventDiscussionFields
                                 dictionary={dictionary}
                                 channels={channels}
                                 includeForum
-                                value={discussionGames[game]}
+                                includeDebriefForumChannel={false}
+                                value={{
+                                    createForumChannel: true,
+                                    createDebriefThread: true,
+                                    deleteForumAfterConclusion: true,
+                                    debriefDestination: "results_thread",
+                                    ...discussion,
+                                    ...discussionGames[game],
+                                }}
                                 onChange={(settings) =>
                                     setDiscussionGames((current) => ({
                                         ...current,
-                                        [game]: settings,
+                                        [game]: {
+                                            ...settings,
+                                            debriefForumChannelId:
+                                                current[game]
+                                                    ?.debriefForumChannelId,
+                                        },
                                     }))
                                 }
                             />

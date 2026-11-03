@@ -30,7 +30,7 @@ export type SelectableDiscordChannel = {
     parentId?: string
 }
 export type ChannelOption = { id: string; name: string; disabled?: boolean }
-export type ChannelKind = "text" | "category" | "voice"
+export type ChannelKind = "text" | "category" | "voice" | "forum"
 
 export function channelOptions(
     channels: readonly SelectableDiscordChannel[],
@@ -43,7 +43,9 @@ export function channelOptions(
                 ? channel.type === 4
                 : kind === "voice"
                   ? channel.type === 2 || channel.type === 13
-                  : canUseChannelType(purpose, channel.type)
+                  : kind === "forum"
+                    ? channel.type === 15
+                    : canUseChannelType(purpose, channel.type)
         )
         .map((channel) => ({ id: channel.id, name: channel.name }))
 }
@@ -105,7 +107,7 @@ export function DiscordChannelSelect(props: Props) {
     const names = selected.map((value) => {
         const option = known.find((option) => option.id === value)
         return option
-            ? `${kind === "text" ? "# " : ""}${option.name}`
+            ? `${kind === "text" || kind === "forum" ? "# " : ""}${option.name}`
             : `${value} · ${t("checkAccess")}`
     })
     const choose = (value?: string) => {
@@ -211,7 +213,8 @@ export function DiscordChannelSelect(props: Props) {
                                 >
                                     <span className="min-w-0">
                                         <span className="block truncate">
-                                            {kind === "text" &&
+                                            {(kind === "text" ||
+                                                kind === "forum") &&
                                             option.name !== option.id
                                                 ? "# "
                                                 : ""}

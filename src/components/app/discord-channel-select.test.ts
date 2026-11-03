@@ -11,6 +11,7 @@ const channels = [
     { id: "101", name: "general", type: 0 },
     { id: "102", name: "voice", type: 2 },
     { id: "103", name: "category", type: 4 },
+    { id: "104", name: "debriefs", type: 15 },
 ]
 
 function render(props: Parameters<typeof DiscordChannelSelect>[0]) {
@@ -60,6 +61,10 @@ test("loading disables the shared select", () => {
 })
 
 test("channel choices preserve each field's purpose and channel kind", () => {
+    assert.deepEqual(
+        channelOptions(channels, "forum").map((channel) => channel.id),
+        ["104"]
+    )
     assert.deepEqual(
         channelOptions(channels, "category").map((channel) => channel.id),
         ["103"]

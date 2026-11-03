@@ -4928,6 +4928,8 @@ export const csMessages = {
             debriefSeparateForum: "Téma v samostatném fóru debriefů",
             debriefLegacyPrivate: "Stávající soukromý debrief",
             debriefForumChannel: "Kanál fóra pro debriefy",
+            debriefForumChannelHint:
+                "Používá se pro debriefy v samostatném fóru. Nastavte výchozí kanál klanu a přidejte výjimky pro hry; ostatní nastavení diskuzí je níže.",
             debriefResultsWarning:
                 "Debrief pod výsledky vyžaduje zveřejnění výsledku po zápase. Fórum zápasu zůstane zachováno, dokud debrief nevznikne.",
             discussionDefaults: "Výchozí nastavení diskuzí událostí",
