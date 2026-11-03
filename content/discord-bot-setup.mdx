@@ -325,3 +325,10 @@ Logi uses several role mechanisms. They look similar in the settings screen, but
 When membership applications are enabled, the panel needs a submit channel, an application parent channel, and at least one category. A category defines the assignment type to create, staff/support roles, any questions, and optional recruit and final Discord roles.
 
 An applicant can have only one open application in that workspace. Opening one creates a private Discord thread, adds the applicant and configured support members where Discord permits it, and creates a **pending** Logi assignment if one does not already exist. Closing the thread records an outcome. A membership outcome updates the assignment and applies the membership-role transition in the table above; a denial closes the application without creating an active membership role set. Thread creation, permissions, and role updates can fail independently, so inspect the bot error channel and the saved application state after a test.
+
+## Checking bot presence
+
+After inviting the bot, choose **Check again** in Workspace setup or refresh bot
+status in settings. A successful check refreshes cached workspace status as well
+as the stored Discord presence. If Discord cannot be checked, Logi shows an error
+and preserves the last known presence rather than marking the bot absent.

@@ -425,5 +425,5 @@ const de: LeagueMessages = {
         "Einladungen und offene Ergebnismeldungen sehen nur du und dein Team.",
 }
 export function getLeagueMessages(locale: Locale): LeagueMessages {
-    return locale === "cs" ? cs : locale === "de" ? de : en
+    return locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
 }

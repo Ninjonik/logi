@@ -6,7 +6,7 @@ import type { HllLighting, HllMode } from "./panel-graphics"
  * language. Czech follows the P7 board verbatim; English and German use the
  * same keys and the informal tone of bot messages.
  */
-export const PANEL_IMAGE_LANGUAGES = ["cs", "en", "de"] as const
+export const PANEL_IMAGE_LANGUAGES = ["cs", "en", "de", "pl"] as const
 export type PanelImageLanguage = (typeof PANEL_IMAGE_LANGUAGES)[number]
 
 export type PanelImageCopy = {

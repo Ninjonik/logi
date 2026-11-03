@@ -68,5 +68,5 @@ const copy = {
     },
 }
 export function tacticalPlanCopy(locale: string) {
-    return copy[locale === "cs" ? "cs" : locale === "de" ? "de" : "en"]
+    return copy[locale === "cs" ? "cs" : locale === "de" ? "de" : locale === "pl" ? "pl" : "en"]
 }

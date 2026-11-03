@@ -121,3 +121,20 @@ test("first login includes bot installation when an admin has an unconnected ful
     assert.ok(tourChapters("welcome", false).includes("bot"))
     assert.ok(!tourChapters("welcome", true).includes("bot"))
 })
+
+test("completing or skipping manager guidance opens workspace setup; members keep their return route", async () => {
+    const { setupWorkspaceAfterTour } = await import("./tours")
+    for (const kind of ["welcome", "manager", "competitions"] as const) {
+        assert.equal(setupWorkspaceAfterTour(kind, admin), "clan-a")
+        assert.equal(
+            setupWorkspaceAfterTour(kind, { ...admin, canManage: false }),
+            null
+        )
+        assert.equal(
+            setupWorkspaceAfterTour(kind, { ...admin, workspaceId: undefined }),
+            null
+        )
+    }
+    assert.equal(setupWorkspaceAfterTour("member", admin), null)
+    assert.equal(setupWorkspaceAfterTour("competition-member", admin), null)
+})

@@ -275,5 +275,5 @@ const de: Copy = {
     awaiting: "Wartet auf Prüfung",
 }
 export function onboardingSamples(locale: Locale): Copy {
-    return locale === "cs" ? cs : locale === "de" ? de : en
+    return locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
 }

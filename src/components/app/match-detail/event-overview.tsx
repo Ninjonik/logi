@@ -76,7 +76,7 @@ export async function EventOverview({
     const linked = linkedTeams.find((team) => team.gameId === teamGame)
     const summaryContext: FlowSummaryContext = {
         t,
-        intl: locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : "en-GB",
+        intl: locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-GB",
         timezone,
         clanName: context.server.name,
         ownTeam: storedOwn

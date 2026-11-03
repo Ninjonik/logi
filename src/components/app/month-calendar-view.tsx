@@ -55,7 +55,7 @@ export function MonthCalendarView({
     groups: Group[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs" | "de"
+    signupLanguage: "en" | "cs" | "de" | "pl"
     currentUserId?: string
     canAdmin?: boolean
 }) {

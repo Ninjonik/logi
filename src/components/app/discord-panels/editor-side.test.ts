@@ -12,7 +12,7 @@ import { JoinPageMock } from "./editor-side"
 const textOf = (html: string) => html.replace(/<[^>]+>/g, " ")
 
 const mock = (
-    locale: "cs" | "en" | "de",
+    locale: "cs" | "en" | "de" | "pl",
     game: "hell_let_loose" | "wardogs",
     value: { address?: string | null; joinCode?: string | null } = {}
 ) =>

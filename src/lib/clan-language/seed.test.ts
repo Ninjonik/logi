@@ -14,7 +14,7 @@ test("cs, en and de have the same seed copy keys", () => {
     const cs = keys(getSeedMessages("cs")).sort()
     assert.deepEqual(keys(getSeedMessages("en")).sort(), cs)
     assert.deepEqual(keys(getSeedMessages("de")).sort(), cs)
-    for (const language of ["cs", "en", "de"])
+    for (const language of ["cs", "en", "de", "pl"])
         assert.equal(getSeedMessages(language).weekdays.length, 7)
 })
 

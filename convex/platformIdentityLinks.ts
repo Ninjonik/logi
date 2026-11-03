@@ -30,7 +30,7 @@ export const begin = mutation({
         sid: v.string(),
         tokenHash: v.string(),
         returnOrigin: v.string(),
-        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de")),
+        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de"), v.literal("pl")),
         expiresAt: v.number(),
     },
     handler: async (ctx, args) => {

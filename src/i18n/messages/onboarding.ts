@@ -604,7 +604,7 @@ const labels = {
 }
 export function getOnboardingCopy(locale: Locale) {
     return {
-        chapters: locale === "cs" ? cs : locale === "de" ? de : en,
+        chapters: locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en,
         labels: labels[locale],
     }
 }

@@ -29,7 +29,7 @@ export const normalizeDoc = normalizeReadModelDoc
 export { normalizeCalendarItemDoc, normalizeEventDoc, normalizeUserDoc }
 
 export function normalizeConfigDoc<
-    T extends { _id: unknown; defaultLanguage?: "en" | "cs" | "de" },
+    T extends { _id: unknown; defaultLanguage?: "en" | "cs" | "de" | "pl" },
 >(doc: T) {
     return {
         ...normalizeReadModelDoc(doc),

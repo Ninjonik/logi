@@ -338,7 +338,7 @@ test("an active catalogue team with the same normalized name is a duplicate", ()
     assert.equal(catalogueDuplicate(items, "bravo"), null)
 })
 
-for (const locale of ["en", "cs", "de"] as const) {
+for (const locale of ["en", "cs", "de", "pl"] as const) {
     test(`logo upload failures read from the ${locale} team messages with the retry wait`, () => {
         const messages = getDictionary(locale).teams.uploadErrors
         for (const error of IMAGE_UPLOAD_ERRORS) {

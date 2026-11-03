@@ -263,7 +263,7 @@ export async function mutateClanApiSettings(input: {
     avatar?: string
     description?: string | null
     timezone?: string
-    defaultLanguage?: "en" | "cs" | "de"
+    defaultLanguage?: "en" | "cs" | "de" | "pl"
     announcementsChannelId?: string | null
     eventInfoChannelId?: string | null
     eventResultsChannelId?: string | null

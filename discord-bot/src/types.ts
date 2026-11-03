@@ -1,7 +1,7 @@
 import type { MessageStyle } from "../../src/domain/discord-messages/message-style"
 import type { GameId } from "../../src/domain/games/game"
 
-export type ClanLanguage = "en" | "cs" | "de"
+export type ClanLanguage = "en" | "cs" | "de" | "pl"
 
 export type TicketModalQuestion = {
     id: string

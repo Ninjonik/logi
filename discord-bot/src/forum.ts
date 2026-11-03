@@ -289,7 +289,7 @@ export async function loadForumContext(eventId: string) {
 
 const infoPostNames = () => [
     ...new Set(
-        (["en", "cs", "de"] as const).flatMap((language) => [
+        (["en", "cs", "de", "pl"] as const).flatMap((language) => [
             getRosterMessages(language).forum.info,
             getEventMessages(language).forum.matchInformation,
         ])
@@ -298,7 +298,7 @@ const infoPostNames = () => [
 
 const debriefPostNames = () => [
     ...new Set(
-        (["en", "cs", "de"] as const).flatMap((language) => [
+        (["en", "cs", "de", "pl"] as const).flatMap((language) => [
             getRosterMessages(language).forum.debrief,
             getEventMessages(language).forum.debrief,
         ])

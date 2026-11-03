@@ -56,7 +56,7 @@ test("the recovery gap uses each language's plural forms", () => {
         "Der nächste Versuch eine Minute später ging durch."
     )
     // Every error code has its past wording in every language.
-    for (const locale of ["cs", "en", "de"] as const) {
+    for (const locale of ["cs", "en", "de", "pl"] as const) {
         const errors = getDictionary(locale).discordPanelStatus.errors
         for (const [code, copy] of Object.entries(errors))
             assert.ok(copy.past.trim(), `${locale} ${code}`)

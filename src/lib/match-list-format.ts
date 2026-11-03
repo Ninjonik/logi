@@ -2,7 +2,7 @@ import type { Dictionary } from "@/i18n/dictionaries"
 import type { MatchRecurrence } from "@/types/domain"
 
 export function intlLocale(locale: string) {
-    return locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : "en-GB"
+    return locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-GB"
 }
 
 /** Weekday name for 0 = Sunday … 6 = Saturday, as stored in match recurrences. */

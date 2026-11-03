@@ -7,7 +7,7 @@ export type SeedTemplateKey = "server" | "players" | "missing" | "threshold"
 
 /** The placeholder spelling offered by the editor in each clan language. */
 export const SEED_TEMPLATE_TOKENS: Record<
-    "cs" | "en" | "de",
+    "cs" | "en" | "de" | "pl",
     Record<SeedTemplateKey, string>
 > = {
     cs: {

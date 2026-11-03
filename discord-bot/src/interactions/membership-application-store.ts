@@ -35,7 +35,7 @@ import { logWarn } from "../log"
 export type ApplicationState = {
     enabled: boolean
     webFormEnabled: boolean
-    language: "en" | "cs" | "de"
+    language: "en" | "cs" | "de" | "pl"
     timeZone: string
     clanName: string
     guildRecordId: string | null

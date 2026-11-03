@@ -95,5 +95,5 @@ const de: Copy = {
     resume: "Tour fortsetzen",
 }
 export function getWalkthroughCopy(locale: Locale): Copy {
-    return locale === "cs" ? cs : locale === "de" ? de : en
+    return locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
 }

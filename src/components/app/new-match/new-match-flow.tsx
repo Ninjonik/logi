@@ -504,7 +504,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         [templates, values.gameId]
     )
     const groupsOfGame = gameGroups(groups, values.gameId)
-    const intl = locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : "en-GB"
+    const intl = locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-GB"
 
     const textChannels = (metadata?.channels ?? []).filter(
         (channel) => channel.type === 0 || channel.type === 5

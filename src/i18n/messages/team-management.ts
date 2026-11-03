@@ -124,4 +124,4 @@ const de: Messages = {
     teamCreated: "Team erstellt und Anmeldung eingereicht.",
 }
 export const getTeamManagementMessages = (locale: Locale): Messages =>
-    locale === "cs" ? cs : locale === "de" ? de : en
+    locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en

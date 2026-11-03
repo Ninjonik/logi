@@ -58,7 +58,7 @@ const overview: Overview = {
     seed: { configured: true, enabled: true },
 }
 
-function render(locale: "cs" | "en" | "de" = "cs") {
+function render(locale: "cs" | "en" | "de" | "pl" = "cs") {
     const dictionary = getDictionary(locale)
     return renderToStaticMarkup(
         // The provider's types require `children` among its props.

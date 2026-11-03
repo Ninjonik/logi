@@ -236,7 +236,7 @@ export function nextSeedSlot(slots: readonly SeedScheduleSlot[]) {
 /** The placeholders offered under the call text, in the clan language. */
 export function seedTemplateTokens(language: string) {
     const tokens =
-        language === "cs" || language === "de"
+        language === "cs" || language === "de" || language === "pl"
             ? SEED_TEMPLATE_TOKENS[language]
             : SEED_TEMPLATE_TOKENS.en
     return [tokens.server, tokens.players, tokens.missing, tokens.threshold]

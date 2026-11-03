@@ -236,7 +236,7 @@ export type DiscordConfig = {
     id: string
     guildId: string
     timezone: string
-    defaultLanguage: "en" | "cs" | "de"
+    defaultLanguage: "en" | "cs" | "de" | "pl"
     announcementsChannelId?: string
     eventInfoChannelId?: string
     /** Clan-wide results destination, shared by all games. */

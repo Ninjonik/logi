@@ -2,5 +2,6 @@
 export function toIntlLocale(locale: string): string {
     if (locale === "cs") return "cs-CZ"
     if (locale === "de") return "de-DE"
+    if (locale === "pl") return "pl-PL"
     return "en-GB"
 }

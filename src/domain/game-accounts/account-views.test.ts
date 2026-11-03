@@ -322,7 +322,7 @@ test("errors: invalid Steam64, taken ID and a stale offer (L4-56, L4-58, M3-11, 
 })
 
 test("every /link card passes the board rules in all three languages", () => {
-    for (const language of ["cs", "en", "de"] as const) {
+    for (const language of ["cs", "en", "de", "pl"] as const) {
         const copy = getGameAccountMessages(language)
         for (const platform of [
             "steam",

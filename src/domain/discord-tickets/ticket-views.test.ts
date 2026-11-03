@@ -342,7 +342,7 @@ test("reasons are quoted line by line and escaped", () => {
 })
 
 test("every ticket card passes the board rules in all three languages", () => {
-    for (const language of ["cs", "en", "de"] as const) {
+    for (const language of ["cs", "en", "de", "pl"] as const) {
         const copy = getTicketMessages(language)
         layoutForTest(
             ticketPanelView({ title: "x", categories, copy }),

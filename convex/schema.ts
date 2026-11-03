@@ -680,7 +680,7 @@ export default defineSchema({
         discordUserId: v.string(),
         userRecordId: v.id("users"),
         returnOrigin: v.string(),
-        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de")),
+        locale: v.union(v.literal("en"), v.literal("cs"), v.literal("de"), v.literal("pl")),
         createdAt: v.number(),
         expiresAt: v.number(),
         status: v.union(
@@ -815,7 +815,7 @@ export default defineSchema({
         defaultLanguage: v.union(
             v.literal("en"),
             v.literal("cs"),
-            v.literal("de")
+            v.literal("de"), v.literal("pl")
         ),
         announcementsChannelId: v.optional(v.string()),
         eventInfoChannelId: v.optional(v.string()),

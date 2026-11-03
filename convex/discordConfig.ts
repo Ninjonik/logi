@@ -112,7 +112,7 @@ export const upsertConfig = mutation({
         guildId: v.id("guilds"),
         timezone: v.optional(v.string()),
         defaultLanguage: v.optional(
-            v.union(v.literal("en"), v.literal("cs"), v.literal("de"))
+            v.union(v.literal("en"), v.literal("cs"), v.literal("de"), v.literal("pl"))
         ),
         announcementsChannelId: clearableId,
         eventInfoChannelId: clearableId,

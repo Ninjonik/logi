@@ -567,7 +567,7 @@ const DESCRIPTION_ORDER: readonly LogiCommand[] = [
     "close_ticket",
     "close_application",
 ]
-const COLUMN_ORDER: readonly ClanLanguage[] = ["cs", "en", "de"]
+const COLUMN_ORDER: readonly ClanLanguage[] = ["cs", "en", "de", "pl"]
 
 /** The clan language's column first, then Czech, English and German. */
 function languageColumns(clanLanguage: ClanLanguage) {

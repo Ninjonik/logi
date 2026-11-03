@@ -1,6 +1,7 @@
 "use client"
 import {
     nextTour,
+    setupWorkspaceAfterTour,
     parseBookmark,
     tourKey,
     workspaceTour,
@@ -41,6 +42,7 @@ import {
 } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { WalkthroughContext } from "./onboarding/walkthrough-context"
+import { guidedSetupHref } from "./settings/settings-section-meta"
 import { getWalkthroughCopy } from "@/i18n/messages/walkthrough"
 import { getOnboardingCopy } from "@/i18n/messages/onboarding"
 import { canAdminWorkspace } from "@/lib/workspace-admin"
@@ -308,7 +310,35 @@ function Walkthrough({
             })
             void persist(active.key)
         }
-        const back = active.returnHref
+        const target =
+            servers.find((item) => item.id === active.workspaceId) ?? candidate
+        const setupWorkspace = done
+            ? setupWorkspaceAfterTour(active.kind, {
+                  workspaceId: target?.id,
+                  canManage: target ? canAdminWorkspace(target, userId) : false,
+                  limited: target?.workspaceMode === "competitions",
+                  botInside: target?.botInside ?? false,
+              })
+            : null
+        // Skipping first-login guidance also dismisses the pending manager tour;
+        // returning from setup must not immediately launch another introduction.
+        if (setupWorkspace && active.kind === "welcome") {
+            const key = tourKey(
+                workspaceTour({
+                    workspaceId: setupWorkspace,
+                    canManage: true,
+                    limited: target?.workspaceMode === "competitions",
+                    botInside: target?.botInside ?? false,
+                }),
+                setupWorkspace
+            )
+            completed.current.add(key)
+            write(storageKey(key), { step: "finish", status: "done" })
+            void persist(key)
+        }
+        const back = setupWorkspace
+            ? guidedSetupHref(locale, setupWorkspace)
+            : active.returnHref
         setActive(null)
         router.replace(back)
     }

@@ -115,7 +115,7 @@ test("the system message copy in Czech is the board's wording (L5)", () => {
 })
 
 test("delivery errors fit the stored error field and contain no English in cs or de", () => {
-    for (const language of ["en", "cs", "de"]) {
+    for (const language of ["en", "cs", "de", "pl"]) {
         const { publication } = getSystemMessages(language)
         for (const message of Object.values(publication))
             assert.ok(message.length <= 240, `${language}: ${message.length}`)

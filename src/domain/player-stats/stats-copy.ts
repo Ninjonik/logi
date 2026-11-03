@@ -576,5 +576,5 @@ const de: StatsCopy = {
 /** The `/stats` copy in the clan language (`cs`, `de`, else English). */
 export function statsCopy(language: string | null | undefined): StatsCopy {
     const value = (language ?? "").toLowerCase()
-    return value.startsWith("cs") ? cs : value.startsWith("de") ? de : en
+    return value.startsWith("cs") ? cs : value.startsWith("de") ? de : value.startsWith("pl") ? pl : en
 }

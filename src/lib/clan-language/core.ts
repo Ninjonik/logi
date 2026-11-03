@@ -6,7 +6,7 @@
  * through {@link clanCopy}.
  */
 
-export const supportedClanLanguages = ["en", "cs", "de"] as const
+export const supportedClanLanguages = ["en", "cs", "de", "pl"] as const
 
 export type ClanLanguage = (typeof supportedClanLanguages)[number]
 
@@ -14,6 +14,7 @@ const clanLocales: Record<ClanLanguage, string> = {
     en: "en-GB",
     cs: "cs-CZ",
     de: "de-DE",
+    pl: "pl-PL",
 }
 
 export function isClanLanguage(

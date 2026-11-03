@@ -1196,7 +1196,7 @@ export const mutateClanSettings = mutation({
         description: v.optional(v.union(v.string(), v.null())),
         timezone: v.optional(v.string()),
         defaultLanguage: v.optional(
-            v.union(v.literal("en"), v.literal("cs"), v.literal("de"))
+            v.union(v.literal("en"), v.literal("cs"), v.literal("de"), v.literal("pl"))
         ),
         announcementsChannelId: v.optional(v.union(v.string(), v.null())),
         eventInfoChannelId: v.optional(v.union(v.string(), v.null())),

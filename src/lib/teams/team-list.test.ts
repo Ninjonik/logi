@@ -124,7 +124,7 @@ test("only https links without credentials are rendered, with a short label", ()
 test("every status has a badge variant and a label in each locale", () => {
     for (const status of TEAM_REQUEST_STATUSES) {
         assert.ok(TEAM_REQUEST_STATUS_BADGE[status])
-        for (const locale of ["en", "cs", "de"] as const)
+        for (const locale of ["en", "cs", "de", "pl"] as const)
             assert.ok(
                 getDictionary(locale).teamRequests.statuses[status].length > 0
             )
