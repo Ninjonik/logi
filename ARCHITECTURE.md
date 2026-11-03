@@ -46,6 +46,13 @@ Convex functions validate their inputs and authenticate through an internal secr
 
 The bot calls Convex through `discord-bot/src/convex.ts`. Its workers coordinate announcements, rosters, panels, reminders, applications, tickets, roles, and League tracking. Discord payloads and network effects live in the bot; shared policy lives in `src/domain` and `src/application`.
 
+Dashboard context snapshots remain cached in Next.js for 24 hours, with immediate
+tag expiration after writes. No process-local stale snapshot sits above that
+cache. Bot invalidation resolves Discord guild IDs to Convex record IDs and
+expires both tag aliases. Delivery checks HTTP status, bounds request duration,
+and retries temporary failures without reporting an already committed write as
+failed. Only roster boards and stratmaps use realtime updates.
+
 ## Identity and access
 
 Discord OAuth creates durable dashboard sessions in Convex. Session validation checks current identity, expiry, and revocation. Optional OIDC uses its own protocol routes and registered clients; bearer integration keys cannot create login sessions.

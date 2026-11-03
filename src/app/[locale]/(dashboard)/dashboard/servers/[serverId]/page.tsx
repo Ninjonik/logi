@@ -28,9 +28,7 @@ export default async function ServerOverviewPage({
     const { game } = await searchParams
     const safeLocale = isLocale(locale) ? locale : "en"
     const gameId = isGameId(game) ? game : undefined
-    const context = await getServerContext(serverId, gameId ?? "all", {
-        staleWhileRevalidate: true,
-    })
+    const context = await getServerContext(serverId, gameId ?? "all")
     if (!context) {
         const text = getDictionary(safeLocale).clanOverview
         return (

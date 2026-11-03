@@ -15,6 +15,19 @@ export const create = mutation({
         startAt: v.string(),
         endAt: v.string(),
         allDay: v.optional(v.boolean()),
+        color: v.optional(v.string()),
+        recurrence: v.optional(
+            v.object({
+                frequency: v.union(
+                    v.literal("weekly"),
+                    v.literal("monthly_date"),
+                    v.literal("monthly_nth_weekday"),
+                    v.literal("yearly")
+                ),
+                interval: v.number(),
+                until: v.optional(v.string()),
+            })
+        ),
     },
     handler: async (ctx, args) => {
         await authorizeDashboardAdmin(ctx, args)
@@ -23,6 +36,8 @@ export const create = mutation({
             startAt: args.startAt,
             endAt: args.endAt,
             allDay: args.allDay,
+            color: args.color,
+            recurrence: args.recurrence,
         })
         return (
             await new CalendarItemCommands(
@@ -31,7 +46,6 @@ export const create = mutation({
             ).save({
                 ...fields,
                 guildId: args.guildId,
-                color: "#7c3aed",
                 allDay: Boolean(fields.allDay),
                 startAt: new Date(fields.startAt).toISOString(),
                 endAt: new Date(fields.endAt).toISOString(),

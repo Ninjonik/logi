@@ -46,7 +46,8 @@ export function EventSignupActions({
             return
         }
 
-        toast.success(body.message ?? messages.interaction.signupUpdated)
+        if (body.warning) toast.warning(body.warning)
+        else toast.success(body.message ?? messages.interaction.signupUpdated)
         startTransition(() => router.refresh())
     }
 

@@ -1,85 +1,15 @@
 import { NextResponse } from "next/server"
 
-import { appCacheTags, revalidateCacheEntries } from "@/lib/cache-tags"
+import {
+    invalidateAppData,
+    type CacheRevalidationPayload,
+} from "@/lib/gateways/cache-revalidation"
+import { logRouteError } from "@/lib/server-route-errors"
+import { revalidateCacheEntries } from "@/lib/cache-tags"
+import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "@/lib/env"
 import { getLoggedInUser } from "@/lib/auth"
-
-type AssignmentChangedPayload = {
-    type: "assignment-changed"
-    serverId: string
-    userId: string
-    assignmentId?: string
-}
-
-type RosterChangedPayload = {
-    type: "roster-changed"
-    serverId: string
-    rosterId: string
-    eventId?: string
-}
-
-type EventChangedPayload = {
-    type: "event-changed"
-    serverId: string
-    eventId: string
-}
-
-type DiscordConfigChangedPayload = {
-    type: "discord-config-changed"
-    serverId: string
-}
-
-type ServerContextChangedPayload = {
-    type: "server-context-changed"
-    serverId: string
-}
-
-type CacheRevalidationPayload =
-    | AssignmentChangedPayload
-    | RosterChangedPayload
-    | EventChangedPayload
-    | DiscordConfigChangedPayload
-    | ServerContextChangedPayload
-
-function getTagsForPayload(payload: CacheRevalidationPayload) {
-    switch (payload.type) {
-        case "assignment-changed":
-            return [
-                appCacheTags.serverContext(payload.serverId),
-                appCacheTags.assignments(payload.serverId),
-                payload.assignmentId
-                    ? appCacheTags.assignment(payload.assignmentId)
-                    : undefined,
-                appCacheTags.player(payload.userId),
-                appCacheTags.users(),
-                appCacheTags.rosterImage(),
-            ]
-        case "roster-changed":
-            return [
-                appCacheTags.serverContext(payload.serverId),
-                appCacheTags.rosters(payload.serverId),
-                appCacheTags.roster(payload.rosterId),
-                appCacheTags.rosterImage(),
-                payload.eventId
-                    ? appCacheTags.rosterImageEvent(payload.eventId)
-                    : undefined,
-            ]
-        case "event-changed":
-            return [
-                appCacheTags.serverContext(payload.serverId),
-                appCacheTags.events(payload.serverId),
-                appCacheTags.event(payload.eventId),
-                appCacheTags.matches(payload.serverId),
-            ]
-        case "discord-config-changed":
-            return [
-                appCacheTags.serverContext(payload.serverId),
-                appCacheTags.discordConfig(payload.serverId),
-            ]
-        case "server-context-changed":
-            return [appCacheTags.serverContext(payload.serverId)]
-    }
-}
+import { fetchQuery } from "convex/nextjs"
 
 function isNonEmptyString(value: unknown): value is string {
     return typeof value === "string" && value.trim().length > 0
@@ -160,6 +90,30 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
     }
 
-    revalidateCacheEntries(getTagsForPayload(payload))
-    return NextResponse.json({ ok: true })
+    try {
+        await invalidateAppData(payload, {
+            resolve: (serverId) => {
+                const discordId = /^\d{17,20}$/.test(serverId)
+                return fetchQuery(
+                    makeFunctionReference<"query">(
+                        discordId ? "guilds:getByDiscordId" : "guilds:getById"
+                    ),
+                    {
+                        secret: getInternalAuthSecret(),
+                        ...(discordId
+                            ? { discordId: serverId }
+                            : { guildId: serverId }),
+                    }
+                )
+            },
+            invalidate: revalidateCacheEntries,
+        })
+        return NextResponse.json({ ok: true })
+    } catch (error) {
+        logRouteError("cache-revalidation", error)
+        return NextResponse.json(
+            { error: "Cache refresh failed." },
+            { status: 503 }
+        )
+    }
 }
