@@ -80,3 +80,17 @@ export function deriveScheduledEventLifecycle(
 
     return "scheduled"
 }
+
+/** Shared-channel matches keep their original card through the result. */
+export function shouldKeepRegistrationMessage(input: {
+    kind: "match" | "training"
+    status: SyncEventLike["status"]
+    registrationAnnouncementDue: boolean
+    splitChannels: boolean
+}) {
+    return (
+        input.registrationAnnouncementDue &&
+        (input.kind === "match" || input.status !== "concluded") &&
+        (!input.splitChannels || input.status === "registration")
+    )
+}
