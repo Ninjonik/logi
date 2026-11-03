@@ -6,6 +6,7 @@ export const GLOBAL_ADMIN_PAGES = [
     "team-requests",
     "bot",
     "platform-settings",
+    "bug-reports",
 ] as const
 
 export type GlobalAdminPage = (typeof GLOBAL_ADMIN_PAGES)[number]

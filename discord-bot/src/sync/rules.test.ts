@@ -1,8 +1,12 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import {
+    shouldSyncEvent,
+    shouldWriteMinimalConcludedSyncState,
+    shouldKeepRegistrationMessage,
+} from "./rules"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
-import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import type { SyncState } from "../types"
 
 const state: SyncState = {
@@ -221,3 +225,44 @@ test("shouldWriteMinimalConcludedSyncState only applies to unqueued concluded ev
         false
     )
 })
+
+for (const status of [
+    "registration",
+    "closed",
+    "starting",
+    "concluded",
+] as const) {
+    test(`shared-channel ${status} edits the original registration card`, () => {
+        assert.equal(
+            shouldKeepRegistrationMessage({
+                kind: "match",
+                status,
+                registrationAnnouncementDue: true,
+                splitChannels: false,
+            }),
+            true
+        )
+    })
+    test(`split-channel ${status} keeps registration only while open`, () => {
+        assert.equal(
+            shouldKeepRegistrationMessage({
+                kind: "match",
+                status,
+                registrationAnnouncementDue: true,
+                splitChannels: true,
+            }),
+            status === "registration"
+        )
+    })
+    test(`unannounced ${status} does not publish a registration card`, () => {
+        assert.equal(
+            shouldKeepRegistrationMessage({
+                kind: "match",
+                status,
+                registrationAnnouncementDue: false,
+                splitChannels: false,
+            }),
+            false
+        )
+    })
+}

@@ -114,3 +114,13 @@ The personal read adds profile description, logo ID/URL and revision. Each
 registration includes published competition name, slug and season; unpublished
 metadata remains null. The old workspace `/api/servers/{serverId}/team-requests`
 endpoint is retired (410); historical global moderation remains available.
+
+## Account bug reports
+
+Bug submission and the global superadmin inbox are deliberately excluded from
+clan integration-key operations. Reports belong to authenticated dashboard accounts
+and may contain private logs spanning several workspaces; clan keys cannot safely
+represent the reporter or grant global moderation authority. The first-party
+`/api/bug-reports` routes require a live dashboard session (and same-origin writes),
+with superadmin authorization for listing, status changes, and attachment downloads.
+See the [bug-report workflow](../../../content/dashboard/bug-reports.mdx).

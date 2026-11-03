@@ -1,7 +1,9 @@
 "use client"
+import { getBugReportMessages } from "@/i18n/messages/bug-reports"
 
 import {
     ArrowLeft,
+    Bug,
     Bot,
     Inbox,
     Gamepad2,
@@ -118,6 +120,11 @@ export function AdminSidebar({
             items: [
                 { section: "bot", title: t.botLogs, icon: Bot },
                 {
+                    section: "bug-reports",
+                    title: getBugReportMessages(locale).inbox,
+                    icon: Bug,
+                },
+                {
                     section: "platform-settings",
                     title: dictionary.sidebar.platformSettings,
                     icon: Settings,
@@ -223,6 +230,20 @@ export function AdminSidebar({
                 </nav>
             </SidebarContent>
             <SidebarFooter className="border-sidebar-border/70 border-t p-1.5 2xl:p-2">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild>
+                            <Link
+                                href={`/${locale}/dashboard/report-bug${query}`}
+                            >
+                                <Bug aria-hidden />
+                                <span>
+                                    {getBugReportMessages(locale).report}
+                                </span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
                 <NavUser
                     user={{ name: user.name, avatar: user.avatar }}
                     locale={locale}

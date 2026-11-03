@@ -623,6 +623,25 @@ const guildGames = defineTable({
 }).index("guildId_gameId", ["guildId", "gameId"])
 
 export default defineSchema({
+    bugReports: defineTable({
+        title: v.string(),
+        message: v.string(),
+        server: v.string(),
+        occurredAt: v.optional(v.number()),
+        reporter: v.string(),
+        status: v.union(
+            v.literal("new"),
+            v.literal("investigating"),
+            v.literal("resolved")
+        ),
+        attachments: v.array(
+            v.object({
+                storageId: v.string(),
+                name: v.string(),
+                size: v.number(),
+            })
+        ),
+    }).index("reporter", ["reporter"]),
     // Global game definitions managed exclusively by platform administrators.
     // `id` deliberately remains a string: new community-only games must not
     // require a source-code deployment merely to exist in the catalogue.

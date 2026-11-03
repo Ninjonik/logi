@@ -1,5 +1,6 @@
 "use client"
 import { getTeamManagementMessages } from "@/i18n/messages/team-management"
+import { getBugReportMessages } from "@/i18n/messages/bug-reports"
 
 import {
     CalendarDays,
@@ -13,6 +14,7 @@ import {
     Bot,
     Globe,
     Ticket,
+    Bug,
 } from "lucide-react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -378,6 +380,13 @@ export function AppSidebar({
               },
           ]
         : []
+
+    footerItems.unshift({
+        title: getBugReportMessages(locale).report,
+        url: `/${locale}/dashboard/report-bug${superadminWorkspaceQuery}`,
+        icon: Bug,
+        isActive: pathname?.includes("/report-bug"),
+    })
 
     if (adminSection)
         return (

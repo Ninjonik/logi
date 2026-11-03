@@ -20,6 +20,11 @@ import {
     squadVoiceChannelNameFor,
 } from "../events/match-discord"
 import {
+    shouldSyncEvent,
+    shouldWriteMinimalConcludedSyncState,
+    shouldKeepRegistrationMessage,
+} from "./rules"
+import {
     announcementMessage,
     announcementThumbnail,
     buildAnnouncementCard,
@@ -41,7 +46,6 @@ import {
 } from "../utils"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
-import { shouldSyncEvent, shouldWriteMinimalConcludedSyncState } from "./rules"
 import { finishAnnouncementMigration } from "../events/announcement-migration"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { fetchRosterImageAttachment } from "./roster-image-attachment"
@@ -596,10 +600,12 @@ async function syncEvent(
     // the now-actionless registration card and keep the match details and
     // roster together there. Single-channel matches deliberately retain the
     // one evolving announcement card.
-    const registrationMessageVisible =
-        registrationAnnouncementDue &&
-        event.status !== "concluded" &&
-        (!splitChannels || event.status === "registration")
+    const registrationMessageVisible = shouldKeepRegistrationMessage({
+        kind: event.kind,
+        status: event.status,
+        registrationAnnouncementDue,
+        splitChannels,
+    })
     if (!registrationMessageVisible) {
         await retireEventMessage(
             client,
