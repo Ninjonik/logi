@@ -8,6 +8,8 @@ import {
 
 test("global administration pages are recognised in every locale", () => {
     assert.equal(globalAdminSection("/cs/dashboard/teams"), "teams")
+    assert.equal(globalAdminSection("/pl/dashboard/bug-reports"), "bug-reports")
+    assert.equal(globalAdminSection("/en/dashboard/report-bug"), null)
     assert.equal(
         globalAdminSection("/en/dashboard/competitions/abc123"),
         "competitions"

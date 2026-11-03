@@ -5,6 +5,8 @@ import { globalAdminHref, isGlobalAdminPath } from "./global-admin-routes"
 
 test("global administration pages are recognised in every locale", () => {
     assert.equal(isGlobalAdminPath("/cs/dashboard/teams"), true)
+    assert.equal(isGlobalAdminPath("/pl/dashboard/bug-reports"), true)
+    assert.equal(isGlobalAdminPath("/en/dashboard/report-bug"), false)
     assert.equal(isGlobalAdminPath("/en/dashboard/competitions/abc"), true)
     assert.equal(isGlobalAdminPath("/de/dashboard/team-requests"), true)
     assert.equal(isGlobalAdminPath("/en/dashboard/platform-settings"), true)

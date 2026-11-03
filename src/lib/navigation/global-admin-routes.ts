@@ -6,6 +6,7 @@ export const GLOBAL_ADMIN_SECTIONS = [
     "team-requests",
     "bot",
     "platform-settings",
+    "bug-reports",
 ] as const
 export type GlobalAdminSection = (typeof GLOBAL_ADMIN_SECTIONS)[number]
 

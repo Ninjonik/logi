@@ -2448,6 +2448,8 @@ export async function GET() {
                 version: "1.11.0",
                 description: `The **Public API — no key required** section contains rate-limited public profiles, matches, and competitions. The **Clan API — API key required** sections contain tenant-scoped dashboard-equivalent data and writes. Clan API traffic is limited to 60 requests per second per API key; public endpoints are limited per client IP. A limited request returns \`429\` with \`Retry-After\` and \`RateLimit-*\` headers. A clan key can access only its own clan; identifiers from another clan return no data. Game-owned records default to hell_let_loose, including legacy records without gameId. Use game=all for every game, or repeat game (for example game=hell_let_loose&game=wardogs) for an explicit combination. Cursors are opaque and valid only for the resource, game selection, and createdAt ordering that produced them.
 
+Account bug reports and their global superadmin moderation inbox are intentionally unavailable to clan API keys: private account reports and cross-workspace attachments require first-party dashboard sessions and global superadmin review. See the [bug-report workflow](https://github.com/Ninjonik/logi/blob/main/content/dashboard/bug-reports.mdx).
+
 ### Authenticate and read
 
 For minimized website reads, grant event-summaries and/or match-summaries and use their matching clan endpoints. Each grant is independent of raw events/matches access. Summary DTOs exclude passwords, notes, player identities, source URLs and raw telemetry. They remain private operational content requiring website publication review. Match summaries identify Logi events and expose unknown or provisional results, never automatic confirmation.
