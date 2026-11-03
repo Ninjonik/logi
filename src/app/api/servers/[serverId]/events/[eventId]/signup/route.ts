@@ -1,3 +1,5 @@
+import { SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
+import { isLateSignupWindow } from "@/domain/events/status"
 import { logRouteError } from "@/lib/server-route-errors"
 import { NextResponse } from "next/server"
 
@@ -31,7 +33,10 @@ export async function POST(
         return NextResponse.json({ error: "Event not found." }, { status: 404 })
     }
 
-    const body = (await request.json()) as { actionId?: unknown }
+    const body = (await request.json()) as {
+        actionId?: unknown
+        lateSignupReason?: unknown
+    }
     const messages = getEventMessages(
         context.discordConfig?.defaultLanguage ?? "en"
     )
@@ -74,10 +79,25 @@ export async function POST(
         return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
+    const lateSignupReason =
+        typeof body.lateSignupReason === "string"
+            ? body.lateSignupReason.trim()
+            : undefined
+    if (
+        resolved.group !== SIGNUP_NOT_ATTENDING &&
+        isLateSignupWindow(event) &&
+        (!lateSignupReason || lateSignupReason.length > 1000)
+    ) {
+        return NextResponse.json(
+            { error: messages.lateSignup.required },
+            { status: 400 }
+        )
+    }
     const result = await toggleServerEventSignup({
         eventId,
         userId: user.discordId,
         group: resolved.group,
+        lateSignupReason,
     })
 
     let cacheRefreshFailed = false
@@ -94,7 +114,8 @@ export async function POST(
         logRouteError("signup-cache-revalidation", error)
     }
 
-    const { appliedSignupLabel, removed } = result as {
+    const { appliedSignupLabel, removed, signedUpLate } = result as {
+        signedUpLate?: boolean
         appliedSignupLabel: string
         removed: boolean
     }
@@ -114,11 +135,13 @@ export async function POST(
         ...(cacheRefreshFailed
             ? { warning: messages.interaction.cacheRefreshFailed }
             : {}),
-        message: formatSignupResultMessage({
-            removed,
-            appliedSignupLabel,
-            labels: { ...messages.interaction, ...messages.buttons },
-            emoji,
-        }),
+        message: signedUpLate
+            ? messages.lateSignup.saved
+            : formatSignupResultMessage({
+                  removed,
+                  appliedSignupLabel,
+                  labels: { ...messages.interaction, ...messages.buttons },
+                  emoji,
+              }),
     })
 }

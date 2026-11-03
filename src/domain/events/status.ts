@@ -84,8 +84,29 @@ export function isTrainingRegistrationStillOpen(
     )
 }
 
+export function isLateSignupWindow(
+    event: {
+        kind?: EventKind
+        registrationEnd: string
+        meetingStart?: string
+        status?: EventStatus
+        allowLateSignups?: boolean
+    },
+    now: Date = new Date()
+): boolean {
+    return (
+        event.kind !== "training" &&
+        event.allowLateSignups !== false &&
+        event.status !== "concluded" &&
+        now.getTime() >= Date.parse(event.registrationEnd) &&
+        now.getTime() < Date.parse(event.meetingStart ?? "")
+    )
+}
+
 export function canAcceptSignups(
     event: {
+        meetingStart?: string
+        allowLateSignups?: boolean
         kind?: EventKind
         registrationEnd: string
         status?: EventStatus
@@ -93,7 +114,9 @@ export function canAcceptSignups(
     now: Date = new Date()
 ): boolean {
     return (
-        event.status === "registration" ||
+        isLateSignupWindow(event, now) ||
+        (event.status === "registration" &&
+            now.getTime() < Date.parse(event.registrationEnd)) ||
         isTrainingRegistrationStillOpen(event, now)
     )
 }

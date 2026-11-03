@@ -120,6 +120,7 @@ export const upsert = mutation({
                 )
             )
         ),
+        allowLateSignups: v.optional(v.boolean()),
         allowNonMembersSignup: v.optional(v.boolean()),
         useGeneralSignup: v.optional(v.boolean()),
         signupReminderStatuses: v.optional(
@@ -207,6 +208,7 @@ export const upsert = mutation({
                     : undefined,
                 stratmapIds: args.stratmapIds?.map((value) => String(value)),
                 allowedSignupStatuses: args.allowedSignupStatuses,
+                allowLateSignups: args.allowLateSignups,
                 allowNonMembersSignup: args.allowNonMembersSignup,
                 squadPresetId:
                     args.squadPresetId === null
@@ -367,6 +369,7 @@ export const toggleSignUp = mutation({
         eventId: v.id("events"),
         userId: v.string(),
         group: v.union(v.string(), v.null()),
+        lateSignupReason: v.optional(v.string()),
         profile: v.optional(v.object({ name: v.string(), avatar: v.string() })),
     },
     handler: async (ctx, args) => {
@@ -378,6 +381,7 @@ export const toggleSignUp = mutation({
                 userId: args.userId,
                 group: args.group,
                 profile: args.profile,
+                lateSignupReason: args.lateSignupReason,
             },
             createUseCase: () =>
                 new ToggleSignupUseCase(

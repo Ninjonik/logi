@@ -4890,6 +4890,9 @@ export const enMessages = {
             noGroups:
                 "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
+            lateSignupLabel: "Signed up late",
+            lateSignups:
+                "Allow late signups until meeting time (reason required; placed in reserves)",
             nonMembers: "Allow non-members to sign up",
             generalOn: "allowed",
             reminder: "Sign-up reminder",

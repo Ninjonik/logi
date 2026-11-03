@@ -41,6 +41,7 @@ export const eventWriteFields = {
     rewardRoleIds: v.optional(v.array(v.string())),
     signupGroupIds: v.optional(v.array(v.string())),
     allowedSignupStatuses: v.optional(v.array(signupStatus)),
+    allowLateSignups: v.optional(v.boolean()),
     allowNonMembersSignup: v.optional(v.boolean()),
     useGeneralSignup: v.optional(v.boolean()),
     signupReminderStatuses: v.optional(v.array(reminderStatus)),

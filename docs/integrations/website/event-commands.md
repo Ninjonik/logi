@@ -391,3 +391,23 @@ No voice presence history is retained. Existing roster reads expose the resultin
 `reserveAttendances`, squad confirmation flags and `meetingAttendance`; their
 contract is unchanged. Network/permission failures do not produce empty-success
 results, and expired requests cannot apply attendance later.
+
+## Late match signups
+
+`allowLateSignups` is an optional match setting supported by dashboard writes,
+`POST/PATCH /api/v1/clan/events`, and actor-backed event create/update commands.
+It defaults to `true`, including on older matches without the field. Set it to
+`false` to disable late signups. Training registration rules are unchanged.
+
+`POST /api/v1/clan/events/{eventId}/signup` accepts optional
+`lateSignupReason` (trimmed, 1–1,000 characters). An attending signup at or after
+`registrationEnd` and strictly before `meetingStart` requires this reason.
+Concluded matches reject signups. Existing membership, tenant and role rules
+still apply. Late players are initially placed in reserves with no assigned
+signup group. A manager can subsequently assign them to a squad.
+
+Participant records carry `lateSignupReason` and `signedUpLateAt`, with the
+original late-signup timestamp retained on repeat submissions. These fields are
+separate from absence notices and are shown with a small clock marker on the
+roster board and roster image. Roster images do not publish the reason. Successful
+writes retain the existing idempotency, webhook and cache invalidation behavior.

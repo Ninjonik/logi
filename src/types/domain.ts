@@ -382,6 +382,7 @@ export type EventRecord = {
     stratmapIds: string[]
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
@@ -425,6 +426,8 @@ export type EventRecord = {
         sentAt: Timestamp
     }[]
     participants: {
+        lateSignupReason?: string
+        signedUpLateAt?: string
         userId: string
         status: "attending" | "not_attending"
         group?: string | null

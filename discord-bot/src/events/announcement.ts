@@ -1,3 +1,4 @@
+import { isLateSignupWindow } from "../../../src/domain/events/status"
 /**
  * The match announcement in the bot (board L1 1.0–1.8): turns a synced event
  * into the domain card (`src/domain/discord-messages/match-announcement.ts`)
@@ -187,6 +188,7 @@ export function matchCardEventOf(input: {
         meetingStart: event.meetingStart,
         gameStart: event.gameStart,
         gameEnd: event.gameEnd,
+        allowLateSignups: event.allowLateSignups,
         registrationEnd: event.registrationEnd,
         timeZone: input.config.timezone,
         locale: messages.locale,
@@ -413,6 +415,7 @@ export function buildAnnouncementCard(
     const view = buildAnnouncementView({
         event: card,
         state,
+        lateSignupsOpen: isLateSignupWindow(event, options.now),
         counts: announcementCountsOf(event, payload.groups),
         signupRoster: options.hideSignupRoster
             ? null

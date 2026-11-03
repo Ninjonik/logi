@@ -510,6 +510,7 @@ export const mutateClanEventSignup = mutation({
         methodPath: v.string(),
         userId: v.string(),
         group: v.union(v.string(), v.null()),
+        lateSignupReason: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
@@ -543,6 +544,7 @@ export const mutateClanEventSignup = mutation({
                     eventId: String(args.eventId),
                     userId: args.userId.trim(),
                     group: args.group,
+                    lateSignupReason: args.lateSignupReason,
                 })
                 response = {
                     data: {

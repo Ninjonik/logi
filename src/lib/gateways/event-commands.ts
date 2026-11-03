@@ -60,6 +60,7 @@ export async function saveServerEventCommand(input: {
     allowedSignupStatuses?: Array<
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
@@ -126,6 +127,7 @@ export async function saveServerEventCommand(input: {
         rewardRoleIds: input.rewardRoleIds,
         signupGroupIds: input.signupGroupIds,
         allowedSignupStatuses: input.allowedSignupStatuses,
+        allowLateSignups: input.allowLateSignups,
         allowNonMembersSignup: input.allowNonMembersSignup,
         useGeneralSignup: input.useGeneralSignup,
         signupReminderStatuses: input.signupReminderStatuses,
@@ -223,12 +225,14 @@ export async function toggleServerEventSignupCommand(input: {
     eventId: string
     userId: string
     group: string | null
+    lateSignupReason?: string
 }) {
     return await fetchMutation(toggleSignupReference, {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
         userId: input.userId,
         group: input.group,
+        lateSignupReason: input.lateSignupReason,
     })
 }
 

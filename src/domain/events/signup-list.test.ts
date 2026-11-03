@@ -353,3 +353,28 @@ test("a text budget pages earlier than 40 long rows", () => {
 test("an empty list is one empty page", () => {
     assert.deepEqual(paginateSignupList([]), [[]])
 })
+
+test("late signup marker is public but its reason is limited to leadership and distinct from late arrival", () => {
+    const lateInput: SignupListInput = {
+        ...input,
+        participants: [
+            {
+                userId: "late-player",
+                status: "attending",
+                group: null,
+                updatedAt: "2030-01-01T17:30:00Z",
+                signedUpLateAt: "2030-01-01T17:30:00Z",
+                lateSignupReason: "Work",
+            },
+        ],
+        absenceNotices: [],
+    }
+    const entries = (leadership: boolean) =>
+        buildSignupList({ ...lateInput, leadership }).sections.flatMap(
+            (s) => s.entries
+        )
+    assert.equal(entries(false)[0].signedUpLate, true)
+    assert.equal(entries(false)[0].lateSignupReason, undefined)
+    assert.equal(entries(false)[0].late, undefined)
+    assert.equal(entries(true)[0].lateSignupReason, "Work")
+})

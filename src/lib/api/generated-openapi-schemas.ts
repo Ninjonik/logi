@@ -96,6 +96,9 @@ export const generatedOpenApiSchemas = {
                     ]
                 }
             },
+            "allowLateSignups": {
+                "type": "boolean"
+            },
             "allowNonMembersSignup": {
                 "type": "boolean"
             },
@@ -562,6 +565,12 @@ export const generatedOpenApiSchemas = {
                                 }
                             ]
                         },
+                        "lateSignupReason": {
+                            "type": "string"
+                        },
+                        "signedUpLateAt": {
+                            "type": "string"
+                        },
                         "requestedGroup": {
                             "anyOf": [
                                 {
@@ -808,6 +817,7 @@ export const generatedOpenApiSchemas = {
             "allowedSignupStatuses": [
                 "recruit"
             ],
+            "allowLateSignups": true,
             "allowNonMembersSignup": true,
             "useGeneralSignup": true,
             "signupReminderStatuses": [
@@ -918,6 +928,8 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "status": "attending",
                     "group": "string",
+                    "lateSignupReason": "string",
+                    "signedUpLateAt": "string",
                     "requestedGroup": "string",
                     "completed": "passed",
                     "updatedAt": "string"

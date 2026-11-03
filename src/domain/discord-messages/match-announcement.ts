@@ -51,6 +51,7 @@ export type MatchCardEvent = {
     meetingStart: string
     gameStart: string
     gameEnd?: string | null
+    allowLateSignups?: boolean
     registrationEnd: string
     /** The clan's time zone, for the weekday of a date. */
     timeZone: string
@@ -93,6 +94,7 @@ export type AnnouncementResult = {
 export type AnnouncementViewInput = {
     event: MatchCardEvent
     state: AnnouncementState
+    lateSignupsOpen?: boolean
     counts: AnnouncementCounts
     /** Roster places and reserves once it is published. */
     roster?: {
@@ -568,6 +570,7 @@ export function buildAnnouncementView(
         kind: event.kind,
         rosterPublished: Boolean(input.roster),
         hasMatchPage: Boolean(input.links.match),
+        lateSignupsOpen: input.lateSignupsOpen,
     })
         .map((row) =>
             row

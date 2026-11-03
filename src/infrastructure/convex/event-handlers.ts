@@ -105,6 +105,7 @@ export async function handleToggleSignup(input: {
         eventId: string
         userId: string
         group: string | null
+        lateSignupReason?: string
         profile?: { name: string; avatar: string }
     }
     createUseCase: () => ExecuteUseCase<
@@ -112,6 +113,7 @@ export async function handleToggleSignup(input: {
             eventId: string
             userId: string
             group: string | null
+            lateSignupReason?: string
             profile?: { name: string; avatar: string }
         },
         unknown

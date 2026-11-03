@@ -415,6 +415,25 @@ async function cropToRosterContent(image: Uint8Array) {
     }
 }
 
+function LateSignupImageIcon() {
+    return (
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#22d3ee"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginLeft: "6px", flexShrink: 0 }}
+        >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2M18 3v5h5" />
+        </svg>
+    )
+}
+
 export async function GET(
     request: Request,
     context: { params: Promise<{ eventId: string }> }
@@ -475,6 +494,11 @@ export async function GET(
     const intlLocale = getIntlLocaleForClanLanguage(clanLanguage)
 
     const usersById = new Map(data.users.map((user) => [user.discordId, user]))
+    const lateSignupUserIds = new Set(
+        (data.event.participants ?? [])
+            .filter((p) => p.signedUpLateAt)
+            .map((p) => p.userId)
+    )
     const attendanceNoticesByUserId = new Map<string, AttendanceNoticeKind>(
         (data.event.absenceNotices ?? []).map((notice) => [
             notice.userId,
@@ -1022,6 +1046,12 @@ export async function GET(
                                                                                         .rosterImage
                                                                                         .openSlot}
                                                                             </span>
+                                                                            {player.id &&
+                                                                            lateSignupUserIds.has(
+                                                                                player.id
+                                                                            ) ? (
+                                                                                <LateSignupImageIcon />
+                                                                            ) : null}
                                                                             {player.note ? (
                                                                                 <span
                                                                                     style={{
@@ -1319,6 +1349,9 @@ export async function GET(
                                     }}
                                 >
                                     {user!.name}
+                                    {lateSignupUserIds.has(user!.discordId) ? (
+                                        <LateSignupImageIcon />
+                                    ) : null}
                                 </span>
                                 <AttendanceIndicator
                                     kind={attendance.indicator}

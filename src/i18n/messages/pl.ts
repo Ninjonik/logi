@@ -4971,6 +4971,9 @@ export const plMessages = {
             noGroups:
                 "Ta gra nie ma grup zapisów. Gracze zapisują się bez wyboru grupy.",
             general: "Zarejestruj się bez wybierania grupy",
+            lateSignupLabel: "Zapis po terminie",
+            lateSignups:
+                "Zezwalaj na późne zapisy do zbiórki (wymagany powód, do rezerwy)",
             nonMembers: "Zezwalaj na rejestrację osobom niebędącym członkami",
             generalOn: "dozwolone",
             reminder: "Przypomnienie o zapisach",

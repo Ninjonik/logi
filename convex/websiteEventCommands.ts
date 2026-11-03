@@ -444,6 +444,10 @@ export const execute = mutation({
                                 signupGroupIds: current?.signupGroupIds,
                                 allowedSignupStatuses:
                                     current?.allowedSignupStatuses,
+                                allowLateSignups:
+                                    fields.allowLateSignups ??
+                                    current?.allowLateSignups ??
+                                    true,
                                 allowNonMembersSignup:
                                     current?.allowNonMembersSignup,
                                 useGeneralSignup:

@@ -198,6 +198,8 @@ const eventParticipant = v.object({
     group: v.optional(v.union(v.string(), v.null())),
     // The capped group a player chose while it was full; they hold a reserve
     // place without a group. Missing on older sign-ups.
+    lateSignupReason: v.optional(v.string()),
+    signedUpLateAt: v.optional(v.string()),
     requestedGroup: v.optional(v.union(v.string(), v.null())),
     completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
@@ -948,6 +950,7 @@ export default defineSchema({
                 )
             )
         ),
+        allowLateSignups: v.optional(v.boolean()),
         allowNonMembersSignup: v.optional(v.boolean()),
         useGeneralSignup: v.optional(v.boolean()),
         signupReminderStatuses: v.optional(

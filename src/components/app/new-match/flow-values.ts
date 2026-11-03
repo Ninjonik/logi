@@ -80,6 +80,7 @@ export type FlowValues = {
     durationMinutes: number
     repeatWeekly: boolean
     allowedSignupStatuses: TemplateSignupStatus[]
+    allowLateSignups: boolean
     allowNonMembersSignup: boolean
     signupGroupIds: string[]
     signupGroupLimits: Array<{ groupId: string; max: number }>
@@ -215,6 +216,7 @@ export function applyTemplateValues(
         meetingMinutes: isMatch ? template.meetingMinutesBeforeStart : 0,
         durationMinutes: template.durationMinutes,
         allowedSignupStatuses: template.allowedSignupStatuses,
+        allowLateSignups: true,
         allowNonMembersSignup: false,
         signupGroupIds: isMatch
             ? (template.signupGroupIds ?? offered).filter((id) =>
@@ -302,6 +304,7 @@ export function newFlowValues(input: {
         durationMinutes: 90,
         repeatWeekly: false,
         allowedSignupStatuses: [],
+        allowLateSignups: true,
         allowNonMembersSignup: false,
         signupGroupIds: gameGroups(input.groups, gameId).map(
             (group) => group.id
@@ -444,6 +447,7 @@ export function flowValuesFromEvent(
             !event.recurrenceSeriesId &&
             event.recurrence?.frequency === "weekly",
         allowedSignupStatuses: event.allowedSignupStatuses ?? [],
+        allowLateSignups: event.allowLateSignups !== false,
         allowNonMembersSignup: event.allowNonMembersSignup ?? false,
         signupGroupIds: event.signupGroupIds ?? [],
         signupGroupLimits: event.signupGroupLimits ?? [],
@@ -652,6 +656,7 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         rewardRoleIds: values.rewardRoleIds,
         signupGroupIds: isMatch ? values.signupGroupIds : [],
         allowedSignupStatuses: isMatch ? values.allowedSignupStatuses : [],
+        allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: isMatch && values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],
@@ -878,6 +883,7 @@ export function flowEditPayload(
         rewardRoleIds: values.rewardRoleIds,
         signupGroupIds: isMatch ? values.signupGroupIds : [],
         allowedSignupStatuses: isMatch ? values.allowedSignupStatuses : [],
+        allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: isMatch && values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],

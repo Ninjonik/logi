@@ -183,8 +183,9 @@ export function resolveEventSignupSelection(input: {
         | "useGeneralSignup"
         | "requiredRoleIds"
         | "registrationEnd"
+        | "allowLateSignups"
         | "status"
-    >
+    > & { meetingStart?: string }
     groups: SignupGroupLike[]
     memberRoleIds?: string[] | null
     assignedGroupIds?: string[]

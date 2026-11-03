@@ -320,3 +320,30 @@ test("debrief defaults on for matches independently of forum cleanup and preserv
         false
     )
 })
+
+test("late signup setting defaults to allowed, preserves an omitted override on edit and copies explicit choices", () => {
+    const created = buildCreateEventRecord(input, now)
+    assert.equal(created.allowLateSignups, true)
+    const disabled = buildCreateEventRecord(
+        { ...input, allowLateSignups: false },
+        now
+    )
+    assert.equal(disabled.allowLateSignups, false)
+    assert.equal(
+        buildUpdateEventPatch(disabled, input, now).allowLateSignups,
+        false
+    )
+    assert.equal(
+        buildUpdateEventPatch(
+            disabled,
+            { ...input, allowLateSignups: true },
+            now
+        ).allowLateSignups,
+        true
+    )
+    assert.equal(
+        buildCreateEventRecord({ ...input, kind: "training" }, now)
+            .allowLateSignups,
+        false
+    )
+})

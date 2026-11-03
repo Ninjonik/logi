@@ -5020,6 +5020,9 @@ export const deMessages = {
             noGroups:
                 "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
+            lateSignupLabel: "Verspätet angemeldet",
+            lateSignups:
+                "Verspätete Anmeldung bis zum Treffpunkt erlauben (mit Grund, zur Reserve)",
             nonMembers: "Anmeldung für Nichtmitglieder erlauben",
             generalOn: "erlaubt",
             reminder: "Anmeldeerinnerung",

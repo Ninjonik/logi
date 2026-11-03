@@ -2943,6 +2943,24 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     )}
                                     <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
                                         <Label
+                                            htmlFor="nm-late-signups"
+                                            className="text-sm font-normal"
+                                        >
+                                            {t.signups.lateSignups}
+                                        </Label>
+                                        <Switch
+                                            id="nm-late-signups"
+                                            checked={
+                                                values.allowLateSignups !==
+                                                false
+                                            }
+                                            onCheckedChange={(
+                                                allowLateSignups
+                                            ) => update({ allowLateSignups })}
+                                        />
+                                    </div>
+                                    <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
+                                        <Label
                                             htmlFor="nm-non-members"
                                             className="text-sm font-normal"
                                         >

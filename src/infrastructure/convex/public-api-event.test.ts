@@ -969,3 +969,66 @@ test("bearer event creation inherits discussion defaults and preserves explicit 
     assert.equal(replay?.status, 201)
     assert.equal(db.tables.events.size, 1)
 })
+
+test("late signup API persists reserve metadata, enforces scope and window, and replays once", async () => {
+    const db = new FakeDb()
+    const now = Date.now()
+    db.tables.events.set("late-event", {
+        _id: "late-event",
+        guildId: "guild-a",
+        ...event({ kind: "match" }),
+        registrationEnd: new Date(now - 60_000).toISOString(),
+        meetingStart: new Date(now + 3_600_000).toISOString(),
+        gameEnd: new Date(now + 7_200_000).toISOString(),
+        allowNonMembersSignup: true,
+        participants: [],
+        signUps: [],
+    })
+    const args = {
+        secret: "dev-internal-auth-secret",
+        keyHash: "key",
+        eventId: "late-event",
+        idempotencyKey: "late-signup",
+        bodyHash: "late-body",
+        methodPath: "POST /clan/events/{eventId}/signup",
+        userId: "late-player",
+        group: "INF",
+        lateSignupReason: "  Work  ",
+    }
+    const execute = (overrides = {}) =>
+        handler(publicApi.mutateClanEventSignup)(
+            { db },
+            { ...args, ...overrides }
+        )
+    const missing = await execute({
+        lateSignupReason: undefined,
+        idempotencyKey: "missing-reason",
+    })
+    assert.equal(missing?.status, 400)
+    const result = await execute()
+    assert.equal(result?.status, 200)
+    assert.deepEqual(await execute(), result)
+    assert.equal(db.tables.webhookDeliveries.size, 1)
+    const participants = db.tables.events.get("late-event")!
+        .participants as Array<{
+        group: string | null
+        lateSignupReason: string
+        signedUpLateAt: string
+    }>
+    assert.equal(participants[0].group, null)
+    assert.equal(participants[0].lateSignupReason, "Work")
+    assert.ok(participants[0].signedUpLateAt)
+    db.tables.events.get("late-event")!.guildId = "guild-b"
+    assert.equal(
+        (await execute({ idempotencyKey: "wrong-tenant" }))?.status,
+        404
+    )
+    db.tables.events.get("late-event")!.guildId = "guild-a"
+    db.tables.events.get("late-event")!.meetingStart = new Date(
+        now - 1000
+    ).toISOString()
+    assert.equal(
+        (await execute({ idempotencyKey: "after-meeting" }))?.status,
+        400
+    )
+})

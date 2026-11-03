@@ -169,6 +169,12 @@ function entryRow(
     return [
         `**${nameOf(entry.userId, input.names)}**`,
         membershipChip(entry.membership, copy),
+        entry.signedUpLate ? `◷ ${copy.attendees.signedUpLate}` : undefined,
+        entry.lateSignupReason
+            ? escapeMarkdownText(
+                  entry.lateSignupReason.replace(/[\s\p{Cc}]+/gu, " ").trim()
+              )
+            : undefined,
         late,
         requested,
         signedUpAt(input.event, entry.at),

@@ -1,4 +1,8 @@
 import {
+    ActionRowBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
     type ButtonInteraction,
     type Guild,
     type GuildMember,
@@ -36,6 +40,10 @@ import {
     buildEventSignupActions,
     resolveEventSignupSelection,
 } from "../../../src/lib/event-signup"
+import {
+    canAcceptSignups,
+    isLateSignupWindow,
+} from "../../../src/domain/events/status"
 import { readSignupGroupLimits } from "../../../src/domain/discord-messages/signup-counts"
 import { DEFAULT_ALLOWED_SIGNUP_STATUSES } from "../../../src/domain/events/signup-policy"
 import { getAnnouncementMessages } from "../../../src/lib/clan-language/announcements"
@@ -43,7 +51,6 @@ import type { MessageView } from "../../../src/domain/discord-messages/message-v
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
 import { announcementCountsOf, matchCardEventOf } from "../events/announcement"
 import { getEventMessages } from "../../../src/lib/clan-language/events"
-import { canAcceptSignups } from "../../../src/domain/events/status"
 import { syncSignupThreadMember } from "../events/signup-thread"
 import { buildRosterAssignmentReply } from "./roster-assignment"
 import type { EventInteractionContext } from "../types"
@@ -544,21 +551,90 @@ export async function handleEventButtonInteraction(
             return
         }
 
-        const result = (await convex.mutation(references.toggleSignUp, {
-            secret: env.internalSecret,
-            eventId: eventId as never,
-            userId: interaction.user.id,
-            group: resolved.group,
-            profile: {
-                name: interaction.user.globalName ?? interaction.user.username,
-                avatar: interaction.user.displayAvatarURL(),
-            },
-        })) as {
+        let lateSignupReason: string | undefined
+        let modalReply:
+            | Awaited<ReturnType<SignupInteraction["awaitModalSubmit"]>>
+            | undefined
+        if (
+            resolved.group !== SIGNUP_NOT_ATTENDING &&
+            isLateSignupWindow(context.event)
+        ) {
+            const copy = getEventMessages(
+                context.config.defaultLanguage
+            ).lateSignup
+            const customId = `late-signup:${interaction.id}`
+            await interaction.showModal(
+                new ModalBuilder()
+                    .setCustomId(customId)
+                    .setTitle(copy.title)
+                    .addComponents(
+                        new ActionRowBuilder<TextInputBuilder>().addComponents(
+                            new TextInputBuilder()
+                                .setCustomId("reason")
+                                .setLabel(copy.reason)
+                                .setStyle(TextInputStyle.Paragraph)
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(1000)
+                        )
+                    )
+            )
+            modalReply = await interaction
+                .awaitModalSubmit({
+                    time: 300_000,
+                    filter: (submit) =>
+                        submit.customId === customId &&
+                        submit.user.id === interaction.user.id,
+                })
+                .catch(() => undefined)
+            if (!modalReply) return
+            lateSignupReason = modalReply.fields
+                .getTextInputValue("reason")
+                .trim()
+            if (!lateSignupReason) {
+                await modalReply.reply({
+                    content: copy.required,
+                    ephemeral: true,
+                })
+                return
+            }
+            await modalReply.deferReply({ ephemeral: true })
+        }
+        if (modalReply && !canAcceptSignups(context.event, new Date())) {
+            await modalReply.editReply({
+                content: getEventMessages(context.config.defaultLanguage)
+                    .interaction.registrationClosed,
+            })
+            return
+        }
+        const result = (await convex
+            .mutation(references.toggleSignUp, {
+                secret: env.internalSecret,
+                eventId: eventId as never,
+                userId: interaction.user.id,
+                group: resolved.group,
+                lateSignupReason,
+                profile: {
+                    name:
+                        interaction.user.globalName ??
+                        interaction.user.username,
+                    avatar: interaction.user.displayAvatarURL(),
+                },
+            })
+            .catch(async (error: unknown) => {
+                if (!modalReply) throw error
+                await modalReply.editReply({
+                    content: getEventMessages(context.config.defaultLanguage)
+                        .interaction.unableToLoadEventContext,
+                })
+                return null
+            })) as {
             appliedSignupLabel: string
             removed: boolean
             /** The capped group was full; the player got a reserve place. */
             fullGroup?: string
-        }
+        } | null
+        if (!result) return
         await revalidateAppData({
             type: "event-changed",
             serverId: context.event.guildId,
@@ -602,7 +678,12 @@ export async function handleEventButtonInteraction(
                             ? null
                             : groupNameOf(context, result.appliedSignupLabel),
                     })
-        await replyToClicker(interaction, view, kit)
+        if (modalReply)
+            await modalReply.editReply({
+                content: getEventMessages(context.config.defaultLanguage)
+                    .lateSignup.saved,
+            })
+        else await replyToClicker(interaction, view, kit)
     } finally {
         releaseLock?.()
         if (signupInteractionLocks.get(lockKey) === current) {

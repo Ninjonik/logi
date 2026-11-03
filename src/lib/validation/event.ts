@@ -106,6 +106,7 @@ export const eventSchema = z
         allowedSignupStatuses: z
             .array(z.enum(["recruit", "member", "reserve_member", "mercenary"]))
             .default([]),
+        allowLateSignups: z.boolean().optional(),
         allowNonMembersSignup: z.boolean().default(false),
         useGeneralSignup: z.boolean().default(false),
         signupReminderStatuses: z

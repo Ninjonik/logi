@@ -17,6 +17,9 @@ export type EventParticipant = {
     userId: string
     status: ParticipantStatus
     group?: string | null
+    /** Required explanation and original timestamp for a signup after registration closes. */
+    lateSignupReason?: string
+    signedUpLateAt?: string
     /**
      * The capped group a player chose while it was full; they hold a reserve
      * place without a group ("Zálohy · původně Tanky").
@@ -118,6 +121,8 @@ export type EventLike = {
     stratmapIds?: string[]
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
+    /** Defaults to allowed for matches, strictly before meetingStart. */
+    allowLateSignups?: boolean
     /** Lets Discord users without a workspace assignment sign up for a match. */
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean

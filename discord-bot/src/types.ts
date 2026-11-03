@@ -365,6 +365,7 @@ export type EventRecord = {
     allowedSignupStatuses?: Array<
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
@@ -421,6 +422,8 @@ export type EventRecord = {
         group?: string | null
     }>
     participants: Array<{
+        lateSignupReason?: string
+        signedUpLateAt?: string
         userId: string
         status: "attending" | "not_attending"
         group?: string | null

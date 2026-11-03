@@ -4,8 +4,8 @@ import { canAcceptSignups } from "../../../src/domain/events/status"
 export function isSignupOpen(
     event: Pick<
         EventInteractionContext["event"],
-        "kind" | "registrationEnd" | "status"
-    >
+        "kind" | "registrationEnd" | "status" | "allowLateSignups"
+    > & { meetingStart?: string }
 ) {
     return canAcceptSignups(event, new Date(Date.now()))
 }

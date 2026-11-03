@@ -110,6 +110,12 @@ export const websiteEventFieldsSchema = z
         timeOfDay: eventTimeOfDaySchema.optional(),
         tacticalPlan: tacticalPlanSchema.nullable().optional(),
         /** Opt-in public Discord thread under the announcement; omitted preserves it on update. */
+        allowLateSignups: z
+            .boolean()
+            .optional()
+            .describe(
+                "Allow late signups before meetingStart; defaults to true. Late signups require a reason and start in reserves."
+            ),
         createSignupThread: z.boolean().optional(),
         createForumChannel: z
             .boolean()

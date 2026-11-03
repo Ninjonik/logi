@@ -64,6 +64,7 @@ export type EventUpsertInput = {
     stratmapIds?: string[]
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
@@ -271,6 +272,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
                       (status): status is SignupMembershipStatus =>
                           Boolean(status)
                   ),
+        allowLateSignups: kind === "match" && input.allowLateSignups !== false,
         allowNonMembersSignup:
             kind === "match" && Boolean(input.allowNonMembersSignup),
         useGeneralSignup:
@@ -343,6 +345,7 @@ export function buildUpdateEventPatch(
     const base = buildEventBasePayload({
         ...input,
         gameId: input.gameId ?? existing.gameId,
+        allowLateSignups: input.allowLateSignups ?? existing.allowLateSignups,
         createForumChannel:
             input.createForumChannel ?? existing.createForumChannel,
     })

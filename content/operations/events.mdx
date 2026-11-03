@@ -104,10 +104,19 @@ After saving, reopen the event and confirm the time, timezone, sign-up settings,
 
 ### The exact sign-up rules
 
-Sign-up is available only while the event is in **registration**. For a
-training, registration remains available after it has moved to **starting** if
-the registration deadline has not yet passed. Match sign-ups are more
-restricted: the person must have a non-pending membership status. By default,
+Regular sign-up is available during **registration**. Matches allow **late signups**
+by default after registration closes and strictly before the meeting starts.
+Managers can disable this in the match’s signup settings. Late signups require a
+reason (up to 1,000 characters) and start in **reserves**, regardless of the chosen
+group. A small clock marker in the primary colour identifies them on the roster
+board; hover or focus it to read the reason. The roster image also includes the
+marker, including after a manager places the player in a squad. This marks a late
+**signup**, separately from reporting that someone will arrive late. Existing
+matches also allow late signups unless explicitly disabled. No late signup is
+accepted at or after the meeting start, or after the match is concluded.
+
+For a training, registration remains available after it has moved to **starting**
+if the registration deadline has not yet passed. Match membership rules still apply: the person must have a non-pending membership status. By default,
 recruits, members, reserve members, and mercenaries may sign up, unless the
 manager narrows the event's allowed membership statuses.
 
@@ -130,8 +139,8 @@ attended.
 | Status       | When it applies                                                                                                        | What changes for members                                                                                                                                                                                   |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                                                                                               |
-| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                                                                                                  |
-| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.                                                                             |
+| Closed       | After registration closes, before the event is starting                                                                | Eligible players can sign up late before the meeting if enabled; a reason is required and they start in reserves.                                                                                                                                                                                  |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Late match signups remain available before the meeting if enabled; training retains the exception above. Published-roster attendance acknowledgement is available.                                                                             |
 | Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | The announcement becomes the **Played** card (or **Cancelled**, see below), the roster card is removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
