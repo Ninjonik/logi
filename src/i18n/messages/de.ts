@@ -5082,6 +5082,8 @@ export const deMessages = {
             debriefSeparateForum: "Thema in einem separaten Debrief-Forum",
             debriefLegacyPrivate: "Bestehender privater Debrief",
             debriefForumChannel: "Forumkanal für Debriefs",
+            debriefForumChannelHint:
+                "Für Debriefs in einem separaten Forum. Clan-Standard und Spielausnahmen festlegen; weitere Diskussionseinstellungen stehen unten.",
             debriefResultsWarning:
                 "Debriefs unter Ergebnissen erfordern die Veröffentlichung des Spielergebnisses. Das Spielforum bleibt erhalten, bis der Debrief existiert.",
             discussionDefaults: "Standardwerte für Eventdiskussionen",

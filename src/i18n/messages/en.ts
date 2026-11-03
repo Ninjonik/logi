@@ -4951,6 +4951,8 @@ export const enMessages = {
             debriefSeparateForum: "Topic in a separate debrief forum",
             debriefLegacyPrivate: "Existing private debrief (legacy)",
             debriefForumChannel: "Debrief forum channel",
+            debriefForumChannelHint:
+                "Used for debriefs in a separate forum. Set a clan default and add game exceptions; other event discussion settings are configured below.",
             debriefResultsWarning:
                 "Debriefs under results require publishing the match result after the game. The event forum is kept until the debrief exists.",
             discussionDefaults: "Event discussion defaults",
