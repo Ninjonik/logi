@@ -111,11 +111,31 @@ export const websiteEventFieldsSchema = z
         tacticalPlan: tacticalPlanSchema.nullable().optional(),
         /** Opt-in public Discord thread under the announcement; omitted preserves it on update. */
         createSignupThread: z.boolean().optional(),
+        createForumChannel: z
+            .boolean()
+            .optional()
+            .describe(
+                "Create the event forum. New matches inherit clan/game discussion defaults; omission on update preserves the saved choice."
+            ),
+        debriefDestination: z
+            .enum([
+                "event_forum",
+                "results_thread",
+                "debrief_forum",
+                "private_thread",
+            ])
+            .optional(),
+        debriefForumChannelId: z
+            .string()
+            .trim()
+            .regex(/^\d{17,20}$/)
+            .optional()
+            .or(z.literal("")),
         createDebriefThread: z
             .boolean()
             .optional()
             .describe(
-                "Create a private debrief thread and invite participants after conclusion, independently of forum deletion. Defaults to true, including existing matches; omission preserves the saved value on update."
+                "Create a debrief at debriefDestination after conclusion. Defaults to true; omission preserves the saved value on update. An external debrief must exist before forum deletion."
             ),
         deleteForumAfterConclusion: z
             .boolean()

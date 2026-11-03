@@ -875,7 +875,9 @@ export async function finalizeForumAfterConclusion(
     // "Debrief ve fóru" is a clan switch on "Zprávy a panely" (N1-14).
     if (
         event.createDebriefThread === false ||
-        !isMessageEnabled(config, "debriefPost")
+        !isMessageEnabled(config, "debriefPost") ||
+        (event.debriefDestination !== undefined &&
+            event.debriefDestination !== "event_forum")
     )
         return extra.debriefMessageId
     const copy = getRosterMessages(config.defaultLanguage)
@@ -1045,6 +1047,7 @@ export async function syncPrivateDebrief(input: {
     config: DiscordConfig
     categories?: readonly EventCategory[]
     parentChannelId?: string
+    resultMessageId?: string
     existingThreadId?: string
     forumChannelId?: string
     forumContext?: MatchForumContext | null
@@ -1184,7 +1187,22 @@ export async function fetchEventChannel(
 export async function concludeEventForum(
     input: Parameters<typeof syncPrivateDebrief>[0] & { deleteForum?: boolean }
 ) {
-    const debriefId = await syncPrivateDebrief(input)
+    const enabled =
+        input.event.createDebriefThread !== false &&
+        isMessageEnabled(input.config, "debriefPost")
+    const destination = input.event.debriefDestination ?? "private_thread"
+    if (enabled && destination === "event_forum" && input.deleteForum)
+        throw new Error("Cannot delete the forum containing the debrief")
+    // A results thread cannot exist before its reviewed result message. Retry on result publication.
+    if (enabled && destination === "results_thread" && !input.resultMessageId)
+        return input.existingThreadId
+    const debriefId = !enabled
+        ? input.existingThreadId
+        : destination === "private_thread"
+          ? await syncPrivateDebrief(input)
+          : destination === "event_forum"
+            ? input.existingThreadId
+            : await syncPublicDebrief(input)
     if (input.deleteForum !== false && input.forumChannelId) {
         const forum = await fetchEventChannel(input.guild, input.forumChannelId)
         if (forum) {
@@ -1194,4 +1212,130 @@ export async function concludeEventForum(
         }
     }
     return debriefId
+}
+
+/** Results discussions attach to the published card; dedicated forums retain searchable topics. */
+export async function syncPublicDebrief(
+    input: Parameters<typeof syncPrivateDebrief>[0]
+) {
+    const { guild, event, config } = input
+    const results = event.debriefDestination === "results_thread"
+    const parentId = results
+        ? input.parentChannelId
+        : event.debriefForumChannelId
+    if (!parentId) throw new Error("No debrief destination configured")
+    const parent = await fetchEventChannel(guild, parentId)
+    if (
+        results
+            ? parent?.type !== ChannelType.GuildText &&
+              parent?.type !== ChannelType.GuildAnnouncement
+            : parent?.type !== ChannelType.GuildForum
+    )
+        throw new Error("Invalid debrief destination channel type")
+    if (
+        !parent ||
+        parent.guildId !== guild.id ||
+        (parent.type !== ChannelType.GuildText &&
+            parent.type !== ChannelType.GuildAnnouncement &&
+            parent.type !== ChannelType.GuildForum)
+    )
+        throw new Error("Debrief channel unavailable")
+    let thread = input.existingThreadId
+        ? await fetchEventChannel(guild, input.existingThreadId)
+        : null
+    if (
+        thread &&
+        (!thread.isThread() ||
+            thread.parentId !== parent.id ||
+            (thread.type !== ChannelType.PublicThread &&
+                thread.type !== ChannelType.AnnouncementThread))
+    )
+        thread = null
+    const suffix = ` · ${event.id}`
+    const name =
+        `${getRosterMessages(config.defaultLanguage).forum.debrief} · ${event.name}`.slice(
+            0,
+            100 - suffix.length
+        ) + suffix
+    const forumContext =
+        input.forumContext === undefined
+            ? await loadForumContext(event.id)
+            : input.forumContext
+    const view = debriefView({
+        event: forumEventOf(config, event, input.categories),
+        result: forumContext?.result
+            ? {
+                  ...forumContext.result,
+                  matchUrl: forumContext.publicMatch
+                      ? buildPublicMatchUrl(event.id, config.defaultLanguage)
+                      : undefined,
+              }
+            : null,
+        context: forumContextOf(config),
+    })
+    if (results) {
+        if (
+            (parent.type !== ChannelType.GuildText &&
+                parent.type !== ChannelType.GuildAnnouncement) ||
+            !input.resultMessageId
+        )
+            throw new Error("Result message required")
+        const message = await parent.messages.fetch(input.resultMessageId)
+        if (thread?.id !== message.id) thread = null
+        thread ??=
+            message.thread ??
+            (message.hasThread
+                ? await fetchEventChannel(guild, message.id)
+                : null)
+        thread ??= await message.startThread({
+            name,
+            autoArchiveDuration: 10080,
+        })
+    } else if (!thread) {
+        const active = await parent.threads.fetchActive()
+        thread =
+            [...active.threads.values()].find((item) =>
+                item.name.endsWith(suffix)
+            ) ?? null
+        let before: Date | undefined
+        while (!thread) {
+            const page = await parent.threads.fetchArchived({
+                limit: 100,
+                before,
+            })
+            thread =
+                [...page.threads.values()].find((item) =>
+                    item.name.endsWith(suffix)
+                ) ?? null
+            if (thread || !page.hasMore) break
+            const oldest = Math.min(
+                ...[...page.threads.values()].flatMap((item) =>
+                    item.archiveTimestamp === null
+                        ? []
+                        : [item.archiveTimestamp]
+                )
+            )
+            if (
+                !Number.isFinite(oldest) ||
+                (before && oldest >= before.getTime())
+            )
+                throw new Error("Debrief recovery did not progress")
+            before = new Date(oldest)
+        }
+        if (!thread && parent.type === ChannelType.GuildForum)
+            thread = await parent.threads.create({
+                name,
+                message: messagePayload(view, kitOptions(config)),
+                autoArchiveDuration: 10080,
+            })
+    }
+    if (!thread?.isThread()) throw new Error("Debrief thread unavailable")
+    await input.rememberThread(thread.id)
+    if (thread.archived) await thread.setArchived(false)
+    if (thread.locked) await thread.setLocked(false)
+    if (!results) {
+        const starter = await thread.fetchStarterMessage()
+        if (starter) await starter.edit(editPayload(view, kitOptions(config)))
+    }
+    return thread.id
 }

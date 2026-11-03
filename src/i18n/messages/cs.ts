@@ -3815,10 +3815,10 @@ export const csMessages = {
                     detail: "Vlákno s informacemi a tématy briefingu · zapíná šablona zápasu",
                 },
                 debrief: {
-                    title: "Debrief ve fóru",
-                    detail: "Po skončení zápasu do vlákna fóra",
-                    target: "vlákno fóra zápasu",
-                    switchLabel: "Debrief ve fóru",
+                    title: "Debrief",
+                    detail: "Po zápase na vybraném místě pro debrief",
+                    target: "vybrané místo debriefu",
+                    switchLabel: "Vytvářet debriefy",
                 },
                 notices: {
                     title: "Omluvy a zpoždění ve vlákně zápasu",
@@ -4919,8 +4919,23 @@ export const csMessages = {
             deleteForumAfterConclusionHint:
                 "Po ručním i automatickém ukončení smazat fórum zápasu včetně příspěvků.",
             createDebriefThread: "Vytvořit debrief vlákno po zápasu",
+            debriefDestination: "Umístění debriefu",
+            debriefEventForum: "Ve fóru zápasu",
+            debriefResultsThread: "Vlákno pod zprávou s výsledky",
+            debriefSeparateForum: "Téma v samostatném fóru debriefů",
+            debriefLegacyPrivate: "Stávající soukromý debrief",
+            debriefForumChannel: "Kanál fóra pro debriefy",
+            debriefResultsWarning:
+                "Debrief pod výsledky vyžaduje zveřejnění výsledku po zápase. Fórum zápasu zůstane zachováno, dokud debrief nevznikne.",
+            discussionDefaults: "Výchozí nastavení diskuzí událostí",
+            discussionDefaultsHint:
+                "Platí pro nové události; u každé události je lze změnit.",
+            discussionInherit: "Použít nastavení klanu",
+            discussionGameOverride: "Výjimka pro hru",
+            discussionForumHint:
+                "Vytvoření fóra zápasu umožní použít předvolby témat.",
             createDebriefThreadHint:
-                "Po ukončení pozvat účastníky do soukromého debrief vlákna v kanálu výsledků → informací → registrací, nezávisle na smazání fóra.",
+                "Po ukončení vytvoří debrief na vybraném místě. Debrief ve fóru zápasu vyžaduje zachování tohoto fóra.",
             signupThread: "Diskuzní vlákno akce",
             signupThreadHint:
                 "Vytvoří veřejné vlákno pod oznámením a udržuje jeho členy podle přihlášek.",

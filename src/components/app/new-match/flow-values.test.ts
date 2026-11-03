@@ -529,3 +529,30 @@ test("new and saved matches expose the same results routing as event info", () =
     )
     assert.equal(restored.eventResultsChannelId, "saved-results")
 })
+
+test("new-match flow snapshots game discussion defaults and retains per-event destinations", () => {
+    const defaults = {
+        createForumChannel: false,
+        createDebriefThread: true,
+        deleteForumAfterConclusion: false,
+        debriefDestination: "debrief_forum" as const,
+        debriefForumChannelId: "123456789012345678",
+    }
+    const values = newFlowValues({
+        kind: "match",
+        gameId: "hell_let_loose",
+        timezone: zone,
+        now: new Date("2029-01-01T00:00:00Z"),
+        templates: [],
+        groups: [],
+        channelDefaults: {
+            hell_let_loose: { eventDiscussionDefaults: defaults },
+        },
+    })
+    assert.equal(values.createForumChannel, false)
+    assert.equal(values.deleteForumAfterConclusion, false)
+    assert.equal(values.debriefDestination, "debrief_forum")
+    const saved = flowValuesFromEvent({ ...match(), ...defaults }, zone)
+    assert.equal(saved.debriefForumChannelId, defaults.debriefForumChannelId)
+    assert.equal(saved.debriefDestination, "debrief_forum")
+})

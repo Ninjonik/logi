@@ -1,5 +1,6 @@
 import { emptyTacticalPlan } from "../../domain/events/tactical-plan"
 import * as commands from "../../../convex/websiteEventCommands"
+import * as eventDrafts from "../../../convex/eventDrafts"
 import { testContext, invoke } from "./testing/database"
 import { test, type TestContext } from "node:test"
 import assert from "node:assert/strict"
@@ -144,7 +145,7 @@ test("actor command creates exactly one native event, schedules it and returns t
     assert.equal(event.gameId, "wardogs")
     assert.equal(event.guildId, guildId)
     assert.equal(event.pingClan, false)
-    assert.equal(event.createForumChannel, false)
+    assert.equal(event.createForumChannel, true)
     assert.ok(f.ctx.db.tables.eventScheduleJobs.length > 0)
     assert.equal(
         result.data.revision,
@@ -955,4 +956,117 @@ test("actor API reads, updates and preserves the independent debrief toggle", as
         },
     })
     assert.equal(f.ctx.db.tables.events[0].createDebriefThread, false)
+})
+
+test("dashboard and API creation snapshot the same clan/game discussion defaults and event overrides", async (t) => {
+    const f = fixture(t)
+    f.ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:defaults",
+        guildId,
+        timezone: "UTC",
+        defaultLanguage: "en",
+        createdAt: "2029-01-01T00:00:00Z",
+        updatedAt: "2029-01-01T00:00:00Z",
+        eventDiscussionDefaults: {
+            createForumChannel: true,
+            createDebriefThread: true,
+            deleteForumAfterConclusion: true,
+            debriefDestination: "results_thread",
+        },
+        gameOverrides: {
+            wardogs: {
+                eventDiscussionDefaults: {
+                    deleteForumAfterConclusion: false,
+                    debriefDestination: "debrief_forum",
+                    debriefForumChannelId: "123456789012345678",
+                },
+            },
+        },
+    })
+    await f.run()
+    const dashboard = await invoke(eventDrafts.publish, f.ctx, {
+        secret,
+        serverId: "guilds:one",
+        ...fields,
+        gameId: "wardogs",
+        pingClan: false,
+    })
+    assert.equal(dashboard.ok, true)
+    const discussion = (event: Record<string, unknown>) =>
+        Object.fromEntries(
+            [
+                "createForumChannel",
+                "createDebriefThread",
+                "deleteForumAfterConclusion",
+                "debriefDestination",
+                "debriefForumChannelId",
+            ].map((key) => [key, event[key]])
+        )
+    assert.deepEqual(
+        discussion(f.ctx.db.tables.events[0]),
+        discussion(f.ctx.db.tables.events[1])
+    )
+    assert.deepEqual(discussion(f.ctx.db.tables.events[0]), {
+        createForumChannel: true,
+        createDebriefThread: true,
+        deleteForumAfterConclusion: false,
+        debriefDestination: "debrief_forum",
+        debriefForumChannelId: "123456789012345678",
+    })
+    const explicit = {
+        ...fields,
+        debriefDestination: "results_thread",
+        deleteForumAfterConclusion: true,
+        createForumChannel: false,
+    }
+    await f.run({
+        idempotencyKey: "explicit-override-001",
+        command: { operation: "create", event: explicit },
+    })
+    await invoke(eventDrafts.publish, f.ctx, {
+        secret,
+        serverId: "guilds:one",
+        ...explicit,
+        gameId: "wardogs",
+        pingClan: false,
+    })
+    assert.deepEqual(
+        discussion(f.ctx.db.tables.events[2]),
+        discussion(f.ctx.db.tables.events[3])
+    )
+    assert.equal(f.ctx.db.tables.events[2].createForumChannel, false)
+    // Changing defaults does not move any event or duplicate an idempotent write.
+    await f.ctx.db.patch("discordConfigs:defaults", {
+        eventDiscussionDefaults: { createForumChannel: false },
+    })
+    const replay = await f.run()
+    assert.equal(replay.data.replayed, true)
+    assert.equal(f.ctx.db.tables.events.length, 4)
+    assert.equal(f.ctx.db.tables.events[0].debriefDestination, "debrief_forum")
+})
+test("both event writers reject deleting an in-forum debrief without any writes", async (t) => {
+    const f = fixture(t)
+    const invalid = {
+        ...fields,
+        createForumChannel: true,
+        createDebriefThread: true,
+        debriefDestination: "event_forum",
+        deleteForumAfterConclusion: true,
+    }
+    const result = await f.run({
+        command: { operation: "create", event: invalid },
+    })
+    assert.equal(result.error.code, "invalid_request")
+    await assert.rejects(
+        invoke(eventDrafts.publish, f.ctx, {
+            secret,
+            serverId: "guilds:one",
+            ...invalid,
+            gameId: "wardogs",
+            pingClan: false,
+        }),
+        /retained/
+    )
+    assert.equal(f.ctx.db.tables.events?.length ?? 0, 0)
+    assert.equal(f.ctx.db.tables.websiteEventCommandReceipts?.length ?? 0, 0)
 })

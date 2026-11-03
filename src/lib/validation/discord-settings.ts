@@ -1,3 +1,4 @@
+import { discussionSettingsSchema } from "@/domain/api/event-discussions-settings-slice"
 import { z } from "zod"
 
 import {
@@ -444,7 +445,12 @@ const membershipSettingsSchema = z
         }
     })
 
+export const eventDiscussionDefaultsSchema = discussionSettingsSchema.extend({
+    debriefForumChannelId: discordIdField,
+})
+
 const gameDiscordOverridesSchema = z.object({
+    eventDiscussionDefaults: eventDiscussionDefaultsSchema.optional(),
     announcementsChannelId: discordIdField,
     eventInfoChannelId: discordIdField,
     forumCategoryId: discordIdField,
@@ -466,6 +472,7 @@ export const discordSettingsPatchSchema = z.object({
     announcementsChannelId: clearableDiscordIdField,
     eventInfoChannelId: clearableDiscordIdField,
     eventResultsChannelId: clearableDiscordIdField,
+    eventDiscussionDefaults: eventDiscussionDefaultsSchema.optional(),
     errorsChannelId: clearableDiscordIdField,
     calendarChannelId: clearableDiscordIdField,
     calendarCategories: z
@@ -487,11 +494,7 @@ export const discordSettingsPatchSchema = z.object({
     messageStyle: messageStyleSchema.optional(),
     messageSettings: messageSettingsSchema.optional(),
     gameOverrides: z
-        .object({
-            hell_let_loose: gameDiscordOverridesSchema.optional(),
-            hell_let_loose_vietnam: gameDiscordOverridesSchema.optional(),
-            wardogs: gameDiscordOverridesSchema.optional(),
-        })
+        .record(z.string().trim().min(1).max(64), gameDiscordOverridesSchema)
         .optional(),
 })
 

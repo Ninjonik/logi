@@ -1,4 +1,5 @@
 import { normalizeOptionalArray } from "@/domain/shared/collections"
+import { validateEventDiscussion } from "./discussion"
 
 import {
     eventTimeOfDaySchema,
@@ -55,6 +56,8 @@ export type EventUpsertInput = {
     createForumChannel?: boolean
     /** Opt-in only. Missing also means off for existing events. */
     createSignupThread?: boolean
+    debriefDestination?: import("./discussion").DebriefDestination
+    debriefForumChannelId?: string
     createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
@@ -116,6 +119,8 @@ export function buildEventCreationSettings(input: EventUpsertInput) {
         attendanceReminderHours: normalizeAttendanceReminderHours(
             input.attendanceReminderHours
         ),
+        debriefDestination: input.debriefDestination ?? "results_thread",
+        debriefForumChannelId: input.debriefForumChannelId?.trim() || undefined,
         createParticipantRoles: input.createParticipantRoles,
         createDebriefThread:
             kind === "match" && (input.createDebriefThread ?? true),
@@ -145,6 +150,12 @@ export function buildEventUpdateSettings(input: EventUpsertInput) {
             : {}),
         ...(input.attendanceReminderHours !== undefined
             ? { attendanceReminderHours: tidied.attendanceReminderHours }
+            : {}),
+        ...(input.debriefDestination !== undefined
+            ? { debriefDestination: input.debriefDestination }
+            : {}),
+        ...(input.debriefForumChannelId !== undefined
+            ? { debriefForumChannelId: tidied.debriefForumChannelId }
             : {}),
         ...(input.createDebriefThread !== undefined
             ? { createDebriefThread: tidied.createDebriefThread }
@@ -292,6 +303,7 @@ export function buildCreateEventRecord(input: EventUpsertInput, now: Date) {
         ...buildEventBasePayload(input),
         ...buildEventCreationSettings(input),
     }
+    validateEventDiscussion(base)
     const derivedStatus: EventStatus = deriveEventStatus(
         {
             registrationEnd: input.registrationEnd,
@@ -331,6 +343,8 @@ export function buildUpdateEventPatch(
     const base = buildEventBasePayload({
         ...input,
         gameId: input.gameId ?? existing.gameId,
+        createForumChannel:
+            input.createForumChannel ?? existing.createForumChannel,
     })
     // Discord message locations and recipients are creation-time choices.  The
     // bot persists message IDs per location, so changing either later could
@@ -341,6 +355,11 @@ export function buildUpdateEventPatch(
         eventResultsChannelId: _eventResultsChannelId,
         ...mutableBase
     } = base
+    validateEventDiscussion({
+        ...existing,
+        ...base,
+        ...buildEventUpdateSettings(input),
+    })
     const derivedStatus: EventStatus = deriveEventStatus(
         {
             registrationEnd: input.registrationEnd,

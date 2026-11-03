@@ -36,7 +36,9 @@ import { refreshEventSchedule } from "../src/infrastructure/convex/event-schedul
 import { fixtureScoreFromEvent } from "../src/domain/competitions/competition"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
+import { debriefDestinationValidator } from "./eventDiscussionValidators"
 import { permitsFixtureStatistics } from "../src/domain/leagues/portal"
+import { loadEventDiscussionDefaults } from "./eventDiscussionSettings"
 import { currentEventStatus } from "../src/domain/events/status"
 import { queueEventDiscordDeletion } from "./eventDeletionQueue"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
@@ -163,6 +165,8 @@ export const upsert = mutation({
         pingRoleIds: v.optional(v.array(v.string())),
         createForumChannel: v.optional(v.boolean()),
         createSignupThread: v.optional(v.boolean()),
+        debriefDestination: v.optional(debriefDestinationValidator),
+        debriefForumChannelId: v.optional(v.string()),
         createDebriefThread: v.optional(v.boolean()),
         deleteForumAfterConclusion: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),
@@ -215,6 +219,8 @@ export const upsert = mutation({
             getGuildDiscordId,
             getEventById: async (eventId) =>
                 await ctx.db.get(eventId as Id<"events">),
+            discussionDefaults: (guildId) =>
+                loadEventDiscussionDefaults(ctx, guildId, args.gameId),
             resolveMatchTeams: async ({ existing }) => {
                 const resolved = await resolveEventMatchTeams(ctx, {
                     gameId: args.gameId ?? existing?.gameId,

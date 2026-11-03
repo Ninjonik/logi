@@ -3944,10 +3944,10 @@ export const deMessages = {
                     detail: "Ein Thread mit Informationen und Briefing-Themen · von der Match-Vorlage eingeschaltet",
                 },
                 debrief: {
-                    title: "Debrief im Forum",
-                    detail: "Nach dem Match in den Forumthread",
-                    target: "Thread im Match-Forum",
-                    switchLabel: "Debrief im Forum",
+                    title: "Debrief",
+                    detail: "Nach dem Spiel am gewählten Debrief-Ziel",
+                    target: "gewähltes Debrief-Ziel",
+                    switchLabel: "Debriefs erstellen",
                 },
                 notices: {
                     title: "Abwesenheiten und Verspätungen im Match-Thread",
@@ -5073,8 +5073,22 @@ export const deMessages = {
             deleteForumAfterConclusionHint:
                 "Nach manuellem oder automatischem Abschluss das Spielforum mit allen Beiträgen löschen.",
             createDebriefThread: "Debrief-Thread nach dem Spiel erstellen",
+            debriefDestination: "Debrief-Ziel",
+            debriefEventForum: "Im Spielforum",
+            debriefResultsThread: "Thread unter der Ergebnisnachricht",
+            debriefSeparateForum: "Thema in einem separaten Debrief-Forum",
+            debriefLegacyPrivate: "Bestehender privater Debrief",
+            debriefForumChannel: "Forumkanal für Debriefs",
+            debriefResultsWarning:
+                "Debriefs unter Ergebnissen erfordern die Veröffentlichung des Spielergebnisses. Das Spielforum bleibt erhalten, bis der Debrief existiert.",
+            discussionDefaults: "Standardwerte für Eventdiskussionen",
+            discussionDefaultsHint:
+                "Gilt für neue Events; jedes Event kann diese Werte ändern.",
+            discussionInherit: "Clan-Standardwerte verwenden",
+            discussionGameOverride: "Spielausnahme",
+            discussionForumHint: "Ein Spielforum ermöglicht Themenvorlagen.",
             createDebriefThreadHint:
-                "Nach Abschluss Teilnehmer in einen privaten Debrief-Thread unter Ergebnisse → Event-Info → Anmeldung einladen, unabhängig vom Löschen des Forums.",
+                "Erstellt nach Abschluss einen Debrief am gewählten Ziel. Ein Debrief im Spielforum erfordert dessen Beibehaltung.",
             signupThread: "Diskussions-Thread zum Event",
             signupThreadHint:
                 "Erstellt einen öffentlichen Thread unter der Ankündigung und synchronisiert seine Mitglieder mit den Anmeldungen.",

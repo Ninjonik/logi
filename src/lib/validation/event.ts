@@ -84,6 +84,20 @@ export const eventSchema = z
         pingRoleIds: z.array(z.string().trim()).default([]),
         createForumChannel: z.boolean().default(false),
         createSignupThread: z.boolean().default(false),
+        debriefDestination: z
+            .enum([
+                "event_forum",
+                "results_thread",
+                "debrief_forum",
+                "private_thread",
+            ])
+            .optional(),
+        debriefForumChannelId: z
+            .string()
+            .trim()
+            .regex(/^\d{17,20}$/)
+            .optional()
+            .or(z.literal("")),
         createDebriefThread: z.boolean().optional(),
         deleteForumAfterConclusion: z.boolean().optional(),
         topicPresetId: z.string().trim().optional(),

@@ -508,7 +508,7 @@ The switches on this page:
 | Message                                            | Default | What turning it off does                                                                                           |
 | -------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
 | Roster changes                                     | On      | **Roster changes** is no longer pre-selected in the Publish dialog; it can still be chosen there.                  |
-| Debrief in the forum                               | On      | No debrief is created after the match, including the private thread used when automatic forum deletion is enabled. |
+| Debrief                                            | On      | No debrief is created after the match, in any destination. Existing discussions remain. |
 | Absences and late notices in the match thread      | Off     | When on, `/notice`, **Running late** and **Can't make it** post who, late or absent and the arrival time.          |
 | Discord event                                      | On      | The bot does not keep a Discord scheduled event with the meeting time.                                             |
 | Match recap                                        | On      | No player gets the recap DM. When on, each player can still turn it off.                                           |
@@ -828,6 +828,21 @@ registered in it; legacy unrestricted keys never qualify. Members must also hold
 of the listed roles in a fresh Discord observation when the website issues a
 command, so a role list is a ceiling, not a guarantee. Policy administration needs
 your signed-in server administrator session; API keys cannot change it.
+
+### Event discussion defaults
+
+On **Channels and language**, set the clan's match forum creation, automatic
+forum deletion, debrief switch, destination, and debrief forum channel. Each
+enabled game can use clan defaults or its own override. New events copy these
+settings, and each event can override them without changing clan defaults.
+
+A debrief can be a topic inside the retained match forum, a public thread under
+the published results message, or a topic in a separate Discord debrief forum.
+An in-forum debrief prevents automatic deletion of that forum. A results-message
+debrief requires an admin to publish the match results after the game; cleanup
+waits until that discussion exists. Separate debrief forums must already exist
+on Discord. Forum permissions determine who can read their debrief topics.
+See [Events and matches](/operations/events) for the complete workflow.
 
 ### Choosing Discord channels
 

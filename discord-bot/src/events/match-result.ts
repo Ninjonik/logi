@@ -132,7 +132,7 @@ export async function synchronizeMatchResult(
                 : []),
         ],
     }
-    await ports.publish({
+    return await ports.publish({
         guildId: payload.config.guildId,
         key,
         revision,

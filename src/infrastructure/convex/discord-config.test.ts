@@ -111,3 +111,52 @@ test("the clan-wide results destination can be saved and cleared without changin
         undefined
     )
 })
+
+test("discussion defaults save with game overrides and validate inherited deletion", async () => {
+    const ctx = fixture()
+    await invoke(configuration.upsertConfig, ctx, {
+        secret,
+        guildId: "guilds:a",
+        eventDiscussionDefaults: {
+            createForumChannel: true,
+            deleteForumAfterConclusion: false,
+            debriefDestination: "event_forum",
+        },
+        gameOverrides: {
+            wardogs: {
+                announcementsChannelId: "301",
+                eventDiscussionDefaults: {
+                    debriefDestination: "debrief_forum",
+                    debriefForumChannelId: "123456789012345678",
+                },
+            },
+        },
+    })
+    assert.equal(
+        ctx.db.tables.discordConfigs[0].eventDiscussionDefaults
+            .debriefDestination,
+        "event_forum"
+    )
+    await assert.rejects(
+        invoke(configuration.upsertConfig, ctx, {
+            secret,
+            guildId: "guilds:a",
+            eventDiscussionDefaults: {
+                createForumChannel: true,
+                deleteForumAfterConclusion: true,
+                debriefDestination: "event_forum",
+            },
+        }),
+        /retained/
+    )
+    assert.equal(
+        ctx.db.tables.discordConfigs[0].eventDiscussionDefaults
+            .deleteForumAfterConclusion,
+        false
+    )
+    assert.equal(
+        ctx.db.tables.discordConfigs[0].gameOverrides.wardogs
+            .announcementsChannelId,
+        "301"
+    )
+})

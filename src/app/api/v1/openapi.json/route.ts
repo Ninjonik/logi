@@ -989,10 +989,31 @@ const eventMutation = {
                             type: "array",
                             items: { type: "string" },
                         },
+                        createForumChannel: {
+                            type: "boolean",
+                            description:
+                                "Create the match forum. Inherits discussion defaults on creation; omission preserves it on update. Topic presets require an enabled forum.",
+                        },
+                        debriefDestination: {
+                            type: "string",
+                            enum: [
+                                "event_forum",
+                                "results_thread",
+                                "debrief_forum",
+                                "private_thread",
+                            ],
+                            description:
+                                "In-forum debriefs require a retained match forum. Results threads require a published match result. Dedicated forum topics require debriefForumChannelId. Missing on existing events preserves legacy private debriefs.",
+                        },
+                        debriefForumChannelId: {
+                            type: "string",
+                            description:
+                                "Discord forum channel for debrief_forum; empty clears it when another destination is selected.",
+                        },
                         createDebriefThread: {
                             type: "boolean",
                             description:
-                                "Creates a private debrief thread and invites participants after conclusion, independently of forum deletion. Defaults to true, including existing matches; omission on update preserves the saved value.",
+                                "Creates a debrief at the selected destination after conclusion. Event values override game and clan defaults; omission on update preserves the stored value. An enabled external debrief must exist before forum cleanup.",
                         },
                         deleteForumAfterConclusion: {
                             type: "boolean",

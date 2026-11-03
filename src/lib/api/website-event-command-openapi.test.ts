@@ -15,6 +15,9 @@ test("OpenAPI exposes the same planned map and time fields for writes and reads"
         for (const field of [
             "deleteForumAfterConclusion",
             "createDebriefThread",
+            "createForumChannel",
+            "debriefDestination",
+            "debriefForumChannelId",
             "timeOfDay",
             "tacticalPlan",
             "controlZone",

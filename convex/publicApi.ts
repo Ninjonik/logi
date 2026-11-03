@@ -63,6 +63,7 @@ import type { EventUpsertCommand } from "../src/application/events/command-ports
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { rosterMutationSchema } from "../src/domain/api/roster-mutation"
 import { ManageRoster } from "../src/application/rosters/manage-roster"
+import { loadEventDiscussionDefaults } from "./eventDiscussionSettings"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { currentEventStatus } from "../src/domain/events/status"
 import { requestRegistrationAfterSave } from "./discordCommands"
@@ -426,6 +427,15 @@ export const mutateClanEvent = mutation({
                     now: new Date().toISOString(),
                 })
                 if (!kept.ok) throw new Error(`match_teams:${kept.error}`)
+                const defaults = current
+                    ? {}
+                    : await loadEventDiscussionDefaults(
+                          ctx,
+                          key.guildId,
+                          typeof event.gameId === "string"
+                              ? event.gameId
+                              : undefined
+                      )
                 const eventId = await new UpsertEventUseCase(
                     new ConvexEventCommandRepository(ctx),
                     new DelegatingEventScorePort((id) =>
@@ -433,7 +443,24 @@ export const mutateClanEvent = mutation({
                     ),
                     systemClock
                 ).execute({
+                    ...defaults,
                     ...(event as EventUpsertCommand),
+                    debriefDestination:
+                        (event as EventUpsertCommand).debriefDestination ??
+                        defaults.debriefDestination,
+                    debriefForumChannelId:
+                        (event as EventUpsertCommand).debriefForumChannelId ??
+                        defaults.debriefForumChannelId,
+                    createForumChannel:
+                        (event as EventUpsertCommand).createForumChannel ??
+                        defaults.createForumChannel,
+                    createDebriefThread:
+                        (event as EventUpsertCommand).createDebriefThread ??
+                        defaults.createDebriefThread,
+                    deleteForumAfterConclusion:
+                        (event as EventUpsertCommand)
+                            .deleteForumAfterConclusion ??
+                        defaults.deleteForumAfterConclusion,
                     guildId: key.guildId,
                     matchTeams: kept.matchTeams,
                     ...(args.eventId ? { eventId: String(args.eventId) } : {}),

@@ -564,3 +564,191 @@ test("debrief creation works without a match forum", async () => {
     assert.ok(f.calls.includes("invite player"))
     assert.equal(f.calls.includes("delete forum"), false)
 })
+
+test("results debrief waits for publication and keeps the disposable forum", async () => {
+    const f = privateDebriefFixture()
+    await concludeEventForum({
+        ...f.input,
+        event: { ...f.input.event, debriefDestination: "results_thread" },
+        deleteForum: true,
+    })
+    assert.deepEqual(f.calls, [])
+})
+test("event forum debrief cannot be deleted even if an invalid event reaches the bot", async () => {
+    const f = privateDebriefFixture()
+    await assert.rejects(
+        concludeEventForum({
+            ...f.input,
+            event: { ...f.input.event, debriefDestination: "event_forum" },
+            deleteForum: true,
+        }),
+        /Cannot delete/
+    )
+    assert.deepEqual(f.calls, [])
+})
+function publicDebriefFixture(destination: "results_thread" | "debrief_forum") {
+    const f = privateDebriefFixture()
+    const calls: string[] = []
+    let created = false
+    const thread = {
+        id: destination === "results_thread" ? "result-card" : "public-debrief",
+        type: ChannelType.PublicThread,
+        parentId: "destination",
+        archived: false,
+        locked: false,
+        isThread: () => true,
+        fetchStarterMessage: async () => ({
+            edit: async () => {
+                calls.push("edit")
+            },
+        }),
+    }
+    const parent = {
+        id: "destination",
+        guildId: f.input.event.guildId,
+        type:
+            destination === "results_thread"
+                ? ChannelType.GuildText
+                : ChannelType.GuildForum,
+        messages: {
+            fetch: async () => ({
+                id: "result-card",
+                get hasThread() {
+                    return created
+                },
+                get thread() {
+                    return null
+                },
+                startThread: async () => {
+                    assert.equal(created, false)
+                    created = true
+                    calls.push("create")
+                    return thread
+                },
+            }),
+        },
+        threads: {
+            fetchActive: async () => ({ threads: new Map() }),
+            fetchArchived: async () => ({ threads: new Map(), hasMore: false }),
+            create: async () => {
+                created = true
+                calls.push("create")
+                return thread
+            },
+        },
+    }
+    const guild = {
+        id: f.input.event.guildId,
+        channels: {
+            fetch: async (id: string) =>
+                id === "destination"
+                    ? parent
+                    : id === thread.id && created
+                      ? thread
+                      : id === "forum"
+                        ? {
+                              type: ChannelType.GuildForum,
+                              delete: async () => {
+                                  calls.push("delete forum")
+                              },
+                          }
+                        : null,
+        },
+    }
+    return {
+        calls,
+        guild,
+        input: {
+            ...f.input,
+            guild: guild as never,
+            event: {
+                ...f.input.event,
+                debriefDestination: destination,
+                debriefForumChannelId: "destination",
+            },
+            parentChannelId: "destination",
+            resultMessageId: "result-card",
+            rememberThread: async (id: string) => {
+                assert.equal(id, thread.id)
+                calls.push("remember")
+            },
+        },
+    }
+}
+for (const destination of ["results_thread", "debrief_forum"] as const) {
+    for (const deleteForum of [true, false])
+        test(`${destination} exists durably before optional forum cleanup (${deleteForum})`, async () => {
+            const f = publicDebriefFixture(destination)
+            const id = await concludeEventForum({ ...f.input, deleteForum })
+            assert.equal(
+                id,
+                destination === "results_thread"
+                    ? "result-card"
+                    : "public-debrief"
+            )
+            assert.ok(f.calls.indexOf("create") < f.calls.indexOf("remember"))
+            assert.equal(f.calls.includes("delete forum"), deleteForum)
+            if (deleteForum)
+                assert.ok(
+                    f.calls.indexOf("remember") <
+                        f.calls.indexOf("delete forum")
+                )
+        })
+}
+test("result debrief recovers the already created thread after state persistence failed", async () => {
+    const f = publicDebriefFixture("results_thread")
+    await assert.rejects(
+        concludeEventForum({
+            ...f.input,
+            rememberThread: async () => {
+                throw new Error("storage failed")
+            },
+        }),
+        /storage failed/
+    )
+    assert.ok(!f.calls.includes("delete forum"))
+    await concludeEventForum(f.input)
+    assert.equal(f.calls.filter((call) => call === "create").length, 1)
+    assert.ok(f.calls.includes("delete forum"))
+})
+test("failed debrief creation never deletes the event forum", async () => {
+    const f = publicDebriefFixture("debrief_forum")
+    await assert.rejects(
+        concludeEventForum({
+            ...f.input,
+            event: { ...f.input.event, debriefForumChannelId: "missing" },
+        }),
+        /Invalid/
+    )
+    assert.ok(!f.calls.includes("delete forum"))
+})
+
+test("an explicit retained event-forum destination creates its debrief in that forum", async () => {
+    const { forum, calls } = fakeForum([
+        { id: "info", name: "Informace o zápasu" },
+    ])
+    const id = await finalizeForumAfterConclusion(
+        forum as never,
+        {
+            ...concludedEvent,
+            debriefDestination: "event_forum",
+            deleteForumAfterConclusion: false,
+        },
+        forumConfig,
+        { forumContext: null }
+    )
+    assert.ok(id)
+    assert.ok(calls.some((call) => call.startsWith("create")))
+})
+test("dedicated debrief refuses a forum outside the event guild", async () => {
+    const f = publicDebriefFixture("debrief_forum")
+    const fetch = f.guild.channels.fetch.bind(f.guild.channels)
+    f.guild.channels.fetch = async (id: string) => {
+        const channel = await fetch(id)
+        if (channel && id === "destination")
+            Object.assign(channel, { guildId: "another-guild" })
+        return channel
+    }
+    await assert.rejects(concludeEventForum(f.input), /unavailable/)
+    assert.deepEqual(f.calls, [])
+})

@@ -376,6 +376,25 @@ export const generatedOpenApiSchemas = {
             "createSignupThread": {
                 "type": "boolean"
             },
+            "debriefDestination": {
+                "anyOf": [
+                    {
+                        "const": "event_forum"
+                    },
+                    {
+                        "const": "results_thread"
+                    },
+                    {
+                        "const": "debrief_forum"
+                    },
+                    {
+                        "const": "private_thread"
+                    }
+                ]
+            },
+            "debriefForumChannelId": {
+                "type": "string"
+            },
             "createDebriefThread": {
                 "type": "boolean"
             },
@@ -858,6 +877,8 @@ export const generatedOpenApiSchemas = {
             ],
             "createForumChannel": true,
             "createSignupThread": true,
+            "debriefDestination": "event_forum",
+            "debriefForumChannelId": "string",
             "createDebriefThread": true,
             "deleteForumAfterConclusion": true,
             "topicPresetId": "string",

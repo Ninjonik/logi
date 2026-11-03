@@ -111,6 +111,7 @@ export type CalendarItem = {
 }
 
 export type DiscordConfig = {
+    eventDiscussionDefaults?: import("../../src/domain/events/discussion").EventDiscussionSettings
     id: string
     guildId: string
     timezone: string
@@ -132,8 +133,9 @@ export type DiscordConfig = {
     playerStatsServers?: PlayerStatsServer[]
     gameOverrides?: Partial<
         Record<
-            "hell_let_loose" | "hell_let_loose_vietnam" | "wardogs",
+            string,
             {
+                eventDiscussionDefaults?: import("../../src/domain/events/discussion").EventDiscussionSettings
                 membershipSettings?: MembershipSettings
                 membershipPanelMessageId?: string
                 membershipPanelLastConfigUpdatedAt?: string
@@ -384,6 +386,8 @@ export type EventRecord = {
     pingRoleIds?: string[]
     createForumChannel: boolean
     createSignupThread?: boolean
+    debriefDestination?: import("../../src/domain/events/discussion").DebriefDestination
+    debriefForumChannelId?: string
     createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string

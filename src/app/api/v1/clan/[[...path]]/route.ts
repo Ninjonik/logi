@@ -227,6 +227,13 @@ async function mutateEvent(
             )
         event = {
             ...parsed.data,
+            // Omission inherits configured defaults; false is an explicit event override.
+            createForumChannel: Object.prototype.hasOwnProperty.call(
+                fields,
+                "createForumChannel"
+            )
+                ? parsed.data.createForumChannel
+                : undefined,
             gameStart: parsed.data.gameStart ?? parsed.data.meetingStart,
             gameEnd:
                 parsed.data.gameEnd ??

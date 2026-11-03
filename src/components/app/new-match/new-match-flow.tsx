@@ -1,5 +1,7 @@
 "use client"
 
+import { EventDiscussionFields } from "@/components/app/event-discussion-fields"
+
 import {
     ArrowLeft,
     ArrowRight,
@@ -431,7 +433,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     const update = useCallback(
         (patch: Partial<FlowValues>) => {
-            setValues((current) => ({ ...current, ...patch }))
+            setValues((current) => ({
+                ...current,
+                ...patch,
+                ...(patch.createForumChannel === false &&
+                current.debriefDestination === "event_forum"
+                    ? { debriefDestination: "results_thread" as const }
+                    : {}),
+            }))
             markDirty()
         },
         [markDirty]
@@ -932,6 +941,12 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         const next: FlowValues = {
             ...values,
             gameId,
+            createForumChannel: true,
+            createDebriefThread: true,
+            deleteForumAfterConclusion: true,
+            debriefDestination: "results_thread",
+            debriefForumChannelId: undefined,
+            ...channelDefaults[gameId]?.eventDiscussionDefaults,
             opponent: null,
             ownSide: null,
             opponentSide: null,
@@ -3419,30 +3434,16 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         </>
                                     )
                                 ) : null}
-                                {isMatch
-                                    ? switchRow(
-                                          "nm-debrief",
-                                          t.discord.createDebriefThread,
-                                          values.createDebriefThread ?? true,
-                                          (createDebriefThread) =>
-                                              update({ createDebriefThread }),
-                                          t.discord.createDebriefThreadHint
-                                      )
-                                    : null}
-                                {isMatch && values.createForumChannel
-                                    ? switchRow(
-                                          "nm-delete-forum",
-                                          t.discord.deleteForumAfterConclusion,
-                                          values.deleteForumAfterConclusion ??
-                                              true,
-                                          (deleteForumAfterConclusion) =>
-                                              update({
-                                                  deleteForumAfterConclusion,
-                                              }),
-                                          t.discord
-                                              .deleteForumAfterConclusionHint
-                                      )
-                                    : null}
+                                {isMatch ? (
+                                    <EventDiscussionFields
+                                        dictionary={dictionary}
+                                        channels={metadata?.channels ?? []}
+                                        value={values}
+                                        onChange={(settings) =>
+                                            update(settings)
+                                        }
+                                    />
+                                ) : null}
                                 {isEdit ? (
                                     <div className="flex flex-col gap-2">
                                         {switchRow(

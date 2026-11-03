@@ -1,3 +1,4 @@
+import { debriefDestinationValidator } from "./eventDiscussionValidators"
 import { tacticalPlanValidator } from "./tacticalPlanValidator"
 import { v } from "convex/values"
 
@@ -77,6 +78,8 @@ export const eventWriteFields = {
     pingRoleIds: v.optional(v.array(v.string())),
     createForumChannel: v.optional(v.boolean()),
     createSignupThread: v.optional(v.boolean()),
+    debriefDestination: v.optional(debriefDestinationValidator),
+    debriefForumChannelId: v.optional(v.string()),
     createDebriefThread: v.optional(v.boolean()),
     deleteForumAfterConclusion: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),

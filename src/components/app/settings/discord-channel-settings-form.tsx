@@ -1,5 +1,7 @@
 "use client"
 
+import { EventDiscussionFields } from "@/components/app/event-discussion-fields"
+import type { EventDiscussionSettings } from "@/domain/events/discussion"
 import { useMemo, useState, useTransition, type ReactNode } from "react"
 import { Lock, Plus, TriangleAlert, X } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -45,7 +47,9 @@ import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import { supportedTimezones } from "@/lib/discord-timezones"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 type Exceptions = Record<
@@ -192,7 +196,35 @@ export function DiscordChannelSettingsForm({
     const [values, setValues] = useState<Values>(initialValues)
     const [exceptions, setExceptions] = useState<Exceptions>(initialExceptions)
 
+    const [discussion, setDiscussion] = useState<EventDiscussionSettings>(
+        config?.eventDiscussionDefaults ?? {}
+    )
+    const initialDiscussionGames = useMemo(
+        () =>
+            Object.fromEntries(
+                enabledGames.flatMap((game) => {
+                    const settings =
+                        config?.gameOverrides?.[game]?.eventDiscussionDefaults
+                    return settings ? [[game, settings]] : []
+                })
+            ),
+        [config, enabledGames]
+    )
+    const [discussionGames, setDiscussionGames] = useState<
+        Partial<Record<GameId, EventDiscussionSettings>>
+    >(initialDiscussionGames)
+    const discussionChanges =
+        Number(
+            JSON.stringify(discussion) !==
+                JSON.stringify(config?.eventDiscussionDefaults ?? {})
+        ) +
+        Number(
+            JSON.stringify(discussionGames) !==
+                JSON.stringify(initialDiscussionGames)
+        )
+
     const changes =
+        discussionChanges +
         (Object.keys(values) as Array<keyof Values>).filter(
             (key) =>
                 (values[key] || undefined) !== (initialValues[key] || undefined)
@@ -362,6 +394,8 @@ export function DiscordChannelSettingsForm({
     }
 
     function discard() {
+        setDiscussion(config?.eventDiscussionDefaults ?? {})
+        setDiscussionGames(initialDiscussionGames)
         setValues(initialValues)
         setExceptions(initialExceptions)
     }
@@ -375,8 +409,15 @@ export function DiscordChannelSettingsForm({
                 >(overrides, field, exceptions[field], enabledGames),
             config?.gameOverrides ?? {}
         )
+        for (const game of enabledGames) {
+            gameOverrides[game] = {
+                ...gameOverrides[game],
+                eventDiscussionDefaults: discussionGames[game],
+            }
+        }
         setSaving(true)
         const result = await saveDiscordSettings(serverId, {
+            eventDiscussionDefaults: discussion,
             timezone: values.timezone,
             defaultLanguage: values.defaultLanguage,
             announcementsChannelId: clearableId(values.announcementsChannelId),
@@ -548,6 +589,78 @@ export function DiscordChannelSettingsForm({
                 {routingRow("forumCategoryId", text.forum, text.forumHelp)}
             </Card>
 
+            <Card
+                id="channels-discussions"
+                title={dictionary.newMatch.discord.discussionDefaults}
+            >
+                <p className="text-muted-foreground text-sm">
+                    {dictionary.newMatch.discord.discussionDefaultsHint}
+                </p>
+                <EventDiscussionFields
+                    dictionary={dictionary}
+                    channels={channels}
+                    includeForum
+                    value={{
+                        createForumChannel: true,
+                        createDebriefThread: true,
+                        deleteForumAfterConclusion: true,
+                        debriefDestination: "results_thread",
+                        ...discussion,
+                    }}
+                    onChange={setDiscussion}
+                />
+                {enabledGames.map((game) => (
+                    <div key={game} className="space-y-4 border-t pt-4">
+                        <div className="flex items-center gap-3">
+                            <Switch
+                                id={`discussion-${game}`}
+                                checked={Boolean(discussionGames[game])}
+                                onCheckedChange={(checked) =>
+                                    setDiscussionGames((current) => {
+                                        const next = { ...current }
+                                        if (checked)
+                                            next[game] = {
+                                                createForumChannel: true,
+                                                createDebriefThread: true,
+                                                deleteForumAfterConclusion: true,
+                                                debriefDestination:
+                                                    "results_thread",
+                                                ...discussion,
+                                            }
+                                        else delete next[game]
+                                        return next
+                                    })
+                                }
+                            />
+                            <Label htmlFor={`discussion-${game}`}>
+                                {GAME_LABELS[game]} ·{" "}
+                                {
+                                    dictionary.newMatch.discord
+                                        .discussionGameOverride
+                                }
+                            </Label>
+                        </div>
+                        {discussionGames[game] ? (
+                            <EventDiscussionFields
+                                dictionary={dictionary}
+                                channels={channels}
+                                includeForum
+                                value={discussionGames[game]}
+                                onChange={(settings) =>
+                                    setDiscussionGames((current) => ({
+                                        ...current,
+                                        [game]: settings,
+                                    }))
+                                }
+                            />
+                        ) : (
+                            <p className="text-muted-foreground text-xs">
+                                {dictionary.newMatch.discord.discussionInherit}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </Card>
             <Card id="channels-voice" title={text.voiceTitle}>
                 {routingRow(
                     "squadVoiceCategoryId",

@@ -22,6 +22,7 @@ export const DISCORD_CONFIG_VALUE_FIELDS = [
     "membershipSettings",
     "statsSettings",
     "gameOverrides",
+    "eventDiscussionDefaults",
 ] as const
 
 export type DiscordConfigIdField = (typeof DISCORD_CONFIG_ID_FIELDS)[number]

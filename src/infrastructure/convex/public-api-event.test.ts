@@ -938,3 +938,34 @@ test("bearer-key event writes re-validate a kept selection on game and kind chan
     assert.deepEqual((await db.get(eventId))?.matchTeams, [])
     assert.equal(db.tables.imageAssetReferences.size, 0)
 })
+
+test("bearer event creation inherits discussion defaults and preserves explicit event overrides", async () => {
+    const db = new FakeDb()
+    await db.insert("discordConfigs", {
+        guildId: "guild-a",
+        eventDiscussionDefaults: {
+            createForumChannel: true,
+            createDebriefThread: true,
+            deleteForumAfterConclusion: false,
+            debriefDestination: "event_forum",
+        },
+    })
+    const created = await handler(publicApi.mutateClanEvent)({ db }, request())
+    assert.equal(created?.status, 201)
+    const eventId = JSON.parse(created!.body).data.id
+    assert.equal((await db.get(eventId))?.debriefDestination, "event_forum")
+    assert.equal((await db.get(eventId))?.deleteForumAfterConclusion, false)
+    const updated = await handler(publicApi.mutateClanEvent)(
+        { db },
+        eventUpdate(eventId, "discussion-update", {
+            createForumChannel: false,
+            debriefDestination: "results_thread",
+            deleteForumAfterConclusion: true,
+        })
+    )
+    assert.equal(updated?.status, 200)
+    assert.equal((await db.get(eventId))?.createForumChannel, false)
+    const replay = await handler(publicApi.mutateClanEvent)({ db }, request())
+    assert.equal(replay?.status, 201)
+    assert.equal(db.tables.events.size, 1)
+})

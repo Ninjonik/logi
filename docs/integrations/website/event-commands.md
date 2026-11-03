@@ -156,10 +156,10 @@ roster channels stay creation-time choices on every write path.
 Cancellation uses a dedicated pre-meeting use case, separate from post-start
 conclusion. It retains Logi's existing cancellation representation:
 `status: concluded`, attendance scoring skipped, pending schedule jobs removed,
-and no invented result. There is no new `cancelled` status. New events have no
-automatic clan ping or forum creation; configure the event's Discord settings
-in Logi when needed. Live Discord message delivery is not implied by creating
-the native event.
+and no invented result. There is no new `cancelled` status. New events do not
+ping the clan automatically. Forum creation follows the configured discussion
+defaults and explicit event overrides. Live Discord message delivery needs the
+bot and valid channel permissions.
 
 POST returns 201 for create (including replay), otherwise 200:
 
@@ -350,22 +350,35 @@ and `excusedBy` set to the admin's Discord ID, and a roster read includes
 channel, the channel, how many people were in it and which roster players were
 found).
 
-### Match forum cleanup
+### Match forums and debriefs
 
-`event.deleteForumAfterConclusion` is available through the actor-backed create
-and update commands and the event editor read. It defaults to `true` for new
-matches; omission on update preserves the saved value, with `false` for legacy
-events. After manual or automatic conclusion, the bot deletes the forum and all
-its posts when this flag is enabled.
+Actor-backed create/update commands and the event editor support
+`createForumChannel`, `createDebriefThread`, `deleteForumAfterConclusion`,
+`debriefDestination`, and `debriefForumChannelId`. They use the normal current
+actor authorization, revision checks, idempotency receipts and cache invalidation.
+Omitting these fields on update preserves the stored choices; an empty
+`debriefForumChannelId` clears that channel when another destination is selected.
 
-`event.createDebriefThread` independently controls creating a private debrief
-under results → event info → registration and inviting attending signups and
-rostered players (excluding explicit absences). It defaults to `true`, including
-existing matches, and omission on update preserves the saved value. It works
-whether or not a forum exists or is deleted. Turning it off prevents debrief
-creation but does not delete an existing debrief. The workspace debrief message
-switch still applies. These operations use the same
-actor authorization, revision checks and idempotency receipts as other edits.
+At creation, explicit event values override game settings, which override clan
+`eventDiscussions` defaults from `GET/PATCH /api/v1/clan/settings`. Without saved
+defaults, matches enable forum creation, forum deletion, and debrief creation,
+with `results_thread` as the destination. Topic presets remain a dashboard
+publication choice and are used only when the match forum is enabled.
+
+| `debriefDestination` | Behavior and requirements |
+| --- | --- |
+| `event_forum` | Pinned debrief in the match forum. Requires `createForumChannel: true` and `deleteForumAfterConclusion: false` while debrief creation is enabled. |
+| `results_thread` | Public thread attached to the published reviewed results message. Admins must publish results after the game. The match forum is retained until the message and debrief exist. |
+| `debrief_forum` | Public topic in `debriefForumChannelId`, an existing Discord forum in this guild. Match forum creation and deletion are independent. |
+| `private_thread` | Compatibility destination for existing private debriefs; invites attending signups and rostered players, excluding explicit absences. Existing events with no destination keep this behavior. |
+
+Invalid combinations return `invalid_request` before writing. Runtime channel
+permissions/type failures retain the match forum and are retried. Forum cleanup
+removes the forum and all posts only after any enabled external debrief has
+been created and its ID persisted. An in-forum debrief can never be deleted by
+this cleanup. Disabling `createDebriefThread` allows explicit forum deletion and
+does not delete an existing external debrief. The workspace debrief message
+switch still applies. Existing signup/registration threads are unchanged.
 
 ### Meeting voice confirmation boundary
 
