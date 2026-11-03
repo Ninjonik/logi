@@ -130,6 +130,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             unansweredNote: "členové, kteří se nepřihlásili ani neomluvili",
             originally: "původně {group}",
             late: "přijde později",
+            signedUpLate: "přihlášen po termínu",
             lateAt: "přijde později ({time})",
             memberships: {
                 member: "Člen",
@@ -367,6 +368,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
                 "Członkowie , którzy nie zarejestrowali się ani nie odmówili",
             originally: "pierwotnie {group}",
             late: "się spóźnia",
+            signedUpLate: "zapis po terminie",
             lateAt: "się spóźnia ({time})",
             memberships: {
                 member: "Członek",
@@ -599,6 +601,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             unansweredNote: "members who neither signed up nor declined",
             originally: "originally {group}",
             late: "running late",
+            signedUpLate: "signed up late",
             lateAt: "running late ({time})",
             memberships: {
                 member: "Member",
@@ -836,6 +839,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
                 "Mitglieder, die sich weder angemeldet noch abgemeldet haben",
             originally: "ursprünglich {group}",
             late: "kommt später",
+            signedUpLate: "verspätet angemeldet",
             lateAt: "kommt später ({time})",
             memberships: {
                 member: "Mitglied",

@@ -27,6 +27,7 @@ export type AnnouncementStateEvent = {
     registrationEnd: string
     meetingStart: string
     gameStart: string
+    allowLateSignups?: boolean
     concludedAt?: string
 }
 
@@ -48,7 +49,8 @@ export function deriveAnnouncementState(input: {
     const { event, now } = input
     if (event.status === "concluded")
         return isEventCancelledBeforeMeeting(event) ? "cancelled" : "played"
-    if (canAcceptSignups(event, now)) return "open"
+    if (canAcceptSignups({ ...event, allowLateSignups: false }, now))
+        return "open"
     const time = now.getTime()
     const gameStart = at(event.gameStart)
     const meetingStart = at(event.meetingStart)
@@ -101,15 +103,19 @@ export function announcementActions(
         rosterPublished: boolean
         /** A public match page exists. */
         hasMatchPage: boolean
+        lateSignupsOpen?: boolean
     }
 ): AnnouncementAction[][] {
     switch (state) {
         case "open":
             return [["signup", "editSignup", "decline"], ["calendar"]]
         case "closed":
-            return [["calendar"]]
+            return options.lateSignupsOpen
+                ? [["signup"], ["calendar"]]
+                : [["calendar"]]
         case "roster":
             return [
+                ...(options.lateSignupsOpen ? [["signup" as const]] : []),
                 ["confirm", "late", "attendanceDecline"],
                 ["assignment", "openRoster", "calendar"],
             ]

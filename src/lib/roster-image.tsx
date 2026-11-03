@@ -20,6 +20,7 @@ type RosterImageContext = {
         server?: string
         serverPassword?: string
         description?: string
+        participants?: Array<{ userId: string; signedUpLateAt?: string }>
         absenceNotices?: Array<{
             userId: string
             reason: string

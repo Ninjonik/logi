@@ -23,6 +23,8 @@ export type SignupListEntry = {
     at: string | null
     membership: SignupListMembership | null
     /** A late notice: the arrival time read from it, if it names one. */
+    signedUpLate?: boolean
+    lateSignupReason?: string
     late?: { arrival: string | null }
     /** The full group a reserve originally chose. */
     requestedGroup?: string | null
@@ -73,6 +75,8 @@ export type SignupListInput = {
         userId: string
         status: ParticipantStatus
         group?: string | null
+        signedUpLateAt?: string
+        lateSignupReason?: string
         requestedGroup?: string | null
         updatedAt: string
     }>
@@ -185,6 +189,14 @@ export function buildSignupList(input: SignupListInput): SignupList {
             participant.updatedAt ??
             null,
         membership: input.memberships?.get(participant.userId) ?? null,
+        ...(participant.signedUpLateAt
+            ? {
+                  signedUpLate: true,
+                  ...(input.leadership
+                      ? { lateSignupReason: participant.lateSignupReason }
+                      : {}),
+              }
+            : {}),
         ...extra,
     })
 

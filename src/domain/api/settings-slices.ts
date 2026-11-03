@@ -205,7 +205,11 @@ export function clanSettingsSlicesPatch(
         for (const [field, fieldValue] of Object.entries(
             slice.toPatch(value, source)
         )) {
-            if (PROTECTED_DISCORD_CONFIG_FIELDS.has(field))
+            // This slice owns only eventDiscussionDefaults within each game; its mapper preserves every other field.
+            if (
+                PROTECTED_DISCORD_CONFIG_FIELDS.has(field) &&
+                !(key === "eventDiscussions" && field === "gameOverrides")
+            )
                 throw new Error(
                     `Settings slice "${key}" may not write "${field}".`
                 )

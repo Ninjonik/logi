@@ -36,6 +36,10 @@ import {
     leagueMessageRefs,
 } from "./leagueDiscoveryTable"
 import {
+    eventDiscussionDefaultsValidator,
+    debriefDestinationValidator,
+} from "./eventDiscussionValidators"
+import {
     leagueFixtures,
     leagueResults,
     leagueCollectionState,
@@ -194,6 +198,8 @@ const eventParticipant = v.object({
     group: v.optional(v.union(v.string(), v.null())),
     // The capped group a player chose while it was full; they hold a reserve
     // place without a group. Missing on older sign-ups.
+    lateSignupReason: v.optional(v.string()),
+    signedUpLateAt: v.optional(v.string()),
     requestedGroup: v.optional(v.union(v.string(), v.null())),
     completed: v.optional(v.union(v.literal("passed"), v.literal("failed"))),
     updatedAt: v.string(),
@@ -369,6 +375,7 @@ const gameEventSelection = v.object({
 })
 
 const gameDiscordOverrides = v.object({
+    eventDiscussionDefaults: v.optional(eventDiscussionDefaultsValidator),
     announcementsChannelId: v.optional(v.string()),
     eventInfoChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
@@ -380,13 +387,8 @@ const gameDiscordOverrides = v.object({
     membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
-// Convex records require a free-form string key validator.  These are known,
-// stable games, so model the overrides as explicit optional fields instead.
-const gameOverrides = v.object({
-    hell_let_loose: v.optional(gameDiscordOverrides),
-    hell_let_loose_vietnam: v.optional(gameDiscordOverrides),
-    wardogs: v.optional(gameDiscordOverrides),
-})
+// Catalogue game IDs also include custom games; omitted fields inherit clan defaults.
+const gameOverrides = v.record(v.string(), gameDiscordOverrides)
 
 const eventResult = v.object({
     sourceUrl: v.string(),
@@ -815,6 +817,7 @@ export default defineSchema({
         .index("id", ["id"])
         .searchIndex("name", { searchField: "name" }),
     discordConfigs: defineTable({
+        eventDiscussionDefaults: v.optional(eventDiscussionDefaultsValidator),
         guildId: v.string(),
         timezone: v.string(),
         defaultLanguage: v.union(
@@ -947,6 +950,7 @@ export default defineSchema({
                 )
             )
         ),
+        allowLateSignups: v.optional(v.boolean()),
         allowNonMembersSignup: v.optional(v.boolean()),
         useGeneralSignup: v.optional(v.boolean()),
         signupReminderStatuses: v.optional(
@@ -1011,6 +1015,8 @@ export default defineSchema({
         createForumChannel: v.optional(v.boolean()),
         // Opt-in only: absent legacy events must not get a thread.
         createSignupThread: v.optional(v.boolean()),
+        debriefDestination: v.optional(debriefDestinationValidator),
+        debriefForumChannelId: v.optional(v.string()),
         createDebriefThread: v.optional(v.boolean()),
         deleteForumAfterConclusion: v.optional(v.boolean()),
         topicPresetId: v.optional(v.id("topicPresets")),

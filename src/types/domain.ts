@@ -233,6 +233,7 @@ export type PlayerStatsServer = {
 }
 
 export type DiscordConfig = {
+    eventDiscussionDefaults?: import("@/domain/events/discussion").EventDiscussionSettings
     id: string
     guildId: string
     timezone: string
@@ -290,6 +291,7 @@ export type GameDiscordOverrides = Pick<
     DiscordConfig,
     | "announcementsChannelId"
     | "eventInfoChannelId"
+    | "eventDiscussionDefaults"
     | "forumCategoryId"
     | "meetingChannelId"
     | "squadVoiceCategoryId"
@@ -372,12 +374,15 @@ export type EventRecord = {
     createForumChannel: boolean
     /** Opt-in public discussion thread attached to the announcement. */
     createSignupThread?: boolean
+    debriefDestination?: import("@/domain/events/discussion").DebriefDestination
+    debriefForumChannelId?: string
     createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     topicPresetId?: string
     stratmapIds: string[]
     signupGroupIds?: string[]
     allowedSignupStatuses?: SignupMembershipStatus[]
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
@@ -421,6 +426,8 @@ export type EventRecord = {
         sentAt: Timestamp
     }[]
     participants: {
+        lateSignupReason?: string
+        signedUpLateAt?: string
         userId: string
         status: "attending" | "not_attending"
         group?: string | null

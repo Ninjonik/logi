@@ -52,14 +52,17 @@ function seriesInput(source: Doc<"events">) {
         pingMode: source.pingMode,
         pingRoleIds: source.pingRoleIds,
         createForumChannel: source.createForumChannel,
+        debriefDestination: source.debriefDestination ?? "private_thread",
+        debriefForumChannelId: source.debriefForumChannelId,
         createDebriefThread: source.createDebriefThread,
-        deleteForumAfterConclusion: source.deleteForumAfterConclusion,
+        deleteForumAfterConclusion: source.deleteForumAfterConclusion ?? false,
         topicPresetId: source.topicPresetId
             ? String(source.topicPresetId)
             : undefined,
         stratmapIds: source.stratmapIds?.map((id) => String(id)),
         signupGroupIds: source.signupGroupIds,
         allowedSignupStatuses: source.allowedSignupStatuses,
+        allowLateSignups: source.allowLateSignups,
         allowNonMembersSignup: source.allowNonMembersSignup,
         useGeneralSignup: source.useGeneralSignup,
         signupReminderStatuses: source.signupReminderStatuses,

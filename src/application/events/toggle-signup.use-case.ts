@@ -3,6 +3,7 @@ import { getResolvedMemberStatus } from "@/domain/assignments/policy"
 import { normalizeEventRecord } from "@/domain/events/normalization"
 import { isSignupGroupFull } from "@/domain/events/signup-limits"
 import { toggleSignup } from "@/domain/events/signup-policy"
+import { isLateSignupWindow } from "@/domain/events/status"
 import type { Clock } from "@/application/ports/clock"
 import { isDraftEvent } from "@/domain/events/drafts"
 
@@ -19,6 +20,7 @@ export class ToggleSignupUseCase {
         eventId: string
         userId: string
         group: string | null
+        lateSignupReason?: string
         profile?: { name: string; avatar: string }
     }) {
         const event = await this.events.getById(input.eventId)
@@ -77,7 +79,8 @@ export class ToggleSignupUseCase {
             nextGroup &&
             nextGroup !== SIGNUP_NOT_ATTENDING &&
             nextGroup !== SIGNUP_GENERAL &&
-            event.signupGroupLimits?.length
+            event.signupGroupLimits?.length &&
+            !isLateSignupWindow(normalizedEvent, now)
         ) {
             for (const limit of event.signupGroupLimits) {
                 const groupName = await this.events.getGroupNameById(
@@ -107,6 +110,7 @@ export class ToggleSignupUseCase {
             now,
             membershipStatus,
             requestedGroup: fullGroup,
+            lateSignupReason: input.lateSignupReason,
         })
 
         if (input.profile) {
@@ -153,9 +157,13 @@ export class ToggleSignupUseCase {
             appliedSignupLabel:
                 input.group === SIGNUP_NOT_ATTENDING
                     ? SIGNUP_NOT_ATTENDING
-                    : (nextGroup ?? SIGNUP_GENERAL),
+                    : (nextParticipant?.group ?? SIGNUP_GENERAL),
             removed: next.removed,
             ...(fullGroup ? { fullGroup } : {}),
+            ...(isLateSignupWindow(normalizedEvent, now) &&
+            nextParticipant?.status === "attending"
+                ? { signedUpLate: true }
+                : {}),
         }
     }
 }

@@ -344,6 +344,7 @@ export async function mutateClanApiEventSignup(input: {
     methodPath: string
     userId: string
     group: string | null
+    lateSignupReason?: string
 }) {
     return (await fetchMutation(mutateEventSignupReference, {
         secret: getInternalAuthSecret(),
@@ -354,6 +355,7 @@ export async function mutateClanApiEventSignup(input: {
         methodPath: input.methodPath,
         userId: input.userId,
         group: input.group,
+        lateSignupReason: input.lateSignupReason,
     })) as { status: number; body: string } | null
 }
 

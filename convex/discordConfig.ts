@@ -9,8 +9,13 @@ import {
     statsSettingsValidator,
     ticketSettingsValidator,
 } from "./discord_shared"
+import {
+    eventDiscussionDefaults,
+    validateEventDiscussion,
+} from "../src/domain/events/discussion"
 import { normalizeMessageStyle } from "../src/domain/discord-messages/message-style"
 import { discordConfigPatch } from "../src/domain/workspaces/discord-config-patch"
+import { eventDiscussionDefaultsValidator } from "./eventDiscussionValidators"
 import { managedRolePolicy } from "../src/domain/membership/managed-roles"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { mutation, query } from "./_generated/server"
@@ -119,6 +124,7 @@ export const upsertConfig = mutation({
                 v.literal("pl")
             )
         ),
+        eventDiscussionDefaults: v.optional(eventDiscussionDefaultsValidator),
         announcementsChannelId: clearableId,
         eventInfoChannelId: clearableId,
         eventResultsChannelId: clearableId,
@@ -154,7 +160,17 @@ export const upsertConfig = mutation({
             .unique()
 
         const merged = { ...existing, ...updates }
-        for (const gameId of GAME_IDS) managedRolePolicy(merged, gameId)
+        for (const gameId of new Set([
+            ...GAME_IDS,
+            ...Object.keys(merged.gameOverrides ?? {}),
+        ])) {
+            managedRolePolicy(merged, gameId)
+            validateEventDiscussion({
+                createForumChannel: true,
+                deleteForumAfterConclusion: true,
+                ...eventDiscussionDefaults(merged, gameId),
+            })
+        }
 
         if (existing) {
             await ctx.db.patch(existing._id, { ...updates, updatedAt: now })

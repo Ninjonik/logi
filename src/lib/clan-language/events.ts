@@ -16,6 +16,14 @@ export type EventMessages = {
         cannotCome: string
         matchDetail: string
     }
+    lateSignup: {
+        title: string
+        reason: string
+        submit: string
+        saved: string
+        cancel: string
+        required: string
+    }
     interaction: {
         unableToLoadEventContext: string
         signupServerOnly: string
@@ -223,6 +231,14 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             confirmShort: "Będę tam",
             cannotCome: "Nie będzie mnie",
             matchDetail: "Szczegóły meczu",
+        },
+        lateSignup: {
+            title: "Późny zapis",
+            reason: "Dlaczego zapisujesz się po terminie?",
+            submit: "Zapisz do rezerwy",
+            saved: "Zapisano po terminie do rezerwy.",
+            cancel: "Anuluj",
+            required: "Podaj powód (1–1000 znaków).",
         },
         interaction: {
             unableToLoadEventContext:
@@ -456,6 +472,14 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             cannotCome: "Can't make it",
             matchDetail: "Match details",
         },
+        lateSignup: {
+            title: "Late signup",
+            reason: "Why are you signing up late?",
+            submit: "Join reserves",
+            saved: "Signed up late in reserves.",
+            cancel: "Cancel",
+            required: "Enter a reason (1–1000 characters).",
+        },
         interaction: {
             unableToLoadEventContext: "Unable to load event context.",
             signupServerOnly:
@@ -686,6 +710,14 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             cannotCome: "Nemůžu",
             matchDetail: "Detail zápasu",
         },
+        lateSignup: {
+            title: "Pozdní přihlášení",
+            reason: "Proč se přihlašuješ po termínu?",
+            submit: "Přihlásit do záloh",
+            saved: "Přihlášen po termínu do záloh.",
+            cancel: "Zrušit",
+            required: "Uveď důvod (1–1000 znaků).",
+        },
         interaction: {
             signupStatusSignedUp: "Jste přihlášeni do skupiny {group}.",
             signupStatusNotSignedUp: "Na tuto akci nejste přihlášeni.",
@@ -915,6 +947,14 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             confirmShort: "Bin dabei",
             cannotCome: "Kann nicht",
             matchDetail: "Spieldetails",
+        },
+        lateSignup: {
+            title: "Verspätete Anmeldung",
+            reason: "Warum meldest du dich verspätet an?",
+            submit: "Zur Reserve anmelden",
+            saved: "Verspätet zur Reserve angemeldet.",
+            cancel: "Abbrechen",
+            required: "Gib einen Grund an (1–1000 Zeichen).",
         },
         interaction: {
             unableToLoadEventContext:

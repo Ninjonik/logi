@@ -3827,10 +3827,10 @@ export const enMessages = {
                     detail: "A thread with the information and briefing topics · turned on by the match template",
                 },
                 debrief: {
-                    title: "Debrief in the forum",
-                    detail: "Into the forum thread after the match",
-                    target: "match forum thread",
-                    switchLabel: "Debrief in the forum",
+                    title: "Debrief",
+                    detail: "After the match at the selected debrief destination",
+                    target: "selected debrief destination",
+                    switchLabel: "Create debriefs",
                 },
                 notices: {
                     title: "Absences and late notices in the match thread",
@@ -4890,6 +4890,9 @@ export const enMessages = {
             noGroups:
                 "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
+            lateSignupLabel: "Signed up late",
+            lateSignups:
+                "Allow late signups until meeting time (reason required; placed in reserves)",
             nonMembers: "Allow non-members to sign up",
             generalOn: "allowed",
             reminder: "Sign-up reminder",
@@ -4942,8 +4945,23 @@ export const enMessages = {
             deleteForumAfterConclusionHint:
                 "After manual or automatic conclusion, delete the match forum and its posts.",
             createDebriefThread: "Create a debrief thread after the match",
+            debriefDestination: "Debrief destination",
+            debriefEventForum: "Inside the match forum",
+            debriefResultsThread: "Thread under the results message",
+            debriefSeparateForum: "Topic in a separate debrief forum",
+            debriefLegacyPrivate: "Existing private debrief (legacy)",
+            debriefForumChannel: "Debrief forum channel",
+            debriefResultsWarning:
+                "Debriefs under results require publishing the match result after the game. The event forum is kept until the debrief exists.",
+            discussionDefaults: "Event discussion defaults",
+            discussionDefaultsHint:
+                "Defaults apply to new events; each event can override them.",
+            discussionInherit: "Use clan defaults",
+            discussionGameOverride: "Game override",
+            discussionForumHint:
+                "Create the match forum to include topic presets.",
             createDebriefThreadHint:
-                "After conclusion, invite participants to a private debrief thread in results → event info → registration, independently of forum deletion.",
+                "Create a debrief after conclusion in the selected destination. A debrief inside the match forum requires keeping that forum.",
             signupThread: "Event discussion thread",
             signupThreadHint:
                 "Create a public thread under the announcement and keep its members in sync with sign-ups.",

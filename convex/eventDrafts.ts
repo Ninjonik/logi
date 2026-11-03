@@ -7,6 +7,7 @@ import { syncEventAssetReferences } from "../src/infrastructure/convex/event-ass
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
+import { loadEventDiscussionDefaults } from "./eventDiscussionSettings"
 import { query, type MutationCtx } from "./_generated/server"
 import { getGuildById, getGuildDiscordId } from "./identity"
 import { systemClock } from "../src/domain/shared/clock"
@@ -122,8 +123,23 @@ async function draftInput(ctx: MutationCtx, args: WriteArgs) {
         matchTeams: _matchTeams,
         ...fields
     } = args
+    const defaults = !args.eventId
+        ? await loadEventDiscussionDefaults(ctx, guildId, args.gameId)
+        : {}
     const input: EventUpsertInput & { eventId?: string } = {
+        ...defaults,
         ...fields,
+        debriefDestination:
+            fields.debriefDestination ?? defaults.debriefDestination,
+        debriefForumChannelId:
+            fields.debriefForumChannelId ?? defaults.debriefForumChannelId,
+        createDebriefThread:
+            fields.createDebriefThread ?? defaults.createDebriefThread,
+        deleteForumAfterConclusion:
+            fields.deleteForumAfterConclusion ??
+            defaults.deleteForumAfterConclusion,
+        createForumChannel:
+            fields.createForumChannel ?? defaults.createForumChannel,
         guildId,
         eventId: args.eventId ? String(args.eventId) : undefined,
         matchTeams: resolved.matchTeams,

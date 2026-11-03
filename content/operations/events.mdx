@@ -104,10 +104,19 @@ After saving, reopen the event and confirm the time, timezone, sign-up settings,
 
 ### The exact sign-up rules
 
-Sign-up is available only while the event is in **registration**. For a
-training, registration remains available after it has moved to **starting** if
-the registration deadline has not yet passed. Match sign-ups are more
-restricted: the person must have a non-pending membership status. By default,
+Regular sign-up is available during **registration**. Matches allow **late signups**
+by default after registration closes and strictly before the meeting starts.
+Managers can disable this in the match’s signup settings. Late signups require a
+reason (up to 1,000 characters) and start in **reserves**, regardless of the chosen
+group. A small clock marker in the primary colour identifies them on the roster
+board; hover or focus it to read the reason. The roster image also includes the
+marker, including after a manager places the player in a squad. This marks a late
+**signup**, separately from reporting that someone will arrive late. Existing
+matches also allow late signups unless explicitly disabled. No late signup is
+accepted at or after the meeting start, or after the match is concluded.
+
+For a training, registration remains available after it has moved to **starting**
+if the registration deadline has not yet passed. Match membership rules still apply: the person must have a non-pending membership status. By default,
 recruits, members, reserve members, and mercenaries may sign up, unless the
 manager narrows the event's allowed membership statuses.
 
@@ -130,8 +139,8 @@ attended.
 | Status       | When it applies                                                                                                        | What changes for members                                                                                                                                                                                   |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Registration | Before the registration deadline                                                                                       | Eligible people can sign up.                                                                                                                                                                               |
-| Closed       | After registration closes, before the event is starting                                                                | New sign-ups are blocked.                                                                                                                                                                                  |
-| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Sign-ups are normally blocked; training retains the exception above. Published-roster attendance acknowledgement is available.                                                                             |
+| Closed       | After registration closes, before the event is starting                                                                | Eligible players can sign up late before the meeting if enabled; a reason is required and they start in reserves.                                                                                                                                                                                  |
+| Starting     | From the later of the registration deadline and 24 hours before the meeting time, until the duration plus reserve ends | Late match signups remain available before the meeting if enabled; training retains the exception above. Published-roster attendance acknowledgement is available.                                                                             |
 | Concluded    | When a manager concludes it after the meeting has started, or 15 minutes after the planned duration ends               | The announcement becomes the **Played** card (or **Cancelled**, see below), the roster card is removed, temporary event roles and squad voice channels are cleaned up, and event scoring is resolved once. |
 
 The dashboard/bot background work reconciles time-based statuses; it is not a
@@ -164,13 +173,37 @@ scheduled event.
 Once an event concludes, the bot can update its existing match forum but never
 recreates a missing or deleted forum channel.
 
-**Create a debrief thread after the match** is a separate switch, enabled by
-default, including for existing matches. After manual or automatic conclusion,
-it invites participants to a private thread under results → event info →
-registration. It works independently of **Delete the forum after the match**,
-which only controls removing the match forum and its posts. Disabling debrief
-creation leaves any existing debrief in place. The workspace debrief message
-switch must also be enabled.
+**Match forum**, **Delete the forum after the match**, and **Create a debrief
+thread after the match** are separate choices. Creating a match forum also
+unlocks topic presets; without a forum, topic presets are not used.
+
+Choose one of three debrief destinations:
+
+- **Inside the match forum**: Logi creates and pins a debrief topic there. The
+  match forum must be enabled and retained; automatic deletion is unavailable.
+- **Thread under the results message**: Logi creates a public discussion thread
+  on the published match result. **Admins must publish the result after the
+  game.** Until that message exists, the bot keeps the event forum, even if
+  automatic deletion is selected.
+- **Topic in a separate debrief forum**: choose an existing Discord forum
+  channel, such as a game's debrief archive. Each concluded match gets its own
+  topic there, whether the event forum is retained or deleted. Visibility follows
+  the selected forum's Discord permissions.
+
+Set clan defaults and game overrides on **Settings → Channels and language →
+Event discussion defaults**. They are copied into new events and can be changed
+in each event. Later changes to clan defaults do not move existing discussions.
+New matches default to a results-message debrief. Older events without an
+explicit destination keep their existing private participant debrief behavior;
+the editor labels that legacy destination explicitly.
+
+Automatic forum deletion runs after manual or automatic conclusion and removes
+all posts in that forum. Logi first creates and records a debrief outside the
+forum; a failed creation keeps the original forum for a retry. Debriefs inside
+the event forum prevent deletion. Disabling debrief creation leaves existing
+debriefs in place and permits explicit forum deletion. The workspace debrief
+message switch must also be enabled. Registration/participant threads are
+separate and retain their existing behavior.
 
 The scheduled Discord event is written in the clan language: its name is the
 announcement title with the category ("VLK vs ROG · Friendly") and its

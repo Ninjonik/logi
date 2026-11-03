@@ -544,3 +544,57 @@ test("a reserve who later picks a free group no longer reads as a reserve", asyn
     assert.equal(participant?.group, "Infantry")
     assert.equal(participant && "requestedGroup" in participant, false)
 })
+
+test("late signup persists its reason, bypasses general group placement, and synchronizes reserves", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "event-1",
+                {
+                    id: "event-1",
+                    guildId: "guild-1",
+                    kind: "match" as const,
+                    registrationEnd: "2030-01-01T17:00:00.000Z",
+                    meetingStart: "2030-01-01T18:00:00.000Z",
+                    gameEnd: "2030-01-01T20:00:00.000Z",
+                    status: "closed" as const,
+                    signupGroupIds: ["inf"],
+                    participants: [],
+                },
+            ],
+        ]),
+        new Map([
+            [
+                "guild-1:user-1",
+                { type: "member", status: "active", primaryGroupId: "inf" },
+            ],
+        ]),
+        new Map([["inf", "INF"]])
+    )
+    const sync = new NoopEventWorkflowSyncPort()
+    const command = new ToggleSignupUseCase(
+        events,
+        sync,
+        new FakeClock(new Date("2030-01-01T17:30:00.000Z"))
+    )
+    await assert.rejects(
+        command.execute({
+            eventId: "event-1",
+            userId: "user-1",
+            group: SIGNUP_GENERAL,
+        }),
+        /reason/
+    )
+    assert.equal(sync.calls.length, 0)
+    const result = await command.execute({
+        eventId: "event-1",
+        userId: "user-1",
+        group: SIGNUP_GENERAL,
+        lateSignupReason: "Work",
+    })
+    assert.equal(result.appliedSignupLabel, SIGNUP_GENERAL)
+    const participant = events.events.get("event-1")?.participants?.[0]
+    assert.equal(participant?.group, null)
+    assert.equal(participant?.lateSignupReason, "Work")
+    assert.equal(sync.calls.length, 1)
+})

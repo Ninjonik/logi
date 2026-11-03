@@ -148,3 +148,36 @@ test("the pass needs the internal secret", async (t) => {
     )
     assert.equal(ctx.db.tables.events.length, 6)
 })
+
+test("recurring matches copy their discussion settings without adopting changed clan defaults", async (t) => {
+    const ctx = fixture(t)
+    await ctx.db.patch("events:series", {
+        debriefDestination: "debrief_forum",
+        debriefForumChannelId: "123456789012345678",
+        createForumChannel: true,
+        createDebriefThread: true,
+        deleteForumAfterConclusion: false,
+    })
+    await ctx.db.patch("discordConfigs:vlci", {
+        eventDiscussionDefaults: {
+            debriefDestination: "results_thread",
+            deleteForumAfterConclusion: true,
+        },
+    })
+    const result = await invoke(eventRecurrence.generateDue, ctx, { secret })
+    for (const occurrence of result.created) {
+        const event = await ctx.db.get(occurrence.eventId)
+        assert.equal(event?.debriefDestination, "debrief_forum")
+        assert.equal(event?.debriefForumChannelId, "123456789012345678")
+        assert.equal(event?.deleteForumAfterConclusion, false)
+    }
+})
+test("legacy weekly series keep their effective private debrief and retained forum", async (t) => {
+    const ctx = fixture(t)
+    await invoke(eventRecurrence.generateDue, ctx, { secret })
+    const event = ctx.db.tables.events.find(
+        (item) => item.gameStart === "2026-10-13T18:00:00.000Z"
+    )
+    assert.equal(event?.debriefDestination, "private_thread")
+    assert.equal(event?.deleteForumAfterConclusion, false)
+})

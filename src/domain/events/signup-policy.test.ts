@@ -216,3 +216,75 @@ test("toggleSignup rejects match signups for disallowed membership statuses", ()
         /membership status is not allowed/i
     )
 })
+
+const lateEvent = {
+    kind: "match" as const,
+    registrationEnd: "2030-01-01T17:00:00.000Z",
+    meetingStart: "2030-01-01T18:00:00.000Z",
+    status: "starting" as const,
+}
+const lateInput = {
+    event: lateEvent,
+    participants: [],
+    userId: "late-player",
+    group: "INF",
+    now: new Date("2030-01-01T17:00:00.000Z"),
+    membershipStatus: "member" as const,
+    lateSignupReason: "  Work ran over  ",
+}
+
+test("late signups default to allowed, require a trimmed reason and have no group", () => {
+    const { participants } = toggleSignup(lateInput)
+    assert.equal(participants[0].group, null)
+    assert.equal(participants[0].lateSignupReason, "Work ran over")
+    assert.equal(participants[0].signedUpLateAt, lateInput.now.toISOString())
+    for (const reason of [undefined, "  ", "x".repeat(1001)]) {
+        assert.throws(
+            () => toggleSignup({ ...lateInput, lateSignupReason: reason }),
+            /reason/
+        )
+    }
+})
+
+test("late signups enforce meeting cutoff, opt-out, conclusion, and membership", () => {
+    for (const event of [
+        { ...lateEvent, allowLateSignups: false },
+        { ...lateEvent, status: "concluded" as const },
+        { ...lateEvent, kind: "training" as const },
+        { ...lateEvent, meetingStart: "invalid" },
+    ])
+        assert.throws(
+            () => toggleSignup({ ...lateInput, event }),
+            /Signups are closed/
+        )
+    for (const time of ["2030-01-01T18:00:00.000Z", "2030-01-01T18:01:00.000Z"])
+        assert.throws(
+            () => toggleSignup({ ...lateInput, now: new Date(time) }),
+            /Signups are closed/
+        )
+    assert.throws(
+        () => toggleSignup({ ...lateInput, membershipStatus: null }),
+        /membership/
+    )
+})
+
+test("late signup marker persists on repeat submissions and remains distinct from absence", () => {
+    const first = toggleSignup(lateInput)
+    const second = toggleSignup({
+        ...lateInput,
+        participants: first.participants,
+        now: new Date("2030-01-01T17:30:00.000Z"),
+    })
+    assert.equal(
+        second.participants[0].signedUpLateAt,
+        lateInput.now.toISOString()
+    )
+    assert.equal(second.participants[0].status, "attending")
+    const decline = toggleSignup({
+        ...lateInput,
+        group: SIGNUP_NOT_ATTENDING,
+        lateSignupReason: undefined,
+    })
+    assert.equal(decline.participants[0].signedUpLateAt, undefined)
+    assert.equal(decline.participants[0].status, "not_attending")
+})

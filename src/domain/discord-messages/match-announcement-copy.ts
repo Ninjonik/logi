@@ -146,6 +146,7 @@ export type MatchAnnouncementCopy = {
         originally: string
         late: string
         /** "přijde později ({time})". */
+        signedUpLate: string
         lateAt: string
         memberships: {
             member: string

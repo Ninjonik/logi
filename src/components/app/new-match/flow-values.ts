@@ -80,6 +80,7 @@ export type FlowValues = {
     durationMinutes: number
     repeatWeekly: boolean
     allowedSignupStatuses: TemplateSignupStatus[]
+    allowLateSignups: boolean
     allowNonMembersSignup: boolean
     signupGroupIds: string[]
     signupGroupLimits: Array<{ groupId: string; max: number }>
@@ -92,6 +93,8 @@ export type FlowValues = {
     pingRoleIds: string[]
     createForumChannel: boolean
     createSignupThread: boolean
+    debriefDestination?: import("@/domain/events/discussion").DebriefDestination
+    debriefForumChannelId?: string
     createDebriefThread?: boolean
     deleteForumAfterConclusion?: boolean
     createSquadVoiceChannels: boolean
@@ -119,6 +122,7 @@ export type ChannelDefaults = Partial<
         {
             announcementChannelId?: string
             eventInfoChannelId?: string
+            eventDiscussionDefaults?: import("@/domain/events/discussion").EventDiscussionSettings
             eventResultsChannelId?: string
         }
     >
@@ -212,6 +216,7 @@ export function applyTemplateValues(
         meetingMinutes: isMatch ? template.meetingMinutesBeforeStart : 0,
         durationMinutes: template.durationMinutes,
         allowedSignupStatuses: template.allowedSignupStatuses,
+        allowLateSignups: true,
         allowNonMembersSignup: false,
         signupGroupIds: isMatch
             ? (template.signupGroupIds ?? offered).filter((id) =>
@@ -225,8 +230,10 @@ export function applyTemplateValues(
         pingRoleIds: template.pingRoleIds,
         createForumChannel: isMatch && template.createForumChannel,
         createSignupThread: false,
+        debriefDestination: "results_thread",
         createDebriefThread: true,
         deleteForumAfterConclusion: true,
+        ...channelDefaults[values.gameId]?.eventDiscussionDefaults,
         createSquadVoiceChannels: template.createSquadVoiceChannels,
         matchType: template.categoryId ?? values.matchType,
         topicPresetId: template.topicPresetId,
@@ -297,6 +304,7 @@ export function newFlowValues(input: {
         durationMinutes: 90,
         repeatWeekly: false,
         allowedSignupStatuses: [],
+        allowLateSignups: true,
         allowNonMembersSignup: false,
         signupGroupIds: gameGroups(input.groups, gameId).map(
             (group) => group.id
@@ -318,8 +326,10 @@ export function newFlowValues(input: {
         pingRoleIds: [],
         createForumChannel: kind === "match",
         createSignupThread: false,
+        debriefDestination: "results_thread",
         createDebriefThread: true,
         deleteForumAfterConclusion: true,
+        ...channelDefaults[gameId]?.eventDiscussionDefaults,
         createSquadVoiceChannels: false,
         server: "",
         serverPassword: "",
@@ -437,6 +447,7 @@ export function flowValuesFromEvent(
             !event.recurrenceSeriesId &&
             event.recurrence?.frequency === "weekly",
         allowedSignupStatuses: event.allowedSignupStatuses ?? [],
+        allowLateSignups: event.allowLateSignups !== false,
         allowNonMembersSignup: event.allowNonMembersSignup ?? false,
         signupGroupIds: event.signupGroupIds ?? [],
         signupGroupLimits: event.signupGroupLimits ?? [],
@@ -449,6 +460,8 @@ export function flowValuesFromEvent(
         pingRoleIds: event.pingRoleIds ?? [],
         createForumChannel: event.createForumChannel,
         createSignupThread: event.createSignupThread ?? false,
+        debriefDestination: event.debriefDestination,
+        debriefForumChannelId: event.debriefForumChannelId,
         createDebriefThread: event.createDebriefThread ?? true,
         deleteForumAfterConclusion: event.deleteForumAfterConclusion ?? false,
         createSquadVoiceChannels: event.createSquadVoiceChannels ?? false,
@@ -600,6 +613,8 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         createForumChannel: isMatch && values.createForumChannel,
         createSignupThread: isMatch && values.createSignupThread,
+        debriefDestination: values.debriefDestination,
+        debriefForumChannelId: values.debriefForumChannelId,
         createDebriefThread: isMatch && (values.createDebriefThread ?? true),
         deleteForumAfterConclusion:
             isMatch && (values.deleteForumAfterConclusion ?? true),
@@ -641,6 +656,7 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         rewardRoleIds: values.rewardRoleIds,
         signupGroupIds: isMatch ? values.signupGroupIds : [],
         allowedSignupStatuses: isMatch ? values.allowedSignupStatuses : [],
+        allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: isMatch && values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],
@@ -837,6 +853,8 @@ export function flowEditPayload(
         pingRoleIds: values.pingMode === "roles" ? values.pingRoleIds : [],
         createForumChannel: isMatch && values.createForumChannel,
         createSignupThread: isMatch && values.createSignupThread,
+        debriefDestination: values.debriefDestination,
+        debriefForumChannelId: values.debriefForumChannelId,
         createDebriefThread: isMatch && (values.createDebriefThread ?? true),
         deleteForumAfterConclusion:
             isMatch && (values.deleteForumAfterConclusion ?? true),
@@ -865,6 +883,7 @@ export function flowEditPayload(
         rewardRoleIds: values.rewardRoleIds,
         signupGroupIds: isMatch ? values.signupGroupIds : [],
         allowedSignupStatuses: isMatch ? values.allowedSignupStatuses : [],
+        allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: isMatch && values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],

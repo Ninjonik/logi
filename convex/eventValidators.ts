@@ -1,3 +1,4 @@
+import { debriefDestinationValidator } from "./eventDiscussionValidators"
 import { tacticalPlanValidator } from "./tacticalPlanValidator"
 import { v } from "convex/values"
 
@@ -40,6 +41,7 @@ export const eventWriteFields = {
     rewardRoleIds: v.optional(v.array(v.string())),
     signupGroupIds: v.optional(v.array(v.string())),
     allowedSignupStatuses: v.optional(v.array(signupStatus)),
+    allowLateSignups: v.optional(v.boolean()),
     allowNonMembersSignup: v.optional(v.boolean()),
     useGeneralSignup: v.optional(v.boolean()),
     signupReminderStatuses: v.optional(v.array(reminderStatus)),
@@ -77,6 +79,8 @@ export const eventWriteFields = {
     pingRoleIds: v.optional(v.array(v.string())),
     createForumChannel: v.optional(v.boolean()),
     createSignupThread: v.optional(v.boolean()),
+    debriefDestination: v.optional(debriefDestinationValidator),
+    debriefForumChannelId: v.optional(v.string()),
     createDebriefThread: v.optional(v.boolean()),
     deleteForumAfterConclusion: v.optional(v.boolean()),
     topicPresetId: v.optional(v.id("topicPresets")),

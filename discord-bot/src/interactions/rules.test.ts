@@ -14,14 +14,16 @@ function withNow<T>(iso: string, run: () => T) {
 }
 
 test("isSignupOpen allows registration events", () => {
-    assert.equal(
-        isSignupOpen({
-            kind: "match",
-            registrationEnd: "2026-01-01T00:00:00.000Z",
-            status: "registration",
-        }),
-        true
-    )
+    withNow("2025-12-31T23:00:00.000Z", () => {
+        assert.equal(
+            isSignupOpen({
+                kind: "match",
+                registrationEnd: "2026-01-01T00:00:00.000Z",
+                status: "registration",
+            }),
+            true
+        )
+    })
 })
 
 test("isSignupOpen allows training in starting state until registration end", () => {

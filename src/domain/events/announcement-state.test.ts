@@ -77,8 +77,8 @@ test("a match ended before its meeting is cancelled, with no new stored status (
     )
 })
 
-test("sign-ups follow the stored status; a training still open after the start stays open", () => {
-    assert.equal(state({}, "2026-10-11T18:05:00.000Z"), "open")
+test("expired registration does not reopen the card; training before its deadline stays open", () => {
+    assert.equal(state({}, "2026-10-11T18:05:00.000Z"), "playing")
     assert.equal(
         state(
             {
@@ -182,5 +182,32 @@ test("full groups are the capped groups without a free place (L1-28, L1-B05)", (
             { name: "Arty", count: 0, max: 1 },
         ]).map((group) => group.name),
         ["Tanky", "Recon"]
+    )
+})
+
+test("late signup buttons preserve closed and published roster actions", () => {
+    assert.deepEqual(
+        announcementActions("closed", {
+            rosterPublished: false,
+            hasMatchPage: false,
+            lateSignupsOpen: true,
+        }),
+        [["signup"], ["calendar"]]
+    )
+    assert.deepEqual(
+        announcementActions("roster", {
+            rosterPublished: true,
+            hasMatchPage: false,
+            lateSignupsOpen: true,
+        }),
+        [
+            ["signup"],
+            ["confirm", "late", "attendanceDecline"],
+            ["assignment", "openRoster", "calendar"],
+        ]
+    )
+    assert.equal(
+        state({ status: "starting" }, "2026-10-11T17:00:00.000Z", true),
+        "roster"
     )
 })

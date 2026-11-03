@@ -1,5 +1,7 @@
 "use client"
 
+import { LateSignupBadge } from "./late-signup-badge"
+
 import { formatKd } from "@/lib/format"
 
 import {
@@ -290,7 +292,11 @@ export function SquadCard({
     serverDiscordId: string
     noticeReasonByUserId: Map<
         string,
-        { reason: string; kind?: "late" | "cannot_come" }
+        {
+            reason: string
+            kind?: "late" | "cannot_come"
+            lateSignupReason?: string
+        }
     >
     /** Name of the player being dragged, for the "Drop here" hint. */
     draggedName?: string
@@ -1381,7 +1387,11 @@ function FilledSlot({
     groupsById: Map<string, Group>
     signupRoleLabel: string | null
     isReserveMember: boolean
-    noticeReason?: { reason: string; kind?: "late" | "cannot_come" }
+    noticeReason?: {
+        reason: string
+        kind?: "late" | "cannot_come"
+        lateSignupReason?: string
+    }
     attendanceStatus: AttendanceStatus
     isAssignmentMode: boolean
     isViewMode: boolean
@@ -1571,7 +1581,13 @@ function FilledSlot({
                             </TooltipContent>
                         </Tooltip>
                     ) : null}
-                    {noticeReason ? (
+                    {noticeReason?.lateSignupReason ? (
+                        <LateSignupBadge
+                            label={dictionary.newMatch.signups.lateSignupLabel}
+                            reason={noticeReason.lateSignupReason}
+                        />
+                    ) : null}
+                    {noticeReason?.reason ? (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 {noticeReason.kind === "cannot_come" ? (

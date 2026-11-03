@@ -158,6 +158,19 @@ async function mutateEventSignup(request: Request, eventId: string) {
             400,
             auth.headers
         )
+    if (
+        body.lateSignupReason !== undefined &&
+        (typeof body.lateSignupReason !== "string" ||
+            !body.lateSignupReason.trim() ||
+            body.lateSignupReason.trim().length > 1000)
+    ) {
+        return error(
+            "validation_error",
+            "lateSignupReason must contain 1–1000 characters.",
+            400,
+            auth.headers
+        )
+    }
     const result = await mutateClanApiEventSignup({
         key: auth.key,
         eventId,
@@ -166,6 +179,10 @@ async function mutateEventSignup(request: Request, eventId: string) {
         methodPath: "POST /clan/events/{eventId}/signup",
         userId: body.userId,
         group: body.group,
+        lateSignupReason:
+            typeof body.lateSignupReason === "string"
+                ? body.lateSignupReason
+                : undefined,
     })
     if (!result)
         return error(
@@ -227,6 +244,13 @@ async function mutateEvent(
             )
         event = {
             ...parsed.data,
+            // Omission inherits configured defaults; false is an explicit event override.
+            createForumChannel: Object.prototype.hasOwnProperty.call(
+                fields,
+                "createForumChannel"
+            )
+                ? parsed.data.createForumChannel
+                : undefined,
             gameStart: parsed.data.gameStart ?? parsed.data.meetingStart,
             gameEnd:
                 parsed.data.gameEnd ??

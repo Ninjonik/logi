@@ -900,7 +900,7 @@ paths["/clan/events/{eventId}/signup"] = {
         summary: "Set a clan member's event signup state",
         tags: ["Clan API — Events"],
         description:
-            "Uses the same membership and registration rules as the dashboard. A successful change enqueues roster.updated webhooks.",
+            "Uses the same membership and registration rules as the dashboard. Matches allow late signups by default after registrationEnd and strictly before meetingStart, unless allowLateSignups is false. Late attending signups require lateSignupReason and start in reserves. A successful change enqueues roster.updated webhooks.",
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -921,6 +921,13 @@ paths["/clan/events/{eventId}/signup"] = {
                         properties: {
                             userId: { type: "string" },
                             group: { type: ["string", "null"] },
+                            lateSignupReason: {
+                                type: "string",
+                                minLength: 1,
+                                maxLength: 1000,
+                                description:
+                                    "Required for late attending signups; trimmed before saving.",
+                            },
                         },
                     },
                 },
@@ -985,14 +992,41 @@ const eventMutation = {
                         gameStart: { type: "string", format: "date-time" },
                         gameEnd: { type: "string", format: "date-time" },
                         pingClan: { type: "boolean" },
+                        allowLateSignups: {
+                            type: "boolean",
+                            default: true,
+                            description:
+                                "Allow late signups before meetingStart; reason required, initially in reserves.",
+                        },
                         signupGroupIds: {
                             type: "array",
                             items: { type: "string" },
                         },
+                        createForumChannel: {
+                            type: "boolean",
+                            description:
+                                "Create the match forum. Inherits discussion defaults on creation; omission preserves it on update. Topic presets require an enabled forum.",
+                        },
+                        debriefDestination: {
+                            type: "string",
+                            enum: [
+                                "event_forum",
+                                "results_thread",
+                                "debrief_forum",
+                                "private_thread",
+                            ],
+                            description:
+                                "In-forum debriefs require a retained match forum. Results threads require a published match result. Dedicated forum topics require debriefForumChannelId. Missing on existing events preserves legacy private debriefs.",
+                        },
+                        debriefForumChannelId: {
+                            type: "string",
+                            description:
+                                "Discord forum channel for debrief_forum; empty clears it when another destination is selected.",
+                        },
                         createDebriefThread: {
                             type: "boolean",
                             description:
-                                "Creates a private debrief thread and invites participants after conclusion, independently of forum deletion. Defaults to true, including existing matches; omission on update preserves the saved value.",
+                                "Creates a debrief at the selected destination after conclusion. Event values override game and clan defaults; omission on update preserves the stored value. An enabled external debrief must exist before forum cleanup.",
                         },
                         deleteForumAfterConclusion: {
                             type: "boolean",

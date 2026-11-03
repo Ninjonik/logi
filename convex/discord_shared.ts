@@ -1,3 +1,4 @@
+import { eventDiscussionDefaultsValidator } from "./eventDiscussionValidators"
 import { applicationFormValidator } from "./membershipApplicationValidators"
 import { v } from "convex/values"
 
@@ -153,6 +154,7 @@ export const playerStatsServerValidator = v.object({
 })
 
 export const gameDiscordOverridesValidator = v.object({
+    eventDiscussionDefaults: v.optional(eventDiscussionDefaultsValidator),
     announcementsChannelId: v.optional(v.string()),
     eventInfoChannelId: v.optional(v.string()),
     forumCategoryId: v.optional(v.string()),
@@ -164,8 +166,7 @@ export const gameDiscordOverridesValidator = v.object({
     membershipPanelLastConfigUpdatedAt: v.optional(v.string()),
 })
 
-export const gameOverridesValidator = v.object({
-    hell_let_loose: v.optional(gameDiscordOverridesValidator),
-    hell_let_loose_vietnam: v.optional(gameDiscordOverridesValidator),
-    wardogs: v.optional(gameDiscordOverridesValidator),
-})
+export const gameOverridesValidator = v.record(
+    v.string(),
+    gameDiscordOverridesValidator
+)

@@ -111,22 +111,36 @@ a forum channel and topic preset. Resyncing can update topic posts and delete
 old topic posts that no longer exist in the preset, so review the preset before
 using it.
 
-New matches default to **Delete the forum after the match**. After manual or
-scheduled conclusion, Logi creates a private debrief thread directly in the
-results channel (falling back to event info, then registration) and invites
-attending signups and rostered players, including confirmed reserves, excluding
-explicit absences. The thread survives deletion of the event card. The bot needs
-Create Private Threads, Send Messages in Threads, Read Message History, Pin Messages
-and Manage Threads, plus Manage Channels to delete the forum; participants
-also need View Channel on the parent channel. A configured parent must be a text
-channel. Invitation or thread failures keep the forum intact for retry.
-Once the debrief is ready, the event forum and **all its posts, tactics and
-attachments are deleted**. Copy anything you need to keep beforehand.
+Forum creation, automatic deletion after conclusion, and debrief destination
+are separate event settings. Clan defaults and game overrides live on
+**Settings → Channels and language** and are copied into new matches.
 
-Turn this option off to keep the forum and put its debrief there instead.
-Existing matches keep their forum until you explicitly enable deletion. The
-workspace's debrief message switch still controls whether a debrief is created;
-when disabled, the deletion option removes the forum without a debrief.
+- A debrief **inside the match forum** requires that forum to be enabled and
+  retained. Logi creates and pins its debrief topic after conclusion.
+- A **thread under the results message** requires an admin to publish reviewed
+  results after the match. The public thread inherits the results channel's
+  visibility. Forum cleanup waits until the results message and thread exist.
+- A **topic in a separate debrief forum** uses the selected existing Discord
+  forum and its permissions. The match forum can be kept or deleted independently.
+
+The bot needs View Channel, Read Message History, Send Messages in Threads,
+Create Public Threads for results discussions, and Send Messages for forum
+posts. It needs Manage Threads to reopen archived or locked topics, Pin Messages
+for the pinned in-forum debrief, and Manage Channels to delete event forums.
+A failed debrief creation keeps the original forum intact for retry.
+
+Automatic cleanup deletes the event forum and **all its posts, tactics and
+attachments** once an enabled external debrief is ready. Copy anything you
+need to retain beforehand. The workspace debrief message switch applies to
+all destinations; if disabled, explicit forum deletion proceeds without a
+new debrief. Disabling event debrief creation leaves existing external
+conversations in place.
+
+Older events without an explicit destination retain private debrief threads
+and participant invitations. Those threads require Create Private Threads,
+Send Messages in Threads, Read Message History, Pin Messages, and Manage Threads;
+participants need View Channel on the parent text channel. Registration threads
+are a separate feature and are unaffected by the debrief destination.
 
 From a match or event detail page, open the connected briefing resources. A briefing can combine event details, topic presets, and selected stratmaps, but each must be prepared and saved independently.
 

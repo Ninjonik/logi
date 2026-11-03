@@ -314,16 +314,30 @@ export function RosterBoard({
         () => new Map(groups.map((group) => [group.id, group])),
         [groups]
     )
-    const noticeReasonByUserId = useMemo(
-        () =>
-            new Map(
-                (event?.absenceNotices ?? []).map((notice) => [
-                    notice.userId,
-                    { reason: notice.reason, kind: notice.kind },
-                ])
-            ),
-        [event?.absenceNotices]
-    )
+    const noticeReasonByUserId = useMemo(() => {
+        const notices = new Map<
+            string,
+            {
+                reason: string
+                kind?: "late" | "cannot_come"
+                lateSignupReason?: string
+            }
+        >(
+            (event?.absenceNotices ?? []).map((notice) => [
+                notice.userId,
+                { reason: notice.reason, kind: notice.kind },
+            ])
+        )
+        for (const participant of event?.participants ?? []) {
+            if (participant.signedUpLateAt)
+                notices.set(participant.userId, {
+                    reason: "",
+                    ...notices.get(participant.userId),
+                    lateSignupReason: participant.lateSignupReason,
+                })
+        }
+        return notices
+    }, [event?.absenceNotices, event?.participants])
     const participantStatusByUserId = useMemo(
         () =>
             new Map(

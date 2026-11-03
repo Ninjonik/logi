@@ -16,6 +16,7 @@ export type EventWorkflowRecord = {
     allowedSignupStatuses?: Array<
         "recruit" | "member" | "reserve_member" | "mercenary"
     >
+    allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
     /** Unpublished drafts accept no sign-ups. */

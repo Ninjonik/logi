@@ -48,6 +48,9 @@ export async function handleUpsertEvent(input: {
         guildId: string
         existing: UpsertExistingEvent | null
     }) => Promise<MatchTeamAssignment[] | undefined>
+    discussionDefaults?: (
+        guildId: string
+    ) => Promise<import("@/domain/events/discussion").EventDiscussionSettings>
     createUseCase: () => ExecuteUseCase<Record<string, unknown>, unknown>
 }) {
     assertInternalSecret(input.secret, input.expectedSecret)
@@ -78,8 +81,15 @@ export async function handleUpsertEvent(input: {
         ...command
     } = input.args
 
+    const defaults =
+        !existing && input.discussionDefaults
+            ? await input.discussionDefaults(guildId)
+            : {}
     return await input.createUseCase().execute({
-        ...command,
+        ...defaults,
+        ...Object.fromEntries(
+            Object.entries(command).filter(([, value]) => value !== undefined)
+        ),
         guildId,
         matchTeams,
         topicPresetId: input.args.topicPresetId
@@ -95,6 +105,7 @@ export async function handleToggleSignup(input: {
         eventId: string
         userId: string
         group: string | null
+        lateSignupReason?: string
         profile?: { name: string; avatar: string }
     }
     createUseCase: () => ExecuteUseCase<
@@ -102,6 +113,7 @@ export async function handleToggleSignup(input: {
             eventId: string
             userId: string
             group: string | null
+            lateSignupReason?: string
             profile?: { name: string; avatar: string }
         },
         unknown

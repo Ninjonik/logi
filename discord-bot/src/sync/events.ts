@@ -356,7 +356,7 @@ async function syncEvent(
         return
     }
 
-    await syncMatchResult(client, payload, event)
+    const resultMessageId = await syncMatchResult(client, payload, event)
     const roster = payload.rosters.find((item) => item.eventId === event.id)
     const eventRoles = options.syncRoles
         ? await syncEventRoles(
@@ -403,7 +403,8 @@ async function syncEvent(
         event.status === "concluded" &&
         event.kind === "match" &&
         ((event.createForumChannel && event.deleteForumAfterConclusion) ||
-            event.createDebriefThread !== false)
+            (event.createDebriefThread !== false &&
+                event.debriefDestination !== "event_forum"))
     ) {
         debriefMessageId = await concludeEventForum({
             deleteForum: Boolean(
@@ -414,6 +415,7 @@ async function syncEvent(
             config: payload.config,
             categories: payload.guild.eventCategories,
             parentChannelId: debriefParentChannelId(event, payload.config),
+            resultMessageId: resultMessageId ?? undefined,
             existingThreadId: debriefMessageId,
             forumChannelId,
             participantIds: debriefParticipantIds(event, roster),
@@ -446,7 +448,14 @@ async function syncEvent(
                 })
             },
         })
-        if (event.createForumChannel && event.deleteForumAfterConclusion) {
+        if (
+            event.createForumChannel &&
+            event.deleteForumAfterConclusion &&
+            (event.debriefDestination !== "results_thread" ||
+                event.createDebriefThread === false ||
+                Boolean(resultMessageId) ||
+                payload.config.debriefPostEnabled === false)
+        ) {
             forumChannelId = undefined
             infoMessageId = undefined
             topicMessageIds = []
@@ -836,7 +845,12 @@ async function syncEvent(
         infoMessageId,
         debriefMessageId,
         topicMessageIds,
-        lastEventUpdatedAt: event.updatedAt,
+        lastEventUpdatedAt:
+            event.debriefDestination === "results_thread" &&
+            event.createDebriefThread !== false &&
+            resultMessageId === null
+                ? undefined
+                : event.updatedAt,
         lastRosterUpdatedAt: roster?.updatedAt,
         lastConfigUpdatedAt: payload.config.updatedAt,
         lastCalendarSyncVersion: getCalendarSyncVersion(event),

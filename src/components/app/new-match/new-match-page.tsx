@@ -1,5 +1,6 @@
 import { isGameId, withGameOverrides, type GameId } from "@/domain/games/game"
 import { ManagersOnlyState } from "@/components/app/managers-only-state"
+import { eventDiscussionDefaults } from "@/domain/events/discussion"
 import { getDictionary, type Dictionary } from "@/i18n/dictionaries"
 import { getLinkedClanTeams } from "@/lib/read-models/clan-teams"
 import { getEventDraft } from "@/lib/gateways/event-drafts"
@@ -42,6 +43,10 @@ export function clanFlowProps(input: {
                 return [
                     gameId,
                     {
+                        eventDiscussionDefaults: eventDiscussionDefaults(
+                            config,
+                            gameId
+                        ),
                         announcementChannelId:
                             scoped?.announcementsChannelId || undefined,
                         eventResultsChannelId:

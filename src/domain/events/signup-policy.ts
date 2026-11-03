@@ -3,9 +3,9 @@ import type {
     EventStatus,
     SignupMembershipStatus,
 } from "./types"
+import { canAcceptSignups, isLateSignupWindow } from "./status"
 import { participantsToSignUps } from "./participants"
 import { SIGNUP_NOT_ATTENDING } from "./types"
-import { canAcceptSignups } from "./status"
 
 export const DEFAULT_ALLOWED_SIGNUP_STATUSES: SignupMembershipStatus[] = [
     "recruit",
@@ -56,10 +56,13 @@ export function toggleSignup(input: {
     event: {
         kind?: "match" | "training"
         registrationEnd: string
+        meetingStart?: string
+        allowLateSignups?: boolean
         status?: EventStatus
         allowedSignupStatuses?: SignupMembershipStatus[]
         allowNonMembersSignup?: boolean
     }
+    lateSignupReason?: string
     userId: string
     group: string | null
     now: Date
@@ -79,11 +82,22 @@ export function toggleSignup(input: {
     const existing = input.participants.find(
         (participant) => participant.userId === input.userId
     )
+    const late =
+        isLateSignupWindow(input.event, input.now) &&
+        input.group !== SIGNUP_NOT_ATTENDING
+    const lateSignupReason = input.lateSignupReason?.trim()
+    if (late && (!lateSignupReason || lateSignupReason.length > 1000)) {
+        throw new Error(
+            "A late signup reason between 1 and 1000 characters is required."
+        )
+    }
     let participants = input.participants.filter(
         (participant) => participant.userId !== input.userId
     )
     const normalizedNextGroup =
-        input.group && input.group !== SIGNUP_NOT_ATTENDING ? input.group : null
+        !late && input.group && input.group !== SIGNUP_NOT_ATTENDING
+            ? input.group
+            : null
     const nextStatus =
         input.group === SIGNUP_NOT_ATTENDING ? "not_attending" : "attending"
     participants = [
@@ -99,6 +113,18 @@ export function toggleSignup(input: {
                 : {}),
             updatedAt: input.now.toISOString(),
             completed: existing?.completed,
+            ...(late
+                ? {
+                      lateSignupReason,
+                      signedUpLateAt:
+                          existing?.signedUpLateAt ?? input.now.toISOString(),
+                  }
+                : existing?.signedUpLateAt
+                  ? {
+                        lateSignupReason: existing.lateSignupReason,
+                        signedUpLateAt: existing.signedUpLateAt,
+                    }
+                  : {}),
         },
     ]
 

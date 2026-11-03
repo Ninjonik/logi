@@ -71,6 +71,8 @@ import type * as eventAttendance from "../eventAttendance.js";
 import type * as eventDeletion from "../eventDeletion.js";
 import type * as eventDeletionQueue from "../eventDeletionQueue.js";
 import type * as eventDeletionStore from "../eventDeletionStore.js";
+import type * as eventDiscussionSettings from "../eventDiscussionSettings.js";
+import type * as eventDiscussionValidators from "../eventDiscussionValidators.js";
 import type * as eventDrafts from "../eventDrafts.js";
 import type * as eventRecurrence from "../eventRecurrence.js";
 import type * as eventReminders from "../eventReminders.js";
@@ -268,6 +270,8 @@ declare const fullApi: ApiFromModules<{
   eventDeletion: typeof eventDeletion;
   eventDeletionQueue: typeof eventDeletionQueue;
   eventDeletionStore: typeof eventDeletionStore;
+  eventDiscussionSettings: typeof eventDiscussionSettings;
+  eventDiscussionValidators: typeof eventDiscussionValidators;
   eventDrafts: typeof eventDrafts;
   eventRecurrence: typeof eventRecurrence;
   eventReminders: typeof eventReminders;

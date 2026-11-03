@@ -25,6 +25,10 @@ import {
     type MutationCtx,
     type QueryCtx,
 } from "./_generated/server"
+import {
+    currentEventStatus,
+    resolveCreateForumChannel,
+} from "../src/domain/events/status"
 import { refreshAssignedMatchTeam } from "../src/application/teams/refresh-match-team.use-case"
 import {
     assertSessionGateway,
@@ -39,10 +43,11 @@ import { CancelEventUseCase } from "../src/application/events/cancel-event.use-c
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { projectEventMatchTeams } from "../src/domain/api/event-summaries"
+import { validateEventDiscussion } from "../src/domain/events/discussion"
+import { loadEventDiscussionDefaults } from "./eventDiscussionSettings"
 import { memberObservation, membershipGuild } from "./membershipAccess"
 import { isApiKeyReadAccess } from "../src/domain/api/key-access"
 import { nextRevision } from "../src/domain/integrations/change"
-import { currentEventStatus } from "../src/domain/events/status"
 import { deleteEventInTransaction } from "./eventDeletionStore"
 import { withIntegrationChanges } from "./integrationMutation"
 import { integrationRevision } from "./integrationChangeLog"
@@ -156,6 +161,9 @@ function editableFields(event: Doc<"events">): WebsiteEventFields | null {
         ...(event.registrationStart !== undefined
             ? { registrationStart: event.registrationStart }
             : {}),
+        createForumChannel: resolveCreateForumChannel(event),
+        debriefDestination: event.debriefDestination,
+        debriefForumChannelId: event.debriefForumChannelId,
         createDebriefThread: event.createDebriefThread ?? true,
         deleteForumAfterConclusion: event.deleteForumAfterConclusion ?? false,
         registrationEnd: event.registrationEnd,
@@ -376,6 +384,13 @@ export const execute = mutation({
                                 return { error: "invalid_match_teams" }
                             // Preserve every native private/Discord field on updates. Website input
                             // owns only the bounded fields above and cannot inject roles or locations.
+                            const defaults = current
+                                ? {}
+                                : await loadEventDiscussionDefaults(
+                                      tracked,
+                                      actor.guildId,
+                                      gameId
+                                  )
                             const native: EventUpsertInput = {
                                 guildId: actor.guildId,
                                 gameId,
@@ -385,18 +400,33 @@ export const execute = mutation({
                                 pingMode: current?.pingMode ?? "none",
                                 pingRoleIds: current?.pingRoleIds,
                                 createForumChannel:
-                                    current?.createForumChannel ?? false,
+                                    fields.createForumChannel ??
+                                    (current
+                                        ? resolveCreateForumChannel(current)
+                                        : undefined) ??
+                                    defaults.createForumChannel ??
+                                    true,
                                 createSignupThread:
                                     fields.createSignupThread ??
                                     current?.createSignupThread ??
                                     false,
+                                debriefDestination:
+                                    fields.debriefDestination ??
+                                    current?.debriefDestination ??
+                                    defaults.debriefDestination,
+                                debriefForumChannelId:
+                                    fields.debriefForumChannelId ??
+                                    current?.debriefForumChannelId ??
+                                    defaults.debriefForumChannelId,
                                 createDebriefThread:
                                     fields.createDebriefThread ??
                                     current?.createDebriefThread ??
+                                    defaults.createDebriefThread ??
                                     true,
                                 deleteForumAfterConclusion:
                                     fields.deleteForumAfterConclusion ??
                                     current?.deleteForumAfterConclusion ??
+                                    defaults.deleteForumAfterConclusion ??
                                     !current,
                                 topicPresetId: current?.topicPresetId
                                     ? String(current.topicPresetId)
@@ -414,6 +444,10 @@ export const execute = mutation({
                                 signupGroupIds: current?.signupGroupIds,
                                 allowedSignupStatuses:
                                     current?.allowedSignupStatuses,
+                                allowLateSignups:
+                                    fields.allowLateSignups ??
+                                    current?.allowLateSignups ??
+                                    true,
                                 allowNonMembersSignup:
                                     current?.allowNonMembersSignup,
                                 useGeneralSignup:
@@ -426,6 +460,11 @@ export const execute = mutation({
                                 cap: current?.cap,
                                 notes: current?.notes,
                                 stratmapIds: current?.stratmapIds?.map(String),
+                            }
+                            try {
+                                validateEventDiscussion(native)
+                            } catch {
+                                return { error: "invalid_request" }
                             }
                             const id = await new UpsertEventUseCase(
                                 repository,

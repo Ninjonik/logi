@@ -3896,10 +3896,10 @@ export const plMessages = {
                     detail: "Wątek z tematami informacji i odpraw · włączony przez szablon meczu",
                 },
                 debrief: {
-                    title: "Podsumowanie na forum",
-                    detail: "W wątku na forum po meczu",
-                    target: "Wątek na forum dotyczącym meczów",
-                    switchLabel: "Podsumowanie na forum",
+                    title: "Podsumowanie",
+                    detail: "Po meczu w wybranym miejscu podsumowania",
+                    target: "wybrane miejsce podsumowania",
+                    switchLabel: "Twórz podsumowania",
                 },
                 notices: {
                     title: "Nieobecności i spóźnione powiadomienia w wątku meczowym",
@@ -4971,6 +4971,9 @@ export const plMessages = {
             noGroups:
                 "Ta gra nie ma grup zapisów. Gracze zapisują się bez wyboru grupy.",
             general: "Zarejestruj się bez wybierania grupy",
+            lateSignupLabel: "Zapis po terminie",
+            lateSignups:
+                "Zezwalaj na późne zapisy do zbiórki (wymagany powód, do rezerwy)",
             nonMembers: "Zezwalaj na rejestrację osobom niebędącym członkami",
             generalOn: "dozwolone",
             reminder: "Przypomnienie o zapisach",
@@ -5023,8 +5026,23 @@ export const plMessages = {
             deleteForumAfterConclusionHint:
                 "Po ręcznym lub automatycznym zakończeniu usuń forum meczowe i znajdujące się na nim posty.",
             createDebriefThread: "Utwórz wątek podsumowujący po meczu",
+            debriefDestination: "Miejsce podsumowania",
+            debriefEventForum: "Na forum meczu",
+            debriefResultsThread: "Wątek pod wiadomością z wynikiem",
+            debriefSeparateForum: "Temat na osobnym forum podsumowań",
+            debriefLegacyPrivate: "Istniejące prywatne podsumowanie",
+            debriefForumChannel: "Kanał forum podsumowań",
+            debriefResultsWarning:
+                "Podsumowanie pod wynikiem wymaga opublikowania wyniku po meczu. Forum meczu pozostaje do czasu utworzenia podsumowania.",
+            discussionDefaults: "Domyślne dyskusje wydarzeń",
+            discussionDefaultsHint:
+                "Dotyczy nowych wydarzeń; ustawienia można zmienić dla każdego wydarzenia.",
+            discussionInherit: "Użyj ustawień klanu",
+            discussionGameOverride: "Wyjątek dla gry",
+            discussionForumHint:
+                "Utworzenie forum meczu umożliwia użycie szablonów tematów.",
             createDebriefThreadHint:
-                "Po zakończeniu zaproś uczestników do prywatnego wątku podsumowującego w wynikach → informacje o wydarzeniu → rejestracja, niezależnie od usunięcia forum.",
+                "Po zakończeniu tworzy podsumowanie w wybranym miejscu. Podsumowanie na forum meczu wymaga zachowania tego forum.",
             signupThread: "Wątek dyskusji o wydarzeniu",
             signupThreadHint:
                 "Utwórz wątek publiczny pod ogłoszeniem i informuj jego członków o rejestracji.",

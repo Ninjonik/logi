@@ -351,3 +351,19 @@ read-only and do not authorize identity writes or a bot-backed Discord refresh.
 Exposing this action with existing directory keys would bypass the dashboard's
 current clan-admin authorization. Existing member-summary reads retain their current projection contract;
 their account display name is separate from this saved guild nickname.
+
+### Event discussion defaults
+
+The `eventDiscussions` settings slice returns `{ defaults, games }`. Both contain
+`createForumChannel`, `createDebriefThread`, `deleteForumAfterConclusion`,
+`debriefDestination`, and optional `debriefForumChannelId`. `games` maps catalogue
+game IDs to overrides; each field inherits from `defaults` when omitted. PATCH
+replaces the submitted `defaults` or `games` object; omitted objects are preserved,
+and `games: {}` clears discussion overrides while retaining all other game
+configuration. Only discussion settings are exposed; private game credentials
+and other configuration are never returned by this slice.
+
+Values snapshot into new events, with per-event overrides available through the
+actor-backed [event commands](event-commands.md#match-forums-and-debriefs).
+`event_forum` requires an enabled, retained event forum; `results_thread` waits
+for published results; `debrief_forum` requires a configured forum channel.

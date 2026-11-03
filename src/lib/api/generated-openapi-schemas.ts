@@ -96,6 +96,9 @@ export const generatedOpenApiSchemas = {
                     ]
                 }
             },
+            "allowLateSignups": {
+                "type": "boolean"
+            },
             "allowNonMembersSignup": {
                 "type": "boolean"
             },
@@ -376,6 +379,25 @@ export const generatedOpenApiSchemas = {
             "createSignupThread": {
                 "type": "boolean"
             },
+            "debriefDestination": {
+                "anyOf": [
+                    {
+                        "const": "event_forum"
+                    },
+                    {
+                        "const": "results_thread"
+                    },
+                    {
+                        "const": "debrief_forum"
+                    },
+                    {
+                        "const": "private_thread"
+                    }
+                ]
+            },
+            "debriefForumChannelId": {
+                "type": "string"
+            },
             "createDebriefThread": {
                 "type": "boolean"
             },
@@ -542,6 +564,12 @@ export const generatedOpenApiSchemas = {
                                     "type": "null"
                                 }
                             ]
+                        },
+                        "lateSignupReason": {
+                            "type": "string"
+                        },
+                        "signedUpLateAt": {
+                            "type": "string"
                         },
                         "requestedGroup": {
                             "anyOf": [
@@ -789,6 +817,7 @@ export const generatedOpenApiSchemas = {
             "allowedSignupStatuses": [
                 "recruit"
             ],
+            "allowLateSignups": true,
             "allowNonMembersSignup": true,
             "useGeneralSignup": true,
             "signupReminderStatuses": [
@@ -858,6 +887,8 @@ export const generatedOpenApiSchemas = {
             ],
             "createForumChannel": true,
             "createSignupThread": true,
+            "debriefDestination": "event_forum",
+            "debriefForumChannelId": "string",
             "createDebriefThread": true,
             "deleteForumAfterConclusion": true,
             "topicPresetId": "string",
@@ -897,6 +928,8 @@ export const generatedOpenApiSchemas = {
                     "userId": "string",
                     "status": "attending",
                     "group": "string",
+                    "lateSignupReason": "string",
+                    "signedUpLateAt": "string",
                     "requestedGroup": "string",
                     "completed": "passed",
                     "updatedAt": "string"

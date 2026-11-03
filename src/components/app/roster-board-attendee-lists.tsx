@@ -1,5 +1,7 @@
 "use client"
 
+import { LateSignupBadge } from "./late-signup-badge"
+
 import { formatKd } from "@/lib/format"
 
 import {
@@ -118,7 +120,11 @@ export function RosterBoardAttendeeLists({
     serverDiscordId: string
     noticeReasonByUserId: Map<
         string,
-        { reason: string; kind?: "late" | "cannot_come" }
+        {
+            reason: string
+            kind?: "late" | "cannot_come"
+            lateSignupReason?: string
+        }
     >
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
     /** "Bez odpovědi: N členů · Připomenout" under the reserves (D3). */
@@ -484,7 +490,11 @@ function GroupedUserList({
     serverDiscordId: string
     noticeReasonByUserId: Map<
         string,
-        { reason: string; kind?: "late" | "cannot_come" }
+        {
+            reason: string
+            kind?: "late" | "cannot_come"
+            lateSignupReason?: string
+        }
     >
     notAttendingIndicatorByUserId: Map<string, "declined" | "no_response">
     slotOptions: Array<{ value: string; label: string }>
@@ -658,7 +668,19 @@ function GroupedUserList({
                                                         </HoverCardContent>
                                                     </HoverCard>
                                                 ) : null}
-                                                {noticeReason ? (
+                                                {noticeReason?.lateSignupReason ? (
+                                                    <LateSignupBadge
+                                                        label={
+                                                            dictionary.newMatch
+                                                                .signups
+                                                                .lateSignupLabel
+                                                        }
+                                                        reason={
+                                                            noticeReason.lateSignupReason
+                                                        }
+                                                    />
+                                                ) : null}
+                                                {noticeReason?.reason ? (
                                                     <HoverCard>
                                                         <HoverCardTrigger
                                                             asChild
