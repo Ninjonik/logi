@@ -10,7 +10,7 @@ import {
     flowReviewRows,
     type FlowSummaryContext,
 } from "./flow-summary"
-import { flowValuesFromEvent } from "./flow-values"
+import { flowValuesFromEvent, type FlowValues } from "./flow-values"
 
 const zone = "Europe/Prague"
 const groups = [
@@ -108,6 +108,165 @@ test("the review rows describe a stored match", () => {
 test("nothing changed lists nothing", () => {
     const values = flowValuesFromEvent(event, zone)
     assert.deepEqual(flowChanges(values, { ...values }, context), [])
+})
+
+// Every flow field must be audited when the editor grows. Null entries are
+// creation-only choices, locked routing, or transient UI state, not edit inputs.
+const fieldEdits: Record<keyof FlowValues, Partial<FlowValues> | null> = {
+    kind: null,
+    gameId: null,
+    templateId: null,
+    nameTouched: null,
+    announcementChannelId: null,
+    eventInfoChannelId: null,
+    eventResultsChannelId: null,
+    opponent: {
+        opponent: {
+            teamId: "another-team",
+            name: "Rogues",
+            shortCode: "ROG",
+            logoUrl: null,
+        },
+    },
+    ownSide: { ownSide: "Axis" },
+    opponentSide: { opponentSide: "Allies" },
+    extraTeam: {
+        extraTeam: {
+            teamId: "third-team",
+            name: "Third",
+            shortCode: "THR",
+            logoUrl: null,
+        },
+    },
+    extraSide: { extraSide: "Allies" },
+    mapId: { mapId: "carentan" },
+    mapCleared: { mapCleared: true },
+    timeOfDay: { timeOfDay: "night" },
+    tacticalPlan: {
+        tacticalPlan: {
+            mapId: "bakurani",
+            layout: "grid A1",
+            controlZone: null,
+            hotZone: null,
+            teams: [],
+        },
+    },
+    mapMode: { mapMode: "offensive" },
+    cap: { cap: "new cap" },
+    activity: { activity: "Raid" },
+    activityTarget: { activityTarget: "Hyjal" },
+    name: { name: "New name" },
+    date: { date: "2027-10-11" },
+    time: { time: "21:00" },
+    announcementHours: { announcementHours: 48 },
+    registrationHours: { registrationHours: 12 },
+    meetingMinutes: { meetingMinutes: 45 },
+    durationMinutes: { durationMinutes: 120 },
+    repeatWeekly: { repeatWeekly: true },
+    allowedSignupStatuses: { allowedSignupStatuses: ["member"] },
+    allowLateSignups: { allowLateSignups: false },
+    allowNonMembersSignup: { allowNonMembersSignup: true },
+    signupGroupIds: { signupGroupIds: ["g-inf"] },
+    signupGroupLimits: { signupGroupLimits: [{ groupId: "g-tank", max: 3 }] },
+    useGeneralSignup: { useGeneralSignup: true },
+    signupReminderStatuses: { signupReminderStatuses: [] },
+    pingMode: { pingMode: "none" },
+    pingRoleIds: { pingRoleIds: ["another-role"] },
+    createForumChannel: { createForumChannel: false },
+    createSignupThread: { createSignupThread: true },
+    debriefDestination: { debriefDestination: "debrief_forum" },
+    debriefForumChannelId: { debriefForumChannelId: "forum-2" },
+    createDebriefThread: { createDebriefThread: false },
+    deleteForumAfterConclusion: { deleteForumAfterConclusion: true },
+    createSquadVoiceChannels: { createSquadVoiceChannels: true },
+    server: { server: "Another server" },
+    serverPassword: { serverPassword: "different-secret" },
+    matchType: { matchType: "unknown-category" },
+    topicPresetId: { topicPresetId: "unknown-preset" },
+    attendanceReminderHours: { attendanceReminderHours: [] },
+    createParticipantRoles: { createParticipantRoles: false },
+    squadPresetId: { squadPresetId: "unknown-preset" },
+    description: { description: "New description" },
+    notes: { notes: "New notes" },
+    thumbnailUrl: { thumbnailUrl: "https://example.test/thumb.png" },
+    imageUrl: { imageUrl: "https://example.test/image.png" },
+    meetingChannelId: { meetingChannelId: "voice-2" },
+    squadVoiceCategoryId: { squadVoiceCategoryId: "category-2" },
+    requiredRoleIds: { requiredRoleIds: ["required-role"] },
+    rewardRoleIds: { rewardRoleIds: ["reward-role"] },
+    stratmapIds: { stratmapIds: ["stratmap-2"] },
+}
+
+for (const [field, patch] of Object.entries(fieldEdits)) {
+    if (!patch) continue
+    test(`editing only ${field} enables saving and reverting clears it`, () => {
+        const initial = flowValuesFromEvent(
+            {
+                ...event,
+                gameId:
+                    field === "activity" || field === "activityTarget"
+                        ? "world_of_warcraft_forever"
+                        : field === "extraTeam" ||
+                            field === "extraSide" ||
+                            field === "tacticalPlan"
+                          ? "wardogs"
+                          : event.gameId,
+            },
+            zone
+        )
+        if (field === "pingRoleIds") initial.pingMode = "roles"
+        if (field === "squadVoiceCategoryId")
+            initial.createSquadVoiceChannels = true
+        assert.ok(
+            flowChanges(initial, { ...initial, ...patch }, context).length > 0
+        )
+        assert.deepEqual(flowChanges(initial, { ...initial }, context), [])
+    })
+}
+
+test("editing a tactical marker without changing its label is detected", () => {
+    const initial = {
+        ...flowValuesFromEvent(event, zone),
+        gameId: "wardogs",
+        tacticalPlan: {
+            mapId: "bakurani" as const,
+            layout: "A1",
+            controlZone: { x: 20, y: 30, radius: 10 },
+            hotZone: null,
+            teams: [],
+        },
+    }
+    assert.ok(
+        flowChanges(
+            initial,
+            {
+                ...initial,
+                tacticalPlan: {
+                    ...initial.tacticalPlan,
+                    controlZone: { x: 21, y: 30, radius: 10 },
+                },
+            },
+            context
+        ).length
+    )
+})
+
+test("replacing a team or preset with an identically labelled one is detected", () => {
+    const initial = flowValuesFromEvent(event, zone)
+    const duplicateNames = {
+        ...context,
+        squadPresets: [
+            { id: "one", name: "Same" },
+            { id: "two", name: "Same" },
+        ],
+    }
+    assert.ok(
+        flowChanges(
+            { ...initial, squadPresetId: "one" },
+            { ...initial, squadPresetId: "two" },
+            duplicateNames
+        ).length
+    )
 })
 
 test("changes read old to new, never show the password and follow the steps", () => {

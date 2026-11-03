@@ -18,6 +18,35 @@ import {
 
 const zone = "Europe/Prague"
 
+test("activity and target edits write the same fields as match creation", () => {
+    const event = match({
+        gameId: "world_of_warcraft_forever",
+        map: "Old target",
+        cap: "Raid",
+    })
+    const initial = flowValuesFromEvent(event, zone)
+    const values = {
+        ...initial,
+        activity: "Dungeon",
+        activityTarget: "New target",
+    }
+    const context = { timezone: zone, name: event.name, ownTeamId: null }
+    const edited = flowEditPayload(values, initial, event, context)
+    const created = flowEventPayload(values, context)
+    assert.equal(edited.cap, "Dungeon")
+    assert.equal(edited.map, "New target")
+    assert.equal(edited.cap, created.cap)
+    assert.equal(edited.map, created.map)
+    const cleared = flowEditPayload(
+        { ...values, activity: "", activityTarget: "" },
+        initial,
+        event,
+        context
+    )
+    assert.equal(cleared.cap, undefined)
+    assert.equal(cleared.map, undefined)
+})
+
 function team(
     slot: "a" | "b" | "c",
     teamId: string,

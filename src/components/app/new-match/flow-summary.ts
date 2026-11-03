@@ -24,6 +24,7 @@ import {
     type FlowValues,
 } from "./flow-values"
 import type { NewMatchPreviewModel } from "./new-match-preview"
+import { tacticalPlanCopy } from "./tactical-plan-copy"
 
 export type FlowText = Dictionary["newMatch"]
 
@@ -430,6 +431,16 @@ export function flowPreviewModel(
 }
 
 export type FlowChangeKey =
+    | "activity"
+    | "activityTarget"
+    | "tacticalPlan"
+    | "allowLateSignups"
+    | "allowNonMembersSignup"
+    | "signupThread"
+    | "createDebriefThread"
+    | "deleteForumAfterConclusion"
+    | "debriefDestination"
+    | "debriefForumChannel"
     | "name"
     | "category"
     | "teams"
@@ -502,6 +513,29 @@ export function describeFlowValues(
     const side = (value: string | null) => sideLabel(t, value) ?? c.noSide
     const reminders = effectiveReminderHours(values.attendanceReminderHours)
     return {
+        activity: values.activity || c.none,
+        activityTarget: values.activityTarget || c.none,
+        tacticalPlan: values.tacticalPlan
+            ? values.tacticalPlan.layout || c.on
+            : c.none,
+        allowLateSignups: onOff(values.allowLateSignups),
+        allowNonMembersSignup: onOff(values.allowNonMembersSignup),
+        signupThread: onOff(values.createSignupThread),
+        createDebriefThread: onOff(values.createDebriefThread ?? true),
+        deleteForumAfterConclusion: onOff(
+            values.deleteForumAfterConclusion ?? false
+        ),
+        debriefDestination:
+            values.debriefDestination === "event_forum"
+                ? t.discord.debriefEventForum
+                : values.debriefDestination === "results_thread"
+                  ? t.discord.debriefResultsThread
+                  : values.debriefDestination === "debrief_forum"
+                    ? t.discord.debriefSeparateForum
+                    : t.discord.debriefLegacyPrivate,
+        debriefForumChannel: values.debriefForumChannelId
+            ? channelText(context, values.debriefForumChannelId)
+            : c.none,
         name,
         category:
             context.categories.find((entry) => entry.id === values.matchType)
@@ -588,6 +622,9 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
     teams: "match",
     map: "match",
     cap: "match",
+    activity: "match",
+    activityTarget: "match",
+    tacticalPlan: "match",
     description: "match",
     notes: "match",
     thumbnail: "match",
@@ -602,6 +639,8 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
     statuses: "signups",
     groups: "signups",
     general: "signups",
+    allowLateSignups: "signups",
+    allowNonMembersSignup: "signups",
     signupReminder: "signups",
     attendanceReminders: "signups",
     squadPreset: "signups",
@@ -609,6 +648,11 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
     rewardRoles: "signups",
     ping: "discord",
     forum: "discord",
+    signupThread: "discord",
+    createDebriefThread: "discord",
+    deleteForumAfterConclusion: "discord",
+    debriefDestination: "discord",
+    debriefForumChannel: "discord",
     topicPreset: "discord",
     voice: "discord",
     meetingChannel: "discord",
@@ -617,9 +661,84 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
     password: "discord",
 }
 
+// Every flow field must explicitly participate in edit tracking or be excluded.
+// Locked routing, creation-only choices and transient UI flags are not edits.
+const CHANGE_FIELDS: Record<keyof FlowValues, FlowChangeKey | null> = {
+    kind: null,
+    gameId: null,
+    templateId: null,
+    nameTouched: null,
+    announcementChannelId: null,
+    eventInfoChannelId: null,
+    eventResultsChannelId: null,
+    opponent: "teams",
+    ownSide: "teams",
+    opponentSide: "teams",
+    extraTeam: "teams",
+    extraSide: "teams",
+    mapId: "map",
+    mapCleared: "map",
+    timeOfDay: "map",
+    tacticalPlan: "tacticalPlan",
+    mapMode: "map",
+    cap: "cap",
+    activity: "activity",
+    activityTarget: "activityTarget",
+    name: "name",
+    date: "start",
+    time: "start",
+    announcementHours: "announcement",
+    registrationHours: "registrationEnd",
+    meetingMinutes: "meeting",
+    durationMinutes: "end",
+    repeatWeekly: "repeat",
+    allowedSignupStatuses: "statuses",
+    allowLateSignups: "allowLateSignups",
+    allowNonMembersSignup: "allowNonMembersSignup",
+    signupGroupIds: "groups",
+    signupGroupLimits: "groups",
+    useGeneralSignup: "general",
+    signupReminderStatuses: "signupReminder",
+    pingMode: "ping",
+    pingRoleIds: "ping",
+    createForumChannel: "forum",
+    createSignupThread: "signupThread",
+    debriefDestination: "debriefDestination",
+    debriefForumChannelId: "debriefForumChannel",
+    createDebriefThread: "createDebriefThread",
+    deleteForumAfterConclusion: "deleteForumAfterConclusion",
+    createSquadVoiceChannels: "voice",
+    server: "server",
+    serverPassword: "password",
+    matchType: "category",
+    topicPresetId: "topicPreset",
+    attendanceReminderHours: "attendanceReminders",
+    createParticipantRoles: "participantRoles",
+    squadPresetId: "squadPreset",
+    description: "description",
+    notes: "notes",
+    thumbnailUrl: "thumbnail",
+    imageUrl: "image",
+    meetingChannelId: "meetingChannel",
+    squadVoiceCategoryId: "voice",
+    requiredRoleIds: "requiredRoles",
+    rewardRoleIds: "rewardRoles",
+    stratmapIds: "stratmaps",
+}
+
+function comparableField(values: FlowValues, field: keyof FlowValues): unknown {
+    if (field === "attendanceReminderHours")
+        return effectiveReminderHours(values.attendanceReminderHours)
+    if (field === "createParticipantRoles" || field === "createDebriefThread")
+        return values[field] ?? true
+    if (field === "deleteForumAfterConclusion" || field === "mapCleared")
+        return values[field] ?? false
+    return values[field] ?? ""
+}
+
 /**
- * The "What changes" list of the review step: every field whose text
- * differs between the stored values and the edited ones, in the order of
+ * The "What changes" list of the review step: every changed editable value,
+ * including changes hidden by identical display labels or shortened text, in the order of
  * the steps. A changed password reads "new password", never its value.
  */
 export function flowChanges(
@@ -629,22 +748,32 @@ export function flowChanges(
 ): FlowChange[] {
     const before = describeFlowValues(initial, context)
     const after = describeFlowValues(values, context)
-    const labels = context.t.edit.fields
-    return (Object.keys(CHANGE_STEPS) as FlowChangeKey[])
-        .filter((key) =>
-            key === "password"
-                ? initial.serverPassword !== values.serverPassword
-                : key === "description"
-                  ? (initial.description ?? "") !== (values.description ?? "")
-                  : key === "notes"
-                    ? (initial.notes ?? "") !== (values.notes ?? "")
-                    : key === "thumbnail"
-                      ? (initial.thumbnailUrl ?? "") !==
-                        (values.thumbnailUrl ?? "")
-                      : key === "image"
-                        ? (initial.imageUrl ?? "") !== (values.imageUrl ?? "")
-                        : before[key] !== after[key]
+    const { t } = context
+    const labels: Record<FlowChangeKey, string> = {
+        ...t.edit.fields,
+        activity: t.match.activity,
+        activityTarget: t.match.target,
+        tacticalPlan: tacticalPlanCopy(context.intl.split("-")[0]).title,
+        allowLateSignups: t.signups.lateSignups,
+        allowNonMembersSignup: t.signups.nonMembers,
+        signupThread: t.discord.signupThread,
+        createDebriefThread: t.discord.createDebriefThread,
+        deleteForumAfterConclusion: t.discord.deleteForumAfterConclusion,
+        debriefDestination: t.discord.debriefDestination,
+        debriefForumChannel: t.discord.debriefForumChannel,
+    }
+    const changedKeys = new Set<FlowChangeKey>()
+    for (const field of Object.keys(CHANGE_FIELDS) as Array<keyof FlowValues>) {
+        const key = CHANGE_FIELDS[field]
+        if (
+            key &&
+            JSON.stringify(comparableField(initial, field)) !==
+                JSON.stringify(comparableField(values, field))
         )
+            changedKeys.add(key)
+    }
+    return (Object.keys(CHANGE_STEPS) as FlowChangeKey[])
+        .filter((key) => changedKeys.has(key) || before[key] !== after[key])
         .map((key) => ({
             key,
             step: CHANGE_STEPS[key],

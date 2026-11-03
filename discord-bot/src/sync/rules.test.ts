@@ -234,35 +234,53 @@ for (const status of [
 ] as const) {
     test(`shared-channel ${status} edits the original registration card`, () => {
         assert.equal(
-            shouldKeepRegistrationMessage({
-                kind: "match",
-                status,
-                registrationAnnouncementDue: true,
-                splitChannels: false,
-            }),
+            shouldKeepRegistrationMessage(
+                {
+                    kind: "match",
+                    status,
+                    registrationStart: "2026-01-01T00:00:00Z",
+                    splitChannels: false,
+                },
+                new Date("2026-11-03T12:00:00Z")
+            ),
             true
         )
     })
     test(`split-channel ${status} keeps registration only while open`, () => {
         assert.equal(
-            shouldKeepRegistrationMessage({
-                kind: "match",
-                status,
-                registrationAnnouncementDue: true,
-                splitChannels: true,
-            }),
+            shouldKeepRegistrationMessage(
+                {
+                    kind: "match",
+                    status,
+                    registrationStart: "2026-01-01T00:00:00Z",
+                    splitChannels: true,
+                },
+                new Date("2026-11-03T12:00:00Z")
+            ),
             status === "registration"
         )
     })
     test(`unannounced ${status} does not publish a registration card`, () => {
         assert.equal(
-            shouldKeepRegistrationMessage({
-                kind: "match",
-                status,
-                registrationAnnouncementDue: false,
-                splitChannels: false,
-            }),
+            shouldKeepRegistrationMessage(
+                {
+                    kind: "match",
+                    status,
+                    registrationStart: "2027-01-01T00:00:00Z",
+                    splitChannels: false,
+                },
+                new Date("2026-11-03T12:00:00Z")
+            ),
             false
+        )
+    })
+    test(`training ${status} retires its card only at conclusion`, () => {
+        assert.equal(
+            shouldKeepRegistrationMessage(
+                { kind: "training", status, splitChannels: false },
+                new Date("2026-11-03T12:00:00Z")
+            ),
+            status !== "concluded"
         )
     })
 }
