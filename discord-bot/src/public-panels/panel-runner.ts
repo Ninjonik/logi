@@ -416,7 +416,7 @@ async function styleBBanner(
             .catch(() => null)
     const model: PanelBannerImage = {
         version: 1,
-        language: (["cs", "en", "de"].includes(pass.language)
+        language: (["cs", "en", "de", "pl"].includes(pass.language)
             ? pass.language
             : "en") as PanelBannerImage["language"],
         accentColor: input.accent,
@@ -1025,7 +1025,7 @@ async function runResults(
                         card: event.card ?? null,
                         matchUrl: event.card?.publicMatch
                             ? new URL(
-                                  `/${["cs", "de"].includes(pass.language) ? pass.language : "en"}/matches/${encodeURIComponent(event.id)}`,
+                                  `/${["cs", "de", "pl"].includes(pass.language) ? pass.language : "en"}/matches/${encodeURIComponent(event.id)}`,
                                   pass.siteUrl
                               ).href
                             : null,
@@ -1096,7 +1096,9 @@ async function runCompetition(
     const copy = getPanelMessages(pass.language)
     const look = resolvePanelPresentation(panel)
     const locale = panelImageCopy(pass.language).locale
-    const language = ["cs", "de"].includes(pass.language) ? pass.language : "en"
+    const language = ["cs", "de", "pl"].includes(pass.language)
+        ? pass.language
+        : "en"
     const url = new URL(
         `/${language}/competitions/${encodeURIComponent(data.slug)}`,
         pass.siteUrl

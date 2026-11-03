@@ -186,9 +186,13 @@ export function isDiscordGuildAdmin(guild: DiscordGuild) {
     return (permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION
 }
 
-export async function isBotInsideDiscordGuild(guildId: string) {
+export async function isBotInsideDiscordGuild(
+    guildId: string,
+    options?: { strict?: boolean }
+) {
     const botToken = getDiscordBotToken()
     if (!botToken) {
+        if (options?.strict) throw new Error("Discord bot token is missing.")
         return false
     }
 
@@ -199,9 +203,20 @@ export async function isBotInsideDiscordGuild(guildId: string) {
                 Authorization: `Bot ${botToken}`,
             },
             cache: "no-store",
+            signal: AbortSignal.timeout(10000),
         }
     )
 
+    if (
+        options?.strict &&
+        !response.ok &&
+        response.status !== 403 &&
+        response.status !== 404
+    ) {
+        throw new Error(
+            `Discord bot presence check failed (${response.status}).`
+        )
+    }
     return response.ok
 }
 

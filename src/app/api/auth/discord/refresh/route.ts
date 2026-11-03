@@ -1,3 +1,5 @@
+import { refreshManagedBotStatus } from "@/lib/gateways/bot-status-refresh"
+import { revalidateCacheEntries } from "@/lib/cache-tags"
 import { NextResponse } from "next/server"
 
 import {
@@ -20,17 +22,12 @@ export async function POST() {
             user.managedGuildIds.includes(guild.discordId)
         )
 
-        await syncManagedGuildsForCurrentPlayer(
-            user.discordId,
-            await Promise.all(
-                managedGuilds.map(async (guild) => ({
-                    id: guild.discordId,
-                    name: guild.name,
-                    avatar: guild.avatar,
-                    botInside: await isBotInsideDiscordGuild(guild.discordId),
-                }))
-            )
-        )
+        await refreshManagedBotStatus(user, managedGuilds, {
+            check: (guildId) =>
+                isBotInsideDiscordGuild(guildId, { strict: true }),
+            sync: syncManagedGuildsForCurrentPlayer,
+            invalidate: revalidateCacheEntries,
+        })
 
         logNextInfo("discord-refresh", "Refreshed Discord bot status", {
             userId: user.discordId,

@@ -192,3 +192,12 @@ export function chapterPath(chapter: ChapterId): string | null {
     }
     return paths[chapter] ?? null
 }
+
+/** Members cannot enter setup; cancelling navigation should keep its return route. */
+export function setupWorkspaceAfterTour(
+    kind: TourKind,
+    context: TourContext
+): string | null {
+    if (kind === "member" || kind === "competition-member") return null
+    return context.canManage ? (context.workspaceId ?? null) : null
+}

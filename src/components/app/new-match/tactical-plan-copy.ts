@@ -1,4 +1,27 @@
 const copy = {
+    pl: {
+        title: "Plan taktyczny",
+        tbd: "do ustalenia / nie wybrano",
+        layout: "Układ / oznaczenie strefy",
+        layoutPlaceholder:
+            "np. uzgodniony układ serwera lub odniesienie do siatki",
+        generate: "Utwórz plan taktyczny",
+        clear: "Usuń plan",
+        controlZone: "Control Zone",
+        hotZone: "Hot Zone",
+        team: "Drużyna",
+        marker: "Umieść na mapie",
+        hint: "Wybierz znacznik i kliknij mapę lub wprowadź X/Y poniżej. Współrzędne i promień to procent obrazu.",
+        planned:
+            "Ręczny plan meczów. O lokalizacji i wielkości stref decyduje organizator; nie są to układy działającego serwera. Bazy frakcji korzystają z istniejącego katalogu map.",
+        radius: "Promień (%)",
+        halfWidth: "Połowa szerokości (%)",
+        downloading: "Przygotowywanie obrazu…",
+        downloadError: "Nie można wyeksportować mapy. Spróbuj ponownie.",
+        removeMarker: "Usuń znacznik",
+        empty: "Wybierz mapę, aby przygotować strefy i pozycje drużyn.",
+        download: "Pobierz mapę (SVG)",
+    },
     en: {
         title: "Tactical plan",
         tbd: "TBD / not selected",
@@ -68,5 +91,13 @@ const copy = {
     },
 }
 export function tacticalPlanCopy(locale: string) {
-    return copy[locale === "cs" ? "cs" : locale === "de" ? "de" : "en"]
+    return copy[
+        locale === "cs"
+            ? "cs"
+            : locale === "de"
+              ? "de"
+              : locale === "pl"
+                ? "pl"
+                : "en"
+    ]
 }

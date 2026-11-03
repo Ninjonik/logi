@@ -154,6 +154,154 @@ const gameAccountMessages: Record<ClanLanguage, GameAccountMessages> = {
                 "Zkontroluj, že je ID tvoje. Když ano, napiš správcům klanu.",
         },
     },
+    pl: {
+        label: "Konta gier",
+        platformLabel: "Konta gier · {platform}",
+        platforms: {
+            steam: {
+                name: "Steam",
+                idName: "Steam64 ID",
+                option: "Steam64 ID, 17 cyfr",
+                guideTitle: "Znajdź swój Steam64 ID",
+                guideHelp:
+                    "Jest to 17-cyfrowy numer rozpoczynający się od 7656119.",
+                steps: [
+                    "Otwórz przewodnik.",
+                    "Skopiuj numer obok Steam64 ID.",
+                    "Wklej go w następnym kroku.",
+                ],
+                enter: "Wprowadź Steam64 ID",
+                modalTitle: "Połącz Steam",
+                placeholder: "76561198…",
+                invalidTitle: "To nie wygląda na Steam64 ID",
+                invalidBody:
+                    "Ma 17 cyfr i zaczyna się od 7656119. {guide} pokazuje, gdzie go znaleźć.",
+            },
+            epic: {
+                name: "Epic Games",
+                idName: "Epic Account ID",
+                option: "Epic Account ID",
+                guideTitle: "Znajdź swój Epic Account ID",
+                guideHelp:
+                    "Jest to 32-znakowy kod składający się z cyfr i liter a–f.",
+                steps: [
+                    "Otwórz przewodnik.",
+                    "Skopiuj kod obok identyfikatora konta.",
+                    "Wklej go w następnym kroku.",
+                ],
+                enter: "Wprowadź Epic Account ID",
+                modalTitle: "Połącz Epic Games",
+                placeholder: "32 znaki, np. 8f3c…",
+                invalidTitle: "To nie wygląda na Epic Account ID",
+                invalidBody:
+                    "Zawiera 32 znaki: tylko cyfry i litery a–f. {guide} pokazuje, gdzie go znaleźć.",
+            },
+            xbox: {
+                name: "Xbox",
+                idName: "Identyfikator profilu Xbox",
+                option: "Identyfikator profilu Xbox",
+                guideTitle: "Znajdź identyfikator swojego profilu Xbox",
+                guideHelp: "To Twój tag gracza, widziany przez innych graczy.",
+                steps: [
+                    "Otwórz przewodnik.",
+                    "Skopiuj swój tag gracza.",
+                    "Wklej go w następnym kroku.",
+                ],
+                enter: "Wprowadź identyfikator profilu Xbox",
+                modalTitle: "Połącz Xbox",
+                placeholder: "np. Gracz17CZ",
+                invalidTitle: "To nie wygląda na identyfikator profilu Xbox",
+                invalidBody:
+                    "Tag gracza zaczyna się od litery i ma maksymalnie 15 znaków. {guide} pokazuje, gdzie go znaleźć.",
+            },
+            playstation: {
+                name: "PlayStation",
+                idName: "Identyfikator profilu PlayStation",
+                option: "Identyfikator profilu PlayStation",
+                guideTitle: "Znajdź swój identyfikator profilu PlayStation",
+                guideHelp:
+                    "To Twój identyfikator online, widziany przez innych graczy.",
+                steps: [
+                    "Otwórz przewodnik.",
+                    "Skopiuj swój identyfikator internetowy.",
+                    "Wklej go w następnym kroku.",
+                ],
+                enter: "Wprowadź identyfikator profilu PlayStation",
+                modalTitle: "Połącz PlayStation",
+                placeholder: "np. Gracz17_CZ",
+                invalidTitle:
+                    "To nie wygląda na identyfikator profilu PlayStation",
+                invalidBody:
+                    "Zawiera od 3 do 16 znaków i zaczyna się od litery. {guide} pokazuje, gdzie go znaleźć.",
+            },
+        },
+        otherPlatform: "Inny identyfikator",
+        start: {
+            title: "Połącz swoje konto gry",
+            body: "Dzięki identyfikatorowi Logi powiąże Cię z rozgrywkami, statystykami i zgłoszeniem do klanu.",
+            platformPlaceholder: "Wybierz platformę",
+            declaration:
+                "Podanie identyfikatora jest deklaracją, a nie potwierdzeniem własności konta. Steam zweryfikujesz w Logi → Moje konto.",
+            verifySteam: "Zweryfikuj Steam na stronie",
+        },
+        playedBefore: {
+            title: "Czy grałeś na serwerach klanu?",
+            placeholder: "Wybierz jedną opcję",
+            yes: "Tak, znajdź mnie",
+            yesDescription: "Znajdziemy Cię po Twojej nazwie w grze",
+            no: "Nie, wprowadzę swój identyfikator",
+            noDescription:
+                "Wybierasz platformę i samodzielnie wprowadzasz identyfikator",
+        },
+        search: {
+            modalTitle: "Znajdź mnie w grze",
+            label: "Nick w grze lub ID",
+            placeholder: "Wpisz co najmniej 3 znaki",
+            resultsTitle: "Wybierz siebie z listy",
+            resultsPlaceholder: "Wybierz swój nick",
+            resultsNote: "Gracze, którzy grali na serwerach klanu.",
+            searchAgain: "Wyszukaj ponownie",
+            enterManually: "Wprowadź identyfikator ręcznie",
+            lastSeen: "ostatnio widziany {date}",
+            lastSeenOn: "ostatnio widziany {date} na {server}",
+            noneTitle: "Nie mogliśmy Cię znaleźć na serwerach klanu",
+            noneBody:
+                "Spróbuj innej nazwy lub wprowadź swój identyfikator ręcznie.",
+            unavailableTitle: "Wyszukiwanie nie jest obecnie dostępne",
+            unavailableBody:
+                "Serwery klanu nie odpowiedziały. Wprowadź swój identyfikator ręcznie lub spróbuj ponownie za chwilę.",
+        },
+        guide: {
+            guideLink: "Przewodnik",
+            guideInline: "Przewodnik",
+            back: "Wstecz",
+            continueApplication: "Wprowadź identyfikator i kontynuuj",
+        },
+        linked: {
+            title: "Twoje połączone konta",
+            chip: "{platform} połączone",
+            successTitle: "{platform} jest połączone",
+            successBody:
+                "Logi będzie teraz dopasowywał Cię do Twoich gier i statystyk.",
+            addAnother: "Dodaj kolejne konto",
+            unlink: "Odłącz konto",
+        },
+        unlink: {
+            title: "Które konto chcesz odłączyć?",
+            placeholder: "Wybierz konto",
+            usedByApplication: "Konto jest używane w Twoim zgłoszeniu do klanu",
+            statsStop: "Statystyki z tego konta nie będą już dopasowywane",
+            back: "Wstecz",
+        },
+        errors: {
+            retry: "Wprowadź ponownie",
+            staleTitle: "Ta opcja wygasła",
+            staleBody: "Uruchom ponownie /link.",
+            takenTitle: "Inny gracz powiązał już ten identyfikator",
+            takenBody:
+                "Sprawdź, czy identyfikator jest Twój. Jeśli tak, napisz do adminów klanu.",
+        },
+    },
     en: {
         label: "Game accounts",
         platformLabel: "Game accounts · {platform}",

@@ -4,6 +4,164 @@ type ChapterCopy = Record<
     ChapterId,
     readonly [title: string, body: string, location: string]
 >
+const pl: ChapterCopy = {
+    history: [
+        "Zapisane rozgrywki",
+        "Przeglądaj zebrane gry serwerowe, sprawdzaj tablice wyników i wybieraj, jak długo mają być przechowywane.",
+        "Ustawienia klanu → Serwery gier → Przechowywanie historii",
+    ],
+    tracking: [
+        "Śledzenie Wardogs League",
+        "Śledź drużyny ligowe, wprowadzaj mecze do Logi i publikuj aktualizacje ligowe w Discord.",
+        "Ustawienia klanu → Wardogs League",
+    ],
+    commands: [
+        "Komendy bota",
+        "Wybierz, które polecenia są dostępne, kto może z nich korzystać i w jakich kanałach. Gracze mogą sprawdzić swoje statystyki za pomocą /stats.",
+        "Ustawienia klanu → Komendy",
+    ],
+    welcome: [
+        "Samouczek Logi",
+        "Zobacz, jak się sprawy mają i obejrzyj przykłady z przykładowym klanem.",
+        "Panel zarządzania",
+    ],
+    workspace: [
+        "Wybierz swój klan",
+        "Użyj przełącznika klanów, aby poruszać się pomiędzy społecznościami, do których należysz lub którymi zarządzasz.",
+        "Pasek boczny → Przełącznik klanów",
+    ],
+    mode: [
+        "Wybierz, ile potrzebujesz",
+        "Pełny Logi zawiera zdarzenia i narzędzia Discord. Tryb rywalizacji przechowuje rejestrację drużyn, zawodników i ligi.",
+        "Ustawienia klanu → Tryb przestrzeni roboczej",
+    ],
+    bot: [
+        "Zaproś bota",
+        "Zaproś Logi do swojego serwera Discord. Umieść jego rolę nad rolami, którymi będzie zarządzał, a następnie odśwież status bota.",
+        "Panel → Zaproś bota",
+    ],
+    overview: [
+        "Panel Twojego klanu",
+        "Sprawdź następny mecz, oczekujące prace, ostatnie wyniki i występ.",
+        "Obszar roboczy → Panel zarządzania",
+    ],
+    calendar: [
+        "Kalendarz",
+        "Przeglądaj mecze, treningi i niestandardowe daty. Otwórz wpis, aby zapoznać się ze szczegółami.",
+        "Obszar roboczy → Kalendarz",
+    ],
+    articles: [
+        "Artykuły",
+        "Publikuj wiadomości klanowe, przewodniki i zasady wraz ze zdjęciami i załącznikami.",
+        "Obszar roboczy → Artykuły",
+    ],
+    players: [
+        "Gracze",
+        "Zarządzaj członkami, najemnikami, grupami i kontami gier. Otwórz gracz, aby zobaczyć jego zarejestrowane występy.",
+        "Konfiguracja → Gracze",
+    ],
+    performance: [
+        "Wyniki",
+        "Porównaj nagrane gry i statystyki graczy. Podłącz serwer gry, aby zebrać dane.",
+        "Panel · Profil gracza",
+    ],
+    match: [
+        "Utwórz mecz",
+        "Wybierz szablon, przeciwników, mapę i czasy. Obejrzyj wypełnienie przykładu.",
+        "Operacje → Mecze → Nowe mecz",
+    ],
+    signups: [
+        "Zapisy na Discordzie",
+        "Gracze wybierają grupę lub odrzucają Discord. Limity grupowe wysyłają dodatkowe zapisy do rezerw.",
+        "Operacje → Mecze",
+    ],
+    roster: [
+        "Zbuduj skład",
+        "Przypisz graczy do drużyn i ról, zachowaj rezerwy, a następnie opublikuj w Discord.",
+        "Mecze → Składy",
+    ],
+    attendance: [
+        "Obecność",
+        "Gracze potwierdzają swoje przydziały na Discord. Przed zamknięciem meczu przejrzyj powiadomienia o obecności i spóźnieniach lub nieobecnościach.",
+        "Mecz → Obecność",
+    ],
+    results: [
+        "Wyniki",
+        "Zaimportuj nagraną grę, przejrzyj wyniki i potwierdź wynik. Korekty wymagają powodu.",
+        "Mecz → Wynik",
+    ],
+    training: [
+        "Treningi",
+        "Zaplanuj sesję, zbierz rejestracje i zanotuj zaliczenie lub niepowodzenie dla każdego uczestnika.",
+        "Operacje → Treningi",
+    ],
+    presets: [
+        "Szablony i presety",
+        "Wykorzystuj ponownie czasy meczów i zasady rejestracji, układy oddział i tematy odpraw.",
+        "Ustawienia klanu → Oddział i ustawienia tematów",
+    ],
+    maps: [
+        "Mapy taktyczne",
+        "Oznaczaj pozycje, rysuj trasy i przygotowuj slajdy na odprawę meczową.",
+        "Mecze → Mapy taktyczne",
+    ],
+    membership: [
+        "Rekrutacja",
+        "Skonfiguruj formularz zgłoszeniowy, przejrzyj kandydatów i przypisz role rekrutów lub członków.",
+        "Ustawienia klanu → Członkostwo",
+    ],
+    tickets: [
+        "Pomoc",
+        "Pozwól graczom otwierać prywatne wątki pomocy z panelu Discord. Ustaw kategorie, pytania i role personelu.",
+        "Konfiguracja → Zgłoszenia",
+    ],
+    competitions: [
+        "Rozgrywki",
+        "Zarejestruj drużynę, sprawdź zatwierdzenie i śledź dywizje, mecze i wyniki.",
+        "Rozgrywki → Rozgrywki",
+    ],
+    teams: [
+        "Drużyny",
+        "Połącz drużyny swojego klanu z katalogu. Poproś o brakujący drużyna lub zaproponuj zmiany.",
+        "Rozgrywki → Drużyny",
+    ],
+    panels: [
+        "Panele Discord",
+        "Publikuj serwery na żywo, wyniki, rankingi ligowe i kalendarz. Wybierz kanały i style wiadomości.",
+        "Bot · Ustawienia klanu → Panele Discord",
+    ],
+    seeding: [
+        "Seeding serwera",
+        "Zadzwoń do graczy, aby zapełnili serwer. Ustaw harmonogram, próg gracza i rolę powiadamiania.",
+        "Ustawienia klanu → Serwer seeding",
+    ],
+    servers: [
+        "Serwery gier",
+        "Podłącz CRCON lub Warcon, aby zbierać wyniki i statystyki graczy. Sprawdź tutaj stan połączenia.",
+        "Ustawienia klanu → Serwery gier",
+    ],
+    settings: [
+        "Ustawienia klanu",
+        "Ustaw gry, kanały, role i dostęp. Wymagane kroki konfiguracji pokazują, czego brakuje.",
+        "Konfiguracja → Ustawienia klanu",
+    ],
+    integrations: [
+        "Strona internetowa i integracje",
+        "Twórz klucze API o określonym zakresie, konfiguruj logowanie do witryny, subskrybuj kalendarz lub wysyłaj webhooki.",
+        "Ustawienia klanu → Strona internetowa i integracje",
+    ],
+    account: [
+        "Twoje konto",
+        "Ustaw język, motyw, konta gier i powiadomienia z menu konta.",
+        "Pasek boczny → Moje konto",
+    ],
+    finish: [
+        "Gotowy do uruchomienia",
+        "Otwórz ponownie tę wycieczkę ze stopki, kiedy tylko jej potrzebujesz.",
+        "Stopka → Uruchom samouczek ponownie",
+    ],
+}
+
 const en: ChapterCopy = {
     history: [
         "Recorded games",
@@ -476,6 +634,47 @@ const de: ChapterCopy = {
     ],
 }
 const labels = {
+    pl: {
+        memberOverview:
+            "Zobacz nadchodzące mecze, ostatnie wyniki i opublikowane składy.",
+        memberRoster:
+            "Sprawdź swój oddział i rolę w opublikowanym skład na Discord.",
+        memberAttendance:
+            "Potwierdź swoje przypisanie w Discord. Poinformuj klan, jeśli się spóźnisz lub nie będziesz mógł przybyć.",
+        memberArticles: "Przeczytaj wiadomości klanowe, przewodniki i zasady.",
+        memberRosterLocation: "Discord → Mój przydział",
+        memberAttendanceLocation: "Discord → Przypomnienie o obecności",
+        demo: "Przykładowe dane",
+        tour: "Samouczek aplikacji",
+        chapters: "Rozdziały",
+        location: "Gdzie to znaleźć",
+        open: "Otwórz tę stronę",
+        pause: "Wstrzymaj przykład",
+        play: "Odtwórz przykład",
+        replay: "Powtórz przykład",
+        start: "Rozpocznij samouczek",
+        resume: "Wznów samouczek",
+        invite: "Zaproś bota",
+        setup: "Otwórz konfigurację",
+        saved: "Utworzono przykład",
+        welcome: "Pierwsze logowanie",
+        manager: "Pełny samouczek klanu",
+        competitions: "Tryb rywalizacji",
+        member: "Samouczek członka",
+        "competition-member": "Tryb rywalizacji",
+        limitedOverview:
+            "Śledź drużyny i zawody swojego klanu w tym obszarze roboczym.",
+        limitedSettings:
+            "Wybierz tutaj Pełny Logi, jeśli potrzebujesz narzędzi zdarzeń i Discord.",
+        limitedMember:
+            "Użyj menu konta do obsługi kont gier i powiadomień. Poproś menadżera klanu o zarejestrowanie drużyn.",
+        sample: "NOVA · Przykładowy klan",
+        done: "Samouczek ukończony",
+        finish: "Rozpocznij korzystanie z Logi",
+        retry: "Ponów próbę zapisu",
+        botPresent: "Bot podłączony",
+        guide: "Poradnik konfiguracji",
+    },
     en: {
         memberOverview:
             "See upcoming matches, recent results and published rosters.",
@@ -604,7 +803,14 @@ const labels = {
 }
 export function getOnboardingCopy(locale: Locale) {
     return {
-        chapters: locale === "cs" ? cs : locale === "de" ? de : en,
+        chapters:
+            locale === "cs"
+                ? cs
+                : locale === "de"
+                  ? de
+                  : locale === "pl"
+                    ? pl
+                    : en,
         labels: labels[locale],
     }
 }

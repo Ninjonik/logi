@@ -285,7 +285,9 @@ export default async function ServerUserDetailPage({
                                                 ? "cs-CZ"
                                                 : safeLocale === "de"
                                                   ? "de-DE"
-                                                  : "en-GB"
+                                                  : safeLocale === "pl"
+                                                    ? "pl-PL"
+                                                    : "en-GB"
                                         ),
                                 },
                                 ...statProfile.fields.map((metric) => ({

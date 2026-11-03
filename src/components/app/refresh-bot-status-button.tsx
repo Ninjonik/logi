@@ -1,7 +1,7 @@
 "use client"
 
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { useTransition } from "react"
 import { toast } from "sonner"
 
 import type { Dictionary } from "@/i18n/dictionaries"
@@ -20,25 +20,33 @@ export function RefreshBotStatusButton({
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const [checking, setChecking] = useState(false)
 
     async function handleRefresh() {
-        const response = await fetch("/api/auth/discord/refresh", {
-            method: "POST",
-        })
-        const body = await response.json()
+        setChecking(true)
+        try {
+            const response = await fetch("/api/auth/discord/refresh", {
+                method: "POST",
+            })
+            const body = await response.json()
 
-        if (!response.ok) {
-            toast.error(
-                body.error ?? dictionary.dashboard.botStatusRefreshError
-            )
-            return
+            if (!response.ok) {
+                toast.error(
+                    body.error ?? dictionary.dashboard.botStatusRefreshError
+                )
+                return
+            }
+
+            toast.success(dictionary.dashboard.botStatusRefreshed)
+            onRefreshed?.()
+            startTransition(() => {
+                router.refresh()
+            })
+        } catch {
+            toast.error(dictionary.dashboard.botStatusRefreshError)
+        } finally {
+            setChecking(false)
         }
-
-        toast.success(dictionary.dashboard.botStatusRefreshed)
-        onRefreshed?.()
-        startTransition(() => {
-            router.refresh()
-        })
     }
 
     return (
@@ -46,9 +54,9 @@ export function RefreshBotStatusButton({
             variant="outline"
             className="h-8 rounded-lg px-3 text-[13px]"
             onClick={handleRefresh}
-            disabled={isPending}
+            disabled={checking || isPending}
         >
-            {isPending
+            {checking || isPending
                 ? dictionary.dashboard.refreshingBotStatus
                 : (label ?? dictionary.dashboard.refreshBotStatus)}
         </Button>

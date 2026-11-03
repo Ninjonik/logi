@@ -14,7 +14,7 @@ export type MatchImageTeam = {
 }
 export type MatchImage = {
     version: 2
-    language: "en" | "cs" | "de"
+    language: "en" | "cs" | "de" | "pl"
     timeZone: string
     game: string
     gameName: string
@@ -58,7 +58,7 @@ export type MatchImageInput = {
         logoUrl?: string | null
     } | null
     categories?: readonly { id: string; label: string }[]
-    language: "en" | "cs" | "de"
+    language: "en" | "cs" | "de" | "pl"
     timeZone: string
     league?: string | null
     result?: {
@@ -165,6 +165,14 @@ export function buildMatchImage(input: MatchImageInput): MatchImage {
 
 export const matchImageCopy = (language: MatchImage["language"]) =>
     ({
+        pl: {
+            meeting: "ZBIÓRKA",
+            start: "ROZPOCZĘCIE GRY",
+            win: "ZWYCIĘSTWO",
+            loss: "PORAŻKA",
+            draw: "REMIS",
+            result: "WYNIK MECZU",
+        },
         en: {
             meeting: "MEETING",
             start: "GAME START",

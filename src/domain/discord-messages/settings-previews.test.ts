@@ -71,7 +71,7 @@ const text = (preview: ReturnType<typeof settingsPreview>, language = "cs") => {
 }
 
 test("every message row has a valid preview in every clan language (N1-B07)", () => {
-    for (const language of ["cs", "en", "de"])
+    for (const language of ["cs", "en", "de", "pl"])
         for (const kind of SETTINGS_PREVIEW_KINDS) {
             const preview = settingsPreview(input(kind, language))
             const system = getSystemMessages(language)

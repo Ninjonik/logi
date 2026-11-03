@@ -102,6 +102,101 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             alreadyClosedBody: "Nic dalšího není potřeba.",
         },
     },
+    pl: {
+        panel: {
+            selectPlaceholder: "Wybierz, w czym potrzebujesz pomocy",
+        },
+        form: { fallbackTitle: "Zgłoszenie pomocy" },
+        opened: {
+            title: "Zgłoszenie #{number} otwarte",
+            body: "Kontynuuj w wątku {thread}. Tam odezwie się do Ciebie obsługa.",
+            openThread: "Otwórz wątek",
+        },
+        failed: {
+            title: "Nie można otworzyć zgłoszenia",
+            body: "Nic nie zostało zapisane. Administratorzy zostali powiadomieni; spróbuj ponownie za chwilę.",
+        },
+        disabled: {
+            title: "Zgłoszenia pomocy są teraz wyłączone",
+            body: "Napisz bezpośrednio do administratorów lub spróbuj ponownie później.",
+        },
+        staleCategory: {
+            title: "Ta opcja wygasła",
+            body: "Wybierz ponownie kategorię w bieżącym panelu zgłoszeń.",
+        },
+        thread: {
+            name: "{category} #{number}",
+            closedName: "zamknięte · {category} #{number}",
+            label: "Zgłoszenie #{number} · {category}",
+            title: "{author} · {category}",
+            openChip: "Otwarte",
+            openedAt: "Otwarto {time}",
+            footer: "Wsparcie zamyka zgłoszenie za pomocą /close_ticket",
+        },
+        closed: {
+            label: "Zgłoszenie #{number} · zamknięte",
+            title: "Rozwiązane",
+            chip: "Zamknięte",
+            closedBy: "Zamknięte przez {closer} · {time}",
+            footer: "Wątek jest zablokowany i zarchiwizowany",
+            auditReason: "Zgłoszenie pomocy zamknięte",
+        },
+        dm: {
+            label: "Klan {clan} · Zgłoszenie #{number}",
+            title: "Twoje zgłoszenie zostało rozwiązane",
+            closedBy: "{category} · zamknięte przez {closer}",
+            openThread: "Otwórz wątek",
+        },
+        close: {
+            successTitle: "Zgłoszenie #{number} zamknięte",
+            successBody:
+                "Podsumowanie znajduje się w wątku i autor otrzymał je przez DM. Wątek jest zamknięty i zarchiwizowany.",
+            dmFailedBody:
+                "Nie udało się dostarczyć wiadomości prywatnej. Podsumowanie jest dostępne w wątku.",
+            dmOffBody:
+                "Podsumowanie jest w wątku. Klan wyłączył prywatne powiadomienia o zamykaniu zgłoszeń. Wątek został zablokowany i zarchiwizowany.",
+            summary: {
+                posted: {
+                    sent: "Podsumowanie znajduje się w wątku i autor otrzymał je przez DM.",
+                    failed: "Nie udało się dostarczyć wiadomości prywatnej. Podsumowanie jest dostępne w wątku.",
+                    off: "Podsumowanie jest w wątku. Klan wyłączył prywatne powiadomienia o zamykaniu zgłoszeń.",
+                },
+                notPosted: {
+                    sent: "Nie można opublikować podsumowania w wątku; autor dostał to przez DM.",
+                    failed: "Nie udało się opublikować podsumowania w wątku ani wysłać go w wiadomości prywatnej.",
+                    off: "Nie udało się opublikować podsumowania w wątku. Klan wyłączył prywatne powiadomienia o zamykaniu zgłoszeń.",
+                },
+            },
+            threadDone: "Wątek jest zablokowany i zarchiwizowany.",
+            threadFailed:
+                "Nie udało się wykonać następujących działań: {steps}.",
+            threadSteps: {
+                rename: "zmienić nazwy",
+                lock: "zablokować wątku",
+                archive: "zarchiwizować wątku",
+            },
+            threadStepsOr: " ani ",
+            adminNotified: "Administratorzy zostali powiadomieni.",
+            notAllowedTitle:
+                "Tylko wsparcie i administratorzy mogą zamknąć to zgłoszenie",
+            notAllowedBody:
+                "Zgłoszenia z kategorii {category} zamykają osoby z rolami {roles} lub administratorzy Logi. Jeśli sprawa jest rozwiązana, napisz o tym w wątku.",
+            notAllowedAdminsBody:
+                "Zgłoszenia w kategorii {category} zamykane są przez administratorów Logi. Jeśli problem został rozwiązany, powiedz to w tym wątku.",
+            or: " lub ",
+            unverifiableTitle: "Nie można teraz sprawdzić Twoich ról",
+            unverifiableBody:
+                "Discord nie odpowiedział. Spróbuj ponownie za chwilę.",
+            outsideTitle:
+                "/close_ticket działa tylko w wątku zgłoszenia pomocy",
+            outsideBody: "Otwórz wątek zgłoszenia i uruchom tam komendę.",
+            notTicketTitle: "Ten wątek nie jest zgłoszeniem",
+            notTicketBody:
+                "Można zamknąć tylko wątek otwarty z panelu zgłoszeń.",
+            alreadyClosedTitle: "Zgłoszenie #{number} jest już zamknięte",
+            alreadyClosedBody: "Nic więcej nie jest potrzebne.",
+        },
+    },
     en: {
         panel: {
             selectPlaceholder: "Choose what you need help with",

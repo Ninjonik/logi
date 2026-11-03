@@ -4,7 +4,7 @@ Logi maintains a durable guild-scoped external fixture collection alongside the 
 
 ## Operator workflow
 
-Use **Settings → Wardogs League**. Save the enabled flag, watched codes (default `VLK`) and the links (input) channel. The picker supports category/search and pasted IDs. Saving verifies bot access and requires a current durable dashboard admin session. The stored output channel of the retired match cards is kept but no longer shown or used. Turning the League off deletes the WD League panel messages. The form is localized in Czech, English and German.
+Use **Settings → Wardogs League**. Save the enabled flag, watched codes (default `VLK`) and the links (input) channel. The picker supports category/search and pasted IDs. Saving verifies bot access and requires a current durable dashboard admin session. The stored output channel of the retired match cards is kept but no longer shown or used. Turning the League off deletes the WD League panel messages. The form is localized in Czech, English, German and Polish.
 
 A URL preview does not register a match. **Track match** pins it independently of the filter. **Pause** stops refresh but retains the snapshot/card. **Ignore** withdraws it and persists through scans. **Resume** pins it again. An archived record offers **Refresh once**: attempt a fresh read, then apply the original archive horizon. Removing a human reference preserves a pin or watched-team eligibility. Native binding accepts only a Wardogs match in this workspace, one-to-one; blank unlinks. It never changes registration, meeting/end times, rosters, attendance or confirmed results.
 

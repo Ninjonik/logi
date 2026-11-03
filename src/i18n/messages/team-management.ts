@@ -1,4 +1,46 @@
 import type { Locale } from "../config"
+const pl: Messages = {
+    title: "Profil drużyny",
+    clanAdministrator: "Administrator klanu",
+    uploadRateLimit:
+        "Za dużo przesłanych awatarów. Poczekaj kilka minut i spróbuj ponownie.",
+    description:
+        "Zarządzaj swoim drużyną, graczami, wpisami do zawodów i połączeniem Discord.",
+    edit: "Edytuj profil",
+    avatar: "Awatar drużyny",
+    removeAvatar: "Usuń awatar",
+    avatarHint:
+        "PNG, JPEG lub WebP, do 2 MiB. Zapisz profil, aby zastosować swój awatar.",
+    cancel: "Anuluj",
+    connection: "Połączenie z Discordem",
+    connectionHint:
+        "Połącz ten drużyna, jeśli chcesz nim zarządzać wraz ze swoim klanem. Nie jest wymagana instalacja bota.",
+    createAndEnroll: "Utwórz drużynę i zgłoś ją",
+    createAndEnrollHint:
+        "Gra jest ustalana przez te zawody. Twój drużyna może także brać udział w innych rozgrywkach w ramach tej samej gry.",
+    createdNeedsPlayers:
+        "Utworzono drużyna . Zaproś graczy do spełnienia minimum, a następnie zarejestruj drużynę tutaj.",
+    createdRegistrationFailed:
+        "Drużyna został utworzony, ale rejestracja nie mogła zostać ukończona. Sprawdź wymagania i zarejestruj swój istniejący drużyna poniżej.",
+    createAndConnect: "Utwórz i połącz drużynę",
+    noClanTeam:
+        "Twój klan nie ma jeszcze połączonej drużyny. Utwórz go lub połącz poniżej drużyna, który już posiadasz.",
+    entries: "Zgłoszenia do rozgrywek",
+    noEntries:
+        "Nie ma jeszcze żadnych zgłoszeń do rozgrywek. Wybierz zawody i zarejestruj tę drużynę.",
+    yourCompetitions: "Twoje rozgrywki",
+    browseCompetitions: "Dołącz do rozgrywek",
+    history: "Wcześniejsze wnioski i wypłaty",
+    noCurrent: "Twój klan nie wziął jeszcze udziału w rozgrywkach.",
+    noAvailable: "Żadne inne rozgrywki nie są dostępne w grze Twojego drużyny.",
+    manageFixtures: "Zarządzaj zgłoszeniem i terminarzem",
+    stale: "Ten drużyna zmienił się podczas edycji. Odśwież i spróbuj ponownie.",
+    uploadError:
+        "Nie można przesłać awatara. Użyj pliku PNG, JPEG lub WebP o rozmiarze do 2 MiB i spróbuj ponownie.",
+    selectTeam: "Użyj istniejącej drużyny",
+    teamCreated: "Drużyna został utworzony i przesłano rejestrację.",
+}
+
 const en = {
     title: "Team profile",
     clanAdministrator: "Clan administrator",
@@ -124,4 +166,4 @@ const de: Messages = {
     teamCreated: "Team erstellt und Anmeldung eingereicht.",
 }
 export const getTeamManagementMessages = (locale: Locale): Messages =>
-    locale === "cs" ? cs : locale === "de" ? de : en
+    locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en

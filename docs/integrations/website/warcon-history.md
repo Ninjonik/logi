@@ -56,7 +56,7 @@ change revision.
 
 ## Report rules and dashboard
 
-The **Settings → Game servers** section shows retained history, filters, faction win shares, player rankings and expandable match details. It uses the same authenticated HTTP DTOs and calculation helper as a website consumer. English, Czech and German copy is included.
+The **Settings → Game servers** section shows retained history, filters, faction win shares, player rankings and expandable match details. It uses the same authenticated HTTP DTOs and calculation helper as a website consumer. English, Czech, German and Polish copy is included.
 
 - Faction share = wins / games with an explicit winner. Draws and result-less games remain separate.
 - Player identity = platform + platform ID. Renames do not create another player. The latest nonempty observed name is displayed.

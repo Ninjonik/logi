@@ -1,7 +1,9 @@
 /**
  * Message forms for a counted phrase. Czech needs `few` (2–4) and `many`
  * (fractions); English and German use only `one` and `other`, so their
- * dictionaries repeat `other` there to keep the keys identical.
+ * dictionaries repeat `other` there to keep the keys identical. Polish uses
+ * `few` for 2–4 endings except 12–14, `many` for other integers, and `other`
+ * for fractions; do not copy English plural forms into its dictionary.
  */
 export type PluralForms = {
     one: string

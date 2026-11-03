@@ -196,7 +196,7 @@ test("error codes outside the vocabulary read as unavailable", () => {
     assert.equal(teamRequestErrorCode(undefined), "unavailable")
 })
 
-for (const locale of ["en", "cs", "de"] as const) {
+for (const locale of ["en", "cs", "de", "pl"] as const) {
     test(`every request error code has a ${locale} message`, () => {
         const dictionary = getDictionary(locale)
         for (const code of TEAM_REQUEST_CLIENT_ERRORS) {

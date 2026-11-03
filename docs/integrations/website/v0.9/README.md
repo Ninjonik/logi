@@ -9,7 +9,7 @@ Manual IDs remain claims, including IDs collected by the existing recruitment li
 Manual claims do not verify ownership, merge accounts, or create a proof link.
 
 1. An authenticated account starts `POST /api/platform-links/steam/start` with
-   `{ "locale": "cs" }`. Allowed locales are `en`, `cs`, `de`. A matching `Origin`
+   `{ "locale": "cs" }`. Allowed locales are `en`, `cs`, `de`, `pl`. A matching `Origin`
    is required. The response contains the Steam redirect URL.
 2. The server creates a random 256-bit challenge, stores its SHA-256 digest, and
    binds it to the exact verified Logi cookie digest, explicit Discord subject and

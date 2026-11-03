@@ -1,4 +1,5 @@
 import type { PanelMessagesCopy } from "../../domain/discord-publications/panel-copy"
+import { polishNoun, polishPlayers } from "../../domain/localization/polish"
 
 import { clanCopy, type ClanLanguage } from "./core"
 
@@ -39,6 +40,192 @@ function czechPlayers(count: string) {
 }
 
 const panelsMessages: Record<ClanLanguage, PanelMessages> = {
+    pl: {
+        calendar: {
+            fallbackDetails: "Odprawa operacyjna z Logi.",
+            fallbackLocation: "Discord",
+            panelTitle: "Kalendarz",
+            panelEmpty:
+                "W tej chwili nie są zaplanowane żadne nadchodzące wydarzenia.",
+            panelCategories: "Kategorie",
+            matchLabel: "Mecz",
+            trainingLabel: "Trening",
+        },
+        live: {
+            labelLive: "Serwer na żywo",
+            labelClan: "Serwer klanu",
+            labelStatus: "Stan serwera",
+            labelCombined: "Nasze serwery",
+            game: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+            state: {
+                live: "Na żywo",
+                online: "Online",
+                empty: "Pusty",
+                seeding: "Seeding",
+                offline: "Niedostępne",
+                paused: "Wstrzymano",
+                stale: "Nieaktualne dane",
+            },
+            players: (count, capacity) => `Gracze ${count} / ${capacity}`,
+            playersShort: (count, capacity) => `${count} / ${capacity}`,
+            playerCount: (count) => `${count} ${polishPlayers(count)}`,
+            queue: (count) => `Kolejka ${count}`,
+            timeLeft: (minutes) => `pozostało ${minutes} min`,
+            liveFrom: (count) => `pełna rozgrywka od ${count}`,
+            serverNotResponding: "Serwer nie odpowiada",
+            lastData: (time) => `ostatnie dane ${time}`,
+            pausedByAdmin: "administrator zatrzymał aktualizacje",
+            offlineText:
+                "Panel aktualizuje się sam, gdy tylko serwer ponownie odpowie.",
+            emptyText: "Nikt nie gra teraz na serwerze.",
+            emptySeedHint: (channel) =>
+                `Gdy administrator rozpocznie seeding, ogłoszenie pojawi się na ${channel}.`,
+            seedJoin: "Wbijaj i pomóż rozkręcić serwer.",
+            seedRunning: (time) => `Seeding od ${time}.`,
+            seedCallIn: (channel) => `Ogłoszenie jest na ${channel}.`,
+            allies: "Alianci",
+            axis: "Oś",
+            topKills: "NAJWIĘCEJ ZABÓJSTW",
+            topCash: "NAJWIĘCEJ PIENIĘDZY TERAZ",
+            clanPlaying: (count) => `CZŁONKOWIE KLANU GRAJĄCY · ${count}`,
+            nextMap: (map) => `Następna mapa: ${map}`,
+            nextMapInline: (map) => `następna mapa ${map}`,
+            matchRunning: (time) => `runda trwa od ${time}`,
+            address: "Adres",
+            password: "Hasło",
+            joinCode: "Kod dołączenia",
+            points: "pkt",
+            newMap: "Nowa mapa",
+            combinedTitle: "Gdzie gramy",
+            seedingProgress: (count, target) => `seeding ${count} / ${target}`,
+            combinedBanner: (games) =>
+                `Nasze serwery · ${games.length > 1 ? `${games.slice(0, -1).join(", ")} i ${games.at(-1)}` : games.join("")}`,
+            buttons: {
+                join: "Dołącz",
+                players: "Pokaż graczy",
+                report: "Zgłoś gracza",
+                openCall: "Otwórz ogłoszenie",
+                joinServer: (name) => `Dołącz: ${name}`,
+            },
+        },
+        players: {
+            label: "Gracze na serwerze",
+            title: (map, players) =>
+                `${map} · ${players} ${polishPlayers(players)}`,
+            titleNoMap: (players) => `${players} ${polishPlayers(players)}`,
+            metaHll: (time) =>
+                `Tylko bieżąca runda · zaobserwowano ${time} · zabójstwa / zgony`,
+            metaWardogs: (time) =>
+                `Tylko bieżąca runda · zaobserwowano ${time} · zabójstwa / pieniądze teraz`,
+            sideHeader: (side, count) => `${side.toUpperCase()} · ${count}`,
+            noSide: "Bez strony",
+            sortedNote: "Posortowane według zabójstw, 8 graczy na stronę",
+            pageButton: (page, pages) => `${page} / ${pages}`,
+            empty: "Nikt nie gra teraz na serwerze.",
+            unavailableTitle: "Lista graczy nie jest obecnie dostępna",
+            unavailableBody:
+                "Serwer nie wysłał graczy biorących udział w bieżącej rundzie. Spróbuj ponownie za chwilę.",
+            outdatedTitle: "Ten panel jest nieaktualny",
+            outdatedBody: "Otwórz bieżący panel w swoim kanale.",
+            previous: "Wstecz",
+            next: "Dalej",
+        },
+        results: {
+            label: "Wynik",
+            corrected: "Poprawione",
+            outcomes: { win: "Wygrana", loss: "Porażka", draw: "Remis" },
+            place: (place) => `${place}. miejsce`,
+            confirmedBy: (name) => `potwierdzone przez ${name}`,
+            correctedAt: (time, previous) =>
+                `poprawiono ${time} · poprzednio ${previous}`,
+            match: (number) => `Mecz ${number}`,
+            fixture: (number, type) => `#${number} ${type}`,
+            points: "pkt",
+            viewMatch: "Zobacz mecz",
+        },
+        calendarPanel: {
+            label: (clan) => `Kalendarz · ${clan}`,
+            title: "Nadchodzące wydarzenia",
+            next: "Dalej:",
+            relative: (time) => time,
+            signupUntil: (time) => `Zapisy do ${time}`,
+            allDay: "cały dzień",
+            open: "Otwórz kalendarz",
+            timesNote: "Godziny w Twojej strefie czasowej",
+            empty: "W tej chwili nie są zaplanowane żadne nadchodzące wydarzenia.",
+            training: "Trening",
+            match: "Mecz",
+            withRound: (type, round) => `${type}, runda ${round}`,
+        },
+        competition: {
+            title: "Tabela",
+            titleAfterRound: (round) => `Tabele po rundzie ${round}`,
+            points: (points) => `${points} pkt`,
+            wins: (wins, matches) =>
+                `${wins} ${polishNoun(wins, "wygrana", "wygrane", "wygranych")} na ${matches} ${polishNoun(matches, "mecz", "mecze", "meczów")}`,
+            nextMatch: (team, details) => `Następny mecz ${team}: ${details}`,
+            round: (round) => `runda ${round}`,
+            open: "Otwórz rozgrywki",
+            rules: "Punkty według zasad ECL",
+            empty: "Żadna drużyna nie jest jeszcze zarejestrowana w tej lidze.",
+        },
+        report: {
+            pickerLabel: (server) => `Zgłoś gracza · ${server}`,
+            pickerTitle: "Kogo chcesz zgłosić?",
+            pickerMeta: (map, time) => `${map} · lista graczy z ${time}`,
+            pickerMetaNoMap: (time) => `Lista graczy z ${time}`,
+            pickerText:
+                "Zgłoszenie widzą tylko administratorzy w prywatnym wątku. Możesz tam załączyć dowody.",
+            selectPlaceholder: "Wybierz gracza",
+            onServer: (side) => `${side} · na serwerze`,
+            onServerNoSide: "na serwerze",
+            otherPlayer: "Inny gracz",
+            otherPlayerHint: "wpisz nick lub ID; dane nie będą zweryfikowane",
+            previous: "Wstecz",
+            next: "Dalej",
+            modalTitle: (player) => `Zgłoś gracza ${player}`,
+            modalTitleOther: "Zgłoś gracza",
+            playerField: "Nazwa lub identyfikator gracza",
+            reasonField: "Co się stało",
+            reasonPlaceholder:
+                "Co najmniej 10 znaków. Np. ciągle zabija członków drużyny na spawnie.",
+            whenField: "Mniej więcej kiedy",
+            whenPlaceholder: "Np. około 20:35",
+            evidenceField: "Link do dowodów",
+            evidencePlaceholder: "https://…",
+            sentTitle: "Zgłoszenie wysłane",
+            sentBody: (thread) =>
+                `Administratorzy mają to w prywatnym wątku ${thread}. Załącz tam filmy i zrzuty ekranu.`,
+            openThread: "Otwórz wątek",
+            savedTitle: "Zgłoszenie zapisane",
+            savedBody:
+                "Twój raport został zapisany, ale jego prywatny wątek jest nadal konfigurowany. Administratorzy to zobaczą; nie musisz wysyłać go ponownie.",
+            cannotSendTitle: "Nie można teraz wysłać raportu",
+            limitBody:
+                "Masz otwarte 3 raporty; więcej na raz nie jest możliwe. Poczekaj, aż administratorzy je zamkną.",
+            waitBody: "Możesz wysłać kolejny raport za minutę.",
+            tooManyFormsBody:
+                "Masz zbyt wiele niedokończonych formularzy raportów. Spróbuj ponownie za 15 minut.",
+            expiredBody:
+                "Formularz wygasł lub panel został zmieniony. Otwórz raport ponownie z bieżącego panelu.",
+            reasonBody: "Opisz, co się stało, używając co najmniej 10 znaków.",
+            evidenceBody: "Link do dowodów musi zaczynać się od https://.",
+            playerBody: "Wprowadź nazwę lub identyfikator gracza.",
+            noAccessBody:
+                "Nie masz dostępu do prywatnych raportów. Wyślij wiadomość do administratorów klanu.",
+            unavailableBody:
+                "Nie można teraz odczytać graczy serwera. Spróbuj ponownie za chwilę.",
+            threadName: (number, player) => `Raport #${number} · ${player}`,
+            cardLabel: (number) => `Raport gracza #${number} · Aby przejrzeć`,
+            observedIdentity:
+                "Nazwa z danych serwera, konto Discord niezweryfikowane",
+            manualIdentity: "Nazwa wprowadzona ręcznie, niezweryfikowana",
+            reportedBy: (reporter) => `zgłoszone przez ${reporter}`,
+            when: "Kiedy",
+            evidence: "Dowód",
+            footer: "Raport do sprawdzenia, a nie udowodnione naruszenie. Zamknij to za pomocą /close_ticket i podaj powód.",
+        },
+    },
     en: {
         calendar: {
             fallbackDetails: "Operation briefing from Logi.",

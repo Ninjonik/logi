@@ -79,7 +79,7 @@ test("the managers' suffix follows the settings (N3-B07)", () => {
 })
 
 test("every description and option fits Discord's limits", () => {
-    for (const language of ["cs", "en", "de"] as const) {
+    for (const language of ["cs", "en", "de", "pl"] as const) {
         const copy = getCommandMessages(language).registry
         for (const text of Object.values(copy.descriptions))
             assert.ok(

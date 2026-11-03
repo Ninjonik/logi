@@ -68,7 +68,7 @@ const fixtures = buildFixturesView(
 )
 
 test("both panels and the reply are valid Discord messages in every clan language", () => {
-    for (const language of ["cs", "en", "de"]) {
+    for (const language of ["cs", "en", "de", "pl"]) {
         for (const view of [
             leagueStandingsMessage(standings, look(language)),
             leagueFixturesMessage(fixtures, look(language), { fixtures: true }),
@@ -254,7 +254,7 @@ const posted = (view: MessageView, layout: MessageLayoutOptions) => {
 const pausedSince = { since: now - 3600_000 }
 
 test("a paused fixtures message filled to the limit with installed emoji is measured with its chip (L3-54, P6-B05)", () => {
-    for (const language of ["cs", "en", "de"]) {
+    for (const language of ["cs", "en", "de", "pl"]) {
         const live = installedLook(language, null)
         const paused = installedLook(language, pausedSince)
         const running = posted(
@@ -325,7 +325,7 @@ test("a paused table filled to the limit is measured with its chip (L3-54, P6-B0
     }))
     for (const count of [140, 141, 142, 143, 144, 145, 150, 160]) {
         const view = { ...standings, rows: rows.slice(0, count) }
-        for (const language of ["cs", "en", "de"]) {
+        for (const language of ["cs", "en", "de", "pl"]) {
             const paused = installedLook(language, pausedSince)
             const stopped = posted(
                 leagueStandingsMessage(view, paused),

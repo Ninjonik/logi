@@ -165,7 +165,9 @@ export function createMatchImageRenderer(ports: {
                 ? "cs-CZ"
                 : model.language === "de"
                   ? "de-DE"
-                  : "en-GB"
+                  : model.language === "pl"
+                    ? "pl-PL"
+                    : "en-GB"
         const date = new Intl.DateTimeFormat(locale, {
             timeZone: model.timeZone,
             weekday: "short",

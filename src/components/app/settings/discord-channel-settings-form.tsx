@@ -406,7 +406,9 @@ export function DiscordChannelSettingsForm({
             ? dictionary.serverSettings.languageEnglish
             : language === "cs"
               ? dictionary.serverSettings.languageCzech
-              : dictionary.serverSettings.languageGerman
+              : language === "pl"
+                ? dictionary.serverSettings.languagePolish
+                : dictionary.serverSettings.languageGerman
 
     return (
         <div className="space-y-6">

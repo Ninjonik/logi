@@ -83,7 +83,7 @@ test("the retry chip follows the flow and the class (L5-B03)", () => {
 })
 
 test("notices and later steps read their own sentences in every language", () => {
-    for (const language of ["cs", "en", "de"]) {
+    for (const language of ["cs", "en", "de", "pl"]) {
         const errors = getSystemMessages(language).errorsChannel
         for (const source of ["panelPassword", "seedControl"] as const) {
             const { reason, fix } = botErrorExplanation(
@@ -364,7 +364,7 @@ test("cards carry no raw error text, codes or internal step names (L5-16, L5-B04
 })
 
 test("every source and permission has copy in every language", () => {
-    for (const language of ["en", "cs", "de"]) {
+    for (const language of ["en", "cs", "de", "pl"]) {
         const errors = getSystemMessages(language).errorsChannel
         for (const source of BOT_ERROR_SOURCES) {
             if (source !== "memberRoles") assert.ok(errors.titles[source])

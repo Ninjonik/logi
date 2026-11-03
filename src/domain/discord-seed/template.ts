@@ -7,7 +7,7 @@ export type SeedTemplateKey = "server" | "players" | "missing" | "threshold"
 
 /** The placeholder spelling offered by the editor in each clan language. */
 export const SEED_TEMPLATE_TOKENS: Record<
-    "cs" | "en" | "de",
+    "cs" | "en" | "de" | "pl",
     Record<SeedTemplateKey, string>
 > = {
     cs: {
@@ -21,6 +21,12 @@ export const SEED_TEMPLATE_TOKENS: Record<
         players: "{players}",
         missing: "{missing}",
         threshold: "{threshold}",
+    },
+    pl: {
+        server: "{serwer}",
+        players: "{gracze}",
+        missing: "{brakuje}",
+        threshold: "{próg}",
     },
     de: {
         server: "{server}",
@@ -42,6 +48,7 @@ const ALIASES: ReadonlyMap<string, SeedTemplateKey> = new Map(
 const ASCII: ReadonlyArray<readonly [string, SeedTemplateKey]> = [
     ["hraci", "players"],
     ["chybi", "missing"],
+    ["prog", "threshold"],
 ]
 
 const TOKEN = /\{([^{}\s]{1,24})\}/gu

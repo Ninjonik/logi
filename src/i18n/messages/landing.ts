@@ -82,6 +82,214 @@ export type LandingMessages = {
     closing: { title: string; description: string; action: string }
 }
 
+export const plLanding: LandingMessages = {
+    metaTitle: "Logi — wydarzenia, składy i Discord dla Twojego klanu",
+    metaDescription:
+        "Planuj mecze i treningi, zbieraj zapisy na Discordzie, publikuj składy i śledź postępy drużyny. Logi — otwarte narzędzie do zarządzania klanem.",
+    nav: {
+        workflow: "Jak to działa",
+        setup: "Pierwsze kroki",
+        features: "Więcej w Logi",
+        source: "GitHub",
+    },
+    hero: {
+        title: "Twoje centrum",
+        accent: "zarządzania klanem.",
+        description:
+            "Ty organizujesz w Logi. Gracze odpowiadają na Discordzie.",
+        primary: "Zacznij z kontem Discord",
+        secondary: "Zobacz, jak to działa",
+        proof: [
+            "Open source",
+            "Wszystkie funkcje za darmo",
+            "Możliwość własnego hostingu",
+        ],
+    },
+    screens: {
+        overview: "Panel Twojego klanu",
+        event: "Edytor meczu z podglądem wiadomości na Discordzie",
+        roster: "Opublikowany skład z podziałem na oddziały",
+        performance: "Wyniki klanu w ostatnich meczach",
+        calendar: "Kalendarz społeczności",
+        zoom: "Powiększ zrzut ekranu",
+        caption:
+            "Rzeczywiste widoki społeczności Valkyria. Zrzuty ekranu są po angielsku; Logi obsługuje angielski, czeski, niemiecki i polski.",
+        close: "Zamknij zrzut ekranu",
+    },
+    setup: {
+        eyebrow: "ŁATWY START",
+        title: "Skonfiguruj raz. Korzystaj co tydzień.",
+        description:
+            "Zaloguj się, dodaj swój klan i połącz bota. Wybierz kanały, grupy i role, których potrzebuje Twój klan.",
+        steps: [
+            {
+                title: "Zaloguj się przez Discord",
+                text: "Użyj swojego konta Discord i otwórz panel klanu.",
+            },
+            {
+                title: "Połącz serwer",
+                text: "Zaproś bota, nadaj mu uprawnienia i wybierz kanały na wydarzenia oraz składy.",
+            },
+            {
+                title: "Skonfiguruj klan",
+                text: "Wybierz gry, utwórz grupy graczy i ustaw role Discord oraz uprawnienia do zapisów.",
+            },
+        ],
+        guide: "Przeczytaj instrukcję konfiguracji",
+    },
+    workflow: {
+        eyebrow: "OD PLANU MECZU DO GOTOWEGO SKŁADU",
+        title: "Zaplanuj mecz, zbierz graczy, opublikuj skład.",
+        description:
+            "Cotygodniowa organizacja w jednym miejscu: tworzysz wydarzenie, zbierasz odpowiedzi i ogłaszasz skład.",
+        steps: [
+            {
+                short: "Zaplanuj",
+                title: "Ustal szczegóły bez zbędnego klikania.",
+                text: "Wybierz grę, drużyny, mapę i harmonogram.",
+                bullets: [
+                    "Zacznij od szablonu wydarzenia",
+                    "Ustaw godzinę zbiórki i koniec zapisów",
+                    "Sprawdź podgląd ogłoszenia przed publikacją",
+                ],
+            },
+            {
+                short: "Zbierz zapisy",
+                title: "Gracze odpowiadają na Discordzie.",
+                text: "Logi publikuje ogłoszenie. Gracze wybierają grupę lub informują, że nie wezmą udziału.",
+                bullets: [
+                    "Wybór grup i limity miejsc",
+                    "Zapisy bez otwierania panelu",
+                    "Przypomnienia dla osób bez odpowiedzi",
+                ],
+            },
+            {
+                short: "Opublikuj skład",
+                title: "Ułóż skład w kilka chwil.",
+                text: "Przeciągnij graczy do oddziałów, przydziel role i kilkoma kliknięciami opublikuj skład na Discordzie.",
+                bullets: [
+                    "Presety oddziałów do wielokrotnego użytku",
+                    "Przeciąganie graczy na wybrane miejsca",
+                    "Potwierdzenia obecności i przypomnienia",
+                ],
+            },
+        ],
+        example: "Podgląd Discord · przykładowi gracze i mecz",
+        channel: "zapisy-na-mecze",
+    },
+    roster: {
+        eyebrow: "GDY SKŁAD SIĘ ZMIENIA",
+        title: "Zmiany w składzie i powiadomienia bez ręcznej roboty.",
+        description:
+            "Opublikuj zmiany, a Logi zaktualizuje skład na Discordzie. Jeśli włączysz powiadomienia, gracze objęci zmianą dostaną DM z nowym oddziałem i rolą.",
+        points: [
+            "Oddziały, role i rezerwa na jednej tablicy",
+            "Przydziały dostępne dla graczy na Discordzie",
+            "Dostępność, potwierdzenie i faktyczna obecność jako osobne informacje",
+        ],
+        guide: "Zobacz, jak działają składy",
+    },
+    discord: {
+        eyebrow: "DLA TWOICH GRACZY",
+        title: "Informacje tam, gdzie są gracze.",
+        description:
+            "Ogłoszenia, zapisy i przypomnienia o obecności — wszystko na Discordzie.",
+        labels: ["Ogłoszenie", "Przypomnienie dla gracza"],
+        note: "Podgląd korzysta z tego samego mechanizmu co wiadomości bota Logi. Dane są przykładowe; żadne wiadomości nie są wysyłane.",
+    },
+    performance: {
+        eyebrow: "PO MECZU",
+        title: "Sprawdź postępy swojej drużyny.",
+        description:
+            "Przeglądaj wyniki i zapisane mecze, porównuj statystyki z kolejnych spotkań.",
+        points: [
+            "Historia meczów i statystyki graczy",
+            "Wykresy wyników z ostatnich rozgrywek",
+            "Statystyki dopasowane do danej gry",
+        ],
+        guide: "Przeglądaj historię meczów",
+    },
+    explore: {
+        eyebrow: "WOKÓŁ MECZÓW",
+        title: "Wszystko, czego potrzebujesz do prowadzenia klanu.",
+        description:
+            "Korzystaj z funkcji, które przydadzą się Twojej społeczności.",
+        cards: [
+            {
+                title: "Treningi i kalendarz",
+                text: "Planuj cykliczne treningi i trzymaj mecze oraz wydarzenia społeczności w jednym kalendarzu.",
+            },
+            {
+                title: "Członkowie i rekrutacja",
+                text: "Zarządzaj członkostwem, zgłoszeniami rekrutacyjnymi, grupami i rolami Discord.",
+            },
+            {
+                title: "Ligi i rozgrywki",
+                text: "Śledź mecze Wardogs League i zarządzaj drużynami oraz ich zgłoszeniami do rozgrywek.",
+            },
+            {
+                title: "Odprawy i plany taktyczne",
+                text: "Trzymaj instrukcje, mapy i plany oddziałów przy odpowiednim wydarzeniu.",
+            },
+            {
+                title: "Pomoc i zgłoszenia",
+                text: "Odpowiadaj na pytania graczy w prywatnych zgłoszeniach na Discordzie.",
+            },
+            {
+                title: "Twoja strona i narzędzia",
+                text: "Połącz je z Logi przez API, webhooki i opcjonalne logowanie SSO.",
+            },
+            {
+                title: "Artykuły i ogłoszenia",
+                text: "Publikuj aktualności klanu, poradniki, zasady i odprawy dla członków.",
+            },
+        ],
+        guide: "Przeglądaj wiki",
+    },
+    ownership: {
+        eyebrow: "OPEN SOURCE",
+        title: "Korzystaj. Hostuj. Rozwijaj razem z nami.",
+        description:
+            "Logi jest dostępne na licencji MIT. Korzystaj z gotowej aplikacji lub uruchom własny panel, backend Convex i bota Discord. Zgłaszaj błędy, proponuj pomysły i rozwijaj kod.",
+        source: "Zobacz kod źródłowy",
+        contribute: "Jak dołączyć do rozwoju",
+        host: "Poradnik własnego hostingu",
+    },
+    faq: {
+        title: "Najczęściej zadawane pytania",
+        items: [
+            {
+                question: "Czy wszyscy gracze muszą korzystać z panelu?",
+                answer: "Gracze mogą zapisywać się i potwierdzać obecność na Discordzie. Panel służy organizatorom do tworzenia wydarzeń, układania składów i zarządzania klanem.",
+            },
+            {
+                question: "Czy możemy zachować obecne grupy i kanały Discord?",
+                answer: "Tak. Dopasuj Logi do kanałów, ról i grup na swoim serwerze. Poradnik konfiguracji opisuje wymagane uprawnienia i połączenia bota.",
+            },
+            {
+                question: "Jakie gry obsługuje Logi?",
+                answer: "Logi ma funkcje dopasowane do Hell Let Loose i Wardogs, a także przestrzenie dla innych gier. Dostępne mapy, statystyki i integracje zależą od wybranej gry.",
+            },
+            {
+                question: "Ile to kosztuje? Czy możemy hostować Logi u siebie?",
+                answer: "Aplikacja i wszystkie jej funkcje są darmowe. Kod jest dostępny na licencji MIT. Poradnik własnego hostingu obejmuje panel, Convex i bota Discord. Potrzebujesz własnej infrastruktury oraz aplikacji Discord.",
+            },
+        ],
+    },
+    comms: {
+        title: "Potrzebujesz też komunikacji głosowej w oddziałach?",
+        description:
+            "LogiComms to osobna aplikacja na Windows do komunikacji głosowej w oddziałach. Pobierzesz ją z panelu klanu.",
+        download: "Pobierz LogiComms",
+    },
+    closing: {
+        title: "Zorganizuj swój następny mecz.",
+        description:
+            "Zacznij od konta Discord. Przewodnik konfiguracji przeprowadzi Cię przez resztę.",
+        action: "Otwórz Logi",
+    },
+}
+
 export const enLanding: LandingMessages = {
     metaTitle: "Logi — events, rosters and Discord for your clan",
     metaDescription:
@@ -108,7 +316,7 @@ export const enLanding: LandingMessages = {
         calendar: "The community calendar",
         zoom: "Enlarge screenshot",
         caption:
-            "Real screens from the Valkyria community. Screenshots are in English; Logi supports English, Czech and German.",
+            "Real screens from the Valkyria community. Screenshots are in English; Logi supports English, Czech, German and Polish.",
         close: "Close screenshot",
     },
     setup: {
@@ -315,7 +523,7 @@ export const csLanding: LandingMessages = {
         calendar: "Komunitní kalendář",
         zoom: "Zvětšit snímek",
         caption:
-            "Skutečné obrazovky komunity Valkyria. Snímky jsou v angličtině; Logi podporuje češtinu, angličtinu a němčinu.",
+            "Skutečné obrazovky komunity Valkyria. Snímky jsou v angličtině; Logi podporuje češtinu, angličtinu, němčinu a polštinu.",
         close: "Zavřít snímek",
     },
     setup: {

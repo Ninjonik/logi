@@ -432,7 +432,14 @@ export function MatchTemplatesSettings({
             (preset.gameId ?? "hell_let_loose") === selected.gameId
     )
     const example = selected ? templateSchedule(selected, EXAMPLE_START) : null
-    const intl = locale === "cs" ? "cs-CZ" : locale === "de" ? "de-DE" : "en-GB"
+    const intl =
+        locale === "cs"
+            ? "cs-CZ"
+            : locale === "de"
+              ? "de-DE"
+              : locale === "pl"
+                ? "pl-PL"
+                : "en-GB"
     const exampleFormat = new Intl.DateTimeFormat(intl, {
         weekday: "short",
         hour: "2-digit",

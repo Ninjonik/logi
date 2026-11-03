@@ -259,7 +259,9 @@ export default async function PublicPlayerPage({
                                                     ? "cs-CZ"
                                                     : resolvedLocale === "de"
                                                       ? "de-DE"
-                                                      : "en-GB",
+                                                      : resolvedLocale === "pl"
+                                                        ? "pl-PL"
+                                                        : "en-GB",
                                                 { dateStyle: "medium" }
                                             ).format(new Date(match.endedAt))}
                                         </p>

@@ -23,7 +23,7 @@ import type { CommandAccessConfig } from "./permissions"
  */
 export type GuildCommandConfig = {
     guildId: string
-    language: "en" | "cs" | "de"
+    language: "en" | "cs" | "de" | "pl"
     timeZone: string
     commandSettings: StoredCommandSettings | null
     statsSettings: StatsCommandSettings | null
@@ -67,7 +67,7 @@ const optionalId = z
 /** Validates one row of `discordCommands:listGuildConfigs`. */
 export const guildCommandConfigSchema = z.object({
     guildId: z.string().min(1),
-    language: z.enum(["en", "cs", "de"]).catch("en"),
+    language: z.enum(["en", "cs", "de", "pl"]).catch("en"),
     timeZone: z.string().min(1).catch("UTC"),
     commandSettings: z.unknown().transform((value) => {
         const parsed = storedCommandSettingsSchema.safeParse(value)

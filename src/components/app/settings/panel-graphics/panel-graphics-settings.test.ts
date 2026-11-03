@@ -103,7 +103,7 @@ const data: PanelGraphicsPageData = {
     ]),
 }
 
-function render(locale: "cs" | "en" | "de" = "cs") {
+function render(locale: "cs" | "en" | "de" | "pl" = "cs") {
     return renderToStaticMarkup(
         createElement(PanelGraphicsSettingsView, {
             serverId: "s1",

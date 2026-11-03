@@ -50,3 +50,10 @@ test("event results routing is a clan-wide, clearable API setting", () => {
         false
     )
 })
+
+test("Polish is a supported clan language in the integration settings contract", () => {
+    assert.deepEqual(parseClanSettingsPatch({ defaultLanguage: "pl" }), {
+        ok: true,
+        value: { defaultLanguage: "pl" },
+    })
+})

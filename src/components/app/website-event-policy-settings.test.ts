@@ -6,7 +6,7 @@ import test from "node:test"
 import { WebsiteEventPolicySettings } from "./website-event-policy-settings"
 import { getDictionary } from "@/i18n/dictionaries"
 
-for (const locale of ["en", "cs", "de"] as const) {
+for (const locale of ["en", "cs", "de", "pl"] as const) {
     test(`website event policy form renders its localized intro and loading state in ${locale}`, () => {
         const dictionary = getDictionary(locale)
         const markup = renderToStaticMarkup(
