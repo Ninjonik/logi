@@ -1,3 +1,4 @@
+import { isRegistrationAnnouncementDue } from "../events/registration-announcement"
 import type { SyncEventLike, SyncScheduledStatus, SyncStateLike } from "./types"
 import { eventInfoMessageRenderVersion } from "./render-version"
 
@@ -82,14 +83,17 @@ export function deriveScheduledEventLifecycle(
 }
 
 /** Shared-channel matches keep their original card through the result. */
-export function shouldKeepRegistrationMessage(input: {
-    kind: "match" | "training"
-    status: SyncEventLike["status"]
-    registrationAnnouncementDue: boolean
-    splitChannels: boolean
-}) {
+export function shouldKeepRegistrationMessage(
+    input: {
+        kind: "match" | "training"
+        status: SyncEventLike["status"]
+        registrationStart?: string
+        splitChannels: boolean
+    },
+    now?: Date
+) {
     return (
-        input.registrationAnnouncementDue &&
+        isRegistrationAnnouncementDue(input, now) &&
         (input.kind === "match" || input.status !== "concluded") &&
         (!input.splitChannels || input.status === "registration")
     )

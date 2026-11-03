@@ -736,6 +736,9 @@ export function flowEditPayload(
     context: PayloadContext
 ) {
     const isMatch = event.kind !== "training"
+    const isActivityGame = usesActivitySelection(
+        event.gameId ?? "hell_let_loose"
+    )
     const timesChanged = changed(TIME_FIELDS, initial, values)
     const schedule = timesChanged
         ? flowSchedule(values, context.timezone)
@@ -759,13 +762,15 @@ export function flowEditPayload(
           }
     const map = !isMatch
         ? undefined
-        : values.mapCleared ||
-            changed(MAP_FIELDS, initial, values) ||
-            // An offensive preset follows your side.
-            (values.mapMode === "offensive" &&
-                values.ownSide !== initial.ownSide)
-          ? flowMapCode(values) || undefined
-          : event.map
+        : isActivityGame
+          ? values.activityTarget || undefined
+          : values.mapCleared ||
+              changed(MAP_FIELDS, initial, values) ||
+              // An offensive preset follows your side.
+              (values.mapMode === "offensive" &&
+                  values.ownSide !== initial.ownSide)
+            ? flowMapCode(values) || undefined
+            : event.map
     const teamsChanged =
         // Older matches can contain only opponent slots. Saving any edit must
         // repair that incomplete snapshot with the clan's linked slot a.
@@ -876,7 +881,9 @@ export function flowEditPayload(
             isMatch && values.gameId === "wardogs"
                 ? (values.tacticalPlan ?? null)
                 : null,
-        cap: isMatch ? values.cap || undefined : undefined,
+        cap: isMatch
+            ? (isActivityGame ? values.activity : values.cap) || undefined
+            : undefined,
         topicPresetId: values.topicPresetId || undefined,
         stratmapIds: values.stratmapIds,
         requiredRoleIds: values.requiredRoleIds,

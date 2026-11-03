@@ -130,7 +130,7 @@ test("the page shows the board's sections and rows in Czech (N1-02..44)", () => 
         "Při publikování jde změnit. Jinak: Jen fotka.",
         "Změny soupisky",
         "Fórum zápasu",
-        "Debrief ve fóru",
+        "Debrief",
         "Omluvy a zpoždění ve vlákně zápasu",
         "Nové",
         "Událost na Discordu",
@@ -194,7 +194,7 @@ test("every switch and the errors channel picker have their board names (N1-45a)
     const html = render()
     for (const label of [
         "Změny soupisky předvolit",
-        "Debrief ve fóru",
+        "Vytvářet debriefy",
         "Omluvy a zpoždění ve vlákně zápasu",
         "Událost na Discordu",
         "Shrnutí zápasu",
@@ -220,7 +220,7 @@ test("every switch and the errors channel picker have their board names (N1-45a)
     )
     assert.match(
         html,
-        /aria-checked="true"[^>]*aria-label="Debrief ve fóru"|aria-label="Debrief ve fóru"[^>]*aria-checked="true"/
+        /aria-checked="true"[^>]*aria-label="Vytvářet debriefy"|aria-label="Vytvářet debriefy"[^>]*aria-checked="true"/
     )
 })
 

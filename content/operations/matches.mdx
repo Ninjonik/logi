@@ -233,7 +233,11 @@ details, attendee role and buttons remain.
 
 **Save changes** saves and returns to the match; the bot updates the
 announcement and the other Discord messages as after any edit, and players who
-signed up stay signed up. **Cancel** returns to the match and asks first when
+signed up stay signed up. Changing any editable field enables **Save changes**,
+including late-signup rules, discussion and debrief options, and tactical-plan
+markers. Returning every field to its saved value disables it again. Team and
+preset choices are compared by their saved identity even when their names match.
+**Cancel** returns to the match and asks first when
 there are unsaved changes, as does leaving the page another way. Concluded matches remain editable. Opening a draft this way continues it in the
 new-match flow.
 

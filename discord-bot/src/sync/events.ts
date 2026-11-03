@@ -397,11 +397,10 @@ async function syncEvent(
         },
     })
 
-    // A concluded match's result belongs exclusively to the configured
-    // results panel. Do not leave a second result card in registration or
-    // event-info channels; retire the ordinary event cards at conclusion.
-    const registrationAnnouncementDue =
-        isRegistrationAnnouncementDue(event) && event.status !== "concluded"
+    // Announcement timing is independent of lifecycle. Shared-channel matches
+    // retain their original card at conclusion; split-channel and training
+    // cleanup is decided by shouldKeepRegistrationMessage below.
+    const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
 
     if (
         event.status === "concluded" &&
@@ -603,7 +602,7 @@ async function syncEvent(
     const registrationMessageVisible = shouldKeepRegistrationMessage({
         kind: event.kind,
         status: event.status,
-        registrationAnnouncementDue,
+        registrationStart: event.registrationStart,
         splitChannels,
     })
     if (!registrationMessageVisible) {
