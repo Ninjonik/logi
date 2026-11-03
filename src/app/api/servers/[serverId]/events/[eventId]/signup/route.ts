@@ -1,3 +1,4 @@
+import { logRouteError } from "@/lib/server-route-errors"
 import { NextResponse } from "next/server"
 
 import {
@@ -79,13 +80,19 @@ export async function POST(
         group: resolved.group,
     })
 
-    revalidateCacheEntries([
-        appCacheTags.serverContext(serverId),
-        appCacheTags.events(serverId),
-        appCacheTags.event(eventId),
-        appCacheTags.rosters(serverId),
-        appCacheTags.rosterImageEvent(eventId),
-    ])
+    let cacheRefreshFailed = false
+    try {
+        revalidateCacheEntries([
+            appCacheTags.serverContext(serverId),
+            appCacheTags.events(serverId),
+            appCacheTags.event(eventId),
+            appCacheTags.rosters(serverId),
+            appCacheTags.rosterImageEvent(eventId),
+        ])
+    } catch (error) {
+        cacheRefreshFailed = true
+        logRouteError("signup-cache-revalidation", error)
+    }
 
     const { appliedSignupLabel, removed } = result as {
         appliedSignupLabel: string
@@ -104,6 +111,9 @@ export async function POST(
 
     return NextResponse.json({
         ok: true,
+        ...(cacheRefreshFailed
+            ? { warning: messages.interaction.cacheRefreshFailed }
+            : {}),
         message: formatSignupResultMessage({
             removed,
             appliedSignupLabel,

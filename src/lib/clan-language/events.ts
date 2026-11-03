@@ -25,6 +25,7 @@ export type EventMessages = {
         unableToResolveMembership: string
         missingRequiredRole: string
         membershipStatusNotAllowed: string
+        cacheRefreshFailed: string
         signupUpdated: string
         signupUpdatedWithType: string
         signupRemovedWithType: string
@@ -238,6 +239,8 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
                 "You do not have the required Discord role for this signup.",
             membershipStatusNotAllowed:
                 "Your membership status is not allowed to sign up for this match.",
+            cacheRefreshFailed:
+                "Your signup was saved, but the page could not refresh. Please try reloading shortly.",
             signupUpdated: "Signup updated.",
             signupUpdatedWithType: "You are signed up as {type}.",
             signupRemovedWithType: "Removed signup from {type}.",
@@ -469,6 +472,8 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
                 "Pro toto přihlášení nemáte požadovanou Discord roli.",
             membershipStatusNotAllowed:
                 "Váš status členství se na tento zápas nemůže přihlásit.",
+            cacheRefreshFailed:
+                "Přihlášení bylo uloženo, ale stránku se nepodařilo aktualizovat. Zkuste ji za chvíli znovu načíst.",
             signupUpdated: "Přihlášení bylo upraveno.",
             signupUpdatedWithType: "Jste přihlášeni jako {type}.",
             signupRemovedWithType: "Odhlášeno z {type}.",
@@ -697,6 +702,8 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
                 "Ihnen fehlt die erforderliche Discord-Rolle für diese Anmeldung.",
             membershipStatusNotAllowed:
                 "Ihr Mitgliedschaftsstatus darf sich für dieses Match nicht anmelden.",
+            cacheRefreshFailed:
+                "Deine Anmeldung wurde gespeichert, aber die Seite konnte nicht aktualisiert werden. Lade sie bitte in Kürze erneut.",
             signupUpdated: "Anmeldung aktualisiert.",
             signupUpdatedWithType: "Sie sind als {type} angemeldet.",
             signupRemovedWithType: "Anmeldung für {type} entfernt.",
