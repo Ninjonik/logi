@@ -9,7 +9,7 @@ to read-only access and the two summary resources; select the required games
 explicitly. Empty resource/game selections cannot create a restricted key.
 Existing-key rows display their actual resource/game grants or explicit legacy
 full access. Create a replacement, switch the consumer, then revoke its old key
-to change permissions. The UI supports English, Czech and German.
+to change permissions. The UI supports English, Czech, German and Polish.
 
 The existing session-authenticated management endpoint accepts the same policy:
 

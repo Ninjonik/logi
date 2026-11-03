@@ -1096,7 +1096,9 @@ async function runCompetition(
     const copy = getPanelMessages(pass.language)
     const look = resolvePanelPresentation(panel)
     const locale = panelImageCopy(pass.language).locale
-    const language = ["cs", "de", "pl"].includes(pass.language) ? pass.language : "en"
+    const language = ["cs", "de", "pl"].includes(pass.language)
+        ? pass.language
+        : "en"
     const url = new URL(
         `/${language}/competitions/${encodeURIComponent(data.slug)}`,
         pass.siteUrl

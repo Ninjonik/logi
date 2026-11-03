@@ -165,6 +165,14 @@ export function buildMatchImage(input: MatchImageInput): MatchImage {
 
 export const matchImageCopy = (language: MatchImage["language"]) =>
     ({
+        pl: {
+            meeting: "ZBIÓRKA",
+            start: "ROZPOCZĘCIE GRY",
+            win: "ZWYCIĘSTWO",
+            loss: "PORAŻKA",
+            draw: "REMIS",
+            result: "WYNIK MECZU",
+        },
         en: {
             meeting: "MEETING",
             start: "GAME START",

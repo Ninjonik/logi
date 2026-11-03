@@ -5,6 +5,7 @@ Logi is an open-source community operations platform with a public site, a manag
 ## Features
 
 - Discord-backed sign-in and role-aware community workspaces.
+- English, Czech, German, and Polish dashboard and Discord bot; English-only wiki and API documentation.
 - Events, matches, training, recurring schedules, registration, and reminders.
 - Squad rosters, reserves, tactical plans, attendance, and reviewed results.
 - Membership applications, groups, tickets, and managed Discord roles.

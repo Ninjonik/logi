@@ -1,4 +1,149 @@
 import type { Locale } from "../config"
+const pl = {
+    login: "Zaloguj się",
+    logout: "Wyloguj się",
+    linkTitle: "Połącz swój drużyna z serwerem Discord",
+    linkHint:
+        "Połącz swój drużyna z obszarem roboczym, którym administrujesz. Każdy serwer Discord może reprezentować jeden drużyna. Twoi gracze, zaproszenia i historia ligi pozostają w drużynie.",
+    linkTeam: "Połącz drużynę",
+    selectWorkspace: "Serwer Discord",
+    chooseWorkspace: "Wybierz serwer",
+    noWorkspaces:
+        "Brak dostępnych niepołączonych serwerów. Użyj konta z dostępem administratora obszaru roboczego lub podłącz inny serwer w panelu kontrolnym.",
+    linkedWorkspace: "Podłączony serwer",
+    linkConflict:
+        "Ten drużyna lub serwer Discord jest już połączony. Odśwież, aby zobaczyć bieżące połączenie.",
+    continueDashboard: "Przejdź do panelu zarządzania",
+    manageLater: "Możesz także później połączyć drużyny z drużyn z Mojej ligi.",
+    playerSteps:
+        "Grasz dla drużyny? Poproś właściciela o zaproszenie, zaloguj się za pomocą Discord i wybierz Dołącz do drużyny. Nie potrzebujesz panelu ani dostępu administratora.",
+    browseHint:
+        "Wybierz ligę, aby zarejestrować istniejącą drużynę, sprawdzić jej rejestrację lub zarządzać spotkaniami.",
+    title: "Ligi",
+    description: "Znajdź ligę, śledź sezon i zarejestruj swoją drużynę.",
+    allGames: "Wszystkie gry",
+    search: "Wyszukaj ligi",
+    empty: "Nie znaleziono lig",
+    emptyHint:
+        "Spróbuj innego wyszukiwania lub sprawdź ponownie, kiedy zostanie opublikowany następny sezon.",
+    teams: "Drużyny",
+    divisions: "Dywizje",
+    fixtures: "Terminarz",
+    results: "Wyniki",
+    season: "Sezon",
+    view: "Wyświetl ligę",
+    register: "Zgłoś drużynę",
+    closed: "Zapisy zamknięte",
+    automatic: "Rejestracja otwarta",
+    approval: "Zgłoszenia otwarte",
+    minimum: "Wymagani są zalogowani gracze co najmniej {count}",
+    noMinimum: "Brak minimalnej liczby graczy",
+    manage: "Moje drużyny ligowe",
+    browse: "Przeglądaj ligi",
+    setupTitle: "Jak się zarejestrować",
+    setupDescription:
+        "Utwórz podstawowy profil drużyny, zaproś swoich graczy i dołącz do ligi. Nie jest wymagana konfiguracja bota Discord ani panelu klanu.",
+    setupOne: "Zaloguj się przez Discord",
+    setupOneText: "Twoje konto identyfikuje Cię jako właściciela drużyny.",
+    setupTwo: "Utwórz lub wybierz swoją drużynę",
+    setupTwoText:
+        "Użyj podstawowego profilu ligowego lub drużyny powiązanego z klanem, którym zarządzasz.",
+    setupThree: "Zarejestruj się w lidze",
+    setupThreeText:
+        "Organizator może przeglądać zgłoszenia przed przyznaniem dywizji.",
+    hostingTitle: "Wybierz miejsce, w którym grasz",
+    hostingText:
+        "Użyj działającego połączenia z serwerem Logi do celów statystycznych lub wybierz serwer zewnętrzny i zgłoś wynik ręcznie.",
+    joinTitle: "Zgłoszenia drużyn",
+    accountTitle: "Twoje drużyny ligowe",
+    signIn: "Zaloguj się, aby zarządzać drużyną",
+    create: "Utwórz drużynę",
+    name: "Nazwa drużyny",
+    shortCode: "Tag drużyny",
+    game: "Gra",
+    about: "Opis (opcjonalnie)",
+    createHint:
+        "Utwórz profil drużyny, aby zapraszać graczy i rejestrować się w ligach.",
+    existingHint:
+        "Jeśli Twój drużyna istnieje już w katalogu, poproś organizatora Logi o powiązanie go z Twoim kontem.",
+    selectTeam: "Wybierz swoją drużynę",
+    noTeams: "Nie masz jeszcze drużyny na tę grę.",
+    members: "{count} zalogowani gracze",
+    owner: "Właściciel drużyny",
+    member: "Gracz",
+    clanLinked: "Klan połączony",
+    basic: "Profil ligi",
+    invite: "Zaproś graczy",
+    copy: "Skopiuj link z zaproszeniem",
+    copied: "Skopiowano",
+    inviteHint:
+        "Każda osoba mająca ten link może zalogować się i dołączyć do Twojego drużyny. Udostępnij to tylko swoim graczom.",
+    joinInvite: "Dołącz do drużyny",
+    inviteCode: "Link lub kod zaproszenia do drużyny",
+    join: "Dołącz do drużyny",
+    inviteDescription:
+        "Dołącz za pomocą zaproszenia udostępnionego przez właściciela drużyny.",
+    pending: "Oczekuje na zatwierdzenie",
+    approved: "Zapisano",
+    rejected: "Zgłoszenie odrzucone",
+    withdrawn: "Wycofano",
+    withdraw: "Wycofaj drużynę",
+    confirmWithdraw:
+        "Wycofać tę drużynę z ligi? Istniejące wyniki zostaną zachowane.",
+    registerHint: "Wybierz drużyna, który chcesz zarejestrować.",
+    save: "Zapisz",
+    saving: "Zapisywanie…",
+    done: "Zapisano",
+    error: "Nie można zapisać. Spróbuj ponownie.",
+    forbidden: "Nie masz uprawnień, aby wprowadzić tę zmianę.",
+    duplicate:
+        "Ten drużyna już istnieje w katalogu. Poproś organizatora Logi o połączenie go z Tobą.",
+    limit: "Drużyna lub liga osiągnęła swój limit.",
+    minimumError:
+        "Twój drużyna potrzebuje więcej zalogowanych graczy, zanim będzie mógł się zarejestrować.",
+    unavailable:
+        "To połączenie jest niedostępne, offline lub nie może udostępnić historii meczów.",
+    locked: "To spotkanie ma już wynik lub powiązane wydarzenia. Poproś organizatora o zmianę.",
+    manualOnly:
+        "Ręczne raporty wyników są dostępne tylko dla serwerów zewnętrznych.",
+    invalid: "Sprawdź szczegóły i spróbuj ponownie.",
+    notFound: "Ta drużyna, liga lub zaproszenie są niedostępne.",
+    fixtureTitle: "Twoje mecze",
+    noFixtures:
+        "Terminarze pojawiają się tutaj, gdy organizator zaplanuje Twój drużyna.",
+    host: "Serwer meczowy",
+    unassigned: "Nie wybrano serwera",
+    linked: "Podłączony serwer Logi",
+    external: "Serwer zewnętrzny",
+    externalName: "Nazwa serwera zewnętrznego",
+    linkedHint:
+        "Można wybrać tylko zdrowe połączenia z klanów, którymi administrujesz. Poproś administratora tego klanu, aby wybrał jego serwer, jeśli hostuje ktoś inny.",
+    noServers:
+        "Żadne działające połączenia statystyczne nie są dostępne dla Twojego konta dla tej gry.",
+    externalHint:
+        "Z serwera zewnętrznego nie są importowane żadne statystyki. Wprowadź ręcznie wyniki końcowe.",
+    report: "Zgłoś wynik",
+    score: "Wynik",
+    reportHint:
+        "Wyniki są uwzględniane w rankingach, gdy każdy uczestniczący drużyna prześle ten sam wynik lub organizator zatwierdzi raport.",
+    reports: "Przesłane wyniki",
+    approve: "Zatwierdź wynik",
+    final: "Finał",
+    scheduled: "Zaplanowano",
+    rules: "Zasady, tabele i terminarze",
+    back: "Powrót do ligi",
+    registrations: "Rejestracje",
+    noBot: "Nie jest wymagany bot",
+    free: "Wszystkie funkcje ligowe są bezpłatne",
+    ownerOnly:
+        "Tylko właściciel drużyny lub administrator klanu może rejestrować się lub zgłaszać wyniki.",
+    signInHint:
+        "Discord służy do identyfikacji konta. Nie musisz dodawać bota ani podłączać serwera Discord.",
+    manualPending: "Oczekiwanie na zgodę innych drużyn lub organizatora.",
+    accountPrivate:
+        "Tylko Ty i Twój drużyna możecie zobaczyć zaproszenia i oczekujące raporty wyników.",
+}
+
 const en = {
     login: "Sign in",
     logout: "Sign out",
@@ -425,5 +570,11 @@ const de: LeagueMessages = {
         "Einladungen und offene Ergebnismeldungen sehen nur du und dein Team.",
 }
 export function getLeagueMessages(locale: Locale): LeagueMessages {
-    return locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
+    return locale === "cs"
+        ? cs
+        : locale === "de"
+          ? de
+          : locale === "pl"
+            ? pl
+            : en
 }

@@ -1,4 +1,5 @@
 import type { HllNation, PanelServerState, WardogsSign } from "./panel-emblems"
+import { polishNoun, polishPlayers } from "../localization/polish"
 import type { HllLighting, HllMode } from "./panel-graphics"
 
 /**
@@ -174,6 +175,85 @@ const cs: PanelImageCopy = {
     },
 }
 
+const pl: PanelImageCopy = {
+    ...shared,
+    locale: "pl-PL",
+    state: {
+        live: "Na żywo",
+        seeding: "Seeding",
+        empty: "Pusty",
+        offline: "Offline",
+    },
+    online: "Online",
+    newMap: "Nowa mapa",
+    players: (count, capacity) => `Gracze ${count} / ${capacity}`,
+    queue: (count) => `Kolejka ${count}`,
+    gauge: (count, capacity, extra) =>
+        gauge(count, capacity, extra, "Kolejka", "seeding do"),
+    timeLeft: (minutes) => `pozostało ${minutes} min`,
+    seedTo: (target) => `seeding do ${target}`,
+    seedCaption: (target) => `pełna rozgrywka od ${target} graczy`,
+    emptyTitle: "Nikt nie gra teraz na serwerze.",
+    statusPlayers: "Gracze na serwerze",
+    joinCode: (code) => `Kod dołączenia ${code}`,
+    topKills: "Najwięcej zabójstw",
+    allies: "Alianci",
+    axis: "Oś",
+    sectors: "sektory",
+    score: "wynik",
+    nextMap: (name) => `następna mapa ${name}`,
+    factionPoints: "punkty frakcji",
+    topCashNow: (name, value) =>
+        `najwięcej pieniędzy teraz: ${name} · ${value}`,
+    lighting: {
+        day: "Dzień",
+        night: "Noc",
+        dawn: "Świt",
+        dusk: "Zmierzch",
+        morning: "Rano",
+        evening: "Wieczór",
+        rain: "Deszcz",
+        overcast: "Pochmurno",
+    },
+    nationShort: {
+        us: "USA",
+        gb: "Wielka Brytania",
+        sov: "ZSRR",
+        cw: "Commonwealth",
+        ger: "Niemcy",
+        dak: "Afrikakorps",
+        allies: "Alianci",
+        axis: "Oś",
+    },
+    nation: {
+        us: "USA",
+        gb: "Wielka Brytania",
+        sov: "Związek Radziecki",
+        cw: "Commonwealth",
+        ger: "Niemcy",
+        dak: "Afrikakorps",
+        allies: "Alianci",
+        axis: "Oś",
+    },
+    wardogs: {
+        valkyra: "Valkyra",
+        manticore: "Manticore",
+        lonestar: "Lonestar",
+        wardogs: "Wardogs",
+    },
+    alt: {
+        score: (parts) => `Obraz punktacji: ${parts.join(", ")}.`,
+        banner: (name) => `Baner serwera ${name}`,
+        map: (name) => `Mapa ${name}`,
+        minutes: (n) =>
+            `pozostało ${n} ${polishNoun(n, "minuta", "minuty", "minut")}`,
+        playersOf: (count, capacity) => `${count} z ${capacity} graczy`,
+        queue: (count) => `Kolejka ${count}`,
+        topKills: (players) => `najwięcej zabójstw: ${players}`,
+        points: (value) => `${value} pkt`,
+    },
+}
+
 const en: PanelImageCopy = {
     ...shared,
     locale: "en-GB",
@@ -328,7 +408,7 @@ const de: PanelImageCopy = {
     },
 }
 
-const copies: Record<PanelImageLanguage, PanelImageCopy> = { cs, en, de }
+const copies: Record<PanelImageLanguage, PanelImageCopy> = { cs, en, de, pl }
 export function panelImageCopy(
     language: string | null | undefined
 ): PanelImageCopy {

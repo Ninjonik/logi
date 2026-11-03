@@ -12,7 +12,10 @@ const dictionaries = {
     de: deMessages,
 } satisfies Record<
     Locale,
-    typeof enMessages | typeof csMessages | typeof deMessages | typeof plMessages
+    | typeof enMessages
+    | typeof csMessages
+    | typeof deMessages
+    | typeof plMessages
 >
 
 export type Dictionary = (typeof dictionaries)[Locale]

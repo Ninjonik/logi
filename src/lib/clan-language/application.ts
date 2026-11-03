@@ -362,6 +362,364 @@ const cs: Copy = {
     },
 }
 
+const pl: Copy = {
+    listAnd: "i",
+    defaultForm: {
+        source: {
+            label: "Skąd się o nas dowiedziałeś?",
+            options: [
+                "Od znajomego w klanie",
+                "Z serwera klanu",
+                "Z Discord",
+                "Gdzie indziej",
+            ],
+        },
+        age: { label: "Wiek", placeholder: "Np. 24" },
+        hours: {
+            label: "Ile godzin tygodniowo grasz?",
+            placeholder: "Np. 10–15 godzin",
+        },
+        why: {
+            label: "Dlaczego chcesz z nami zagrać?",
+            placeholder: "Wystarczy kilka zdań.",
+        },
+        specialization: {
+            label: "Specjalizacja",
+            help: "Tylko Hell Let Loose.",
+            options: ["Piechota", "Jednostki pancerne", "Zwiad"],
+        },
+        when: {
+            label: "Kiedy zazwyczaj grasz?",
+            help: "Możesz wybrać więcej niż jeden.",
+            options: ["Wieczory w dni powszednie", "Weekendy"],
+        },
+        microphone: { label: "Czy masz mikrofon?" },
+        previousClan: {
+            label: "W którym klanie grałeś wcześniej?",
+            placeholder: "Opcjonalnie",
+        },
+        referrer: {
+            label: "Kto Cię zaprosił?",
+            help: "Członek tego serwera.",
+        },
+    },
+    panel: {
+        apply: "Wyślij zgłoszenie",
+        applyOnWeb: "Wypełnij zgłoszenie na stronie",
+        windowsNote: {
+            two: "Formularz ma dwa krótkie kroki i zajmuje około 2 minut.",
+            three: "Formularz ma trzy krótkie kroki i zajmuje około 3 minut.",
+        },
+        defaultTitle: "Dołącz do klanu {clan}",
+        defaultTitleNoClan: "Dołącz do nas",
+        defaultText: {
+            two: "Wybierz, jak chcesz z nami grać. Formularz ma dwa krótkie kroki i zajmie kilka minut.",
+            three: "Wybierz, jak chcesz z nami grać. Formularz ma trzy krótkie kroki i zajmie kilka minut.",
+        },
+    },
+    label: "Zgłoszenie do {clan}",
+    step: "Krok {step} z {total}",
+    reviewStep: "Sprawdź",
+    windowTitle: "Zgłoszenie · {step} z {total} · {name}",
+    windowTitleExtra: "Zgłoszenie · {step}{suffix} · {name}",
+    windowNames: {
+        about: "O Tobie",
+        accounts: "Konta gier",
+        questions: "Pytania klanowe",
+    },
+    fields: {
+        games: {
+            label: "W jakie gry grasz?",
+            help: "Wybierz jedno lub oba.",
+            placeholder: "Wybierz gry",
+        },
+        category: {
+            label: "Kategoria",
+            help: "Jak chcesz z nami grać.",
+            placeholder: "Wybierz kategorię",
+        },
+        name: {
+            label: "Nick w grze",
+            help: "Dokładnie tak, jak widzisz to w grze.",
+        },
+        previous: {
+            label: "Czy znaleźliśmy Cię na serwerach klanu?",
+            help: "Pod nazwą w grze {name} z pierwszego okna.",
+            none: "Żadne z tych",
+            noneHelp: "Poniżej wprowadzę moje konto",
+            seen: "{platform} · ostatnio widziany {date} na {server}",
+            seenNoServer: "{platform} · ostatnio widziany {date}",
+        },
+        steam: {
+            label: "Steam ID lub link do profilu",
+            help: "17 cyfr zaczynających się od 7656119 lub link do strony steamcommunity.com/profiles/…",
+        },
+        epic: { label: "Epic Account ID", placeholder: "Opcjonalnie" },
+        xbox: { label: "Xbox", placeholder: "Opcjonalnie" },
+        playstation: { label: "PlayStation", placeholder: "Opcjonalnie" },
+        selectPlaceholder: "Wybierz opcję",
+        memberPlaceholder: "Wybierz członka",
+        optional: "Opcjonalnie",
+        yes: "Tak",
+        no: "Nie",
+    },
+    platforms: {
+        steam: "Steam",
+        epic: "Epic Games",
+        xbox: "Xbox",
+        playstation: "PlayStation",
+        other: "Konto",
+    },
+    progress: {
+        intro: {
+            about: "W pierwszym oknie pojawia się pytanie o gry, kategorię i nazwę w grze.",
+            accounts:
+                "Następne okno zapyta o Steam, Epic lub konsolę. Jedno konto wystarczy.",
+            questions: "W następnym oknie znajdują się pytania klanu.",
+            questionsMore: "Następne okno zawiera resztę pytań klanu.",
+        },
+        done: "zrobione",
+        fix: "Popraw",
+        steamVerified: "✓ Zweryfikowano Steam",
+        accountsPending:
+            "Możesz zweryfikować Steam na stronie. Wtedy nie trzeba wpisywać go w formularzu.",
+        accountsVerified: "Steam {id} · okno już wypełnione",
+        accountsLocked:
+            "Zweryfikuj Steam na stronie — wpisanie Steam ID nie wystarczy. W tym oknie możesz podać konto konsolowe lub Epic.",
+        questionsCount: {
+            one: "Jeszcze {count} pytanie, potem podsumowanie",
+            few: "Jeszcze {count} pytania, potem podsumowanie",
+            many: "Jeszcze {count} pytań, potem podsumowanie",
+            other: "Jeszcze {count} pytań, potem podsumowanie",
+        },
+        ageValue: "{value} lat",
+        continue: "Dalej",
+        edit: "Edytuj",
+        cancel: "Anuluj",
+        verifySteam: "Zweryfikuj Steam na stronie (zalecane)",
+        verifySteamRequired: "Zweryfikuj Steam na stronie",
+        findAccount: "Znajdź identyfikator mojego konta",
+        keepNote: "Niedokończone zgłoszenie zachowamy przez 24 godziny.",
+    },
+    review: {
+        title: "Sprawdź i wyślij",
+        submit: "Wyślij zgłoszenie",
+        cancel: "Anuluj",
+        note: "Niedokończone zgłoszenie zachowamy przez 24 godziny, potem je usuniemy. Rekruterzy zobaczą je dopiero po wysłaniu.",
+        games: "Gry",
+        category: "Kategoria",
+        name: "Nick w grze",
+    },
+    summaryLabels: {
+        source: "Od",
+        age: "Wiek",
+        referrer: "Zaproszony przez",
+        specialization: "Specjalizacja",
+    },
+    fixTitle: {
+        about: "Popraw swoje dane",
+        accounts: "Popraw konta gier",
+        questions: "Popraw swoje odpowiedzi",
+    },
+    fixButton: {
+        about: "Popraw swoje dane",
+        accounts: "Popraw konta gier",
+        questions: "Popraw odpowiedzi",
+    },
+    issues: {
+        required: "{field}: to pole jest wymagane.",
+        number: "{field}: wpisz liczbę.",
+        tooLong: "{field}: odpowiedź jest za długa.",
+        choice: "{field}: wybierz jedną z oferowanych opcji.",
+        tooFew: "{field}: wybierz więcej opcji.",
+        tooMany: "{field}: wybierz mniej opcji.",
+        member: "{field}: wybierz członka tego serwera.",
+        steam: "Identyfikator Steam nie wygląda prawidłowo. Ma 17 cyfr i zaczyna się od 7656119.",
+        accountMissing: "Wprowadź co najmniej jedno konto gry.",
+        unknown: "W międzyczasie formularz się zmienił. Wypełnij go ponownie.",
+    },
+    sent: {
+        title: "Zgłoszenie wysłane",
+        body: "Rekruterzy skontaktują się z Tobą w {thread}. Decyzję dostaniesz też w wiadomości prywatnej.",
+        openThread: "Otwórz wątek",
+    },
+    cancelled: {
+        title: "Zgłoszenie anulowane",
+        body: "Nic nie zostało wysłane. Zacznij od nowa przyciskiem Wyślij zgłoszenie na {channel}.",
+    },
+    expired: {
+        title: "To zgłoszenie wygasło",
+        body: "Niedokończone odpowiedzi nie zostały zachowane. Zacznij od nowa przyciskiem Wyślij zgłoszenie na {channel}.",
+    },
+    windowExpired: {
+        title: "Okno zostało zamknięte przed wysłaniem",
+        body: "Twoje zapisane kroki zostaną zachowane: {steps}. Kontynuuj od miejsca, w którym skończyłeś i ponownie wypełnij {window}.",
+        bodyNothing: "Nic nie zostało jeszcze zapisane. Zacznij od {window}.",
+        continue: "Dalej",
+    },
+    alreadyInClan: {
+        title: "Jesteś już w {clan}",
+        body: "Aby zmienić swoją rolę lub kategorię, napisz do administratorów poprzez zgłoszenie w {tickets}.",
+        bodyNoTickets:
+            "Aby zmienić swoją rolę lub kategorię, napisz do administratorów klanu.",
+    },
+    openApplication: {
+        title: "Masz już otwarte zgłoszenie #{number}",
+        body: "Poczekaj na decyzję rekruterów. Dostaniesz wiadomość prywatną.",
+        open: "Otwórz wątek",
+    },
+    closed: {
+        title: "Zgłoszenia są obecnie zamknięte",
+        body: "Spróbuj ponownie później lub zapytaj administratorów w {channel}.",
+        bodyNoChannel:
+            "Spróbuj ponownie później lub zapytaj administratorów klanu.",
+    },
+    sendFailed: {
+        title: "Nie można wysłać zgłoszenia",
+        body: "Nic nie zostało zapisane. Administratorzy zostali powiadomieni; spróbuj ponownie za chwilę.",
+    },
+    threadName: "zgłoszenie · {name}",
+    closedThreadName: "zamknięte · {name}",
+    welcome: {
+        withRoles:
+            "Cześć {applicant}, dziękujemy za złożenie wniosku. {support_roles} wkrótce się z Tobą skontaktuje.",
+        withoutRoles:
+            "Cześć {applicant}, dziękujemy za złożenie wniosku. Rekruterzy wkrótce się z Tobą skontaktują.",
+    },
+    card: {
+        label: "Zgłoszenie #{number} · {games}",
+        closedLabel: "Zgłoszenie #{number} · zamknięte",
+        title: "{name} · {category}",
+        pending: "Oczekiwanie na decyzję",
+        submitted: "wysłano {time}",
+        inGameName: "Nick w grze: {name}",
+        accounts: "Konta",
+        source: "Skąd się o nas dowiedziałeś(-aś)",
+        invitedBy: "zaproszony przez {member}",
+        undecided: "Jeszcze nie zdecydowano · {name}, {time}",
+        undecidedNote:
+            "Wątek pozostaje otwarty, a wnioskodawca nic nie otrzymuje. Przyciski zostają.",
+        deciders: "Decyzję mogą podjąć {roles} i administratorzy Logi",
+        decidersAdmins: "Decyzję mogą podjąć administratorzy Logi",
+        accept: {
+            member: "Przyjmij jako członka",
+            recruit: "Przyjmij jako rekruta",
+            mercenary: "Przyjmij jako najemnika",
+        },
+        reject: "Odrzuć…",
+        undecidedButton: "Zostaw do rozpatrzenia",
+        mercenaryUnavailable:
+            "Nie można jeszcze przyjąć najemnika: klan nie ma kategorii najemnika.",
+        decidedTitle: {
+            member: "{name} — przyjęto jako członka",
+            recruit: "{name} — przyjęto jako rekruta",
+            mercenary: "{name} — przyjęto jako najemnika",
+            pending: "{name} oczekuje na decyzję",
+            denied: "{name} — zgłoszenie odrzucone",
+        },
+        outcome: {
+            member: "Członek",
+            recruit: "Rekrut",
+            mercenary: "Najemnik",
+            pending: "Oczekiwanie na decyzję",
+            denied: "Odrzucono",
+        },
+        rolesPending: "Dodawane są role",
+        decidedBy: "Decyzja: {member} · {time}",
+        rolesAdd: {
+            one: "Logi dodaje rolę {roles} w ciągu minuty.",
+            other: "Logi dodaje role {roles} w ciągu minuty.",
+        },
+        rolesRemove: {
+            one: "Logi usuwa rolę {roles} w ciągu minuty.",
+            other: "Logi usuwa role {roles} w ciągu minuty.",
+        },
+        closedFooter: "Wątek jest zablokowany i zarchiwizowany",
+    },
+    rejectModal: {
+        title: "Odrzuć zgłoszenie #{number}",
+        body: "{name} otrzyma powód w wiadomości prywatnej. Następnie wątek zostanie zamknięty i zarchiwizowany.",
+        reason: "Powód",
+        reasonHelp: "Wnioskodawca to zobaczy.",
+        reasonPlaceholder:
+            "Np. nie prowadzimy teraz rekrutacji rezerwowych, spróbuj ponownie w listopadzie.",
+    },
+    decision: {
+        notAllowed: {
+            title: "Rekruterzy decydują o zgłoszeniach",
+            body: "Zgłoszenia w kategorii {category} rozpatrują osoby z rolami {roles} lub administratorzy Logi.",
+            bodyAdmins:
+                "Zgłoszenia w {category} są obsługiwane przez administratorów Logi.",
+        },
+        unverifiable: {
+            title: "Nie można teraz sprawdzić Twoich ról",
+            body: "Discord nie odpowiedział. Spróbuj ponownie za chwilę.",
+        },
+        alreadyDecided: {
+            title: "Zgłoszenie #{number} jest już rozpatrzone",
+            body: "Decyzja osoby {member}: {outcome}. Członkostwo zmienisz na stronie w zakładce Członkowie.",
+            members: "Członkowie w Logi",
+        },
+        notTracked: {
+            title: "Ten wątek nie jest zgłoszeniem",
+            body: "Decyzję podejmij w wątku utworzonym ze zgłoszenia rekrutacyjnego.",
+        },
+        noMercenaryCategory: {
+            title: "Klan nie ma kategorii najemnika",
+            body: "Administrator dodaje je w Logi w obszarze Ustawienia → Członkostwo → Kategorie. Wtedy możesz przyjąć najemnika.",
+        },
+        dmFailed:
+            "Nie udało się wysłać wiadomości prywatnej. Decyzja jest dostępna w wątku zgłoszenia.",
+    },
+    dm: {
+        label: "Klan {clan} · Zgłoszenie #{number}",
+        accepted: {
+            member: "Witamy w klanie, jesteś członkiem",
+            recruit: "Witamy w klanie, jesteś rekrutem",
+            mercenary: "Witamy w klanie, jesteś najemnikiem",
+        },
+        acceptedBody: "Rekruterzy przyjęli Twoje zgłoszenie do {game}.",
+        roles: {
+            one: "Rolę {roles} otrzymasz na serwerze w ciągu minuty.",
+            other: "Role {roles} otrzymasz na serwerze w ciągu minuty.",
+        },
+        rejectedTitle: "Twój wniosek nie został zaakceptowany",
+        rejectedHelp:
+            "Jeśli masz pytanie, otwórz zgłoszenie na serwerze {clan} w kanale {channel}.",
+        rejectedHelpNoTickets:
+            "Jeśli masz pytanie, napisz do administratorów na serwerze {clan}.",
+        pendingTitle: "Twój wniosek oczekuje na decyzję",
+        pendingBody:
+            "Rekruterzy odłożyli decyzję w sprawie Twojego zgłoszenia. Damy Ci znać, gdy ją podejmą.",
+        openThread: "Otwórz wątek",
+        confirmationTitle: "Zgłoszenie #{number} wysłane",
+        confirmationBody:
+            "Rekruterzy skontaktują się z Tobą w wątku zgłoszenia. Tutaj otrzymasz również wiadomość z decyzją.",
+    },
+    command: {
+        closedTitle: "Zgłoszenie #{number} zamknięte: {outcome}",
+        rejectedTitle: "Zgłoszenie #{number} odrzucone",
+        roles: {
+            one: "{name} otrzymuje rolę {roles} w ciągu minuty.",
+            other: "{name} otrzymuje role {roles} w ciągu minuty.",
+        },
+        delivered: "Decyzja jest w wątku i wnioskodawca otrzymał ją przez DM.",
+        notDelivered:
+            "Decyzja jest w wątku. Nie udało się dostarczyć wiadomości prywatnej — osoba zgłaszająca się znajdzie ją w wątku.",
+        dmOff: "Decyzja jest w wątku. Klan wyłączył prywatne powiadomienia o decyzjach w ustawieniach wiadomości.",
+        wrongPlace: {
+            title: "/close_application działa tylko w wątku zgłoszenia rekrutacyjnego",
+            body: "Otwórz wątek zgłoszenia i uruchom tam komendę.",
+        },
+        alreadyClosed: {
+            title: "Zgłoszenie #{number} jest już zamknięte",
+            body: "Decyzja: {outcome}. Członkostwo zmienisz na stronie w zakładce Członkowie.",
+            members: "Członkowie w Logi",
+        },
+        notAllowedTitle: "To zgłoszenie mogą rozpatrzyć rekruterzy",
+    },
+}
+
 const en: Copy = {
     listAnd: "and",
     defaultForm: {
@@ -1076,7 +1434,7 @@ const de: Copy = {
     },
 }
 
-const applicationMessages: Record<ClanLanguage, Copy> = { cs, en, de }
+const applicationMessages: Record<ClanLanguage, Copy> = { cs, en, de, pl }
 
 export const getApplicationMessages: (
     language?: string | null
@@ -1087,4 +1445,5 @@ export const applicationPanelDefaults: readonly PanelDefaultCopy[] = [
     cs.panel,
     en.panel,
     de.panel,
+    pl.panel,
 ]

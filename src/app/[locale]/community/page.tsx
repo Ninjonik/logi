@@ -328,7 +328,10 @@ export default async function CommunityPage({ params, searchParams }: Props) {
                                                                 : resolvedLocale ===
                                                                     "de"
                                                                   ? "de-DE"
-                                                                  : "en-GB",
+                                                                  : resolvedLocale ===
+                                                                      "pl"
+                                                                    ? "pl-PL"
+                                                                    : "en-GB",
                                                             {
                                                                 dateStyle:
                                                                     "medium",

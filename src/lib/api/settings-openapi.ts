@@ -43,7 +43,10 @@ export function clanSettingsOpenApiSchemas(
                     type: "string",
                     enum: [...SUPPORTED_SETTINGS_TIMEZONES],
                 },
-                defaultLanguage: { type: "string", enum: ["en", "cs", "de", "pl"] },
+                defaultLanguage: {
+                    type: "string",
+                    enum: ["en", "cs", "de", "pl"],
+                },
                 ...Object.fromEntries(
                     SETTINGS_DISCORD_FIELDS.map((field) => [field, discordId])
                 ),

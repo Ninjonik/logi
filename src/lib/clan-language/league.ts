@@ -2,6 +2,7 @@ import type {
     LeagueCopy,
     LeagueDay,
 } from "../../domain/wardogs-league/league-copy"
+import { polishNoun, polishPlayers } from "../../domain/localization/polish"
 
 import { clanCopy, type ClanLanguage } from "./core"
 
@@ -22,6 +23,90 @@ const placeList = (
 ) => points.map((value, index) => place(index + 1, value)).join(" · ")
 
 const leagueMessages: Record<ClanLanguage, LeagueMessages> = {
+    pl: {
+        standings: {
+            label: (season) => `Wardogs League · sezon ${season}`,
+            title: "WD League · tabela",
+            played: (matches) =>
+                matches === 1 ? "Po 1 meczu" : `Po ${matches} meczach`,
+            rule: (points) =>
+                `punktacja: ${placeList(points, (position, value) => `${position}. miejsce: ${value}`)}`,
+            mixedRule: "punktacja według zasad poszczególnych meczów",
+            columns: {
+                rank: "#",
+                team: "Drużyna",
+                points: "P",
+                played: "M",
+                first: "1.",
+                second: "2.",
+                third: "3.",
+                name: "Nazwa",
+            },
+            legend: "P punkty · M mecze · 1. 2. 3. liczba zajętych miejsc · › nasza drużyna",
+            waiting: "Tabela pojawi się po pierwszych wynikach",
+            moreTeams: (count) =>
+                `… i jeszcze ${count} ${polishNoun(count, "drużyna", "drużyny", "drużyn")}`,
+            open: "Otwórz ligę",
+            footer: "Logi zlicza punkty z wyników na wardogsleague.net",
+        },
+        fixtures: {
+            label: "Wardogs League · mecze całej ligi",
+            title: "WD League · następne mecze",
+            meta: (shown) =>
+                `${shown} ${polishNoun(shown, "najbliższy mecz", "najbliższe mecze", "najbliższych meczów")} · godziny w Twojej strefie czasowej`,
+            members: (count) =>
+                `${count} ${polishNoun(count, "członek", "członków", "członków")}`,
+            host: (team) => `Gospodarz: ${team}`,
+            hostLeague: "Organizowany przez ligę",
+            mapAfterVote: "Mapa po głosowaniu",
+            live: "Na żywo",
+            chips: {
+                rules: (picked, total) => `Zasady ${picked}/${total}`,
+                rulesUnknown: "Zasady",
+                voteRunning: "Głosowanie na mapę",
+                voteCloses: (time) => `koniec ${time}`,
+                voteFrom: (date) => `Głosowanie na mapę od ${date}`,
+                votePending: "Nie rozpoczęło się głosowanie na mapę",
+                voteDone: "Głosowanie na mapę zakończone",
+                moderatorDone: "Przypisano moderatora",
+                moderatorPending: "Nie ma jeszcze moderatora",
+                readyPending: "Nie rozpoczęto sprawdzania gotowości",
+                readyRunning: "Trwa sprawdzanie gotowości",
+                readyDone: "Sprawdzenie gotowości zakończone",
+                notStarted: "Przygotowanie jeszcze się nie rozpoczęło",
+            },
+            detail: "Szczegóły na wardogsleague.net",
+            more: (count) =>
+                `… i jeszcze ${count} ${polishNoun(count, "mecz", "mecze", "meczów")} na stronie ligi`,
+            empty: "W lidze nie ma obecnie żadnych nadchodzących meczów.",
+            all: "Wszystkie mecze na stronie ligi",
+            footer: "Dane z wardogsleague.net",
+            mapAlt: (map) => `Mapa ${map}`,
+            stale: "Strona ligi nie odpowiada",
+            lastData: (time) => `ostatnie dane ${time}`,
+        },
+        recent: {
+            label: (range) => `Wardogs League · ${range}`,
+            title: "WD League · ostatnie wyniki",
+            heading: "Najnowsze wyniki",
+            range: (from: LeagueDay, to: LeagueDay) =>
+                from.month === to.month
+                    ? `${from.day}–${to.day} ${to.monthShort}`
+                    : `${from.day} ${from.monthShort}–${to.day} ${to.monthShort}`,
+            empty: "Brak wyników ligowych w ciągu ostatnich 7 dni.",
+            waiting:
+                "Wyniki pojawią się po pierwszych rozegranych meczach ligi",
+            link: "Wyniki na stronie ligi",
+        },
+        pausedReason: "administrator wstrzymał aktualizacje",
+        reply: {
+            label: (fixture) => `Wardogs League · nowy mecz ${fixture}`,
+            body: (channel) =>
+                `Logi śledzi ten mecz. Kartę, która sama się aktualizuje, znajdziesz w ${channel}.`,
+            openPanel: "Otwórz kartę",
+            openLeague: "Otwórz na stronie ligi",
+        },
+    },
     en: {
         standings: {
             label: (season) => `Wardogs League · season ${season}`,

@@ -91,6 +91,7 @@ export async function synchronizeMatchResult(
         en: "Match statistics",
         cs: "Statistiky zápasu",
         de: "Spielstatistiken",
+        pl: "Statystyki meczu",
     }[payload.config.defaultLanguage]
     const view: MessageView = {
         accent: "clan",

@@ -1,3 +1,4 @@
+import { polishNoun, polishPlayers } from "../../domain/localization/polish"
 import type { SeedMessagesCopy } from "../../domain/discord-seed/seed-copy"
 
 import { clanCopy, type ClanLanguage } from "./core"
@@ -232,6 +233,173 @@ function enCooldown(minutes: number) {
         return `${hours} ${hours === 1 ? "hour" : "hours"}`
     }
     return `${minutes} minutes`
+}
+
+const PL_DAYS = [
+    "w niedziele",
+    "w poniedziałki",
+    "we wtorki",
+    "w środy",
+    "w czwartki",
+    "w piątki",
+    "w soboty",
+]
+const plPlayers = polishPlayers
+function plCooldown(minutes: number) {
+    if (minutes % 60 === 0) {
+        const hours = minutes / 60
+        return `${hours} ${polishNoun(hours, "godzinę", "godziny", "godzin")}`
+    }
+    return `${minutes} ${polishNoun(minutes, "minutę", "minuty", "minut")}`
+}
+const pl: SeedMessages = {
+    labels: { seed: "Seeding", control: "Zarządzanie serwerem" },
+    game: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+    weekdays: ["Niedz.", "Pon.", "Wt.", "Śr.", "Czw.", "Pt.", "Sob."],
+    units: { hours: "h", minutes: "min" },
+    chips: {
+        seeding: "Seeding",
+        live: "Na żywo",
+        ended: "Seeding zakończony",
+        empty: "Pusty",
+        filling: "Zapełnia się",
+        offline: "Niedostępne",
+        unknown: "Brak danych",
+    },
+    call: {
+        title: (server) => `Seeding ${server}`,
+        liveTitle: "Serwer rozkręcony",
+        endedTitle: (server) => `Seeding na ${server} zakończony`,
+        status: (players, capacity, liveFrom) =>
+            `${players}${capacity ? ` / ${capacity}` : ""} ${plPlayers(capacity ?? players)} · pełna rozgrywka od ${liveFrom}`,
+        liveStatus: (players, capacity, seeders) =>
+            `${players}${capacity ? ` / ${capacity}` : ""} ${plPlayers(capacity ?? players)}${seeders ? ` · dzięki pomocy ${seeders} ${polishNoun(seeders, "seedera", "seederów", "seederów")}` : ""}`,
+        startingText: (liveFrom) =>
+            `Wbijaj i pomóż rozkręcić serwer. Od ${liveFrom} graczy zaczynamy normalną rozgrywkę.`,
+        closeText: (missing) =>
+            `Brakuje już tylko ${missing} ${polishNoun(missing, "gracza", "graczy", "graczy")}. Wbijaj i pomóż dobić do celu!`,
+        missingLine: (missing) =>
+            `Do pełnej rozgrywki brakuje ${missing} ${polishNoun(missing, "gracza", "graczy", "graczy")}`,
+        startedBy: {
+            manual: (name) => `seeding rozpoczęty przez ${name}`,
+            schedule: (slot) =>
+                `seeding rozpoczęty zgodnie z harmonogramem ${slot}`,
+            auto: "seeding rozpoczęty automatycznie",
+        },
+        liveText: (time) =>
+            `Seeding zakończony o ${time}. Dzięki wszystkim za pomoc! Serwer już się rozkręcił.`,
+        endedText: {
+            admin: (name) =>
+                name
+                    ? `${name} zakończył(a) seeding. Nie będzie kolejnych pingów.`
+                    : "Administrator zakończył seeding. Nie będzie kolejnych pingów.",
+            timeout: (liveFrom, duration) =>
+                `W ciągu ${duration} na serwerze nie zebrało się ${liveFrom} graczy. Seeding zakończony — nie będzie kolejnych pingów.`,
+            failed: "Seeding zakończony, ponieważ serwer przestał odpowiadać.",
+        },
+        duration: (duration) => `Seeding trwał ${duration}`,
+        buttons: { join: "Dołącz", role: "Powiadamiaj mnie o seedingu" },
+    },
+    intro: {
+        title: (clan) => `Seeding serwera · ${clan}`,
+        body: "Gdy serwer jest pusty, administratorzy ogłaszają tutaj seeding. Włącz rolę Seeding, jeśli chcesz dostawać pingi. Tym samym przyciskiem możesz ją wyłączyć.",
+        usually: (servers, when) =>
+            `Zwykle rozkręcamy serwery: ${servers}${when ? ` · ${when}` : ""}`,
+        days: (days) =>
+            same(days, [0, 1, 2, 3, 4, 5, 6])
+                ? "codziennie"
+                : same(days, [1, 2, 3, 4, 5])
+                  ? "w dni robocze"
+                  : same(days, [0, 6])
+                    ? "w weekendy"
+                    : joinList(
+                          sorted(days).map((day) => PL_DAYS[day]!),
+                          "i"
+                      ),
+        partOfDay: (minutes) =>
+            minutes < 12 * 60
+                ? "rano"
+                : minutes < 18 * 60
+                  ? "po południu"
+                  : "wieczorem",
+        list: (items) => joinList(items, "i"),
+        button: "Powiadamiaj mnie o seedingu",
+    },
+    role: {
+        onTitle: "Rola Seeding jest włączona",
+        onBody: "Dostaniesz ping przy następnym seedingu. Tym samym przyciskiem możesz wyłączyć powiadomienia.",
+        offTitle: "Rola Seeding jest wyłączona",
+        offBody: (channel) =>
+            `Nie będziesz dostawać pingów o seedingu. Ogłoszenia nadal znajdziesz na ${channel}.`,
+        unavailableTitle: "Ten przycisk już nie działa",
+        unavailableBody:
+            "Administratorzy wyłączyli lub zmienili rolę Seeding. Użyj przycisku w najnowszym ogłoszeniu lub w wiadomości powitalnej kanału.",
+        failedTitle: "Nie można teraz zmienić roli Seeding",
+    },
+    control: {
+        status: (players, capacity, map) =>
+            [
+                `${players ?? "?"}${capacity ? ` / ${capacity}` : ""} ${plPlayers(capacity ?? players ?? "0")}`,
+                map,
+            ]
+                .filter(Boolean)
+                .join(" · "),
+        seedingStatus: (players, capacity, liveFrom) =>
+            `${players ?? "?"}${capacity ? ` / ${capacity}` : ""} ${plPlayers(capacity ?? players ?? "0")} · pełna rozgrywka od ${liveFrom}`,
+        footer: "Tylko administratorzy",
+        buttons: {
+            start: "Rozpocznij seeding",
+            stop: "Zakończ seeding",
+            refresh: "Odśwież panel",
+            pause: "Wstrzymaj panel",
+            resume: "Wznów",
+        },
+    },
+    replies: {
+        startedTitle: (server) => `Trwa seeding na ${server}`,
+        startedBody: (seedChannel, pinged, panelChannel) =>
+            `Ogłoszenie jest na ${seedChannel}${pinged ? ". Wysłano ping do roli Seeding." : ", tym razem bez pingu — rola Seeding dostała go niedawno."}${panelChannel ? ` Postęp widać w panelu na ${panelChannel}.` : ""}`,
+        openCall: "Otwórz ogłoszenie",
+        cooldownTitle: "Nie można teraz rozpocząć seedingu",
+        cooldownBody: (remaining, at, cooldownMinutes) =>
+            `Kolejny seeding można rozpocząć za ${remaining}, o ${at}. Minimalny odstęp to ${plCooldown(cooldownMinutes)}, żeby nie spamować pingami do roli Seeding.`,
+        schedule: "Harmonogram w Logi",
+        runningTitle: (server) => `Seeding na ${server} już trwa`,
+        runningBody:
+            "Ogłoszenie znajdziesz na kanale seedingu. Użyj przycisku Zakończ seeding, aby go zakończyć.",
+        alreadyLiveTitle: "Serwer jest już rozkręcony",
+        alreadyLiveBody: (liveFrom) =>
+            `Na serwerze jest już co najmniej ${liveFrom} graczy. Seeding nie jest teraz potrzebny.`,
+        offlineTitle: "Serwer nie odpowiada",
+        offlineBody:
+            "Możesz uruchomić seeding, gdy serwer ponownie będzie online.",
+        notConfiguredTitle: "Seeding nie jest skonfigurowany",
+        notConfiguredBody:
+            "W Logi otwórz Seeding serwera i wybierz kanał ogłoszeń.",
+        stoppedTitle: (server) => `Seeding na ${server} zakończony`,
+        stoppedBody:
+            "Ogłoszenie pokazuje teraz „Seeding zakończony”, a panel wrócił do zwykłego widoku.",
+        notRunningTitle: "Seeding nie trwa",
+        notRunningBody: "Na tym serwerze nie trwa obecnie seeding.",
+        forbiddenTitle: "Nie wolno Ci tego zrobić",
+        forbiddenBody:
+            "Tylko administratorzy Logi mogą używać przycisków Seeding, Odśwież i Wstrzymaj.",
+        panelPausedTitle: (server) => `Panel ${server} jest wstrzymany`,
+        panelPausedBody: (channel) =>
+            `Na ${channel} panel pokazuje status „Wstrzymano” i ostatnie dane. Przycisk zmienił się na Wznów.`,
+        panelResumedTitle: (server) => `Panel ${server} działa ponownie`,
+        panelResumedBody: (channel) =>
+            `Panel na ${channel} znów odświeża się co 60 sekund. Przycisk zmienił się na Wstrzymaj panel.`,
+        panelRefreshedTitle: (server) => `Panel ${server} zostanie odświeżony`,
+        panelRefreshedBody:
+            "Bot odświeży panel od razu, bez czekania 60 sekund.",
+        noPanelTitle: "Ten serwer nie ma panelu",
+        noPanelBody: "Dodaj panel tego serwera w Logi → Panele Discord.",
+        panelNotSentTitle: "Panelu nie ma jeszcze na Discordzie",
+        panelNotSentBody:
+            "Otwórz Panele Discord w Logi i użyj przycisku Wyślij na kanał.",
+        openInLogi: "Otwórz w Logi",
+    },
 }
 
 const en: SeedMessages = {
@@ -567,6 +735,6 @@ const de: SeedMessages = {
     },
 }
 
-const seedMessages: Record<ClanLanguage, SeedMessages> = { en, cs, de }
+const seedMessages: Record<ClanLanguage, SeedMessages> = { en, cs, de, pl }
 
 export const getSeedMessages = clanCopy(seedMessages)

@@ -202,5 +202,11 @@ export function fallbackGuildLanguage(
     preferredLocale: string | null | undefined
 ) {
     const value = (preferredLocale ?? "").toLowerCase()
-    return value.startsWith("cs") ? "cs" : value.startsWith("de") ? "de" : value.startsWith("pl") ? "pl" : "en"
+    return value.startsWith("cs")
+        ? "cs"
+        : value.startsWith("de")
+          ? "de"
+          : value.startsWith("pl")
+            ? "pl"
+            : "en"
 }

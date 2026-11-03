@@ -162,6 +162,258 @@ export type CommandMessages = {
 }
 
 const commandsMessages: Record<ClanLanguage, CommandMessages> = {
+    pl: {
+        commands: {
+            outcomeDenied: "Odmowa",
+            outcomePending: "Nadal oczekuje",
+            outcomeRecruit: "Rekrut",
+            outcomeMember: "Członek",
+            outcomeMercenary: "Najemnik",
+        },
+        registry: {
+            descriptions: {
+                help: "Dostępne komendy i link do poradnika",
+                stats: "Twoje statystyki Hell Let Loose lub Wardogs",
+                player: "Profil gracza klanowego: wyniki i ostatnie mecze",
+                link: "Połącz swoje konta gier: Steam, Epic, Xbox, PlayStation",
+                notice: "Poinformuj dowództwo, że spóźnisz się na wydarzenie",
+                "server-status":
+                    "Ostatnio zapisany stan serwerów gry Twojego klanu",
+                close_ticket:
+                    "Zamknij to zgłoszenie i wyślij autorowi podsumowanie",
+                close_application:
+                    "Rozpatrz zgłoszenie rekrutacyjne w tym wątku i zamknij je",
+            },
+            managerSuffix: "(zarządzający)",
+            options: {
+                statsGame: {
+                    name: "gra",
+                    description: "Hell Let Loose lub Wardogs",
+                },
+                statsMember: {
+                    name: "członek",
+                    description:
+                        "Członek serwera z połączonym kontem Steam (domyślnie: Ty)",
+                },
+                statsPlayer: {
+                    name: "gracz",
+                    description: "Wardogs: znajdź gracza po nicku lub Steam ID",
+                },
+                statsPeriod: {
+                    name: "okres",
+                    description:
+                        "7, 30 lub 90 dni lub cała historia (domyślnie 30 dni)",
+                },
+                statsServer: {
+                    name: "serwer",
+                    description: "Tylko Wardogs: jeden z serwerów klanu",
+                },
+                statsChannel: {
+                    name: "kanał",
+                    description:
+                        "Kanał, na który przycisk Udostępnij wyśle kartę",
+                },
+                playerPlayer: {
+                    name: "gracz",
+                    description: "Gracz klanu, wybierz z listy",
+                },
+                noticeEvent: {
+                    name: "wydarzenie",
+                    description:
+                        "Wydarzenie, na które masz zapis i które jeszcze się nie rozpoczęło",
+                },
+                closeTicketReason: {
+                    name: "powód",
+                    description: "Autor widzi to w wątku i na DM",
+                },
+                closeApplicationOutcome: {
+                    name: "decyzja",
+                    description:
+                        "Status, który otrzyma osoba zgłaszająca się do klanu",
+                },
+                closeApplicationReason: {
+                    name: "powód",
+                    description: "Zgłaszający widzi to w wątku i na DM",
+                },
+                serverStatusGame: {
+                    name: "gra",
+                    description: "Gra, której serwery mają zostać pokazane",
+                },
+            },
+            periods: {
+                "7d": "7 dni",
+                "30d": "30 dni",
+                "90d": "90 dni",
+                all: "Cała historia",
+            },
+        },
+        access: {
+            disabledTitle: "{command} jest tutaj wyłączone",
+            disabledBody:
+                "Menedżer może to włączyć w Logi → Ustawienia → Polecenia.",
+            notAllowedTitle: {
+                clanMembers: "Tylko członkowie klanu mogą używać {command}",
+                logiAdmins: "Tylko menedżerowie Logi mogą używać {command}",
+            },
+            notAllowedBody: {
+                clanMembers:
+                    "Członkowie klanu mają rolę klanową ustawioną w Logi. Jeśli jej brakuje, skontaktuj się z zarządzającymi.",
+                logiAdmins:
+                    "Zarządzający mają uprawnienia administratora Discord lub rolę zarządzających Logi.",
+            },
+            extraRoles: "Dostęp mają również osoby z rolami: {roles}.",
+            wrongChannelTitle: "{command} tutaj nie działa",
+            wrongChannelBody: "Użyj go w {channels}.",
+            verifyFailedTitle: "Nie można teraz sprawdzić Twoich ról",
+            verifyFailedBody:
+                "Discord nie odpowiedział. Spróbuj ponownie za chwilę.",
+            notConnectedTitle: "Logi nie jest jeszcze tutaj skonfigurowane",
+            notConnectedBody:
+                "Administrator serwera musi połączyć Discord z Logi na stronie. Wtedy pojawią się tutaj komendy Twojego klanu.",
+            aboutLogi: "Co to jest Logi",
+            and: " i ",
+            or: "lub",
+        },
+        help: {
+            label: "Logi · Klan {clan}",
+            title: "Czego możesz tutaj użyć",
+            lines: {
+                stats: "Twoje statystyki Hell Let Loose lub Wardogs. Tylko Ty je widzisz, dopóki ich nie udostępnisz.",
+                player: "Profil gracza klanowego: wyniki i ostatnie mecze.",
+                link: "Połącz swoje konta gier, aby Logi rozpoznał Cię w grze.",
+                notice: "Poinformuj dowództwo, że spóźnisz się na wydarzenie.",
+                "server-status": "Zapisany status serwerów gier klanu.",
+                close_ticket:
+                    "W wątku dotyczącym zgłoszeń zamyka go i wysyła autorowi podsumowanie.",
+                close_application:
+                    "W wątku zgłoszenia decyduje o wnioskodawcy i dodaje role.",
+            },
+            channelsAll:
+                "Zgłoszenia do klanu, pomoc i zapisy na mecze znajdziesz pod przyciskami na {recruitment}, {tickets} i {announcements}.",
+            recruitmentLine: "Zgłoś się do klanu przyciskiem na {channel}.",
+            ticketsLine: "Utwórz zgłoszenie pomocy przyciskiem na {channel}.",
+            signupLine: "Zapisz się na mecz przyciskami na {channel}.",
+            staffTitle: "Dla zarządzających",
+            staffReason: {
+                administrator:
+                    "Widzisz je, ponieważ masz uprawnienia administratora Discord.",
+                adminRole: "Widzisz je, ponieważ pełnisz rolę menedżerów Logi.",
+                support:
+                    "Widzisz je, ponieważ obsługujesz kategorię rekrutacji lub zgłoszeń pomocy.",
+                role: "Widzisz je, ponieważ menedżerowie zezwolili na Twoją rolę.",
+            },
+            guide: "Poradnik na stronie",
+            nothing: "W tej chwili nie ma tu żadnych poleceń.",
+        },
+        player: {
+            label: "{game} · Profil gracza",
+            statuses: {
+                member: "Członek",
+                reserve_member: "Rezerwa",
+                mercenary: "Najemnik",
+                recruit: "Rekrut",
+                pending: "Wnioskodawca",
+                active: "aktywne",
+                paused: "wstrzymane",
+            },
+            score: "Wynik klanu",
+            matches: "Mecze",
+            kd: "K/D",
+            averages:
+                "Średnio na mecz: zabójstwa {kills} · zgony {deaths} · atak {offense} · obrona {defense} · wsparcie {support}",
+            recentTitle: "Ostatnie mecze",
+            recentRow:
+                "{day} · {map} · zabójstwa: {kills}, zgony: {deaths} · K/D {kd}",
+            share: "Udostępnij",
+            source: "Źródło: mecze zaimportowane przez klan",
+            sourceSince: "{count} od {date}",
+            matchCount: {
+                one: "{count} mecz",
+                few: "{count} mecze",
+                many: "{count} meczów",
+                other: "{count} meczów",
+            },
+            sharedBy: "Udostępnione przez {user} · od {time}",
+            sharedSource: "Zaimportowane mecze klanu",
+            noMatches:
+                "Nie zaimportowano jeszcze żadnych meczów, więc nie ma nic do pokazania ani udostępnienia.",
+            notFoundTitle: "Nie mogę znaleźć tego gracza w klanie",
+            notFoundBody:
+                "Wybierz gracza z listy podpowiedzi wyświetlanej podczas wpisywania nicku.",
+            loadFailedTitle: "Nie można teraz załadować profilu",
+            loadFailedBody: "Spróbuj ponownie za chwilę.",
+            sharedTitle: "Udostępniono na {channel}",
+            viewMessage: "Wyświetl wiadomość",
+            shareDeniedTitle: "Nie możesz teraz udostępnić karty na {channel}",
+            shareDeniedBody:
+                "Ty i bot potrzebujecie uprawnień do wysyłania wiadomości i osadzania łączy w tym kanale.",
+            shareFailedTitle: "Nie można potwierdzić udostępniania",
+            shareFailedBody:
+                "Sprawdź kanał przed ponownym udostępnieniem, profil może już tam być.",
+            avatar: "Awatar {name}",
+        },
+        notice: {
+            modalTitle: "Spóźnienie · {event}",
+            modalNote: "Widzą to tylko prowadzący mecz.",
+            reasonLabel: "Kiedy dołączysz i dlaczego się spóźnisz?",
+            reasonPlaceholder: "Np. około 20:30, późno kończę pracę.",
+            savedTitle: "Dowództwo wie już, że się spóźnisz",
+            savedNote:
+                "Nie dostaniesz kolejnych przypomnień o obecności na tym meczu. Aby zmienić informację, użyj ponownie /notice.",
+            notSignedUpTitle:
+                "Nie zapisałeś się na żadne nadchodzące wydarzenie",
+            notSignedUpBody:
+                "Powiadomienie możesz wysłać tylko w przypadku wydarzenia, na które się zapisałeś, a które się jeszcze nie rozpoczęło.",
+            signupWhere: "Zapisy znajdziesz na {channel}.",
+            startedTitle: "{event} już się rozpoczęło",
+            startedBody: "Napisz bezpośrednio do dowództwa na kanale meczu.",
+            multipleTitle: "Pasuje kilka wydarzeń",
+            multipleBody:
+                "Wybierz wydarzenie z listy. Przy każdym widać dzień i godzinę.",
+            eventFallback: "wydarzenie",
+        },
+        serverStatus: {
+            label: "Stan serwera gier · {game}",
+            title: {
+                one: "{count} serwer klanu",
+                few: "{count} serwery klanu",
+                many: "{count} serwerów klanu",
+                other: "{count} serwerów klanu",
+            },
+            intro: "Ostatnio zapisany stan ze zbierania danych — bez odpytywania serwera na żywo.",
+            online: "Online",
+            offline: "Offline",
+            stale: "nieaktualne",
+            staleOnly: "Nieaktualne",
+            noData: "Brak danych",
+            disabled: "Zbieranie danych wyłączone",
+            disabledHint: "Włącz zbieranie danych w ustawieniach serwerów gry",
+            players: "Gracze: {players} / {capacity}",
+            link: "Serwery gier w Logi",
+            shown: {
+                one: "Wyświetlanie {shown} z {total} {servers}. Maksymalnie 5, pełna lista znajduje się w Logi.",
+                other: "Wyświetlanie {shown} z {total} {servers}. Maksymalnie 5, pełna lista znajduje się w Logi.",
+            },
+            serversOf: { one: "serwera", other: "serwerów" },
+            notAllowedTitle:
+                "Stan serwerów jest dostępny tylko dla zarządzających Logi",
+            notAllowedBody:
+                "Menedżerowie mają uprawnienia administratora Discord lub rolę menedżerów.",
+            liveScoreWhere: "Wyniki na żywo znajdziesz w {channel}.",
+            noConnectionsTitle: "Klan nie ma podłączonego serwera {game}",
+            noConnectionsBody: "Podłącz jeden w Logi → Serwery gier.",
+            unavailableTitle: "Nie można teraz załadować statusu serwera",
+            unavailableBody:
+                "Spróbuj ponownie za minutę. Nie ma to wpływu na serwery gry.",
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_rcon: "RCON",
+                wardogs_warcon: "Warcon",
+                wardogs_public_directory: "Serwery Wardogs",
+            },
+            unnamed: "Serwer gier",
+        },
+    },
     en: {
         commands: {
             outcomeDenied: "Denied",

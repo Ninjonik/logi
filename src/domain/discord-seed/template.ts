@@ -22,6 +22,12 @@ export const SEED_TEMPLATE_TOKENS: Record<
         missing: "{missing}",
         threshold: "{threshold}",
     },
+    pl: {
+        server: "{serwer}",
+        players: "{gracze}",
+        missing: "{brakuje}",
+        threshold: "{próg}",
+    },
     de: {
         server: "{server}",
         players: "{spieler}",
@@ -42,6 +48,7 @@ const ALIASES: ReadonlyMap<string, SeedTemplateKey> = new Map(
 const ASCII: ReadonlyArray<readonly [string, SeedTemplateKey]> = [
     ["hraci", "players"],
     ["chybi", "missing"],
+    ["prog", "threshold"],
 ]
 
 const TOKEN = /\{([^{}\s]{1,24})\}/gu

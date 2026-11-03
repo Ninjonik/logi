@@ -1,4 +1,38 @@
 import type { Locale } from "../config"
+const pl: Copy = {
+    playersNav:
+        "Kliknij Gracze na pasku bocznym, aby otworzyć listę graczy klanu.",
+    playerOpen: "Otwórz Atlas, aby zobaczyć zapisy wydajności gracza.",
+    playerTrends:
+        "Są to te same wskaźniki trendów i wykresy wydajności, które są używane w profilach graczy. Najedź kursorem na dane, aby zobaczyć, co mierzy.",
+    newMatch: "Kliknij Nowe dopasowanie, aby otworzyć formularz tworzenia.",
+    matchWatch:
+        "Obejrzyj, jak w formularzu wypełnia się drużyny, mapę i nazwę meczu. Zmiany te mają charakter lokalny w stosunku do wycieczki.",
+    matchContinue:
+        "Kliknij przycisk Kontynuuj w formularzu, aby przejść do następnego kroku.",
+    matchTime:
+        "Ustaw tutaj godzinę rozpoczęcia gry, godzinę spotkania i ostateczny termin rejestracji. Podgląd wykorzystuje ten sam harmonogram.",
+    matchSignups:
+        "Wybierz, kto może się zarejestrować, oferowane grupy i ich limity pojemności.",
+    matchDiscord:
+        "Wybierz kanały Discord, opcje forum i kanału głosowego. Podgląd ogłoszenia jest aktualizowany wraz z formularzem.",
+    matchReview:
+        "Przed publikacją przejrzyj harmonogram, rejestracje i ustawienia Discord.",
+    matchPublish:
+        "Kliknij opcję Publikuj, aby zasymulować tworzenie tego dopasowania. Trasa nie zapisze dopasowania ani nie wyśle ​​wiadomości Discord.",
+    loading: "Otwieranie następnej strony…",
+    exit: "Zakończ samouczek",
+    leave: "Zakończ wycieczkę, aby korzystać z rzeczywistych danych na tej stronie.",
+    example: "Samouczek · Przykładowe dane",
+    missing:
+        "Ta część strony jest niedostępna. Możesz przejść do następnego kroku.",
+    nextPage: "Dalej",
+    pause: "Pauza",
+    play: "Odtwórz",
+    replay: "Powtórka",
+    resume: "Wznów samouczek",
+}
+
 const en = {
     playersNav: "Click Players in the sidebar to open the clan's player list.",
     playerOpen: "Open Atlas to see the player's performance records.",
@@ -95,5 +129,11 @@ const de: Copy = {
     resume: "Tour fortsetzen",
 }
 export function getWalkthroughCopy(locale: Locale): Copy {
-    return locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
+    return locale === "cs"
+        ? cs
+        : locale === "de"
+          ? de
+          : locale === "pl"
+            ? pl
+            : en
 }
