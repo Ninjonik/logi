@@ -80,6 +80,7 @@ export type MatchAnnouncementCopy = {
         registrationEnd: string
         signupsRestrictedTo: string
         attendeeRole: string
+        nonMembers: string
         anyone: string
         attendeeRolePending: string
     }

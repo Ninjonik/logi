@@ -116,10 +116,16 @@ test("the open card reads like the board (L1-11..24)", () => {
     }
     const body = text(view)
     assert.match(body, /`VLK` Spojenci ★ {2}vs {2}`ROG` Osa ✚/)
-    assert.match(body, /\*\*Čas\*\*\n<t:1791739800:f> - <t:1791748800:t>/)
+    assert.match(
+        body,
+        /\*\*Čas\*\*\nSraz <t:1791739800:f>, start <t:1791741600:f>\./
+    )
     assert.match(body, /\*\*Konec přihlášek\*\*\n<t:1791653400:f>/)
     assert.match(body, /\*\*Mapa\*\*\nFoy · den/)
-    assert.match(body, /\*\*Přihlásit se mohou\*\*\nKdokoli/)
+    assert.match(
+        body,
+        /\*\*Přihlásit se mohou\*\*\nrekruti, členové, záložníci, žoldáci/
+    )
     assert.match(body, /\*\*Role účastníků\*\*/)
     assert.match(body, /Tanky drží střed, F2 brání\. Mikrofon povinný\./)
     assert.match(
@@ -503,4 +509,30 @@ test("English and German clans read their own words", () => {
         const body = text(view)
         assert.doesNotMatch(body, /Přihlášky|Přihlásit|sraz|Fórum zápasu/)
     }
+})
+
+test("eligibility combines configured membership, non-members and additional event roles", () => {
+    const body = text(
+        buildAnnouncementView({
+            ...base,
+            event: {
+                ...event,
+                allowedSignupStatuses: ["reserve_member"],
+                allowNonMembersSignup: true,
+                signupRestriction: "<@&123>",
+            },
+        })
+    )
+    assert.match(body, /záložníci, hráči bez členství · <@&123>/)
+    assert.doesNotMatch(body, /Kdokoli/)
+})
+
+test("training without event roles remains open to anyone", () => {
+    const body = text(
+        buildAnnouncementView({
+            ...base,
+            event: { ...event, kind: "training" },
+        })
+    )
+    assert.match(body, /\*\*Přihlásit se mohou\*\*\nKdokoli/)
 })

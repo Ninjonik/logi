@@ -4191,7 +4191,8 @@ export const csMessages = {
                     description:
                         "Podle rolí na Discordu Logi pozná členy klanu a správce.",
                     clanRole: "Klanová role",
-                    clanRoleHelp: "Kdo má tuto roli, je člen klanu.",
+                    clanRoleHelp:
+                        "Kdo má tuto roli, je člen klanu. Vytvořte roli v nastavení Discord serveru → Role a znovu načtěte Logi.",
                     adminRole: "Role správců Logi",
                     adminRoleHelp:
                         "Lidé s touto rolí uvidí Nastavení a mohou ho měnit.",
@@ -4208,9 +4209,9 @@ export const csMessages = {
                 },
             },
             finished: {
-                title: "Hotovo. Logi je připravené.",
+                title: "Průvodce nastavením dokončen.",
                 description:
-                    "V Nastavení upravíte panely, příkazy a propojení s webem.",
+                    "Zkontrolujte seznam v Nastavení. Nedokončené povinné kroky jsou uvedené níže.",
                 openSettings: "Otevřít Nastavení",
                 again: "Projít znovu",
             },
@@ -4748,8 +4749,10 @@ export const csMessages = {
         saveDraft: "Uložit jako koncept",
         publish: "Zveřejnit",
         draftSaved: "Koncept uložen.",
-        published: "Zápas zveřejněn.",
-        publishedTraining: "Trénink zveřejněn.",
+        published:
+            "Zápas uložen. Doručení na Discord čeká; zkontrolujte bota a kanál oznámení v Nastavení.",
+        publishedTraining:
+            "Trénink uložen. Doručení na Discord čeká; zkontrolujte bota a kanál oznámení v Nastavení.",
         errors: {
             invalid_event: "Zkontrolujte údaje v krocích: {fields}.",
             not_found: "Koncept už neexistuje. Možná ho někdo smazal.",

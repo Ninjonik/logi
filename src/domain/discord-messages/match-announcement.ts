@@ -13,8 +13,10 @@ import {
     type AnnouncementState,
 } from "@/domain/events/announcement-state"
 import type { PanelFactionEmoji } from "@/domain/discord-publications/panel-presentation"
+import { DEFAULT_ALLOWED_SIGNUP_STATUSES } from "@/domain/events/signup-policy"
 import { SIGNUP_NOT_ATTENDING, TRAINING_ATTEND } from "@/domain/events/types"
 import { resolveClanOutcome, type ClanOutcome } from "./match-result"
+import type { SignupMembershipStatus } from "@/domain/events/types"
 
 import {
     escapeMarkdownText,
@@ -58,6 +60,8 @@ export type MatchCardEvent = {
     /** The clan language's Intl locale (`cs-CZ`). */
     locale: string
     factionEmoji?: PanelFactionEmoji
+    allowedSignupStatuses?: SignupMembershipStatus[]
+    allowNonMembersSignup?: boolean
     signupRestriction?: string | null
     attendeeRole?: string | null
 }
@@ -515,6 +519,7 @@ export function buildAnnouncementView(
     }
 
     const meeting = discordTimestamp(event.meetingStart, "f")
+    const start = discordTimestamp(event.gameStart, "f")
     const end = discordTimestamp(event.gameEnd, "t")
     const registrationEnd = discordTimestamp(event.registrationEnd, "f")
     const fields = [
@@ -522,7 +527,16 @@ export function buildAnnouncementView(
             ? {
                   title: copy.card.time,
                   text: [
-                      end ? `${meeting} - ${end}` : meeting,
+                      event.kind === "match" && start
+                          ? copy.calendar.times
+                                .replace("{meeting}", meeting)
+                                .replace("{start}", start)
+                          : end
+                            ? `${meeting} - ${end}`
+                            : meeting,
+                      ...(event.kind === "match" && end
+                          ? [copy.card.until.replace("{time}", end)]
+                          : []),
                       ...(state === "open" && registrationEnd
                           ? [
                                 `**${copy.card.registrationEnd}**`,
@@ -541,7 +555,26 @@ export function buildAnnouncementView(
         state === "open"
             ? {
                   title: copy.card.signupsRestrictedTo,
-                  text: event.signupRestriction?.trim() || copy.card.anyone,
+                  text:
+                      [
+                          event.kind === "match"
+                              ? [
+                                    ...(event.allowedSignupStatuses?.length
+                                        ? event.allowedSignupStatuses
+                                        : DEFAULT_ALLOWED_SIGNUP_STATUSES
+                                    ).map(
+                                        (status) =>
+                                            copy.replies.statusNames[status]
+                                    ),
+                                    ...(event.allowNonMembersSignup
+                                        ? [copy.card.nonMembers]
+                                        : []),
+                                ].join(", ")
+                              : null,
+                          event.signupRestriction?.trim(),
+                      ]
+                          .filter(Boolean)
+                          .join(" · ") || copy.card.anyone,
               }
             : null,
         {

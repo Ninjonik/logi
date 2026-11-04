@@ -400,6 +400,8 @@ export function flowPreviewModel(
         gameStart: schedule?.gameStart ?? null,
         gameEnd: schedule?.gameEnd ?? null,
         registrationEnd: schedule?.registrationEnd ?? null,
+        allowedSignupStatuses: values.allowedSignupStatuses,
+        allowNonMembersSignup: values.allowNonMembersSignup,
         signupRestriction: values.requiredRoleIds.length
             ? values.requiredRoleIds
                   .map((id) => `@${context.roleName(id) ?? id}`)

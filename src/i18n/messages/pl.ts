@@ -4281,7 +4281,7 @@ export const plMessages = {
                         "Logi rozpoznaje członków klanu i administratorów na podstawie ich ról Discord.",
                     clanRole: "Rola w klanie",
                     clanRoleHelp:
-                        "Ktokolwiek pełni tę rolę, jest członkiem klanu.",
+                        "Posiadacz tej roli jest członkiem klanu. Utwórz rolę w ustawieniach serwera Discord → Role i odśwież Logi.",
                     adminRole: "Rola administratorów Logi",
                     adminRoleHelp:
                         "Osoby z tą rolą widzą Ustawienia i mogą je zmieniać.",
@@ -4298,9 +4298,9 @@ export const plMessages = {
                 },
             },
             finished: {
-                title: "Gotowe. Logi jest gotowy.",
+                title: "Przewodnik konfiguracji zakończony.",
                 description:
-                    "Otwórz ustawienia, aby skonfigurować panele, polecenia i integrację ze stroną internetową.",
+                    "Sprawdź listę w ustawieniach. Niedokończone wymagane kroki są wymienione poniżej.",
                 openSettings: "Otwórz ustawienia",
                 again: "Przejdź ponownie",
             },
@@ -4845,8 +4845,10 @@ export const plMessages = {
         saveDraft: "Zapisz jako wersję roboczą",
         publish: "Opublikuj",
         draftSaved: "Wersja robocza została zapisana.",
-        published: "Mecz opublikowany.",
-        publishedTraining: "Trening opublikowany.",
+        published:
+            "Mecz zapisany. Dostarczenie na Discord oczekuje; sprawdź bota i kanał ogłoszeń w ustawieniach.",
+        publishedTraining:
+            "Trening zapisany. Dostarczenie na Discord oczekuje; sprawdź bota i kanał ogłoszeń w ustawieniach.",
         errors: {
             invalid_event:
                 "Sprawdź szczegóły w następujących krokach: {fields}.",

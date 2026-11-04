@@ -67,6 +67,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             signupsRestrictedTo: "Přihlásit se mohou",
             attendeeRole: "Role účastníků",
             anyone: "Kdokoli",
+            nonMembers: "hráči bez členství",
             attendeeRolePending: "Vytvoří Logi pro účastníky",
         },
         states: {
@@ -311,6 +312,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             signupsRestrictedTo: "Zapisy ograniczone do",
             attendeeRole: "Rola uczestnika",
             anyone: "Każdy",
+            nonMembers: "gracze bez członkostwa",
             attendeeRolePending: "Stworzony przez Logi dla uczestników",
         },
         states: {
@@ -545,6 +547,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             signupsRestrictedTo: "Signups restricted to",
             attendeeRole: "Attendee role",
             anyone: "Anyone",
+            nonMembers: "players without membership",
             attendeeRolePending: "Created by Logi for attendees",
         },
         states: {
@@ -778,6 +781,7 @@ const announcementMessages: Record<ClanLanguage, AnnouncementMessages> = {
             signupsRestrictedTo: "Anmeldung möglich für",
             attendeeRole: "Teilnehmerrolle",
             anyone: "Alle",
+            nonMembers: "Spieler ohne Mitgliedschaft",
             attendeeRolePending: "Wird von Logi für Teilnehmende erstellt",
         },
         states: {

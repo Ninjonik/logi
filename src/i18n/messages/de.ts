@@ -4330,7 +4330,8 @@ export const deMessages = {
                     description:
                         "An den Discord-Rollen erkennt Logi Clan-Mitglieder und Admins.",
                     clanRole: "Clan-Rolle",
-                    clanRoleHelp: "Wer diese Rolle hat, ist Clan-Mitglied.",
+                    clanRoleHelp:
+                        "Wer diese Rolle hat, ist Clan-Mitglied. Erstelle die Rolle in den Discord-Servereinstellungen → Rollen und lade Logi neu.",
                     adminRole: "Rolle der Logi-Admins",
                     adminRoleHelp:
                         "Personen mit dieser Rolle sehen die Einstellungen und können sie ändern.",
@@ -4347,9 +4348,9 @@ export const deMessages = {
                 },
             },
             finished: {
-                title: "Fertig. Logi ist bereit.",
+                title: "Einrichtungsassistent beendet.",
                 description:
-                    "Konfiguriere Panels, Befehle und Website-Integrationen unter Einstellungen.",
+                    "Prüfe die Checkliste unter Einstellungen. Offene Pflichtschritte stehen unten.",
                 openSettings: "Einstellungen öffnen",
                 again: "Noch einmal durchgehen",
             },
@@ -4899,8 +4900,10 @@ export const deMessages = {
         saveDraft: "Als Entwurf speichern",
         publish: "Veröffentlichen",
         draftSaved: "Entwurf gespeichert.",
-        published: "Match veröffentlicht.",
-        publishedTraining: "Training veröffentlicht.",
+        published:
+            "Match gespeichert. Discord-Zustellung steht aus; prüfe Bot und Ankündigungskanal in den Einstellungen.",
+        publishedTraining:
+            "Training gespeichert. Discord-Zustellung steht aus; prüfe Bot und Ankündigungskanal in den Einstellungen.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
             not_found:

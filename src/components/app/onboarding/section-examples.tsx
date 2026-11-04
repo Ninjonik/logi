@@ -819,7 +819,16 @@ export function SectionExamples({
     }
     return (
         <DiscordMetadataPreviewContext.Provider value={sampleMetadata}>
-            <div data-tour-sample-page="" className="space-y-5">
+            <div
+                data-tour-sample-page=""
+                data-tour-section={
+                    !limited &&
+                    (chapter === "welcome" || chapter === "workspace")
+                        ? chapter
+                        : undefined
+                }
+                className="space-y-5"
+            >
                 {content}
             </div>
         </DiscordMetadataPreviewContext.Provider>

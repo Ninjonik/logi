@@ -4208,7 +4208,8 @@ export const enMessages = {
                     description:
                         "Logi recognises clan members and admins by their Discord roles.",
                     clanRole: "Clan role",
-                    clanRoleHelp: "Whoever has this role is a clan member.",
+                    clanRoleHelp:
+                        "Whoever has this role is a clan member. Create the role in Discord Server Settings → Roles, then reload Logi to select it.",
                     adminRole: "Logi admin role",
                     adminRoleHelp:
                         "People with this role see Settings and can change them.",
@@ -4225,9 +4226,9 @@ export const enMessages = {
                 },
             },
             finished: {
-                title: "Done. Logi is ready.",
+                title: "Setup guide finished.",
                 description:
-                    "Open Settings to configure panels, commands and website integrations.",
+                    "Check the setup checklist in Settings. Any unfinished required steps are listed below.",
                 openSettings: "Open Settings",
                 again: "Go through again",
             },
@@ -4769,8 +4770,10 @@ export const enMessages = {
         saveDraft: "Save as draft",
         publish: "Publish",
         draftSaved: "Draft saved.",
-        published: "Match published.",
-        publishedTraining: "Training published.",
+        published:
+            "Match saved. Discord delivery is pending; check the bot and announcement channel in Settings.",
+        publishedTraining:
+            "Training saved. Discord delivery is pending; check the bot and announcement channel in Settings.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
             not_found:
