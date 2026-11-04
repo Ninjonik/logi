@@ -2930,6 +2930,14 @@ export const csMessages = {
         saveError: "Nastavení členství se nepodařilo uložit.",
     },
     userManagement: {
+        canAddMemberOrMercenary:
+            "Lze přidat jako člena, člena v záloze nebo žoldáka.",
+        mercenaryOnly:
+            "Už patří do jiného klanu; lze přidat pouze jako žoldáka.",
+        missingPlayerLink:
+            "Chybí hráč? Požádejte ho, aby na Discordu použil /link a zaregistroval se v Logi. Již přiřazení hráči se nezobrazují.",
+        missingPlayerApplication: "Může také podat přihlášku do klanu.",
+
         grantAdminAccess: "Nastavit jako admina",
         removeAdminAccess: "Odebrat přístup admina",
         adminAccessGranted: "Hráč je nyní admin.",
@@ -3795,6 +3803,10 @@ export const csMessages = {
                     detail: "Nový zápas nebo trénink · přihlášky a ping role podle šablony",
                 },
                 roster: {
+                    noPresets:
+                        "Nejprve vytvořte předvolbu družstev pro tuto soupisku.",
+                    createPreset: "Vytvořit předvolbu družstev",
+
                     title: "Soupiska",
                     detail: "Fotka soupisky pod hlavičkou s tlačítky Zobrazit zařazení a Otevřít soupisku · zařazení a heslo vidí jen hráč",
                     variantLabel: "Výchozí podoba",
@@ -4719,6 +4731,16 @@ export const csMessages = {
         },
     },
     newMatch: {
+        delivery: {
+            pending: "Uloženo; čeká na doručení na Discord.",
+            delivered: "Doručeno na Discord.",
+            unavailable: "Doručení na Discord není dostupné: nastavte oznamovací kanál v nastavení.",
+            open: "Otevřít zprávu",
+            refresh: "Obnovit stav",
+        },
+        descriptionTraining:
+            "Použijte šablonu tréninku nebo zadejte podrobnosti tréninku.",
+
         title: "Nový zápas",
         titleTraining: "Nový trénink",
         description: "Použijte šablonu nebo zadejte údaje o zápase.",
@@ -4749,10 +4771,8 @@ export const csMessages = {
         saveDraft: "Uložit jako koncept",
         publish: "Zveřejnit",
         draftSaved: "Koncept uložen.",
-        published:
-            "Zápas uložen. Doručení na Discord čeká; zkontrolujte bota a kanál oznámení v Nastavení.",
-        publishedTraining:
-            "Trénink uložen. Doručení na Discord čeká; zkontrolujte bota a kanál oznámení v Nastavení.",
+        published: "Zápas uložen; čeká na doručení na Discord.",
+        publishedTraining: "Trénink uložen; čeká na doručení na Discord.",
         errors: {
             invalid_event: "Zkontrolujte údaje v krocích: {fields}.",
             not_found: "Koncept už neexistuje. Možná ho někdo smazal.",
@@ -4883,8 +4903,7 @@ export const csMessages = {
                 memberRecruit: "členům a rekrutům",
                 all: "členům, rekrutům a záložníkům",
             },
-            trainingNote:
-                "Na trénink se přihlásí každý člen klanu jedním tlačítkem.",
+            trainingNote: "Oprávnění hráči se přihlásí na trénink jedním tlačítkem. Výše vyberte stavy členství; hráči bez členství mají samostatnou volbu.",
             groupOffered: "Nabídnout skupinu {name}",
             capLabel: "Limit skupiny {name}",
             capPlaceholder: "bez limitu",
@@ -6218,6 +6237,9 @@ export const csMessages = {
         rosterPageDescription: "Vyberte akci a předlohu čet pro tuto sestavu.",
     },
     rosterPublish: {
+        publishedWithoutDiscord:
+            "Uloženo v Logi. Doručení na Discord není dostupné: není nastaven kanál soupisky. Nastavte jej v nastavení kanálů.",
+
         publishTitle: "Publikovat soupisku",
         republishTitle: "Publikovat znovu",
         publishedAt: "zveřejněno {time}",

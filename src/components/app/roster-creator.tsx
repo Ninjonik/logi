@@ -14,6 +14,7 @@ import type {
     Roster,
     SquadPreset,
 } from "@/types/domain"
+import type { RosterPublishContext } from "@/components/app/roster-publish-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import { RosterBoard } from "@/components/app/roster-board"
@@ -22,6 +23,7 @@ import type { Dictionary } from "@/i18n/dictionaries"
 import { Label } from "@/components/ui/label"
 import { formatDateTime } from "@/lib/format"
 import { useState, useMemo } from "react"
+import Link from "next/link"
 
 const SIGNUP_NOT_ATTENDING = "NOT_ATTENDING"
 
@@ -76,6 +78,8 @@ export function RosterCreator({
     serverId,
     locale,
     timezone,
+    initialEventId,
+    publishContexts,
 }: {
     events: EventRecord[]
     rosters: Roster[]
@@ -88,9 +92,23 @@ export function RosterCreator({
     serverId: string
     locale: string
     timezone?: string
+    initialEventId?: string
+    publishContexts?: Record<string, RosterPublishContext>
 }) {
-    const [selectedEventId, setSelectedEventId] = useState<string>("")
-    const [selectedPresetId, setSelectedPresetId] = useState<string>("")
+    const initialEvent = events.find(
+        (event) =>
+            event.id === initialEventId &&
+            event.kind === "match" &&
+            !event.isDraft &&
+            !rosters.some((roster) => roster.eventId === event.id)
+    )
+    const [selectedEventId, setSelectedEventId] = useState(
+        initialEvent?.id ?? ""
+    )
+    const [selectedPresetId, setSelectedPresetId] = useState(
+        squadPresets.find((preset) => preset.id === initialEvent?.squadPresetId)
+            ?.id ?? ""
+    )
 
     const availableEvents = useMemo(() => {
         const rosterEventIds = new Set(rosters.map((r) => r.eventId))
@@ -260,6 +278,17 @@ export function RosterCreator({
 
                         <div className="space-y-2">
                             <Label>{dictionary.roster.selectPreset}</Label>
+                            {!squadPresets.length ? (
+                                <p className="text-muted-foreground text-sm">
+                                    {dictionary.roster.noPresets}{" "}
+                                    <Link
+                                        className="underline"
+                                        href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create${initialEvent ? `?game=${initialEvent.gameId}` : ""}`}
+                                    >
+                                        {dictionary.roster.createPreset}
+                                    </Link>
+                                </p>
+                            ) : null}
                             <Select
                                 value={selectedPresetId}
                                 onValueChange={setSelectedPresetId}
@@ -291,6 +320,7 @@ export function RosterCreator({
             {draftRoster && selectedEvent ? (
                 <RosterBoard
                     roster={draftRoster}
+                    publishContext={publishContexts?.[selectedEvent.id]}
                     event={selectedEvent}
                     users={users}
                     userAssignments={userAssignments}

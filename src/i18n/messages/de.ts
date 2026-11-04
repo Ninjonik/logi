@@ -3036,6 +3036,15 @@ export const deMessages = {
             "Mitgliedschaftseinstellungen konnten nicht gespeichert werden.",
     },
     userManagement: {
+        canAddMemberOrMercenary:
+            "Kann als Mitglied, Reservemitglied oder Söldner hinzugefügt werden.",
+        mercenaryOnly:
+            "Gehört bereits einem anderen Clan an; kann nur als Söldner hinzugefügt werden.",
+        missingPlayerLink:
+            "Spieler fehlt? Bitte ihn, /link in Discord auszuführen, um sich bei Logi zu registrieren. Bereits zugewiesene Spieler werden ausgeblendet.",
+        missingPlayerApplication:
+            "Er kann auch eine Clanmitgliedschaft beantragen.",
+
         grantAdminAccess: "Zum Admin machen",
         removeAdminAccess: "Admin-Zugriff entziehen",
         adminAccessGranted: "Spieler ist jetzt Admin.",
@@ -3923,6 +3932,10 @@ export const deMessages = {
                     detail: "Neues Match oder Training · Anmeldungen und Rollen-Ping laut Vorlage",
                 },
                 roster: {
+                    noPresets:
+                        "Erstelle zuerst eine Truppenvorlage für diese Aufstellung.",
+                    createPreset: "Truppenvorlage erstellen",
+
                     title: "Kader",
                     detail: "Das Kaderfoto unter dem Kopf mit Einteilung anzeigen und Kader öffnen · Einteilung und Passwort sieht nur der Spieler",
                     variantLabel: "Standardansicht",
@@ -4870,6 +4883,16 @@ export const deMessages = {
         },
     },
     newMatch: {
+        delivery: {
+            pending: "Gespeichert; wartet auf Discord-Zustellung.",
+            delivered: "An Discord zugestellt.",
+            unavailable: "Discord-Zustellung nicht verfügbar: konfiguriere einen Ankündigungskanal in den Einstellungen.",
+            open: "Nachricht öffnen",
+            refresh: "Status aktualisieren",
+        },
+        descriptionTraining:
+            "Verwende eine Trainingsvorlage oder gib die Trainingsdetails ein.",
+
         title: "Neues Match",
         titleTraining: "Neues Training",
         description: "Nutze eine Vorlage oder gib die Spieldetails ein.",
@@ -4900,10 +4923,9 @@ export const deMessages = {
         saveDraft: "Als Entwurf speichern",
         publish: "Veröffentlichen",
         draftSaved: "Entwurf gespeichert.",
-        published:
-            "Match gespeichert. Discord-Zustellung steht aus; prüfe Bot und Ankündigungskanal in den Einstellungen.",
+        published: "Match gespeichert; wartet auf Discord-Zustellung.",
         publishedTraining:
-            "Training gespeichert. Discord-Zustellung steht aus; prüfe Bot und Ankündigungskanal in den Einstellungen.",
+            "Training gespeichert; wartet auf Discord-Zustellung.",
         errors: {
             invalid_event: "Prüfe die Angaben in diesen Schritten: {fields}.",
             not_found:
@@ -5036,8 +5058,7 @@ export const deMessages = {
                 memberRecruit: "Mitglieder und Rekruten",
                 all: "Mitglieder, Rekruten und Reserve",
             },
-            trainingNote:
-                "Zu einem Training meldet sich jedes Clanmitglied mit einem Knopf an.",
+            trainingNote: "Berechtigte Spieler melden sich mit einem Klick zum Training an. Wähle oben die Mitgliedsstatus; Spieler ohne Mitgliedschaft sind eine separate Option.",
             groupOffered: "Gruppe {name} anbieten",
             capLabel: "Limit der Gruppe {name}",
             capPlaceholder: "ohne Limit",
@@ -6408,6 +6429,9 @@ export const deMessages = {
             "Wähle das Event und die Squad-Vorlage für diese Aufstellung.",
     },
     rosterPublish: {
+        publishedWithoutDiscord:
+            "In Logi gespeichert. Discord-Zustellung nicht verfügbar: kein Aufstellungskanal konfiguriert. Lege ihn in den Kanaleinstellungen fest.",
+
         publishTitle: "Aufstellung veröffentlichen",
         republishTitle: "Erneut veröffentlichen",
         publishedAt: "veröffentlicht {time}",

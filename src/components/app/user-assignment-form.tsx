@@ -1,5 +1,6 @@
 "use client"
 
+import { searchAssignmentCandidates } from "@/domain/assignments/player-search"
 import { PencilLine, Search, Trash2 } from "lucide-react"
 import { useMemo, useState, useTransition } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -125,6 +126,8 @@ export function UserAssignmentForm({
           )?.user
         : undefined
     const [query, setQuery] = useState(initialSelectedUser?.name ?? "")
+    const [page, setPage] = useState(0)
+    const pageSize = 10
     const [isEditing, setIsEditing] = useState(createMode)
     const [serverError, setServerError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
@@ -170,16 +173,7 @@ export function UserAssignmentForm({
         takenPlatformIds
     )
 
-    const matches = useMemo(() => {
-        const normalized = query.trim().toLowerCase()
-        return eligibleUsers.filter(({ user }) => {
-            if (!normalized) return true
-            return (
-                user.name.toLowerCase().includes(normalized) ||
-                user.discordId.includes(normalized)
-            )
-        })
-    }, [eligibleUsers, query])
+    const matches = useMemo(() => searchAssignmentCandidates(eligibleUsers, { query, guildId: server.discordId, createMode }), [eligibleUsers, query, createMode, server.discordId])
 
     const selected = eligibleUsers.find(
         (item) => item.user.discordId === selectedUserId
@@ -399,7 +393,6 @@ export function UserAssignmentForm({
                     className="space-y-6"
                     onSubmit={form.handleSubmit(submit)}
                 >
-                    {notices}
                     {showPlayerPicker ? (
                         <div className="space-y-3">
                             <Label>
@@ -409,9 +402,10 @@ export function UserAssignmentForm({
                                 <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                                 <Input
                                     value={query}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
                                         setQuery(event.target.value)
-                                    }
+                                        setPage(0)
+                                    }}
                                     placeholder={
                                         dictionary.userManagement
                                             .searchPlaceholder
@@ -420,134 +414,128 @@ export function UserAssignmentForm({
                                 />
                             </div>
                             <div className="border-border/60 max-h-72 space-y-2 overflow-auto rounded-2xl border p-3">
-                                {matches.map(
-                                    ({
-                                        user,
-                                        canJoinAsMember,
-                                        canJoinAsMercenary,
-                                    }) => (
-                                        <button
-                                            key={user.id}
-                                            type="button"
-                                            onClick={() => {
-                                                form.setValue(
-                                                    "userId",
-                                                    user.discordId,
-                                                    { shouldValidate: true }
-                                                )
-                                                setQuery(user.name)
-                                                if (
-                                                    !canJoinAsMember &&
-                                                    canJoinAsMercenary
-                                                ) {
-                                                    form.setValue(
-                                                        "type",
-                                                        "mercenary",
-                                                        { shouldValidate: true }
-                                                    )
-                                                    form.setValue(
-                                                        "status",
-                                                        "active",
-                                                        { shouldValidate: true }
-                                                    )
-                                                }
-                                            }}
-                                            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
-                                                selectedUserId ===
-                                                user.discordId
-                                                    ? "border-primary bg-primary/5"
-                                                    : "border-border/60"
-                                            }`}
-                                        >
-                                            <Avatar className="size-9 rounded-lg">
-                                                <AvatarImage
-                                                    src={user.avatar}
-                                                    alt={user.name}
-                                                />
-                                                <AvatarFallback>
-                                                    {user.name.slice(0, 2)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="truncate font-medium">
-                                                    {user.name}
-                                                </div>
-                                                <div className="text-muted-foreground truncate text-xs">
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .mainClan
-                                                    }
-                                                    :{" "}
-                                                    {user.guildId ??
-                                                        dictionary
-                                                            .userManagement
-                                                            .none}{" "}
-                                                    •{" "}
-                                                    {getUserScoreForGuild(
-                                                        user,
-                                                        server.discordId,
-                                                        selectedGameId
-                                                    )}{" "}
-                                                    {
-                                                        dictionary.navUser
-                                                            .scoreSuffix
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Badge
-                                                    variant={
-                                                        canJoinAsMember
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                    className="rounded-full px-2.5"
-                                                >
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .memberLabel
-                                                    }
-                                                </Badge>
-                                                <Badge
-                                                    variant={
-                                                        canJoinAsMember
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                    className="rounded-full px-2.5"
-                                                >
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .reserveMemberLabel
-                                                    }
-                                                </Badge>
-                                                <Badge
-                                                    variant={
-                                                        canJoinAsMercenary
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                    className="rounded-full px-2.5"
-                                                >
-                                                    {
-                                                        dictionary
-                                                            .userManagement
-                                                            .mercLabel
-                                                    }
-                                                </Badge>
-                                            </div>
-                                        </button>
+                                {matches
+                                    .slice(
+                                        page * pageSize,
+                                        (page + 1) * pageSize
                                     )
-                                )}
+                                    .map(
+                                        ({
+                                            user,
+                                            canJoinAsMember,
+                                            canJoinAsMercenary,
+                                        }) => (
+                                            <button
+                                                key={user.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    form.setValue(
+                                                        "userId",
+                                                        user.discordId,
+                                                        { shouldValidate: true }
+                                                    )
+                                                    setQuery(user.name)
+                                                    setPage(0)
+                                                    if (
+                                                        !canJoinAsMember &&
+                                                        canJoinAsMercenary
+                                                    ) {
+                                                        form.setValue(
+                                                            "type",
+                                                            "mercenary",
+                                                            {
+                                                                shouldValidate: true,
+                                                            }
+                                                        )
+                                                        form.setValue(
+                                                            "status",
+                                                            "active",
+                                                            {
+                                                                shouldValidate: true,
+                                                            }
+                                                        )
+                                                    }
+                                                }}
+                                                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
+                                                    selectedUserId ===
+                                                    user.discordId
+                                                        ? "border-primary bg-primary/5"
+                                                        : "border-border/60"
+                                                }`}
+                                            >
+                                                <Avatar className="size-9 rounded-lg">
+                                                    <AvatarImage
+                                                        src={user.avatar}
+                                                        alt={user.name}
+                                                    />
+                                                    <AvatarFallback>
+                                                        {user.name.slice(0, 2)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="truncate font-medium">
+                                                        {user.name}
+                                                    </div>
+                                                    <div className="text-muted-foreground text-xs">
+                                                        {user.nicknames[
+                                                            server.discordId
+                                                        ] || user.discordId}
+                                                    </div>
+                                                    <p className="text-sm">
+                                                        {canJoinAsMember
+                                                            ? dictionary
+                                                                  .userManagement
+                                                                  .canAddMemberOrMercenary
+                                                            : dictionary
+                                                                  .userManagement
+                                                                  .mercenaryOnly}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        )
+                                    )}
                                 {!matches.length ? (
                                     <div className="text-muted-foreground py-6 text-center text-sm">
                                         {dictionary.userManagement.noResults}
                                     </div>
                                 ) : null}
                             </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={page === 0}
+                                    onClick={() => setPage(page - 1)}
+                                >
+                                    {dictionary.common.previous}
+                                </Button>
+                                <span
+                                    className="text-muted-foreground text-sm"
+                                    role="status"
+                                >
+                                    {page + 1} /{" "}
+                                    {Math.max(
+                                        1,
+                                        Math.ceil(matches.length / pageSize)
+                                    )}
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                        (page + 1) * pageSize >= matches.length
+                                    }
+                                    onClick={() => setPage(page + 1)}
+                                >
+                                    {dictionary.common.next}
+                                </Button>
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.userManagement.missingPlayerLink}
+                                {config?.membershipSettings?.enabled
+                                    ? ` ${dictionary.userManagement.missingPlayerApplication}`
+                                    : ""}
+                            </p>
                             {form.formState.errors.userId ? (
                                 <p className="text-destructive text-sm">
                                     {getValidationMessage(
@@ -622,6 +610,7 @@ export function UserAssignmentForm({
 
                     {selected ? (
                         <div className="grid gap-4 md:grid-cols-6">
+                            {notices.length > 1 ? <div className="md:col-span-6 space-y-3">{notices.slice(1)}</div> : null}
                             <div className="space-y-2 md:col-span-2">
                                 <Label>
                                     {dictionary.userManagement.assignmentType}
@@ -1120,6 +1109,12 @@ export function UserAssignmentForm({
                         </div>
                     )}
 
+                    <details className="text-muted-foreground text-sm">
+                        <summary className="cursor-pointer">
+                            {dictionary.userManagement.roleSyncTitle}
+                        </summary>
+                        <div className="mt-3 space-y-3">{notices[0]}</div>
+                    </details>
                     {serverError ? (
                         <p className="text-destructive text-sm">
                             {serverError}

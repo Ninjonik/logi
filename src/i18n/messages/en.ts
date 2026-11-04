@@ -2942,6 +2942,15 @@ export const enMessages = {
         saveError: "Unable to save membership settings.",
     },
     userManagement: {
+        canAddMemberOrMercenary:
+            "Can be added as a member, reserve member or mercenary.",
+        mercenaryOnly:
+            "Already belongs to another clan; can only be added as a mercenary.",
+        missingPlayerLink:
+            "Missing a player? Ask them to run /link in Discord to register with Logi. Players already assigned here are excluded.",
+        missingPlayerApplication:
+            "They can also submit a clan membership application.",
+
         grantAdminAccess: "Make admin",
         removeAdminAccess: "Remove admin access",
         adminAccessGranted: "Player is now an admin.",
@@ -3806,6 +3815,10 @@ export const enMessages = {
                     detail: "New match or training · sign-ups and the role ping from the template",
                 },
                 roster: {
+                    noPresets:
+                        "Create a squad preset to start building this roster.",
+                    createPreset: "Create a squad preset",
+
                     title: "Roster",
                     detail: "The roster photo under the header with View assignment and Open roster · only the player sees the assignment and password",
                     variantLabel: "Default look",
@@ -4740,6 +4753,16 @@ export const enMessages = {
         },
     },
     newMatch: {
+        delivery: {
+            pending: "Saved; waiting for Discord delivery.",
+            delivered: "Delivered to Discord.",
+            unavailable: "Discord delivery is unavailable: configure an announcement channel in Settings.",
+            open: "Open message",
+            refresh: "Refresh status",
+        },
+        descriptionTraining:
+            "Use a training template or enter the training details.",
+
         title: "New match",
         titleTraining: "New training",
         description: "Use a template or enter the match details.",
@@ -4770,10 +4793,8 @@ export const enMessages = {
         saveDraft: "Save as draft",
         publish: "Publish",
         draftSaved: "Draft saved.",
-        published:
-            "Match saved. Discord delivery is pending; check the bot and announcement channel in Settings.",
-        publishedTraining:
-            "Training saved. Discord delivery is pending; check the bot and announcement channel in Settings.",
+        published: "Match saved; waiting for Discord delivery.",
+        publishedTraining: "Training saved; waiting for Discord delivery.",
         errors: {
             invalid_event: "Check the details in these steps: {fields}.",
             not_found:
@@ -4906,8 +4927,7 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote:
-                "Every clan member signs up for a training with one button.",
+            trainingNote: "Eligible players sign up for training with one button. Choose their membership statuses above; players without membership are a separate option.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
@@ -6242,6 +6262,9 @@ export const enMessages = {
             "Choose the event and squad preset for this roster.",
     },
     rosterPublish: {
+        publishedWithoutDiscord:
+            "Saved in Logi. Discord delivery is unavailable: no roster channel is configured. Set one in channel settings.",
+
         publishTitle: "Publish roster",
         republishTitle: "Publish again",
         publishedAt: "published {time}",

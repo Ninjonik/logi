@@ -179,13 +179,8 @@ function groupsText(values: FlowValues, context: FlowSummaryContext) {
 }
 
 function statusesText(values: FlowValues, t: FlowText) {
-    return (
-        values.allowedSignupStatuses.length
-            ? values.allowedSignupStatuses
-            : FLOW_SIGNUP_STATUSES
-    )
-        .map((status) => t.signups.statuses[status])
-        .join(", ")
+    const statuses = values.allowedSignupStatuses.length ? values.allowedSignupStatuses : values.kind === "training" ? FLOW_SIGNUP_STATUSES.filter((status) => status !== "mercenary") : FLOW_SIGNUP_STATUSES
+    return [...statuses.map((status) => t.signups.statuses[status]), ...(values.allowNonMembersSignup ? [t.signups.nonMembers] : [])].join(", ")
 }
 
 function pingText(values: FlowValues, t: FlowText) {
@@ -259,7 +254,7 @@ export function flowReviewRows(
                 ? [statusesText(values, t), groupsText(values, context)]
                       .filter(Boolean)
                       .join(" · ")
-                : t.signups.trainingNote,
+                : statusesText(values, t),
         },
         {
             step: "discord",

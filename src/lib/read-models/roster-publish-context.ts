@@ -1,3 +1,4 @@
+import { withGameOverrides } from "@/domain/games/game"
 import { resolveMatchMessageSettings } from "@/domain/discord-messages/notification-settings"
 import { resolveRosterUpdateChannelIds } from "@/domain/rosters/roster-update-channel"
 import type { RosterPublishContext } from "@/components/app/roster-publish-dialog"
@@ -21,7 +22,8 @@ export async function getRosterPublishContext(input: {
     /** Channel names already loaded by the page, if any. */
     channelNames?: Map<string, string>
 }): Promise<RosterPublishContext> {
-    const { event, discordConfig } = input
+    const { event } = input
+    const discordConfig = input.discordConfig ? withGameOverrides(input.discordConfig, input.discordConfig.gameOverrides, event.gameId) : null
     const language = resolveClanLanguage(discordConfig?.defaultLanguage)
     const settings = resolveMatchMessageSettings(discordConfig)
     const channels = resolveRosterUpdateChannelIds({
@@ -47,8 +49,10 @@ export async function getRosterPublishContext(input: {
         language,
         messageStyle: discordConfig?.messageStyle ?? null,
         timeZone: discordConfig?.timezone || "UTC",
+        rosterChannelId: channels.rosterUpdateChannelId,
         rosterChannelName: channels.rosterUpdateChannelId
-            ? names.get(channels.rosterUpdateChannelId)
+            ? (names.get(channels.rosterUpdateChannelId) ??
+              channels.rosterUpdateChannelId)
             : undefined,
         meetingChannelId,
         meetingChannelName: meetingChannelId

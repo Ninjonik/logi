@@ -585,3 +585,15 @@ test("new-match flow snapshots game discussion defaults and retains per-event de
     assert.equal(saved.debriefForumChannelId, defaults.debriefForumChannelId)
     assert.equal(saved.debriefDestination, "debrief_forum")
 })
+
+
+test("training create and edit payloads retain the chosen signup eligibility", () => {
+    const event = match({ kind: "training", allowedSignupStatuses: ["recruit"], allowNonMembersSignup: true })
+    const initial = flowValuesFromEvent(event, zone)
+    const values: FlowValues = { ...initial, allowedSignupStatuses: ["reserve_member", "mercenary"], allowNonMembersSignup: true }
+    const context = { timezone: zone, name: event.name, ownTeamId: null }
+    for (const payload of [flowEventPayload(values, context), flowEditPayload(values, initial, event, context)]) {
+        assert.deepEqual(payload.allowedSignupStatuses, ["reserve_member", "mercenary"])
+        assert.equal(payload.allowNonMembersSignup, true)
+    }
+})

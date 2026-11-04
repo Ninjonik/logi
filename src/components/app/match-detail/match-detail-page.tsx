@@ -261,7 +261,7 @@ export async function MatchDetailPage({
               )
             : undefined
     const createRosterHref = canAdmin
-        ? `/${locale}/dashboard/servers/${serverId}/rosters/create?game=${gameId}`
+        ? `/${locale}/dashboard/servers/${serverId}/rosters/create?game=${gameId}&eventId=${encodeURIComponent(event.id)}`
         : undefined
     const signupHistoryHref = `/${locale}/dashboard/servers/${serverId}/signup-activity?eventId=${event.id}`
     const reviewerIds =

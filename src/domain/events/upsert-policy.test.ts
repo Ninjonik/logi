@@ -347,3 +347,13 @@ test("late signup setting defaults to allowed, preserves an omitted override on 
         false
     )
 })
+
+
+test("training saves default clan eligibility and preserves explicit audience updates", () => {
+    const training = buildCreateEventRecord({ ...input, kind: "training" }, now)
+    assert.deepEqual(training.allowedSignupStatuses, ["recruit", "member", "reserve_member"])
+    assert.equal(training.allowNonMembersSignup, false)
+    const edited = buildUpdateEventPatch(training, { ...input, kind: "training", allowedSignupStatuses: ["recruit", "mercenary"], allowNonMembersSignup: true }, now)
+    assert.deepEqual(edited.allowedSignupStatuses, ["recruit", "mercenary"])
+    assert.equal(edited.allowNonMembersSignup, true)
+})

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { toggleSignup } from "./signup-policy"
+import { isSignupMembershipAllowed, toggleSignup } from "./signup-policy"
 import { SIGNUP_NOT_ATTENDING } from "./types"
 
 test("toggleSignup adds an attending participant", () => {
@@ -84,6 +84,7 @@ test("toggleSignup rejects closed signups", () => {
 test("toggleSignup allows training signups during starting before registration end", () => {
     const result = toggleSignup({
         participants: [],
+        membershipStatus: "member",
         event: {
             kind: "training",
             registrationEnd: "2026-01-01T12:00:00.000Z",
@@ -287,4 +288,21 @@ test("late signup marker persists on repeat submissions and remains distinct fro
     })
     assert.equal(decline.participants[0].signedUpLateAt, undefined)
     assert.equal(decline.participants[0].status, "not_attending")
+})
+
+
+test("training eligibility defaults to clan membership and independently honors each audience", () => {
+    const event = { kind: "training" as const }
+    for (const membershipStatus of ["recruit", "member", "reserve_member"] as const) {
+        assert.equal(isSignupMembershipAllowed({ event, membershipStatus }), true)
+    }
+    assert.equal(isSignupMembershipAllowed({ event, membershipStatus: "mercenary" }), false)
+    assert.equal(isSignupMembershipAllowed({ event, membershipStatus: null }), false)
+    for (const selected of ["recruit", "member", "reserve_member", "mercenary"] as const) {
+        for (const membershipStatus of ["recruit", "member", "reserve_member", "mercenary"] as const) {
+            assert.equal(isSignupMembershipAllowed({ event: { ...event, allowedSignupStatuses: [selected] }, membershipStatus }), selected === membershipStatus)
+        }
+    }
+    assert.equal(isSignupMembershipAllowed({ event: { ...event, allowNonMembersSignup: true }, membershipStatus: null }), true)
+    assert.equal(isSignupMembershipAllowed({ event: { ...event, allowNonMembersSignup: true }, membershipStatus: "mercenary" }), false)
 })

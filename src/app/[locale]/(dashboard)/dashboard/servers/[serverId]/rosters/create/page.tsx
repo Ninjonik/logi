@@ -1,3 +1,4 @@
+import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
 import { RosterCreator } from "@/components/app/roster-creator"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -12,10 +13,10 @@ export default async function CreateRosterPage({
     searchParams,
 }: {
     params: Promise<{ locale: string; serverId: string }>
-    searchParams: Promise<{ game?: string }>
+    searchParams: Promise<{ game?: string; eventId?: string }>
 }) {
     const { locale, serverId } = await params
-    const { game } = await searchParams
+    const { game, eventId } = await searchParams
     const dictionary = getDictionary(isLocale(locale) ? locale : "en")
     const context = await getServerContext(
         serverId,
@@ -56,6 +57,25 @@ export default async function CreateRosterPage({
         context.server.discordId
     )
 
+    const publishContexts = Object.fromEntries(
+        await Promise.all(
+            rosterEligibleEvents
+                .filter((event) => event.kind === "match" && !event.isDraft)
+                .map(
+                    async (event) =>
+                        [
+                            event.id,
+                            await getRosterPublishContext({
+                                serverId,
+                                locale,
+                                server: context.server,
+                                event,
+                                discordConfig,
+                            }),
+                        ] as const
+                )
+        )
+    )
     return (
         <>
             <PageHeader
@@ -65,6 +85,8 @@ export default async function CreateRosterPage({
             <div className="px-4 lg:px-6">
                 <RosterCreator
                     events={rosterEligibleEvents}
+                    initialEventId={eventId}
+                    publishContexts={publishContexts}
                     rosters={rosters}
                     squadPresets={squadPresets}
                     users={reserveUsers}

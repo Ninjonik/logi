@@ -22,16 +22,14 @@ export function isSignupMembershipAllowed(input: {
     }
     membershipStatus?: SignupMembershipStatus | null
 }) {
-    if (input.event.kind !== "match") {
-        return true
-    }
-
     if (!input.membershipStatus)
         return Boolean(input.event.allowNonMembersSignup)
 
     const allowedStatuses = input.event.allowedSignupStatuses?.length
         ? input.event.allowedSignupStatuses
-        : DEFAULT_ALLOWED_SIGNUP_STATUSES
+        : input.event.kind === "training"
+          ? ["recruit", "member", "reserve_member"]
+          : DEFAULT_ALLOWED_SIGNUP_STATUSES
 
     return allowedStatuses.includes(input.membershipStatus)
 }
@@ -46,7 +44,7 @@ export function assertSignupMembershipAllowed(input: {
 }) {
     if (!isSignupMembershipAllowed(input)) {
         throw new Error(
-            "Your membership status is not allowed to sign up for this match."
+            "Your membership status is not allowed to sign up for this event."
         )
     }
 }

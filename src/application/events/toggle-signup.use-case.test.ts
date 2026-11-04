@@ -157,6 +157,7 @@ test("ToggleSignupUseCase supports training signups during starting before regis
                     id: "event-1",
                     guildId: "guild-1",
                     kind: "training" as const,
+                    allowNonMembersSignup: true,
                     registrationEnd: "2026-01-01T12:00:00.000Z",
                     meetingStart: "2026-01-01T11:00:00.000Z",
                     gameEnd: "2026-01-01T13:00:00.000Z",

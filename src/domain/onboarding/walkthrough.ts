@@ -16,7 +16,6 @@ export type WalkStep = {
         | "playerTrends"
         | "newMatch"
         | "matchWatch"
-        | "matchContinue"
         | "matchTime"
         | "matchSignups"
         | "matchDiscord"
@@ -95,16 +94,6 @@ export function walkthroughSteps(
                     instruction: "matchWatch",
                 },
                 {
-                    id: "match-continue",
-                    chapter,
-                    path: "/matches/create",
-                    selector: "#onboarding-match-continue",
-                    mock: "match",
-                    formStep: "match",
-                    instruction: "matchContinue",
-                    action: "advance",
-                },
-                {
                     id: "match-time",
                     chapter,
                     path: "/matches/create",
@@ -112,16 +101,6 @@ export function walkthroughSteps(
                     mock: "match",
                     formStep: "time",
                     instruction: "matchTime",
-                },
-                {
-                    id: "match-time-next",
-                    chapter,
-                    path: "/matches/create",
-                    selector: "#onboarding-match-continue",
-                    mock: "match",
-                    formStep: "time",
-                    instruction: "matchContinue",
-                    action: "advance",
                 },
                 {
                     id: "match-signups",
@@ -133,16 +112,6 @@ export function walkthroughSteps(
                     instruction: "matchSignups",
                 },
                 {
-                    id: "match-signups-next",
-                    chapter,
-                    path: "/matches/create",
-                    selector: "#onboarding-match-continue",
-                    mock: "match",
-                    formStep: "signups",
-                    instruction: "matchContinue",
-                    action: "advance",
-                },
-                {
                     id: "match-discord",
                     chapter,
                     path: "/matches/create",
@@ -150,16 +119,6 @@ export function walkthroughSteps(
                     mock: "match",
                     formStep: "discord",
                     instruction: "matchDiscord",
-                },
-                {
-                    id: "match-discord-next",
-                    chapter,
-                    path: "/matches/create",
-                    selector: "#onboarding-match-continue",
-                    mock: "match",
-                    formStep: "discord",
-                    instruction: "matchContinue",
-                    action: "advance",
                 },
                 {
                     id: "match-review",

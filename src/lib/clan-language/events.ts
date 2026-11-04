@@ -253,7 +253,7 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             missingRequiredRole:
                 "Nie masz roli Discord wymaganej do tego zapisu.",
             membershipStatusNotAllowed:
-                "Twój status członkostwa nie pozwala na zapis na ten mecz.",
+                "Twój status członkostwa nie pozwala na zapis na to wydarzenie.",
             cacheRefreshFailed:
                 "Twój zapis został zapisany, ale strony nie można odświeżyć. Spróbuj za chwilę załadować ponownie.",
             signupUpdated: "Zapis zaktualizowano.",
@@ -494,7 +494,7 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             missingRequiredRole:
                 "You do not have the required Discord role for this signup.",
             membershipStatusNotAllowed:
-                "Your membership status is not allowed to sign up for this match.",
+                "Your membership status is not allowed to sign up for this event.",
             cacheRefreshFailed:
                 "Your signup was saved, but the page could not refresh. Please try reloading shortly.",
             signupUpdated: "Signup updated.",
@@ -733,7 +733,7 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             missingRequiredRole:
                 "Pro toto přihlášení nemáte požadovanou Discord roli.",
             membershipStatusNotAllowed:
-                "Váš status členství se na tento zápas nemůže přihlásit.",
+                "Váš status členství se na tuto akci nemůže přihlásit.",
             cacheRefreshFailed:
                 "Přihlášení bylo uloženo, ale stránku se nepodařilo aktualizovat. Zkuste ji za chvíli znovu načíst.",
             signupUpdated: "Přihlášení bylo upraveno.",
@@ -971,7 +971,7 @@ const eventsMessages: Record<ClanLanguage, EventMessages> = {
             missingRequiredRole:
                 "Ihnen fehlt die erforderliche Discord-Rolle für diese Anmeldung.",
             membershipStatusNotAllowed:
-                "Ihr Mitgliedschaftsstatus darf sich für dieses Match nicht anmelden.",
+                "Ihr Mitgliedschaftsstatus darf sich für dieses Ereignis nicht anmelden.",
             cacheRefreshFailed:
                 "Deine Anmeldung wurde gespeichert, aber die Seite konnte nicht aktualisiert werden. Lade sie bitte in Kürze erneut.",
             signupUpdated: "Anmeldung aktualisiert.",

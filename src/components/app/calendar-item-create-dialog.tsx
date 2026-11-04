@@ -78,6 +78,21 @@ export function CalendarItemCreateDialog({
         Partial<Record<Field, CalendarItemRangeError>>
     >({})
 
+    function updateField(field: Field, value: string) {
+        const next = { title, startAt, endAt, [field]: value }
+        if (field === "title") setTitle(value)
+        if (field === "startAt") setStartAt(value)
+        if (field === "endAt") setEndAt(value)
+        if (Object.keys(errors).length)
+            setErrors(
+                validateCalendarItemInput({
+                    title: next.title,
+                    startAt: toInstant(next.startAt, timezone),
+                    endAt: toInstant(next.endAt, timezone),
+                })
+            )
+    }
+
     const messages: Record<CalendarItemRangeError, string> = {
         title_required: labels.titleRequired,
         start_required: labels.startRequired,
@@ -205,7 +220,9 @@ export function CalendarItemCreateDialog({
                                     ? "calendar-item-title-error"
                                     : undefined
                             }
-                            onChange={(event) => setTitle(event.target.value)}
+                            onChange={(event) =>
+                                updateField("title", event.target.value)
+                            }
                         />
                         {fieldError("title")}
                     </div>
@@ -223,7 +240,9 @@ export function CalendarItemCreateDialog({
                                     ? "calendar-item-startAt-error"
                                     : undefined
                             }
-                            onChange={(event) => setStartAt(event.target.value)}
+                            onChange={(event) =>
+                                updateField("startAt", event.target.value)
+                            }
                         />
                         {fieldError("startAt")}
                     </div>
@@ -242,7 +261,9 @@ export function CalendarItemCreateDialog({
                                     ? "calendar-item-endAt-error"
                                     : undefined
                             }
-                            onChange={(event) => setEndAt(event.target.value)}
+                            onChange={(event) =>
+                                updateField("endAt", event.target.value)
+                            }
                         />
                         {fieldError("endAt")}
                     </div>
