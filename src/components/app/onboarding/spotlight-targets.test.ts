@@ -21,13 +21,7 @@ const router = {
     prefetch() {},
     bfcacheId: "tour-test",
 }
-const shellSteps = new Set([
-    "welcome",
-    "workspace",
-    "account",
-    "finish",
-    "players-nav",
-])
+const shellSteps = new Set(["finish", "players-nav"])
 
 test("tour spotlights resolve to the rendered example sections and actions for every role", () => {
     for (const kind of [

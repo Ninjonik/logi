@@ -193,6 +193,8 @@ export function matchCardEventOf(input: {
         timeZone: input.config.timezone,
         locale: messages.locale,
         factionEmoji: input.factionEmoji,
+        allowedSignupStatuses: event.allowedSignupStatuses,
+        allowNonMembersSignup: event.allowNonMembersSignup,
         signupRestriction: event.requiredRoleIds.length
             ? event.requiredRoleIds.map((roleId) => `<@&${roleId}>`).join(", ")
             : null,

@@ -60,7 +60,10 @@ test("the new-match preview draws the bot's own announcement card", () => {
     assert.match(text, /Spojenci ★ vs ROG Osa ✚ vs KOD Manticore/)
     assert.match(text, /Čas/)
     assert.match(text, /Konec přihlášek/)
-    assert.match(text, /Přihlásit se mohou @Members/)
+    assert.match(
+        text,
+        /Přihlásit se mohou rekruti, členové, záložníci, žoldáci · @Members/
+    )
     assert.match(text, /Role účastníků @Event attendees/)
     assert.match(text, /Přihlásit se/)
     assert.match(text, /Zkontrolovat přihlášení/)
@@ -95,4 +98,26 @@ test("a training preview shows its server and no teams or map", () => {
     assert.match(text, /Trénink · komunikace a souhra/)
     assert.match(text, /Čas/)
     assert.doesNotMatch(text, /Spojenci|Foy|Fórum zápasu/)
+})
+
+test("preview distinguishes meeting and game start and exposes membership eligibility", () => {
+    const html = renderToStaticMarkup(
+        createElement(NewMatchPreview, {
+            model: {
+                ...model,
+                signupRestriction: null,
+                allowedSignupStatuses: ["member"],
+            },
+            step: "time",
+            dictionary,
+            copy: dictionary.newMatch.preview,
+        })
+    )
+    const text = textOf(html)
+    assert.match(text, /Sraz/)
+    assert.match(text, /start/)
+    assert.match(text, /19:30/)
+    assert.match(text, /20:00/)
+    assert.match(text, /Přihlásit se mohou členové/)
+    assert.doesNotMatch(text, /Kdokoli/)
 })

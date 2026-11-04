@@ -131,9 +131,15 @@ test("the live preview is the bot's own announcement while sign-ups are open (N1
     const rendered = text(preview)
     assert.equal(preview.view.header?.title, "VLK vs ROG")
     assert.match(rendered, /Spojenci ★ {2}vs {2}`ROG` Osa ✚/)
-    assert.match(rendered, /\*\*Čas\*\*\n<t:1791739800:f>/)
+    assert.match(
+        rendered,
+        /\*\*Čas\*\*\nSraz <t:1791739800:f>, start <t:1791741600:f>/
+    )
     assert.match(rendered, /\*\*Konec přihlášek\*\*\n<t:1791653400:f>/)
-    assert.match(rendered, /\*\*Přihlásit se mohou\*\*\nKdokoli/)
+    assert.match(
+        rendered,
+        /\*\*Přihlásit se mohou\*\*\nrekruti, členové, záložníci, žoldáci/
+    )
     assert.match(rendered, /\*\*Role účastníků\*\*\nVytvoří Logi pro účastníky/)
     assert.match(
         rendered,

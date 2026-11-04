@@ -38,6 +38,8 @@ export type NewMatchPreviewModel = {
     gameStart: string | null
     gameEnd?: string | null
     registrationEnd: string | null
+    allowedSignupStatuses?: MatchCardEvent["allowedSignupStatuses"]
+    allowNonMembersSignup?: boolean
     signupRestriction?: string | null
     attendeeRole?: string | null
     groups: Array<{ name: string; max?: number }>
@@ -66,8 +68,8 @@ const subscribeMinute = (onChange: () => void) => {
 const currentMinute = () => Math.floor(Date.now() / MINUTE_MS) * MINUTE_MS
 const noMinute = () => undefined
 /**
- * The reader's clock to the minute. Discord shows times in each reader's zone,
- * so they render in the browser only; the server render has no clock.
+ * The reader's clock to the minute for relative timestamps. Absolute preview
+ * times use the workspace timezone, matching the editor.
  */
 function useBrowserMinute(): number | undefined {
     return useSyncExternalStore(subscribeMinute, currentMinute, noMinute)
@@ -177,6 +179,8 @@ export function NewMatchPreview({
         gameStart: model.gameStart ?? "",
         gameEnd: model.gameEnd ?? null,
         registrationEnd: model.registrationEnd ?? "",
+        allowedSignupStatuses: model.allowedSignupStatuses,
+        allowNonMembersSignup: model.allowNonMembersSignup,
         signupRestriction: model.signupRestriction,
         attendeeRole: model.attendeeRole,
         timeZone: model.timeZone,
@@ -254,7 +258,7 @@ export function NewMatchPreview({
                 style={model.messageStyle}
                 labels={dictionary.discordPreview}
                 now={now}
-                timeZone={now === undefined ? model.timeZone : undefined}
+                timeZone={model.timeZone}
                 mentions={{
                     roles: Object.fromEntries(
                         model.mentions.map((name, index) => [
@@ -268,7 +272,7 @@ export function NewMatchPreview({
             />
             {note === null ? null : (
                 <p className="text-muted-foreground text-xs leading-[18px]">
-                    {note ?? text.note}
+                    {note ?? text.note} ({model.timeZone})
                 </p>
             )}
         </aside>

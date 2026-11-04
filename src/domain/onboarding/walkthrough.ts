@@ -202,10 +202,10 @@ export function walkthroughSteps(
             commands: `${page} [data-tour-command="stats"]`,
             teams: section("teams"),
             competitions: section("competitions"),
-            welcome: "#onboarding-workspace-switcher",
-            workspace: "#onboarding-workspace-switcher",
+            welcome: section("welcome"),
+            workspace: section("workspace"),
             mode: `${page} [data-tour-workspace-mode]`,
-            account: "#onboarding-account-menu",
+            account: section("account"),
             overview:
                 kind === "competitions" || kind === "competition-member"
                     ? section("overview")

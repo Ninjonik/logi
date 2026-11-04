@@ -602,6 +602,25 @@ export function GuidedSetup({
                             <p className="text-muted-foreground text-sm leading-[22px]">
                                 {copy.finished.description}
                             </p>
+                            <ul className="space-y-1">
+                                {steps
+                                    .filter(
+                                        (step) =>
+                                            !step.optional &&
+                                            step.state !== "done"
+                                    )
+                                    .map((step) => (
+                                        <li key={step.id}>
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                onClick={() => goTo(step.id)}
+                                            >
+                                                {stepTitle(step.id)}
+                                            </Button>
+                                        </li>
+                                    ))}
+                            </ul>
                             <div className="flex flex-wrap gap-2">
                                 <Button asChild className="rounded-lg">
                                     <Link href={overviewHref}>
