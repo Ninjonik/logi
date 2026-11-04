@@ -1620,11 +1620,15 @@ export function RosterBoard({
                 }
 
                 toast.success(
-                    republishing
-                        ? dictionary.rosterPublish.republished
-                        : published
-                          ? dictionary.rosterPublish.published
-                          : dictionary.roster.saved
+                    published &&
+                        !resolvedPublishContext.rosterChannelId &&
+                        !resolvedPublishContext.rosterChannelName
+                        ? dictionary.rosterPublish.publishedWithoutDiscord
+                        : republishing
+                          ? dictionary.rosterPublish.republished
+                          : published
+                            ? dictionary.rosterPublish.published
+                            : dictionary.roster.saved
                 )
             } catch (error) {
                 console.error("Failed to save roster:", error)

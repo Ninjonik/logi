@@ -900,7 +900,7 @@ paths["/clan/events/{eventId}/signup"] = {
         summary: "Set a clan member's event signup state",
         tags: ["Clan API — Events"],
         description:
-            "Uses the same membership and registration rules as the dashboard. Matches allow late signups by default after registrationEnd and strictly before meetingStart, unless allowLateSignups is false. Late attending signups require lateSignupReason and start in reserves. A successful change enqueues roster.updated webhooks.",
+            "Uses the same membership and registration rules as the dashboard. Trainings default to recruits, full members and reserve members; allowedSignupStatuses selects each membership audience independently, and allowNonMembersSignup separately opts in players without membership. Both settings are writable through bearer event create/update. Matches allow late signups by default after registrationEnd and strictly before meetingStart, unless allowLateSignups is false. Late attending signups require lateSignupReason and start in reserves. A successful change enqueues roster.updated webhooks.",
         security: [{ clanApiKey: [] }],
         parameters: [
             {
@@ -992,6 +992,14 @@ const eventMutation = {
                         gameStart: { type: "string", format: "date-time" },
                         gameEnd: { type: "string", format: "date-time" },
                         pingClan: { type: "boolean" },
+                        allowedSignupStatuses: {
+                            type: "array", items: { type: "string", enum: ["recruit", "member", "reserve_member", "mercenary"] },
+                            description: "Membership audiences for matches and trainings. Empty or omitted defaults to all four for matches, and recruit/member/reserve_member for trainings. Explicitly list mercenary to allow them at training.",
+                        },
+                        allowNonMembersSignup: {
+                            type: "boolean", default: false,
+                            description: "Independently permit players without membership, for matches and trainings.",
+                        },
                         allowLateSignups: {
                             type: "boolean",
                             default: true,

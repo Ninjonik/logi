@@ -557,20 +557,23 @@ export function buildAnnouncementView(
                   title: copy.card.signupsRestrictedTo,
                   text:
                       [
-                          event.kind === "match"
-                              ? [
-                                    ...(event.allowedSignupStatuses?.length
-                                        ? event.allowedSignupStatuses
-                                        : DEFAULT_ALLOWED_SIGNUP_STATUSES
-                                    ).map(
-                                        (status) =>
-                                            copy.replies.statusNames[status]
-                                    ),
-                                    ...(event.allowNonMembersSignup
-                                        ? [copy.card.nonMembers]
-                                        : []),
-                                ].join(", ")
-                              : null,
+                          [
+                              ...(event.allowedSignupStatuses?.length
+                                  ? event.allowedSignupStatuses
+                                  : event.kind === "training"
+                                    ? ([
+                                          "recruit",
+                                          "member",
+                                          "reserve_member",
+                                      ] as const)
+                                    : DEFAULT_ALLOWED_SIGNUP_STATUSES
+                              ).map(
+                                  (status) => copy.replies.statusNames[status]
+                              ),
+                              ...(event.allowNonMembersSignup
+                                  ? [copy.card.nonMembers]
+                                  : []),
+                          ].join(", "),
                           event.signupRestriction?.trim(),
                       ]
                           .filter(Boolean)

@@ -130,6 +130,23 @@ reopened.
 
 ### Template settings after creation
 
+Training eligibility uses the same shared signup command as matches.
+Bearer-key `POST`/`PATCH /api/v1/clan/events` accepts
+`allowedSignupStatuses` (`recruit`, `member`, `reserve_member`, `mercenary`)
+and `allowNonMembersSignup` for trainings too. An omitted or empty training
+status list defaults to recruits, full members and reserve members; explicitly
+list `mercenary` to include mercenaries. `allowNonMembersSignup` defaults to
+false and independently permits players without membership. Training
+`POST /api/v1/clan/events/{eventId}/signup` enforces those settings, including
+workspace/game membership scope and idempotent replay.
+
+Actor-backed `event-commands` preserve native signup settings on update; new
+trainings use the same clan-member defaults. The dashboard's announcement
+delivery polling endpoint is a manager-only presentation of bot message state;
+it is not a new bearer-key publication operation. Roster publication remains
+allowed without Discord delivery, and dashboard confirmations explicitly name
+missing destinations; API publication choices keep their existing lifecycle.
+
 Group caps (`signupGroupLimits`), attendance reminder offsets
 (`attendanceReminderHours`), the participant-roles switch
 (`createParticipantRoles`) and the roster's squad preset (`squadPresetId`) are

@@ -2990,6 +2990,15 @@ export const plMessages = {
         saveError: "Nie można zapisać ustawień członkostwa.",
     },
     userManagement: {
+        canAddMemberOrMercenary:
+            "Można dodać jako członka, członka rezerwy lub najemnika.",
+        mercenaryOnly:
+            "Należy już do innego klanu; można dodać wyłącznie jako najemnika.",
+        missingPlayerLink:
+            "Brakuje gracza? Poproś go o użycie /link na Discordzie, aby zarejestrować się w Logi. Przypisani już gracze są ukryci.",
+        missingPlayerApplication:
+            "Może również wysłać podanie o członkostwo w klanie.",
+
         grantAdminAccess: "Zrób administratora",
         removeAdminAccess: "Usuń dostęp administratora",
         adminAccessGranted: "Gracz jest teraz administratorem.",
@@ -3875,6 +3884,10 @@ export const plMessages = {
                     detail: "Nowy mecz lub trening · rejestracje i ping roli z szablonu",
                 },
                 roster: {
+                    noPresets:
+                        "Najpierw utwórz szablon drużyn dla tego składu.",
+                    createPreset: "Utwórz szablon drużyn",
+
                     title: "Skład",
                     detail: "Grafika składu pod nagłówkiem z opcją Wyświetl przypisanie i Otwórz skład · tylko gracz widzi przypisanie i hasło",
                     variantLabel: "Wygląd domyślny",
@@ -4815,6 +4828,16 @@ export const plMessages = {
         },
     },
     newMatch: {
+        delivery: {
+            pending: "Zapisano; oczekuje na dostarczenie na Discord.",
+            delivered: "Dostarczono na Discord.",
+            unavailable: "Dostarczenie na Discord jest niedostępne: skonfiguruj kanał ogłoszeń w ustawieniach.",
+            open: "Otwórz wiadomość",
+            refresh: "Odśwież status",
+        },
+        descriptionTraining:
+            "Użyj szablonu treningu lub wprowadź szczegóły treningu.",
+
         title: "Nowy mecz",
         titleTraining: "Nowy trening",
         description: "Użyj szablonu lub wprowadź szczegóły meczu.",
@@ -4845,10 +4868,9 @@ export const plMessages = {
         saveDraft: "Zapisz jako wersję roboczą",
         publish: "Opublikuj",
         draftSaved: "Wersja robocza została zapisana.",
-        published:
-            "Mecz zapisany. Dostarczenie na Discord oczekuje; sprawdź bota i kanał ogłoszeń w ustawieniach.",
+        published: "Mecz zapisany; oczekuje na dostarczenie na Discord.",
         publishedTraining:
-            "Trening zapisany. Dostarczenie na Discord oczekuje; sprawdź bota i kanał ogłoszeń w ustawieniach.",
+            "Trening zapisany; oczekuje na dostarczenie na Discord.",
         errors: {
             invalid_event:
                 "Sprawdź szczegóły w następujących krokach: {fields}.",
@@ -4986,8 +5008,7 @@ export const plMessages = {
                 memberRecruit: "członkowie i rekruci",
                 all: ", rekruci i rezerwy",
             },
-            trainingNote:
-                "Członkowie klanu zapisują się na trening jednym przyciskiem.",
+            trainingNote: "Uprawnieni gracze zapisują się na trening jednym przyciskiem. Powyżej wybierz statusy członkostwa; gracze bez członkostwa mają osobną opcję.",
             groupOffered: "Zaoferuj grupę {name}",
             capLabel: "Limit grupy {name}",
             capPlaceholder: "bez limitu",
@@ -6348,6 +6369,9 @@ export const plMessages = {
             "Wybierz zdarzenie i preset oddziałów dla tego składu.",
     },
     rosterPublish: {
+        publishedWithoutDiscord:
+            "Zapisano w Logi. Dostarczenie na Discord jest niedostępne: nie skonfigurowano kanału składu. Ustaw go w ustawieniach kanałów.",
+
         publishTitle: "Opublikuj skład",
         republishTitle: "Opublikuj ponownie",
         publishedAt: "opublikowano {time}",

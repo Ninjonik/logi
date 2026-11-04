@@ -265,16 +265,15 @@ export function buildEventBasePayload(input: EventUpsertInput) {
                 : normalizeOptionalArray(input.signupGroupIds)
                       .map((id) => id.trim())
                       .filter(Boolean),
-        allowedSignupStatuses:
-            kind === "training"
-                ? undefined
-                : normalizeOptionalArray(input.allowedSignupStatuses).filter(
-                      (status): status is SignupMembershipStatus =>
-                          Boolean(status)
-                  ),
+        allowedSignupStatuses: input.allowedSignupStatuses?.length
+            ? normalizeOptionalArray(input.allowedSignupStatuses).filter(
+                  (status): status is SignupMembershipStatus => Boolean(status)
+              )
+            : kind === "training"
+              ? ["recruit", "member", "reserve_member"]
+              : [],
         allowLateSignups: kind === "match" && input.allowLateSignups !== false,
-        allowNonMembersSignup:
-            kind === "match" && Boolean(input.allowNonMembersSignup),
+        allowNonMembersSignup: Boolean(input.allowNonMembersSignup),
         useGeneralSignup:
             kind === "match" ? Boolean(input.useGeneralSignup) : false,
         signupReminderStatuses:

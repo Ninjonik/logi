@@ -68,3 +68,28 @@ test("every role and mode uses local examples on every tour step", () => {
         }
     }
 })
+
+test("match guidance advances through form sections without Continue-only stops", () => {
+    for (const botInside of [true, false]) {
+        const steps = walkthroughSteps("manager", botInside).filter(
+            (step) => step.chapter === "match"
+        )
+        assert.deepEqual(
+            steps.map((step) => step.id),
+            [
+                "match-new",
+                "match-watch",
+                "match-time",
+                "match-signups",
+                "match-discord",
+                "match-review",
+                "match-publish",
+            ]
+        )
+        assert.ok(
+            steps.every(
+                (step) => step.selector !== "#onboarding-match-continue"
+            )
+        )
+    }
+})

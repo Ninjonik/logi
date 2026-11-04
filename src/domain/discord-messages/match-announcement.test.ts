@@ -527,12 +527,13 @@ test("eligibility combines configured membership, non-members and additional eve
     assert.doesNotMatch(body, /Kdokoli/)
 })
 
-test("training without event roles remains open to anyone", () => {
+test("training without custom eligibility announces clan members only", () => {
     const body = text(
         buildAnnouncementView({
             ...base,
             event: { ...event, kind: "training" },
         })
     )
-    assert.match(body, /\*\*Přihlásit se mohou\*\*\nKdokoli/)
+    assert.match(body, /\*\*Přihlásit se mohou\*\*\nrekruti, členové, záložníci/)
+    assert.doesNotMatch(body, /Kdokoli/)
 })

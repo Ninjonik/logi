@@ -506,11 +506,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     const template =
         templates.find((entry) => entry.id === values.templateId) ?? null
     const offeredTemplates = useMemo(
-        () =>
-            templates.filter(
-                (entry) => !entry.gameId || entry.gameId === values.gameId
-            ),
-        [templates, values.gameId]
+        () => templatesFor(templates, values.kind, values.gameId),
+        [templates, values.kind, values.gameId]
     )
     const groupsOfGame = gameGroups(groups, values.gameId)
     const intl =
@@ -1119,9 +1116,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
           })
 
     const statusChip = (status: TemplateSignupStatus) => {
-        const pressed = values.allowedSignupStatuses.length
-            ? values.allowedSignupStatuses.includes(status)
-            : true
+        const defaultStatuses = isMatch
+            ? FLOW_SIGNUP_STATUSES
+            : FLOW_SIGNUP_STATUSES.filter((entry) => entry !== "mercenary")
+        const pressed = (
+            values.allowedSignupStatuses.length
+                ? values.allowedSignupStatuses
+                : defaultStatuses
+        ).includes(status)
         return (
             <button
                 key={status}
@@ -1130,13 +1132,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                 onClick={() => {
                     const current = values.allowedSignupStatuses.length
                         ? values.allowedSignupStatuses
-                        : FLOW_SIGNUP_STATUSES
+                        : defaultStatuses
                     const next = pressed
                         ? current.filter((entry) => entry !== status)
                         : [...current, status]
-                    // Every status chosen is stored as "no restriction".
+                    if (!next.length) return
                     update({
                         allowedSignupStatuses:
+                            isMatch &&
                             next.length === FLOW_SIGNUP_STATUSES.length
                                 ? []
                                 : next,
@@ -1356,7 +1359,11 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                               : t.titleTraining}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        {isEdit ? t.edit.description : t.description}
+                        {isEdit
+                            ? t.edit.description
+                            : isMatch
+                              ? t.description
+                              : t.descriptionTraining}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -2761,22 +2768,37 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     </span>
                                 ) : null}
                             </div>
+                            <div className="flex flex-col gap-2">
+                                <FieldLabel id="nm-who">
+                                    {t.signups.who}
+                                </FieldLabel>
+                                <div
+                                    role="group"
+                                    aria-labelledby="nm-who"
+                                    className="flex flex-wrap gap-2"
+                                >
+                                    {FLOW_SIGNUP_STATUSES.map(statusChip)}
+                                </div>
+                            </div>
+                            <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
+                                <Label
+                                    htmlFor="nm-non-members"
+                                    className="text-sm font-normal"
+                                >
+                                    {t.signups.nonMembers}
+                                </Label>
+                                <Switch
+                                    id="nm-non-members"
+                                    checked={values.allowNonMembersSignup}
+                                    onCheckedChange={(allowNonMembersSignup) =>
+                                        update({
+                                            allowNonMembersSignup,
+                                        })
+                                    }
+                                />
+                            </div>
                             {isMatch ? (
                                 <>
-                                    <div className="flex flex-col gap-2">
-                                        <FieldLabel id="nm-who">
-                                            {t.signups.who}
-                                        </FieldLabel>
-                                        <div
-                                            role="group"
-                                            aria-labelledby="nm-who"
-                                            className="flex flex-wrap gap-2"
-                                        >
-                                            {FLOW_SIGNUP_STATUSES.map(
-                                                statusChip
-                                            )}
-                                        </div>
-                                    </div>
                                     {
                                         <div className="flex flex-col gap-1.5">
                                             <FieldLabel id="nm-required-match">
@@ -2957,27 +2979,6 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             onCheckedChange={(
                                                 allowLateSignups
                                             ) => update({ allowLateSignups })}
-                                        />
-                                    </div>
-                                    <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
-                                        <Label
-                                            htmlFor="nm-non-members"
-                                            className="text-sm font-normal"
-                                        >
-                                            {t.signups.nonMembers}
-                                        </Label>
-                                        <Switch
-                                            id="nm-non-members"
-                                            checked={
-                                                values.allowNonMembersSignup
-                                            }
-                                            onCheckedChange={(
-                                                allowNonMembersSignup
-                                            ) =>
-                                                update({
-                                                    allowNonMembersSignup,
-                                                })
-                                            }
                                         />
                                     </div>
                                     {isEdit ? (

@@ -1,3 +1,4 @@
+import { EventDeliveryStatus } from "@/components/app/event-delivery-status"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 
@@ -108,6 +109,7 @@ export default async function TrainingDetailPage({
                 }
             />
             <div className="px-4 lg:px-6">
+                {canAdmin && !event.isDraft ? <EventDeliveryStatus key={event.id} serverId={serverId} eventId={event.id} dictionary={dictionary} /> : null}
                 <EventOverview
                     event={event}
                     context={context}

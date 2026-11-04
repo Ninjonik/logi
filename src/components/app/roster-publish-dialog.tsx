@@ -52,6 +52,7 @@ export type RosterPublishContext = {
     messageStyle?: MessageStyle | null
     timeZone: string
     /** The roster channel's name ("info-akce"), read-only here (D5-07). */
+    rosterChannelId?: string
     rosterChannelName?: string
     meetingChannelId?: string
     meetingChannelName?: string
@@ -311,7 +312,9 @@ function RosterPublishBody({
         : undefined
     const channel = context.rosterChannelName
         ? `#${context.rosterChannelName}`
-        : t.channelMissing
+        : context.rosterChannelId
+          ? `<#${context.rosterChannelId}>`
+          : t.channelMissing
 
     const layout = {
         copy: getSystemMessages(context.language).kit,
@@ -588,6 +591,15 @@ function RosterPublishBody({
                         >
                             {channel}
                         </div>
+                        {!context.rosterChannelId &&
+                        !context.rosterChannelName ? (
+                            <p
+                                role="status"
+                                className="text-sm text-amber-700 dark:text-amber-400"
+                            >
+                                {t.publishedWithoutDiscord}
+                            </p>
+                        ) : null}
                         <span className="text-muted-foreground flex items-center gap-1 text-xs">
                             <Lock className="size-3" aria-hidden />
                             {t.channelFrom}{" "}

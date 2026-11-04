@@ -55,7 +55,7 @@ export async function getEligibleUsersForServer(
     server: Guild,
     assignments: ServerUserAssignment[]
 ) {
-    const currentUsers = await listUsers(server.discordId)
+    const currentUsers = await listUsers()
 
     return currentUsers.map((user) => {
         const existingHere = assignments.find(
