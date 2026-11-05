@@ -337,6 +337,7 @@ export type EventRecord = {
     id: string
     guildId: string
     /** Missing means the legacy Hell Let Loose game scope. */
+    wardogsFixtureUrl?: string
     gameId?: GameId
     kind: EventKind
     /** Saved but not published: shown only in the dashboard, never announced. */

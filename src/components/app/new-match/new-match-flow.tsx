@@ -1,6 +1,11 @@
 "use client"
 
+import {
+    WardogsFixtureInput,
+    fixtureConflictMessage,
+} from "./wardogs-fixture-input"
 import { EventDiscussionFields } from "@/components/app/event-discussion-fields"
+import { fixturePrefill } from "./fixture-prefill"
 
 import {
     ArrowLeft,
@@ -648,6 +653,8 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         body: { error?: string; fields?: string[] } | null
     ) => {
         const code = body?.error ?? "save_failed"
+        if (code === "fixture_link_conflict")
+            return fixtureConflictMessage(locale)
         if (code === "invalid_event") {
             const steps = [
                 ...new Set((body?.fields ?? []).map(stepOfField)),
@@ -846,12 +853,14 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             if (!response.ok) {
                 const teamError = matchTeamSaveErrorCode(body)
                 toast.error(
-                    teamError
-                        ? dictionary.teams.picker.errors[teamError]
-                        : eventWriteErrorMessage(body, {
-                              forbidden: dictionary.event.writeForbidden,
-                              fallback: t.errors.save_failed,
-                          })
+                    body?.error === "fixture_link_conflict"
+                        ? fixtureConflictMessage(locale)
+                        : teamError
+                          ? dictionary.teams.picker.errors[teamError]
+                          : eventWriteErrorMessage(body, {
+                                forbidden: dictionary.event.writeForbidden,
+                                fallback: t.errors.save_failed,
+                            })
                 )
                 setBusy(null)
                 return
@@ -1704,6 +1713,42 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 </div>
                             ) : isMatch ? (
                                 <div className="flex flex-col gap-2">
+                                    {values.gameId === "wardogs" && (
+                                        <WardogsFixtureInput
+                                            serverId={serverId}
+                                            locale={locale}
+                                            value={
+                                                values.wardogsFixtureUrl ?? ""
+                                            }
+                                            onChange={(wardogsFixtureUrl) =>
+                                                update({
+                                                    wardogsFixtureUrl,
+                                                    ...(wardogsFixtureUrl.trim()
+                                                        ? {
+                                                              repeatWeekly: false,
+                                                          }
+                                                        : {}),
+                                                })
+                                            }
+                                            onApply={(preview) =>
+                                                update(
+                                                    fixturePrefill(
+                                                        preview.fixture,
+                                                        preview.matchTeams,
+                                                        timezone
+                                                    )
+                                                )
+                                            }
+                                            disabled={
+                                                Boolean(busy) ||
+                                                Boolean(props.demo) ||
+                                                Boolean(
+                                                    edit?.event
+                                                        .wardogsFixtureUrl
+                                                )
+                                            }
+                                        />
+                                    )}
                                     <FieldLabel id="nm-teams">
                                         {t.match.teams}
                                     </FieldLabel>
@@ -2717,6 +2762,12 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     <div className="flex items-start gap-3">
                                         <Switch
                                             id="nm-repeat"
+                                            disabled={
+                                                values.gameId === "wardogs" &&
+                                                Boolean(
+                                                    values.wardogsFixtureUrl?.trim()
+                                                )
+                                            }
                                             checked={values.repeatWeekly}
                                             onCheckedChange={(repeatWeekly) =>
                                                 update({ repeatWeekly })

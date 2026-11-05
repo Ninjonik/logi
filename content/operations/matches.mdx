@@ -700,3 +700,19 @@ these timestamps in each reader's timezone; the editor uses the workspace timezo
 Match sign-ups require an allowed membership status, plus any configured event role.
 The announcement lists those eligibility requirements; no extra role restriction
 does not mean that everyone can sign up.
+
+### Wardogs League fixture links
+
+When creating a Wardogs match, the **Match** step has an optional **Wardogs fixture
+link**. Paste the public League match URL to link it when publishing. **Fill from
+Wardogs API** can prefill the plan using the team API key in **Settings → Wardogs
+League**. Loading is optional; you may enter the match details manually and keep
+only the link. The same fixture cannot be published as two matches in one clan.
+Drafts keep the link without reserving it. Recurring matches cannot carry a fixture
+link.
+
+Automatic League imports also reuse a single existing Wardogs match at the exact
+same **game start**, keeping that match's settings, sign-ups and roster. Ambiguous
+or conflicting matches are flagged instead of creating another one. See
+[Wardogs League](/wiki/configuration/league-tracking#prevent-duplicates-when-creating-matches-manually)
+for limits and configuration.

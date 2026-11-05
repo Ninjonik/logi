@@ -1091,3 +1091,36 @@ test("API signup cannot bypass a future registrationStart on an imported native 
     assert.match(result?.body ?? "", /Signups are closed/)
     assert.deepEqual(db.tables.events.get("scheduled-import")?.participants, [])
 })
+
+test("bearer event writes bind optional Wardogs fixture URLs through the shared repository", async () => {
+    const db = new FakeDb()
+    const url = "https://wardogsleague.net/matches/cmvjzz9tz03nvml015t5vzlpa"
+    const created = await handler(publicApi.mutateClanEvent)(
+        { db },
+        request({
+            event: event({
+                gameId: "wardogs",
+                kind: "match",
+                wardogsFixtureUrl: `${url}/`,
+            }),
+        })
+    )
+    assert.equal(created?.status, 201)
+    const id = JSON.parse(created!.body).data.id
+    assert.equal((await db.get(id))?.wardogsFixtureUrl, url)
+    assert.equal(db.tables.leagueAutoImportFixtures.size, 1)
+    const duplicate = await handler(publicApi.mutateClanEvent)(
+        { db },
+        request({
+            idempotencyKey: "duplicate-fixture",
+            bodyHash: "duplicate-fixture",
+            event: event({
+                gameId: "wardogs",
+                kind: "match",
+                wardogsFixtureUrl: url,
+            }),
+        })
+    )
+    assert.equal(duplicate?.status, 400)
+    assert.match(duplicate?.body ?? "", /already linked/)
+})

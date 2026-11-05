@@ -7,6 +7,9 @@ export const generatedOpenApiSchemas = {
             "guildId": {
                 "type": "string"
             },
+            "wardogsFixtureUrl": {
+                "type": "string"
+            },
             "gameId": {
                 "type": "string"
             },
@@ -790,6 +793,7 @@ export const generatedOpenApiSchemas = {
         ],
         "example": {
             "guildId": "string",
+            "wardogsFixtureUrl": "string",
             "gameId": "string",
             "kind": "match",
             "isDraft": true,

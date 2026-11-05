@@ -115,6 +115,7 @@ test("nothing changed lists nothing", () => {
 const fieldEdits: Record<keyof FlowValues, Partial<FlowValues> | null> = {
     kind: null,
     gameId: null,
+    wardogsFixtureUrl: null,
     templateId: null,
     nameTouched: null,
     announcementChannelId: null,

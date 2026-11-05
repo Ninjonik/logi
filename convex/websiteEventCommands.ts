@@ -144,6 +144,7 @@ function editableFields(event: Doc<"events">): WebsiteEventFields | null {
     const value = websiteEventFieldsSchema.safeParse({
         kind: event.kind ?? "match",
         name: event.name,
+        wardogsFixtureUrl: event.wardogsFixtureUrl,
         ...(event.matchType !== undefined
             ? { matchType: event.matchType }
             : {}),

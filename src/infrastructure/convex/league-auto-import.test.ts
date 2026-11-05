@@ -203,3 +203,127 @@ test("defaults change new imports only, and registrationStart reaches the shared
     )
     assert.notEqual(config.revision, next.revision)
 })
+
+test("an exact existing kickoff is adopted without changing the match, signups or roster", async () => {
+    const ctx = await setup()
+    const start = new Date(Date.now() + 10 * 86400_000).toISOString()
+    ctx.db.seed("events", {
+        _id: "events:manual",
+        guildId: "guild-a",
+        gameId: "wardogs",
+        kind: "match",
+        name: "Manual match",
+        gameStart: start,
+        gameEnd: new Date(Date.parse(start) + 7200_000).toISOString(),
+        registrationEnd: start,
+        meetingStart: start,
+        signUps: [{ userId: "player" }],
+    })
+    ctx.db.seed("rosters", {
+        _id: "rosters:manual",
+        eventId: "events:manual",
+        squads: [{ name: "Keep" }],
+    })
+    const config = await run(ctx, { scheduledAt: start })
+    assert.equal(ctx.db.tables.events.length, 1)
+    assert.equal(
+        ctx.db.tables.leagueAutoImportFixtures[0].eventId,
+        "events:manual"
+    )
+    assert.equal(ctx.db.tables.events[0].name, "Manual match")
+    assert.equal(
+        ctx.db.tables.events[0].wardogsFixtureUrl,
+        `https://wardogsleague.net/matches/${fixture.id}`
+    )
+    assert.equal(ctx.db.tables.events[0].signUps.length, 1)
+    assert.equal(ctx.db.tables.rosters[0].squads[0].name, "Keep")
+    await invoke(importFixture, ctx, {
+        id: config._id,
+        fence: config.fence,
+        revision: config.revision,
+        fixtureJson: JSON.stringify({
+            ...fixture,
+            scheduledAt: start,
+            map: "Changed API map",
+        }),
+    })
+    assert.equal(ctx.db.tables.events.length, 1)
+    assert.equal(ctx.db.tables.events[0].map, undefined)
+})
+test("ambiguous exact kickoff and a match linked to a different fixture block duplicate creation", async () => {
+    for (const ambiguous of [true, false]) {
+        const ctx = await setup()
+        const start = new Date(Date.now() + 10 * 86400_000).toISOString()
+        const event = {
+            guildId: "guild-a",
+            gameId: "wardogs",
+            kind: "match",
+            name: "Manual match",
+            gameStart: start,
+            gameEnd: new Date(Date.parse(start) + 7200_000).toISOString(),
+            registrationEnd: start,
+            meetingStart: start,
+        }
+        ctx.db.seed("events", {
+            _id: "events:first",
+            ...event,
+            ...(!ambiguous
+                ? {
+                      wardogsFixtureUrl:
+                          "https://wardogsleague.net/matches/different",
+                  }
+                : {}),
+        })
+        if (ambiguous) ctx.db.seed("events", { _id: "events:second", ...event })
+        await run(ctx, { scheduledAt: start })
+        assert.equal(ctx.db.tables.events.length, ambiguous ? 2 : 1)
+        assert.equal(
+            ctx.db.tables.leagueAutoImportFixtures[0].issue,
+            ambiguous ? "ambiguous_game_start" : "kickoff_already_linked"
+        )
+    }
+})
+test("another clan's match at the same kickoff is never adopted", async () => {
+    const ctx = await setup()
+    const start = new Date(Date.now() + 10 * 86400_000).toISOString()
+    ctx.db.seed("events", {
+        _id: "events:other",
+        guildId: "other",
+        gameId: "wardogs",
+        kind: "match",
+        gameStart: start,
+    })
+    await run(ctx, { scheduledAt: start })
+    assert.equal(ctx.db.tables.events.length, 2)
+    assert.notEqual(
+        ctx.db.tables.leagueAutoImportFixtures[0].eventId,
+        "events:other"
+    )
+})
+
+test("exact-time adoption also recognizes legacy clan record IDs without migrating native data", async () => {
+    const ctx = await setup()
+    const start = new Date(Date.now() + 10 * 86400_000).toISOString()
+    ctx.db.seed("events", {
+        _id: "events:legacy",
+        guildId: "guilds:admin",
+        gameId: "wardogs",
+        name: "Legacy match",
+        gameStart: start,
+        gameEnd: new Date(Date.parse(start) + 7200_000).toISOString(),
+        registrationEnd: start,
+        meetingStart: start,
+    })
+    const config = await run(ctx, { scheduledAt: start })
+    assert.equal(ctx.db.tables.events.length, 1)
+    assert.equal(ctx.db.tables.events[0].guildId, "guilds:admin")
+    assert.equal(ctx.db.tables.leagueAutoImportFixtures.length, 1)
+    assert.equal(ctx.db.tables.leagueAutoImportFixtures[0].guildId, "guild-a")
+    await invoke(importFixture, ctx, {
+        id: config._id,
+        fence: config.fence,
+        revision: config.revision,
+        fixtureJson: JSON.stringify({ ...fixture, scheduledAt: start }),
+    })
+    assert.equal(ctx.db.tables.events.length, 1)
+})

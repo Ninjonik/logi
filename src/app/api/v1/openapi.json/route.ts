@@ -963,6 +963,12 @@ const eventMutation = {
                         gameId: gameParameter.schema,
                         kind: { type: "string", enum: ["match", "training"] },
                         name: { type: "string", minLength: 1 },
+                        wardogsFixtureUrl: {
+                            type: "string",
+                            format: "uri",
+                            description:
+                                "Optional canonical https://wardogsleague.net/matches/{id} link for Wardogs matches only. Reserves the fixture for this match in the write transaction; another match bound to that fixture is rejected. Omission preserves a saved link. Cannot be combined with recurrence.",
+                        },
                         map: {
                             type: "string",
                             description:

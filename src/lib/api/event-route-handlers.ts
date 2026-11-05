@@ -1,4 +1,5 @@
 import { DEFAULT_GAME_ID, isGameId, type GameId } from "@/domain/games/game"
+import { fixtureLinkConflict } from "@/domain/wardogs-league/fixture-link"
 import { NextResponse } from "next/server"
 import type { ZodType } from "zod"
 import { z } from "zod"
@@ -209,6 +210,11 @@ function saveErrorResponse(
     deps: Pick<EventRouteDeps<EventBody>, "getUserSafeErrorMessage">,
     error: unknown
 ) {
+    if (fixtureLinkConflict(error))
+        return NextResponse.json(
+            { error: "fixture_link_conflict" },
+            { status: 409 }
+        )
     return NextResponse.json(
         {
             error:

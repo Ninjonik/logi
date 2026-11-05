@@ -2,6 +2,7 @@ import type { EventScoreRepository } from "@/application/events/apply-event-scor
 import type { RosterScoreSettings } from "@/domain/events/score-policy"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
+import { bindWardogsFixture } from "./league-fixture-binding"
 import type { EventLike } from "@/domain/events/types"
 
 import type {
@@ -53,6 +54,11 @@ export class ConvexEventCommandRepository implements EventCommandRepository {
 
     async create(input: Record<string, unknown>): Promise<string> {
         const eventId = await this.ctx.db.insert("events", input as any)
+        if (
+            typeof input.wardogsFixtureUrl === "string" &&
+            input.wardogsFixtureUrl
+        )
+            await bindWardogsFixture(this.ctx, eventId, input.wardogsFixtureUrl)
         return String(eventId)
     }
 
@@ -61,6 +67,15 @@ export class ConvexEventCommandRepository implements EventCommandRepository {
         patch: Record<string, unknown>
     ): Promise<void> {
         await this.ctx.db.patch(eventId as Id<"events">, patch as any)
+        if (
+            typeof patch.wardogsFixtureUrl === "string" &&
+            patch.wardogsFixtureUrl
+        )
+            await bindWardogsFixture(
+                this.ctx,
+                eventId as Id<"events">,
+                patch.wardogsFixtureUrl
+            )
     }
 
     async updateStatus(

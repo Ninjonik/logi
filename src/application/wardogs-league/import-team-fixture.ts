@@ -77,6 +77,13 @@ type CurrentMatch = Partial<ImportedFields> & {
     matchTeams?: MatchTeamAssignment[]
 }
 export interface TeamFixtureImportPorts {
+    findScheduledMatch(
+        gameStart: string
+    ): Promise<
+        | { kind: "none" }
+        | { kind: "match"; eventId: string }
+        | { kind: "review"; issue: string }
+    >
     create(command: EventUpsertCommand): Promise<string>
     update(
         eventId: string,
@@ -124,13 +131,14 @@ export class ImportTeamFixtureUseCase {
             current &&
             (current.guildId !== input.guildId ||
                 current.gameId !== "wardogs" ||
-                current.kind !== "match")
+                (current.kind ?? "match") !== "match")
         )
             throw new Error("Imported match scope mismatch.")
         if (previous?.eventId && !current) {
             await this.ports.save({ issue: "match_deleted" })
             return
         }
+        if (previous?.eventId && current && !previous.baseline) return
         if (input.manuallyManaged) {
             await this.ports.save({ issue: "manually_managed" })
             return
@@ -180,6 +188,21 @@ export class ImportTeamFixtureUseCase {
         let eventId = previous?.eventId
         let changed = false
         if (plan.kind === "create") {
+            const existing = await this.ports.findScheduledMatch(
+                plan.fields.gameStart
+            )
+            if (existing.kind === "review") {
+                await this.ports.save({ issue: existing.issue })
+                return
+            }
+            if (existing.kind === "match") {
+                await this.ports.link(existing.eventId)
+                await this.ports.save({
+                    eventId: existing.eventId,
+                    changed: true,
+                })
+                return
+            }
             const command = fixtureCommand(
                 input.guildId,
                 fixture,

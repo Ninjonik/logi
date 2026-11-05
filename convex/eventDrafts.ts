@@ -4,6 +4,7 @@ import {
     type EventDraftWrite,
 } from "../src/application/events/event-drafts.use-case"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
+import { bindWardogsFixture } from "../src/infrastructure/convex/league-fixture-binding"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import type { EventUpsertInput } from "../src/domain/events/upsert-policy"
 import { normalizeEventRecord } from "../src/domain/events/normalization"
@@ -54,15 +55,25 @@ class ConvexEventDraftRepository implements EventDraftRepository {
             : null
     }
     async create(record: EventDraftWrite) {
-        return String(
-            await this.ctx.db.insert("events", eventDoc(this.ctx, record))
+        const id = await this.ctx.db.insert(
+            "events",
+            eventDoc(this.ctx, record)
         )
+        if (!record.isDraft && record.wardogsFixtureUrl)
+            await bindWardogsFixture(this.ctx, id, record.wardogsFixtureUrl)
+        return String(id)
     }
     async replace(eventId: string, record: EventDraftWrite) {
         await this.ctx.db.replace(
             eventId as Id<"events">,
             eventDoc(this.ctx, record)
         )
+        if (!record.isDraft && record.wardogsFixtureUrl)
+            await bindWardogsFixture(
+                this.ctx,
+                eventId as Id<"events">,
+                record.wardogsFixtureUrl
+            )
     }
     async remove(eventId: string) {
         await this.ctx.db.delete(eventId as Id<"events">)

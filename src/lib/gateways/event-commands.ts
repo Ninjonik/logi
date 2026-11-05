@@ -42,6 +42,7 @@ export async function saveServerEventCommand(input: {
     serverId: string
     gameId?: GameId
     kind: "match" | "training"
+    wardogsFixtureUrl?: string
     matchType?: string
     name: string
     description?: string
@@ -111,6 +112,7 @@ export async function saveServerEventCommand(input: {
         serverId: input.serverId,
         gameId: input.gameId,
         kind: input.kind,
+        wardogsFixtureUrl: input.wardogsFixtureUrl,
         matchType: input.matchType,
         name: input.name,
         description: input.description,
