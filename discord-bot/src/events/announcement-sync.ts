@@ -208,6 +208,7 @@ export async function syncAnnouncement(input: {
     const result = await publishManagedMessage(client, {
         guildId: guild.id,
         key: `event:${event.id}:announcement`,
+        allowCreate: cardState !== "played" && cardState !== "cancelled",
         revision: Math.max(
             Date.parse(payload.config.updatedAt),
             Date.parse(event.updatedAt)
@@ -225,6 +226,17 @@ export async function syncAnnouncement(input: {
             ],
         }),
     })
+    if (result === null) {
+        logInfo(
+            "announcement",
+            "Finished match announcement was not recreated",
+            {
+                eventId: event.id,
+                guildId: guild.id,
+            }
+        )
+        return messageId
+    }
     if (decision.ping || context.layoutVersion !== ANNOUNCEMENT_LAYOUT_VERSION)
         await convex
             .mutation(announcementReferences.record, {

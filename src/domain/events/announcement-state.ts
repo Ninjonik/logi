@@ -115,9 +115,13 @@ export function announcementActions(
                 : [["calendar"]]
         case "roster":
             return [
-                ...(options.lateSignupsOpen ? [["signup" as const]] : []),
                 ["confirm", "late", "attendanceDecline"],
-                ["assignment", "openRoster", "calendar"],
+                [
+                    ...(options.lateSignupsOpen ? ["signup" as const] : []),
+                    "assignment",
+                    "openRoster",
+                    "calendar",
+                ],
             ]
         case "starting":
             return options.rosterPublished &&

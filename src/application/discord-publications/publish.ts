@@ -36,7 +36,8 @@ export async function publish(
     store: PublicationStore,
     transport: PublicationTransport,
     target: string | null,
-    hash: string
+    hash: string,
+    options: { allowCreate?: boolean } = {}
 ) {
     const claimed = await store.claim()
     if (!claimed) return undefined
@@ -65,6 +66,10 @@ export async function publish(
                 state.hash = null
                 await store.save(state)
             } else if (state.channelId !== target) {
+                if (options.allowCreate === false) {
+                    await store.finish(state)
+                    return null
+                }
                 await transport.remove(state.channelId, state.messageId)
                 state.messageId = null
                 state.hash = null
@@ -74,6 +79,9 @@ export async function publish(
         if (target && state.messageId) {
             if (state.hash !== hash)
                 await transport.edit(target, state.messageId)
+        } else if (target && options.allowCreate === false) {
+            await store.finish(state)
+            return null
         } else if (target) {
             state.pending = {
                 channelId: target,

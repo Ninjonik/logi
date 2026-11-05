@@ -534,6 +534,22 @@ test("training without custom eligibility announces clan members only", () => {
             event: { ...event, kind: "training" },
         })
     )
-    assert.match(body, /\*\*Přihlásit se mohou\*\*\nrekruti, členové, záložníci/)
+    assert.match(
+        body,
+        /\*\*Přihlásit se mohou\*\*\nrekruti, členové, záložníci/
+    )
     assert.doesNotMatch(body, /Kdokoli/)
+})
+
+test("published roster with late signups renders valid actions", () => {
+    const view = buildAnnouncementView({
+        ...base,
+        state: "roster",
+        lateSignupsOpen: true,
+        roster: { players: 32, reserves: 0 },
+    })
+    assert.deepEqual(validateMessageView(view, layoutOptions).issues, [])
+    const rows = buttons(view)
+    assert.equal(rows.length, 2)
+    assert.equal(rows.flat().length, 7)
 })

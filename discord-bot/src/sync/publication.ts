@@ -132,6 +132,7 @@ export async function publishManagedMessage(
          * `PUBLICATION_RECHECK_MS`, untouched: no write, no Discord call.
          * The panels set it on their timed refresh, never on an admin request.
          */
+        allowCreate?: boolean
         reuseCurrent?: boolean
     }
 ) {
@@ -315,7 +316,8 @@ export async function publishManagedMessage(
             },
         },
         input.channelId,
-        hash
+        hash,
+        { allowCreate: input.allowCreate }
     )
     if (result === undefined)
         throw new Error("Publication busy or configuration changed; retry.")

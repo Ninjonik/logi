@@ -455,7 +455,7 @@ function announcementButton(
                 kind: "action",
                 id: announcementCustomId(action, event),
                 label,
-                style: "success",
+                style: input.state === "roster" ? "secondary" : "success",
             }
         case "decline":
         case "attendanceDecline":
