@@ -1,3 +1,4 @@
+import { DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES } from "./signup-policy"
 import { normalizeOptionalArray } from "@/domain/shared/collections"
 
 import {
@@ -40,7 +41,7 @@ export function normalizeEventRecord<T extends EventLike>(
         allowedSignupStatuses: event.allowedSignupStatuses?.length
             ? normalizeOptionalArray(event.allowedSignupStatuses)
             : event.kind === "training"
-              ? ["recruit", "member", "reserve_member"]
+              ? [...DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES]
               : [],
         allowLateSignups:
             event.kind !== "training" && event.allowLateSignups !== false,

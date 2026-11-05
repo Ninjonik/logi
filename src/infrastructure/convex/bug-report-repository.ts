@@ -21,7 +21,13 @@ export function bugReportRepository(ctx: MutationCtx): BugReportRepository {
                 if (!metadata || metadata.size !== file.size)
                     throw new Error("invalid_attachment")
             }
-            return String(await ctx.db.insert("bugReports", report))
+            return String(
+                await ctx.db.insert("bugReports", {
+                    ...report,
+                    githubPending: true,
+                    githubRevision: 1,
+                })
+            )
         },
     }
 }

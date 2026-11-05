@@ -501,16 +501,28 @@ export async function syncForumChannel(input: {
                 name: forumName,
                 type: ChannelType.GuildForum,
                 parent: forumCategoryId,
-                permissionOverwrites: [attendeeRoleId, reserveRoleId]
-                    .filter((id): id is string => Boolean(id))
-                    .map((id) => ({
-                        id,
+                permissionOverwrites: [
+                    { id: guild.id, deny: ["ViewChannel"] },
+                    {
+                        id: guild.client.user.id,
                         allow: [
                             "ViewChannel",
+                            "ManageChannels",
                             "SendMessages",
                             "SendMessagesInThreads",
                         ],
-                    })),
+                    },
+                    ...[attendeeRoleId, reserveRoleId]
+                        .filter((id): id is string => Boolean(id))
+                        .map((id) => ({
+                            id,
+                            allow: [
+                                "ViewChannel",
+                                "SendMessages",
+                                "SendMessagesInThreads",
+                            ] as const,
+                        })),
+                ],
             })
             .catch((error) => {
                 logWarn("forum", "Failed to create forum channel", {
@@ -552,6 +564,28 @@ export async function syncForumChannel(input: {
             debriefMessageId,
             stateChanged,
             topicMessageIds,
+        }
+    }
+
+    // Restrict the default audience without pruning existing member overrides.
+    await forumChannel.permissionOverwrites.edit(guild.id, {
+        ViewChannel: false,
+    })
+    await forumChannel.permissionOverwrites.edit(guild.client.user.id, {
+        ViewChannel: true,
+        ManageChannels: true,
+        SendMessages: true,
+        SendMessagesInThreads: true,
+    })
+    for (const participant of event.participants) {
+        if (participant.status === "attending") {
+            await forumChannel.permissionOverwrites.edit(participant.userId, {
+                ViewChannel: true,
+                SendMessages: true,
+                SendMessagesInThreads: true,
+            })
+        } else if (participant.status === "not_attending") {
+            await forumChannel.permissionOverwrites.delete(participant.userId)
         }
     }
 
@@ -1069,8 +1103,12 @@ export async function syncPrivateDebrief(input: {
         thread &&
         (thread.type !== ChannelType.PrivateThread ||
             thread.guildId !== guild.id)
-    )
-        throw new Error("Stored debrief is not a private thread in this guild")
+    ) {
+        if (!thread.isThread() || thread.guildId !== guild.id)
+            throw new Error("Invalid stored debrief")
+        await thread.delete("Replace public debrief with private discussion")
+        thread = null
+    }
     if (!thread) {
         if (!input.parentChannelId)
             throw new Error("No channel configured for the private debrief")
@@ -1158,8 +1196,16 @@ export async function syncPrivateDebrief(input: {
         const sent = await thread.send(messagePayload(view, kitOptions(config)))
         await sent.pin()
     }
+    await thread.setInvitable(false)
     // An invitation failure leaves the forum intact and the sync pending for retry.
     const members = await thread.members.fetch()
+    for (const participant of event.participants) {
+        if (
+            participant.status === "not_attending" &&
+            members.has(participant.userId)
+        )
+            await thread.members.remove(participant.userId)
+    }
     for (const id of input.participantIds) {
         if (!members.has(id)) await thread.members.add(id)
     }
@@ -1202,7 +1248,7 @@ export async function concludeEventForum(
           ? await syncPrivateDebrief(input)
           : destination === "event_forum"
             ? input.existingThreadId
-            : await syncPublicDebrief(input)
+            : await syncPrivateDebrief(input)
     if (input.deleteForum !== false && input.forumChannelId) {
         const forum = await fetchEventChannel(input.guild, input.forumChannelId)
         if (forum) {

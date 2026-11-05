@@ -4,6 +4,7 @@ import test from "node:test"
 import {
     localeOfPath,
     loginErrorPath,
+    loginPath,
     parseLoginError,
 } from "@/lib/login-redirect"
 
@@ -35,4 +36,16 @@ test("only known error codes are explained", () => {
     assert.equal(parseLoginError("<script>"), null)
     assert.equal(parseLoginError(["oauth-state"]), null)
     assert.equal(parseLoginError(undefined), null)
+})
+
+test("login destinations preserve dashboard entry and exact protected URLs", () => {
+    for (const destination of [
+        "/en/dashboard",
+        "/cs/dashboard/servers/abc/events?game=hll&tab=upcoming",
+        "/pl/league-teams?invite=abc",
+    ]) {
+        const url = new URL(loginPath(destination), "https://logi.example")
+        assert.equal(url.pathname, `/${localeOfPath(destination)}/login`)
+        assert.equal(url.searchParams.get("redirectTo"), destination)
+    }
 })

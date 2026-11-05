@@ -999,12 +999,24 @@ const eventMutation = {
                         gameEnd: { type: "string", format: "date-time" },
                         pingClan: { type: "boolean" },
                         allowedSignupStatuses: {
-                            type: "array", items: { type: "string", enum: ["recruit", "member", "reserve_member", "mercenary"] },
-                            description: "Membership audiences for matches and trainings. Empty or omitted defaults to all four for matches, and recruit/member/reserve_member for trainings. Explicitly list mercenary to allow them at training.",
+                            type: "array",
+                            items: {
+                                type: "string",
+                                enum: [
+                                    "recruit",
+                                    "member",
+                                    "reserve_member",
+                                    "mercenary",
+                                ],
+                            },
+                            description:
+                                "Membership audiences for matches and trainings. Empty or omitted defaults to all four for matches, and recruit/member/reserve_member for trainings. Explicitly list mercenary to allow them at training.",
                         },
                         allowNonMembersSignup: {
-                            type: "boolean", default: false,
-                            description: "Independently permit players without membership, for matches and trainings.",
+                            type: "boolean",
+                            default: false,
+                            description:
+                                "Independently permit players without membership, for matches and trainings.",
                         },
                         allowLateSignups: {
                             type: "boolean",

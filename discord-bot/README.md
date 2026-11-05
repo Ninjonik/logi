@@ -22,7 +22,7 @@ See [Discord installation](../content/discord-bot-setup.mdx) for application set
 
 ## Responsibilities
 
-- Event announcements, forum posts, scheduled events, sign-ups, rosters, attendance, reminders, and reviewed-result cards. Debriefs use a retained event forum, a public thread on the published result, or a separate debrief forum topic; legacy private debriefs remain supported. Disposable match forums are deleted only after any enabled external debrief exists.
+- Event announcements, forum posts, scheduled events, sign-ups, rosters, attendance, reminders, and reviewed-result cards. Debriefs use a private retained event forum or an invitation-only participant thread in the results text channel. External forum destinations also use private threads because shared forum topics cannot restrict their individual audience. Disposable match forums are deleted only after any enabled external debrief exists.
 - Membership applications, private tickets, account linking, and team-request decision DMs.
 - Durable public panels, server seeding, League tracking, and player-statistics replies.
 - Membership observations and queued role changes with current actor, target, and hierarchy checks.
@@ -53,7 +53,9 @@ Cross-runtime rules and workflows live in `../src/domain` and `../src/applicatio
 
 Workers use durable publication keys, leases, fences, and retry policies. Discord sends can be ambiguous; an uncertain send is reconciled according to the feature's recovery rules. Scheduled reminder reservations prevent replay after interruption, so a partially delivered run can leave some recipients waiting for the next run.
 
-Public messages do not show server passwords. A player's private assignment response can show the password to eligible published-roster players. Player reports use private threads and current Discord audience checks; bearer integrations cannot export their private contents.
+Public messages do not show server passwords. A player's private assignment response can show the password to eligible published-roster players. Signup discussions and external debriefs require regular text channels and private-thread permissions. Signups are invited and explicit declines are removed, without pruning other thread members. Discord administrators and members with Manage Threads retain access. This is a Discord delivery change; the v1 event configuration contract is unchanged.
+
+Player reports use private threads and current Discord audience checks; bearer integrations cannot export their private contents.
 
 Meeting attendance checks read only the requested roster's assigned and reserve players through Discord's voice-state REST endpoint. Requests expire after 45 seconds; permission/network failures abort rather than confirming an empty result. The bot stores attendance results, without voice presence history or server-wide voice snapshots.
 

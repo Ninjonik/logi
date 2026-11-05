@@ -1033,28 +1033,64 @@ test("late signup API persists reserve metadata, enforces scope and window, and 
     )
 })
 
-
 test("training API defaults to clan members, saves custom eligibility, and replays signups once", async () => {
     const db = new FakeDb()
-    const created = await handler(publicApi.mutateClanEvent)({ db }, request({ event: event({ kind: "training" }) }))
+    const created = await handler(publicApi.mutateClanEvent)(
+        { db },
+        request({ event: event({ kind: "training" }) })
+    )
     assert.equal(created?.status, 201)
     const eventId = JSON.parse(created!.body).data.id
-    assert.deepEqual((await db.get(eventId))?.allowedSignupStatuses, ["recruit", "member", "reserve_member"])
-    const signup = (key: string, overrides: Record<string, unknown> = {}) => handler(publicApi.mutateClanEventSignup)({ db }, {
-        secret: "dev-internal-auth-secret", keyHash: "key", eventId,
-        idempotencyKey: key, bodyHash: key, methodPath: "POST /clan/events/{eventId}/signup",
-        userId: "new-player", group: null, ...overrides,
-    })
+    assert.deepEqual((await db.get(eventId))?.allowedSignupStatuses, [
+        "recruit",
+        "member",
+        "reserve_member",
+    ])
+    const signup = (key: string, overrides: Record<string, unknown> = {}) =>
+        handler(publicApi.mutateClanEventSignup)(
+            { db },
+            {
+                secret: "dev-internal-auth-secret",
+                keyHash: "key",
+                eventId,
+                idempotencyKey: key,
+                bodyHash: key,
+                methodPath: "POST /clan/events/{eventId}/signup",
+                userId: "new-player",
+                group: null,
+                ...overrides,
+            }
+        )
     assert.equal((await signup("training-denied"))?.status, 400)
-    const changed = await handler(publicApi.mutateClanEvent)({ db }, request({ operation: "update", eventId, idempotencyKey: "training-audience", bodyHash: "training-audience", methodPath: "PATCH /clan/events/{eventId}", event: event({ kind: "training", allowedSignupStatuses: ["mercenary"], allowNonMembersSignup: true }) }))
+    const changed = await handler(publicApi.mutateClanEvent)(
+        { db },
+        request({
+            operation: "update",
+            eventId,
+            idempotencyKey: "training-audience",
+            bodyHash: "training-audience",
+            methodPath: "PATCH /clan/events/{eventId}",
+            event: event({
+                kind: "training",
+                allowedSignupStatuses: ["mercenary"],
+                allowNonMembersSignup: true,
+            }),
+        })
+    )
     assert.equal(changed?.status, 200)
-    assert.deepEqual((await db.get(eventId))?.allowedSignupStatuses, ["mercenary"])
+    assert.deepEqual((await db.get(eventId))?.allowedSignupStatuses, [
+        "mercenary",
+    ])
     const accepted = await signup("training-opted-in")
     assert.equal(accepted?.status, 200)
     const deliveries = db.tables.webhookDeliveries.size
     assert.deepEqual(await signup("training-opted-in"), accepted)
     assert.equal(db.tables.webhookDeliveries.size, deliveries)
-    assert.equal((await signup("training-other-clan", { keyHash: "other-key" }))?.status ?? 401, 401)
+    assert.equal(
+        (await signup("training-other-clan", { keyHash: "other-key" }))
+            ?.status ?? 401,
+        401
+    )
 })
 
 test("API signup cannot bypass a future registrationStart on an imported native match", async () => {

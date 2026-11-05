@@ -54,7 +54,7 @@ export async function syncGuildPayload(
     }
 
     await syncPayloadEvents(client, queuedEventIds, payload, {
-        syncRoles: mode === "full",
+        syncRoles: true,
     })
 
     // Event lifecycle and message changes are user-visible state. Never hold them

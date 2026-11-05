@@ -1,10 +1,10 @@
-import { withGameOverrides } from "@/domain/games/game"
 import { resolveMatchMessageSettings } from "@/domain/discord-messages/notification-settings"
 import { resolveRosterUpdateChannelIds } from "@/domain/rosters/roster-update-channel"
 import type { RosterPublishContext } from "@/components/app/roster-publish-dialog"
 import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
 import type { DiscordConfig, EventRecord, Guild } from "@/types/domain"
 import { resolveClanLanguage } from "@/lib/clan-language/core"
+import { withGameOverrides } from "@/domain/games/game"
 import { getSiteUrl } from "@/lib/env"
 
 /**
@@ -23,7 +23,13 @@ export async function getRosterPublishContext(input: {
     channelNames?: Map<string, string>
 }): Promise<RosterPublishContext> {
     const { event } = input
-    const discordConfig = input.discordConfig ? withGameOverrides(input.discordConfig, input.discordConfig.gameOverrides, event.gameId) : null
+    const discordConfig = input.discordConfig
+        ? withGameOverrides(
+              input.discordConfig,
+              input.discordConfig.gameOverrides,
+              event.gameId
+          )
+        : null
     const language = resolveClanLanguage(discordConfig?.defaultLanguage)
     const settings = resolveMatchMessageSettings(discordConfig)
     const channels = resolveRosterUpdateChannelIds({
@@ -32,6 +38,9 @@ export async function getRosterPublishContext(input: {
         configuredAnnouncementChannelId: discordConfig?.announcementsChannelId,
         configuredEventInfoChannelId: discordConfig?.eventInfoChannelId,
     })
+    const destinationId = channels.announcementChannelId
+        ? channels.rosterUpdateChannelId
+        : undefined
     const meetingChannelId =
         event.meetingChannelId ?? discordConfig?.meetingChannelId
     const names =
@@ -49,10 +58,9 @@ export async function getRosterPublishContext(input: {
         language,
         messageStyle: discordConfig?.messageStyle ?? null,
         timeZone: discordConfig?.timezone || "UTC",
-        rosterChannelId: channels.rosterUpdateChannelId,
-        rosterChannelName: channels.rosterUpdateChannelId
-            ? (names.get(channels.rosterUpdateChannelId) ??
-              channels.rosterUpdateChannelId)
+        rosterChannelId: destinationId,
+        rosterChannelName: destinationId
+            ? (names.get(destinationId) ?? destinationId)
             : undefined,
         meetingChannelId,
         meetingChannelName: meetingChannelId

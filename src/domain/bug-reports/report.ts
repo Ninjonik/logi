@@ -21,6 +21,10 @@ export type Report = ReportInput & {
     _creationTime: number
     reporter: string
     status: z.infer<typeof reportStatus>
+    githubUrl?: string
+    githubError?: string
+    githubPending?: boolean
+    githubComments?: { id: number; body: string; author: string }[]
     attachments: Attachment[]
 }
 

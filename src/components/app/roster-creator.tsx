@@ -79,6 +79,7 @@ export function RosterCreator({
     locale,
     timezone,
     initialEventId,
+    gameId,
     publishContexts,
 }: {
     events: EventRecord[]
@@ -92,6 +93,7 @@ export function RosterCreator({
     serverId: string
     locale: string
     timezone?: string
+    gameId?: string
     initialEventId?: string
     publishContexts?: Record<string, RosterPublishContext>
 }) {
@@ -283,7 +285,7 @@ export function RosterCreator({
                                     {dictionary.roster.noPresets}{" "}
                                     <Link
                                         className="underline"
-                                        href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create${initialEvent ? `?game=${initialEvent.gameId}` : ""}`}
+                                        href={`/${locale}/dashboard/servers/${serverId}/squad-presets/create${gameId ? `?game=${gameId}` : initialEvent ? `?game=${initialEvent.gameId}` : ""}`}
                                     >
                                         {dictionary.roster.createPreset}
                                     </Link>

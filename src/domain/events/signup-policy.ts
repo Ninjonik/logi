@@ -14,6 +14,9 @@ export const DEFAULT_ALLOWED_SIGNUP_STATUSES: SignupMembershipStatus[] = [
     "mercenary",
 ]
 
+export const DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES: SignupMembershipStatus[] =
+    ["recruit", "member", "reserve_member"]
+
 export function isSignupMembershipAllowed(input: {
     event: {
         kind?: "match" | "training"
@@ -28,7 +31,7 @@ export function isSignupMembershipAllowed(input: {
     const allowedStatuses = input.event.allowedSignupStatuses?.length
         ? input.event.allowedSignupStatuses
         : input.event.kind === "training"
-          ? ["recruit", "member", "reserve_member"]
+          ? DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES
           : DEFAULT_ALLOWED_SIGNUP_STATUSES
 
     return allowedStatuses.includes(input.membershipStatus)

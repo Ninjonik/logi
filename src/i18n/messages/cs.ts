@@ -2930,6 +2930,8 @@ export const csMessages = {
         saveError: "Nastavení členství se nepodařilo uložit.",
     },
     userManagement: {
+        previousPage: "Předchozí",
+        nextPage: "Další",
         canAddMemberOrMercenary:
             "Lze přidat jako člena, člena v záloze nebo žoldáka.",
         mercenaryOnly:
@@ -2962,7 +2964,8 @@ export const csMessages = {
         eligibleMembers: "Způsobilí pro kmenové členství",
         eligibleMercs: "Způsobilí pro žoldáctví",
         blocked: "Nezpůsobilý",
-        searchPlaceholder: "Vyhledat hráče v systému...",
+        searchPlaceholder:
+            "Jméno na Discordu, přezdívka na serveru nebo Discord ID",
         noResults: "V systému nebyli nalezeni žádní odpovídající hráči.",
         rulesTitle: "Pravidla přiřazení",
         rulesMember:
@@ -3803,10 +3806,6 @@ export const csMessages = {
                     detail: "Nový zápas nebo trénink · přihlášky a ping role podle šablony",
                 },
                 roster: {
-                    noPresets:
-                        "Nejprve vytvořte předvolbu družstev pro tuto soupisku.",
-                    createPreset: "Vytvořit předvolbu družstev",
-
                     title: "Soupiska",
                     detail: "Fotka soupisky pod hlavičkou s tlačítky Zobrazit zařazení a Otevřít soupisku · zařazení a heslo vidí jen hráč",
                     variantLabel: "Výchozí podoba",
@@ -4606,6 +4605,9 @@ export const csMessages = {
         },
     },
     roster: {
+        noPresets: "Nejprve vytvořte předvolbu družstev pro tuto soupisku.",
+        createPreset: "Vytvořit předvolbu družstev",
+
         dragSection: "Přetáhnout sekci",
         dragSquad: "Přetáhnout jednotku",
         moveUp: "Posunout nahoru",
@@ -4732,9 +4734,12 @@ export const csMessages = {
     },
     newMatch: {
         delivery: {
+            checkFailed:
+                "Stav doručení na Discord se nepodařilo ověřit. Zkuste obnovit stav.",
             pending: "Uloženo; čeká na doručení na Discord.",
             delivered: "Doručeno na Discord.",
-            unavailable: "Doručení na Discord není dostupné: nastavte oznamovací kanál v nastavení.",
+            unavailable:
+                "Doručení na Discord není dostupné: nastavte oznamovací kanál v nastavení.",
             open: "Otevřít zprávu",
             refresh: "Obnovit stav",
         },
@@ -4903,7 +4908,8 @@ export const csMessages = {
                 memberRecruit: "členům a rekrutům",
                 all: "členům, rekrutům a záložníkům",
             },
-            trainingNote: "Oprávnění hráči se přihlásí na trénink jedním tlačítkem. Výše vyberte stavy členství; hráči bez členství mají samostatnou volbu.",
+            trainingNote:
+                "Oprávnění hráči se přihlásí na trénink jedním tlačítkem. Výše vyberte stavy členství; hráči bez členství mají samostatnou volbu.",
             groupOffered: "Nabídnout skupinu {name}",
             capLabel: "Limit skupiny {name}",
             capPlaceholder: "bez limitu",
@@ -4946,12 +4952,12 @@ export const csMessages = {
             createDebriefThread: "Vytvořit debrief vlákno po zápasu",
             debriefDestination: "Umístění debriefu",
             debriefEventForum: "Ve fóru zápasu",
-            debriefResultsThread: "Vlákno pod zprávou s výsledky",
-            debriefSeparateForum: "Téma v samostatném fóru debriefů",
+            debriefResultsThread: "Soukromé vlákno v kanálu výsledků",
+            debriefSeparateForum: "Soukromé vlákno účastníků (náhrada fóra)",
             debriefLegacyPrivate: "Stávající soukromý debrief",
             debriefForumChannel: "Kanál fóra pro debriefy",
             debriefForumChannelHint:
-                "Používá se pro debriefy v samostatném fóru. Nastavte výchozí kanál klanu a přidejte výjimky pro hry; ostatní nastavení diskuzí je níže.",
+                "Debrief mimo fórum zápasu používá soukromé vlákno v textovém kanálu výsledků. Témata sdíleného fóra nelze omezit na účastníky zápasu.",
             debriefResultsWarning:
                 "Debrief pod výsledky vyžaduje zveřejnění výsledku po zápase. Fórum zápasu zůstane zachováno, dokud debrief nevznikne.",
             discussionDefaults: "Výchozí nastavení diskuzí událostí",
@@ -4965,7 +4971,7 @@ export const csMessages = {
                 "Po ukončení vytvoří debrief na vybraném místě. Debrief ve fóru zápasu vyžaduje zachování tohoto fóra.",
             signupThread: "Diskuzní vlákno akce",
             signupThreadHint:
-                "Vytvoří veřejné vlákno pod oznámením a udržuje jeho členy podle přihlášek.",
+                "Vytvoří soukromé vlákno v textovém kanálu oznámení. Přístup mají pouze aktuálně přihlášení účastníci.",
             voice: "Hlasové kanály čet při srazu",
             serverAndPassword: "Server a heslo",
             server: "Server",
@@ -6237,8 +6243,10 @@ export const csMessages = {
         rosterPageDescription: "Vyberte akci a předlohu čet pro tuto sestavu.",
     },
     rosterPublish: {
+        noDiscordDestination:
+            "Zveřejnění uloží soupisku v Logi. Doručení na Discord není dostupné, dokud nenastavíte cílový kanál.",
         publishedWithoutDiscord:
-            "Uloženo v Logi. Doručení na Discord není dostupné: není nastaven kanál soupisky. Nastavte jej v nastavení kanálů.",
+            "Uloženo v Logi. Doručení na Discord není dostupné: nastavte cílový oznamovací kanál v nastavení kanálů.",
 
         publishTitle: "Publikovat soupisku",
         republishTitle: "Publikovat znovu",

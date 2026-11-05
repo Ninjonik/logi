@@ -50,3 +50,22 @@ test("applies the clan API ceiling by bearer key across client IPs", async () =>
     assert.ok(secondIpResponse)
     assert.equal(secondIpResponse.status, 429)
 })
+
+for (const locale of ["en", "cs", "de", "pl"]) {
+    test(`preserves ${locale} dashboard URLs when a session cookie needs server validation`, async () => {
+        const path = `/${locale}/dashboard/servers/workspace/events?game=wardogs&tab=upcoming`
+        const response = await proxy(
+            new NextRequest(`https://logi.example${path}`, {
+                headers: {
+                    cookie: "token=expired-session",
+                    "x-logi-request-path": "/en/untrusted",
+                },
+            })
+        )
+        assert.ok(response)
+        assert.equal(
+            response.headers.get("x-middleware-request-x-logi-request-path"),
+            path
+        )
+    })
+}

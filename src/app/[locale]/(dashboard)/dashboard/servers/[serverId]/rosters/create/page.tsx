@@ -1,4 +1,5 @@
 import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
+import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
 import { GameSelectionGate } from "@/components/app/game-selection-gate"
 import { RosterCreator } from "@/components/app/roster-creator"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -57,6 +58,10 @@ export default async function CreateRosterPage({
         context.server.discordId
     )
 
+    const channelNames = await getDiscordChannelNames(
+        serverId,
+        context.server.discordId
+    )
     const publishContexts = Object.fromEntries(
         await Promise.all(
             rosterEligibleEvents
@@ -71,6 +76,7 @@ export default async function CreateRosterPage({
                                 server: context.server,
                                 event,
                                 discordConfig,
+                                channelNames,
                             }),
                         ] as const
                 )
@@ -86,6 +92,7 @@ export default async function CreateRosterPage({
                 <RosterCreator
                     events={rosterEligibleEvents}
                     initialEventId={eventId}
+                    gameId={game}
                     publishContexts={publishContexts}
                     rosters={rosters}
                     squadPresets={squadPresets}

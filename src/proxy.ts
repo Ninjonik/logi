@@ -46,6 +46,11 @@ export default async function proxy(request: NextRequest) {
         return Response.redirect(loginUrl)
     }
 
+    // Overwrite client-supplied values before forwarding the requested URL.
+    request.headers.set(
+        "x-logi-request-path",
+        `${request.nextUrl.pathname}${request.nextUrl.search}`
+    )
     return handleI18nRouting(request)
 }
 

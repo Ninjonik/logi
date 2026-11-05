@@ -6,6 +6,7 @@ import { ChannelFlags, ChannelType } from "discord.js"
 import {
     buildMatchForumName,
     concludeEventForum,
+    syncPublicDebrief,
     buildTopicMessage,
     finalizeForumAfterConclusion,
     findForumPost,
@@ -221,6 +222,7 @@ test("without a stored ID the archived post is found by name; another forum's th
 })
 
 const concludedEvent = {
+    participants: [],
     id: "event-1",
     guildId: "111111111111111111",
     kind: "match",
@@ -325,6 +327,7 @@ function privateDebriefFixture() {
         archived: false,
         locked: false,
         isThread: () => true,
+        setInvitable: async () => {},
         setArchived: async () => {
             calls.push("reopen")
         },
@@ -344,6 +347,9 @@ function privateDebriefFixture() {
         },
         members: {
             fetch: async () => new Map<string, unknown>(),
+            remove: async (id: string) => {
+                calls.push(`remove ${id}`)
+            },
             add: async (id: string) => {
                 calls.push(`invite ${id}`)
             },
@@ -678,14 +684,14 @@ function publicDebriefFixture(destination: "results_thread" | "debrief_forum") {
 for (const destination of ["results_thread", "debrief_forum"] as const) {
     for (const deleteForum of [true, false])
         test(`${destination} exists durably before optional forum cleanup (${deleteForum})`, async () => {
-            const f = publicDebriefFixture(destination)
+            const f = privateDebriefFixture()
+            Object.assign(f.input, { resultMessageId: "result" })
+            f.input.event = {
+                ...f.input.event,
+                debriefDestination: destination,
+            }
             const id = await concludeEventForum({ ...f.input, deleteForum })
-            assert.equal(
-                id,
-                destination === "results_thread"
-                    ? "result-card"
-                    : "public-debrief"
-            )
+            assert.equal(id, "private")
             assert.ok(f.calls.indexOf("create") < f.calls.indexOf("remember"))
             assert.equal(f.calls.includes("delete forum"), deleteForum)
             if (deleteForum)
@@ -696,7 +702,10 @@ for (const destination of ["results_thread", "debrief_forum"] as const) {
         })
 }
 test("result debrief recovers the already created thread after state persistence failed", async () => {
-    const f = publicDebriefFixture("results_thread")
+    const f = privateDebriefFixture()
+    f.parent.threads.fetchActive = async () => ({
+        threads: new Map([["private", f.thread]]),
+    })
     await assert.rejects(
         concludeEventForum({
             ...f.input,
@@ -708,17 +717,17 @@ test("result debrief recovers the already created thread after state persistence
     )
     assert.ok(!f.calls.includes("delete forum"))
     await concludeEventForum(f.input)
-    assert.equal(f.calls.filter((call) => call === "create").length, 1)
+    assert.equal(f.calls.filter((call) => call === "create").length, 0)
     assert.ok(f.calls.includes("delete forum"))
 })
 test("failed debrief creation never deletes the event forum", async () => {
-    const f = publicDebriefFixture("debrief_forum")
+    const f = privateDebriefFixture()
     await assert.rejects(
         concludeEventForum({
             ...f.input,
-            event: { ...f.input.event, debriefForumChannelId: "missing" },
+            parentChannelId: "missing",
         }),
-        /Invalid/
+        /requires/
     )
     assert.ok(!f.calls.includes("delete forum"))
 })
@@ -749,6 +758,23 @@ test("dedicated debrief refuses a forum outside the event guild", async () => {
             Object.assign(channel, { guildId: "another-guild" })
         return channel
     }
-    await assert.rejects(concludeEventForum(f.input), /unavailable/)
+    await assert.rejects(syncPublicDebrief(f.input), /unavailable/)
     assert.deepEqual(f.calls, [])
+})
+
+test("private debrief preserves other members and invites participants", async () => {
+    const f = privateDebriefFixture()
+    f.thread.members.fetch = async () =>
+        new Map([
+            ["former", {}],
+            ["bot", {}],
+        ])
+    await concludeEventForum({
+        ...f.input,
+        existingThreadId: "private",
+        deleteForum: false,
+    })
+    assert.ok(!f.calls.includes("remove former"))
+    assert.ok(!f.calls.includes("remove bot"))
+    assert.ok(f.calls.includes("invite player"))
 })

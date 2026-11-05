@@ -1,8 +1,8 @@
 import { DashboardShell } from "@/components/app/dashboard-shell"
+import { redirectToPageLogin } from "@/lib/require-page-login"
 import { isLocale, type Locale } from "@/i18n/config"
 import { getDictionary } from "@/i18n/dictionaries"
 import { getCurrentPlayer } from "@/lib/auth"
-import { redirect } from "next/navigation"
 import { connection } from "next/server"
 import type { Metadata } from "next"
 
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
     const dictionary = getDictionary(safeLocale)
     const user = await getCurrentPlayer()
     if (!user) {
-        redirect(`/${safeLocale}/login`)
+        return await redirectToPageLogin(`/${safeLocale}/dashboard`)
     }
     return (
         <DashboardShell dictionary={dictionary} locale={safeLocale} user={user}>

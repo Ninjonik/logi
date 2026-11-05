@@ -115,7 +115,10 @@ export async function syncCalendarPanel(client: Client, payload: SyncPayload) {
             key: "calendar",
             revision: Math.max(
                 Date.parse(config.updatedAt) || 0,
-                panel?.revision ?? 0
+                panel?.revision ?? 0,
+                ...payload.events.map(
+                    (event) => Date.parse(event.updatedAt) || 0
+                )
             ),
             channelId,
             legacyChannelId: config.calendarMessageChannelId,

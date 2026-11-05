@@ -77,7 +77,14 @@ export const updateStatus = mutation({
     },
     handler: async (ctx, args) => {
         await authorize(ctx, args, true)
-        await ctx.db.patch(args.id, { status: args.status })
+        const report = await ctx.db.get(args.id)
+        if (!report) throw new Error("Report not found")
+        if (report.status === args.status) return
+        await ctx.db.patch(args.id, {
+            status: args.status,
+            githubPending: true,
+            githubRevision: (report.githubRevision ?? 0) + 1,
+        })
     },
 })
 export const attachment = query({

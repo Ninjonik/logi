@@ -2942,6 +2942,8 @@ export const enMessages = {
         saveError: "Unable to save membership settings.",
     },
     userManagement: {
+        previousPage: "Previous",
+        nextPage: "Next",
         canAddMemberOrMercenary:
             "Can be added as a member, reserve member or mercenary.",
         mercenaryOnly:
@@ -2975,7 +2977,7 @@ export const enMessages = {
         eligibleMembers: "Eligible for member",
         eligibleMercs: "Eligible for mercenary",
         blocked: "Not eligible",
-        searchPlaceholder: "Search players in the system...",
+        searchPlaceholder: "Discord name, server display name or Discord ID",
         noResults: "No matching players found in the system.",
         rulesTitle: "Assignment rules",
         rulesMember:
@@ -3815,10 +3817,6 @@ export const enMessages = {
                     detail: "New match or training · sign-ups and the role ping from the template",
                 },
                 roster: {
-                    noPresets:
-                        "Create a squad preset to start building this roster.",
-                    createPreset: "Create a squad preset",
-
                     title: "Roster",
                     detail: "The roster photo under the header with View assignment and Open roster · only the player sees the assignment and password",
                     variantLabel: "Default look",
@@ -4628,6 +4626,9 @@ export const enMessages = {
         },
     },
     roster: {
+        noPresets: "Create a squad preset to start building this roster.",
+        createPreset: "Create a squad preset",
+
         dragSection: "Drag section",
         dragSquad: "Drag squad",
         moveUp: "Move up",
@@ -4754,9 +4755,12 @@ export const enMessages = {
     },
     newMatch: {
         delivery: {
+            checkFailed:
+                "Could not check Discord delivery. Refresh the status to try again.",
             pending: "Saved; waiting for Discord delivery.",
             delivered: "Delivered to Discord.",
-            unavailable: "Discord delivery is unavailable: configure an announcement channel in Settings.",
+            unavailable:
+                "Discord delivery is unavailable: configure an announcement channel in Settings.",
             open: "Open message",
             refresh: "Refresh status",
         },
@@ -4927,7 +4931,8 @@ export const enMessages = {
                 memberRecruit: "members and recruits",
                 all: "members, recruits and reserves",
             },
-            trainingNote: "Eligible players sign up for training with one button. Choose their membership statuses above; players without membership are a separate option.",
+            trainingNote:
+                "Eligible players sign up for training with one button. Choose their membership statuses above; players without membership are a separate option.",
             groupOffered: "Offer the {name} group",
             capLabel: "Cap of {name}",
             capPlaceholder: "no limit",
@@ -4970,12 +4975,12 @@ export const enMessages = {
             createDebriefThread: "Create a debrief thread after the match",
             debriefDestination: "Debrief destination",
             debriefEventForum: "Inside the match forum",
-            debriefResultsThread: "Thread under the results message",
-            debriefSeparateForum: "Topic in a separate debrief forum",
+            debriefResultsThread: "Private thread in the results channel",
+            debriefSeparateForum: "Private participant thread (forum fallback)",
             debriefLegacyPrivate: "Existing private debrief (legacy)",
             debriefForumChannel: "Debrief forum channel",
             debriefForumChannelHint:
-                "Used for debriefs in a separate forum. Set a clan default and add game exceptions; other event discussion settings are configured below.",
+                "External debriefs use a private thread in the results text channel. Shared forum topics cannot restrict access to match participants.",
             debriefResultsWarning:
                 "Debriefs under results require publishing the match result after the game. The event forum is kept until the debrief exists.",
             discussionDefaults: "Event discussion defaults",
@@ -4989,7 +4994,7 @@ export const enMessages = {
                 "Create a debrief after conclusion in the selected destination. A debrief inside the match forum requires keeping that forum.",
             signupThread: "Event discussion thread",
             signupThreadHint:
-                "Create a public thread under the announcement and keep its members in sync with sign-ups.",
+                "Create a private thread in the announcement text channel. Only current attending sign-ups are invited.",
             voice: "Squad voice channels at the meeting",
             serverAndPassword: "Server and password",
             server: "Server",
@@ -6262,8 +6267,10 @@ export const enMessages = {
             "Choose the event and squad preset for this roster.",
     },
     rosterPublish: {
+        noDiscordDestination:
+            "Publishing saves the roster in Logi. Discord delivery is unavailable until you configure a destination in channel settings.",
         publishedWithoutDiscord:
-            "Saved in Logi. Discord delivery is unavailable: no roster channel is configured. Set one in channel settings.",
+            "Saved in Logi. Discord delivery is unavailable: configure an announcement destination in channel settings.",
 
         publishTitle: "Publish roster",
         republishTitle: "Publish again",

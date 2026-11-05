@@ -628,6 +628,23 @@ const guildGames = defineTable({
 
 export default defineSchema({
     bugReports: defineTable({
+        githubNumber: v.optional(v.number()),
+        githubUrl: v.optional(v.string()),
+        githubRepository: v.optional(v.string()),
+        githubPending: v.optional(v.boolean()),
+        githubLease: v.optional(v.number()),
+        githubRevision: v.optional(v.number()),
+        githubError: v.optional(v.string()),
+        githubUpdatedAt: v.optional(v.string()),
+        githubComments: v.optional(
+            v.array(
+                v.object({
+                    id: v.number(),
+                    body: v.string(),
+                    author: v.string(),
+                })
+            )
+        ),
         title: v.string(),
         message: v.string(),
         server: v.string(),
@@ -645,7 +662,10 @@ export default defineSchema({
                 size: v.number(),
             })
         ),
-    }).index("reporter", ["reporter"]),
+    })
+        .index("reporter", ["reporter"])
+        .index("githubPending", ["githubPending"])
+        .index("githubIssue", ["githubRepository", "githubNumber"]),
     // Global game definitions managed exclusively by platform administrators.
     // `id` deliberately remains a string: new community-only games must not
     // require a source-code deployment merely to exist in the catalogue.

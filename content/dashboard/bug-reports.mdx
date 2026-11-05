@@ -11,3 +11,9 @@ After sending, a confirmation appears. Signed-in users can send up to ten report
 ## Superadmin review
 
 Logi superadmins can open **Bug reports** under global administration. The inbox lists the newest reports first and includes the reporting Discord account ID, submission time, optional server and incident time, and attachment downloads. Use **Load more** to view older reports. Change the status to **New**, **Investigating**, or **Resolved** to track progress. Reports and downloads are available only to superadmins.
+
+## Optional GitHub connection
+
+Operators can install a GitHub App on their repository to connect reports using the [GitHub setup guide](https://github.com/Ninjonik/logi/blob/main/docs/github-issues.md). When enabled, new reports create issues automatically, normally within a minute. Report text and server context are copied to the repository; do not include secrets. Attachments and reporter account IDs remain in Logi.
+
+The superadmin inbox shows the GitHub issue link, imported comments, and delivery errors. Changing a report to Resolved closes its issue; New or Investigating opens it. Status changes also add a GitHub comment. Closing the issue in GitHub resolves the report, and reopening it changes a resolved report to New. Reload the inbox to see updates. GitHub comments are displayed for review; the inbox does not offer a comment editor.
