@@ -53,6 +53,7 @@ export function toggleSignup(input: {
     participants: EventParticipant[]
     event: {
         kind?: "match" | "training"
+        registrationStart?: string
         registrationEnd: string
         meetingStart?: string
         allowLateSignups?: boolean

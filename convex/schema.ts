@@ -50,6 +50,10 @@ import {
     discordSeedRuns,
 } from "./discordSeedTable"
 import {
+    leagueAutoImportSettings,
+    leagueAutoImportFixtures,
+} from "./leagueAutoImportTables"
+import {
     commandSettingsValidator,
     discordCommandRegistrations,
 } from "./discordCommandTable"
@@ -1953,6 +1957,8 @@ export default defineSchema({
     })
         .index("guildId_sourceRef", ["guildId", "sourceRef"])
         .index("keyId", ["keyId"]),
+    leagueAutoImportSettings,
+    leagueAutoImportFixtures,
     leagueTrackingSettings,
     leagueTrackedMatches,
     leagueIndexCache,

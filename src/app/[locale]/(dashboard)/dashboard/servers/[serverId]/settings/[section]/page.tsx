@@ -1,3 +1,4 @@
+import { LeagueAutoImportSettings } from "@/components/app/league-auto-import-settings"
 import { notFound, redirect } from "next/navigation"
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
@@ -446,6 +447,7 @@ export default async function ServerSettingsSectionPage({
         case "league":
             content = (
                 <div className="space-y-6">
+                    <LeagueAutoImportSettings serverId={serverId} />
                     <LeagueTrackingForm
                         serverId={serverId}
                         dictionary={dictionary}

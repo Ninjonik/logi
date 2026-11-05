@@ -6,6 +6,12 @@ import { internal } from "./_generated/api"
 
 const crons = cronJobs()
 crons.interval(
+    "import authenticated Wardogs team fixtures",
+    { minutes: 1 },
+    makeFunctionReference<"action">("leagueAutoImportJobs:collectDue"),
+    {}
+)
+crons.interval(
     "discover and refresh League fixtures",
     { minutes: 15 },
     makeFunctionReference<"action">("leagueDiscoveryJobs:collectDue"),

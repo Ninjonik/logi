@@ -23,6 +23,7 @@ export type EventWorkflowRecord = {
     isDraft?: boolean
     /** Group caps by group ID; a full group gives a reserve place instead. */
     signupGroupLimits?: Array<{ groupId: string; max: number }>
+    registrationStart?: string
     registrationEnd: string
     meetingStart: string
     gameStart?: string

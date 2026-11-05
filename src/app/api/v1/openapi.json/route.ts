@@ -2509,7 +2509,8 @@ Article, group, calendar-item, roster, assignment, event, signup, stratmap, and 
                 },
                 {
                     name: "Clan API — Events",
-                    description: "Events, conclusion, and signups.",
+                    description:
+                        "Events, conclusion, and signups. Signups are rejected before an event’s registrationStart when provided. Automatically imported Wardogs fixtures are ordinary native events and use the same read/write contracts and change notifications. Provider API-key setup and automatic-import enablement are dashboard-only because service keys must not manage external credentials or start unattended Discord publication.",
                 },
                 {
                     name: "Clan API — Groups",
