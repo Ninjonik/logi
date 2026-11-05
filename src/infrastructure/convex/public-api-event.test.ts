@@ -1056,3 +1056,38 @@ test("training API defaults to clan members, saves custom eligibility, and repla
     assert.equal(db.tables.webhookDeliveries.size, deliveries)
     assert.equal((await signup("training-other-clan", { keyHash: "other-key" }))?.status ?? 401, 401)
 })
+
+test("API signup cannot bypass a future registrationStart on an imported native match", async () => {
+    const db = new FakeDb()
+    const now = Date.now()
+    db.tables.events.set("scheduled-import", {
+        _id: "scheduled-import",
+        guildId: "guild-a",
+        ...event({ kind: "match" }),
+        gameId: "wardogs",
+        status: "registration",
+        allowNonMembersSignup: true,
+        registrationStart: new Date(now + 86_400_000).toISOString(),
+        registrationEnd: new Date(now + 2 * 86_400_000).toISOString(),
+        meetingStart: new Date(now + 3 * 86_400_000).toISOString(),
+        gameEnd: new Date(now + 3 * 86_400_000 + 3_600_000).toISOString(),
+        participants: [],
+        signUps: [],
+    })
+    const result = await handler(publicApi.mutateClanEventSignup)(
+        { db },
+        {
+            secret: "dev-internal-auth-secret",
+            keyHash: "key",
+            eventId: "scheduled-import",
+            idempotencyKey: "future-opening",
+            bodyHash: "future-opening-body",
+            methodPath: "POST /clan/events/{eventId}/signup",
+            userId: "player",
+            group: null,
+        }
+    )
+    assert.equal(result?.status, 400)
+    assert.match(result?.body ?? "", /Signups are closed/)
+    assert.deepEqual(db.tables.events.get("scheduled-import")?.participants, [])
+})

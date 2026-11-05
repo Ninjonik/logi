@@ -105,6 +105,7 @@ export function isLateSignupWindow(
 
 export function canAcceptSignups(
     event: {
+        registrationStart?: string
         meetingStart?: string
         allowLateSignups?: boolean
         kind?: EventKind
@@ -113,6 +114,10 @@ export function canAcceptSignups(
     },
     now: Date = new Date()
 ): boolean {
+    if (event.registrationStart) {
+        const opensAt = Date.parse(event.registrationStart)
+        if (!Number.isFinite(opensAt) || now.getTime() < opensAt) return false
+    }
     return (
         isLateSignupWindow(event, now) ||
         (event.status === "registration" &&

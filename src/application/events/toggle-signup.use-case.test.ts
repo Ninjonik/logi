@@ -599,3 +599,42 @@ test("late signup persists its reason, bypasses general group placement, and syn
     assert.equal(participant?.lateSignupReason, "Work")
     assert.equal(sync.calls.length, 1)
 })
+
+test("ToggleSignupUseCase rejects direct signups before a scheduled opening", async () => {
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([
+            [
+                "scheduled",
+                {
+                    id: "scheduled",
+                    guildId: "clan",
+                    kind: "match",
+                    status: "registration",
+                    registrationStart: "2027-01-13T19:00:00Z",
+                    registrationEnd: "2027-01-19T18:30:00Z",
+                    meetingStart: "2027-01-20T18:30:00Z",
+                    gameEnd: "2027-01-20T20:30:00Z",
+                    participants: [],
+                    signUps: [],
+                },
+            ],
+        ]),
+        new Map([["clan:player", { type: "member", status: "active" }]])
+    )
+    const sync = new NoopEventWorkflowSyncPort()
+    const command = new ToggleSignupUseCase(
+        events,
+        sync,
+        new FakeClock(new Date("2027-01-01T00:00:00Z"))
+    )
+    await assert.rejects(
+        command.execute({
+            eventId: "scheduled",
+            userId: "player",
+            group: "INF",
+        }),
+        /Signups are closed/
+    )
+    assert.equal(sync.calls.length, 0)
+    assert.equal(events.events.get("scheduled")?.participants?.length, 0)
+})

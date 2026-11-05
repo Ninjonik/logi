@@ -81,3 +81,51 @@ Grant the website key **Tracked Wardogs League fixtures** (`league-fixtures`) fo
 - `GET /api/v1/clan/league-fixtures/overview?game=wardogs&limit=6` returns what the two panels show: the table of the season and the nearest fixtures of the whole League with the recent results, with your team marked.
 
 Posting, refreshing, pausing and deleting the Discord panels are actions in the dashboard and are not part of the API. Website keys cannot change watched teams, rooms or tracking.
+
+## Automatically create your team's matches
+
+Clans with **Wardogs** enabled can open **Settings → Wardogs League → Configure
+automatic imports**. This is separate from public League tracking and panels.
+A clan administrator supplies the team's Wardogs API key and team code, selects a Wardogs match
+template, and confirms the announcement and event-information/roster channels.
+The team code identifies which participant is your clan and is prefilled when a unique catalogue team is linked to it. The results channel and game-server name are optional. The key is checked against
+Wardogs before it is saved, encrypted, and never displayed again. Leave its field
+empty when saving other settings to retain it, or enter a replacement key.
+
+Registration opens **168 hours (7 days) before kickoff** by default; change this
+in the modal. Direct dashboard, API and bot sign-ups are blocked until this opening time. It must open before the template's registration deadline. Fixtures
+found after their opening time open registration immediately. The template supplies
+meeting time, registration close, duration, signup groups and caps, reminders,
+pings, participant roles, squad preset, forum and voice-channel choices. Existing
+clan discussion defaults also apply. Changes to these defaults affect new imports.
+
+Logi checks the authenticated team fixtures endpoint every 15 minutes and creates
+upcoming **SCHEDULED** fixtures only. It fills kickoff, map, competition, season,
+division, round, game mode, team names and available factions. Uniquely matching
+catalogue teams receive normal team assignments. Missing or ambiguous teams keep
+their API names in the match description, with a review notice in League settings;
+edit the match's **Teams** to resolve them. No catalogue teams are created.
+
+Each fixture creates at most one native match per clan. Existing manually linked,
+ignored or paused fixtures remain managed manually. A deleted imported match is
+not recreated. Subsequent API changes update untouched imported fields and team
+assignments; a detected local edit is preserved on future refreshes. Registration,
+meeting and end times follow kickoff changes unless individually edited locally.
+Sign-ups, rosters, attendance and reviewed results are preserved. Completed native
+matches are never reopened, and API results are not automatically confirmed.
+Cancelled/postponed fixtures and fixtures without a kickoff are flagged for review;
+Logi never deletes a match or infers cancellation from a fixture missing in the
+API's bounded response. Disabling imports retains already-created matches.
+
+The modal shows the last successful import, failures and fixtures needing review.
+Temporary failures preserve existing matches and retry automatically. Provider
+coverage is limited to the upcoming/recent fixture window returned by Wardogs.
+
+Operators must configure `LOGI_CREDENTIAL_KEYRING` and the dashboard `SITE_URL` in
+Convex, alongside the matching `INTERNAL_AUTH_SECRET`, for encryption and cache
+refreshes. See [game server data settings](/wiki/configuration/settings#game-server-data) for credential encryption requirements.
+
+Imported matches use the ordinary `/api/v1/clan/events` read/write contracts and
+change notifications. API-key configuration and import enablement are deliberately
+dashboard-only: clan service keys must not manage another provider's credentials
+or start an unattended publication workflow.

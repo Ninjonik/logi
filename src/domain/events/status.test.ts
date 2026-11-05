@@ -189,3 +189,36 @@ test("currentEventStatus advances a stale stored status by the schedule", () => 
     )
     assert.equal(currentEventStatus({}, afterEnd), undefined)
 })
+
+test("signups wait for registrationStart, open at the exact instant and retain immediate legacy opening", () => {
+    const event = {
+        status: "registration" as const,
+        kind: "match" as const,
+        registrationStart: "2027-01-13T19:00:00Z",
+        registrationEnd: "2027-01-19T18:30:00Z",
+        meetingStart: "2027-01-20T18:30:00Z",
+        allowLateSignups: true,
+    }
+    assert.equal(
+        canAcceptSignups(event, new Date("2027-01-13T18:59:59Z")),
+        false
+    )
+    assert.equal(
+        canAcceptSignups(event, new Date(event.registrationStart)),
+        true
+    )
+    assert.equal(
+        canAcceptSignups(
+            { ...event, registrationStart: undefined },
+            new Date("2027-01-01")
+        ),
+        true
+    )
+    assert.equal(
+        canAcceptSignups(
+            { ...event, registrationStart: "invalid" },
+            new Date("2027-01-01")
+        ),
+        false
+    )
+})

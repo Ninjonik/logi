@@ -102,3 +102,42 @@ Retained completed fixtures without results can be scheduled for a bounded re-re
 
 - Bot and dashboard: `leagueDiscoveryPanels:forGuild` (internal secret) returns `{ enabled, standings, fixtures }` for a guild; `options` (`table`, `fixtures`, `recentResults`, `fixtureCount` 1–10, default all on and 6) selects the content, `enabled: false` means the workspace turned the League off. The guild's watched team codes mark its own team.
 - Website: `GET /api/v1/clan/league-fixtures/overview?game=wardogs&limit=6` with the same explicit `league-fixtures` + `wardogs` grant returns `{ data: { standings, fixtures } }` (`LeagueOverview` in the served OpenAPI). `limit` is 1–10. Responses are no-store. Posting, refreshing or pausing the panels in Discord are live Discord actions and stay outside the API.
+
+## Authenticated team fixture importer
+
+The independent `leagueAutoImportJobs:collectDue` cron wakes every minute and
+claims at most five due clans. Each enabled clan polls
+`https://wardogsleague.net/api/v1/team/fixtures?limit=20` every 15 minutes, with a
+five-minute fenced lease and configuration revision. Settings saves invalidate
+old claims. Requests use a bearer key, a 15-second timeout, a 1 MiB body bound,
+validated response schemas and no redirects. Failed reads retain native data;
+absence from the provider's upcoming/recent window never means cancellation.
+
+Administrators configure this through the dashboard-only
+`/api/servers/{serverId}/league-auto-import` adapter. Durable session and clan
+admin checks run in Convex as well as the web boundary. Keys are tested before
+replacement, encrypted with `LOGI_CREDENTIAL_KEYRING`, and bound by AES-GCM AAD to
+`wardogs-team-fixtures:{guildId}`. Read projections expose only `hasKey`, never
+plaintext or ciphertext. The operator keyring must also be available to the
+Convex Node action. Existing keys remain in use when the field is omitted.
+
+`leagueAutoImportSettings` holds scheduling and encrypted configuration;
+`leagueAutoImportFixtures` provides clan/fixture idempotency, event linkage,
+creation-time template/settings snapshots, provider baselines and durable local
+field overrides. Creation delegates to `UpsertEventUseCase` and the shared
+`ConvexEventCommandRepository`; scheduling and the integration-change wrapper run
+in the same transaction. Changes to import defaults apply only to new fixtures.
+Updates affect untouched provider fields and catalogue team assignments only.
+The required team code identifies the key owner, places the clan first, and flags fixtures that do not include it. Missing/ambiguous teams retain names in the native description and raise a review
+notice; they never create catalogue records. Native results remain reviewed by
+managers. Manually linked, ignored, paused, deleted or concluded matches are
+protected. Cancellation/postponement requires review, never deletion.
+
+Cache invalidations use the existing authenticated `/api/cache/revalidate`
+endpoint through Convex's configured `SITE_URL` and `INTERNAL_AUTH_SECRET`.
+Pending invalidations remain durable and retry independently of import enablement.
+Imported matches retain ordinary `/api/v1/clan/events` contracts and event change
+notifications. Managing external provider credentials and enabling unattended
+publication are deliberately excluded from service-key APIs; these require a
+current clan administrator in the dashboard. Public HTML discovery and panels
+continue using their existing anonymous transport and do not read the team key.
