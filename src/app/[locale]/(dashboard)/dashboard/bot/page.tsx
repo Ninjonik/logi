@@ -5,6 +5,7 @@ import {
     DatabaseZap,
     Filter,
 } from "lucide-react"
+import { redirectToPageLogin } from "@/lib/require-page-login"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -64,7 +65,7 @@ export default async function BotDashboardPage({
     const user = await getCurrentPlayer()
 
     if (!user) {
-        redirect(`/${safeLocale}/login`)
+        return await redirectToPageLogin(`/${safeLocale}/dashboard/bot`)
     }
 
     if (!(await isCurrentUserSuperadmin())) {

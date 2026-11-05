@@ -1,8 +1,8 @@
 import { getCurrentPlayer, getVisibleGuildsForLoggedInUser } from "@/lib/auth"
 import { getBugReportMessages } from "@/i18n/messages/bug-reports"
 import { BugReportForm } from "@/components/app/bug-report-form"
+import { redirectToPageLogin } from "@/lib/require-page-login"
 import { PageHeader } from "@/components/app/page-header"
-import { redirect } from "next/navigation"
 import { isLocale } from "@/i18n/config"
 
 export default async function ReportBugPage({
@@ -14,7 +14,8 @@ export default async function ReportBugPage({
 }) {
     const { locale: raw } = await params
     const locale = isLocale(raw) ? raw : "en"
-    if (!(await getCurrentPlayer())) redirect(`/${locale}/login`)
+    if (!(await getCurrentPlayer()))
+        return await redirectToPageLogin(`/${locale}/dashboard/report-bug`)
     const t = getBugReportMessages(locale)
     const servers = await getVisibleGuildsForLoggedInUser()
     const { workspace } = await searchParams

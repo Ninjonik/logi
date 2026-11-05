@@ -188,9 +188,7 @@ export function LandingPage({
         }
     }, [workflowPosition])
     const [viewer, setViewer] = useState<ShotView | null>(null)
-    const action = signedIn
-        ? (dashboardHref ?? `/${locale}/dashboard`)
-        : `/${locale}/login`
+    const action = dashboardHref ?? `/${locale}/dashboard`
     const actionLabel = signedIn ? dictionary.home.openApp : copy.hero.primary
 
     const renderFeature = (i: number) => {

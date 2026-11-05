@@ -28,3 +28,8 @@ export function loginErrorPath(redirectTo: string, error: LoginError): string {
     query.set("redirectTo", redirectTo)
     return `/${locale}/login?${query.toString()}`
 }
+
+/** Localized sign-in entrypoint preserving the requested page. */
+export function loginPath(destination: string): string {
+    return `/${localeOfPath(destination)}/login?${new URLSearchParams({ redirectTo: destination })}`
+}
