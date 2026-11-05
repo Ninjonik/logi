@@ -201,9 +201,8 @@ test("late signup buttons preserve closed and published roster actions", () => {
             lateSignupsOpen: true,
         }),
         [
-            ["signup"],
             ["confirm", "late", "attendanceDecline"],
-            ["assignment", "openRoster", "calendar"],
+            ["signup", "assignment", "openRoster", "calendar"],
         ]
     )
     assert.equal(

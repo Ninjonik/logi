@@ -177,3 +177,28 @@ test("a release that finds its lease expired records the failure instead of the 
     assert.equal(f.state().hash, "v1")
     assert.deepEqual(f.writes, ["claim", "finish:error"])
 })
+
+test("edit-only publication never recreates or moves a missing or existing message", async () => {
+    for (const initial of [{}, { channelId: "a", messageId: "deleted" }]) {
+        const f = fixture(initial)
+        assert.equal(
+            await publish(f.store, f.transport, "a", "v1", {
+                allowCreate: false,
+            }),
+            null
+        )
+        assert.ok(!f.calls.some((call) => call.startsWith("create")))
+    }
+    const f = fixture({ channelId: "old", messageId: "original" })
+    f.messages.set("old:original", "owned")
+    assert.equal(
+        await publish(f.store, f.transport, "new", "v1", {
+            allowCreate: false,
+        }),
+        null
+    )
+    assert.deepEqual(f.calls, ["fetch:old:original"])
+    assert.equal(f.state().messageId, "original")
+    await publish(f.store, f.transport, "old", "v1", { allowCreate: false })
+    assert.ok(f.calls.includes("edit:old:original"))
+})
