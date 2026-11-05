@@ -13,6 +13,7 @@ import {
     findRecoverableEventForum,
     pinForumPost,
     syncForumChannel,
+    forumOverwriteMatches,
     type ForumPostCandidate,
 } from "./forum"
 import { forumTopicView } from "../../src/domain/discord-messages/match-forum"
@@ -777,4 +778,18 @@ test("private debrief preserves other members and invites participants", async (
     assert.ok(!f.calls.includes("remove former"))
     assert.ok(!f.calls.includes("remove bot"))
     assert.ok(f.calls.includes("invite player"))
+})
+
+test("forum overwrite comparison preserves unrelated permissions and detects conflicts", () => {
+    const bits = (allow: number, deny: number) => ({
+        allow: { bitfield: BigInt(allow) },
+        deny: { bitfield: BigInt(deny) },
+    })
+    assert.equal(forumOverwriteMatches(bits(7, 8), BigInt(3), BigInt(8)), true)
+    assert.equal(forumOverwriteMatches(bits(1, 8), BigInt(3), BigInt(8)), false)
+    assert.equal(
+        forumOverwriteMatches(bits(3, 10), BigInt(3), BigInt(8)),
+        false
+    )
+    assert.equal(forumOverwriteMatches(undefined, BigInt(3), BigInt(0)), false)
 })

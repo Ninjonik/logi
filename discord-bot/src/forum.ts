@@ -1,4 +1,4 @@
-import {
+﻿import {
     AttachmentBuilder,
     ChannelFlags,
     ChannelType,
@@ -7,6 +7,7 @@ import {
     MediaGalleryBuilder,
     MediaGalleryItemBuilder,
     MessageFlags,
+    PermissionsBitField,
     TextDisplayBuilder,
     type AnyThreadChannel,
     type Client,
@@ -328,7 +329,7 @@ export type ForumPostThreads<T extends ForumPostCandidate> = {
  * its stored post or starter-message ID first (a forum post's thread has the
  * ID of its starter message), archived posts included, then by name among
  * the active and the archived posts. Discord archives quiet posts on its
- * own, so an active-only lookup would create a second "Informace o zápasu"
+ * own, so an active-only lookup would create a second "Informace o zÃ¡pasu"
  * or "Debrief". Returns the active posts too, for pinning.
  */
 export async function findForumPost<T extends ForumPostCandidate>(
@@ -380,6 +381,21 @@ async function reopenForumPost(
     )
 }
 
+export function forumOverwriteMatches(
+    current:
+        { allow: { bitfield: bigint }; deny: { bitfield: bigint } } | undefined,
+    allow: bigint,
+    deny: bigint
+) {
+    return Boolean(
+        current &&
+        (current.allow.bitfield & allow) === allow &&
+        (current.deny.bitfield & deny) === deny &&
+        (current.deny.bitfield & allow) === BigInt(0) &&
+        (current.allow.bitfield & deny) === BigInt(0)
+    )
+}
+
 export async function syncForumChannel(input: {
     config: DiscordConfig
     event: EventRecord
@@ -387,7 +403,7 @@ export async function syncForumChannel(input: {
     forumChannelId?: string
     guild: import("discord.js").Guild
     existingTopicMessageIds?: string[]
-    /** The stored "Informace o zápasu" post (its starter message ID). */
+    /** The stored "Informace o zÃ¡pasu" post (its starter message ID). */
     infoMessageId?: string
     /** The stored Debrief post (its starter message ID). */
     debriefMessageId?: string
@@ -567,24 +583,49 @@ export async function syncForumChannel(input: {
         }
     }
 
-    // Restrict the default audience without pruning existing member overrides.
-    await forumChannel.permissionOverwrites.edit(guild.id, {
-        ViewChannel: false,
-    })
-    await forumChannel.permissionOverwrites.edit(guild.client.user.id, {
-        ViewChannel: true,
-        ManageChannels: true,
-        SendMessages: true,
-        SendMessagesInThreads: true,
-    })
+    // Discord rate-limits overwrite edits. Only write permissions that differ;
+    // preserve unrelated bits and member overrides.
+    const ensureOverwrite = async (
+        id: string,
+        permissions: Record<string, boolean>,
+        allow: bigint,
+        deny: bigint = BigInt(0)
+    ) => {
+        const current = forumChannel!.permissionOverwrites.cache.get(id)
+        if (forumOverwriteMatches(current, allow, deny)) return
+        await forumChannel!.permissionOverwrites.edit(id, permissions)
+    }
+    const view = PermissionsBitField.Flags.ViewChannel
+    const participantPermissions =
+        view |
+        PermissionsBitField.Flags.SendMessages |
+        PermissionsBitField.Flags.SendMessagesInThreads
+    await ensureOverwrite(guild.id, { ViewChannel: false }, BigInt(0), view)
+    await ensureOverwrite(
+        guild.client.user.id,
+        {
+            ViewChannel: true,
+            ManageChannels: true,
+            SendMessages: true,
+            SendMessagesInThreads: true,
+        },
+        participantPermissions | PermissionsBitField.Flags.ManageChannels
+    )
     for (const participant of event.participants) {
         if (participant.status === "attending") {
-            await forumChannel.permissionOverwrites.edit(participant.userId, {
-                ViewChannel: true,
-                SendMessages: true,
-                SendMessagesInThreads: true,
-            })
-        } else if (participant.status === "not_attending") {
+            await ensureOverwrite(
+                participant.userId,
+                {
+                    ViewChannel: true,
+                    SendMessages: true,
+                    SendMessagesInThreads: true,
+                },
+                participantPermissions
+            )
+        } else if (
+            participant.status === "not_attending" &&
+            forumChannel.permissionOverwrites.cache.has(participant.userId)
+        ) {
             await forumChannel.permissionOverwrites.delete(participant.userId)
         }
     }
@@ -592,32 +633,34 @@ export async function syncForumChannel(input: {
     for (const roleId of [attendeeRoleId, reserveRoleId].filter(
         (id): id is string => Boolean(id)
     )) {
-        await forumChannel.permissionOverwrites
-            .edit(roleId, {
+        await ensureOverwrite(
+            roleId,
+            {
                 ViewChannel: true,
                 SendMessages: true,
                 SendMessagesInThreads: true,
+            },
+            participantPermissions
+        ).catch((error) => {
+            void reportClanDiscordError({
+                client: guild.client,
+                guildId: guild.id,
+                error,
+                action: `Grant forum access for "${event.name}"`,
+                location: "Forum channels",
+                scope: "forum",
+                target: forumChannel!.name,
+                details: {
+                    eventId: event.id,
+                    forumChannelId: forumChannel!.id,
+                    roleId,
+                },
             })
-            .catch((error) => {
-                void reportClanDiscordError({
-                    client: guild.client,
-                    guildId: guild.id,
-                    error,
-                    action: `Grant forum access for "${event.name}"`,
-                    location: "Forum channels",
-                    scope: "forum",
-                    target: forumChannel!.name,
-                    details: {
-                        eventId: event.id,
-                        forumChannelId: forumChannel!.id,
-                        roleId,
-                    },
-                })
-            })
+        })
     }
 
     // The stored post first, archived ones included: never a second
-    // "Informace o zápasu" (L1-137).
+    // "Informace o zÃ¡pasu" (L1-137).
     const { post: infoPost } = await findForumPost<AnyThreadChannel>(
         forumChannel.id,
         forumChannel.threads,
@@ -906,7 +949,7 @@ export async function finalizeForumAfterConclusion(
         debriefMessageId?: string
     } = {}
 ): Promise<string | undefined> {
-    // "Debrief ve fóru" is a clan switch on "Zprávy a panely" (N1-14).
+    // "Debrief ve fÃ³ru" is a clan switch on "ZprÃ¡vy a panely" (N1-14).
     if (
         event.createDebriefThread === false ||
         !isMessageEnabled(config, "debriefPost") ||
@@ -999,8 +1042,8 @@ export async function pinForumPost(
 
 /**
  * The optional attendance post in the match thread (board L5-43, N1-15):
- * after "Přijdu později", "Nemůžu" or /notice, when the clan turned it on,
- * the match's "Informace o zápasu" thread gets who is late or not coming,
+ * after "PÅ™ijdu pozdÄ›ji", "NemÅ¯Å¾u" or /notice, when the clan turned it on,
+ * the match's "Informace o zÃ¡pasu" thread gets who is late or not coming,
  * with their place and never the reason. Failures are logged only: the
  * player's own reply never depends on it.
  */
@@ -1116,9 +1159,9 @@ export async function syncPrivateDebrief(input: {
         if (parent?.type !== ChannelType.GuildText)
             throw new Error("The private debrief requires a guild text channel")
         // Stable per-event name recovers a thread when Discord succeeded but state storage failed.
-        const suffix = ` · ${event.id}`
+        const suffix = ` Â· ${event.id}`
         const name =
-            `${getRosterMessages(config.defaultLanguage).forum.debrief} · ${event.name}`.slice(
+            `${getRosterMessages(config.defaultLanguage).forum.debrief} Â· ${event.name}`.slice(
                 0,
                 100 - suffix.length
             ) + suffix
@@ -1297,9 +1340,9 @@ export async function syncPublicDebrief(
                 thread.type !== ChannelType.AnnouncementThread))
     )
         thread = null
-    const suffix = ` · ${event.id}`
+    const suffix = ` Â· ${event.id}`
     const name =
-        `${getRosterMessages(config.defaultLanguage).forum.debrief} · ${event.name}`.slice(
+        `${getRosterMessages(config.defaultLanguage).forum.debrief} Â· ${event.name}`.slice(
             0,
             100 - suffix.length
         ) + suffix

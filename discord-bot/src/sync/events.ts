@@ -39,16 +39,12 @@ import {
     syncAnnouncement,
 } from "../events/announcement-sync"
 import { eventInfoMessageRenderVersion } from "../../../src/domain/discord-sync/render-version"
-import {
-    buildRosterImageUrl,
-    getRosterImageVersion,
-    withTimeout,
-} from "../utils"
 import { isMessageEnabled } from "../../../src/domain/discord-messages/notification-settings"
 import type { BotErrorSource } from "../../../src/domain/discord-messages/bot-errors"
 import { finishAnnouncementMigration } from "../events/announcement-migration"
 import type { EventRecord, Roster, SyncPayload, SyncState } from "../types"
 import { fetchRosterImageAttachment } from "./roster-image-attachment"
+import { buildRosterImageUrl, getRosterImageVersion } from "../utils"
 import { applicationFactionEmoji } from "../runtime/faction-emoji"
 import { syncForumChannel, concludeEventForum } from "../forum"
 import { syncSquadVoiceChannels } from "../events/squad-voice"
@@ -64,7 +60,6 @@ import { env } from "../environment"
 // One event can legitimately include role reconciliation, two message writes,
 // a scheduled Discord event and forum provisioning. Discord rate limits make
 // the previous 20-second aggregate deadline too short for that valid work.
-const EVENT_SYNC_TIMEOUT_MS = 60_000
 
 /**
  * A failed part of the event sync that has its own title in the errors
@@ -316,11 +311,7 @@ export async function syncPayloadEvents(
                 hasState: Boolean(state),
                 hasRoster: Boolean(roster),
             })
-            await withTimeout(
-                syncEvent(client, payload, event, state, options),
-                EVENT_SYNC_TIMEOUT_MS,
-                `event sync ${event.id}`
-            )
+            await syncEvent(client, payload, event, state, options)
         } catch (error) {
             logError("event-sync", "Discord bot event sync failed", {
                 eventId: event.id,
@@ -401,160 +392,6 @@ async function syncEvent(
     // retain their original card at conclusion; split-channel and training
     // cleanup is decided by shouldKeepRegistrationMessage below.
     const registrationAnnouncementDue = isRegistrationAnnouncementDue(event)
-
-    if (
-        event.status === "concluded" &&
-        event.kind === "match" &&
-        ((event.createForumChannel && event.deleteForumAfterConclusion) ||
-            (event.createDebriefThread !== false &&
-                event.debriefDestination !== "event_forum"))
-    ) {
-        debriefMessageId = await concludeEventForum({
-            deleteForum: Boolean(
-                event.createForumChannel && event.deleteForumAfterConclusion
-            ),
-            guild,
-            event,
-            config: payload.config,
-            categories: payload.guild.eventCategories,
-            parentChannelId: debriefParentChannelId(event, payload.config),
-            resultMessageId: resultMessageId ?? undefined,
-            existingThreadId: debriefMessageId,
-            forumChannelId,
-            participantIds: debriefParticipantIds(event, roster),
-            rememberThread: async (id) => {
-                debriefMessageId = id
-                await convex.mutation(references.updateEventSyncState, {
-                    announcementChannelId: state?.announcementChannelId,
-                    announcementMessageId,
-                    eventInfoMessageId,
-                    eventInfoMessageRenderVersion:
-                        state?.eventInfoMessageRenderVersion,
-                    scheduledEventId,
-                    scheduledEventStatus,
-                    forumThreadId,
-                    signupThreadId,
-                    infoMessageId,
-                    squadVoiceChannelIds,
-                    lastEventUpdatedAt: undefined,
-                    lastRosterUpdatedAt: state?.lastRosterUpdatedAt,
-                    lastConfigUpdatedAt: state?.lastConfigUpdatedAt,
-                    lastCalendarSyncVersion: state?.lastCalendarSyncVersion,
-                    lastSyncedAt: new Date().toISOString(),
-                    secret: env.internalSecret,
-                    eventId: event.id as never,
-                    guildId: guild.id,
-                    debriefMessageId: id,
-                    forumChannelId,
-                    topicMessageIds,
-                    // Keep previous versions until invitations and cleanup complete.
-                })
-            },
-        })
-        if (
-            event.createForumChannel &&
-            event.deleteForumAfterConclusion &&
-            (event.debriefDestination !== "results_thread" ||
-                event.createDebriefThread === false ||
-                Boolean(resultMessageId) ||
-                payload.config.debriefPostEnabled === false)
-        ) {
-            forumChannelId = undefined
-            infoMessageId = undefined
-            topicMessageIds = []
-        }
-    } else if (
-        (registrationAnnouncementDue ||
-            (event.status === "concluded" && Boolean(forumChannelId))) &&
-        event.createForumChannel &&
-        payload.config.forumCategoryId &&
-        !(event.status === "concluded" && !forumChannelId)
-    ) {
-        try {
-            const topicPreset = payload.topicPresets.find(
-                (preset) => preset.id === event.topicPresetId
-            )
-            const forumSyncResult = await syncForumChannel({
-                config: payload.config,
-                event,
-                forumCategoryId: payload.config.forumCategoryId,
-                forumChannelId,
-                guild,
-                existingTopicMessageIds: topicMessageIds,
-                // Stored posts are found again even when archived (L1-137).
-                infoMessageId,
-                debriefMessageId,
-                topicPreset,
-                attendeeRoleId: eventRoles.attendeeRoleId,
-                reserveRoleId: eventRoles.reserveRoleId,
-                categories: payload.guild.eventCategories,
-            })
-
-            forumChannelId = forumSyncResult.forumChannelId
-            infoMessageId = forumSyncResult.infoMessageId
-            debriefMessageId = forumSyncResult.debriefMessageId
-            if (
-                !topicMessageIds.length &&
-                forumSyncResult.topicMessageIds.length
-            ) {
-                topicMessageIds = forumSyncResult.topicMessageIds
-            }
-            // Store the Discord resource as soon as it exists. The remainder
-            // of an event sync can take longer for Wardogs (three team cards,
-            // uploads, and rate limits), and a later failure must not make the
-            // next attempt create another event forum.
-            if (forumSyncResult.stateChanged && forumChannelId) {
-                await convex.mutation(references.updateEventSyncState, {
-                    secret: env.internalSecret,
-                    eventId: event.id as never,
-                    guildId: payload.config.guildId,
-                    announcementChannelId: state?.announcementChannelId,
-                    announcementMessageId,
-                    eventInfoMessageId,
-                    eventInfoMessageRenderVersion:
-                        state?.eventInfoMessageRenderVersion,
-                    scheduledEventId,
-                    scheduledEventStatus,
-                    forumChannelId,
-                    forumThreadId,
-                    infoMessageId,
-                    debriefMessageId,
-                    topicMessageIds,
-                    lastEventUpdatedAt: event.updatedAt,
-                    lastRosterUpdatedAt: roster?.updatedAt,
-                    lastConfigUpdatedAt: payload.config.updatedAt,
-                    lastCalendarSyncVersion: getCalendarSyncVersion(event),
-                    squadVoiceChannelIds,
-                    lastSyncedAt: new Date().toISOString(),
-                })
-            }
-            logInfo("forum", "Forum sync completed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                forumChannelId,
-                infoMessageId,
-                topicMessageCount: topicMessageIds.length,
-            })
-        } catch (error) {
-            logError("forum", "Discord bot forum sync failed", {
-                eventId: event.id,
-                guildId: payload.config.guildId,
-                forumChannelId,
-                error,
-            })
-            throw error
-        }
-    } else {
-        logInfo("forum", "Skipping forum sync", {
-            eventId: event.id,
-            guildId: payload.config.guildId,
-            reason: !event.createForumChannel
-                ? "event-forum-creation-disabled"
-                : !payload.config.forumCategoryId
-                  ? "forum-category-not-configured"
-                  : "concluded-without-existing-forum",
-        })
-    }
 
     logInfo("event-sync", "Event sync started", {
         eventId: event.id,
@@ -750,6 +587,188 @@ async function syncEvent(
             reason: announcementChannelId
                 ? "announcement-not-due"
                 : "announcements-channel-not-configured",
+        })
+    }
+
+    const previousForumChannelId = forumChannelId
+    if (
+        event.status === "concluded" &&
+        event.kind === "match" &&
+        ((event.createForumChannel && event.deleteForumAfterConclusion) ||
+            (event.createDebriefThread !== false &&
+                event.debriefDestination !== "event_forum"))
+    ) {
+        debriefMessageId = await concludeEventForum({
+            deleteForum: Boolean(
+                event.createForumChannel && event.deleteForumAfterConclusion
+            ),
+            guild,
+            event,
+            config: payload.config,
+            categories: payload.guild.eventCategories,
+            parentChannelId: debriefParentChannelId(event, payload.config),
+            resultMessageId: resultMessageId ?? undefined,
+            existingThreadId: debriefMessageId,
+            forumChannelId,
+            participantIds: debriefParticipantIds(event, roster),
+            rememberThread: async (id) => {
+                debriefMessageId = id
+                await convex.mutation(references.updateEventSyncState, {
+                    announcementChannelId: state?.announcementChannelId,
+                    announcementMessageId,
+                    eventInfoMessageId,
+                    eventInfoMessageRenderVersion:
+                        state?.eventInfoMessageRenderVersion,
+                    scheduledEventId,
+                    scheduledEventStatus,
+                    forumThreadId,
+                    signupThreadId,
+                    infoMessageId,
+                    squadVoiceChannelIds,
+                    lastEventUpdatedAt: undefined,
+                    lastRosterUpdatedAt: state?.lastRosterUpdatedAt,
+                    lastConfigUpdatedAt: state?.lastConfigUpdatedAt,
+                    lastCalendarSyncVersion: state?.lastCalendarSyncVersion,
+                    lastSyncedAt: new Date().toISOString(),
+                    secret: env.internalSecret,
+                    eventId: event.id as never,
+                    guildId: guild.id,
+                    debriefMessageId: id,
+                    forumChannelId,
+                    topicMessageIds,
+                    // Keep previous versions until invitations and cleanup complete.
+                })
+            },
+        })
+        if (
+            event.createForumChannel &&
+            event.deleteForumAfterConclusion &&
+            (event.debriefDestination !== "results_thread" ||
+                event.createDebriefThread === false ||
+                Boolean(resultMessageId) ||
+                payload.config.debriefPostEnabled === false)
+        ) {
+            forumChannelId = undefined
+            infoMessageId = undefined
+            topicMessageIds = []
+        }
+    } else if (
+        (registrationAnnouncementDue ||
+            (event.status === "concluded" && Boolean(forumChannelId))) &&
+        event.createForumChannel &&
+        payload.config.forumCategoryId &&
+        !(event.status === "concluded" && !forumChannelId)
+    ) {
+        try {
+            const topicPreset = payload.topicPresets.find(
+                (preset) => preset.id === event.topicPresetId
+            )
+            const forumSyncResult = await syncForumChannel({
+                config: payload.config,
+                event,
+                forumCategoryId: payload.config.forumCategoryId,
+                forumChannelId,
+                guild,
+                existingTopicMessageIds: topicMessageIds,
+                // Stored posts are found again even when archived (L1-137).
+                infoMessageId,
+                debriefMessageId,
+                topicPreset,
+                attendeeRoleId: eventRoles.attendeeRoleId,
+                reserveRoleId: eventRoles.reserveRoleId,
+                categories: payload.guild.eventCategories,
+            })
+
+            forumChannelId = forumSyncResult.forumChannelId
+            infoMessageId = forumSyncResult.infoMessageId
+            debriefMessageId = forumSyncResult.debriefMessageId
+            if (
+                !topicMessageIds.length &&
+                forumSyncResult.topicMessageIds.length
+            ) {
+                topicMessageIds = forumSyncResult.topicMessageIds
+            }
+            // Store the Discord resource as soon as it exists. The remainder
+            // of an event sync can take longer for Wardogs (three team cards,
+            // uploads, and rate limits), and a later failure must not make the
+            // next attempt create another event forum.
+            if (forumSyncResult.stateChanged && forumChannelId) {
+                await convex.mutation(references.updateEventSyncState, {
+                    secret: env.internalSecret,
+                    eventId: event.id as never,
+                    guildId: payload.config.guildId,
+                    announcementChannelId: state?.announcementChannelId,
+                    announcementMessageId,
+                    eventInfoMessageId,
+                    eventInfoMessageRenderVersion:
+                        state?.eventInfoMessageRenderVersion,
+                    scheduledEventId,
+                    scheduledEventStatus,
+                    forumChannelId,
+                    forumThreadId,
+                    infoMessageId,
+                    debriefMessageId,
+                    topicMessageIds,
+                    lastEventUpdatedAt: event.updatedAt,
+                    lastRosterUpdatedAt: roster?.updatedAt,
+                    lastConfigUpdatedAt: payload.config.updatedAt,
+                    lastCalendarSyncVersion: getCalendarSyncVersion(event),
+                    squadVoiceChannelIds,
+                    lastSyncedAt: new Date().toISOString(),
+                })
+            }
+            logInfo("forum", "Forum sync completed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                forumChannelId,
+                infoMessageId,
+                topicMessageCount: topicMessageIds.length,
+            })
+        } catch (error) {
+            logError("forum", "Discord bot forum sync failed", {
+                eventId: event.id,
+                guildId: payload.config.guildId,
+                forumChannelId,
+                error,
+            })
+            throw error
+        }
+    } else {
+        logInfo("forum", "Skipping forum sync", {
+            eventId: event.id,
+            guildId: payload.config.guildId,
+            reason: !event.createForumChannel
+                ? "event-forum-creation-disabled"
+                : !payload.config.forumCategoryId
+                  ? "forum-category-not-configured"
+                  : "concluded-without-existing-forum",
+        })
+    }
+
+    // A newly created or recovered forum could not be linked in the first
+    // announcement render. Add its link once the forum has been persisted.
+    if (
+        forumChannelId &&
+        forumChannelId !== previousForumChannelId &&
+        announcementChannelId &&
+        registrationMessageVisible &&
+        registrationChannel?.isTextBased() &&
+        (registrationChannel.type === ChannelType.GuildText ||
+            registrationChannel.type === ChannelType.GuildAnnouncement)
+    ) {
+        announcementMessageId = await syncAnnouncement({
+            client,
+            guild,
+            payload,
+            event,
+            roster,
+            state,
+            messageId: announcementMessageId,
+            channel: registrationChannel as TextChannel,
+            forumChannelId,
+            rosterChannelId: null,
+            rosterImage: rosterImageAttachment,
+            factionEmoji: await applicationFactionEmoji(client),
         })
     }
 

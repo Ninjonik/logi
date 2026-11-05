@@ -136,6 +136,7 @@ export async function syncAnnouncement(input: {
     event: EventRecord
     roster: Roster | undefined
     state: SyncState | undefined
+    messageId?: string
     channel: TextChannel
     forumChannelId?: string
     /** The roster card's own channel in split mode. */
@@ -146,7 +147,7 @@ export async function syncAnnouncement(input: {
     now?: Date
 }): Promise<string | undefined> {
     const { client, guild, payload, event, state } = input
-    const messageId = state?.announcementMessageId
+    const messageId = input.messageId ?? state?.announcementMessageId
     const context = await loadAnnouncementContext(event.id)
     const meetingChannelId =
         event.meetingChannelId?.trim() || payload.config.meetingChannelId
