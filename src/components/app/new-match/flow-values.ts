@@ -52,6 +52,7 @@ export type FlowOpponent = {
 export type FlowValues = {
     kind: "match" | "training"
     gameId: GameId
+    wardogsFixtureUrl?: string
     templateId: string | null
     opponent: FlowOpponent | null
     ownSide: string | null
@@ -481,6 +482,7 @@ export function flowValuesFromEvent(
         attendanceReminderHours: event.attendanceReminderHours,
         createParticipantRoles: event.createParticipantRoles,
         squadPresetId: event.squadPresetId,
+        wardogsFixtureUrl: event.wardogsFixtureUrl,
         description: event.description,
         notes: event.notes,
         thumbnailUrl: event.thumbnailUrl,
@@ -607,6 +609,10 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         kind: values.kind,
         matchType: values.matchType || undefined,
         name: context.name.trim(),
+        wardogsFixtureUrl:
+            isMatch && values.gameId === "wardogs"
+                ? values.wardogsFixtureUrl?.trim() || undefined
+                : undefined,
         description: values.description || undefined,
         notes: values.notes || undefined,
         thumbnailUrl: values.thumbnailUrl || undefined,
@@ -857,6 +863,10 @@ export function flowEditPayload(
         kind: event.kind,
         matchType: values.matchType || undefined,
         name: context.name.trim(),
+        wardogsFixtureUrl:
+            isMatch && values.gameId === "wardogs"
+                ? values.wardogsFixtureUrl?.trim() || undefined
+                : undefined,
         description: values.description || undefined,
         notes: values.notes || undefined,
         thumbnailUrl: values.thumbnailUrl || undefined,

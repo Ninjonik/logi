@@ -1,3 +1,4 @@
+import { fixtureLinkConflict } from "@/domain/wardogs-league/fixture-link"
 import { z } from "zod"
 
 import {
@@ -85,6 +86,8 @@ export function createEventFlowWriteHandler(deps: Deps) {
             if (result.ok) deps.revalidate(serverId, result.eventId)
             return resultResponse(result)
         } catch (error) {
+            if (fixtureLinkConflict(error))
+                return json({ error: "fixture_link_conflict" }, 409)
             const teamError = matchTeamErrorCode(error)
             if (teamError) return json({ error: teamError }, 400)
             deps.logError(

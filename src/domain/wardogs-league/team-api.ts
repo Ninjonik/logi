@@ -137,6 +137,7 @@ export function fixtureCommand(
     return {
         ...fixtureFields(fixture, template, settings),
         guildId,
+        wardogsFixtureUrl: `https://wardogsleague.net/matches/${fixture.id}`,
         gameId: "wardogs",
         kind: "match",
         matchType: template.categoryId,

@@ -1,3 +1,4 @@
+import { wardogsFixtureUrlSchema } from "@/domain/wardogs-league/fixture-link"
 import { verifyPublicChannel } from "@/lib/gateways/discord-public-channel"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { autoImportSettingsSchema } from "@/domain/wardogs-league/team-api"
@@ -81,5 +82,30 @@ export async function PUT(request: Request, context: Context) {
         )
     } catch {
         return json({ error: "save_failed" }, 400)
+    }
+}
+
+export async function POST(request: Request, context: Context) {
+    const { serverId } = await context.params
+    const denied = await clanAdminWriteDenied(request, serverId)
+    if (denied) return denied
+    const args = await access(serverId)
+    if (!args) return json({ error: "Forbidden." }, 403)
+    try {
+        const input = z
+            .strictObject({
+                sourceUrl: wardogsFixtureUrlSchema.pipe(z.string().min(1)),
+            })
+            .parse(await readBoundedJson(request, 1024))
+        return json(
+            await fetchAction(
+                makeFunctionReference<"action">(
+                    "leagueAutoImportJobs:readFixture"
+                ),
+                { ...args, sourceUrl: input.sourceUrl }
+            )
+        )
+    } catch {
+        return json({ error: "fixture_unavailable" }, 400)
     }
 }

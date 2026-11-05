@@ -131,3 +131,31 @@ test("a draft is deleted through its own route", async () => {
     )
     assert.equal(bad.status, 404)
 })
+
+test("fixture binding conflicts return 409 without claiming a publication succeeded", async () => {
+    const { deps: d, calls } = deps({
+        publish: async () => {
+            throw new Error(
+                "This Wardogs fixture is already linked to another match."
+            )
+        },
+    })
+    const response = await createEventFlowWriteHandler(d)(
+        post({
+            publish: true,
+            event: {
+                ...event,
+                gameId: "wardogs",
+                wardogsFixtureUrl:
+                    "https://wardogsleague.net/matches/cmvjzz9tz03nvml015t5vzlpa",
+            },
+        }),
+        { params }
+    )
+    assert.equal(response.status, 409)
+    assert.deepEqual(await response.json(), { error: "fixture_link_conflict" })
+    assert.equal(
+        calls.some(([type]) => type === "revalidate"),
+        false
+    )
+})

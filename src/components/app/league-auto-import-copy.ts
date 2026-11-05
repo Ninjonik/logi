@@ -1,5 +1,11 @@
 const en = {
     title: "Automatic Wardogs matches",
+    ambiguous_game_start:
+        "Multiple matches have this kickoff time; link the fixture manually.",
+    kickoff_already_linked:
+        "The match at this kickoff is linked to another fixture.",
+    matching_scan_limit:
+        "Too many matches to check safely; link the fixture manually.",
     configure: "Configure automatic imports",
     enabled: "Automatically create my team's fixtures",
     intro: "Connect your Wardogs League team API key. Upcoming scheduled fixtures become Logi matches; registration opens 7 days before kickoff by default.",
@@ -40,6 +46,12 @@ const en = {
 export type AutoImportCopy = typeof en
 const cs: AutoImportCopy = {
     title: "Automatické zápasy Wardogs",
+    ambiguous_game_start:
+        "Stejný začátek má více zápasů; propojte utkání ručně.",
+    kickoff_already_linked:
+        "Zápas s tímto začátkem je propojen s jiným utkáním.",
+    matching_scan_limit:
+        "Příliš mnoho zápasů pro bezpečné ověření; propojte utkání ručně.",
     configure: "Nastavit automatický import",
     enabled: "Automaticky vytvářet zápasy mého týmu",
     intro: "Připojte API klíč týmu z Wardogs League. Z plánovaných zápasů vzniknou zápasy v Logi; registrace se standardně otevře 7 dní před začátkem.",
@@ -80,6 +92,12 @@ const cs: AutoImportCopy = {
 const de: AutoImportCopy = {
     ...en,
     title: "Automatische Wardogs-Spiele",
+    ambiguous_game_start:
+        "Mehrere Spiele beginnen gleichzeitig; Begegnung manuell verknüpfen.",
+    kickoff_already_linked:
+        "Das Spiel zu dieser Zeit ist mit einer anderen Begegnung verknüpft.",
+    matching_scan_limit:
+        "Zu viele Spiele für eine sichere Prüfung; manuell verknüpfen.",
     configure: "Automatischen Import einrichten",
     enabled: "Spiele meines Teams automatisch erstellen",
     intro: "Verbinde den API-Schlüssel deines Wardogs-League-Teams. Geplante Begegnungen werden zu Logi-Spielen; die Anmeldung öffnet standardmäßig 7 Tage vor Spielbeginn.",
@@ -120,6 +138,12 @@ const de: AutoImportCopy = {
 const pl: AutoImportCopy = {
     ...en,
     title: "Automatyczne mecze Wardogs",
+    ambiguous_game_start:
+        "Kilka meczów zaczyna się jednocześnie; połącz spotkanie ręcznie.",
+    kickoff_already_linked:
+        "Mecz o tej godzinie jest połączony z innym spotkaniem.",
+    matching_scan_limit:
+        "Za dużo meczów do bezpiecznego sprawdzenia; połącz spotkanie ręcznie.",
     configure: "Skonfiguruj automatyczny import",
     enabled: "Automatycznie twórz mecze mojego zespołu",
     intro: "Połącz klucz API zespołu Wardogs League. Zaplanowane spotkania staną się meczami Logi; zapisy domyślnie otwierają się 7 dni przed rozpoczęciem.",

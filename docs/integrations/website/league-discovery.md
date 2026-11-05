@@ -141,3 +141,35 @@ notifications. Managing external provider credentials and enabling unattended
 publication are deliberately excluded from service-key APIs; these require a
 current clan administrator in the dashboard. Public HTML discovery and panels
 continue using their existing anonymous transport and do not read the team key.
+
+### Native fixture identity and exact-kickoff adoption
+
+Event create/update and actor-backed event commands accept the optional
+`wardogsFixtureUrl` (canonical `https://wardogsleague.net/matches/{id}`; Wardogs
+matches only, incompatible with recurrence). The shared event repository and draft
+publication adapter call `bindWardogsFixture` inside their write transaction.
+This binds both the tracked fixture and the importer identity, checking both
+fixture→event and event→fixture directions. Concurrent publishes/imports therefore
+conflict and retry against the saved binding; a failed bind rolls back publication.
+Draft autosaves retain the URL but do not reserve it. Omission on update preserves
+an existing binding. Normal event reads and minimized event/match summaries expose
+the link, and binding changes participate in integration revisions.
+
+Before creating a new fixture, the import use-case asks the repository for existing
+same-clan Wardogs matches at the exact `gameStart` instant (`Date.parse` comparison,
+so equivalent timezone offsets match). The indexed `guildId_gameId` read is bounded
+to 2,001 rows; more than 2,000 yields `matching_scan_limit` rather than creating
+without a complete check. Drafts, training and concluded records are excluded.
+One match is adopted without rewriting native data; several yield
+`ambiguous_game_start`. A match already bound to a different fixture yields
+`kickoff_already_linked`. Adopted/manual bindings have no provider baseline and
+remain manually managed on later polls.
+
+Dashboard `POST /api/servers/{serverId}/league-auto-import` loads an optional
+fixture preview using the configured encrypted team key. It validates the public
+URL, fetches only the fixed authenticated team endpoint, finds that ID in the
+upcoming/recent window, orders the configured clan team first, and resolves known
+catalogue teams. It never fetches an arbitrary credential-bearing URL or exposes
+the key. Missing key, mismatched team or a fixture outside that bounded API window
+leaves manual entry available. This credential-backed convenience is deliberately
+excluded from service-key APIs; saving native fixture links is supported there.

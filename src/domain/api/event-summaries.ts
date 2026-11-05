@@ -9,6 +9,7 @@ const identity = {
     guildId: z.string(),
     gameId: z.string().min(1),
     title: z.string(),
+    wardogsFixtureUrl: z.string().optional(),
     updatedAt: z.string().nullable(),
 }
 
@@ -61,6 +62,7 @@ export type ClanMatchSummary = z.infer<typeof clanMatchSummarySchema>
 
 type SummaryEvent = Pick<
     EventLike,
+    | "wardogsFixtureUrl"
     | "gameId"
     | "kind"
     | "status"
@@ -81,6 +83,9 @@ function summaryIdentity(event: SummaryEvent) {
         guildId: event.guildId,
         gameId: resolveGameScope(event.gameId),
         title: event.name,
+        ...(event.wardogsFixtureUrl
+            ? { wardogsFixtureUrl: event.wardogsFixtureUrl }
+            : {}),
         updatedAt: event.updatedAt ?? null,
     }
 }

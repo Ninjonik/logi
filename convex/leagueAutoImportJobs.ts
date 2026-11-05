@@ -10,6 +10,8 @@ import {
 } from "../src/domain/game-data/credentials.schema"
 import { fetchTeamFixtures } from "../src/infrastructure/wardogs-league/fetch-team-fixtures"
 import { autoImportSettingsSchema } from "../src/domain/wardogs-league/team-api"
+import { ownTeamFirst } from "../src/domain/wardogs-league/team-api"
+import { matchUrl } from "../src/domain/wardogs-league/match-url"
 import { internalAction, action } from "./_generated/server"
 import { makeFunctionReference } from "convex/server"
 import type { Doc } from "./_generated/dataModel"
@@ -141,5 +143,68 @@ export const collectDue = internalAction({
                 /* Retained for the next cron, including while import is disabled. */
             }
         }
+    },
+})
+
+/** Fetches only the configured team's bounded API window; never an arbitrary credential-bearing URL. */
+export const readFixture = action({
+    args: {
+        secret: v.string(),
+        guildId: v.string(),
+        actor: dashboardActor,
+        sourceUrl: v.string(),
+    },
+    handler: async (
+        ctx,
+        args
+    ): Promise<{
+        fixture: import("../src/domain/wardogs-league/team-api").TeamFixture
+        matchTeams: import("../src/domain/teams/match-teams").MatchTeamAssignment[]
+    }> => {
+        const access = {
+            secret: args.secret,
+            guildId: args.guildId,
+            actor: args.actor,
+        }
+        const config: {
+            available: boolean
+            settings: { teamCode: string } | null
+            defaults: { teamCode: string }
+        } = await ctx.runQuery(
+            makeFunctionReference<"query">("leagueAutoImport:read"),
+            access
+        )
+        if (!config.available) throw new Error("Wardogs is not enabled.")
+        const source = matchUrl(args.sourceUrl.trim())
+        const credentialJson: string | null = await ctx.runQuery(
+            makeFunctionReference<"query">("leagueAutoImport:credential"),
+            { guildId: args.guildId }
+        )
+        if (!credentialJson)
+            throw new Error("Configure the Wardogs team API key first.")
+        const key = decryptCredential(
+            parseKeyring(process.env.LOGI_CREDENTIAL_KEYRING),
+            credentialEnvelopeSchema.parse(JSON.parse(credentialJson)),
+            `wardogs-team-fixtures:${args.guildId}`
+        )
+        const response = await fetchTeamFixtures(key)
+        const raw = [...response.upcoming, ...response.recent].find(
+            (f) => f.id === source.id
+        )
+        if (!raw) throw new Error("Fixture is outside the team API window.")
+        const fixture = ownTeamFirst(
+            raw,
+            config.settings?.teamCode ?? config.defaults.teamCode
+        )
+        if (!fixture) throw new Error("Check your Wardogs team code.")
+        const matchTeams = await ctx.runQuery(
+            makeFunctionReference<"query">("leagueAutoImport:previewTeams"),
+            { fixtureJson: JSON.stringify(fixture) }
+        )
+        await ctx.runQuery(
+            makeFunctionReference<"query">("leagueAutoImport:read"),
+            access
+        )
+        return { fixture, matchTeams }
     },
 })

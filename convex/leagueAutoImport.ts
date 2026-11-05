@@ -11,20 +11,22 @@ import {
 } from "../src/infrastructure/convex/event-command-repositories"
 import { ImportTeamFixtureUseCase } from "../src/application/wardogs-league/import-team-fixture"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
+import { bindWardogsFixture } from "../src/infrastructure/convex/league-fixture-binding"
 import { credentialEnvelopeSchema } from "../src/domain/game-data/credentials.schema"
 import { UpsertEventUseCase } from "../src/application/events/upsert-event.use-case"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
+import { sameKickoffCandidates } from "../src/domain/wardogs-league/fixture-link"
 import { matchTemplateSchema } from "../src/lib/validation/match-templates"
 import { matchTeamAssignmentSchema } from "../src/domain/teams/match-teams"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
 import { loadEventDiscussionDefaults } from "./eventDiscussionSettings"
 import { templatesFor } from "../src/domain/events/match-templates"
-import { trackedMatch, ensureTracked } from "./leagueTrackingStore"
 import { currentEventStatus } from "../src/domain/events/status"
 import { withGameOverrides } from "../src/domain/games/game"
 import { query, internalQuery } from "./_generated/server"
 import { systemClock } from "../src/domain/shared/clock"
 import { internalMutation } from "./integrationMutation"
+import { trackedMatch } from "./leagueTrackingStore"
 import type { QueryCtx } from "./_generated/server"
 import { assetPublicUrl } from "./imageAssetStore"
 import { getGuildByDiscordId } from "./identity"
@@ -220,13 +222,20 @@ export const importFixture = internalMutation({
             ? autoImportSettingsSchema.parse(JSON.parse(old.settingsJson))
             : defaults
         fixture = ownTeamFirst(fixture, settings.teamCode) ?? fixture
+        const guildAliases = [
+            ...new Set([
+                config.guildId,
+                String(guild._id),
+                ...(guild.id ? [guild.id] : []),
+            ]),
+        ]
         const tracked = await trackedMatch(ctx, config.guildId, fixture.id)
         const current = old?.eventId ? await ctx.db.get(old.eventId) : null
         if (
             current &&
-            (current.guildId !== config.guildId ||
+            (!guildAliases.includes(current.guildId) ||
                 current.gameId !== "wardogs" ||
-                current.kind !== "match")
+                (current.kind ?? "match") !== "match")
         )
             throw new Error("Imported match scope mismatch.")
         const template = old?.templateJson
@@ -274,6 +283,56 @@ export const importFixture = internalMutation({
             .collect()
         const repository = new ConvexEventCommandRepository(ctx)
         await new ImportTeamFixtureUseCase({
+            findScheduledMatch: async (gameStart) => {
+                const rows = (
+                    await Promise.all(
+                        guildAliases.map((guildId) =>
+                            ctx.db
+                                .query("events")
+                                .withIndex("guildId_gameId", (q) =>
+                                    q
+                                        .eq("guildId", guildId)
+                                        .eq("gameId", "wardogs")
+                                )
+                                .take(2001)
+                        )
+                    )
+                ).flat()
+                if (rows.length > 2000)
+                    return { kind: "review", issue: "matching_scan_limit" }
+                const matches = sameKickoffCandidates(
+                    rows.map((row) => ({
+                        ...row,
+                        status: currentEventStatus(row),
+                    })),
+                    gameStart
+                )
+                if (matches.length > 1)
+                    return { kind: "review", issue: "ambiguous_game_start" }
+                if (!matches.length) return { kind: "none" }
+                const candidate = matches[0]
+                const bound = await ctx.db
+                    .query("leagueAutoImportFixtures")
+                    .withIndex("eventId", (q) => q.eq("eventId", candidate._id))
+                    .unique()
+                const trackedBinding = await ctx.db
+                    .query("leagueTrackedMatches")
+                    .withIndex("event", (q) =>
+                        q
+                            .eq("guildId", config.guildId)
+                            .eq("eventId", String(candidate._id))
+                    )
+                    .unique()
+                if (
+                    (candidate.wardogsFixtureUrl &&
+                        candidate.wardogsFixtureUrl !==
+                            `https://wardogsleague.net/matches/${fixture.id}`) ||
+                    (bound && bound.fixtureId !== fixture.id) ||
+                    (trackedBinding && trackedBinding.matchId !== fixture.id)
+                )
+                    return { kind: "review", issue: "kickoff_already_linked" }
+                return { kind: "match", eventId: String(candidate._id) }
+            },
             create: async (command) => {
                 for (const [table, id] of [
                     ["squadPresets", template.squadPresetId],
@@ -301,10 +360,13 @@ export const importFixture = internalMutation({
             },
             update: (id, patch) => repository.update(id, patch),
             link: async (id) => {
-                const link =
-                    tracked ??
-                    (await ensureTracked(ctx, config.guildId, fixture.id))
-                await ctx.db.patch(link._id, { eventId: id })
+                const eventId = ctx.db.normalizeId("events", id)
+                if (!eventId) throw new Error("Invalid match ID.")
+                await bindWardogsFixture(
+                    ctx,
+                    eventId,
+                    `https://wardogsleague.net/matches/${fixture.id}`
+                )
             },
             refreshSchedule: async (id) => {
                 const normalized = ctx.db.normalizeId("events", id)
@@ -350,7 +412,15 @@ export const importFixture = internalMutation({
                     ...(value.changed ? { cachePending: true } : {}),
                     updatedAt: Date.now(),
                 }
-                if (old) await ctx.db.patch(old._id, patch)
+                const stored = await ctx.db
+                    .query("leagueAutoImportFixtures")
+                    .withIndex("identity", (q) =>
+                        q
+                            .eq("guildId", config.guildId)
+                            .eq("fixtureId", fixture.id)
+                    )
+                    .unique()
+                if (stored) await ctx.db.patch(stored._id, patch)
                 else
                     await ctx.db.insert("leagueAutoImportFixtures", {
                         guildId: config.guildId,
@@ -366,7 +436,11 @@ export const importFixture = internalMutation({
             settings,
             now: Date.now(),
             current: current
-                ? { ...current, status: currentEventStatus(current) }
+                ? {
+                      ...current,
+                      guildId: config.guildId,
+                      status: currentEventStatus(current),
+                  }
                 : null,
             previous: old
                 ? {
@@ -385,6 +459,7 @@ export const importFixture = internalMutation({
                   }
                 : undefined,
             manuallyManaged: Boolean(
+                (old?.eventId && !old.baselineJson) ||
                 tracked?.ignored ||
                 tracked?.paused ||
                 (tracked?.eventId && tracked.eventId !== old?.eventId)
@@ -415,5 +490,45 @@ export const acknowledgeCache = internalMutation({
         const row = await ctx.db.get(args.id)
         if (row?.updatedAt === args.updatedAt)
             await ctx.db.patch(row._id, { cachePending: false })
+    },
+})
+
+export const credential = internalQuery({
+    args: { guildId: v.string() },
+    handler: async (ctx, args) => {
+        const config = await configFor(ctx, args.guildId)
+        return config?.credentialJson ?? null
+    },
+})
+export const previewTeams = internalQuery({
+    args: { fixtureJson: v.string() },
+    handler: async (ctx, args) => {
+        const fixture = teamFixtureSchema.parse(JSON.parse(args.fixtureJson))
+        const rows = await ctx.db
+            .query("teamDirectory")
+            .withIndex("gameId_archivedAt_normalizedName", (q) =>
+                q.eq("gameId", "wardogs").eq("archivedAt", null)
+            )
+            .take(2000)
+        const candidates = rows.filter((t) =>
+            fixture.participants.some(
+                (p) =>
+                    p.team.code.toLowerCase() === t.shortCode?.toLowerCase() ||
+                    p.team.name.toLowerCase() === t.name.toLowerCase()
+            )
+        )
+        return matchFixtureTeams(
+            fixture,
+            await Promise.all(
+                candidates.map(async (t) => ({
+                    ...t,
+                    id: String(t._id),
+                    logoAssetId: t.logoAssetId ? String(t.logoAssetId) : null,
+                    logoUrl: await assetPublicUrl(ctx, t.logoAssetId),
+                }))
+            ),
+            [],
+            new Date().toISOString()
+        ).assignments
     },
 })

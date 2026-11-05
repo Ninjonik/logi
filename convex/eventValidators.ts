@@ -25,6 +25,7 @@ const reminderStatus = v.union(
 export const eventWriteFields = {
     gameId: v.optional(v.string()),
     kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
+    wardogsFixtureUrl: v.optional(v.string()),
     matchType: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),

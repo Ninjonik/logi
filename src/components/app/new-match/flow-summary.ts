@@ -663,6 +663,7 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
 const CHANGE_FIELDS: Record<keyof FlowValues, FlowChangeKey | null> = {
     kind: null,
     gameId: null,
+    wardogsFixtureUrl: null,
     templateId: null,
     nameTouched: null,
     announcementChannelId: null,

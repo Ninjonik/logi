@@ -28,6 +28,7 @@ export const leagueAutoImportFixtures = defineTable({
     issue: v.optional(v.string()),
     updatedAt: v.number(),
 })
+    .index("eventId", ["eventId"])
     .index("cachePending", ["cachePending"])
     .index("identity", ["guildId", "fixtureId"])
     .index("guildId", ["guildId"])

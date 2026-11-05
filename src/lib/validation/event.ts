@@ -4,6 +4,7 @@ import {
     tacticalPlanSchema,
 } from "@/domain/events/tactical-plan"
 import { ATTENDANCE_REMINDER_OFFSETS } from "@/domain/events/scheduled-job-policy"
+import { wardogsFixtureUrlSchema } from "@/domain/wardogs-league/fixture-link"
 import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
 import { matchTeamInputsSchema } from "@/domain/teams/match-teams"
 import { z } from "zod"
@@ -38,6 +39,7 @@ export const eventSchema = z
     .object({
         gameId: z.string().trim().min(1).optional(),
         kind: z.enum(["match", "training"]),
+        wardogsFixtureUrl: wardogsFixtureUrlSchema.optional(),
         matchType: z
             .string()
             .trim()
@@ -137,6 +139,19 @@ export const eventSchema = z
         squadPresetId: z.string().trim().max(64).optional(),
     })
     .superRefine((value, ctx) => {
+        if (
+            value.wardogsFixtureUrl &&
+            (value.gameId !== "wardogs" ||
+                value.kind !== "match" ||
+                value.recurrence)
+        ) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["wardogsFixtureUrl"],
+                message:
+                    "A fixture link requires a non-recurring Wardogs match.",
+            })
+        }
         if (
             value.tacticalPlan &&
             (value.kind !== "match" ||

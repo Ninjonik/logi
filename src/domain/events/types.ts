@@ -78,6 +78,7 @@ export type EventLike = {
     map?: string
     timeOfDay?: string
     tacticalPlan?: import("./tactical-plan").TacticalPlan | null
+    wardogsFixtureUrl?: string
     gameId?: import("@/domain/games/game").GameId
     registrationEnd: string
     registrationStart?: string

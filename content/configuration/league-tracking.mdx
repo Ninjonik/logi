@@ -129,3 +129,34 @@ Imported matches use the ordinary `/api/v1/clan/events` read/write contracts and
 change notifications. API-key configuration and import enablement are deliberately
 dashboard-only: clan service keys must not manage another provider's credentials
 or start an unattended publication workflow.
+
+### Prevent duplicates when creating matches manually
+
+In the **Match** step of a Wardogs match, optionally paste its public fixture URL,
+for example `https://wardogsleague.net/matches/cmvjzz9tz03nvml015t5vzlpa`.
+**Fill from Wardogs API** uses the team key configured above to fill kickoff,
+map, teams, factions and competition details. It retains the selected template's
+signup rules and timing offsets. The provider only returns a bounded window of
+upcoming/recent fixtures; a fixture outside that window cannot be loaded. You
+can still enter the details yourself and save the fixture link without an API key.
+
+The link is saved with drafts, but reserved only when the match is published.
+Publishing another match for the same fixture is rejected in the same transaction,
+including when an automatic import has already created it. Fixture links are
+one-to-one and cannot be combined with recurring matches. An existing binding is
+preserved when the link is omitted from an update.
+
+Before creating an unlinked fixture, the importer also checks this clan's existing
+Wardogs matches for the **exact same game-start instant**. Equivalent time-zone
+representations count as the same instant; meeting and registration times do not.
+A single eligible match is linked automatically, keeping all its existing settings,
+sign-ups, roster and results. It remains manually managed. Drafts, trainings,
+concluded matches and matches belonging to other clans are excluded. If several
+matches share the kickoff, or the matching match belongs to another fixture,
+Logi flags the conflict and creates nothing. The search is bounded to 2,000 Wardogs
+records per clan; larger collections require an explicit fixture link.
+
+The normal event API and actor-backed event commands accept `wardogsFixtureUrl`;
+event and match summaries expose a saved link. API writes use the same binding
+checks as the dashboard. The button that loads provider details is dashboard-only
+because it uses the clan's private third-party team key.

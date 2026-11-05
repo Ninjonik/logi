@@ -9,6 +9,7 @@ import {
     tacticalPlanMatchesMap,
     tacticalPlanSchema,
 } from "./tactical-plan"
+import { wardogsFixtureUrlSchema } from "../wardogs-league/fixture-link"
 import { isApiKeyReadAccess } from "../api/key-access"
 import { teamIdSchema } from "../teams/team"
 import { deriveEventStatus } from "./status"
@@ -103,6 +104,7 @@ const instant = z.iso.datetime()
 export const websiteEventFieldsSchema = z
     .strictObject({
         kind: z.enum(["match", "training"]),
+        wardogsFixtureUrl: wardogsFixtureUrlSchema.optional(),
         name: z.string().trim().min(1).max(160),
         matchType: z.string().trim().max(80).optional(),
         description: z.string().trim().max(2000).optional(),

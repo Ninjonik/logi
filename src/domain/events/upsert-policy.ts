@@ -1,3 +1,4 @@
+import { normalizeFixtureLink } from "../wardogs-league/fixture-link"
 import { normalizeOptionalArray } from "@/domain/shared/collections"
 import { validateEventDiscussion } from "./discussion"
 
@@ -23,6 +24,7 @@ export type EventUpsertInput = {
     guildId: string
     gameId?: GameId
     kind?: EventKind
+    wardogsFixtureUrl?: string
     matchType?: string
     name: string
     description?: string
@@ -195,6 +197,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
 
     return {
         guildId: input.guildId,
+        wardogsFixtureUrl: normalizeFixtureLink(input),
         gameId: input.gameId,
         kind,
         matchType: trimOptional(input.matchType),
@@ -374,6 +377,7 @@ export function buildUpdateEventPatch(
 
     return {
         ...mutableBase,
+        wardogsFixtureUrl: base.wardogsFixtureUrl ?? existing.wardogsFixtureUrl,
         // A map change cannot retain positions from a different battlefield.
         ...(input.tacticalPlan === undefined &&
         (input.map !== existing.map ||

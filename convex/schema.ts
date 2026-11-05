@@ -941,6 +941,7 @@ export default defineSchema({
         .index("guildId_name", ["guildId", "name"]),
     events: defineTable({
         guildId: v.string(),
+        wardogsFixtureUrl: v.optional(v.string()),
         gameId: v.optional(gameId),
         kind: v.optional(v.union(v.literal("match"), v.literal("training"))),
         // A draft is saved from the new-match form but not published: it shows
@@ -1076,6 +1077,7 @@ export default defineSchema({
         updatedAt: v.optional(v.string()),
     })
         .index("guildId", ["guildId"])
+        .index("guildId_gameId", ["guildId", "gameId"])
         // The timed passes read this table through these indexes, never
         // whole (ARCHITECTURE.md, "Convex hot paths"): the recurrence pass
         // takes the weekly series and each one's upcoming occurrences, the

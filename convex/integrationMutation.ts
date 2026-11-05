@@ -180,6 +180,7 @@ async function trackIntegrationChanges<T>(
                     "kind",
                     "status",
                     "gameStart",
+                    "wardogsFixtureUrl",
                     "gameEnd",
                     "updatedAt",
                     "eventResult",
