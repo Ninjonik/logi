@@ -179,8 +179,15 @@ function groupsText(values: FlowValues, context: FlowSummaryContext) {
 }
 
 function statusesText(values: FlowValues, t: FlowText) {
-    const statuses = values.allowedSignupStatuses.length ? values.allowedSignupStatuses : values.kind === "training" ? FLOW_SIGNUP_STATUSES.filter((status) => status !== "mercenary") : FLOW_SIGNUP_STATUSES
-    return [...statuses.map((status) => t.signups.statuses[status]), ...(values.allowNonMembersSignup ? [t.signups.nonMembers] : [])].join(", ")
+    const statuses = values.allowedSignupStatuses.length
+        ? values.allowedSignupStatuses
+        : values.kind === "training"
+          ? FLOW_SIGNUP_STATUSES.filter((status) => status !== "mercenary")
+          : FLOW_SIGNUP_STATUSES
+    return [
+        ...statuses.map((status) => t.signups.statuses[status]),
+        ...(values.allowNonMembersSignup ? [t.signups.nonMembers] : []),
+    ].join(", ")
 }
 
 function pingText(values: FlowValues, t: FlowText) {

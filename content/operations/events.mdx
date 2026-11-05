@@ -127,7 +127,7 @@ linked Discord role or has the group assigned in Logi. The optional **general
 signup** avoids choosing a group; when the member has a primary group that is
 visible on the event, Logi records that primary group instead.
 
-For matches, managers can opt in to a public discussion thread under the Discord sign-up announcement. Logi adds people when they sign up and removes them when they select **not attending**. Existing matches keep this option off until a manager enables it.
+For matches, managers can opt in to a private discussion thread in the Discord sign-up channel. Logi invites people when they sign up and removes them when they select **not attending**. It does not enumerate server members or remove other thread members. Discord administrators and members with Manage Threads can also access private threads. The channel must be a regular text channel with private-thread permissions for Logi. Existing matches keep this option off until a manager enables it.
 
 Selecting **not attending** records a decline; it does not erase the person's
 participation record. A later response replaces the old one. A sign-up says
@@ -187,14 +187,10 @@ Choose one of three debrief destinations:
 
 - **Inside the match forum**: Logi creates and pins a debrief topic there. The
   match forum must be enabled and retained; automatic deletion is unavailable.
-- **Thread under the results message**: Logi creates a public discussion thread
-  on the published match result. **Admins must publish the result after the
-  game.** Until that message exists, the bot keeps the event forum, even if
-  automatic deletion is selected.
-- **Topic in a separate debrief forum**: choose an existing Discord forum
-  channel, such as a game's debrief archive. Each concluded match gets its own
-  topic there, whether the event forum is retained or deleted. Visibility follows
-  the selected forum's Discord permissions.
+- **Thread under the results message**: after the result is published, Logi creates a separate private participant thread in the results text channel. Discord cannot attach a private thread directly to a message.
+- **Topic in a separate debrief forum**: for participant privacy, Logi instead creates a private thread in the configured results text channel (falling back to the event info or signup channel). Shared forum topics cannot have a private per-match audience.
+
+Debriefs invite attending signups and eligible roster participants. Explicitly declining participants lose thread membership; other members are left in place. Existing public debrief threads are replaced and deleted when synchronized. Private threads require a regular text channel; unsupported channel types fail without deleting the match forum.
 
 Set clan defaults and game overrides on **Settings → Channels and language →
 Event discussion defaults**. They are copied into new events and can be changed

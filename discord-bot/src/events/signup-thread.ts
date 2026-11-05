@@ -1,4 +1,5 @@
 import {
+    ChannelType,
     ThreadAutoArchiveDuration,
     type Guild,
     type ThreadChannel,
@@ -21,7 +22,7 @@ async function addMember(thread: ThreadChannel, userId: string) {
     )
 }
 
-/** Creates the announcement's opt-in public thread and mirrors current signups. */
+/** Keeps an invitation-only discussion in sync with current signups. */
 export async function syncSignupThread(input: {
     guild: Guild
     event: EventRecord
@@ -36,29 +37,65 @@ export async function syncSignupThread(input: {
     )
         return input.existingThreadId
 
-    const channel = await input.guild.channels
-        .fetch(input.announcementChannelId)
-        .catch(() => null)
-    if (!channel?.isTextBased() || !("messages" in channel))
-        return input.existingThreadId
+    const channel = await input.guild.channels.fetch(
+        input.announcementChannelId
+    )
+    if (channel?.type !== ChannelType.GuildText)
+        throw new Error(
+            "Private event discussions require a guild text channel"
+        )
 
     let thread = input.existingThreadId
         ? await input.guild.channels
               .fetch(input.existingThreadId)
-              .then((value) => (value?.isThread() ? value : null))
-              .catch(() => null)
+              .catch((error: unknown) => {
+                  if (
+                      typeof error === "object" &&
+                      error !== null &&
+                      "code" in error &&
+                      error.code === 10003
+                  )
+                      return null
+                  throw error
+              })
         : null
+    if (thread && thread.type !== ChannelType.PrivateThread) {
+        // Discord cannot convert public threads; remove the exposed discussion.
+        if (!thread.isThread())
+            throw new Error("Invalid event discussion channel")
+        await thread.delete(
+            "Replace public event discussion with private discussion"
+        )
+        thread = null
+    }
+    if (thread && (!thread.isThread() || thread.parentId !== channel.id))
+        throw new Error("Invalid event discussion parent")
+    const name =
+        `${threadName(input.event).slice(0, 70)} · ${input.event.id}`.slice(
+            0,
+            100
+        )
     if (!thread) {
-        const message = await channel.messages
-            .fetch(input.announcementMessageId)
-            .catch(() => null)
-        if (!message) return undefined
+        const active = await channel.threads.fetchActive()
         thread =
-            message.thread ??
-            (await message.startThread({
-                name: threadName(input.event),
+            [...active.threads.values()].find(
+                (candidate) =>
+                    candidate.type === ChannelType.PrivateThread &&
+                    candidate.name === name
+            ) ??
+            (await channel.threads.create({
+                name,
+                type: ChannelType.PrivateThread,
+                invitable: false,
                 autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
             }))
+    }
+    if (!thread.isThread()) throw new Error("Invalid event discussion")
+    if (thread.archived) await thread.setArchived(false)
+    await thread.setInvitable(false)
+    for (const participant of input.event.participants) {
+        if (participant.status === "not_attending")
+            await thread.members.remove(participant.userId)
     }
 
     await Promise.all(
@@ -81,7 +118,8 @@ export async function syncSignupThreadMember(input: {
         .fetch(input.threadId)
         .then((value) => (value?.isThread() ? value : null))
         .catch(() => null)
-    if (!thread) return
+    if (!thread || thread.type !== ChannelType.PrivateThread) return
+    if (thread.archived) await thread.setArchived(false)
     if (input.attending) {
         await addMember(thread, input.userId)
         return

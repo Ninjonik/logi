@@ -597,7 +597,7 @@ function RosterPublishBody({
                                 role="status"
                                 className="text-sm text-amber-700 dark:text-amber-400"
                             >
-                                {t.publishedWithoutDiscord}
+                                {t.noDiscordDestination}
                             </p>
                         ) : null}
                         <span className="text-muted-foreground flex items-center gap-1 text-xs">

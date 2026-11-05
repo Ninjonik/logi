@@ -795,13 +795,21 @@ test("Wardogs reviewed reports document the same public and scoped match shape",
     )
 })
 
-
 test("training API documents independent signup audiences and clan-only defaults", async () => {
     const document = await (await GET()).json()
-    for (const operation of [document.paths["/clan/events"].post, document.paths["/clan/events/{eventId}"].patch]) {
-        const properties = operation.requestBody.content["application/json"].schema.properties
+    for (const operation of [
+        document.paths["/clan/events"].post,
+        document.paths["/clan/events/{id}"].patch,
+    ]) {
+        const properties =
+            operation.requestBody.content["application/json"].schema.properties
         assert.match(properties.allowedSignupStatuses.description, /trainings/)
-        assert.deepEqual(properties.allowedSignupStatuses.items.enum, ["recruit", "member", "reserve_member", "mercenary"])
+        assert.deepEqual(properties.allowedSignupStatuses.items.enum, [
+            "recruit",
+            "member",
+            "reserve_member",
+            "mercenary",
+        ])
         assert.equal(properties.allowNonMembersSignup.default, false)
     }
 })

@@ -173,7 +173,15 @@ export function UserAssignmentForm({
         takenPlatformIds
     )
 
-    const matches = useMemo(() => searchAssignmentCandidates(eligibleUsers, { query, guildId: server.discordId, createMode }), [eligibleUsers, query, createMode, server.discordId])
+    const matches = useMemo(
+        () =>
+            searchAssignmentCandidates(eligibleUsers, {
+                query,
+                guildId: server.discordId,
+                createMode,
+            }),
+        [eligibleUsers, query, createMode, server.discordId]
+    )
 
     const selected = eligibleUsers.find(
         (item) => item.user.discordId === selectedUserId
@@ -507,7 +515,7 @@ export function UserAssignmentForm({
                                     disabled={page === 0}
                                     onClick={() => setPage(page - 1)}
                                 >
-                                    {dictionary.common.previous}
+                                    {dictionary.userManagement.previousPage}
                                 </Button>
                                 <span
                                     className="text-muted-foreground text-sm"
@@ -527,7 +535,7 @@ export function UserAssignmentForm({
                                     }
                                     onClick={() => setPage(page + 1)}
                                 >
-                                    {dictionary.common.next}
+                                    {dictionary.userManagement.nextPage}
                                 </Button>
                             </div>
                             <p className="text-muted-foreground text-sm">
@@ -610,7 +618,11 @@ export function UserAssignmentForm({
 
                     {selected ? (
                         <div className="grid gap-4 md:grid-cols-6">
-                            {notices.length > 1 ? <div className="md:col-span-6 space-y-3">{notices.slice(1)}</div> : null}
+                            {notices.length > 1 ? (
+                                <div className="space-y-3 md:col-span-6">
+                                    {notices.slice(1)}
+                                </div>
+                            ) : null}
                             <div className="space-y-2 md:col-span-2">
                                 <Label>
                                     {dictionary.userManagement.assignmentType}

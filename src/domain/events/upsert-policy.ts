@@ -1,3 +1,4 @@
+import { DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES } from "./signup-policy"
 import { normalizeFixtureLink } from "../wardogs-league/fixture-link"
 import { normalizeOptionalArray } from "@/domain/shared/collections"
 import { validateEventDiscussion } from "./discussion"
@@ -273,7 +274,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
                   (status): status is SignupMembershipStatus => Boolean(status)
               )
             : kind === "training"
-              ? ["recruit", "member", "reserve_member"]
+              ? [...DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES]
               : [],
         allowLateSignups: kind === "match" && input.allowLateSignups !== false,
         allowNonMembersSignup: Boolean(input.allowNonMembersSignup),

@@ -1,4 +1,5 @@
 type CalendarEvent = {
+    updatedAt?: string
     name: string
     matchType?: string
     meetingStart: string
@@ -8,6 +9,7 @@ type CalendarEvent = {
 }
 
 const calendarFields: Array<keyof CalendarEvent> = [
+    "updatedAt",
     "name",
     "matchType",
     "meetingStart",

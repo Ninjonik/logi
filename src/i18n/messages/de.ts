@@ -3036,6 +3036,8 @@ export const deMessages = {
             "Mitgliedschaftseinstellungen konnten nicht gespeichert werden.",
     },
     userManagement: {
+        previousPage: "Zurück",
+        nextPage: "Weiter",
         canAddMemberOrMercenary:
             "Kann als Mitglied, Reservemitglied oder Söldner hinzugefügt werden.",
         mercenaryOnly:
@@ -3070,7 +3072,7 @@ export const deMessages = {
         eligibleMembers: "Für Mitglied geeignet",
         eligibleMercs: "Für Mercenary geeignet",
         blocked: "Nicht geeignet",
-        searchPlaceholder: "Spieler im System suchen...",
+        searchPlaceholder: "Discord-Name, Server-Anzeigename oder Discord-ID",
         noResults: "Keine passenden Spieler im System gefunden.",
         rulesTitle: "Zuweisungsregeln",
         rulesMember:
@@ -3932,10 +3934,6 @@ export const deMessages = {
                     detail: "Neues Match oder Training · Anmeldungen und Rollen-Ping laut Vorlage",
                 },
                 roster: {
-                    noPresets:
-                        "Erstelle zuerst eine Truppenvorlage für diese Aufstellung.",
-                    createPreset: "Truppenvorlage erstellen",
-
                     title: "Kader",
                     detail: "Das Kaderfoto unter dem Kopf mit Einteilung anzeigen und Kader öffnen · Einteilung und Passwort sieht nur der Spieler",
                     variantLabel: "Standardansicht",
@@ -4757,6 +4755,9 @@ export const deMessages = {
         },
     },
     roster: {
+        noPresets: "Erstelle zuerst eine Truppenvorlage für diese Aufstellung.",
+        createPreset: "Truppenvorlage erstellen",
+
         dragSection: "Bereich ziehen",
         dragSquad: "Trupp ziehen",
         moveUp: "Nach oben",
@@ -4884,9 +4885,12 @@ export const deMessages = {
     },
     newMatch: {
         delivery: {
+            checkFailed:
+                "Discord-Zustellung konnte nicht geprüft werden. Aktualisiere den Status.",
             pending: "Gespeichert; wartet auf Discord-Zustellung.",
             delivered: "An Discord zugestellt.",
-            unavailable: "Discord-Zustellung nicht verfügbar: konfiguriere einen Ankündigungskanal in den Einstellungen.",
+            unavailable:
+                "Discord-Zustellung nicht verfügbar: konfiguriere einen Ankündigungskanal in den Einstellungen.",
             open: "Nachricht öffnen",
             refresh: "Status aktualisieren",
         },
@@ -5058,7 +5062,8 @@ export const deMessages = {
                 memberRecruit: "Mitglieder und Rekruten",
                 all: "Mitglieder, Rekruten und Reserve",
             },
-            trainingNote: "Berechtigte Spieler melden sich mit einem Klick zum Training an. Wähle oben die Mitgliedsstatus; Spieler ohne Mitgliedschaft sind eine separate Option.",
+            trainingNote:
+                "Berechtigte Spieler melden sich mit einem Klick zum Training an. Wähle oben die Mitgliedsstatus; Spieler ohne Mitgliedschaft sind eine separate Option.",
             groupOffered: "Gruppe {name} anbieten",
             capLabel: "Limit der Gruppe {name}",
             capPlaceholder: "ohne Limit",
@@ -5102,12 +5107,12 @@ export const deMessages = {
             createDebriefThread: "Debrief-Thread nach dem Spiel erstellen",
             debriefDestination: "Debrief-Ziel",
             debriefEventForum: "Im Spielforum",
-            debriefResultsThread: "Thread unter der Ergebnisnachricht",
-            debriefSeparateForum: "Thema in einem separaten Debrief-Forum",
+            debriefResultsThread: "Privater Thread im Ergebniskanal",
+            debriefSeparateForum: "Privater Teilnehmer-Thread (Forum-Ersatz)",
             debriefLegacyPrivate: "Bestehender privater Debrief",
             debriefForumChannel: "Forumkanal für Debriefs",
             debriefForumChannelHint:
-                "Für Debriefs in einem separaten Forum. Clan-Standard und Spielausnahmen festlegen; weitere Diskussionseinstellungen stehen unten.",
+                "Externe Debriefs nutzen einen privaten Thread im Ergebnis-Textkanal. Themen in geteilten Foren lassen sich nicht auf Spielteilnehmer beschränken.",
             debriefResultsWarning:
                 "Debriefs unter Ergebnissen erfordern die Veröffentlichung des Spielergebnisses. Das Spielforum bleibt erhalten, bis der Debrief existiert.",
             discussionDefaults: "Standardwerte für Eventdiskussionen",
@@ -5120,7 +5125,7 @@ export const deMessages = {
                 "Erstellt nach Abschluss einen Debrief am gewählten Ziel. Ein Debrief im Spielforum erfordert dessen Beibehaltung.",
             signupThread: "Diskussions-Thread zum Event",
             signupThreadHint:
-                "Erstellt einen öffentlichen Thread unter der Ankündigung und synchronisiert seine Mitglieder mit den Anmeldungen.",
+                "Erstellt einen privaten Thread im Textkanal der Ankündigung. Nur aktuell angemeldete Teilnehmer werden eingeladen.",
             voice: "Sprachkanäle der Trupps beim Treffpunkt",
             serverAndPassword: "Server und Passwort",
             server: "Server",
@@ -6429,8 +6434,10 @@ export const deMessages = {
             "Wähle das Event und die Squad-Vorlage für diese Aufstellung.",
     },
     rosterPublish: {
+        noDiscordDestination:
+            "Veröffentlichen speichert die Aufstellung in Logi. Discord-Zustellung ist erst verfügbar, wenn ein Ziel in den Kanaleinstellungen konfiguriert ist.",
         publishedWithoutDiscord:
-            "In Logi gespeichert. Discord-Zustellung nicht verfügbar: kein Aufstellungskanal konfiguriert. Lege ihn in den Kanaleinstellungen fest.",
+            "In Logi gespeichert. Discord-Zustellung nicht verfügbar: konfiguriere ein Ankündigungsziel in den Kanaleinstellungen.",
 
         publishTitle: "Aufstellung veröffentlichen",
         republishTitle: "Erneut veröffentlichen",

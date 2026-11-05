@@ -2990,6 +2990,8 @@ export const plMessages = {
         saveError: "Nie można zapisać ustawień członkostwa.",
     },
     userManagement: {
+        previousPage: "Poprzednia",
+        nextPage: "Następna",
         canAddMemberOrMercenary:
             "Można dodać jako członka, członka rezerwy lub najemnika.",
         mercenaryOnly:
@@ -3024,7 +3026,8 @@ export const plMessages = {
         eligibleMembers: "Kwalifikuje się na członka",
         eligibleMercs: "Nadaje się na najemnika",
         blocked: "Nie kwalifikuje się",
-        searchPlaceholder: "Wyszukaj graczy w systemie...",
+        searchPlaceholder:
+            "Nazwa Discord, nazwa wyświetlana na serwerze lub Discord ID",
         noResults: "W systemie nie znaleziono pasujących graczy.",
         rulesTitle: "Zasady przydziału",
         rulesMember:
@@ -3884,10 +3887,6 @@ export const plMessages = {
                     detail: "Nowy mecz lub trening · rejestracje i ping roli z szablonu",
                 },
                 roster: {
-                    noPresets:
-                        "Najpierw utwórz szablon drużyn dla tego składu.",
-                    createPreset: "Utwórz szablon drużyn",
-
                     title: "Skład",
                     detail: "Grafika składu pod nagłówkiem z opcją Wyświetl przypisanie i Otwórz skład · tylko gracz widzi przypisanie i hasło",
                     variantLabel: "Wygląd domyślny",
@@ -4704,6 +4703,9 @@ export const plMessages = {
         },
     },
     roster: {
+        noPresets: "Najpierw utwórz szablon drużyn dla tego składu.",
+        createPreset: "Utwórz szablon drużyn",
+
         dragSection: "Przeciągnij sekcję",
         dragSquad: "Przeciągnij oddział",
         moveUp: "Przesuń w górę",
@@ -4829,9 +4831,12 @@ export const plMessages = {
     },
     newMatch: {
         delivery: {
+            checkFailed:
+                "Nie udało się sprawdzić dostarczenia na Discord. Odśwież status.",
             pending: "Zapisano; oczekuje na dostarczenie na Discord.",
             delivered: "Dostarczono na Discord.",
-            unavailable: "Dostarczenie na Discord jest niedostępne: skonfiguruj kanał ogłoszeń w ustawieniach.",
+            unavailable:
+                "Dostarczenie na Discord jest niedostępne: skonfiguruj kanał ogłoszeń w ustawieniach.",
             open: "Otwórz wiadomość",
             refresh: "Odśwież status",
         },
@@ -5008,7 +5013,8 @@ export const plMessages = {
                 memberRecruit: "członkowie i rekruci",
                 all: ", rekruci i rezerwy",
             },
-            trainingNote: "Uprawnieni gracze zapisują się na trening jednym przyciskiem. Powyżej wybierz statusy członkostwa; gracze bez członkostwa mają osobną opcję.",
+            trainingNote:
+                "Uprawnieni gracze zapisują się na trening jednym przyciskiem. Powyżej wybierz statusy członkostwa; gracze bez członkostwa mają osobną opcję.",
             groupOffered: "Zaoferuj grupę {name}",
             capLabel: "Limit grupy {name}",
             capPlaceholder: "bez limitu",
@@ -5051,12 +5057,12 @@ export const plMessages = {
             createDebriefThread: "Utwórz wątek podsumowujący po meczu",
             debriefDestination: "Miejsce podsumowania",
             debriefEventForum: "Na forum meczu",
-            debriefResultsThread: "Wątek pod wiadomością z wynikiem",
-            debriefSeparateForum: "Temat na osobnym forum podsumowań",
+            debriefResultsThread: "Prywatny wątek w kanale wyników",
+            debriefSeparateForum: "Prywatny wątek uczestników (zamiast forum)",
             debriefLegacyPrivate: "Istniejące prywatne podsumowanie",
             debriefForumChannel: "Kanał forum podsumowań",
             debriefForumChannelHint:
-                "Dla podsumowań na osobnym forum. Ustaw kanał klanu i dodaj wyjątki dla gier; pozostałe ustawienia dyskusji znajdują się poniżej.",
+                "Podsumowania poza forum meczu używają prywatnego wątku w kanale tekstowym wyników. Tematów wspólnego forum nie można ograniczyć do uczestników meczu.",
             debriefResultsWarning:
                 "Podsumowanie pod wynikiem wymaga opublikowania wyniku po meczu. Forum meczu pozostaje do czasu utworzenia podsumowania.",
             discussionDefaults: "Domyślne dyskusje wydarzeń",
@@ -5070,7 +5076,7 @@ export const plMessages = {
                 "Po zakończeniu tworzy podsumowanie w wybranym miejscu. Podsumowanie na forum meczu wymaga zachowania tego forum.",
             signupThread: "Wątek dyskusji o wydarzeniu",
             signupThreadHint:
-                "Utwórz wątek publiczny pod ogłoszeniem i informuj jego członków o rejestracji.",
+                "Tworzy prywatny wątek w kanale tekstowym ogłoszeń. Zapraszani są tylko aktualnie zapisani uczestnicy.",
             voice: "Oddział kanały głosowe na spotkaniu",
             serverAndPassword: "Serwer i hasło",
             server: "Serwer",
@@ -6369,8 +6375,10 @@ export const plMessages = {
             "Wybierz zdarzenie i preset oddziałów dla tego składu.",
     },
     rosterPublish: {
+        noDiscordDestination:
+            "Publikacja zapisuje skład w Logi. Dostarczenie na Discord jest niedostępne do czasu skonfigurowania kanału docelowego.",
         publishedWithoutDiscord:
-            "Zapisano w Logi. Dostarczenie na Discord jest niedostępne: nie skonfigurowano kanału składu. Ustaw go w ustawieniach kanałów.",
+            "Zapisano w Logi. Dostarczenie na Discord jest niedostępne: skonfiguruj kanał ogłoszeń w ustawieniach kanałów.",
 
         publishTitle: "Opublikuj skład",
         republishTitle: "Opublikuj ponownie",

@@ -51,3 +51,20 @@ test("displayed schedule changes refresh calendar and roster changes refresh eve
         getCalendarSyncVersion({ ...before, name: "Renamed" })
     )
 })
+
+test("event edits invalidate the calendar even when schedule fields stay the same", () => {
+    const before = {
+        name: "Match",
+        meetingStart: "meeting",
+        gameStart: "start",
+        gameEnd: "end",
+        status: "registration",
+        updatedAt: "2026-11-04T12:00:00Z",
+    }
+    const after = { ...before, updatedAt: "2026-11-04T12:01:00Z" }
+    assert.equal(shouldRefreshCalendar(before, after), true)
+    assert.notEqual(
+        getCalendarSyncVersion(before),
+        getCalendarSyncVersion(after)
+    )
+})
