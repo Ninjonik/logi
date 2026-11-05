@@ -17,3 +17,5 @@ Logi's documentation is organized by audience and runtime:
 | [Dependency patches](../patches/README.md)                             | Discord gateway patch and its regression checks                        |
 
 The API serves its interactive reference at `/api/v1/docs` and OpenAPI schema at `/api/v1/openapi.json`. JSON examples and provider captures retained beside integration references support contract and parser tests.
+
+[GitHub issue synchronization](github-issues.md) covers optional bug-report export, status synchronization, and signed webhooks.

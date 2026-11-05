@@ -13,6 +13,8 @@ import type * as apiIdempotency from "../apiIdempotency.js";
 import type * as apiKeyAuth from "../apiKeyAuth.js";
 import type * as apiKeyValidators from "../apiKeyValidators.js";
 import type * as articles from "../articles.js";
+import type * as bugReportGithub from "../bugReportGithub.js";
+import type * as bugReportGithubStore from "../bugReportGithubStore.js";
 import type * as bugReports from "../bugReports.js";
 import type * as calendarFeed from "../calendarFeed.js";
 import type * as calendarItems from "../calendarItems.js";
@@ -216,6 +218,8 @@ declare const fullApi: ApiFromModules<{
   apiKeyAuth: typeof apiKeyAuth;
   apiKeyValidators: typeof apiKeyValidators;
   articles: typeof articles;
+  bugReportGithub: typeof bugReportGithub;
+  bugReportGithubStore: typeof bugReportGithubStore;
   bugReports: typeof bugReports;
   calendarFeed: typeof calendarFeed;
   calendarItems: typeof calendarItems;

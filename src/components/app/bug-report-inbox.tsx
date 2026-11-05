@@ -109,6 +109,32 @@ export function BugReportInbox({
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {report.githubUrl && (
+                            <a
+                                className="text-primary underline"
+                                href={report.githubUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                GitHub
+                            </a>
+                        )}
+                        {report.githubError && (
+                            <p role="alert" className="text-destructive">
+                                GitHub: {report.githubError}
+                            </p>
+                        )}
+                        {report.githubComments?.map((comment) => (
+                            <blockquote
+                                key={comment.id}
+                                className="border-l-2 pl-3 text-sm"
+                            >
+                                <strong>{comment.author}</strong>
+                                <p className="break-words whitespace-pre-wrap">
+                                    {comment.body.replace(/<!--.*?-->/g, "")}
+                                </p>
+                            </blockquote>
+                        ))}
                         <dl className="text-muted-foreground grid gap-2 text-sm sm:grid-cols-2">
                             <div>
                                 <dt>{t.reporter}</dt>

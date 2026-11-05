@@ -6,6 +6,12 @@ import { internal } from "./_generated/api"
 
 const crons = cronJobs()
 crons.interval(
+    "sync bug reports to GitHub",
+    { minutes: 1 },
+    makeFunctionReference<"action">("bugReportGithub:sync"),
+    {}
+)
+crons.interval(
     "import authenticated Wardogs team fixtures",
     { minutes: 1 },
     makeFunctionReference<"action">("leagueAutoImportJobs:collectDue"),

@@ -2,7 +2,7 @@ import type { Locale } from "../config"
 const en = {
     report: "Report a bug",
     inbox: "Bug reports",
-    intro: "Tell us what went wrong. Screenshots and logs help us investigate.",
+    intro: "Tell us what went wrong. Screenshots and logs help us investigate. Report text and server context may be shared with our GitHub issue tracker; do not include secrets.",
     title: "Title",
     titleHint: "Briefly describe the problem",
     message: "What happened?",
@@ -42,7 +42,7 @@ type Messages = { [K in keyof typeof en]: string }
 const cs: Messages = {
     report: "Nahlásit chybu",
     inbox: "Hlášení chyb",
-    intro: "Popište, co se pokazilo. Snímky obrazovky a protokoly nám pomohou problém vyřešit.",
+    intro: "Popište, co se pokazilo. Snímky obrazovky a protokoly nám pomohou problém vyřešit. Text hlášení a kontext serveru mohou být sdíleny v našem GitHub trackeru; neuvádějte tajné údaje.",
     title: "Název",
     titleHint: "Stručně popište problém",
     message: "Co se stalo?",
@@ -81,7 +81,7 @@ const cs: Messages = {
 const de: Messages = {
     report: "Fehler melden",
     inbox: "Fehlermeldungen",
-    intro: "Beschreibe das Problem. Screenshots und Protokolle helfen bei der Untersuchung.",
+    intro: "Beschreibe das Problem. Screenshots und Protokolle helfen bei der Untersuchung. Meldungstext und Serverkontext können in unserem GitHub-Issue-Tracker geteilt werden; keine Geheimnisse angeben.",
     title: "Titel",
     titleHint: "Beschreibe das Problem kurz",
     message: "Was ist passiert?",
@@ -123,7 +123,7 @@ const de: Messages = {
 const pl: Messages = {
     report: "Zgłoś błąd",
     inbox: "Zgłoszenia błędów",
-    intro: "Opisz, co poszło nie tak. Zrzuty ekranu i logi pomogą zbadać problem.",
+    intro: "Opisz, co poszło nie tak. Zrzuty ekranu i logi pomogą zbadać problem. Treść zgłoszenia i kontekst serwera mogą być udostępniane w naszym trackerze GitHub; nie podawaj sekretów.",
     title: "Tytuł",
     titleHint: "Krótko opisz problem",
     message: "Co się stało?",
