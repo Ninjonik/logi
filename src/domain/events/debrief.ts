@@ -5,6 +5,7 @@ export function debriefParticipantIds(
         absenceNotices?: ReadonlyArray<{ userId: string; kind?: string }>
     },
     roster?: {
+        localPlayerIds?: readonly string[]
         squads: ReadonlyArray<{ players: ReadonlyArray<{ id?: string }> }>
         reserveAttendances?: ReadonlyArray<{
             userId: string
@@ -34,7 +35,12 @@ export function debriefParticipantIds(
                 .filter((p) => p.confirmed)
                 .map((p) => p.userId),
         ]),
-    ].filter((id) => !absent.has(id))
+    ].filter(
+        (id) =>
+            !absent.has(id) &&
+            (roster?.localPlayerIds === undefined ||
+                roster.localPlayerIds.includes(id))
+    )
 }
 
 /** Event overrides take precedence over workspace defaults for each location. */

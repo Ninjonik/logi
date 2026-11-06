@@ -226,7 +226,15 @@ export const claim = mutation({
             mentionPlayers: row.mentionPlayers,
             firstPublish: row.firstPublish === true,
             memberIds: [
-                ...new Set(members.map((assignment) => assignment.userId)),
+                ...new Set(
+                    members
+                        .map((assignment) => assignment.userId)
+                        .filter(
+                            (id) =>
+                                roster.localPlayerIds === undefined ||
+                                roster.localPlayerIds.includes(id)
+                        )
+                ),
             ],
         }
     },

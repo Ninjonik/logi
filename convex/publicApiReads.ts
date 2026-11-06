@@ -12,6 +12,7 @@ import {
     matchesGameScope,
     resolveGameScope,
 } from "../src/domain/games/game"
+import { sharedMatchMembers } from "../src/infrastructure/convex/shared-match-store"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
 import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
@@ -237,13 +238,16 @@ export const getClanMatchByEvent = query({
             )
         )
             return null
+        const host = event.hostEventId
+            ? (await sharedMatchMembers(ctx, event)).host
+            : event
         const match = await ctx.db
             .query("matchStats")
-            .withIndex("eventId", (q) => q.eq("eventId", event._id))
+            .withIndex("eventId", (q) => q.eq("eventId", host._id))
             .unique()
         if (
             match &&
-            (match.guildId !== key.guildId ||
+            (match.guildId !== host.guildId ||
                 !allowsApiKeyRead(
                     key.readAccess,
                     "matches",

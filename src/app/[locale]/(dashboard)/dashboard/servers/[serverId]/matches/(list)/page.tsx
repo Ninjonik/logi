@@ -1,3 +1,5 @@
+import { SharedMatchPanel } from "@/components/app/shared-match-panel"
+import { sharedInvitations } from "@/lib/gateways/shared-matches"
 import { CalendarPlus, Plus, RefreshCw } from "lucide-react"
 import { connection } from "next/server"
 import type { Metadata } from "next"
@@ -74,54 +76,68 @@ export default async function MatchesPage({
         label: GAME_LABELS[id],
     }))
 
+    const shared = canAdmin ? await sharedInvitations(serverId) : null
     return (
-        <MatchListView
-            title={text.title}
-            description={text.description}
-            secondaryAction={
-                canAdmin
-                    ? {
-                          href: `${base}/matches/recurring`,
-                          label: text.recurring,
-                          icon: RefreshCw,
-                      }
-                    : undefined
-            }
-            primaryAction={
-                canAdmin
-                    ? { href: createHref, label: text.newMatch, icon: Plus }
-                    : undefined
-            }
-            rows={rows}
-            drafts={drafts}
-            queue={queue}
-            games={games}
-            kinds={["match", "training"]}
-            canAdmin={canAdmin}
-            initialGame={gameId}
-            initialTab={listTab(resolvedSearchParams?.tab)}
-            empty={{
-                icon: CalendarPlus,
-                title: text.emptyTitle,
-                description: canAdmin ? text.emptyAdmin : text.emptyMember,
-                actions: canAdmin ? (
-                    <>
-                        <Button asChild className="rounded-lg">
-                            <Link href={createHref}>{text.newMatch}</Link>
-                        </Button>
-                        <Button
-                            asChild
-                            variant="outline"
-                            className="rounded-lg"
-                        >
-                            <Link href={`${base}/settings/match-templates`}>
-                                {text.editTemplates}
-                            </Link>
-                        </Button>
-                    </>
-                ) : undefined,
-            }}
-            dictionary={dictionary}
-        />
+        <>
+            {shared?.incoming.length ? (
+                <div className="mx-auto w-full max-w-[70rem] px-4 pb-4 lg:px-6">
+                    <SharedMatchPanel
+                        serverId={serverId}
+                        invitations={shared.incoming}
+                        incoming
+                        dictionary={dictionary}
+                        locale={locale}
+                    />
+                </div>
+            ) : null}
+            <MatchListView
+                title={text.title}
+                description={text.description}
+                secondaryAction={
+                    canAdmin
+                        ? {
+                              href: `${base}/matches/recurring`,
+                              label: text.recurring,
+                              icon: RefreshCw,
+                          }
+                        : undefined
+                }
+                primaryAction={
+                    canAdmin
+                        ? { href: createHref, label: text.newMatch, icon: Plus }
+                        : undefined
+                }
+                rows={rows}
+                drafts={drafts}
+                queue={queue}
+                games={games}
+                kinds={["match", "training"]}
+                canAdmin={canAdmin}
+                initialGame={gameId}
+                initialTab={listTab(resolvedSearchParams?.tab)}
+                empty={{
+                    icon: CalendarPlus,
+                    title: text.emptyTitle,
+                    description: canAdmin ? text.emptyAdmin : text.emptyMember,
+                    actions: canAdmin ? (
+                        <>
+                            <Button asChild className="rounded-lg">
+                                <Link href={createHref}>{text.newMatch}</Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="rounded-lg"
+                            >
+                                <Link href={`${base}/settings/match-templates`}>
+                                    {text.editTemplates}
+                                </Link>
+                            </Button>
+                        </>
+                    ) : undefined,
+                }}
+                dictionary={dictionary}
+            />
+        </>
     )
 }

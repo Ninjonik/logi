@@ -19,9 +19,9 @@ import {
     saveServerMatch,
 } from "@/lib/server-matches"
 import { saveServerEvent, saveServerEventResult } from "@/lib/server-events"
+import { getGuildMetadata, getEventMetadata } from "@/lib/server-metadata"
 import { savePlayerMatchStats } from "@/lib/server-player-stats"
 import { logNextError, logNextInfo } from "@/lib/system-logs"
-import { getGuildMetadata } from "@/lib/server-metadata"
 import type { AppUser } from "@/types/domain"
 
 type ExternalTeam = string
@@ -1152,6 +1152,8 @@ export async function importEventMatchResults(input: {
     eventSide?: string
     matchLink: string
 }) {
+    if ((await getEventMetadata(input.eventId))?.hostEventId)
+        throw new Error("Only the host can import match results.")
     const diagnostics: ImportDiagnostics = {
         scoreboardFetched: { ok: false },
         playerStatsSaved: { ok: false },

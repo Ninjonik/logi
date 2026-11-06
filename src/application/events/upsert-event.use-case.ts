@@ -3,6 +3,7 @@ import {
     buildUpdateEventPatch,
 } from "@/domain/events/upsert-policy"
 import type { Clock } from "@/application/ports/clock"
+import { resolveGameScope } from "@/domain/games/game"
 
 import type {
     EventCommandRepository,
@@ -25,6 +26,20 @@ export class UpsertEventUseCase {
             if (!existing) {
                 throw new Error("Event not found.")
             }
+            if (existing.hostEventId)
+                throw new Error(
+                    "Only the host can edit shared match details. Use this clan's local settings instead."
+                )
+            if (
+                existing.sharedLocalPlayerIds &&
+                ((input.gameId &&
+                    resolveGameScope(input.gameId) !==
+                        resolveGameScope(existing.gameId)) ||
+                    (input.kind && input.kind !== (existing.kind ?? "match")))
+            )
+                throw new Error(
+                    "A shared match's game and type cannot change while other clans participate."
+                )
 
             const patch = buildUpdateEventPatch(existing, input, now)
             await this.events.update(input.eventId, patch)

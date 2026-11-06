@@ -71,6 +71,9 @@ export type AttendanceReminder = {
 }
 
 export type EventLike = {
+    hostEventId?: string
+    sharedAccessRevoked?: boolean
+    sharedLocalPlayerIds?: string[]
     /** Long-form event briefing, stored as Discord-compatible Markdown. */
     description?: string
     /** Short operational addendum, also rendered as Discord-compatible Markdown. */

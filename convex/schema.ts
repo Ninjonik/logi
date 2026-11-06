@@ -543,6 +543,8 @@ const rawMatch = v.object({
 })
 
 const rosterPlayer = v.object({
+    allocatedGuildId: v.optional(v.string()),
+    locked: v.optional(v.boolean()),
     id: v.optional(v.string()),
     customName: v.optional(v.string()),
     ack: v.boolean(),
@@ -960,6 +962,14 @@ export default defineSchema({
         .index("guildId_gameId", ["guildId", "gameId"])
         .index("guildId_name", ["guildId", "name"]),
     events: defineTable({
+        hostEventId: v.optional(v.id("events")),
+        hostClanName: v.optional(v.string()),
+        sharedAccessRevoked: v.optional(v.boolean()),
+        sharedLocalPlayerIds: v.optional(v.array(v.string())),
+        localRosterMessageVariant: v.optional(
+            v.union(v.literal("photo_text"), v.literal("photo"))
+        ),
+        localRosterMentionPlayers: v.optional(v.boolean()),
         guildId: v.string(),
         wardogsFixtureUrl: v.optional(v.string()),
         gameId: v.optional(gameId),
@@ -1097,6 +1107,7 @@ export default defineSchema({
         updatedAt: v.optional(v.string()),
     })
         .index("guildId", ["guildId"])
+        .index("hostEventId", ["hostEventId"])
         .index("guildId_gameId", ["guildId", "gameId"])
         // The timed passes read this table through these indexes, never
         // whole (ARCHITECTURE.md, "Convex hot paths"): the recurrence pass
@@ -1115,6 +1126,26 @@ export default defineSchema({
         // The people reconciliation walks the events changed since its last
         // complete run; rows without `updatedAt` wait for the daily full walk.
         .index("updatedAt", ["updatedAt"]),
+    sharedMatchInvitations: defineTable({
+        hostEventId: v.id("events"),
+        hostGuildId: v.string(),
+        guestGuildId: v.string(),
+        localEventId: v.optional(v.id("events")),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("accepted"),
+            v.literal("declined"),
+            v.literal("revoked")
+        ),
+        requestedRoles: v.array(
+            v.object({ role: v.string(), count: v.number() })
+        ),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    })
+        .index("hostEventId", ["hostEventId"])
+        .index("guestGuildId", ["guestGuildId"])
+        .index("host_guest", ["hostEventId", "guestGuildId"]),
     signupActivities: defineTable(signupActivity)
         .index("eventId_occurredAt", ["eventId", "occurredAt"])
         .index("guildId_occurredAt", ["guildId", "occurredAt"])
@@ -1444,6 +1475,7 @@ export default defineSchema({
         updatedAt: v.string(),
     }).index("guildId", ["guildId"]),
     rosters: defineTable({
+        localPlayerIds: v.optional(v.array(v.string())),
         // Optional while legacy rosters are backfilled from their parent event.
         guildId: v.optional(v.string()),
         // Missing values are legacy Hell Let Loose rosters.
@@ -1492,6 +1524,7 @@ export default defineSchema({
         .index("guildId_userId", ["guildId", "userId"])
         .index("guildId_updatedAt", ["guildId", "updatedAt"]),
     matchRecaps: defineTable({
+        sourceEventId: v.optional(v.id("events")),
         resultVersion: v.optional(v.number()),
         eventId: v.id("events"),
         userId: v.string(),
@@ -1512,7 +1545,8 @@ export default defineSchema({
         sentAt: v.optional(v.string()),
     })
         .index("eventId", ["eventId"])
-        .index("eventId_userId", ["eventId", "userId"]),
+        .index("eventId_userId", ["eventId", "userId"])
+        .index("sourceEventId_userId", ["sourceEventId", "userId"]),
     // The match announcement card the bot keeps in the announcement channel
     // (board L1): whether its first post pinged the roles, so a re-created
     // card never pings again, and the card layout it was last drawn with, so

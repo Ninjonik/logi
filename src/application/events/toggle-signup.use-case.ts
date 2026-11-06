@@ -30,6 +30,7 @@ export class ToggleSignupUseCase {
         }
 
         const now = this.clock.now()
+        await this.events.assertSignupClan?.(input.eventId, input.userId)
         const normalizedEvent = normalizeEventRecord(event, now)
         const previousParticipant = normalizedEvent.participants.find(
             (participant) => participant.userId === input.userId

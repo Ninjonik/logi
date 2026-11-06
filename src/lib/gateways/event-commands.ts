@@ -1,3 +1,8 @@
+import {
+    invalidateSharedMatchCaches,
+    sharedMatchCacheScopes,
+    invalidateSharedMatchScopes,
+} from "./shared-match-cache"
 import { makeFunctionReference } from "convex/server"
 import { fetchMutation } from "convex/nextjs"
 
@@ -17,11 +22,14 @@ export async function deleteServerEventCommand(input: {
 }) {
     const actor = await currentDashboardActor()
     if (!actor) throw new Error("Forbidden.")
-    return fetchMutation(deleteEventReference, {
+    const sharedScopes = await sharedMatchCacheScopes(input.eventId)
+    const result = await fetchMutation(deleteEventReference, {
         ...input,
         actor,
         secret: getInternalAuthSecret(),
     })
+    invalidateSharedMatchScopes(sharedScopes)
+    return result
 }
 const concludeEventReference =
     makeFunctionReference<"mutation">("events:conclude")
@@ -106,7 +114,7 @@ export async function saveServerEventCommand(input: {
     /** "" clears the squad preset; omitted keeps it. */
     squadPresetId?: string
 }) {
-    return await fetchMutation(upsertEventReference, {
+    const result = await fetchMutation(upsertEventReference, {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
         serverId: input.serverId,
@@ -176,13 +184,17 @@ export async function saveServerEventCommand(input: {
               }
             : {}),
     })
+    await invalidateSharedMatchCaches(String(result))
+    return result
 }
 
 export async function concludeServerEventCommand(input: { eventId: string }) {
-    return await fetchMutation(concludeEventReference, {
+    const result = await fetchMutation(concludeEventReference, {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
     })
+    await invalidateSharedMatchCaches(input.eventId)
+    return result
 }
 
 export async function completeServerTrainingCommand(input: {
@@ -216,11 +228,13 @@ export async function saveServerEventResultCommand(input: {
         }
     }
 }) {
-    return await fetchMutation(setEventResultReference, {
+    const result = await fetchMutation(setEventResultReference, {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
         eventResult: input.eventResult,
     })
+    await invalidateSharedMatchCaches(input.eventId)
+    return result
 }
 
 export async function toggleServerEventSignupCommand(input: {
@@ -229,13 +243,15 @@ export async function toggleServerEventSignupCommand(input: {
     group: string | null
     lateSignupReason?: string
 }) {
-    return await fetchMutation(toggleSignupReference, {
+    const result = await fetchMutation(toggleSignupReference, {
         secret: getInternalAuthSecret(),
         eventId: input.eventId as never,
         userId: input.userId,
         group: input.group,
         lateSignupReason: input.lateSignupReason,
     })
+    await invalidateSharedMatchCaches(input.eventId)
+    return result
 }
 
 export async function requestServerForumTopicResync(input: {

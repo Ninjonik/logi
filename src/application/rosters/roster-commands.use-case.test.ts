@@ -436,3 +436,94 @@ test("UpsertRosterUseCase stores the published places and the version a publish 
     assert.ok(!("publishedPlaces" in draft))
     assert.ok(!("previousPublishedPlaces" in draft))
 })
+
+test("acknowledging again clears only the player's decline and preserves placement", async () => {
+    for (const reserve of [false, true]) {
+        const roster = {
+            id: "roster-1",
+            eventId: "event-1",
+            published: true,
+            squads: [
+                {
+                    name: "Able",
+                    group: "INF",
+                    order: 0,
+                    color: "#fff",
+                    players: reserve
+                        ? []
+                        : [{ id: "user-1", ack: false, confirmed: false }],
+                },
+            ],
+            reservePlayerIds: reserve ? ["user-1"] : [],
+            reserveAttendances: [],
+            notAttendingPlayerIds: [],
+        }
+        const repo = new InMemoryRosterCommandRepository(
+            new Map([[roster.id, roster]]),
+            null,
+            []
+        )
+        const notices = [
+            {
+                userId: "user-1",
+                kind: "cannot_come" as const,
+                reason: "Unavailable",
+                createdAt: "2026-01-01T00:00:00Z",
+            },
+            {
+                userId: "user-2",
+                kind: "cannot_come" as const,
+                reason: "Away",
+                createdAt: "2026-01-01T00:00:00Z",
+            },
+            {
+                userId: "user-1",
+                kind: "late" as const,
+                reason: "Traffic",
+                createdAt: "2026-01-01T00:00:00Z",
+            },
+        ]
+        let saved: import("@/domain/events/types").EventNotice[] = notices
+        let writes = 0
+        const command = new UpdateRosterAttendanceUseCase(
+            repo,
+            {
+                async getById() {
+                    return {
+                        id: "event-1",
+                        guildId: "guild-1",
+                        registrationEnd: "2026-01-03T00:00:00Z",
+                        meetingStart: "2026-01-03T01:00:00Z",
+                        gameEnd: "2026-01-03T03:00:00Z",
+                        absenceNotices: saved,
+                    }
+                },
+                async saveAbsenceNotices(_id, input) {
+                    saved = input.absenceNotices ?? []
+                    writes++
+                },
+            },
+            { now: () => new Date("2026-01-02T00:00:00Z") }
+        )
+        await command.acknowledge("event-1", "user-1")
+        await command.acknowledge("event-1", "user-1")
+        assert.deepEqual(saved, notices.slice(1))
+        assert.equal(writes, 1)
+        const updated = repo.rosters.get(roster.id)
+        assert.equal(
+            reserve
+                ? updated.reserveAttendances[0].ack
+                : updated.squads[0].players[0].ack,
+            true
+        )
+        assert.deepEqual(updated.reservePlayerIds, roster.reservePlayerIds)
+        assert.deepEqual(
+            updated.squads.map((squad: { players: { id: string }[] }) =>
+                squad.players.map((player) => player.id)
+            ),
+            roster.squads.map((squad) =>
+                squad.players.map((player) => player.id)
+            )
+        )
+    }
+})

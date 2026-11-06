@@ -37,6 +37,8 @@ export async function appendEventResult(
 ) {
     const event = await ctx.db.get(eventId)
     if (!event) throw new Error("Event not found.")
+    if (event.hostEventId)
+        throw new Error("Only the host can post match results.")
     const previous = await currentEventResult(ctx, event)
     if (
         (previous?.version ?? 0) !== expected ||

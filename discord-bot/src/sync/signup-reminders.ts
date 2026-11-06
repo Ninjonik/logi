@@ -156,13 +156,20 @@ export async function processSignupReminders(
         const message = buildSignupReminderMessage(payload, event)
         // Assignments were not included in older cached payloads. Treat them
         // as an empty recipient set while a rolling deployment catches up.
-        const recipients = (payload.assignments ?? []).filter((assignment) =>
-            isSignupReminderRecipient({
-                assignment,
-                eventGameId: event.gameId,
-                recipientStatuses,
-                respondedUserIds,
-            })
+        const recipients = (payload.assignments ?? []).filter(
+            (assignment) =>
+                (event.sharedLocalPlayerIds?.includes(assignment.userId) ??
+                    true) &&
+                (payload.rosters
+                    ?.find((roster) => roster.eventId === event.id)
+                    ?.localPlayerIds?.includes(assignment.userId) ??
+                    true) &&
+                isSignupReminderRecipient({
+                    assignment,
+                    eventGameId: event.gameId,
+                    recipientStatuses,
+                    respondedUserIds,
+                })
         )
         const sentUserIds: string[] = []
         const failedUserIds: string[] = []

@@ -124,6 +124,7 @@ export async function EventOverview({
             preview={preview}
             previewCopy={getDictionary(botLanguage).newMatch.preview}
             editHref={editHref}
+            localOnly={Boolean(event.hostEventId)}
             series={isMatch ? (eventSeriesRole(event)?.kind ?? null) : null}
             seriesEditHref={seriesEditHref}
             canResyncTopics={canResyncTopics}
@@ -155,6 +156,7 @@ export function EventOverviewView({
     preview,
     previewCopy,
     editHref,
+    localOnly = false,
     series,
     seriesEditHref,
     canResyncTopics,
@@ -171,6 +173,7 @@ export function EventOverviewView({
     preview: NewMatchPreviewModel
     previewCopy: Dictionary["newMatch"]["preview"]
     editHref: string | null
+    localOnly?: boolean
     series: "source" | "occurrence" | null
     seriesEditHref: string | null
     canResyncTopics: boolean
@@ -223,7 +226,10 @@ export function EventOverviewView({
                                     {row.text}
                                 </span>
                             </span>
-                            {editHref ? (
+                            {editHref &&
+                            (!localOnly ||
+                                row.step === "signups" ||
+                                row.step === "discord") ? (
                                 <Link
                                     href={`${editHref}?step=${row.step}`}
                                     className="text-foreground inline-flex h-7 items-center rounded-md px-2.5 text-[13px] font-medium underline underline-offset-[3px]"

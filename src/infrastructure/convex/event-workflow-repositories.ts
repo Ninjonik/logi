@@ -1,7 +1,11 @@
 import { SyncRosterMembershipForUserUseCase } from "@/application/rosters/sync-roster-membership.use-case"
+import { rosterRevisionTimestamp } from "../../domain/rosters/shared-roster"
+import { sharedMatchMembers, sharedMatchPeople } from "./shared-match-store"
+import { syncRosterMembershipForUser } from "../../domain/rosters/sync"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import { matchesGameScope, type GameId } from "@/domain/games/game"
 import type { Id } from "../../../convex/_generated/dataModel"
+import { getUserByDiscordId } from "../../../convex/identity"
 import { systemClock } from "@/domain/shared/clock"
 
 import {
@@ -18,9 +22,38 @@ import type {
 export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
     constructor(private readonly ctx: MutationCtx) {}
 
+    async assertSignupClan(eventId: string, userId: string) {
+        const event = await this.ctx.db.get(eventId as Id<"events">)
+        if (!event) throw new Error("Event not found.")
+        const { events } = await sharedMatchMembers(this.ctx, event)
+        if (events.length === 1) return
+        const user = await getUserByDiscordId(this.ctx, userId)
+        if (
+            user?.guildId &&
+            events.some((item) => item.guildId === user.guildId) &&
+            user.guildId !== event.guildId
+        )
+            throw new Error(
+                "Sign up through your main clan for this shared match."
+            )
+        if (user?.guildId === event.guildId) return
+        if (
+            events.some(
+                (item) =>
+                    item._id !== event._id &&
+                    (item.participants ?? []).some(
+                        (person) => person.userId === userId
+                    )
+            )
+        )
+            throw new Error(
+                "You already have a signup through another clan for this match."
+            )
+    }
+
     async getById(eventId: string): Promise<EventWorkflowRecord | null> {
         const event = await this.ctx.db.get(eventId as Id<"events">)
-        if (!event) {
+        if (!event || event.sharedAccessRevoked) {
             return null
         }
 
@@ -140,6 +173,43 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             updatedAt: string
         }
     ): Promise<void> {
+        const event = await this.ctx.db.get(eventId as Id<"events">)
+        if (event) {
+            const { events } = await sharedMatchMembers(this.ctx, event)
+            if (events.length > 1) {
+                const before = new Map(
+                    (event.participants ?? []).map((person) => [
+                        person.userId,
+                        JSON.stringify(person),
+                    ])
+                )
+                const changed = new Set(
+                    (input.participants ?? [])
+                        .filter(
+                            (person) =>
+                                before.get(person.userId) !==
+                                JSON.stringify(person)
+                        )
+                        .map((person) => person.userId)
+                )
+                for (const local of events)
+                    if (
+                        local._id !== event._id &&
+                        local.participants?.some((person) =>
+                            changed.has(person.userId)
+                        )
+                    )
+                        await this.ctx.db.patch(local._id, {
+                            participants: local.participants.filter(
+                                (person) => !changed.has(person.userId)
+                            ),
+                            signUps: (local.signUps ?? []).filter(
+                                (person) => !changed.has(person.userId)
+                            ),
+                            updatedAt: input.updatedAt,
+                        })
+            }
+        }
         await this.ctx.db.patch(eventId as Id<"events">, {
             participants: input.participants ?? [],
             signUps: input.signUps ?? [],
@@ -185,6 +255,64 @@ export class ConvexEventWorkflowSyncPort implements EventWorkflowSyncPort {
         eventId: string,
         userId: string
     ): Promise<void> {
+        const event = await this.ctx.db.get(eventId as Id<"events">)
+        if (event) {
+            const { host, events } = await sharedMatchMembers(this.ctx, event)
+            if (events.length > 1) {
+                const roster = await this.ctx.db
+                    .query("rosters")
+                    .withIndex("eventId", (q) => q.eq("eventId", host._id))
+                    .unique()
+                if (!roster) return
+                if (
+                    roster.squads.some((squad) =>
+                        squad.players.some(
+                            (slot) => slot.id === userId && slot.locked
+                        )
+                    )
+                )
+                    return
+                const { assignments, owners } = await sharedMatchPeople(
+                    this.ctx,
+                    events
+                )
+                const next = syncRosterMembershipForUser(
+                    roster,
+                    {
+                        ...host,
+                        participants: events.flatMap((local) =>
+                            (local.participants ?? []).filter(
+                                (person) =>
+                                    owners.get(person.userId) === local.guildId
+                            )
+                        ),
+                        signUps: events.flatMap((local) =>
+                            (local.signUps ?? []).filter(
+                                (person) =>
+                                    owners.get(person.userId) === local.guildId
+                            )
+                        ),
+                    },
+                    assignments.map((item) => ({
+                        ...item,
+                        serverId: host.guildId,
+                    })),
+                    userId,
+                    systemClock.now()
+                )
+                await this.ctx.db.patch(roster._id, {
+                    squads: next.squads,
+                    reservePlayerIds: next.reservePlayerIds,
+                    reserveAttendances: next.reserveAttendances,
+                    notAttendingPlayerIds: next.notAttendingPlayerIds,
+                    updatedAt: rosterRevisionTimestamp(
+                        roster.updatedAt,
+                        new Date()
+                    ),
+                })
+                return
+            }
+        }
         const useCase = new SyncRosterMembershipForUserUseCase(
             new ConvexEventRepository(this.ctx),
             new ConvexRosterRepository(this.ctx),

@@ -1,6 +1,8 @@
+import { sharedMatchCopy } from "./shared-matches"
 import { csLanding } from "./landing"
 
 export const csMessages = {
+    sharedMatches: sharedMatchCopy.cs,
     competitionEnrollment: {
         title: "Soutěže",
         description: "Přihlaste týmy klanu nebo spravujte jejich přihlášky.",

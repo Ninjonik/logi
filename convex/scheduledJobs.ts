@@ -212,7 +212,12 @@ export const backfillMissing = mutation({
             const historical =
                 new Date(event.gameEnd).getTime() <
                 Date.now() - 7 * 24 * 60 * 60 * 1000
-            if (historical || event.isDraft === true) continue
+            if (
+                historical ||
+                event.isDraft === true ||
+                event.sharedAccessRevoked
+            )
+                continue
             const existingJobs = await ctx.db
                 .query("eventScheduleJobs")
                 .withIndex("eventId", (q) => q.eq("eventId", event._id))

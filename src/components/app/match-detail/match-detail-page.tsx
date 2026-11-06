@@ -1,3 +1,5 @@
+import { SharedMatchPanel } from "@/components/app/shared-match-panel"
+import { sharedInvitations } from "@/lib/gateways/shared-matches"
 import { SearchX } from "lucide-react"
 import Link from "next/link"
 
@@ -27,9 +29,11 @@ import { getDiscordChannelNames } from "@/lib/read-models/discord-channel-names"
 import { getReminderDeliveryNotice } from "@/lib/read-models/reminder-delivery"
 import { eventEditability, eventSeriesRole } from "@/domain/events/event-edit"
 import { EventOverview } from "@/components/app/match-detail/event-overview"
+import { sharedRosterUser } from "@/domain/rosters/shared-roster-user"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
+import { getPublicStratmapDetail } from "@/lib/server-stratmaps"
 import { getUsersByIds } from "@/lib/server-user-management"
 import { currentEventStatus } from "@/domain/events/status"
 import { isGameId, type GameId } from "@/domain/games/game"
@@ -109,9 +113,24 @@ export async function MatchDetailPage({
     const guildDiscordId = context.server.discordId
     const roster =
         context.rosters.find((item) => item.eventId === eventId) ?? null
-    const attachedStratmaps = context.stratmaps.filter((stratmap) =>
+    const ownAttachedStratmaps = context.stratmaps.filter((stratmap) =>
         event.stratmapIds.includes(stratmap.id)
     )
+    const sharedAttachedStratmaps = event.hostEventId
+        ? await Promise.all(
+              event.stratmapIds
+                  .filter(
+                      (id) => !ownAttachedStratmaps.some((map) => map.id === id)
+                  )
+                  .map(getPublicStratmapDetail)
+          )
+        : []
+    const attachedStratmaps = [
+        ...ownAttachedStratmaps,
+        ...sharedAttachedStratmaps.filter(
+            (map): map is NonNullable<typeof map> => map !== null
+        ),
+    ]
     // Closing a match scores every active member of the clan, whatever game.
     const allAssignments =
         gameScope === "all"
@@ -229,7 +248,9 @@ export async function MatchDetailPage({
     const basePath = `/${locale}/dashboard/servers/${serverId}/${section}/${event.id}`
     // Managers edit in the new-match flow until the match concludes.
     const editHref =
-        canAdmin && eventEditability(event, now) === "editable"
+        canAdmin &&
+        !event.sharedAccessRevoked &&
+        (event.hostEventId || eventEditability(event, now) === "editable")
             ? `${basePath}/edit`
             : undefined
     const series = eventSeriesRole(event)
@@ -260,9 +281,10 @@ export async function MatchDetailPage({
                   messages.announcementMessageId
               )
             : undefined
-    const createRosterHref = canAdmin
-        ? `/${locale}/dashboard/servers/${serverId}/rosters/create?game=${gameId}&eventId=${encodeURIComponent(event.id)}`
-        : undefined
+    const createRosterHref =
+        canAdmin && !event.hostEventId
+            ? `/${locale}/dashboard/servers/${serverId}/rosters/create?game=${gameId}&eventId=${encodeURIComponent(event.id)}`
+            : undefined
     const signupHistoryHref = `/${locale}/dashboard/servers/${serverId}/signup-activity?eventId=${event.id}`
     const reviewerIds =
         activeTab === "result" && review
@@ -283,7 +305,7 @@ export async function MatchDetailPage({
         ).map((user) => [user.discordId, user.name])
     )
     const needsUsers = activeTab === "attendance" || activeTab === "roster"
-    const users = needsUsers
+    const rawUsers = needsUsers
         ? await getUsersByIds(
               [
                   ...new Set([
@@ -298,6 +320,13 @@ export async function MatchDetailPage({
               guildDiscordId
           )
         : []
+    const users = rawUsers.map((user) =>
+        sharedRosterUser(
+            user,
+            roster?.localPlayerIds === undefined ||
+                roster.localPlayerIds.includes(user.discordId)
+        )
+    )
     const meetingChannelName = meetingChannelId
         ? channelNames.get(meetingChannelId)
         : undefined
@@ -337,7 +366,7 @@ export async function MatchDetailPage({
             activeTab={activeTab}
             played={played}
             closeAvailable={closeAvailable}
-            canAdmin={canAdmin}
+            canAdmin={canAdmin && !event.hostEventId}
             timeZone={timeZone}
             gameId={gameId}
             guildDiscordId={guildDiscordId}
@@ -388,9 +417,36 @@ export async function MatchDetailPage({
                                 timeZone={timeZone}
                             />
                         ) : null}
+                        {canAdmin && !event.hostEventId ? (
+                            <SharedMatchPanel
+                                serverId={serverId}
+                                eventId={event.id}
+                                invitations={
+                                    (
+                                        await sharedInvitations(
+                                            serverId,
+                                            event.id
+                                        )
+                                    ).invitations
+                                }
+                                dictionary={dictionary}
+                                locale={locale}
+                            />
+                        ) : null}
                         <EventOverview
                             event={event}
-                            context={context}
+                            context={{
+                                ...context,
+                                stratmaps: [
+                                    ...context.stratmaps,
+                                    ...attachedStratmaps.filter(
+                                        (map) =>
+                                            !context.stratmaps.some(
+                                                (own) => own.id === map.id
+                                            )
+                                    ),
+                                ],
+                            }}
                             dictionary={dictionary}
                             locale={locale}
                             serverId={serverId}

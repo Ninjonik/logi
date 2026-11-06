@@ -18,6 +18,7 @@ Logi owns operational community records. Connected websites use scoped HTTP cont
 - [Competition enrollment](competition-enrollment.md)
 - [Clan metadata](clan-meta.md)
 - [Settings and API coverage](configuration-coverage.md)
+- [Shared matches and allocated roster slots](shared-matches.md)
 
 ## Game data and Discord
 

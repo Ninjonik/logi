@@ -26,6 +26,7 @@ export const MANUAL_REMINDER_COOLDOWN_MS = 60 * 60 * 1000
 export const MANUAL_REMINDER_STALE_MS = 10 * 60 * 1000
 
 export type ManualReminderEvent = {
+    sharedLocalPlayerIds?: string[]
     kind?: EventKind
     gameId?: GameId
     status?: EventStatus
@@ -39,6 +40,7 @@ export type ManualReminderEvent = {
 }
 
 export type ManualReminderRoster = {
+    localPlayerIds?: string[]
     published: boolean
     squads: Array<{ players: Array<{ id?: string; ack?: boolean }> }>
     reservePlayerIds: string[]
@@ -94,6 +96,16 @@ function unansweredUserIds(
     )
     const userIds = new Set<string>()
     for (const assignment of assignments) {
+        if (
+            event.sharedLocalPlayerIds &&
+            !event.sharedLocalPlayerIds.includes(assignment.userId)
+        )
+            continue
+        if (
+            roster?.localPlayerIds &&
+            !roster.localPlayerIds.includes(assignment.userId)
+        )
+            continue
         if (assignment.paused || answered.has(assignment.userId)) continue
         if (!matchesGameScope(assignment.gameId, event.gameId)) continue
         const status = getResolvedMemberStatus(
@@ -113,7 +125,13 @@ function unconfirmedUserIds(
     const userIds = new Set<string>()
     for (const squad of roster?.squads ?? []) {
         for (const player of squad.players) {
-            if (player.id && !player.ack) userIds.add(player.id)
+            if (
+                player.id &&
+                !player.ack &&
+                (roster?.localPlayerIds === undefined ||
+                    roster.localPlayerIds.includes(player.id))
+            )
+                userIds.add(player.id)
         }
     }
     // Whoever already said they are late or cannot come is not reminded,

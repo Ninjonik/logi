@@ -98,7 +98,10 @@ import {
 import { RosterBoardAttendeeLists } from "@/components/app/roster-board-attendee-lists"
 import { PublicShareLinkButton } from "@/components/app/public-share-link-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmActionDialog } from "@/components/app/confirm-action-dialog"
+import type { SharedRosterContext } from "@/lib/gateways/shared-matches"
 import type { ServerUserAssignment } from "@/lib/server-user-management"
+import { canEditSharedSlot } from "@/domain/rosters/shared-slot-policy"
 import { countRosterChanges } from "@/domain/rosters/roster-changes"
 import { resultFaction } from "@/domain/match-results/result-sides"
 import { formatHllPresetLabel } from "@/lib/hll-map-presets"
@@ -131,6 +134,7 @@ function clearRosterPlayerAssignment(
 }
 
 export function RosterBoard({
+    sharedContext,
     roster,
     event,
     users,
@@ -148,6 +152,7 @@ export function RosterBoard({
     publishContext,
     defaultMode = "view",
 }: {
+    sharedContext?: SharedRosterContext
     roster?: Roster
     event?: EventRecord
     users: AppUser[]
@@ -169,7 +174,75 @@ export function RosterBoard({
     defaultMode?: RosterBoardMode
 }) {
     const router = useRouter()
+    const isGuest = Boolean(event?.hostEventId)
+    const isShared = isGuest || (sharedContext?.clans.length ?? 0) > 1
+    const canEditSlot = (squadIndex: number, playerIndex: number) => {
+        const slot = board?.squads[squadIndex]?.players[playerIndex]
+        return Boolean(
+            canAdmin &&
+            slot &&
+            (!isGuest ||
+                (sharedContext &&
+                    canEditSharedSlot({
+                        hostGuildId: sharedContext.hostGuildId,
+                        actorGuildId: event!.guildId,
+                        invitationActive: true,
+                        slot,
+                    })))
+        )
+    }
+    function allocateClan(
+        guildId: string | undefined,
+        squadIndex: number,
+        playerIndex: number,
+        confirmed = false
+    ) {
+        if (isGuest || !canAdmin) return
+        const previous = board?.squads[squadIndex]?.players[playerIndex]
+        if (
+            previous?.id &&
+            previous.allocatedGuildId !== guildId &&
+            !confirmed
+        ) {
+            setPendingAllocation({
+                guildId,
+                squadIndex,
+                playerIndex,
+                userId: previous.id,
+            })
+            return
+        }
+        setIsDirty(true)
+        setBoard((current) => {
+            if (!current) return current
+            const next = structuredClone(current)
+            const slot = next.squads[squadIndex].players[playerIndex]
+            if (slot.id && !next.reservePlayerIds.includes(slot.id))
+                next.reservePlayerIds.push(slot.id)
+            clearRosterPlayerAssignment(slot)
+            slot.allocatedGuildId = guildId
+            slot.locked = false
+            return next
+        })
+    }
+    function toggleSlotLock(squadIndex: number, playerIndex: number) {
+        if (isGuest || !canAdmin) return
+        setIsDirty(true)
+        setBoard((current) => {
+            if (!current) return current
+            const next = structuredClone(current)
+            const slot = next.squads[squadIndex].players[playerIndex]
+            slot.locked = !slot.locked
+            return next
+        })
+    }
     const [board, setBoard] = useState(roster)
+    const [pendingAllocation, setPendingAllocation] = useState<{
+        guildId?: string
+        squadIndex: number
+        playerIndex: number
+        userId: string
+    } | null>(null)
     const [mode, setMode] = useState<RosterBoardMode>(defaultMode)
     const [reserveSearch, setReserveSearch] = useState("")
     const [notAttendingSearch, setNotAttendingSearch] = useState("")
@@ -734,6 +807,15 @@ export function RosterBoard({
         squadIndex: number,
         playerIndex: number
     ) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
+        if (
+            board?.squads.some((squad, si) =>
+                squad.players.some(
+                    (slot, pi) => slot.id === userId && !canEditSlot(si, pi)
+                )
+            )
+        )
+            return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -765,6 +847,11 @@ export function RosterBoard({
             }
 
             slot.id = userId
+            if (!isGuest && !slot.allocatedGuildId) {
+                const clan = usersById.get(userId)?.sharedGuildId
+                if (clan && clan !== event?.guildId)
+                    slot.allocatedGuildId = clan
+            }
             slot.customName = undefined
             slot.ack = false
             slot.confirmed = false
@@ -777,6 +864,7 @@ export function RosterBoard({
         squadIndex: number,
         playerIndex: number
     ) {
+        if (isGuest || !canEditSlot(squadIndex, playerIndex)) return
         const trimmedName = customName.trim()
         if (!trimmedName) {
             return
@@ -808,6 +896,7 @@ export function RosterBoard({
         playerIndex: number,
         targetReserveId?: string
     ) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -830,6 +919,7 @@ export function RosterBoard({
     }
 
     function moveSlotToNotAttending(squadIndex: number, playerIndex: number) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -956,6 +1046,11 @@ export function RosterBoard({
         targetSquadIndex: number,
         targetPlayerIndex: number
     ) {
+        if (
+            !canEditSlot(sourceSquadIndex, sourcePlayerIndex) ||
+            !canEditSlot(targetSquadIndex, targetPlayerIndex)
+        )
+            return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -971,12 +1066,16 @@ export function RosterBoard({
                 roleName: source.roleName,
                 roleIcon: source.roleIcon,
                 note: source.note,
+                allocatedGuildId: source.allocatedGuildId,
+                locked: source.locked,
             }
             next.squads[targetSquadIndex].players[targetPlayerIndex] = {
                 ...sourceCopy,
                 roleName: target.roleName,
                 roleIcon: target.roleIcon,
                 note: target.note,
+                allocatedGuildId: target.allocatedGuildId,
+                locked: target.locked,
             }
             return next
         })
@@ -988,6 +1087,7 @@ export function RosterBoard({
         field: "note" | "roleName",
         value: string
     ) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1004,6 +1104,7 @@ export function RosterBoard({
         playerIndex: number,
         roleIcon: string
     ) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1020,6 +1121,7 @@ export function RosterBoard({
         playerIndex: number,
         status: AttendanceStatus
     ) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1033,6 +1135,7 @@ export function RosterBoard({
     }
 
     function clearSlotAssignment(squadIndex: number, playerIndex: number) {
+        if (!canEditSlot(squadIndex, playerIndex)) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1055,7 +1158,7 @@ export function RosterBoard({
     }
 
     function moveSquad(index: number, direction: -1 | 1) {
-        if (!canAdmin || !board) return
+        if (!canAdmin || isGuest || !board) return
         const currentSquad = board.squads[index]
         const siblings = sortedSquads.filter(
             (squad) => squad.group === currentSquad.group
@@ -1084,7 +1187,7 @@ export function RosterBoard({
     }
 
     function moveSection(groupIndex: number, direction: -1 | 1) {
-        if (!canAdmin) return
+        if (!canAdmin || isGuest) return
         const source = squadGroups[groupIndex]
         const target = squadGroups[groupIndex + direction]
         if (!source || !target) return
@@ -1183,6 +1286,7 @@ export function RosterBoard({
         field: "name" | "group" | "color",
         value: string
     ) {
+        if (isGuest) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1196,6 +1300,7 @@ export function RosterBoard({
     }
 
     function addRosterSlot(squadIndex: number) {
+        if (isGuest) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1214,7 +1319,7 @@ export function RosterBoard({
     function addRosterSquad(
         group: string = dictionary.roster.defaultSquadGroup
     ) {
-        if (!canAdmin) return
+        if (!canAdmin || isGuest) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1239,6 +1344,7 @@ export function RosterBoard({
     }
 
     function removeRosterSquad(squadIndex: number) {
+        if (isGuest) return
         setLayoutRevision((value) => value + 1)
         setIsDirty(true)
         setBoard((current) => {
@@ -1258,6 +1364,7 @@ export function RosterBoard({
     }
 
     function removeRosterSlot(squadIndex: number, playerIndex: number) {
+        if (isGuest) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1320,6 +1427,7 @@ export function RosterBoard({
     }
 
     function autoFillRoster() {
+        if (isGuest) return
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
@@ -1344,6 +1452,7 @@ export function RosterBoard({
     }
 
     function applyTemplateChange() {
+        if (isGuest) return
         if (!pendingPreset) return
         setLayoutRevision((value) => value + 1)
 
@@ -1468,6 +1577,7 @@ export function RosterBoard({
         choice?: RosterPublishChoice
     ) => {
         if (!board || !event) return
+        if (isGuest) published = board.published
         const previousRoster = roster
         const republishing = Boolean(previousRoster?.published && published)
 
@@ -1512,6 +1622,7 @@ export function RosterBoard({
                                     ? undefined
                                     : board.id,
                             eventId: event.id,
+                            expectedUpdatedAt: roster?.updatedAt,
                             squadPresetId: board.squadPresetId || undefined,
                             squads: saveSquads,
                             reservePlayerIds: cleanReservePlayerIds,
@@ -1587,7 +1698,7 @@ export function RosterBoard({
                     }),
                 }).catch(() => null)
 
-                if (republishing) {
+                if (republishing && !isGuest) {
                     const notificationResponse = await fetch(
                         `/api/servers/${serverId}/rosters/${nextRosterId}/update-notifications`,
                         {
@@ -1652,7 +1763,7 @@ export function RosterBoard({
     }
 
     const handleSave = async (published: boolean = false) => {
-        if (board?.published && published && isDirty) {
+        if (!isGuest && board?.published && published && isDirty) {
             setPublishedUpdateDialogOpen(true)
             return
         }
@@ -1663,7 +1774,8 @@ export function RosterBoard({
     const canConfirmFromMeetingChannel = Boolean(
         meetingChannelId && board?.id && event?.id
     )
-    const shouldShowMeetingChannelConfirmation = canAdmin && mode !== "layout"
+    const shouldShowMeetingChannelConfirmation =
+        canAdmin && !isGuest && mode !== "layout"
     // On phones these actions sit behind the "⋯" button (Mobile board).
     const actionControlClass =
         "hidden h-9 min-h-9 shrink-0 rounded-xl px-3 text-xs md:inline-flex"
@@ -1783,6 +1895,39 @@ export function RosterBoard({
                 canAdmin && (!board.published || isDirty) && "pb-20 md:pb-0"
             )}
         >
+            {isShared ? (
+                <p className="text-muted-foreground text-sm">
+                    {isGuest
+                        ? dictionary.sharedMatches.guestHelp
+                        : dictionary.sharedMatches.hostHelp}
+                </p>
+            ) : null}
+            <ConfirmActionDialog
+                open={Boolean(pendingAllocation)}
+                onOpenChange={(open) => {
+                    if (!open) setPendingAllocation(null)
+                }}
+                title={dictionary.sharedMatches.reallocateTitle}
+                description={dictionary.sharedMatches.reallocateHelp.replace(
+                    "{name}",
+                    usersById.get(pendingAllocation?.userId ?? "")?.name ??
+                        pendingAllocation?.userId ??
+                        ""
+                )}
+                confirmLabel={dictionary.common.save}
+                cancelLabel={dictionary.common.cancel}
+                destructive={false}
+                onConfirm={() => {
+                    if (pendingAllocation)
+                        allocateClan(
+                            pendingAllocation.guildId,
+                            pendingAllocation.squadIndex,
+                            pendingAllocation.playerIndex,
+                            true
+                        )
+                    setPendingAllocation(null)
+                }}
+            />
             {canAdmin ? (
                 <div className="flex flex-col gap-2 md:items-end">
                     <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
@@ -1804,23 +1949,27 @@ export function RosterBoard({
                                         dictionary.roster.modeAssignment,
                                     ],
                                 ] as const
-                            ).map(([value, label]) => (
-                                <button
-                                    key={value}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={mode === value}
-                                    onClick={() => setMode(value)}
-                                    className={cn(
-                                        "h-full flex-1 shrink-0 rounded-lg px-2 text-xs whitespace-nowrap transition-colors md:flex-none md:px-2.5",
-                                        mode === value
-                                            ? "bg-background text-foreground font-semibold shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                            )
+                                .filter(
+                                    ([value]) => !isGuest || value !== "layout"
+                                )
+                                .map(([value, label]) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={mode === value}
+                                        onClick={() => setMode(value)}
+                                        className={cn(
+                                            "h-full flex-1 shrink-0 rounded-lg px-2 text-xs whitespace-nowrap transition-colors md:flex-none md:px-2.5",
+                                            mode === value
+                                                ? "bg-background text-foreground font-semibold shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1837,7 +1986,9 @@ export function RosterBoard({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-64">
-                                {board && squadPresets.length > 0 ? (
+                                {board &&
+                                !isGuest &&
+                                squadPresets.length > 0 ? (
                                     <>
                                         <DropdownMenuLabel className="text-muted-foreground text-xs">
                                             {
@@ -1884,7 +2035,7 @@ export function RosterBoard({
                                         }
                                     </DropdownMenuItem>
                                 ) : null}
-                                {mode === "assignment" ? (
+                                {mode === "assignment" && !isGuest ? (
                                     <DropdownMenuItem
                                         disabled={isPending}
                                         onSelect={() =>
@@ -1895,7 +2046,7 @@ export function RosterBoard({
                                         {dictionary.roster.autoFill}
                                     </DropdownMenuItem>
                                 ) : null}
-                                {board?.published ? (
+                                {board?.published && !isGuest ? (
                                     <DropdownMenuItem
                                         disabled={isPending}
                                         onSelect={() => void handleSave(false)}
@@ -1903,7 +2054,7 @@ export function RosterBoard({
                                         <EyeOff className="size-4" />
                                         {dictionary.roster.unpublishRoster}
                                     </DropdownMenuItem>
-                                ) : board?.id !== "draft-roster" ? (
+                                ) : !isGuest && board?.id !== "draft-roster" ? (
                                     <DropdownMenuItem
                                         variant="destructive"
                                         disabled={isPending || isDeleting}
@@ -1917,7 +2068,7 @@ export function RosterBoard({
                                 ) : null}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        {board && squadPresets.length > 0 ? (
+                        {board && !isGuest && squadPresets.length > 0 ? (
                             <Select
                                 value={board.squadPresetId}
                                 onValueChange={requestTemplateChange}
@@ -1966,7 +2117,7 @@ export function RosterBoard({
                                 </Tooltip>
                             )
                         ) : null}
-                        {mode === "assignment" ? (
+                        {mode === "assignment" && !isGuest ? (
                             <Button
                                 variant="outline"
                                 className={actionControlClass}
@@ -2015,7 +2166,7 @@ export function RosterBoard({
                             )}
                             {dictionary.matchDetail.roster.save}
                         </Button>
-                        {!board?.published ? (
+                        {!board?.published && !isGuest ? (
                             <>
                                 <Button
                                     variant="default"
@@ -2188,7 +2339,15 @@ export function RosterBoard({
                                     groupedNotAttendingUsers={
                                         groupedNotAttendingUsers
                                     }
-                                    allUsersSorted={allUsersSorted}
+                                    allUsersSorted={
+                                        isGuest
+                                            ? allUsersSorted.filter(
+                                                  (user) =>
+                                                      user.sharedGuildId ===
+                                                      event.guildId
+                                              )
+                                            : allUsersSorted
+                                    }
                                     assignmentsByUserId={assignmentsByUserId}
                                     groupsById={groupsById}
                                     dictionary={dictionary}
@@ -2246,7 +2405,7 @@ export function RosterBoard({
                             </aside>
                         ) : null}
                         <div className="min-w-0 space-y-2.5">
-                            {canAdmin ? (
+                            {canAdmin && !isGuest ? (
                                 <div className="md:col-span-2">
                                     <Button
                                         variant="outline"
@@ -2293,7 +2452,7 @@ export function RosterBoard({
                                     }}
                                 >
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                        {canAdmin ? (
+                                        {canAdmin && !isGuest ? (
                                             <>
                                                 <button
                                                     type="button"
@@ -2415,6 +2574,14 @@ export function RosterBoard({
                                             .sort((a, b) => a.order - b.order)
                                             .map((squad) => (
                                                 <SquadCard
+                                                    sharedClans={
+                                                        sharedContext?.clans
+                                                    }
+                                                    guest={isGuest}
+                                                    allocateClan={allocateClan}
+                                                    toggleSlotLock={
+                                                        toggleSlotLock
+                                                    }
                                                     key={`${mode}-${layoutRevision}-${squad.order}`}
                                                     squad={squad}
                                                     board={board}
@@ -2522,7 +2689,7 @@ export function RosterBoard({
                             {dictionary.common.save}
                         </Button>
                     ) : null}
-                    {!board.published ? (
+                    {!board.published && !isGuest ? (
                         <Button
                             className="h-11 flex-1 rounded-xl"
                             onClick={() => setPublishDialogOpen(true)}

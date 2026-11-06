@@ -15,6 +15,7 @@ import {
 } from "../../../src/domain/discord-messages/match-text"
 import { resolveAttendanceReminderHours } from "../../../src/domain/events/scheduled-job-policy"
 import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
+import { isLocalRosterPlayer } from "../../../src/domain/rosters/local-audience"
 import { findSquadLeader } from "../../../src/domain/discord-messages/format"
 import type { EventRecord, Roster, SyncPayload } from "../types"
 import { dmFrame, memberNames } from "../events/match-context"
@@ -38,6 +39,7 @@ export function rosterPlaces(
     for (const squad of roster.squads) {
         const leader = findSquadLeader(squad.players)
         for (const player of squad.players) {
+            if (player.id && !isLocalRosterPlayer(roster, player.id)) continue
             if (!player.id || (player.ack && !options.includeAcknowledged))
                 continue
             places.set(player.id, {

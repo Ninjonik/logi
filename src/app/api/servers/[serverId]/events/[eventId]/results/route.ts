@@ -1,3 +1,4 @@
+import { invalidateSharedMatchCaches } from "@/lib/gateways/shared-match-cache"
 import { getServerContextUncached } from "@/lib/read-models/server-context"
 import { revalidateCacheEntries, appCacheTags } from "@/lib/cache-tags"
 import { eventResultsHandlers } from "@/lib/api/event-results-route"
@@ -19,7 +20,7 @@ function handlers(serverId: string) {
                     resolveGameScope(e.gameId) === gameId &&
                     (e.kind ?? "match") === "match"
             )
-            return context?.canAdmin && event
+            return context?.canAdmin && event && !event.hostEventId
                 ? {
                       guildId: context.server.discordId,
                       gameId,
@@ -42,6 +43,7 @@ function handlers(serverId: string) {
                 appCacheTags.matches(serverId),
                 appCacheTags.publicDiscovery(),
             ])
+            await invalidateSharedMatchCaches(scope.eventId)
             for (const player of revision.players ?? []) {
                 if (player.logiUserId)
                     revalidateCacheEntries([

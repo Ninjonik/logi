@@ -14,6 +14,8 @@ export class ConcludeEventUseCase {
         if (!event) {
             throw new Error("Event not found.")
         }
+        if (event.hostEventId)
+            throw new Error("Only the host can conclude a shared match.")
 
         const now = this.clock.now()
         const meetingStart = new Date(event.meetingStart ?? "").getTime()

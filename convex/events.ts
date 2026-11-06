@@ -454,6 +454,9 @@ export const conclude = mutation({
         eventId: v.id("events"),
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        if ((await ctx.db.get(args.eventId))?.hostEventId)
+            throw new Error("Only the host can conclude a shared match.")
         return await handleConcludeEvent({
             secret: args.secret,
             expectedSecret: internalAuthSecret(),
@@ -587,6 +590,9 @@ export const setResult = mutation({
         eventResult,
     },
     handler: async (ctx, args) => {
+        assertInternalSecret(args.secret)
+        if ((await ctx.db.get(args.eventId))?.hostEventId)
+            throw new Error("Only the host can post match results.")
         const result = await handleSetEventResult({
             secret: args.secret,
             expectedSecret: internalAuthSecret(),

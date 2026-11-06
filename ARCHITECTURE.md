@@ -46,6 +46,22 @@ Convex functions validate their inputs and authenticate through an internal secr
 
 The bot calls Convex through `discord-bot/src/convex.ts`. Its workers coordinate announcements, rosters, panels, reminders, applications, tickets, roles, and League tracking. Discord payloads and network effects live in the bot; shared policy lives in `src/domain` and `src/application`.
 
+Shared matches retain one host event and canonical roster. Accepted invitations
+create local external event and roster projections for each invited clan, with
+independent Discord and signup settings. The tracked mutation boundary updates
+those projections inside the same transaction; it does not use asynchronous
+copy synchronization. Shared roster saves check the local optimistic revision,
+allocation, locks, player eligibility and unique placement before writing the
+canonical roster. Dashboard and v1 roster writes use the same management command.
+Only host writers can change match facts, lifecycle, result or publication.
+Discord delivery is independently retried through each clan's existing workers.
+
+Roster readers expose the full squad layout but redact foreign player account
+and membership data. Local reserve/declined lists and explicit local audiences
+scope reminders, roles, voice attendance and debriefs. Match statistics remain
+canonical; recap delivery references that source while using the player's local
+event and clan preferences. See [shared matches](docs/integrations/website/shared-matches.md).
+
 Dashboard context snapshots remain cached in Next.js for 24 hours, with immediate
 tag expiration after writes. No process-local stale snapshot sits above that
 cache. Bot invalidation resolves Discord guild IDs to Convex record IDs and

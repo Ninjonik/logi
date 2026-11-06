@@ -1,6 +1,8 @@
+import { sharedMatchCopy } from "./shared-matches"
 import { enLanding } from "./landing"
 
 export const enMessages = {
+    sharedMatches: sharedMatchCopy.en,
     competitionEnrollment: {
         title: "Competitions",
         description: "Register your clan’s teams or manage their applications.",

@@ -1,5 +1,6 @@
 import type { RosterDashboardActor } from "../../../convex/rosterWriterAccess"
 import { appCacheTags, revalidateCacheEntries } from "../cache-tags"
+import { invalidateSharedMatchCaches } from "./shared-match-cache"
 import type { RosterWriteInput } from "../api/roster-write-route"
 import { makeFunctionReference } from "convex/server"
 import { isSuperadminDiscordId } from "../superadmin"
@@ -38,5 +39,6 @@ export async function writeRoster(
         appCacheTags.events(serverId),
         appCacheTags.rosterImage(),
     ])
+    await invalidateSharedMatchCaches(input.eventId)
     return id
 }

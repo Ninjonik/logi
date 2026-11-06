@@ -39,6 +39,7 @@ import { leaguePortalPaths } from "@/lib/api/league-portal-openapi"
 import { warconQuerySchema } from "@/domain/game-data/warcon-query"
 import { hllLiveEnvelopeSchema } from "@/domain/game-data/hll-live"
 import { matchTeamSummarySchema } from "@/domain/teams/match-teams"
+import { sharedMatchPaths } from "@/lib/api/shared-match-openapi"
 import { API_KEY_READ_RESOURCES } from "@/domain/api/key-access"
 import { SYNC_RESOURCES } from "@/domain/integrations/change"
 import { NextResponse } from "next/server"
@@ -412,6 +413,7 @@ function deletedResponse(resource: string) {
     }
 }
 const paths: Record<string, unknown> = {
+    ...sharedMatchPaths,
     "/public/matches": {
         get: {
             summary: "List public matches",

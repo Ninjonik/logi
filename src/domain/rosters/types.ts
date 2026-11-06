@@ -1,4 +1,6 @@
 export type RosterPlayer = {
+    allocatedGuildId?: string
+    locked?: boolean
     id?: string
     customName?: string
     ack: boolean
@@ -24,6 +26,7 @@ export type RosterSquad = {
 }
 
 export type RosterLike = {
+    localPlayerIds?: string[]
     squads: RosterSquad[]
     reservePlayerIds: string[]
     reserveAttendances?: ReserveAttendanceRecord[]

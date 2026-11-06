@@ -103,6 +103,11 @@ export async function syncSquadVoiceChannels(input: {
     const missing = roster.squads.filter(
         (squad) =>
             squad.players.length > 0 &&
+            (roster.localPlayerIds === undefined ||
+                squad.players.some(
+                    (player) =>
+                        player.id && roster.localPlayerIds?.includes(player.id)
+                )) &&
             !existingNames.has(names.squad(squad)) &&
             !existingNames.has(squad.name)
     )

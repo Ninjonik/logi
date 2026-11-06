@@ -59,6 +59,8 @@ export type CalendarItem = {
 }
 
 export type AppUser = {
+    sharedGuildId?: string
+    sharedEligibleGuildIds?: string[]
     _reserveSection?: string
     id: string
     discordId: string
@@ -334,6 +336,13 @@ export type Group = {
 }
 
 export type EventRecord = {
+    reviewedResult?: import("@/domain/api/result-summaries").ResultSummaryPayload
+    hostEventId?: string
+    hostClanName?: string
+    sharedAccessRevoked?: boolean
+    sharedLocalPlayerIds?: string[]
+    localRosterMessageVariant?: "photo_text" | "photo"
+    localRosterMentionPlayers?: boolean
     id: string
     guildId: string
     /** Missing means the legacy Hell Let Loose game scope. */
@@ -678,6 +687,8 @@ export type SquadPreset = {
 }
 
 export type RosterPlayer = {
+    allocatedGuildId?: string
+    locked?: boolean
     id?: string
     customName?: string
     ack: boolean
@@ -697,6 +708,7 @@ export type RosterSquad = {
 }
 
 export type Roster = {
+    localPlayerIds?: string[]
     id: string
     eventId: string
     guildId: string

@@ -286,6 +286,9 @@ export function buildMatchListRows(input: BuildInput) {
             ]
         return [
             GAME_LABELS[gameId],
+            event.hostEventId
+                ? `${dictionary.sharedMatches.external} · ${dictionary.sharedMatches.hostedBy.replace("{name}", event.hostClanName ?? "")}`
+                : undefined,
             event.map
                 ? (formatHllPresetLabel(event.map, event.gameId) ?? event.map)
                 : undefined,
@@ -351,7 +354,7 @@ export function buildMatchListRows(input: BuildInput) {
         ? matchListQueue(visibleEvents, input.rosters, now, reviews).flatMap(
               (item): MatchListQueueRow[] => {
                   const event = eventById.get(item.eventId)
-                  if (!event) return []
+                  if (!event || event.hostEventId) return []
                   switch (item.kind) {
                       case "publishRoster":
                           return [

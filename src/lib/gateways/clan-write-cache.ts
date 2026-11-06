@@ -1,5 +1,6 @@
 import { createClanMutationResponder } from "../api/clan-mutation-response"
 import { appCacheTags, revalidateCacheEntries } from "../cache-tags"
+import { invalidateSharedMatchCaches } from "./shared-match-cache"
 import { logRouteError } from "../server-route-errors"
 import { makeFunctionReference } from "convex/server"
 import { getInternalAuthSecret } from "../env"
@@ -86,6 +87,20 @@ export const clanMutationResponse = createClanMutationResponder({
         )
             throw new Error("Cannot resolve clan cache scope.")
         revalidateCacheEntries(clanWriteCacheTags(server.id, guildId, body))
+        const parsed: unknown = JSON.parse(body)
+        if (
+            parsed &&
+            typeof parsed === "object" &&
+            "data" in parsed &&
+            parsed.data &&
+            typeof parsed.data === "object"
+        ) {
+            for (const key of ["eventId", "id"]) {
+                const id: unknown = Reflect.get(parsed.data, key)
+                if (typeof id === "string")
+                    await invalidateSharedMatchCaches(id)
+            }
+        }
     },
     onInvalidationError: (error) => logRouteError("clan-write-cache", error),
 })

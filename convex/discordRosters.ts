@@ -5,6 +5,7 @@ import {
     normalizeEventDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import { localRosterLists } from "../src/domain/rosters/local-audience"
 import { mutation } from "./integrationMutation"
 import { getUserByDiscordId } from "./identity"
 import { query } from "./_generated/server"
@@ -56,7 +57,7 @@ export const getRosterImageContext = query({
         )
         return {
             event: normalizeEventDoc(event),
-            roster: normalizeDoc(roster),
+            roster: normalizeDoc(localRosterLists(roster)),
             config: config
                 ? normalizeConfigDoc(config)
                 : {
@@ -134,6 +135,12 @@ export const confirmRosterAttendanceFromMeetingChannel = mutation({
         const squads = roster.squads.map((squad) => ({
             ...squad,
             players: squad.players.map((player) => {
+                if (
+                    player.id &&
+                    roster.localPlayerIds &&
+                    !roster.localPlayerIds.includes(player.id)
+                )
+                    return player
                 if (!player.id || !memberIdsInMeetingChannel.has(player.id))
                     return player
                 rosteredCount += 1
