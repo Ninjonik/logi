@@ -37,6 +37,7 @@ export type EventWorkflowRecord = {
 }
 
 export interface EventWorkflowRepository {
+    assertSignupClan?(eventId: string, userId: string): Promise<void>
     getById(eventId: string): Promise<EventWorkflowRecord | null>
     getAssignmentForUser(
         serverId: string,

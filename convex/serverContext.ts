@@ -9,6 +9,11 @@ import {
     normalizeStratmapDoc,
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
+import {
+    sharedMatchMembers,
+    sharedMatchPeople,
+} from "../src/infrastructure/convex/shared-match-store"
+import { canReadSharedRosterPassword } from "../src/domain/rosters/local-audience"
 import { filterByGameScope, type GameScope } from "../src/domain/games/game"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
 import { withoutDrafts } from "../src/domain/events/drafts"
@@ -147,6 +152,30 @@ async function buildServerContext(
     )
 
     const normalizedServer = normalizeGuildDoc(server)
+    const displayEvents = await Promise.all(
+        scopedEvents.map(async (event) => {
+            if (!canAdmin || event.hostEventId) return normalizeEventDoc(event)
+            const { events: shared } = await sharedMatchMembers(ctx, event)
+            if (shared.length === 1) return normalizeEventDoc(event)
+            const { owners } = await sharedMatchPeople(ctx, shared)
+            return normalizeEventDoc({
+                ...event,
+                participants: shared.flatMap((item) =>
+                    (item.participants ?? []).filter(
+                        (person) => owners.get(person.userId) === item.guildId
+                    )
+                ),
+                signUps: shared.flatMap((item) =>
+                    (item.signUps ?? []).filter(
+                        (person) => owners.get(person.userId) === item.guildId
+                    )
+                ),
+                absenceNotices: shared.flatMap(
+                    (item) => item.absenceNotices ?? []
+                ),
+            })
+        })
+    )
 
     return {
         user: normalizeUserDoc(user),
@@ -157,7 +186,23 @@ async function buildServerContext(
         canAdmin,
         hasDashboardAccess: Boolean(discordAccess?.hasDashboardAccess),
         memberRoleIds: discordAccess?.roleIds ?? [],
-        events: scopedEvents.map(normalizeEventDoc),
+        events: displayEvents.map((event) => {
+            if (!event.hostEventId && event.sharedLocalPlayerIds === undefined)
+                return event
+            const roster = relevantRosters.find(
+                (item) => item.eventId === event._id
+            )
+            return {
+                ...event,
+                serverPassword: canReadSharedRosterPassword({
+                    hostAdmin: !event.hostEventId && canAdmin,
+                    userId: args.userId,
+                    roster: roster ?? null,
+                })
+                    ? event.serverPassword
+                    : undefined,
+            }
+        }),
         topicPresets: topicPresets.map(normalizeDoc),
         squadPresets: scopedSquadPresets.map(normalizeDoc),
         stratmaps: scopedStratmaps.map(normalizeStratmapDoc),

@@ -31,7 +31,7 @@ export async function refreshEventSchedule(
         .collect()
     await Promise.all(existingJobs.map((job) => ctx.db.delete(job._id)))
     // A draft is never announced, so it has no deadlines until it is published.
-    if (event.isDraft === true) return
+    if (event.isDraft === true || event.sharedAccessRevoked) return
     const lastReminderAt = await lastSignupReminderAt(
         ctx,
         event,

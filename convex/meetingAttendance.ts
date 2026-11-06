@@ -94,14 +94,20 @@ export const claimMeetingAttendanceRequest = mutation({
         return {
             ...request,
             rosterUserIds: [
-                ...new Set([
-                    ...roster.reservePlayerIds,
-                    ...roster.squads.flatMap((squad) =>
-                        squad.players.flatMap((player) =>
-                            player.id ? [player.id] : []
-                        )
-                    ),
-                ]),
+                ...new Set(
+                    [
+                        ...roster.reservePlayerIds,
+                        ...roster.squads.flatMap((squad) =>
+                            squad.players.flatMap((player) =>
+                                player.id ? [player.id] : []
+                            )
+                        ),
+                    ].filter(
+                        (id) =>
+                            roster.localPlayerIds === undefined ||
+                            roster.localPlayerIds.includes(id)
+                    )
+                ),
             ],
         }
     },

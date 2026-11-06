@@ -17,6 +17,8 @@ import {
     GripVertical,
     MoreHorizontal,
     Plus,
+    LockKeyhole,
+    LockKeyholeOpen,
     Trash2,
 } from "lucide-react"
 import { useState } from "react"
@@ -201,6 +203,10 @@ function GroupBadge({
 }
 
 export function SquadCard({
+    sharedClans = [],
+    guest = false,
+    allocateClan,
+    toggleSlotLock,
     squad,
     board,
     squadIndex,
@@ -237,6 +243,14 @@ export function SquadCard({
     draggedName,
     defaultExpanded = true,
 }: {
+    sharedClans?: { guildId: string; name: string }[]
+    guest?: boolean
+    allocateClan?: (
+        guildId: string | undefined,
+        squadIndex: number,
+        playerIndex: number
+    ) => void
+    toggleSlotLock?: (squadIndex: number, playerIndex: number) => void
     squad: Roster["squads"][0]
     board: Roster
     squadIndex: number
@@ -315,8 +329,7 @@ export function SquadCard({
     const [contextMenuOpen, setContextMenuOpen] = useState(false)
     const [squadDropOver, setSquadDropOver] = useState(false)
     const effectiveMode = localMode ?? mode
-    const isLayoutMode = canAdmin && effectiveMode === "layout"
-    const isAssignmentMode = canAdmin && effectiveMode !== "layout"
+    const isLayoutMode = canAdmin && !guest && effectiveMode === "layout"
     const isViewMode = effectiveMode === "view"
     const filledSlotCount = squad.players.filter((player) =>
         Boolean(player.id || getCustomPlayerName(player))
@@ -372,7 +385,7 @@ export function SquadCard({
             onClick={() => setFocusedGroup(squad.group)}
         >
             <CardHeader className="px-0">
-                {canAdmin ? (
+                {canAdmin && !guest ? (
                     <div className="flex items-center gap-1">
                         <button
                             type="button"
@@ -638,6 +651,15 @@ export function SquadCard({
                 )}
             >
                 {squad.players.map((player, playerIndex) => {
+                    const slotEditable =
+                        !guest ||
+                        (player.allocatedGuildId === serverDiscordId &&
+                            !player.locked)
+                    const isAssignmentMode =
+                        canAdmin && effectiveMode !== "layout" && slotEditable
+                    const allocatedClan = sharedClans.find(
+                        (clan) => clan.guildId === player.allocatedGuildId
+                    )
                     const slotUser = player.id
                         ? usersById.get(player.id)
                         : undefined
@@ -664,6 +686,17 @@ export function SquadCard({
                             playerIndex,
                         })
                     const filteredUsers = allUsersSorted
+                        .filter(
+                            (user) =>
+                                !guest || user.sharedGuildId === serverDiscordId
+                        )
+                        .filter(
+                            (user) =>
+                                !player.allocatedGuildId ||
+                                user.sharedEligibleGuildIds?.includes(
+                                    player.allocatedGuildId
+                                )
+                        )
                         .filter((user) =>
                             user.name
                                 .toLowerCase()
@@ -789,6 +822,70 @@ export function SquadCard({
                                     </Button>
                                 ) : null}
                             </div>
+                            {player.allocatedGuildId ? (
+                                <div className="flex items-center gap-1 py-1 text-xs">
+                                    <Badge variant="secondary">
+                                        {allocatedClan?.name ??
+                                            player.allocatedGuildId}
+                                    </Badge>
+                                    {player.locked ? (
+                                        <LockKeyhole
+                                            className="size-3"
+                                            aria-label={
+                                                dictionary.sharedMatches.locked
+                                            }
+                                        />
+                                    ) : null}
+                                    {canAdmin && !guest ? (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-6"
+                                                aria-label={
+                                                    player.locked
+                                                        ? dictionary
+                                                              .sharedMatches
+                                                              .unlock
+                                                        : dictionary
+                                                              .sharedMatches
+                                                              .lock
+                                                }
+                                                onClick={() =>
+                                                    toggleSlotLock?.(
+                                                        squadIndex,
+                                                        playerIndex
+                                                    )
+                                                }
+                                            >
+                                                {player.locked ? (
+                                                    <LockKeyhole className="size-3" />
+                                                ) : (
+                                                    <LockKeyholeOpen className="size-3" />
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-6"
+                                                aria-label={
+                                                    dictionary.sharedMatches
+                                                        .unallocate
+                                                }
+                                                onClick={() =>
+                                                    allocateClan?.(
+                                                        undefined,
+                                                        squadIndex,
+                                                        playerIndex
+                                                    )
+                                                }
+                                            >
+                                                ×
+                                            </Button>
+                                        </>
+                                    ) : null}
+                                </div>
+                            ) : null}
                             {slotUser || placeholderName ? (
                                 <div>
                                     {!isLayoutMode ? (
@@ -804,7 +901,7 @@ export function SquadCard({
                                             attendanceStatus={attendanceStatus}
                                             isAssignmentMode={isAssignmentMode}
                                             isViewMode={isViewMode}
-                                            canAdmin={canAdmin}
+                                            canAdmin={canAdmin && slotEditable}
                                             dictionary={dictionary}
                                             serverDiscordId={serverDiscordId}
                                             groupLabel={
@@ -981,6 +1078,62 @@ export function SquadCard({
                                                         }
                                                     />
                                                     <CommandList>
+                                                        {!guest &&
+                                                        sharedClans.length >
+                                                            1 ? (
+                                                            <CommandGroup
+                                                                heading={
+                                                                    dictionary
+                                                                        .sharedMatches
+                                                                        .allocate
+                                                                }
+                                                            >
+                                                                {sharedClans
+                                                                    .filter(
+                                                                        (
+                                                                            clan
+                                                                        ) =>
+                                                                            clan.guildId !==
+                                                                                serverDiscordId &&
+                                                                            clan.name
+                                                                                .toLowerCase()
+                                                                                .includes(
+                                                                                    (
+                                                                                        slotSearches[
+                                                                                            playerIndex
+                                                                                        ] ??
+                                                                                        ""
+                                                                                    )
+                                                                                        .trim()
+                                                                                        .toLowerCase()
+                                                                                )
+                                                                    )
+                                                                    .map(
+                                                                        (
+                                                                            clan
+                                                                        ) => (
+                                                                            <CommandItem
+                                                                                key={`clan-${clan.guildId}`}
+                                                                                value={`clan-${clan.guildId}`}
+                                                                                onSelect={() => {
+                                                                                    allocateClan?.(
+                                                                                        clan.guildId,
+                                                                                        squadIndex,
+                                                                                        playerIndex
+                                                                                    )
+                                                                                    setSlotPickerOpen(
+                                                                                        null
+                                                                                    )
+                                                                                }}
+                                                                            >
+                                                                                {
+                                                                                    clan.name
+                                                                                }
+                                                                            </CommandItem>
+                                                                        )
+                                                                    )}
+                                                            </CommandGroup>
+                                                        ) : null}
                                                         <CommandEmpty>
                                                             {
                                                                 dictionary
@@ -992,7 +1145,7 @@ export function SquadCard({
                                                             slotSearches[
                                                                 playerIndex
                                                             ] ?? ""
-                                                        ).trim() ? (
+                                                        ).trim() && !guest ? (
                                                             <CommandGroup>
                                                                 <CommandItem
                                                                     value={(

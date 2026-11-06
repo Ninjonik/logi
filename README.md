@@ -8,6 +8,7 @@ Logi is an open-source community operations platform with a public site, a manag
 - English, Czech, German, and Polish dashboard and Discord bot; English-only wiki and API documentation.
 - Events, matches, training, recurring schedules, registration, and reminders.
 - Squad rosters, reserves, tactical plans, attendance, and reviewed results.
+- Shared matches with invited clans and allocated, lockable roster slots.
 - Membership applications, groups, tickets, and managed Discord roles.
 - Discord announcements, forum posts, scheduled events, public panels, and server seeding.
 - Game-specific capabilities, including HLL CRCON, Warcon, retained game history, and Wardogs League tracking.

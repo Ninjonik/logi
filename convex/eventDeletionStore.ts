@@ -8,10 +8,28 @@ import type { Id } from "./_generated/dataModel"
 export async function deleteEventInTransaction(
     ctx: MutationCtx,
     eventId: Id<"events">,
-    guildId: string
+    guildId: string,
+    sharedCleanup = false
 ) {
     const event = await ctx.db.get(eventId)
     if (!event || event.guildId !== guildId) throw new Error("Event not found.")
+    if (event.hostEventId && !sharedCleanup)
+        throw new Error("Only the host can delete a shared match.")
+    if (!event.hostEventId) {
+        const invitations = await ctx.db
+            .query("sharedMatchInvitations")
+            .withIndex("hostEventId", (q) => q.eq("hostEventId", eventId))
+            .collect()
+        const linked = await ctx.db
+            .query("events")
+            .withIndex("hostEventId", (q) => q.eq("hostEventId", eventId))
+            .collect()
+        for (const local of linked)
+            await deleteEventInTransaction(ctx, local._id, local.guildId, true)
+        for (const invitation of invitations) {
+            await ctx.db.delete(invitation._id)
+        }
+    }
     const syncs = await ctx.db
         .query("discordEventSyncs")
         .withIndex("eventId", (q) => q.eq("eventId", eventId))

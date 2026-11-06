@@ -16,7 +16,12 @@ import type { RosterPublishContext } from "@/components/app/roster-publish-dialo
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import type { Dictionary } from "@/i18n/dictionaries"
 
+import {
+    sharedRosterContext,
+    type SharedRosterContext,
+} from "@/lib/gateways/shared-matches"
 import { RosterBoard } from "./roster-board"
+import { useEffect, useState } from "react"
 
 type BoardDiscordConfig = Pick<DiscordConfig, "timezone" | "meetingChannelId">
 
@@ -56,6 +61,25 @@ const getRosterDetailReference = makeFunctionReference<"query">(
 )
 
 export function LiveRosterBoard(props: LiveRosterBoardProps) {
+    const [shared, setShared] = useState<SharedRosterContext>()
+    const initialEventId = props.initialEvent?.id
+    useEffect(() => {
+        let active = true
+        if (props.initialCanAdmin && initialEventId)
+            void sharedRosterContext(props.serverId, initialEventId)
+                .then((value) => {
+                    if (active) setShared(value)
+                })
+                .catch(() => undefined)
+        return () => {
+            active = false
+        }
+    }, [
+        props.serverId,
+        initialEventId,
+        props.initialCanAdmin,
+        props.initialRoster?.updatedAt,
+    ])
     const liveData = useQuery(getRosterDetailReference, {
         grant: props.grant,
         serverId: props.serverId as never,
@@ -64,7 +88,14 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
 
     const roster = liveData?.roster ?? props.initialRoster
     const event = liveData?.event ?? props.initialEvent
-    const users = liveData?.users ?? props.initialUsers
+    const users = [
+        ...new Map(
+            [
+                ...(liveData?.users ?? props.initialUsers),
+                ...(shared?.users ?? []),
+            ].map((user) => [user.discordId, user])
+        ).values(),
+    ]
     const userAssignments = liveData?.assignments ?? props.initialAssignments
     const groups = liveData?.groups ?? props.initialGroups
     // Keep server-rendered admin access while the live query resolves. This also
@@ -74,13 +105,14 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
 
     return (
         <RosterBoard
+            sharedContext={shared}
             roster={roster}
             event={event}
             users={users}
             userAssignments={userAssignments}
             groups={groups}
             squadPresets={props.initialSquadPresets}
-            canAdmin={canAdmin}
+            canAdmin={canAdmin && !event?.sharedAccessRevoked}
             dictionary={props.dictionary}
             serverId={props.serverId}
             locale={props.locale}

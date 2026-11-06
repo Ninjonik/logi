@@ -1,3 +1,4 @@
+import type { Roster, AppUser } from "../types/domain"
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -7,6 +8,60 @@ import {
 } from "./roster-assignment"
 
 const weights: AutoFillWeights = { score: 1, kd: 1 }
+
+test("shared autofill preserves clan allocation even when another clan's player ranks higher", () => {
+    const board: Roster = {
+        id: "roster",
+        eventId: "event",
+        guildId: "host",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+        squads: [
+            {
+                name: "Alpha",
+                group: "Infantry",
+                color: "#fff",
+                order: 0,
+                players: [{ allocatedGuildId: "guest", ack: false }],
+            },
+        ],
+        reservePlayerIds: ["host-player", "guest-player"],
+        notAttendingPlayerIds: [],
+        published: false,
+    }
+    const user = (id: string, guild: string): AppUser => ({
+        id,
+        discordId: id,
+        name: id,
+        avatar: "",
+        hasDiscordLink: true,
+        isStreamer: false,
+        managedGuildIds: [],
+        mercenaryGuildIds: [],
+        platformIds: [],
+        nicknames: {},
+        scores: { host: guild === "host" ? 100 : 0 },
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+        sharedGuildId: guild,
+        sharedEligibleGuildIds: [guild],
+    })
+    const context: Parameters<typeof autoFillRosterAssignments>[1] = {
+        usersById: new Map([
+            ["host-player", user("host-player", "host")],
+            ["guest-player", user("guest-player", "guest")],
+        ]),
+        assignmentsByUserId: new Map(),
+        groupsById: new Map(),
+        signupGroupByUserId: new Map(),
+        participantStatusByUserId: new Map(),
+        serverDiscordId: "host",
+    }
+    const result = autoFillRosterAssignments(board, context, weights)
+    assert.equal(result.squads[0].players[0].id, "guest-player")
+    assert.equal(result.squads[0].players[0].allocatedGuildId, "guest")
+    assert.deepEqual(result.reservePlayerIds, ["host-player"])
+})
 
 test("autoFillRosterAssignments processes players first and keeps specialists near their signup preference", () => {
     const board = {

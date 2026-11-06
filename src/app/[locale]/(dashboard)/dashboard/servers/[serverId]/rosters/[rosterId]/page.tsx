@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { getRosterPublishContext } from "@/lib/read-models/roster-publish-context"
+import { sharedRosterUser } from "@/domain/rosters/shared-roster-user"
 import { LiveRosterBoard } from "@/components/app/live-roster-board"
 import { clientGrantScopes } from "@/domain/identity/client-grant"
 import { getUsersByIds } from "@/lib/server-user-management"
@@ -52,7 +53,7 @@ export default async function RosterDetailPage({
     } = context
     const roster = rosters.find((item) => item.id === rosterId)
     const event = events.find((item) => item.id === roster?.eventId)
-    const users = await getUsersByIds(
+    const rawUsers = await getUsersByIds(
         Array.from(
             new Set([
                 ...assignments.map((assignment) => assignment.userId),
@@ -71,6 +72,13 @@ export default async function RosterDetailPage({
             ])
         ),
         context.server.discordId
+    )
+    const users = rawUsers.map((user) =>
+        sharedRosterUser(
+            user,
+            roster?.localPlayerIds === undefined ||
+                roster.localPlayerIds.includes(user.discordId)
+        )
     )
     const session = await getSession()
     if (!session) notFound()

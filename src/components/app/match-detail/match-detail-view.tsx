@@ -107,52 +107,77 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                 ? `${basePath}/match-stats`
                 : `${basePath}/match`
             : undefined
-    const actions: MatchDetailAction[] = canAdmin
-        ? [
-              ...(reportHref
-                  ? [{ label: t.result.openStats, href: reportHref }]
-                  : []),
-              ...(model.discordHref
-                  ? [
-                        {
-                            label: t.openInDiscord,
-                            href: model.discordHref,
-                            external: true,
-                            phoneOnly: true,
-                        },
-                    ]
-                  : []),
-              ...(model.editHref
-                  ? [{ label: t.actions.edit, href: model.editHref }]
-                  : []),
-              ...(model.rosterPageHref
-                  ? [
-                        {
-                            label: t.actions.openRoster,
-                            href: model.rosterPageHref,
-                        },
-                    ]
-                  : []),
-              { label: t.actions.signupHistory, href: model.signupHistoryHref },
-          ]
-        : model.discordHref
-          ? [
-                ...(reportHref
-                    ? [{ label: t.result.openStats, href: reportHref }]
-                    : []),
-                {
-                    label: t.openInDiscord,
-                    href: model.discordHref,
-                    external: true,
-                    phoneOnly: true,
-                },
-            ]
-          : reportHref
-            ? [{ label: t.result.openStats, href: reportHref }]
-            : []
+    const actions: MatchDetailAction[] =
+        canAdmin || (event.hostEventId && model.editHref)
+            ? [
+                  ...(reportHref
+                      ? [{ label: t.result.openStats, href: reportHref }]
+                      : []),
+                  ...(model.discordHref
+                      ? [
+                            {
+                                label: t.openInDiscord,
+                                href: model.discordHref,
+                                external: true,
+                                phoneOnly: true,
+                            },
+                        ]
+                      : []),
+                  ...(model.editHref
+                      ? [
+                            {
+                                label: event.hostEventId
+                                    ? dictionary.sharedMatches.localSettings
+                                    : t.actions.edit,
+                                href: model.editHref,
+                            },
+                        ]
+                      : []),
+                  ...(model.rosterPageHref
+                      ? [
+                            {
+                                label: t.actions.openRoster,
+                                href: model.rosterPageHref,
+                            },
+                        ]
+                      : []),
+                  {
+                      label: t.actions.signupHistory,
+                      href: model.signupHistoryHref,
+                  },
+              ]
+            : model.discordHref
+              ? [
+                    ...(reportHref
+                        ? [{ label: t.result.openStats, href: reportHref }]
+                        : []),
+                    {
+                        label: t.openInDiscord,
+                        href: model.discordHref,
+                        external: true,
+                        phoneOnly: true,
+                    },
+                ]
+              : reportHref
+                ? [{ label: t.result.openStats, href: reportHref }]
+                : []
 
     return (
         <div className="flex flex-col gap-5 pb-6">
+            {event.hostEventId ? (
+                <p className="text-muted-foreground text-sm">
+                    {event.sharedAccessRevoked
+                        ? dictionary.sharedMatches.revoked
+                        : dictionary.sharedMatches.external}
+                    {" · "}
+                    {dictionary.sharedMatches.hostedBy.replace(
+                        "{name}",
+                        event.hostClanName ?? ""
+                    )}
+                    {" · "}
+                    {dictionary.sharedMatches.sharedDetails}
+                </p>
+            ) : null}
             <MatchDetailHeader
                 event={event}
                 dictionary={dictionary}
@@ -248,7 +273,8 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                     />
                 ) : null}
                 {activeTab === "roster" ? (
-                    roster && (canAdmin || roster.published) ? (
+                    roster &&
+                    (canAdmin || event.hostEventId || roster.published) ? (
                         model.rosterBoard
                     ) : (
                         <EmptyState
@@ -326,6 +352,26 @@ export function MatchDetailView(model: MatchDetailViewModel) {
                                         : undefined
                                 }
                             />
+                        ) : event.hostEventId &&
+                          (event.reviewedResult || event.eventResult) ? (
+                            <section className="rounded-2xl border p-5">
+                                <h2 className="font-semibold">
+                                    {t.result.title}
+                                </h2>
+                                <p className="my-3 text-2xl font-semibold tabular-nums">
+                                    {event.reviewedResult
+                                        ? event.reviewedResult.participants
+                                              .map(
+                                                  (side) =>
+                                                      `${side.label} ${side.score ?? "–"}`
+                                              )
+                                              .join(" : ")
+                                        : `${event.eventResult!.sideA} ${event.eventResult!.score.sideA} : ${event.eventResult!.score.sideB} ${event.eventResult!.sideB}`}
+                                </p>
+                                <p className="text-muted-foreground text-sm">
+                                    {dictionary.sharedMatches.sharedDetails}
+                                </p>
+                            </section>
                         ) : (
                             <EmptyState
                                 title={t.result.title}

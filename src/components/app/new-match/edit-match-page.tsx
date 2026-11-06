@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { fetchQuery } from "convex/nextjs"
 import { isLocale } from "@/i18n/config"
 
+import { SharedMatchSettingsForm } from "../shared-match-settings"
 import { clanFlowProps } from "./new-match-page"
 import { NewMatchFlow } from "./new-match-flow"
 
@@ -82,6 +83,21 @@ export async function EditMatchPage({
             </div>
         )
     const isTraining = event.kind === "training"
+    if (event.hostEventId)
+        return (
+            <SharedMatchSettingsForm
+                serverId={serverId}
+                event={event}
+                dictionary={dictionary}
+                groups={context.groups.filter(
+                    (group) =>
+                        (group.gameId ?? "hell_let_loose") ===
+                        (event.gameId ?? "hell_let_loose")
+                )}
+                topicPresets={context.topicPresets}
+                backHref={`${base}/${section}/${event.id}`}
+            />
+        )
     const query = isStep(step) ? `?step=${step}` : ""
     const editability = eventEditability(event, new Date())
     if (editability === "draft")

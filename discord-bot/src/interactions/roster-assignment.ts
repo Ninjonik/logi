@@ -101,7 +101,11 @@ export function buildMyAssignmentView(input: {
     return myAssignmentView({
         event: rosterCardEvent(event, config),
         assignment: findMyAssignment(
-            roster ? cardRoster(roster) : null,
+            roster &&
+                (roster.localPlayerIds === undefined ||
+                    roster.localPlayerIds.includes(input.userId))
+                ? cardRoster(roster)
+                : null,
             input.userId
         ),
         context: rosterCardContext({

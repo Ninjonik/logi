@@ -337,6 +337,7 @@ export type MatchTeamAssignment = {
 }
 
 export type EventRecord = {
+    sharedLocalPlayerIds?: string[]
     id: string
     guildId: string
     gameId?:
@@ -436,6 +437,7 @@ export type EventRecord = {
 }
 
 export type Roster = {
+    localPlayerIds?: string[]
     id: string
     eventId: string
     published: boolean

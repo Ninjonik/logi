@@ -11,6 +11,13 @@ export type RosterPublicationChoice = {
     mentionPlayers: boolean
 }
 export interface RosterManagementRepository extends RosterCommandRepository {
+    saveShared?(
+        input: UpsertRosterInput & {
+            guildId: string
+            requestedBy?: string
+            discordPublish?: RosterPublicationChoice
+        }
+    ): Promise<string | null>
     getPreset(id: string): Promise<{ guildId: string; gameId?: string } | null>
     publish(input: {
         rosterId: string
@@ -37,6 +44,8 @@ export class ManageRoster {
             discordPublish?: RosterPublicationChoice
         }
     ) {
+        const shared = await this.repository.saveShared?.(input)
+        if (shared) return shared
         const event = await this.repository.getEvent(input.eventId)
         if (!event || event.guildId !== input.guildId)
             throw new Error("Event not found.")
@@ -83,6 +92,8 @@ export class ManageRoster {
         const roster = await this.repository.getRosterById(rosterId)
         if (!roster) throw new Error("Roster not found.")
         const event = await this.repository.getEvent(roster.eventId)
+        if (event && "hostEventId" in event && event.hostEventId)
+            throw new Error("Only the host can delete the shared roster.")
         if (
             guildId !== undefined &&
             (!event ||

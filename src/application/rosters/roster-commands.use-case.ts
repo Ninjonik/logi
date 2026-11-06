@@ -27,6 +27,8 @@ export type RosterCommandRecord = {
         color: string
         icon?: string
         players: Array<{
+            allocatedGuildId?: string
+            locked?: boolean
             id?: string
             customName?: string
             ack: boolean
@@ -92,6 +94,7 @@ export type UpsertRosterInput = Omit<
     "id" | "publishedPlaces" | "previousPublishedPlaces"
 > & {
     rosterId?: string
+    expectedUpdatedAt?: string
 }
 
 function buildPersistedRosterPayload(roster: Omit<RosterCommandRecord, "id">) {
@@ -176,13 +179,40 @@ export class UpdateRosterAttendanceUseCase {
         private readonly repository: Pick<
             RosterCommandRepository,
             "getRosterByEventId" | "updateRoster"
-        >
+        >,
+        private readonly events?: Pick<
+            EventWorkflowRepository,
+            "getById" | "saveAbsenceNotices"
+        >,
+        private readonly clock?: Clock
     ) {}
 
     async acknowledge(eventId: string, userId: string) {
-        return await this.update(eventId, userId, (roster, nextUserId) =>
-            acknowledgeRosterAttendance(roster, nextUserId)
+        const result = await this.update(
+            eventId,
+            userId,
+            (roster, nextUserId) =>
+                acknowledgeRosterAttendance(roster, nextUserId)
         )
+        const event = await this.events?.getById(eventId)
+        const notices = event?.absenceNotices ?? []
+        if (
+            this.events &&
+            notices.some(
+                (notice) =>
+                    notice.userId === userId && notice.kind === "cannot_come"
+            )
+        ) {
+            await this.events.saveAbsenceNotices(eventId, {
+                absenceNotices: notices.filter(
+                    (notice) =>
+                        notice.userId !== userId ||
+                        notice.kind !== "cannot_come"
+                ),
+                updatedAt: (this.clock?.now() ?? new Date()).toISOString(),
+            })
+        }
+        return result
     }
 
     async setStatus(eventId: string, userId: string, status: AttendanceStatus) {

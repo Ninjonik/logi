@@ -6,6 +6,9 @@ import {
     normalizeEventDoc,
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
+import { sharedDashboardEvent } from "../src/infrastructure/convex/shared-match-store"
+import { canReadSharedRosterPassword } from "../src/domain/rosters/local-audience"
+import { sharedRosterUser } from "../src/domain/rosters/shared-roster-user"
 import { clientGrantScopes } from "../src/domain/identity/client-grant"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
 import { readClientGrant } from "./clientGrants"
@@ -118,10 +121,22 @@ export const getRosterDetail = query({
         const users = await Promise.all(
             relevantUserIds.map((userId) => getUserByDiscordId(ctx, userId))
         )
+        const displayEvent = canAdmin
+            ? await sharedDashboardEvent(ctx, event)
+            : event
 
         return {
             canAdmin,
-            event: normalizeEventDoc(event),
+            event: normalizeEventDoc({
+                ...displayEvent,
+                serverPassword: canReadSharedRosterPassword({
+                    hostAdmin: !event.hostEventId && canAdmin,
+                    userId,
+                    roster,
+                })
+                    ? displayEvent.serverPassword
+                    : undefined,
+            }),
             roster: {
                 ...normalizeDoc(roster),
                 guildId: serverDiscordId,
@@ -131,7 +146,13 @@ export const getRosterDetail = query({
                     Boolean(item)
                 )
                 .map((item) =>
-                    normalizeUserDoc(item, { guildId: serverDiscordId })
+                    sharedRosterUser(
+                        normalizeUserDoc(item, { guildId: serverDiscordId }),
+                        roster.localPlayerIds === undefined ||
+                            roster.localPlayerIds.includes(
+                                item.discordId ?? item.id ?? ""
+                            )
+                    )
                 ),
             groups: groups.map(normalizeDoc),
             assignments: assignments.map((assignment) =>

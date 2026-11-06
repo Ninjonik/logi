@@ -111,6 +111,18 @@ export function rosterWriteHandler(ports: {
                 throw new Error("Invalid response.")
             return json({ id }, 200)
         } catch (error) {
+            if (
+                error instanceof Error &&
+                /The roster changed\./.test(error.message)
+            )
+                return json({ error: error.message }, 409)
+            if (
+                error instanceof Error &&
+                /Only the host|read-only for your clan|Choose a player|Slot allocation|selected player|only one slot|only your clan/.test(
+                    error.message
+                )
+            )
+                return json({ error: error.message }, 400)
             return error instanceof Error &&
                 /Forbidden\.|Unauthorized\./.test(error.message)
                 ? json({ error: "Forbidden." }, 403)

@@ -51,6 +51,7 @@ type EventRouteDeps<TEventInput extends EventBody> = {
         [key: string]: unknown
     }>
     getEventMetadata: (eventId: string) => Promise<{
+        hostEventId?: string
         side?: string
         rewardRoleIds?: string[]
         name?: string
@@ -546,6 +547,11 @@ export function createServerEventPostHandler<TEventInput extends EventBody>(
 
             if (body?.action === "submitMatchResults") {
                 const event = await deps.getEventMetadata(eventId)
+                if (event?.hostEventId)
+                    return NextResponse.json(
+                        { error: "Only the host can import match results." },
+                        { status: 403 }
+                    )
                 if (!event) {
                     return NextResponse.json(
                         { error: "Event not found." },

@@ -62,6 +62,7 @@ async function authorize(ctx: Pick<QueryCtx, "db">, args: Scope) {
     if (
         !isGameId(args.gameId) ||
         !event ||
+        event.hostEventId ||
         event.guildId !== args.guildId ||
         resolveGameScope(event.gameId) !== args.gameId ||
         (event.kind ?? "match") !== "match" ||

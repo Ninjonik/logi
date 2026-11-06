@@ -113,7 +113,12 @@ export async function syncEventRoles(
                     .map((player) => player.id)
                     .filter((id): id is string => Boolean(id))
             ) ?? []
-        for (const id of rosteredIds) attendeeIds.add(id)
+        for (const id of rosteredIds)
+            if (
+                roster?.localPlayerIds === undefined ||
+                roster.localPlayerIds.includes(id)
+            )
+                attendeeIds.add(id)
         for (const id of reserveIds) attendeeIds.delete(id)
         const attendeeRole = await guild.roles
             .fetch(attendeeRoleId!)

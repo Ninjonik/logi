@@ -1,3 +1,7 @@
+import {
+    sharedMatchMembers,
+    sharedMatchPeople,
+} from "../src/infrastructure/convex/shared-match-store"
 import { calculateMatchRecapBaseline } from "../src/domain/match-results/match-recap-baseline"
 import { canReceiveMatchRecap } from "../src/domain/match-results/match-recap-notifications"
 import { getUserByIdentifier, getUserStableId } from "./identity"
@@ -34,6 +38,12 @@ export async function queueEventRecaps(
     )
         return { queued: 0 }
     let queued = 0
+    if (event.hostEventId)
+        throw new Error("Only the host can queue shared match recaps.")
+    const shared = roster.localPlayerIds
+        ? await sharedMatchMembers(ctx, event)
+        : null
+    const people = shared ? await sharedMatchPeople(ctx, shared.events) : null
     for (const rosterId of new Set(
         roster.squads.flatMap((squad) =>
             squad.players.flatMap((player) => (player.id ? [player.id] : []))
@@ -47,18 +57,34 @@ export async function queueEventRecaps(
         )
             continue
         const userId = getUserStableId(user)
+        const recipientDiscordId = user.discordId
+        const deliveryEvent =
+            shared?.events.find(
+                (item) =>
+                    item.guildId === people?.owners.get(recipientDiscordId)
+            ) ?? event
         const stats = await ctx.db
             .query("playerStats")
             .withIndex("userId", (q) => q.eq("userId", userId))
             .collect()
         const current = stats.map((row) => row.matches[eventId]).find(Boolean)
         if (!current) continue
-        const existing = await ctx.db
-            .query("matchRecaps")
-            .withIndex("eventId_userId", (q) =>
-                q.eq("eventId", eventId).eq("userId", userId)
-            )
-            .unique()
+        const sharedExisting = shared
+            ? await ctx.db
+                  .query("matchRecaps")
+                  .withIndex("sourceEventId_userId", (q) =>
+                      q.eq("sourceEventId", eventId).eq("userId", userId)
+                  )
+                  .unique()
+            : null
+        const existing =
+            sharedExisting ??
+            (await ctx.db
+                .query("matchRecaps")
+                .withIndex("eventId_userId", (q) =>
+                    q.eq("eventId", deliveryEvent._id).eq("userId", userId)
+                )
+                .unique())
         if (existing) continue
         const previous = stats.flatMap((row) =>
             Object.entries(row.matches)
@@ -77,7 +103,8 @@ export async function queueEventRecaps(
             baselines?.find((row) => row.userId === userId) ??
             calculateMatchRecapBaseline(previous)
         await ctx.db.insert("matchRecaps", {
-            eventId,
+            eventId: deliveryEvent._id,
+            ...(shared ? { sourceEventId: eventId } : {}),
             ...(event.gameId === "wardogs"
                 ? { resultVersion: event.reviewedResult?.version }
                 : {}),

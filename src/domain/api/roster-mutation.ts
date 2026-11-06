@@ -1,6 +1,8 @@
 import { z } from "zod"
 
 const playerSchema = z.object({
+    allocatedGuildId: z.string().min(1).max(200).optional(),
+    locked: z.boolean().optional(),
     id: z.string().optional(),
     customName: z.string().optional(),
     ack: z.boolean(),
@@ -11,6 +13,7 @@ const playerSchema = z.object({
 })
 
 export const rosterMutationSchema = z.object({
+    expectedUpdatedAt: z.string().optional(),
     eventId: z.string().min(1),
     squadPresetId: z.string().optional(),
     squads: z.array(

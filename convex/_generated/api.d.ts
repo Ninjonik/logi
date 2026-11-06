@@ -179,6 +179,8 @@ import type * as serverDashboard from "../serverDashboard.js";
 import type * as serverMetadata from "../serverMetadata.js";
 import type * as serverRosters from "../serverRosters.js";
 import type * as serverSetup from "../serverSetup.js";
+import type * as sharedMatchApi from "../sharedMatchApi.js";
+import type * as sharedMatches from "../sharedMatches.js";
 import type * as signupActivity from "../signupActivity.js";
 import type * as squadPresets from "../squadPresets.js";
 import type * as sso from "../sso.js";
@@ -384,6 +386,8 @@ declare const fullApi: ApiFromModules<{
   serverMetadata: typeof serverMetadata;
   serverRosters: typeof serverRosters;
   serverSetup: typeof serverSetup;
+  sharedMatchApi: typeof sharedMatchApi;
+  sharedMatches: typeof sharedMatches;
   signupActivity: typeof signupActivity;
   squadPresets: typeof squadPresets;
   sso: typeof sso;

@@ -42,6 +42,16 @@ export class ReconcileEventStatusesUseCase {
 
         for (const event of records) {
             if (isDraftEvent(event)) continue
+            // External lifecycle is copied from the host inside its transaction.
+            if (event.hostEventId) {
+                if (
+                    event.status === "concluded" &&
+                    !event.scoreResolution &&
+                    !event.sharedAccessRevoked
+                )
+                    scoreEventIds.push(event.id)
+                continue
+            }
             const normalizedEvent = normalizeEventRecord(event, now)
             const nextStatus = deriveEventStatus(normalizedEvent, now)
             const shouldPatch =

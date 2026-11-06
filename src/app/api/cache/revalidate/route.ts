@@ -4,6 +4,7 @@ import {
     invalidateAppData,
     type CacheRevalidationPayload,
 } from "@/lib/gateways/cache-revalidation"
+import { invalidateSharedMatchCaches } from "@/lib/gateways/shared-match-cache"
 import { logRouteError } from "@/lib/server-route-errors"
 import { revalidateCacheEntries } from "@/lib/cache-tags"
 import { makeFunctionReference } from "convex/server"
@@ -108,6 +109,12 @@ export async function POST(request: Request) {
             },
             invalidate: revalidateCacheEntries,
         })
+        if (payload.type === "event-changed")
+            await invalidateSharedMatchCaches(payload.eventId)
+        if (payload.type === "roster-changed")
+            await invalidateSharedMatchCaches(
+                payload.eventId ?? payload.rosterId
+            )
         return NextResponse.json({ ok: true })
     } catch (error) {
         logRouteError("cache-revalidation", error)

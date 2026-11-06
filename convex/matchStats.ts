@@ -1,4 +1,5 @@
 import { applyAttendanceEvidence } from "../src/infrastructure/convex/result-attendance"
+import { sharedMatchMembers } from "../src/infrastructure/convex/shared-match-store"
 import { storeMatchPreview } from "./publicPreviewStore"
 import type { MutationCtx } from "./_generated/server"
 import { internalAuthSecret } from "./discord_shared"
@@ -207,6 +208,8 @@ export const upsertForEvent = mutation({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
+        if (event?.hostEventId)
+            throw new Error("Only the host can import match statistics.")
         if (!event) {
             throw new Error("Event not found.")
         }
@@ -277,9 +280,14 @@ export const getByEventId = query({
     },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
+        const event = await ctx.db.get(args.eventId)
+        if (event?.sharedAccessRevoked) return null
+        if (event?.hostEventId) await sharedMatchMembers(ctx, event)
         const matchStats = await ctx.db
             .query("matchStats")
-            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+            .withIndex("eventId", (q) =>
+                q.eq("eventId", event?.hostEventId ?? args.eventId)
+            )
             .unique()
 
         return matchStats ? normalizeDoc(matchStats) : null

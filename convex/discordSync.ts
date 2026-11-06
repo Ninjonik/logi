@@ -14,6 +14,7 @@ import {
 import { historicalConcludedEventCutoff } from "../src/application/discord-sync/relevance"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
+import { localRosterLists } from "../src/domain/rosters/local-audience"
 import { eventDiscordDeletion } from "../src/domain/events/deletion"
 import { getGuildByDiscordId, getGuildDiscordId } from "./identity"
 import { queueEventDiscordDeletion } from "./eventDeletionQueue"
@@ -77,7 +78,9 @@ async function listBotEvents(ctx: QueryCtx, now: Date) {
             )
             .collect(),
     ])
-    return withoutDrafts(groups.flat())
+    return withoutDrafts(groups.flat()).filter(
+        (event) => !event.sharedAccessRevoked
+    )
 }
 
 /**
@@ -283,7 +286,9 @@ export const listSyncPayloads = query({
                 const guildSyncStates = syncStates
                     .filter((state) => state.guildId === config.guildId)
                     .map(normalizeDoc)
-                const guildRosters = clanRosters.map(normalizeDoc)
+                const guildRosters = clanRosters.map((roster) =>
+                    normalizeDoc(localRosterLists(roster))
+                )
                 // The clan's referenced people, each user once whichever of its
                 // identifiers the references carried.
                 const clanUsers = new Map<string, Doc<"users">>()
@@ -439,7 +444,7 @@ export const listEventSyncIndex = query({
                 }
             }),
             rosters: rosters.map((roster) => ({
-                ...normalizeDoc(roster),
+                ...normalizeDoc(localRosterLists(roster)),
                 eventId: String(roster.eventId),
             })),
         }
@@ -452,7 +457,7 @@ export const getEventSyncContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event || isDraftEvent(event)) {
+        if (!event || event.sharedAccessRevoked || isDraftEvent(event)) {
             return null
         }
 
@@ -485,7 +490,10 @@ export const getEventSyncContext = query({
                 )
             ),
             roster: roster
-                ? { ...normalizeDoc(roster), eventId: String(roster.eventId) }
+                ? {
+                      ...normalizeDoc(localRosterLists(roster)),
+                      eventId: String(roster.eventId),
+                  }
                 : null,
             syncState: syncState ? normalizeDoc(syncState) : null,
             userDisplayNames: userDisplayNamesFor(
@@ -509,6 +517,7 @@ export const getEventSignupContext = query({
         if (
             !event ||
             isDraftEvent(event) ||
+            event.sharedAccessRevoked ||
             (args.guildId && event.guildId !== args.guildId)
         ) {
             return null
@@ -563,7 +572,7 @@ export const getEventSignupContext = query({
                     type: assignment.type,
                     status: assignment.status,
                 })),
-            roster: roster ? normalizeDoc(roster) : null,
+            roster: roster ? normalizeDoc(localRosterLists(roster)) : null,
             syncState: syncState ? normalizeDoc(syncState) : null,
         }
     },
@@ -575,7 +584,7 @@ export const getEventInteractionContext = query({
         assertInternalSecret(args.secret)
 
         const event = await ctx.db.get(args.eventId)
-        if (!event) {
+        if (!event || event.sharedAccessRevoked) {
             return null
         }
 
@@ -613,7 +622,7 @@ export const getEventInteractionContext = query({
             ),
             event: normalizeEventDoc(event),
             groups: groups.map(normalizeDoc),
-            roster: roster ? normalizeDoc(roster) : null,
+            roster: roster ? normalizeDoc(localRosterLists(roster)) : null,
             categoryColor,
         }
     },

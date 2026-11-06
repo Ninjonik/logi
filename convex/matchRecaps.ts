@@ -80,7 +80,14 @@ async function pendingDelivery(
         .withIndex("userId", (q) => q.eq("userId", recap.userId))
         .collect()
     const current = stats
-        .map((stat) => stat.matches[String(event._id)])
+        .map(
+            (stat) =>
+                stat.matches[
+                    String(
+                        recap.sourceEventId ?? event.hostEventId ?? event._id
+                    )
+                ]
+        )
         .find(Boolean)
     if (!current) return null
     return {

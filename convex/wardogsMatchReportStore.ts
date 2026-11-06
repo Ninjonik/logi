@@ -1,3 +1,4 @@
+import { sharedMatchMembers } from "../src/infrastructure/convex/shared-match-store"
 import type { ResultRevision } from "../src/domain/match-results/result-revision"
 import { buildWardogsMatchReport } from "../src/domain/match-reports/wardogs"
 import type { ProviderSession } from "../src/domain/game-data/contracts"
@@ -115,7 +116,15 @@ export async function readWardogsMatchReport(
     eventId: Id<"events">,
     guildId?: string
 ) {
-    const event = await ctx.db.get(eventId)
+    let event = await ctx.db.get(eventId)
+    if (event?.sharedAccessRevoked) return null
+    if (event?.hostEventId) {
+        if (guildId && event.guildId !== guildId) return null
+        const { host } = await sharedMatchMembers(ctx, event)
+        event = host
+        eventId = host._id
+        guildId = host.guildId
+    }
     if (
         !event ||
         event.gameId !== "wardogs" ||

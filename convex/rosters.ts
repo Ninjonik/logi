@@ -21,6 +21,8 @@ const dashboardActor = v.object({
 })
 
 const rosterPlayer = v.object({
+    allocatedGuildId: v.optional(v.string()),
+    locked: v.optional(v.boolean()),
     id: v.optional(v.string()),
     customName: v.optional(v.string()),
     ack: v.boolean(),
@@ -57,6 +59,7 @@ export const upsert = mutation({
         serverId: v.id("guilds"),
         actor: dashboardActor,
         rosterId: v.optional(v.id("rosters")),
+        expectedUpdatedAt: v.optional(v.string()),
         eventId: v.id("events"),
         squadPresetId: v.optional(v.id("squadPresets")),
         squads: v.array(rosterSquad),
@@ -109,11 +112,15 @@ export const acknowledgeAttendance = mutation({
             deriveEventStatus(event) === "concluded" ||
             (Number.isFinite(gameStart) && Date.now() >= gameStart) ||
             !roster?.published ||
+            (roster.localPlayerIds !== undefined &&
+                !roster.localPlayerIds.includes(args.userId)) ||
             (roster.guildId !== undefined && roster.guildId !== args.guildId)
         )
             throw new Error("Attendance unavailable.")
         return await new UpdateRosterAttendanceUseCase(
-            new ConvexRosterCommandRepository(ctx)
+            new ConvexRosterCommandRepository(ctx),
+            new ConvexEventWorkflowRepository(ctx),
+            systemClock
         ).acknowledge(String(args.eventId), args.userId)
     },
 })
@@ -139,6 +146,11 @@ export const declineAttendance = mutation({
             .query("rosters")
             .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
             .unique()
+        if (
+            roster?.localPlayerIds &&
+            !roster.localPlayerIds.includes(args.userId)
+        )
+            throw new Error("Attendance unavailable.")
         if (roster?.guildId !== undefined && roster.guildId !== args.guildId)
             throw new Error("Attendance unavailable.")
         try {

@@ -9,13 +9,24 @@ import type { Id } from "../../../convex/_generated/dataModel"
 import type { RosterCommandRepository } from "@/application/rosters/roster-commands.use-case"
 import type { RosterCommandRecord } from "@/application/rosters/roster-commands.use-case"
 import type { RosterManagementRepository } from "@/application/rosters/manage-roster"
+import { rosterRevisionTimestamp } from "../../domain/rosters/shared-roster"
+import { sharedMatchMembers, sharedMatchPeople } from "./shared-match-store"
 import { rosterCardHome } from "@/domain/rosters/roster-update-channel"
+import { saveSharedRoster } from "./shared-roster-command"
 import { withGameOverrides } from "@/domain/games/game"
 
 export class ConvexRosterCommandRepository
     implements RosterCommandRepository, RosterManagementRepository
 {
     constructor(private readonly ctx: MutationCtx) {}
+
+    async saveShared(
+        input: Parameters<
+            NonNullable<RosterManagementRepository["saveShared"]>
+        >[0]
+    ) {
+        return saveSharedRoster(this.ctx, this, input)
+    }
 
     async getRosterById(rosterId: string) {
         const roster = await this.ctx.db.get(rosterId as Id<"rosters">)
@@ -34,7 +45,24 @@ export class ConvexRosterCommandRepository
 
     async getEvent(eventId: string) {
         const event = await this.ctx.db.get(eventId as Id<"events">)
-        return event ? { ...event } : null
+        if (!event) return null
+        if (event.hostEventId) return { ...event }
+        const { events } = await sharedMatchMembers(this.ctx, event)
+        if (events.length === 1) return { ...event }
+        const { owners } = await sharedMatchPeople(this.ctx, events)
+        return {
+            ...event,
+            participants: events.flatMap((item) =>
+                (item.participants ?? []).filter(
+                    (person) => owners.get(person.userId) === item.guildId
+                )
+            ),
+            signUps: events.flatMap((item) =>
+                (item.signUps ?? []).filter(
+                    (person) => owners.get(person.userId) === item.guildId
+                )
+            ),
+        }
     }
 
     async listAssignments(serverDiscordId: string, gameId?: GameId) {
@@ -70,6 +98,63 @@ export class ConvexRosterCommandRepository
     ) {
         const event = await this.getEvent(roster.eventId)
         if (!event) throw new Error("Event not found.")
+        const savedRoster = await this.ctx.db.get(rosterId as Id<"rosters">)
+        const updatedAt = rosterRevisionTimestamp(
+            savedRoster?.updatedAt,
+            new Date()
+        )
+        if (event.hostEventId) {
+            const previous = await this.ctx.db.get(rosterId as Id<"rosters">)
+            const host = await this.ctx.db.get(event.hostEventId)
+            if (!previous || !host) throw new Error("Roster not found.")
+            const { events } = await sharedMatchMembers(this.ctx, {
+                ...event,
+                _id: roster.eventId as Id<"events">,
+            })
+            const { owners } = await sharedMatchPeople(this.ctx, events)
+            const canonical = await this.ctx.db
+                .query("rosters")
+                .withIndex("eventId", (q) => q.eq("eventId", host._id))
+                .unique()
+            if (!canonical) throw new Error("Roster not found.")
+            const attendance = new Map(
+                roster.squads.flatMap((squad) =>
+                    squad.players.flatMap((slot) =>
+                        slot.id && owners.get(slot.id) === event.guildId
+                            ? [[slot.id, slot] as const]
+                            : []
+                    )
+                )
+            )
+            await this.ctx.db.patch(canonical._id, {
+                squads: canonical.squads.map((squad) => ({
+                    ...squad,
+                    players: squad.players.map((slot) => {
+                        const next = slot.id ? attendance.get(slot.id) : null
+                        return next
+                            ? {
+                                  ...slot,
+                                  ack: next.ack,
+                                  confirmed: next.confirmed,
+                              }
+                            : slot
+                    }),
+                })),
+                reserveAttendances: [
+                    ...(canonical.reserveAttendances ?? []).filter(
+                        (item) => owners.get(item.userId) !== event.guildId
+                    ),
+                    ...(roster.reserveAttendances ?? []).filter(
+                        (item) => owners.get(item.userId) === event.guildId
+                    ),
+                ],
+                updatedAt: rosterRevisionTimestamp(
+                    canonical.updatedAt,
+                    new Date()
+                ),
+            })
+            return
+        }
         await this.ctx.db.patch(rosterId as Id<"rosters">, {
             ...roster,
             eventId: roster.eventId as Id<"events">,
@@ -77,7 +162,7 @@ export class ConvexRosterCommandRepository
                 Id<"squadPresets"> | undefined,
             guildId: event.guildId,
             gameId: event.gameId,
-            updatedAt: new Date().toISOString(),
+            updatedAt,
         })
     }
 
@@ -85,6 +170,18 @@ export class ConvexRosterCommandRepository
         return this.ctx.db.get(id as Id<"squadPresets">)
     }
     async delete(id: string) {
+        const roster = await this.ctx.db.get(id as Id<"rosters">)
+        const event = roster ? await this.ctx.db.get(roster.eventId) : null
+        if (event && !event.hostEventId) {
+            const { events } = await sharedMatchMembers(this.ctx, event)
+            for (const local of events.slice(1)) {
+                const copy = await this.ctx.db
+                    .query("rosters")
+                    .withIndex("eventId", (q) => q.eq("eventId", local._id))
+                    .unique()
+                if (copy) await this.ctx.db.delete(copy._id)
+            }
+        }
         await this.ctx.db.delete(id as Id<"rosters">)
     }
     async publish(input: Parameters<RosterManagementRepository["publish"]>[0]) {

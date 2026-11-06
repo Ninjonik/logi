@@ -1,6 +1,8 @@
+import { sharedMatchCopy } from "./shared-matches"
 import { plLanding } from "./landing"
 
 export const plMessages = {
+    sharedMatches: sharedMatchCopy.pl,
     competitionEnrollment: {
         title: "Rozgrywki",
         description:

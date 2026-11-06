@@ -564,9 +564,24 @@ export function autoFillRosterAssignments(
             continue
         }
 
-        let bestSlotIndex = 0
+        const user = context.usersById.get(userId)
+        const eligibleSlots = emptySlots.flatMap((slot, index) => {
+            const clan =
+                next.squads[slot.squadIndex]?.players[slot.playerIndex]
+                    ?.allocatedGuildId
+            return !clan ||
+                user?.sharedEligibleGuildIds?.includes(clan) ||
+                user?.sharedGuildId === clan
+                ? [index]
+                : []
+        })
+        if (!eligibleSlots.length) {
+            unassignedUserIds.push(userId)
+            continue
+        }
+        let bestSlotIndex = eligibleSlots[0]
 
-        for (let index = 1; index < emptySlots.length; index += 1) {
+        for (const index of eligibleSlots.slice(1)) {
             if (
                 compareSlotsForUser(
                     userId,
