@@ -16,7 +16,7 @@ import type { AppUser } from "@/types/domain"
 
 export type SharedRosterContext = {
     hostGuildId: string
-    clans: { guildId: string; name: string }[]
+    clans: { guildId: string; name: string; avatar?: string }[]
     users: (AppUser & { sharedGuildId: string })[]
 }
 export type SharedInvitation = {

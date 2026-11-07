@@ -1,6 +1,9 @@
 export const sharedMatchCopy = {
     en: {
         title: "Participating clans",
+        searchRoster: "Search players or clans…",
+        slotHelp:
+            "Choose a clan below to give it this slot, or choose a player directly. Unlocked clan slots can be filled by that clan.",
         registrationStart: "Registration starts",
         registrationStartHelp:
             "Choose when registration should open in your clan. Discord signup posts will wait until that time. After accepting, review your local settings before registration opens.",
@@ -39,6 +42,9 @@ export const sharedMatchCopy = {
     },
     cs: {
         title: "Zúčastněné klany",
+        searchRoster: "Hledat hráče nebo klany…",
+        slotHelp:
+            "Vyberte klan níže a přidělte mu toto místo, nebo vyberte přímo hráče. Odemčená místa může daný klan sám obsadit.",
         registrationStart: "Začátek registrace",
         registrationStartHelp:
             "Vyberte, kdy se má otevřít registrace ve vašem klanu. Příspěvky s registrací na Discordu počkají do tohoto času. Po přijetí zkontrolujte místní nastavení, než registrace začne.",
@@ -77,6 +83,9 @@ export const sharedMatchCopy = {
     },
     de: {
         title: "Teilnehmende Clans",
+        searchRoster: "Spieler oder Clans suchen…",
+        slotHelp:
+            "Wähle unten einen Clan, um ihm diesen Platz zuzuweisen, oder direkt einen Spieler. Freigegebene Clanplätze kann der jeweilige Clan selbst besetzen.",
         registrationStart: "Registrierungsbeginn",
         registrationStartHelp:
             "Wähle, wann die Registrierung in deinem Clan beginnt. Discord-Anmeldungen werden erst dann veröffentlicht. Prüfe nach der Annahme deine lokalen Einstellungen vor dem Beginn.",
@@ -115,6 +124,9 @@ export const sharedMatchCopy = {
     },
     pl: {
         title: "Uczestniczące klany",
+        searchRoster: "Szukaj graczy lub klanów…",
+        slotHelp:
+            "Wybierz klan poniżej, aby przydzielić mu to miejsce, lub bezpośrednio gracza. Odblokowane miejsca klanu może obsadzić ten klan.",
         registrationStart: "Początek zapisów",
         registrationStartHelp:
             "Wybierz, kiedy rozpoczną się zapisy w twoim klanie. Posty z zapisami na Discordzie poczekają do tego czasu. Po przyjęciu sprawdź lokalne ustawienia przed rozpoczęciem zapisów.",

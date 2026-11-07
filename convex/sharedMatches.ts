@@ -318,24 +318,40 @@ export const rosterContext = query({
         const { host, events } = await sharedMatchMembers(ctx, event)
         const { owners, eligibleByGuild } = await sharedMatchPeople(ctx, events)
         const clans = await Promise.all(
-            events.map(async (item) => ({
-                guildId: item.guildId,
-                name:
-                    (await getGuildByDiscordId(ctx, item.guildId))?.name ??
-                    item.guildId,
-            }))
+            events.map(async (item) => {
+                const clan = await getGuildByDiscordId(ctx, item.guildId)
+                return {
+                    guildId: item.guildId,
+                    name: clan?.name ?? item.guildId,
+                    avatar: clan?.avatar,
+                }
+            })
+        )
+        const visibleRoster = event.hostEventId
+            ? await ctx.db
+                  .query("rosters")
+                  .withIndex("eventId", (q) => q.eq("eventId", host._id))
+                  .unique()
+            : null
+        const visiblePlayerIds = new Set(
+            visibleRoster?.squads.flatMap((squad) =>
+                squad.players.flatMap((slot) => (slot.id ? [slot.id] : []))
+            ) ?? []
         )
         const users = await Promise.all(
             [...owners]
                 .filter(
                     ([id]) =>
                         !event.hostEventId ||
-                        eligibleByGuild.get(args.guildId)?.has(id)
+                        eligibleByGuild.get(args.guildId)?.has(id) ||
+                        visiblePlayerIds.has(id)
                 )
                 .map(async ([id, ownerGuildId]) => {
-                    const guildId = event.hostEventId
-                        ? args.guildId
-                        : ownerGuildId
+                    const guildId =
+                        event.hostEventId &&
+                        eligibleByGuild.get(args.guildId)?.has(id)
+                            ? args.guildId
+                            : ownerGuildId
                     const user = await getUserByDiscordId(ctx, id)
                     return user
                         ? {
