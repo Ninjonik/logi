@@ -29,11 +29,13 @@ import {
     guidedSetupHref,
     settingsHref,
 } from "@/components/app/settings/settings-section-meta"
+import { getPlayerImportCopy } from "@/i18n/messages/onboarding-player-import"
 import { firstUnfinishedGuidedStep } from "@/domain/workspaces/guided-setup"
 import { GAME_LABELS, type GameId } from "@/domain/games/game"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
 import { pluralize } from "@/i18n/plural"
+import { isLocale } from "@/i18n/config"
 import { cn } from "@/lib/utils"
 
 type Text = Dictionary["settingsHub"]["overview"]
@@ -86,11 +88,13 @@ function SetupStep({
     text,
     detail,
     href,
+    playerImportTitle,
 }: {
     step: SettingsSetupStep
     text: Text["setup"]
     detail: string
     href?: string
+    playerImportTitle: string
 }) {
     const Icon =
         step.state === "done"
@@ -120,7 +124,9 @@ function SetupStep({
             />
             <div className="min-w-0 flex-1">
                 <div className="text-sm">
-                    {text.steps[step.id].title}
+                    {step.id === "players"
+                        ? playerImportTitle
+                        : text.steps[step.id].title}
                     {step.optional ? (
                         <span className="text-muted-foreground">
                             {" "}
@@ -218,6 +224,9 @@ export function SettingsOverview({
     const stepDetail = (step: SettingsSetupStep) => {
         const copy = text.setup.steps
         switch (step.id) {
+            case "players":
+                return getPlayerImportCopy(isLocale(locale) ? locale : "en")
+                    .body
             case "bot":
                 return step.state === "done" ? copy.bot.done : copy.bot.missing
             case "games":
@@ -294,6 +303,11 @@ export function SettingsOverview({
                         key={step.id}
                         step={step}
                         text={text.setup}
+                        playerImportTitle={
+                            getPlayerImportCopy(
+                                isLocale(locale) ? locale : "en"
+                            ).title
+                        }
                         detail={stepDetail(step)}
                         // "Fix" opens the page that holds the setting; "Set up"
                         // and the bot step open the setup guide at that step.

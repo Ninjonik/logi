@@ -354,7 +354,7 @@ export async function updateCurrentPlayerProfile(input: {
 }
 
 export async function markCurrentPlayerOnboardingSeen(input: {
-    milestone: "dashboard_setup" | "workspace_tour"
+    milestone: "dashboard_setup" | "workspace_tour" | "player_import"
     workspaceId?: string
 }) {
     const session = await getSession()

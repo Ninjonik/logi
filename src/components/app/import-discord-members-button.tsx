@@ -39,12 +39,14 @@ export function ImportDiscordMembersButton({
     defaultRoleId,
     gameId,
     enabledGames,
+    onImported,
 }: {
     serverId: string
     dictionary: Dictionary
     defaultRoleId?: string
     gameId: GameId
     enabledGames?: GameId[]
+    onImported?: () => void
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [metadata, setMetadata] = useState<DiscordMetadata | null>(null)
@@ -114,7 +116,8 @@ export function ImportDiscordMembersButton({
             }
 
             setIsOpen(false)
-            window.location.reload()
+            if (onImported) onImported()
+            else window.location.reload()
         })
     }
 

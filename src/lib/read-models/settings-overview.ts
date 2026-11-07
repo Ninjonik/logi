@@ -6,6 +6,7 @@ import type { SettingsOverviewFacts } from "@/domain/workspaces/settings-overvie
 import { gameServerSourceListSchema } from "@/domain/game-data/credentials.schema"
 import { currentDashboardActor } from "@/lib/gateways/dashboard-actor"
 import { getInternalAuthSecret } from "@/lib/env"
+import { getCurrentPlayer } from "@/lib/auth"
 import type { Guild } from "@/types/domain"
 
 const sourcesReference = makeFunctionReference<"query">("gameDataSources:list")
@@ -26,6 +27,11 @@ export async function getSettingsOverviewFacts(
 ): Promise<SettingsOverviewFacts> {
     const facts: SettingsOverviewFacts = {
         botInside: server.botInside,
+        playerImportCompleted: Boolean(
+            (await getCurrentPlayer())?.onboarding?.playerImportsCompletedAt?.[
+                server.id
+            ]
+        ),
         profile: {
             name: Boolean(server.name?.trim()),
             logo: Boolean(server.avatar?.trim()),

@@ -22,6 +22,7 @@ const snapshot: SettingsSnapshot = {
 }
 const facts: SettingsOverviewFacts = {
     botInside: true,
+    playerImportCompleted: true,
     profile: { name: true, logo: true, description: false },
     templateCount: 0,
 }
@@ -86,11 +87,12 @@ test("the step list marks finished, open and waiting steps", () => {
             ["profile", 3, "done"],
             ["channels", 4, "current"],
             ["roles", 5, "todo"],
-            ["gameServers", 6, "todo"],
+            ["players", 6, "done"],
+            ["gameServers", 7, "todo"],
         ]
     )
-    assert.equal(view.done, 3)
-    assert.equal(view.total, 6)
+    assert.equal(view.done, 4)
+    assert.equal(view.total, 7)
     assert.equal(view.current?.number, 4)
     assert.equal(view.current?.last, false)
     assert.equal(view.previous, "profile")
@@ -104,8 +106,8 @@ test("a reopened finished step shows its number, later finished steps their chec
     }).steps
     const view = guidedSetupView(withServers, "games")
     assert.equal(view.items[1]?.marker, "current")
-    assert.equal(view.items[5]?.marker, "done")
-    assert.equal(view.done, 4)
+    assert.equal(view.items[6]?.marker, "done")
+    assert.equal(view.done, 5)
     assert.equal(view.previous, "bot")
 })
 

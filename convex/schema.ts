@@ -110,6 +110,9 @@ const users = defineTable({
     ),
     onboarding: v.optional(
         v.object({
+            playerImportsCompletedAt: v.optional(
+                v.record(v.string(), v.string())
+            ),
             dashboardSetupCompletedAt: v.optional(v.string()),
             workspaceTourCompletedAt: v.optional(
                 v.record(v.string(), v.string())
