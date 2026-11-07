@@ -12,6 +12,47 @@ const png =
         return new Response(body, { headers: { "content-type": "image/png" } })
     }
 
+test("interrupted image bodies are downloaded again before uploading", async () => {
+    let calls = 0
+    const image = await fetchRosterImageAttachment(url, "Match", async () => {
+        calls++
+        if (calls === 1)
+            return new Response(
+                new ReadableStream({
+                    start(controller) {
+                        controller.error(new TypeError("terminated"))
+                    },
+                }),
+                { headers: { "content-type": "image/png" } }
+            )
+        return new Response("recovered", {
+            headers: { "content-type": "image/png" },
+        })
+    })
+    assert.equal(calls, 2)
+    assert.deepEqual(image.attachment.attachment, Buffer.from("recovered"))
+})
+
+test("temporary render failures retry, but invalid images and missing routes do not", async () => {
+    let calls = 0
+    await fetchRosterImageAttachment(url, "Match", async () => {
+        calls++
+        return calls === 1
+            ? new Response("unavailable", { status: 503 })
+            : new Response("png", { headers: { "content-type": "image/png" } })
+    })
+    assert.equal(calls, 2)
+    calls = 0
+    await assert.rejects(
+        fetchRosterImageAttachment(url, "Match", async () => {
+            calls++
+            return new Response("missing", { status: 404 })
+        }),
+        /Unable to render roster image/
+    )
+    assert.equal(calls, 1)
+})
+
 test("unchanged roster uploads are retained; changed image bytes replace them", async () => {
     const first = await fetchRosterImageAttachment(url, "Match", png("first"))
     const same = await fetchRosterImageAttachment(url, "Match", png("first"))

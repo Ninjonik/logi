@@ -237,6 +237,25 @@ test("host publication automatically publishes the guest view and stale guest sa
     )
 })
 
+test("host unpublication returns every participating roster to draft", async () => {
+    const { ctx, actor, localId } = await fixture()
+    const localRoster = ctx.db.tables.rosters.find(
+        (row) => row.eventId === localId
+    )!
+    for (const published of [true, false]) {
+        const input = payload(await ctx.db.get("rosters:host"))
+        input.published = published
+        await invoke(rosters.upsert, ctx, {
+            secret,
+            actor,
+            serverId: "guilds:admin",
+            ...input,
+        })
+        assert.equal((await ctx.db.get("rosters:host"))?.published, published)
+        assert.equal((await ctx.db.get(localRoster._id))?.published, published)
+    }
+})
+
 test("v1 roster writes enforce the same guest slot permissions and replay once", async () => {
     const { ctx, localId } = await fixture()
     ctx.db.seed("apiKeys", {

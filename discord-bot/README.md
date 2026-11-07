@@ -53,6 +53,10 @@ Cross-runtime rules and workflows live in `../src/domain` and `../src/applicatio
 
 Workers use durable publication keys, leases, fences, and retry policies. Discord sends can be ambiguous; an uncertain send is reconciled according to the feature's recovery rules. Scheduled reminder reservations prevent replay after interruption, so a partially delivered run can leave some recipients waiting for the next run.
 
+Published roster image downloads retry interrupted connections and temporary HTTP
+failures up to three times within a single 45-second deadline, including failures
+while reading the response body. Failed downloads never replace Discord media.
+
 Public messages do not show server passwords. A player's private assignment response can show the password to eligible published-roster players. Signup discussions and external debriefs require regular text channels and private-thread permissions. Signups are invited and explicit declines are removed, without pruning other thread members. Discord administrators and members with Manage Threads retain access. This is a Discord delivery change; the v1 event configuration contract is unchanged.
 
 Player reports use private threads and current Discord audience checks; bearer integrations cannot export their private contents.

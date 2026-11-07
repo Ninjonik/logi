@@ -152,6 +152,44 @@ test("square logos keep their corners and no team or Logi backplate is drawn", a
     )
 })
 
+test("supporting clan logos have no surrounding circle or backplate", async () => {
+    const logo = await sharp({
+        create: { width: 30, height: 30, channels: 4, background: "#ff0000" },
+    })
+        .png()
+        .toBuffer()
+    const renderer = createMatchImageRenderer({
+        publicDir: path.resolve("public"),
+        loadLogo: async () => logo,
+    })
+    const model = buildMatchImage({
+        clan: { name: "Local" },
+        language: "en",
+        timeZone: "UTC",
+        event: {
+            name: "Match",
+            meetingStart: "2026-11-08T18:30:00Z",
+            gameStart: "2026-11-08T19:00:00Z",
+            sharedClans: [{ name: "Partner", logoUrl: "partner" }],
+        },
+    })
+    const png = await renderer(model)
+    const baseline = await renderer({ ...model, supportingClans: [] })
+    const left = Math.round(600 + Math.cos((-40 * Math.PI) / 180) * 100 - 20)
+    const top = Math.round(220 + Math.sin((-40 * Math.PI) / 180) * 100 - 20)
+    const pixel = (image: Uint8Array, x: number, y: number) =>
+        sharp(Buffer.from(image))
+            .extract({ left: x, top: y, width: 1, height: 1 })
+            .removeAlpha()
+            .raw()
+            .toBuffer()
+    assert.deepEqual(
+        await pixel(png, left + 1, top + 20),
+        await pixel(baseline, left + 1, top + 20)
+    )
+    assert.deepEqual([...(await pixel(png, left + 5, top + 5))], [255, 0, 0])
+})
+
 test("partner badges use safe logo loading and bound large linked-clan groups", async () => {
     const requested: string[] = []
     const render = createMatchImageRenderer({
