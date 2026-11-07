@@ -308,8 +308,10 @@ export function createMatchImageRenderer(ports: {
                       .slice(0, 2)
                       .toUpperCase()
                 : `+${overflow}`
-            const circle = `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="19" fill="#25282d" stroke="#97d8c2" stroke-width="2"/>${logo ? "" : text(initials, 20, 25, 12, "#ffffff", 700, 32)}</svg>`
-            layers.push({ input: Buffer.from(circle), left, top })
+            if (!logo) {
+                const label = `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">${text(initials, 20, 25, 12, "#ffffff", 700, 32)}</svg>`
+                layers.push({ input: Buffer.from(label), left, top })
+            }
             if (logo) layers.push({ input: logo, left: left + 5, top: top + 5 })
         }
         const icons: Record<string, string> = {

@@ -290,11 +290,20 @@ export function RosterBoard({
         // The live subscription may resolve after the manager starts dragging,
         // or refresh because unrelated event/group data changed. Keep that
         // roster's unsaved draft instead of silently discarding their edits.
-        if (dirtyRef.current && rosterIdRef.current === roster?.id) return
+        if (dirtyRef.current && rosterIdRef.current === roster?.id) {
+            // Guest edits must never freeze the host's publication status.
+            if (isGuest && roster)
+                setBoard((current) =>
+                    current
+                        ? { ...current, published: roster.published }
+                        : current
+                )
+            return
+        }
         rosterIdRef.current = roster?.id
         setBoard(roster)
         setIsDirty(false)
-    }, [roster, setIsDirty])
+    }, [roster, setIsDirty, isGuest])
 
     useEffect(() => {
         setMode(defaultMode)
@@ -2208,7 +2217,7 @@ export function RosterBoard({
                                     </Button>
                                 ) : null}
                             </>
-                        ) : (
+                        ) : !isGuest ? (
                             <Button
                                 variant="outline"
                                 className={actionControlClass}
@@ -2224,7 +2233,7 @@ export function RosterBoard({
                                 )}
                                 {dictionary.roster.unpublishRoster}
                             </Button>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             ) : null}
