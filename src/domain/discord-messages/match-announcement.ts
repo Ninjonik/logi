@@ -596,10 +596,7 @@ export function buildAnnouncementView(
         blocks.push({ kind: "gallery", items: [input.image] })
 
     const rosterImage = input.roster?.image
-    if (
-        rosterImage &&
-        (state === "roster" || state === "starting" || state === "playing")
-    )
+    if (rosterImage && state !== "played" && state !== "cancelled")
         blocks.push({ kind: "gallery", items: [rosterImage] })
 
     const rows = announcementActions(state, {
