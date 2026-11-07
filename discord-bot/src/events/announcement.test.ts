@@ -401,3 +401,17 @@ test("the generated picture fills only an empty match picture slot", () => {
     )
     assert.ok(!JSON.stringify(custom.view).includes(fallback.url))
 })
+
+test("an unlinked local clan still appears beside its opponent in the matchup text", () => {
+    const event = boardEvent({
+        matchTeams: boardEvent().matchTeams?.filter(
+            (team) => team.slot !== "a"
+        ),
+    })
+    const payload = boardPayload(event)
+    payload.linkedTeams = []
+    const { view } = buildAnnouncementCard(payload, event, { now: BOARD_NOW })
+    const text = JSON.stringify(view.blocks)
+    assert.ok(text.includes(payload.guild.name))
+    assert.ok(text.includes(event.matchTeams![0]!.snapshot.shortCode!))
+})

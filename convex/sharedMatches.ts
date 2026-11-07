@@ -4,12 +4,14 @@ import {
     sharedMatchPeople,
     synchronizeSharedMatch,
 } from "../src/infrastructure/convex/shared-match-store"
+import { refreshSharedMatchPresentation } from "../src/infrastructure/convex/shared-match-logos"
 import { configureSharedMatchLocal } from "../src/infrastructure/convex/configure-shared-match"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { normalizeUserDoc } from "../src/infrastructure/convex/server-read-model"
 import { withGameOverrides, resolveGameScope } from "../src/domain/games/game"
 import { sharedRosterUser } from "../src/domain/rosters/shared-roster-user"
+import { sharedRegistrationStart } from "../src/domain/events/shared-match"
 import { validateRequestedRoles } from "../src/domain/events/shared-match"
 import { dashboardActor, authorizeDashboardAdmin } from "./dashboardActor"
 import { eventDiscussionDefaults } from "../src/domain/events/discussion"
@@ -220,6 +222,7 @@ export const respond = mutation({
         ...scope,
         invitationId: v.id("sharedMatchInvitations"),
         accept: v.boolean(),
+        registrationStart: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         await authorizeDashboardAdmin(ctx, args)
@@ -230,6 +233,14 @@ export const respond = mutation({
             invitation.status !== "pending"
         )
             throw new Error("Invitation unavailable.")
+        const now = new Date().toISOString()
+        if (!args.accept) {
+            await ctx.db.patch(invitation._id, {
+                status: "declined",
+                updatedAt: now,
+            })
+            return null
+        }
         const host = await ctx.db.get(invitation.hostEventId)
         if (
             !host ||
@@ -249,14 +260,6 @@ export const respond = mutation({
             throw new Error(
                 "Enable the match's game before accepting this invitation."
             )
-        const now = new Date().toISOString()
-        if (!args.accept) {
-            await ctx.db.patch(invitation._id, {
-                status: "declined",
-                updatedAt: now,
-            })
-            return null
-        }
         const hostClan = await getGuildByDiscordId(ctx, host.guildId)
         const config = await ctx.db
             .query("discordConfigs")
@@ -272,6 +275,10 @@ export const respond = mutation({
             gameStart: host.gameStart,
             gameEnd: host.gameEnd,
             ...sharedMatchPatch(host),
+            registrationStart: sharedRegistrationStart(
+                args.registrationStart ?? host.registrationStart,
+                host.registrationEnd
+            ),
             hostEventId: host._id,
             hostClanName: hostClan?.name ?? host.guildId,
             guildId: args.guildId,
@@ -292,6 +299,7 @@ export const respond = mutation({
             localEventId,
             updatedAt: now,
         })
+        await refreshSharedMatchPresentation(ctx, host, now)
         const createdEvent = await ctx.db.get(localEventId)
         if (createdEvent) await syncEventAssetReferences(ctx, createdEvent)
         await refreshEventSchedule(ctx, localEventId)
@@ -390,6 +398,10 @@ export const revoke = mutation({
             status: "revoked",
             updatedAt: now,
         })
+        if (invitation.localEventId) {
+            const host = await ctx.db.get(invitation.hostEventId)
+            if (host) await refreshSharedMatchPresentation(ctx, host, now)
+        }
         const roster = await ctx.db
             .query("rosters")
             .withIndex("eventId", (q) =>
@@ -419,6 +431,7 @@ export const revoke = mutation({
 /** Guests edit local delivery/eligibility only; shared facts never enter this validator. */
 export const configureLocal = mutation({
     args: {
+        registrationStart: v.optional(v.string()),
         localRosterMessageVariant: v.optional(
             v.union(v.literal("photo_text"), v.literal("photo"))
         ),

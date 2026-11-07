@@ -7,10 +7,15 @@ import {
     type ActionCtx,
 } from "./_generated/server"
 import {
+    performanceEvents,
+    performanceSourceId,
+} from "../src/infrastructure/convex/shared-performance-events"
+import {
     filterByGameScope,
     resolveGameScope,
     type GameId,
 } from "../src/domain/games/game"
+import { sharedMatchMembers } from "../src/infrastructure/convex/shared-match-store"
 import { playerStatProfile } from "../src/domain/player-stats/game-metrics"
 import { assertInternalSecret, internalAuthSecret } from "./discord_shared"
 import { authorizeDashboardAdmin, dashboardActor } from "./dashboardActor"
@@ -129,12 +134,7 @@ export async function rebuildGuildPerformanceHistory(
     includePlayers = true,
     gameId?: GameId
 ) {
-    const events = (
-        await ctx.db
-            .query("events")
-            .withIndex("guildId", (q) => q.eq("guildId", guildId))
-            .collect()
-    )
+    const events = (await performanceEvents(ctx, guildId))
         .filter(
             (event) =>
                 event.kind !== "training" &&
@@ -150,7 +150,9 @@ export async function rebuildGuildPerformanceHistory(
                 new Date(a.eventResult?.endedAt ?? a.gameEnd).getTime()
         )
     const guildEvents = limitMatchesPerGame(events)
-    const eventById = new Map(events.map((event) => [String(event._id), event]))
+    const eventById = new Map(
+        events.map((event) => [String(performanceSourceId(event)), event])
+    )
     const assignments = await ctx.db
         .query("userAssignments")
         .withIndex("serverId", (q) => q.eq("serverId", guildId))
@@ -163,7 +165,9 @@ export async function rebuildGuildPerformanceHistory(
             guildEvents.map((event) =>
                 ctx.db
                     .query("matchStats")
-                    .withIndex("eventId", (q) => q.eq("eventId", event._id))
+                    .withIndex("eventId", (q) =>
+                        q.eq("eventId", performanceSourceId(event))
+                    )
                     .unique()
             )
         ),
@@ -195,7 +199,9 @@ export async function rebuildGuildPerformanceHistory(
             const playerRows = playerDocs
                 .filter((doc) => doc.userId && eventClanUserIds.has(doc.userId))
                 .flatMap((doc) =>
-                    doc.matches[event._id] ? [doc.matches[event._id]!] : []
+                    doc.matches[performanceSourceId(event)]
+                        ? [doc.matches[performanceSourceId(event)]!]
+                        : []
                 )
             if (playerRows.length) {
                 const kills = playerRows.reduce(
@@ -289,7 +295,7 @@ export async function rebuildGuildPerformanceHistory(
             const kills = number(match.kills),
                 deaths = number(match.deaths)
             matches.set(eventId, {
-                eventId,
+                eventId: String(event._id),
                 gameId: event.gameId,
                 playedAt:
                     event.eventResult?.endedAt ??
@@ -387,10 +393,7 @@ export const refreshPlayerForGuild = mutation({
         if (args.secret !== internalAuthSecret())
             throw new Error("Unauthorized.")
         const [events, docs] = await Promise.all([
-            ctx.db
-                .query("events")
-                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
-                .collect(),
+            performanceEvents(ctx, args.guildId),
             ctx.db
                 .query("playerStats")
                 .withIndex("userId", (q) => q.eq("userId", args.userId))
@@ -408,7 +411,7 @@ export const refreshPlayerForGuild = mutation({
                                     "provisional")) &&
                         resolveGameScope(event.gameId) === args.gameId
                 )
-                .map((event) => [String(event._id), event])
+                .map((event) => [String(performanceSourceId(event)), event])
         )
         const matches = new Map<string, Snapshot>()
         for (const doc of docs)
@@ -418,7 +421,7 @@ export const refreshPlayerForGuild = mutation({
                 const kills = number(match.kills),
                     deaths = number(match.deaths)
                 matches.set(eventId, {
-                    eventId,
+                    eventId: String(event._id),
                     gameId: event.gameId,
                     playedAt: event.eventResult?.endedAt ?? event.gameEnd,
                     label: event.name,
@@ -470,11 +473,17 @@ export const refreshPlayerForGuild = mutation({
 export const matchClanUserIds = internalQuery({
     args: { guildId: v.string(), eventId: v.id("events") },
     handler: async (ctx, args): Promise<string[]> => {
+        const event = (await performanceEvents(ctx, args.guildId)).find(
+            (item) => item._id === args.eventId
+        )
+        if (!event) return []
         const stats = await ctx.db
             .query("matchStats")
-            .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
+            .withIndex("eventId", (q) =>
+                q.eq("eventId", performanceSourceId(event))
+            )
             .unique()
-        if (!stats || stats.guildId !== args.guildId) return []
+        if (!stats) return []
         const linked = new Set<string>()
         for (const playerId of new Set(
             stats.raw.player_stats.map((row) => row.player_id)
@@ -498,6 +507,29 @@ export const matchClanUserIds = internalQuery({
         return members.sort()
     },
 })
+/** Only active participants in a host-owned match may receive a refresh. */
+export const matchRefreshTargets = internalQuery({
+    args: {
+        guildId: v.string(),
+        eventId: v.id("events"),
+        gameId: gameIdValidator,
+    },
+    handler: async (ctx, args) => {
+        const event = await ctx.db.get(args.eventId)
+        if (
+            !event ||
+            event.guildId !== args.guildId ||
+            event.hostEventId ||
+            resolveGameScope(event.gameId) !== args.gameId
+        )
+            return []
+        const { events } = await sharedMatchMembers(ctx, event)
+        return events
+            .filter((item) => !item.sharedAccessRevoked)
+            .map((item) => ({ guildId: item.guildId, eventId: item._id }))
+    },
+})
+
 type RefreshResult = { guildMatches: number; players: number }
 /** The workspace history, then each given player's (every member's without a list). */
 async function refreshHistories(
@@ -540,17 +572,35 @@ export const refreshInBackground = internalAction({
             throw new Error("Unauthorized.")
         if (!playerStatProfile(args.gameId))
             throw new Error("This game does not collect player statistics.")
-        const target = { guildId: args.guildId, gameId: args.gameId }
-        return await refreshHistories(
-            ctx,
-            target,
-            args.eventId
-                ? await ctx.runQuery(
-                      internal.performanceHistory.matchClanUserIds,
-                      { guildId: args.guildId, eventId: args.eventId }
-                  )
-                : undefined
+        if (!args.eventId)
+            return await refreshHistories(ctx, {
+                guildId: args.guildId,
+                gameId: args.gameId,
+            })
+        const targets = await ctx.runQuery(
+            internal.performanceHistory.matchRefreshTargets,
+            {
+                guildId: args.guildId,
+                gameId: args.gameId,
+                eventId: args.eventId,
+            }
         )
+        const result: RefreshResult = { guildMatches: 0, players: 0 }
+        for (const target of targets) {
+            const refreshed = await refreshHistories(
+                ctx,
+                { guildId: target.guildId, gameId: args.gameId },
+                args.gameId === "wardogs"
+                    ? undefined
+                    : await ctx.runQuery(
+                          internal.performanceHistory.matchClanUserIds,
+                          target
+                      )
+            )
+            result.guildMatches += refreshed.guildMatches
+            result.players += refreshed.players
+        }
+        return result
     },
 })
 /** The dashboard check of `refreshForDashboard`: a current clan admin's session. */

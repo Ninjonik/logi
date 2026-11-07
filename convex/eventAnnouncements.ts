@@ -1,3 +1,4 @@
+import { sharedMatchLogos } from "../src/infrastructure/convex/shared-match-logos"
 import { buildMatchImage } from "../src/domain/events/match-image"
 import { assetPublicUrl } from "./imageAssetStore"
 import { v } from "convex/values"
@@ -257,7 +258,10 @@ export const getImageContext = query({
         return {
             customImageUrl: args.result ? null : (event.imageUrl ?? null),
             model: buildMatchImage({
-                event,
+                event: {
+                    ...event,
+                    sharedClans: await sharedMatchLogos(ctx, event),
+                },
                 clan: guild,
                 categories: guild.eventCategories,
                 ownTeam: own

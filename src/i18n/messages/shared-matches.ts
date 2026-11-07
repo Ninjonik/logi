@@ -1,6 +1,9 @@
 export const sharedMatchCopy = {
     en: {
         title: "Participating clans",
+        registrationStart: "Registration starts",
+        registrationStartHelp:
+            "Choose when registration should open in your clan. Discord signup posts will wait until that time. After accepting, review your local settings before registration opens.",
         reallocateTitle: "Reallocate this slot?",
         reallocateHelp: "{name} will return to their clan’s reserves.",
         external: "External",
@@ -36,6 +39,9 @@ export const sharedMatchCopy = {
     },
     cs: {
         title: "Zúčastněné klany",
+        registrationStart: "Začátek registrace",
+        registrationStartHelp:
+            "Vyberte, kdy se má otevřít registrace ve vašem klanu. Příspěvky s registrací na Discordu počkají do tohoto času. Po přijetí zkontrolujte místní nastavení, než registrace začne.",
         reallocateTitle: "Přidělit místo jinému klanu?",
         reallocateHelp: "{name} se vrátí do záloh svého klanu.",
         external: "Externí",
@@ -71,6 +77,9 @@ export const sharedMatchCopy = {
     },
     de: {
         title: "Teilnehmende Clans",
+        registrationStart: "Registrierungsbeginn",
+        registrationStartHelp:
+            "Wähle, wann die Registrierung in deinem Clan beginnt. Discord-Anmeldungen werden erst dann veröffentlicht. Prüfe nach der Annahme deine lokalen Einstellungen vor dem Beginn.",
         reallocateTitle: "Diesen Platz neu zuweisen?",
         reallocateHelp: "{name} kehrt in die Reserve des eigenen Clans zurück.",
         external: "Extern",
@@ -106,6 +115,9 @@ export const sharedMatchCopy = {
     },
     pl: {
         title: "Uczestniczące klany",
+        registrationStart: "Początek zapisów",
+        registrationStartHelp:
+            "Wybierz, kiedy rozpoczną się zapisy w twoim klanie. Posty z zapisami na Discordzie poczekają do tego czasu. Po przyjęciu sprawdź lokalne ustawienia przed rozpoczęciem zapisów.",
         reallocateTitle: "Przydzielić to miejsce ponownie?",
         reallocateHelp: "{name} wróci do rezerwy swojego klanu.",
         external: "Zewnętrzny",

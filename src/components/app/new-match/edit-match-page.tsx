@@ -86,6 +86,7 @@ export async function EditMatchPage({
     if (event.hostEventId)
         return (
             <SharedMatchSettingsForm
+                timeZone={context.discordConfig?.timezone ?? "UTC"}
                 serverId={serverId}
                 event={event}
                 dictionary={dictionary}

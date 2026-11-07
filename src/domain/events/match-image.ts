@@ -26,11 +26,13 @@ export type MatchImage = {
     cap: string | null
     meetingStart: string
     gameStart: string
+    supportingClans?: { name: string; logoUrl: string | null }[]
     teams: MatchImageTeam[]
     result: { outcome: ClanOutcome | null; scores: string } | null
 }
 export type MatchImageInput = {
     event: {
+        sharedClans?: readonly { name: string; logoUrl: string | null }[]
         name: string
         gameId?: string
         map?: string
@@ -149,6 +151,16 @@ export function buildMatchImage(input: MatchImageInput): MatchImage {
         meetingStart: event.meetingStart,
         gameStart: event.gameStart,
         teams,
+        ...(event.sharedClans?.length
+            ? {
+                  supportingClans: event.sharedClans
+                      .slice(0, 32)
+                      .map((clan) => ({
+                          name: clean(clan.name) || "?",
+                          logoUrl: clan.logoUrl,
+                      })),
+              }
+            : {}),
         result: input.result
             ? {
                   outcome: outcome?.outcome ?? null,
@@ -207,6 +219,7 @@ export function matchImageAlt(model: MatchImage) {
         model.category,
         model.title,
         model.teams.map((t) => t.code || t.name).join(" vs "),
+        model.supportingClans?.map((clan) => clan.name).join(", "),
         model.map,
         model.result
             ? `${model.result.outcome ? copy[model.result.outcome] : copy.result}: ${model.result.scores}`

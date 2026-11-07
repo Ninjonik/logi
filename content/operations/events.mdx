@@ -41,6 +41,30 @@ A player's main clan takes priority if it participates; otherwise eligible
 mercenaries remain selectable through their local clan records. A person can
 have only one signup representation and one roster place for the shared match.
 
+Accepting an invitation first asks when registration should open for your clan.
+The time is shown in your browser's time zone and must be before the host's
+registration deadline. After acceptance, Logi opens your local settings so you
+can review channels and other choices. Discord signup and roster posts wait
+until your chosen opening time. You can change that time in local settings;
+host edits do not overwrite it. The host still controls the registration deadline
+and match schedule.
+
+Managers see a pending-invitation count beside **Matches** in the sidebar for
+the selected clan. Opening Matches does not dismiss it: each invitation remains
+counted until accepted, declined, or withdrawn by its host. The count refreshes
+after invitation actions, on navigation or returning to the tab, and periodically
+while the dashboard is visible.
+
+For shared Hell Let Loose and Wardogs matches, only the host imports official
+statistics. Imports and corrections automatically refresh the host's and each
+accepted clan's performance history and player charts in the background. Each
+clan sees its own members' contribution from the same canonical report, with
+links to its local match. The match is counted once, not once per linked copy.
+Pending or revoked clans do not receive new statistics updates. The manual
+performance refresh uses the same shared-match data. Reload the page after the
+background refresh completes to see updated charts.
+
+
 Removing an invited clan stops further participation and cleans up its live
 Discord resources while retaining its local history. Deleting the host match
 deletes the linked matches through the normal deletion workflow.
@@ -469,3 +493,13 @@ is pinged again. The per-group buttons of old announcements (the group is now
 chosen after **Sign up**) and the grey **Automatic updates** button disappear.
 Matches that ended longer ago and DMs already sent stay as they are. Logi
 records each redrawn match, so a restart never redraws it twice.
+
+Discord matchup text includes the local clan even when the match only stores an
+opponent and the clan has no linked directory team. Match banners keep the local clan as the main logo and show other accepted
+clans as small badges in an arc beside it. They do not add extra opponent teams.
+Missing logos use initials; large groups use a compact overflow count.
+
+Debrief retries recover the existing active or archived discussion using its
+stable event ID, including threads created with an older incorrectly encoded
+name separator. A storage retry does not create another discussion or delete
+the event forum before the recovered debrief is saved.

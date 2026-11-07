@@ -164,6 +164,7 @@ export async function saveCollectedPlayerStats(
                 secret: internalAuthSecret(),
                 guildId: event.guildId,
                 gameId: "wardogs",
+                eventId: event._id,
             }
         )
     return { players: players.length, matchedPlayers, changed }

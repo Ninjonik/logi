@@ -1,5 +1,7 @@
 "use client"
 
+import { SHARED_INVITATIONS_CHANGED } from "@/hooks/use-pending-match-invitations"
+
 import {
     inviteSharedClan,
     respondSharedInvitation,
@@ -26,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState, useTransition } from "react"
 import type { Dictionary } from "@/i18n/dictionaries"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
@@ -50,6 +53,8 @@ export function SharedMatchPanel({
     const t = dictionary.sharedMatches
     const router = useRouter()
     const [pending, start] = useTransition()
+    const [accepting, setAccepting] = useState<SharedInvitation | null>(null)
+    const [registrationStart, setRegistrationStart] = useState("")
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState("")
     const [clans, setClans] = useState<{ guildId: string; name: string }[]>([])
@@ -82,6 +87,7 @@ export function SharedMatchPanel({
         start(async () => {
             try {
                 await operation()
+                window.dispatchEvent(new Event(SHARED_INVITATIONS_CHANGED))
                 router.refresh()
             } catch (error) {
                 toast.error(error instanceof Error ? error.message : t.error)
@@ -279,20 +285,10 @@ export function SharedMatchPanel({
                                     </Button>
                                     <Button
                                         disabled={pending}
-                                        onClick={() =>
-                                            act(async () => {
-                                                const id =
-                                                    await respondSharedInvitation(
-                                                        serverId,
-                                                        item.id,
-                                                        true
-                                                    )
-                                                if (id)
-                                                    router.push(
-                                                        `/${locale}/dashboard/servers/${serverId}/matches/${id}`
-                                                    )
-                                            })
-                                        }
+                                        onClick={() => {
+                                            setRegistrationStart("")
+                                            setAccepting(item)
+                                        }}
                                     >
                                         {t.accept}
                                     </Button>
@@ -326,6 +322,62 @@ export function SharedMatchPanel({
                     ))
                 )}
             </CardContent>
+            <Dialog
+                open={accepting !== null}
+                onOpenChange={(open) => {
+                    if (!pending && !open) setAccepting(null)
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t.accept}</DialogTitle>
+                        <DialogDescription>
+                            {t.registrationStartHelp}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault()
+                            if (!accepting || !registrationStart) return
+                            act(async () => {
+                                const id = await respondSharedInvitation(
+                                    serverId,
+                                    accepting.id,
+                                    true,
+                                    new Date(registrationStart).toISOString()
+                                )
+                                setAccepting(null)
+                                if (id)
+                                    router.push(
+                                        `/${locale}/dashboard/servers/${serverId}/matches/${id}/edit`
+                                    )
+                            })
+                        }}
+                    >
+                        <Label htmlFor="shared-registration-start">
+                            {t.registrationStart} (
+                            {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                        </Label>
+                        <Input
+                            id="shared-registration-start"
+                            type="datetime-local"
+                            required
+                            value={registrationStart}
+                            onChange={(e) =>
+                                setRegistrationStart(e.target.value)
+                            }
+                            disabled={pending}
+                        />
+                        <Button
+                            type="submit"
+                            disabled={pending || !registrationStart}
+                        >
+                            {t.accept}
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </Card>
     )
 }

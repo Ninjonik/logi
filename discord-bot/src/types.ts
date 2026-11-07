@@ -396,6 +396,7 @@ export type EventRecord = {
     stratmapIds?: string[]
     /** Native match teams; absent or empty on legacy events. */
     matchTeams?: MatchTeamAssignment[]
+    sharedClans?: { name: string; logoUrl: string | null }[]
     /** Saved but unpublished; Convex leaves drafts out of every bot read. */
     isDraft?: boolean
     /** Attendance DM offsets in hours; missing means every offset. */

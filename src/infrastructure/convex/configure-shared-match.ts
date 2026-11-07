@@ -1,4 +1,5 @@
 import { sharedMatchSettingsSchema } from "../../lib/validation/shared-match-settings"
+import { sharedRegistrationStart } from "../../domain/events/shared-match"
 import { validateEventDiscussion } from "../../domain/events/discussion"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
@@ -18,6 +19,8 @@ export async function configureSharedMatchLocal(
     if (!event || event.guildId !== guildId || !event.hostEventId)
         throw new Error("External match not found.")
     await sharedMatchMembers(ctx, event)
+    if (fields.registrationStart !== undefined)
+        sharedRegistrationStart(fields.registrationStart, event.registrationEnd)
     validateEventDiscussion(fields)
     for (const id of [
         ...fields.signupGroupIds,
