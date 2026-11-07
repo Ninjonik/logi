@@ -63,12 +63,22 @@ export async function POST(request: Request) {
                 ? Number(form.get("occurredAt"))
                 : undefined,
         })
+        if (!input.success)
+            return noStore(
+                {
+                    error: input.error.issues.some(
+                        (issue) => issue.path[0] === "occurredAt"
+                    )
+                        ? "invalid_time"
+                        : "invalid",
+                },
+                400
+            )
         if (
-            !input.success ||
-            (input.data.occurredAt !== undefined &&
-                input.data.occurredAt > Date.now() + 60000)
+            input.data.occurredAt !== undefined &&
+            input.data.occurredAt > Date.now() + 60000
         )
-            return noStore({ error: "invalid" }, 400)
+            return noStore({ error: "future_time" }, 400)
         const files = form
             .getAll("attachments")
             .filter(

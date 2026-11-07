@@ -11,7 +11,12 @@ const en = {
     server: "Server (optional)",
     serverHint: "Choose a server or enter its name / ID",
     time: "When did it happen? (optional)",
-    timeHint: "Your local time. Leave empty if you are unsure.",
+    timeHint:
+        "Your local time; cannot be in the future. Leave empty if you are unsure.",
+    invalidTimeError:
+        "Enter a valid incident date and time, or leave it empty.",
+    futureTimeError:
+        "The incident date and time cannot be in the future. Check your local date and time, or leave it empty.",
     files: "Attachments (optional)",
     filesHint:
         "Up to 5 files, 5 MiB each: screenshots (PNG, JPG, WebP, GIF), TXT/LOG logs, JSON, CSV or ZIP. Remove passwords and tokens before uploading.",
@@ -51,7 +56,12 @@ const cs: Messages = {
     server: "Server (nepovinné)",
     serverHint: "Vyberte server nebo zadejte název / ID",
     time: "Kdy se to stalo? (nepovinné)",
-    timeHint: "Váš místní čas. Pokud si nejste jisti, ponechte prázdné.",
+    timeHint:
+        "Váš místní čas; nesmí být v budoucnosti. Pokud si nejste jisti, ponechte prázdné.",
+    invalidTimeError:
+        "Zadejte platné datum a čas události, nebo pole ponechte prázdné.",
+    futureTimeError:
+        "Datum a čas události nesmí být v budoucnosti. Zkontrolujte místní datum a čas, nebo pole ponechte prázdné.",
     files: "Přílohy (nepovinné)",
     filesHint:
         "Až 5 souborů, každý do 5 MiB: snímky (PNG, JPG, WebP, GIF), protokoly TXT/LOG, JSON, CSV nebo ZIP. Před nahráním odstraňte hesla a tokeny.",
@@ -90,7 +100,12 @@ const de: Messages = {
     server: "Server (optional)",
     serverHint: "Server auswählen oder Namen / ID eingeben",
     time: "Wann ist es passiert? (optional)",
-    timeHint: "Deine Ortszeit. Im Zweifelsfall leer lassen.",
+    timeHint:
+        "Deine Ortszeit; darf nicht in der Zukunft liegen. Im Zweifelsfall leer lassen.",
+    invalidTimeError:
+        "Gib ein gültiges Datum und eine gültige Uhrzeit ein oder lasse das Feld leer.",
+    futureTimeError:
+        "Der Vorfall darf nicht in der Zukunft liegen. Prüfe Datum und Ortszeit oder lasse das Feld leer.",
     files: "Anhänge (optional)",
     filesHint:
         "Bis zu 5 Dateien mit jeweils 5 MiB: Screenshots (PNG, JPG, WebP, GIF), TXT/LOG-Protokolle, JSON, CSV oder ZIP. Passwörter und Tokens vor dem Hochladen entfernen.",
@@ -132,7 +147,12 @@ const pl: Messages = {
     server: "Serwer (opcjonalnie)",
     serverHint: "Wybierz serwer lub wpisz nazwę / ID",
     time: "Kiedy to się stało? (opcjonalnie)",
-    timeHint: "Twój czas lokalny. Pozostaw puste, jeśli nie masz pewności.",
+    timeHint:
+        "Twój czas lokalny; nie może być w przyszłości. Pozostaw puste, jeśli nie masz pewności.",
+    invalidTimeError:
+        "Podaj prawidłową datę i godzinę zdarzenia lub pozostaw pole puste.",
+    futureTimeError:
+        "Data i godzina zdarzenia nie mogą być w przyszłości. Sprawdź lokalną datę i godzinę lub pozostaw pole puste.",
     files: "Załączniki (opcjonalnie)",
     filesHint:
         "Do 5 plików, każdy do 5 MiB: zrzuty (PNG, JPG, WebP, GIF), logi TXT/LOG, JSON, CSV lub ZIP. Przed przesłaniem usuń hasła i tokeny.",
