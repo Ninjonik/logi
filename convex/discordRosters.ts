@@ -36,6 +36,34 @@ export const getRosterImageContext = query({
                 .unique(),
         ])
         if (!roster?.published) return null
+        const host = event.hostEventId
+            ? await ctx.db.get(event.hostEventId)
+            : event
+        const hostGuildId = host?.guildId ?? event.guildId
+        const foreignGuildIds = [
+            ...new Set(
+                roster.squads.flatMap((squad) =>
+                    squad.players.flatMap((slot) =>
+                        (slot.allocatedGuildId ?? hostGuildId) !== event.guildId
+                            ? [slot.allocatedGuildId ?? hostGuildId]
+                            : []
+                    )
+                )
+            ),
+        ]
+        const clans = await Promise.all(
+            foreignGuildIds.map(async (guildId) => {
+                const guild = await ctx.db
+                    .query("guilds")
+                    .withIndex("discordId", (q) => q.eq("discordId", guildId))
+                    .unique()
+                return {
+                    guildId,
+                    name: guild?.name ?? "",
+                    avatar: guild?.avatar,
+                }
+            })
+        )
         const userIds = [
             ...new Set([
                 ...roster.reservePlayerIds,
@@ -56,6 +84,8 @@ export const getRosterImageContext = query({
                 Boolean(user)
         )
         return {
+            hostGuildId,
+            clans,
             event: normalizeEventDoc(event),
             roster: normalizeDoc(localRosterLists(roster)),
             config: config

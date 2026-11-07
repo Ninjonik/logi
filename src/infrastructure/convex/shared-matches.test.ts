@@ -1,6 +1,7 @@
 import { isRegistrationAnnouncementDue } from "../../domain/events/registration-announcement"
 import { sharedMatchSettingsSchema } from "../../lib/validation/shared-match-settings"
 import * as announcements from "../../../convex/eventAnnouncements"
+import * as discordRosters from "../../../convex/discordRosters"
 import { seedDashboardActor } from "./testing/dashboard-actor"
 import * as sharedApi from "../../../convex/sharedMatchApi"
 import * as discordSync from "../../../convex/discordSync"
@@ -18,6 +19,36 @@ const hostGuild = "100000000000000100"
 const guestGuild = "100000000000000200"
 const hostPlayer = "100000000000000101"
 const guestPlayer = "100000000000000201"
+
+test("each roster image receives foreign clan logos and its canonical host identity", async () => {
+    const { ctx, actor, localId } = await fixture()
+    await ctx.db.patch("guilds:admin", { avatar: "host.png" })
+    await ctx.db.patch("guilds:guest", { avatar: "guest.png" })
+    const input = payload(await ctx.db.get("rosters:host"))
+    input.published = true
+    await invoke(rosters.upsert, ctx, {
+        secret,
+        actor,
+        serverId: "guilds:admin",
+        ...input,
+    })
+    const host = await invoke(discordRosters.getRosterImageContext, ctx, {
+        secret,
+        eventId: "events:host",
+    })
+    const guest = await invoke(discordRosters.getRosterImageContext, ctx, {
+        secret,
+        eventId: localId,
+    })
+    assert.equal(host.hostGuildId, hostGuild)
+    assert.deepEqual(host.clans, [
+        { guildId: guestGuild, name: "Guest", avatar: "guest.png" },
+    ])
+    assert.equal(guest.hostGuildId, hostGuild)
+    assert.deepEqual(guest.clans, [
+        { guildId: hostGuild, name: "Host", avatar: "host.png" },
+    ])
+})
 
 async function fixture(registrationStart?: string) {
     process.env.INTERNAL_AUTH_SECRET = secret
@@ -458,6 +489,17 @@ test("guest attendance reaches the canonical roster and rejects another clan's p
         (await ctx.db.get("rosters:host"))?.squads[0].players[1].ack,
         true
     )
+    await invoke(rosters.acknowledgeAttendance, ctx, {
+        secret,
+        eventId: "events:host",
+        guildId: hostGuild,
+        userId: hostPlayer,
+    })
+    const guestRoster = ctx.db.tables.rosters.find(
+        (row) => row.eventId === localId
+    )!
+    assert.equal(guestRoster.squads[0].players[0].ack, true)
+    assert.equal(guestRoster.squads[0].players[1].ack, true)
     await assert.rejects(
         invoke(rosters.acknowledgeAttendance, ctx, {
             secret,

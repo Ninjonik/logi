@@ -5,6 +5,8 @@ import { getInternalAuthSecret, getSiteUrl } from "@/lib/env"
 import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 
 type RosterImageContext = {
+    hostGuildId: string
+    clans: Array<{ guildId: string; name: string; avatar?: string }>
     event: {
         id: string
         name: string
@@ -44,6 +46,7 @@ type RosterImageContext = {
             order: number
             icon?: string
             players: Array<{
+                allocatedGuildId?: string
                 id?: string
                 customName?: string
                 ack: boolean
@@ -104,7 +107,9 @@ function buildRosterImageCacheKey(eventId: string, rosterUpdatedAt?: string) {
     const versionSource = rosterUpdatedAt
         ? `${eventId}:${rosterUpdatedAt}`
         : `${eventId}:${Date.now()}`
-    return Buffer.from(versionSource).toString("base64url")
+    return Buffer.from(`clan-portraits-v1:${versionSource}`).toString(
+        "base64url"
+    )
 }
 
 export function resolveSiteAssetUrl(path?: string) {
