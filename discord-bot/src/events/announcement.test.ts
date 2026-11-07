@@ -132,6 +132,30 @@ test("the card never carries the password, raw map or raw side (L1-03, L1-139)",
     assert.match(text, /Role účastníků/)
 })
 
+test("an open registration card includes the published roster image", () => {
+    const event = withLimits(boardEvent({ status: "registration" }))
+    const options = {
+        now: BOARD_NOW,
+        rosterImage: { url: "attachment://roster.png", description: "Roster" },
+    }
+    const published = buildAnnouncementCard(
+        boardPayload(event, [boardRoster]),
+        event,
+        options
+    )
+    assert.equal(published.state, "open")
+    assert.match(JSON.stringify(published.view), /attachment:\/\/roster\.png/)
+    const draft = buildAnnouncementCard(
+        boardPayload(event, [{ ...boardRoster, published: false }]),
+        event,
+        options
+    )
+    assert.doesNotMatch(
+        JSON.stringify(draft.view),
+        /attachment:\/\/roster\.png/
+    )
+})
+
 test("a closed event-info card keeps match facts and roster media without the sign-up list", () => {
     const event = withLimits(boardEvent({ status: "closed" }))
     const { view } = buildAnnouncementCard(

@@ -256,6 +256,42 @@ test("a published roster names its size and offers the three attendance actions"
     )
 })
 
+test("a published roster follows the match banner even while registration is open", () => {
+    for (const state of ANNOUNCEMENT_STATES) {
+        const image = { url: "attachment://banner.png", description: "match" }
+        const rosterImage = {
+            url: "attachment://roster.png",
+            description: "roster",
+        }
+        const view = buildAnnouncementView({
+            ...base,
+            state,
+            image,
+            roster: { players: 1, reserves: 0, image: rosterImage },
+        })
+        const bannerIndex = view.blocks.findIndex(
+            (block) =>
+                block.kind === "gallery" && block.items[0]?.url === image.url
+        )
+        const rosterIndex = view.blocks.findIndex(
+            (block) =>
+                block.kind === "gallery" &&
+                block.items[0]?.url === rosterImage.url
+        )
+        if (state === "played" || state === "cancelled")
+            assert.equal(rosterIndex, -1, state)
+        else {
+            assert.ok(bannerIndex >= 0, state)
+            assert.equal(rosterIndex, bannerIndex + 1, state)
+        }
+        const draft = buildAnnouncementView({ ...base, state, image })
+        assert.equal(
+            draft.blocks.filter((block) => block.kind === "gallery").length,
+            state === "played" || state === "cancelled" ? 0 : 1
+        )
+    }
+})
+
 test("without a roster channel the card shows the roster picture (L1-43, L1-B16)", () => {
     const view = buildAnnouncementView({
         ...base,
