@@ -38,7 +38,23 @@ export function BugReportForm({
                 method: "POST",
                 body: form,
             })
-            if (!response.ok) throw new Error()
+            if (!response.ok) {
+                const body: unknown = await response.json().catch(() => null)
+                const code =
+                    body && typeof body === "object" && "error" in body
+                        ? body.error
+                        : undefined
+                setError(
+                    code === "future_time"
+                        ? t.futureTimeError
+                        : code === "invalid_time"
+                          ? t.invalidTimeError
+                          : code === "attachments"
+                            ? t.fileError
+                            : t.error
+                )
+                return
+            }
             setSent(true)
             setFiles([])
         } catch {
