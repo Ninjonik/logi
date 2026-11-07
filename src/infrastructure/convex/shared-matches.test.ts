@@ -706,3 +706,84 @@ test("an expired pending invitation can still be declined to clear manager notif
     })
     assert.equal(invitations.incoming.length, 0)
 })
+
+test("roster clan choices include names and logos while player identities retain their owner", async () => {
+    const { ctx, scope } = await fixture()
+    await ctx.db.patch("guilds:admin", {
+        avatar: "https://cdn.discordapp.com/icons/host/logo.png",
+    })
+    await ctx.db.patch("guilds:guest", {
+        avatar: "https://cdn.discordapp.com/icons/guest/logo.png",
+    })
+    const context = await invoke(shared.rosterContext, ctx, {
+        ...scope,
+        eventId: "events:host",
+    })
+    assert.deepEqual(
+        context.clans.map((clan: { name: string; avatar?: string }) => ({
+            name: clan.name,
+            avatar: clan.avatar,
+        })),
+        [
+            {
+                name: "Host",
+                avatar: "https://cdn.discordapp.com/icons/host/logo.png",
+            },
+            {
+                name: "Guest",
+                avatar: "https://cdn.discordapp.com/icons/guest/logo.png",
+            },
+        ]
+    )
+    assert.equal(
+        context.users.find(
+            (user: { discordId: string }) => user.discordId === guestPlayer
+        )?.sharedGuildId,
+        guestGuild
+    )
+    assert.equal(
+        context.users.find(
+            (user: { discordId: string }) => user.discordId === hostPlayer
+        )?.sharedGuildId,
+        hostGuild
+    )
+})
+
+test("guest roster badges identify visible foreign players without exposing the foreign reserve pool", async () => {
+    const { ctx, scope, localId } = await fixture()
+    await ctx.db.patch(`users:${hostPlayer}`, { note: "Private host note" })
+    ctx.db.seed("users", {
+        _id: "users:host-reserve",
+        discordId: "host-reserve",
+        guildId: hostGuild,
+        name: "Host Reserve",
+        avatar: "",
+        nicknames: {},
+        platformIds: [],
+    })
+    ctx.db.seed("userAssignments", {
+        _id: "userAssignments:host-reserve",
+        userId: "host-reserve",
+        serverId: hostGuild,
+        type: "member",
+        status: "active",
+        gameId: "hell_let_loose",
+        createdAt: "2020-01-01T00:00:00Z",
+    })
+    const context = await invoke(shared.rosterContext, ctx, {
+        ...scope,
+        guildId: guestGuild,
+        eventId: localId,
+    })
+    const foreign = context.users.find(
+        (user: { discordId: string }) => user.discordId === hostPlayer
+    )
+    assert.equal(foreign?.sharedGuildId, hostGuild)
+    assert.equal(foreign?.note, undefined)
+    assert.equal(
+        context.users.some(
+            (user: { discordId: string }) => user.discordId === "host-reserve"
+        ),
+        false
+    )
+})

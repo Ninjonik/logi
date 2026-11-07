@@ -16,12 +16,8 @@ import type { RosterPublishContext } from "@/components/app/roster-publish-dialo
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import type { Dictionary } from "@/i18n/dictionaries"
 
-import {
-    sharedRosterContext,
-    type SharedRosterContext,
-} from "@/lib/gateways/shared-matches"
+import { useSharedRosterContext } from "@/hooks/use-shared-roster-context"
 import { RosterBoard } from "./roster-board"
-import { useEffect, useState } from "react"
 
 type BoardDiscordConfig = Pick<DiscordConfig, "timezone" | "meetingChannelId">
 
@@ -61,25 +57,6 @@ const getRosterDetailReference = makeFunctionReference<"query">(
 )
 
 export function LiveRosterBoard(props: LiveRosterBoardProps) {
-    const [shared, setShared] = useState<SharedRosterContext>()
-    const initialEventId = props.initialEvent?.id
-    useEffect(() => {
-        let active = true
-        if (props.initialCanAdmin && initialEventId)
-            void sharedRosterContext(props.serverId, initialEventId)
-                .then((value) => {
-                    if (active) setShared(value)
-                })
-                .catch(() => undefined)
-        return () => {
-            active = false
-        }
-    }, [
-        props.serverId,
-        initialEventId,
-        props.initialCanAdmin,
-        props.initialRoster?.updatedAt,
-    ])
     const liveData = useQuery(getRosterDetailReference, {
         grant: props.grant,
         serverId: props.serverId as never,
@@ -88,6 +65,12 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
 
     const roster = liveData?.roster ?? props.initialRoster
     const event = liveData?.event ?? props.initialEvent
+    const shared = useSharedRosterContext(
+        props.serverId,
+        event?.id,
+        props.initialCanAdmin || Boolean(liveData?.canAdmin),
+        liveData?.roster?.updatedAt ?? props.initialRoster?.updatedAt
+    )
     const users = [
         ...new Map(
             [

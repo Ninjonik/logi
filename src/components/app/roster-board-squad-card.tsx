@@ -1,5 +1,6 @@
 "use client"
 
+import { RosterClanBadge, type RosterClan } from "./roster-clan-badge"
 import { LateSignupBadge } from "./late-signup-badge"
 
 import { formatKd } from "@/lib/format"
@@ -243,7 +244,7 @@ export function SquadCard({
     draggedName,
     defaultExpanded = true,
 }: {
-    sharedClans?: { guildId: string; name: string }[]
+    sharedClans?: RosterClan[]
     guest?: boolean
     allocateClan?: (
         guildId: string | undefined,
@@ -824,7 +825,11 @@ export function SquadCard({
                             </div>
                             {player.allocatedGuildId ? (
                                 <div className="flex items-center gap-1 py-1 text-xs">
-                                    <Badge variant="secondary">
+                                    <Badge
+                                        variant="secondary"
+                                        className="gap-1"
+                                    >
+                                        <RosterClanBadge clan={allocatedClan} />
                                         {allocatedClan?.name ??
                                             player.allocatedGuildId}
                                     </Badge>
@@ -892,6 +897,16 @@ export function SquadCard({
                                         <FilledSlot
                                             player={player}
                                             slotUser={slotUser}
+                                            clan={
+                                                sharedClans.length > 1
+                                                    ? sharedClans.find(
+                                                          (clan) =>
+                                                              clan.guildId ===
+                                                              (slotUser?.sharedGuildId ??
+                                                                  player.allocatedGuildId)
+                                                      )
+                                                    : undefined
+                                            }
                                             placeholderName={placeholderName}
                                             assignment={assignment}
                                             groupsById={groupsById}
@@ -1048,6 +1063,16 @@ export function SquadCard({
                                                 className="w-[320px] p-0"
                                                 align="start"
                                             >
+                                                {!guest &&
+                                                sharedClans.length > 1 ? (
+                                                    <p className="text-muted-foreground border-b px-3 py-2 text-xs">
+                                                        {
+                                                            dictionary
+                                                                .sharedMatches
+                                                                .slotHelp
+                                                        }
+                                                    </p>
+                                                ) : null}
                                                 <Command shouldFilter={false}>
                                                     <CommandInput
                                                         value={
@@ -1073,8 +1098,15 @@ export function SquadCard({
                                                             )
                                                         }}
                                                         placeholder={
-                                                            dictionary.common
-                                                                .openSlot
+                                                            !guest &&
+                                                            sharedClans.length >
+                                                                1
+                                                                ? dictionary
+                                                                      .sharedMatches
+                                                                      .searchRoster
+                                                                : dictionary
+                                                                      .common
+                                                                      .openSlot
                                                         }
                                                     />
                                                     <CommandList>
@@ -1126,9 +1158,27 @@ export function SquadCard({
                                                                                     )
                                                                                 }}
                                                                             >
-                                                                                {
-                                                                                    clan.name
-                                                                                }
+                                                                                <Avatar className="mr-2 size-6 rounded-sm">
+                                                                                    <AvatarImage
+                                                                                        src={
+                                                                                            clan.avatar
+                                                                                        }
+                                                                                        alt={
+                                                                                            clan.name
+                                                                                        }
+                                                                                    />
+                                                                                    <AvatarFallback>
+                                                                                        {clan.name.slice(
+                                                                                            0,
+                                                                                            2
+                                                                                        )}
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span>
+                                                                                    {
+                                                                                        clan.name
+                                                                                    }
+                                                                                </span>
                                                                             </CommandItem>
                                                                         )
                                                                     )}
@@ -1256,7 +1306,7 @@ export function SquadCard({
                                                                             }
                                                                             className={cn(
                                                                                 assignedElsewhere &&
-                                                                                    "bg-amber-500/10 text-amber-100 data-[selected=true]:bg-amber-500/20",
+                                                                                    "bg-amber-500/10 text-amber-950 data-[selected=true]:bg-amber-500/20 dark:text-amber-100",
                                                                                 isNotAttending &&
                                                                                     "bg-muted/80 data-[selected=true]:bg-muted"
                                                                             )}
@@ -1280,22 +1330,39 @@ export function SquadCard({
                                                                                 )
                                                                             }}
                                                                         >
-                                                                            <Avatar className="mr-2 size-6 rounded-sm">
-                                                                                <AvatarImage
-                                                                                    src={
-                                                                                        user.avatar
-                                                                                    }
-                                                                                    alt={
-                                                                                        user.name
+                                                                            <span className="relative mr-2 shrink-0">
+                                                                                <Avatar className="size-6 rounded-sm">
+                                                                                    <AvatarImage
+                                                                                        src={
+                                                                                            user.avatar
+                                                                                        }
+                                                                                        alt={
+                                                                                            user.name
+                                                                                        }
+                                                                                    />
+                                                                                    <AvatarFallback>
+                                                                                        {user.name.slice(
+                                                                                            0,
+                                                                                            2
+                                                                                        )}
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <RosterClanBadge
+                                                                                    className="absolute -right-1 -bottom-1"
+                                                                                    clan={
+                                                                                        sharedClans.length >
+                                                                                        1
+                                                                                            ? sharedClans.find(
+                                                                                                  (
+                                                                                                      clan
+                                                                                                  ) =>
+                                                                                                      clan.guildId ===
+                                                                                                      user.sharedGuildId
+                                                                                              )
+                                                                                            : undefined
                                                                                     }
                                                                                 />
-                                                                                <AvatarFallback>
-                                                                                    {user.name.slice(
-                                                                                        0,
-                                                                                        2
-                                                                                    )}
-                                                                                </AvatarFallback>
-                                                                            </Avatar>
+                                                                            </span>
                                                                             <div className="min-w-0 flex-1">
                                                                                 <div className="flex items-center gap-1.5">
                                                                                     <div className="truncate">
@@ -1513,6 +1580,7 @@ function RoleIconPreview({ value }: { value: string }) {
 function FilledSlot({
     player,
     slotUser,
+    clan,
     placeholderName,
     assignment,
     groupsById,
@@ -1535,6 +1603,7 @@ function FilledSlot({
 }: {
     player: Roster["squads"][number]["players"][number]
     slotUser?: AppUser
+    clan?: RosterClan
     placeholderName?: string
     assignment?: ServerUserAssignment
     groupsById: Map<string, Group>
@@ -1606,6 +1675,7 @@ function FilledSlot({
                     {name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
             </Avatar>
+            <RosterClanBadge clan={clan} />
             {slotUser ? (
                 <GroupInlineIcons
                     assignment={assignment}

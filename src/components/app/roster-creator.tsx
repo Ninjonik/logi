@@ -1,5 +1,7 @@
 "use client"
 
+import { useSharedRosterContext } from "@/hooks/use-shared-roster-context"
+
 import {
     Select,
     SelectContent,
@@ -123,6 +125,24 @@ export function RosterCreator({
     const selectedEvent = useMemo(
         () => events.find((e) => e.id === selectedEventId),
         [events, selectedEventId]
+    )
+
+    const shared = useSharedRosterContext(
+        serverId,
+        selectedEventId || undefined,
+        canAdmin,
+        selectedEvent?.updatedAt
+    )
+    const rosterUsers = useMemo(
+        () => [
+            ...new Map(
+                [...users, ...(shared?.users ?? [])].map((user) => [
+                    user.discordId,
+                    user,
+                ])
+            ).values(),
+        ],
+        [users, shared]
     )
 
     const selectedPreset = useMemo(
@@ -321,10 +341,11 @@ export function RosterCreator({
 
             {draftRoster && selectedEvent ? (
                 <RosterBoard
+                    sharedContext={shared}
                     roster={draftRoster}
                     publishContext={publishContexts?.[selectedEvent.id]}
                     event={selectedEvent}
-                    users={users}
+                    users={rosterUsers}
                     userAssignments={userAssignments}
                     groups={groups}
                     squadPresets={squadPresets}

@@ -83,3 +83,8 @@ Generated match images, including the existing v1 image endpoint, keep the local
 clan as the main identity. Other accepted clans appear as small partner-logo
 badges beside it, with initials for missing logos and an overflow count for
 large groups. They do not become additional match opponents.
+
+The dashboard roster creator and editor share the same clan/player projection.
+Their picker shows accepted clans under **Allocate to clan**, with small clan
+logos on player identities. This is presentation metadata; v1 allocation still
+uses the existing `allocatedGuildId` and `locked` fields without a contract change.
