@@ -1,4 +1,5 @@
 import { getRosterImageAttendanceStyle } from "@/lib/roster-image-attendance"
+import { rosterSlotPortrait } from "@/domain/rosters/slot-portrait"
 import { loadRosterImageAsset } from "@/lib/roster-image-assets"
 import { NextResponse } from "next/server"
 import { ImageResponse } from "next/og"
@@ -73,6 +74,7 @@ const SMALL_GROUP_MAX_SQUADS = 2
 const LARGE_GROUP_MAX_PER_ROW = 4
 
 type Player = {
+    allocatedGuildId?: string
     id?: string
     customName?: string
     ack: boolean
@@ -460,6 +462,9 @@ export async function GET(
             [
                 ...data.users.map((user) =>
                     resolveRosterAvatarUrl(user.avatar)
+                ),
+                ...data.clans.map((clan) =>
+                    resolveRosterAvatarUrl(clan.avatar)
                 ),
                 ...data.roster.squads.flatMap((squad) => [
                     resolveAssetUrl(squad.icon),
@@ -964,7 +969,22 @@ export async function GET(
                                                                                 <img
                                                                                     src={inlineAsset(
                                                                                         resolveRosterAvatarUrl(
-                                                                                            user.avatar
+                                                                                            rosterSlotPortrait(
+                                                                                                {
+                                                                                                    localGuildId:
+                                                                                                        data
+                                                                                                            .config
+                                                                                                            ?.guildId ??
+                                                                                                        "",
+                                                                                                    allocatedGuildId:
+                                                                                                        player.allocatedGuildId,
+                                                                                                    playerAvatar:
+                                                                                                        user.avatar,
+                                                                                                    clans: data.clans,
+                                                                                                    hostGuildId:
+                                                                                                        data.hostGuildId,
+                                                                                                }
+                                                                                            )
                                                                                         )
                                                                                     )}
                                                                                     alt=""
@@ -976,9 +996,21 @@ export async function GET(
                                                                                         width: "28px",
                                                                                         height: "28px",
                                                                                         borderRadius:
-                                                                                            "999px",
+                                                                                            (player.allocatedGuildId ??
+                                                                                                data.hostGuildId) !==
+                                                                                            data
+                                                                                                .config
+                                                                                                ?.guildId
+                                                                                                ? "0"
+                                                                                                : "999px",
                                                                                         objectFit:
-                                                                                            "cover",
+                                                                                            (player.allocatedGuildId ??
+                                                                                                data.hostGuildId) !==
+                                                                                            data
+                                                                                                .config
+                                                                                                ?.guildId
+                                                                                                ? "contain"
+                                                                                                : "cover",
                                                                                         flexShrink: 0,
                                                                                     }}
                                                                                 />
