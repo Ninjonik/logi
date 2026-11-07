@@ -1,4 +1,6 @@
+import { isRegistrationAnnouncementDue } from "../../domain/events/registration-announcement"
 import { sharedMatchSettingsSchema } from "../../lib/validation/shared-match-settings"
+import * as announcements from "../../../convex/eventAnnouncements"
 import { seedDashboardActor } from "./testing/dashboard-actor"
 import * as sharedApi from "../../../convex/sharedMatchApi"
 import * as discordSync from "../../../convex/discordSync"
@@ -17,7 +19,7 @@ const guestGuild = "100000000000000200"
 const hostPlayer = "100000000000000101"
 const guestPlayer = "100000000000000201"
 
-async function fixture() {
+async function fixture(registrationStart?: string) {
     process.env.INTERNAL_AUTH_SECRET = secret
     const ctx = testContext()
     const actor = seedDashboardActor(ctx.db, hostGuild)
@@ -112,6 +114,7 @@ async function fixture() {
         guildId: guestGuild,
         invitationId,
         accept: true,
+        registrationStart,
     })
     return { ctx, actor, scope, invitationId, localId }
 }
@@ -321,6 +324,7 @@ test("dashboard and API local settings share validation and preserve host detail
         createParticipantRoles: false,
         attendanceReminderHours: [12],
         signupGroupLimits: [],
+        registrationStart: new Date(Date.now() + 1_800_000).toISOString(),
         pingMode: "clan",
     })
     await invoke(shared.configureLocal, ctx, {
@@ -348,6 +352,10 @@ test("dashboard and API local settings share validation and preserve host detail
     }
     const result = await invoke(sharedApi.configureLocal, ctx, args)
     assert.equal(result.status, 200)
+    assert.equal(
+        (await ctx.db.get(localId))?.registrationStart,
+        settings.registrationStart
+    )
     assert.deepEqual(await invoke(sharedApi.configureLocal, ctx, args), result)
     const invalid = await invoke(sharedApi.configureLocal, ctx, {
         ...args,
@@ -573,4 +581,128 @@ test("local signup writes update the shared reserve pool and respect main-clan p
         (await ctx.db.get(localId))?.participants[0].userId,
         guestPlayer
     )
+})
+
+test("acceptance schedules registration locally and host updates preserve the guest opening", async () => {
+    const registrationStart = new Date(Date.now() + 1_800_000).toISOString()
+    const { ctx, localId, scope, invitationId } =
+        await fixture(registrationStart)
+    const local = await ctx.db.get(localId)
+    assert.equal(local?.registrationStart, registrationStart)
+    assert.equal(
+        isRegistrationAnnouncementDue({
+            registrationStart: local?.registrationStart,
+        }),
+        false
+    )
+    assert.equal(
+        isRegistrationAnnouncementDue(
+            { registrationStart: local?.registrationStart },
+            new Date(registrationStart)
+        ),
+        true
+    )
+    assert.ok(
+        (ctx.db.tables.eventScheduleJobs ?? []).some(
+            (row) =>
+                row.eventId === localId && row.kind === "registration-start"
+        )
+    )
+    await ctx.db.patch("events:host", {
+        name: "Updated host",
+        registrationStart: new Date().toISOString(),
+    })
+    // A local save triggers the same transactional projection refresh as a host save.
+    const settings = sharedMatchSettingsSchema.parse({
+        createParticipantRoles: false,
+        attendanceReminderHours: [],
+        signupGroupLimits: [],
+        registrationStart,
+    })
+    await invoke(shared.configureLocal, ctx, {
+        ...scope,
+        guildId: guestGuild,
+        eventId: localId,
+        ...settings,
+    })
+    assert.equal(
+        (await ctx.db.get(localId))?.registrationStart,
+        registrationStart
+    )
+    await assert.rejects(
+        invoke(shared.configureLocal, ctx, {
+            ...scope,
+            guildId: guestGuild,
+            eventId: localId,
+            ...settings,
+            registrationStart: local!.registrationEnd,
+        }),
+        /before/
+    )
+    // Re-open the invitation only in the fake database to exercise acceptance rejection.
+    await ctx.db.patch(invitationId, { status: "pending" })
+    await assert.rejects(
+        invoke(shared.respond, ctx, {
+            ...scope,
+            guildId: guestGuild,
+            invitationId,
+            accept: true,
+            registrationStart: "invalid",
+        }),
+        /before/
+    )
+})
+
+test("each clan's match image carries only the other accepted clans as partner badges", async () => {
+    const { ctx, localId } = await fixture()
+    const host = await invoke(discordSync.getEventSyncContext, ctx, {
+        secret,
+        eventId: "events:host",
+    })
+    const guest = await invoke(discordSync.getEventSyncContext, ctx, {
+        secret,
+        eventId: localId,
+    })
+    assert.deepEqual(
+        host.event.sharedClans.map((clan: { name: string }) => clan.name),
+        ["Guest"]
+    )
+    assert.deepEqual(
+        guest.event.sharedClans.map((clan: { name: string }) => clan.name),
+        ["Host"]
+    )
+    for (const [eventId, guildId, partner] of [
+        ["events:host", hostGuild, "Guest"],
+        [localId, guestGuild, "Host"],
+    ]) {
+        const image = await invoke(announcements.getImageContext, ctx, {
+            secret,
+            eventId,
+            guildId,
+            result: false,
+        })
+        assert.equal(image.model.supportingClans[0].name, partner)
+        assert.equal(
+            image.model.clanName,
+            guildId === hostGuild ? "Host" : "Guest"
+        )
+    }
+})
+
+test("an expired pending invitation can still be declined to clear manager notifications", async () => {
+    const { ctx, scope, invitationId } = await fixture()
+    await ctx.db.patch(invitationId, { status: "pending" })
+    await ctx.db.patch("events:host", { status: "concluded" })
+    await invoke(shared.respond, ctx, {
+        ...scope,
+        guildId: guestGuild,
+        invitationId,
+        accept: false,
+    })
+    assert.equal((await ctx.db.get(invitationId))?.status, "declined")
+    const invitations = await invoke(shared.list, ctx, {
+        ...scope,
+        guildId: guestGuild,
+    })
+    assert.equal(invitations.incoming.length, 0)
 })

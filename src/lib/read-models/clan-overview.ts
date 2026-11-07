@@ -59,11 +59,7 @@ export async function getClanOverviewExtras(input: {
 }) {
     const { serverId, context } = input
     const [performance, recent, leaders] = await Promise.all([
-        getGuildPerformanceHistory(
-            context.server.discordId,
-            serverId,
-            input.gameScope
-        ),
+        getGuildPerformanceHistory(context.server.discordId, input.gameScope),
         getRecentMatchSummary(serverId, input.gameScope),
         attendanceLeaders(context, input.monthKey, input.monthKeyOf),
     ])

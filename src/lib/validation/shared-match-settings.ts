@@ -6,6 +6,7 @@ import {
 import { z } from "zod"
 
 export const sharedMatchSettingsSchema = z.strictObject({
+    registrationStart: z.string().datetime().optional(),
     localRosterMessageVariant: z.enum(["photo_text", "photo"]).optional(),
     localRosterMentionPlayers: z.boolean().optional(),
     announcementChannelId: eventSchema.shape.announcementChannelId,

@@ -263,6 +263,55 @@ export function createMatchImageRenderer(ports: {
             if (logo)
                 layers.push({ input: logo, left: positions[i]! - 75, top: 145 })
         })
+        const partners = model.supportingClans ?? []
+        const badges = partners.slice(0, partners.length > 5 ? 4 : 5)
+        const overflow = partners.length - badges.length
+        const badgeCount = badges.length + (overflow > 0 ? 1 : 0)
+        const partnerLogos = await Promise.all(
+            badges.map(async (clan) => {
+                if (!clan.logoUrl) return null
+                {
+                    const url = clan.logoUrl
+                    return await remember(`partner:${url}`, async () => {
+                        const bytes = await ports.loadLogo(url)
+                        return bytes
+                            ? sharp(bytes, {
+                                  limitInputPixels: 8192 * 8192,
+                                  animated: false,
+                              })
+                                  .rotate()
+                                  .resize(30, 30, {
+                                      fit: "contain",
+                                      background: "transparent",
+                                  })
+                                  .png()
+                                  .toBuffer()
+                            : null
+                    })
+                }
+            })
+        )
+        for (let i = 0; i < badgeCount; i++) {
+            const angle =
+                ((badgeCount === 1 ? -40 : -50 + (i * 90) / (badgeCount - 1)) *
+                    Math.PI) /
+                180
+            const left = Math.round(positions[0]! + Math.cos(angle) * 100 - 20)
+            const top = Math.round(220 + Math.sin(angle) * 100 - 20)
+            const clan = badges[i]
+            const logo = partnerLogos[i] ?? null
+            const initials = clan
+                ? clan.name
+                      .split(/\s+/)
+                      .map((word) => word[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                : `+${overflow}`
+            const circle = `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="19" fill="#25282d" stroke="#97d8c2" stroke-width="2"/>${logo ? "" : text(initials, 20, 25, 12, "#ffffff", 700, 32)}</svg>`
+            layers.push({ input: Buffer.from(circle), left, top })
+            if (logo) layers.push({ input: logo, left: left + 5, top: top + 5 })
+        }
         const icons: Record<string, string> = {
             hell_let_loose: "img/games/hll.jpg",
             hell_let_loose_vietnam: "img/games/hllv.png",

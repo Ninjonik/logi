@@ -793,3 +793,15 @@ test("forum overwrite comparison preserves unrelated permissions and detects con
     )
     assert.equal(forumOverwriteMatches(undefined, BigInt(3), BigInt(0)), false)
 })
+
+test("recovery reuses a private debrief made with the historical corrupted separator", async () => {
+    const f = privateDebriefFixture()
+    f.thread.name = `Debrief \u00c2\u00b7 Liga 4 \u00c2\u00b7 ${concludedEvent.id}`
+    f.parent.threads.fetchActive = async () => ({
+        threads: new Map([["private", f.thread]]),
+    })
+    await concludeEventForum(f.input)
+    assert.ok(!f.calls.includes("create"))
+    assert.ok(f.calls.includes("remember"))
+    assert.equal(f.calls.at(-1), "delete forum")
+})

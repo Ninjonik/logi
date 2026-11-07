@@ -16,6 +16,15 @@ export const matchImageSchema = z.strictObject({
     cap: label(60).nullable(),
     meetingStart: z.iso.datetime({ offset: true }),
     gameStart: z.iso.datetime({ offset: true }),
+    supportingClans: z
+        .array(
+            z.strictObject({
+                name: label(100),
+                logoUrl: z.string().max(2048).nullable(),
+            })
+        )
+        .max(32)
+        .optional(),
     teams: z
         .array(
             z.strictObject({

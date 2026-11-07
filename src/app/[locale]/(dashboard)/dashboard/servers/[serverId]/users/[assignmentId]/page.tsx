@@ -95,7 +95,6 @@ export default async function ServerUserDetailPage({
     const performanceHistory = await getPlayerPerformanceHistory(
         server.discordId,
         user.id,
-        serverId,
         gameScope
     )
     const paginatedMatches = getPaginatedRows({

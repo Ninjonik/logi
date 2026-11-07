@@ -27,6 +27,7 @@ import {
     SidebarMenu,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { usePendingMatchInvitations } from "@/hooks/use-pending-match-invitations"
 import { useSettingsAttentionCount } from "@/components/app/settings-attention"
 import { globalAdminHref, isGlobalAdminPath } from "@/lib/global-admin-routes"
 import { NavMain, NavMenuItems, type NavItem } from "@/components/nav-main"
@@ -112,6 +113,13 @@ export function AppSidebar({
             ? modeOverride.mode
             : resolvedServer?.workspaceMode) === "competitions"
     const settingsAttention = useSettingsAttentionCount(resolvedServerId)
+    const pendingInvitations = usePendingMatchInvitations(
+        resolvedServerId,
+        resolvedCanAdmin &&
+            workspaceEnabled &&
+            !competitionOnly &&
+            !adminSection
+    )
     const selectedGame = searchParams.get("game")
     // Tactical maps are currently a specialised HLL/Wardogs capability. New
     // catalogue games default to map-free until the platform enables it.
@@ -167,6 +175,13 @@ export function AppSidebar({
                               title: t.matches,
                               url: `${base}/matches`,
                               icon: CalendarIcon,
+                              badge:
+                                  pendingInvitations > 0
+                                      ? {
+                                            count: pendingInvitations,
+                                            label: `${dictionary.sharedMatches.incoming}: ${pendingInvitations}`,
+                                        }
+                                      : undefined,
                               isActive: within("matches"),
                               items: [
                                   {

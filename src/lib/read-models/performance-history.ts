@@ -1,5 +1,4 @@
 import type { DashboardActor } from "../../../convex/dashboardActor"
-import { appCacheTags, cachedRead } from "@/lib/cache-tags"
 import { fetchAction, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 import type { GameScope } from "@/domain/games/game"
@@ -28,78 +27,43 @@ const refreshRef = makeFunctionReference<"action">(
     "performanceHistory:refreshForDashboard"
 )
 
+/** Histories are already materialized and bounded. Read them without the
+ * dashboard cache so a background import refresh is visible on the next read. */
 export async function getGuildPerformanceHistory(
     guildId: string,
-    cacheServerId = guildId,
     gameScope: GameScope = "all"
 ) {
-    return cachedRead(
-        ["guild-performance-history:v6", guildId, gameScope],
-        [appCacheTags.matches(cacheServerId)],
-        async () => {
-            const row = (await fetchQuery(guildRef, {
-                secret: getInternalAuthSecret(),
-                guildId,
-                gameScope,
-            })) as {
-                matches: PerformanceSnapshot[]
-            } | null
-            return row?.matches ?? []
-        },
-        60 * 60 * 24
-    )
+    const row = (await fetchQuery(guildRef, {
+        secret: getInternalAuthSecret(),
+        guildId,
+        gameScope,
+    })) as { matches: PerformanceSnapshot[] } | null
+    return row?.matches ?? []
 }
 export async function getPlayerPerformanceHistory(
     guildId: string,
     userId: string,
-    cacheServerId = guildId,
     gameScope: GameScope = "all"
 ) {
-    return cachedRead(
-        ["player-performance-history:v6", guildId, userId, gameScope],
-        [appCacheTags.matches(cacheServerId), appCacheTags.playerStats(userId)],
-        async () => {
-            const row = (await fetchQuery(playerRef, {
-                secret: getInternalAuthSecret(),
-                guildId,
-                userId,
-                gameScope,
-            })) as {
-                matches: PerformanceSnapshot[]
-            } | null
-            return row?.matches ?? []
-        },
-        3600
-    )
+    const row = (await fetchQuery(playerRef, {
+        secret: getInternalAuthSecret(),
+        guildId,
+        userId,
+        gameScope,
+    })) as { matches: PerformanceSnapshot[] } | null
+    return row?.matches ?? []
 }
 export async function getPlayersPerformanceHistories(
     guildId: string,
     userIds: string[],
-    cacheServerId = guildId,
     gameScope: GameScope = "all"
 ) {
-    const uniqueIds = [...new Set(userIds)].sort()
-    return cachedRead(
-        [
-            "player-performance-histories:v2",
-            guildId,
-            uniqueIds.join(","),
-            gameScope,
-        ],
-        [
-            appCacheTags.matches(cacheServerId),
-            ...uniqueIds.map(appCacheTags.playerStats),
-        ],
-        async () => {
-            return (await fetchQuery(playersRef, {
-                secret: getInternalAuthSecret(),
-                guildId,
-                userIds: uniqueIds,
-                gameScope,
-            })) as Record<string, PerformanceSnapshot[]>
-        },
-        3600
-    )
+    return (await fetchQuery(playersRef, {
+        secret: getInternalAuthSecret(),
+        guildId,
+        userIds: [...new Set(userIds)].sort(),
+        gameScope,
+    })) as Record<string, PerformanceSnapshot[]>
 }
 /**
  * "Refresh performance history": the workspace and every member's history

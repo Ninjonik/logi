@@ -87,7 +87,6 @@ export default async function ServerUsersPage({
             const histories = await getPlayersPerformanceHistories(
                 context.server.discordId,
                 userIds,
-                serverId,
                 gameId
             )
             for (const [userId, matches] of Object.entries(histories)) {

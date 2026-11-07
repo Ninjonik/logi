@@ -33,8 +33,13 @@ members and minimized website roster-summary grants.
 `PATCH /api/v1/clan/events/{eventId}/local-settings` accepts an unrestricted clan
 key, an `Idempotency-Key`, and the complete local-settings object documented in
 OpenAPI. It uses the same command as the dashboard. Channels, local role IDs,
+registration opening time (`registrationStart`, before the host deadline),
 signup eligibility/groups/caps, reminder choices, discussions and temporary
 Discord resources are local. Host-controlled match fields are rejected.
+
+Acceptance asks for the local registration opening time and then opens local
+settings for review. Scheduled signup/roster publication waits until that time;
+host synchronization preserves it.
 
 Invitation creation, acceptance and revocation intentionally require a live
 dashboard manager. They grant or remove cross-workspace access; a bearer service
@@ -51,7 +56,15 @@ eligible mercenaries remain selectable by their clans, with one representation
 and one slot per person in the shared match.
 
 Only the host can import or confirm results. Linked matches read the host's
-statistics instead of importing another copy. Each clan retains its own
+statistics instead of importing another copy. HLL and Wardogs imports and corrections schedule performance-history refreshes
+for the host and every currently accepted clan. Each clan's charts include only
+its own members' statistics, resolve the host's canonical match ID, and link to
+its local event. A shared match contributes once per clan/player history; its
+statistics are not copied into another match record. Manual performance refresh
+uses the same mapping. Dashboard chart reads use the materialized histories
+directly so background updates appear on the next page load. Pending and revoked invitations do not receive updates.
+These rules also apply to results written through the existing API; no new API
+operation is required. Each clan retains its own
 attendance scoring and delivery settings. Reminders, participant roles, voice
 attendance and debrief membership use the local player audience, preventing
 cross-clan duplicate delivery.
@@ -65,3 +78,8 @@ Revocation disables further guest writes and removes its live Discord resources;
 its existing local match and roster remain as history. Deleting the host match
 uses the existing deletion lifecycle to clean up linked records and Discord
 resources in all participating clans.
+
+Generated match images, including the existing v1 image endpoint, keep the local
+clan as the main identity. Other accepted clans appear as small partner-logo
+badges beside it, with initials for missing logos and an overflow count for
+large groups. They do not become additional match opponents.

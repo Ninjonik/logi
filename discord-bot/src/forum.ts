@@ -1,4 +1,4 @@
-﻿import {
+import {
     AttachmentBuilder,
     ChannelFlags,
     ChannelType,
@@ -12,6 +12,10 @@
     type AnyThreadChannel,
     type Client,
 } from "discord.js"
+import {
+    debriefThreadName,
+    matchesDebriefThreadName,
+} from "../../src/domain/events/debrief-thread"
 
 import {
     attendanceNoticeView,
@@ -1159,15 +1163,14 @@ export async function syncPrivateDebrief(input: {
         if (parent?.type !== ChannelType.GuildText)
             throw new Error("The private debrief requires a guild text channel")
         // Stable per-event name recovers a thread when Discord succeeded but state storage failed.
-        const suffix = ` Â· ${event.id}`
-        const name =
-            `${getRosterMessages(config.defaultLanguage).forum.debrief} Â· ${event.name}`.slice(
-                0,
-                100 - suffix.length
-            ) + suffix
+        const name = debriefThreadName(
+            getRosterMessages(config.defaultLanguage).forum.debrief,
+            event.name,
+            event.id
+        )
         const matches = (candidate: AnyThreadChannel) =>
             candidate.type === ChannelType.PrivateThread &&
-            candidate.name.endsWith(suffix)
+            matchesDebriefThreadName(candidate.name, event.id)
         const active = await parent.threads.fetchActive()
         thread = [...active.threads.values()].find(matches) ?? null
         let before: Date | undefined
@@ -1340,12 +1343,11 @@ export async function syncPublicDebrief(
                 thread.type !== ChannelType.AnnouncementThread))
     )
         thread = null
-    const suffix = ` Â· ${event.id}`
-    const name =
-        `${getRosterMessages(config.defaultLanguage).forum.debrief} Â· ${event.name}`.slice(
-            0,
-            100 - suffix.length
-        ) + suffix
+    const name = debriefThreadName(
+        getRosterMessages(config.defaultLanguage).forum.debrief,
+        event.name,
+        event.id
+    )
     const forumContext =
         input.forumContext === undefined
             ? await loadForumContext(event.id)
@@ -1384,7 +1386,7 @@ export async function syncPublicDebrief(
         const active = await parent.threads.fetchActive()
         thread =
             [...active.threads.values()].find((item) =>
-                item.name.endsWith(suffix)
+                matchesDebriefThreadName(item.name, event.id)
             ) ?? null
         let before: Date | undefined
         while (!thread) {
@@ -1394,7 +1396,7 @@ export async function syncPublicDebrief(
             })
             thread =
                 [...page.threads.values()].find((item) =>
-                    item.name.endsWith(suffix)
+                    matchesDebriefThreadName(item.name, event.id)
                 ) ?? null
             if (thread || !page.hasMore) break
             const oldest = Math.min(

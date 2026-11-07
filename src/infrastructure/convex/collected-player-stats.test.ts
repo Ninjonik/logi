@@ -135,6 +135,21 @@ test("confirming a Warcon source saves K/D/cash exactly once, without manufactur
         confirmed
     )
     assert.equal(result.players, 1)
+    assert.ok(
+        ctx.scheduler.calls.some((call) => {
+            if (!Array.isArray(call)) return false
+            const args: unknown = call[2]
+            return (
+                typeof args === "object" &&
+                args !== null &&
+                "eventId" in args &&
+                "gameId" in args &&
+                args.eventId === event._id &&
+                args.gameId === "wardogs"
+            )
+        }),
+        "the background refresh retains the canonical match for shared-clan fanout"
+    )
     const doc = ctx.db.tables.playerStats[0]
     assert.equal(doc.userId, "user")
     assert.equal(doc.matches[event._id].kills, 20)

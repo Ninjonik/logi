@@ -12,6 +12,7 @@ import {
     upsertDiscordMemberCache,
 } from "./discordMemberAccessStore"
 import { historicalConcludedEventCutoff } from "../src/application/discord-sync/relevance"
+import { sharedMatchLogos } from "../src/infrastructure/convex/shared-match-logos"
 import { matchesGameScope, withGameOverrides } from "../src/domain/games/game"
 import { isDraftEvent, withoutDrafts } from "../src/domain/events/drafts"
 import { localRosterLists } from "../src/domain/rosters/local-audience"
@@ -274,8 +275,11 @@ export const listSyncPayloads = query({
                 const clanRosters = rosters.filter((roster) =>
                     clanEvents.some((event) => event._id === roster.eventId)
                 )
-                const guildEvents = clanEvents.map((event) =>
-                    withCompetitionRound(event, rounds)
+                const guildEvents = await Promise.all(
+                    clanEvents.map(async (event) => ({
+                        ...withCompetitionRound(event, rounds),
+                        sharedClans: await sharedMatchLogos(ctx, event),
+                    }))
                 )
                 const guildCalendarItems = calendarItems
                     .filter((item) => item.guildId === config.guildId)
@@ -481,14 +485,17 @@ export const getEventSyncContext = query({
         )
 
         return {
-            event: withCompetitionRound(
-                event,
-                new Map(
-                    typeof fixture?.round === "number"
-                        ? [[String(event._id), fixture.round]]
-                        : []
-                )
-            ),
+            event: {
+                ...withCompetitionRound(
+                    event,
+                    new Map(
+                        typeof fixture?.round === "number"
+                            ? [[String(event._id), fixture.round]]
+                            : []
+                    )
+                ),
+                sharedClans: await sharedMatchLogos(ctx, event),
+            },
             roster: roster
                 ? {
                       ...normalizeDoc(localRosterLists(roster)),

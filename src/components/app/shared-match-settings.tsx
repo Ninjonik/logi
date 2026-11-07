@@ -11,6 +11,10 @@ import {
     sharedMatchSettingsSchema,
     type SharedMatchSettings,
 } from "@/lib/validation/shared-match-settings"
+import {
+    toDateTimeLocalInTimeZone,
+    fromDateTimeLocalInTimeZone,
+} from "@/lib/timezone-datetime"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiscordMultiEntitySelect } from "./discord-multi-entity-select"
 import type { EventRecord, Group, TopicPreset } from "@/types/domain"
@@ -35,6 +39,7 @@ export function SharedMatchSettingsForm({
     groups,
     topicPresets,
     backHref,
+    timeZone = "UTC",
 }: {
     serverId: string
     event: EventRecord
@@ -42,6 +47,7 @@ export function SharedMatchSettingsForm({
     groups: Group[]
     topicPresets: TopicPreset[]
     backHref: string
+    timeZone?: string
 }) {
     const router = useRouter()
     const id = useId()
@@ -114,6 +120,33 @@ export function SharedMatchSettingsForm({
                     <CardTitle>{t.steps.discord}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-5">
+                    <div className="space-y-2">
+                        <Label htmlFor={`${id}-registration-start`}>
+                            {dictionary.sharedMatches.registrationStart} (
+                            {timeZone})
+                        </Label>
+                        <Input
+                            id={`${id}-registration-start`}
+                            type="datetime-local"
+                            value={toDateTimeLocalInTimeZone(
+                                value.registrationStart,
+                                timeZone
+                            )}
+                            onChange={(e) =>
+                                update({
+                                    registrationStart: e.target.value
+                                        ? fromDateTimeLocalInTimeZone(
+                                              e.target.value,
+                                              timeZone
+                                          )
+                                        : undefined,
+                                })
+                            }
+                        />
+                        <p className="text-muted-foreground text-sm">
+                            {dictionary.sharedMatches.registrationStartHelp}
+                        </p>
+                    </div>
                     {(
                         [
                             [

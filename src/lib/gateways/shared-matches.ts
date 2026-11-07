@@ -64,6 +64,13 @@ export async function sharedInvitations(
     })
 }
 
+/** Reuse the invitation list's manager authorization and pending-state rules. */
+export async function pendingSharedInvitationCount(
+    serverId: string
+): Promise<number> {
+    return (await sharedInvitations(serverId)).incoming.length
+}
+
 export async function searchSharedClans(
     serverId: string,
     search: string
@@ -93,11 +100,12 @@ export async function inviteSharedClan(
 export async function respondSharedInvitation(
     serverId: string,
     invitationId: string,
-    accept: boolean
+    accept: boolean,
+    registrationStart?: string
 ): Promise<string | null> {
     const id = await fetchMutation(
         makeFunctionReference<"mutation">("sharedMatches:respond"),
-        { ...(await scope(serverId)), invitationId, accept }
+        { ...(await scope(serverId)), invitationId, accept, registrationStart }
     )
     revalidateCacheEntries([
         appCacheTags.serverContext(serverId),

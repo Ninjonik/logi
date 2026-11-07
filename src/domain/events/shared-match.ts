@@ -16,7 +16,6 @@ export const SHARED_MATCH_FIELDS = [
     "tacticalPlan",
     "cap",
     "notes",
-    "registrationStart",
     "registrationEnd",
     "meetingStart",
     "gameStart",
@@ -64,4 +63,19 @@ export function participantClan(input: {
         input.participatingGuildIds.includes(input.mainGuildId)
         ? input.mainGuildId
         : input.selectedGuildId
+}
+
+/** An invited clan owns its opening time; the host still owns the deadline. */
+export function sharedRegistrationStart(
+    value: string | undefined,
+    registrationEnd: string
+) {
+    if (value === undefined) return undefined
+    const start = Date.parse(value)
+    const end = Date.parse(registrationEnd)
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end)
+        throw new Error(
+            "Registration must start before the host's registration deadline."
+        )
+    return new Date(start).toISOString()
 }

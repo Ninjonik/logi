@@ -106,6 +106,7 @@ function actionContext(ctx: ReturnType<typeof testContext>) {
             history.refreshPlayerForGuild,
         "performanceHistory:listClanUserIds": history.listClanUserIds,
         "performanceHistory:matchClanUserIds": history.matchClanUserIds,
+        "performanceHistory:matchRefreshTargets": history.matchRefreshTargets,
         "performanceHistory:authorizeRefresh": history.authorizeRefresh,
     }
     const called: string[] = []
@@ -201,6 +202,7 @@ test("an imported match refreshes the workspace and only the members who played 
         eventId: "events:one",
     })
     assert.deepEqual(called, [
+        "performanceHistory:matchRefreshTargets",
         "performanceHistory:matchClanUserIds",
         "performanceHistory:refreshGuildOnly",
         "performanceHistory:refreshPlayerForGuild:user-a",
@@ -248,3 +250,142 @@ test("the dashboard refresh checks the clan admin before it reads anything, then
     assert.deepEqual(result, { guildMatches: 2, players: 3 })
     assert.equal(ctx.db.tables.playerPerformanceHistory.length, 3)
 })
+
+for (const sharedGame of ["hell_let_loose", "wardogs"] as const) {
+    test(`${sharedGame} shared histories refresh every active clan from one canonical match`, async () => {
+        const { ctx } = fixture()
+        const host = ctx.db.tables.events.find(
+            (row) => row._id === "events:one"
+        )!
+        host.gameId = sharedGame
+        if (sharedGame === "wardogs")
+            host.reviewedResult = { status: "confirmed" }
+        const guestGuild = "guild-guest"
+        ctx.db.seed("events", {
+            ...host,
+            _id: "events:guest",
+            guildId: guestGuild,
+            hostEventId: host._id,
+        })
+        ctx.db.seed("sharedMatchInvitations", {
+            _id: "sharedMatchInvitations:active",
+            hostEventId: host._id,
+            hostGuildId: guildId,
+            guestGuildId: guestGuild,
+            localEventId: "events:guest",
+            status: "accepted",
+        })
+        ctx.db.seed("userAssignments", {
+            _id: "userAssignments:guest",
+            serverId: guestGuild,
+            userId: "user-elsewhere",
+            gameId: sharedGame,
+        })
+        for (const row of ctx.db.tables.userAssignments) row.gameId = sharedGame
+        // A previously revoked copy must not receive this update or create a duplicate history entry.
+        ctx.db.seed("events", {
+            ...host,
+            _id: "events:revoked",
+            guildId: guestGuild,
+            hostEventId: host._id,
+            sharedAccessRevoked: true,
+        })
+        ctx.db.seed("sharedMatchInvitations", {
+            _id: "sharedMatchInvitations:revoked",
+            hostEventId: host._id,
+            hostGuildId: guildId,
+            guestGuildId: guestGuild,
+            localEventId: "events:revoked",
+            status: "revoked",
+        })
+        ctx.db.seed("events", {
+            ...host,
+            _id: "events:pending",
+            guildId: "guild-pending",
+            hostEventId: host._id,
+        })
+        const { actionCtx } = actionContext(ctx)
+        await runAction(history.refreshInBackground, actionCtx, {
+            secret,
+            guildId,
+            gameId: sharedGame,
+            eventId: host._id,
+        })
+        const clanHistory = ctx.db.tables.guildPerformanceHistory.find(
+            (row) => row.guildId === guestGuild
+        )!
+        assert.equal(clanHistory.matches.length, 1)
+        assert.equal(clanHistory.matches[0].eventId, "events:guest")
+        assert.equal(clanHistory.matches[0].kills, 4)
+        const playerHistory = ctx.db.tables.playerPerformanceHistory.find(
+            (row) =>
+                row.guildId === guestGuild && row.userId === "user-elsewhere"
+        )!
+        assert.equal(playerHistory.matches.length, 1)
+        assert.equal(playerHistory.matches[0].eventId, "events:guest")
+        assert.equal(playerHistory.matches[0].kills, 4)
+        assert.ok(
+            !ctx.db.tables.guildPerformanceHistory.some(
+                (row) => row.guildId === "guild-pending"
+            )
+        )
+        // Correcting the host's report updates guest charts without adding another match.
+        ctx.db.tables.playerStats.find(
+            (row) => row.userId === "user-elsewhere"
+        )!.matches[host._id].kills = 12
+        ctx.db.tables.matchStats
+            .find((row) => row.eventId === host._id)!
+            .raw.player_stats.find(
+                (row: { player_id: string }) => row.player_id === "steam-x"
+            ).kills = 12
+        await runAction(history.refreshInBackground, actionCtx, {
+            secret,
+            guildId,
+            gameId: sharedGame,
+            eventId: host._id,
+        })
+        assert.equal(clanHistory.matches.length, 1)
+        assert.equal(clanHistory.matches[0].kills, 12)
+        assert.equal(playerHistory.matches.length, 1)
+        assert.equal(playerHistory.matches[0].kills, 12)
+        // The manual rebuild follows exactly the same source mapping.
+        await invoke(history.refreshGuildOnly, ctx, {
+            secret,
+            guildId: guestGuild,
+            gameId: sharedGame,
+        })
+        await invoke(history.refreshPlayerForGuild, ctx, {
+            secret,
+            guildId: guestGuild,
+            gameId: sharedGame,
+            userId: "user-elsewhere",
+        })
+        assert.equal(playerHistory.matches[0].eventId, "events:guest")
+        assert.equal(playerHistory.matches[0].kills, 12)
+        await assert.rejects(
+            runAction(history.refreshInBackground, actionCtx, {
+                secret: "wrong",
+                guildId,
+                gameId: sharedGame,
+                eventId: host._id,
+            }),
+            /Unauthorized/
+        )
+        assert.deepEqual(
+            await invoke(history.matchRefreshTargets, ctx, {
+                guildId: "other",
+                gameId: sharedGame,
+                eventId: host._id,
+            }),
+            []
+        )
+        assert.deepEqual(
+            await invoke(history.matchRefreshTargets, ctx, {
+                guildId: guestGuild,
+                gameId: sharedGame,
+                eventId: "events:guest",
+            }),
+            []
+        )
+    })
+}

@@ -151,3 +151,37 @@ test("square logos keep their corners and no team or Logi backplate is drawn", a
         [49, 51, 56]
     )
 })
+
+test("partner badges use safe logo loading and bound large linked-clan groups", async () => {
+    const requested: string[] = []
+    const render = createMatchImageRenderer({
+        publicDir: path.join(process.cwd(), "public"),
+        loadLogo: async (url) => {
+            requested.push(url)
+            return null
+        },
+    })
+    const model = buildMatchImage({
+        clan: { name: "Local Clan" },
+        event: {
+            name: "Shared Match",
+            meetingStart: "2026-11-08T18:30:00Z",
+            gameStart: "2026-11-08T19:00:00Z",
+            sharedClans: Array.from({ length: 9 }, (_, i) => ({
+                name: `Partner ${i}`,
+                logoUrl: `https://cdn.discordapp.com/icons/${i}/icon.png`,
+            })),
+        },
+        language: "en",
+        timeZone: "UTC",
+    })
+    const bytes = await render(model)
+    assert.equal(
+        requested.length,
+        4,
+        "four logos and one overflow badge keep the image readable"
+    )
+    const metadata = await sharp(bytes).metadata()
+    assert.equal(metadata.width, 1200)
+    assert.equal(metadata.height, 675)
+})

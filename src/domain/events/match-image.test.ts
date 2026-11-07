@@ -249,3 +249,22 @@ test("ambiguous team labels never assign a score or outcome", () => {
     assert.equal(model.teams[0]?.score, null)
     assert.equal(model.result?.outcome, null)
 })
+
+test("shared clan logos decorate the local team without creating extra opponents", () => {
+    const original = input()
+    original.event.matchTeams = [team("b", "Manticore")]
+    original.event.sharedClans = [
+        {
+            name: "Partner One",
+            logoUrl: "https://cdn.discordapp.com/icons/1/a.png",
+        },
+        { name: "Partner Two", logoUrl: null },
+    ]
+    const model = buildMatchImage(original)
+    assert.equal(model.teams.length, 2)
+    assert.equal(model.teams[0]?.name, original.clan.name)
+    assert.deepEqual(model.supportingClans, original.event.sharedClans)
+    assert.ok(matchImageSchema.safeParse(model).success)
+    assert.ok(matchImageAlt(model).includes("Partner One"))
+    assert.equal(buildMatchImage(input()).supportingClans, undefined)
+})
