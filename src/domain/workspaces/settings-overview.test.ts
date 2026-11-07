@@ -16,6 +16,7 @@ const snapshot: SettingsSnapshot = {
 }
 const facts: SettingsOverviewFacts = {
     botInside: true,
+    playerImportCompleted: true,
     profile: { name: true, logo: true, description: true },
     templateCount: 3,
     collectingServers: 1,
@@ -33,11 +34,12 @@ test("the first unfinished step is next and later ones wait", () => {
             ["profile", "done"],
             ["channels", "next"],
             ["roles", "todo"],
+            ["players", "done"],
             ["gameServers", "done"],
         ]
     )
-    assert.equal(setup.done, 4)
-    assert.equal(setup.total, 6)
+    assert.equal(setup.done, 5)
+    assert.equal(setup.total, 7)
     assert.equal(setup.complete, false)
     assert.equal(setup.next?.section, "channels")
 })
@@ -139,5 +141,25 @@ test("a failing game server outranks the collecting count", () => {
             failingServers: 1,
         }),
         { tone: "attention", kind: "failing", count: 1 }
+    )
+})
+
+test("player import needs explicit completion even when other required settings are ready", () => {
+    const ready = { ...snapshot, announcementsChannelId: "1", clanRoleId: "2" }
+    const unfinished = settingsSetupSteps(ready, {
+        ...facts,
+        playerImportCompleted: undefined,
+    })
+    assert.equal(unfinished.next?.id, "players")
+    assert.equal(unfinished.complete, false)
+    assert.equal(unfinished.next?.section, undefined)
+    const finished = settingsSetupSteps(ready, {
+        ...facts,
+        playerImportCompleted: true,
+    })
+    assert.equal(finished.complete, true)
+    assert.equal(
+        finished.steps.find((step) => step.id === "players")?.state,
+        "done"
     )
 })

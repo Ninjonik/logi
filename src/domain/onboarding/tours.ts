@@ -40,6 +40,7 @@ export type TourContext = {
     botInside: boolean
 }
 export type OnboardingState = {
+    playerImportsCompletedAt?: Record<string, string>
     dashboardSetupCompletedAt?: string
     workspaceTourCompletedAt?: Record<string, string>
 }

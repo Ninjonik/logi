@@ -2656,6 +2656,12 @@ export const generatedOpenApiSchemas = {
             onboarding: {
                 type: "object",
                 properties: {
+                    playerImportsCompletedAt: {
+                        type: "object",
+                        additionalProperties: {
+                            type: "string",
+                        },
+                    },
                     dashboardSetupCompletedAt: {
                         type: "string",
                     },
@@ -2720,6 +2726,9 @@ export const generatedOpenApiSchemas = {
                 },
             },
             onboarding: {
+                playerImportsCompletedAt: {
+                    key: "string",
+                },
                 dashboardSetupCompletedAt: "string",
                 workspaceTourCompletedAt: {
                     key: "string",

@@ -39,14 +39,18 @@ import {
     guidedSetupHref,
     settingsHref,
 } from "@/components/app/settings/settings-section-meta"
+import { ImportDiscordMembersButton } from "@/components/app/import-discord-members-button"
 import { saveEnabledGames } from "@/components/app/settings/save-enabled-games"
+import { getPlayerImportCopy } from "@/i18n/messages/onboarding-player-import"
 import type { SettingsSetupStep } from "@/domain/workspaces/settings-overview"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useDiscordMetadataState } from "@/hooks/use-discord-metadata"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { DEFAULT_GAME_ID } from "@/domain/games/game"
 import type { GameId } from "@/domain/games/game"
 import { Button } from "@/components/ui/button"
 import { initialsOf } from "@/lib/initials"
+import { isLocale } from "@/i18n/config"
 import { cn } from "@/lib/utils"
 
 export type GuidedSetupStored = {
@@ -102,7 +106,7 @@ function StepMarker({
 }
 
 /**
- * The setup guide (design B): six steps from inviting the bot to connecting a
+ * The setup guide (design B): seven steps from inviting the bot to connecting a
  * game server, one card at a time. "Continue" saves the step through the same
  * routes the settings pages use and moves on, "Skip" moves on without saving.
  * Which steps are finished comes from the stored settings, by the same rule as
@@ -138,6 +142,8 @@ export function GuidedSetup({
     dictionary: Dictionary
 }) {
     const copy = dictionary.settingsHub.guidedSetup
+    const importCopy = getPlayerImportCopy(isLocale(locale) ? locale : "en")
+    const [playersDone, setPlayersDone] = useState(false)
     const titles = dictionary.settingsHub.overview.setup.steps
     const router = useRouter()
     const [, startTransition] = useTransition()
@@ -150,7 +156,14 @@ export function GuidedSetup({
     const metadata = useDiscordMetadataState(serverId, metadataVersion)
     const heading = useRef<HTMLHeadingElement>(null)
     const shown = useRef(initialStep)
-    const view = guidedSetupView(steps, position)
+    const view = guidedSetupView(
+        steps.map((step) =>
+            step.id === "players" && playersDone
+                ? { ...step, state: "done" as const }
+                : step
+        ),
+        position
+    )
     const current = view.current
 
     useEffect(() => {
@@ -191,6 +204,19 @@ export function GuidedSetup({
 
     async function save(): Promise<Outcome> {
         switch (current?.id) {
+            case "players": {
+                const response = await fetch("/api/user/onboarding", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        milestone: "player_import",
+                        workspaceId: serverId,
+                    }),
+                })
+                if (!response.ok) return { ok: false, error: copy.saveError }
+                setPlayersDone(true)
+                return { ok: true, saved: true }
+            }
             case "games": {
                 if (!drafts.enabledGames.length)
                     return { ok: false, error: copy.steps.games.required }
@@ -264,7 +290,8 @@ export function GuidedSetup({
     }
 
     const refresh = () => startTransition(() => router.refresh())
-    const stepTitle = (id: GuidedSetupItem["id"]) => titles[id].title
+    const stepTitle = (id: GuidedSetupItem["id"]) =>
+        id === "players" ? importCopy.title : titles[id].title
     const overviewHref = settingsHref(locale, serverId)
 
     let body: ReactNode = null
@@ -328,6 +355,18 @@ export function GuidedSetup({
                     metadata={metadata}
                     copy={copy.steps.roles}
                     unavailable={copy.discordUnavailable}
+                />
+            )
+            break
+        case "players":
+            body = (
+                <ImportDiscordMembersButton
+                    serverId={serverId}
+                    dictionary={dictionary}
+                    gameId={drafts.enabledGames[0] ?? DEFAULT_GAME_ID}
+                    enabledGames={drafts.enabledGames}
+                    defaultRoleId={drafts.roles.clanRoleId}
+                    onImported={refresh}
                 />
             )
             break
@@ -513,10 +552,15 @@ export function GuidedSetup({
                                         tabIndex={-1}
                                         className="text-[22px] leading-[30px] font-semibold outline-none"
                                     >
-                                        {copy.steps[current.id].heading}
+                                        {current.id === "players"
+                                            ? importCopy.title
+                                            : copy.steps[current.id].heading}
                                     </h1>
                                     <p className="text-muted-foreground text-sm leading-[22px]">
-                                        {copy.steps[current.id].description}
+                                        {current.id === "players"
+                                            ? importCopy.body
+                                            : copy.steps[current.id]
+                                                  .description}
                                     </p>
                                 </div>
                                 {body}
@@ -552,17 +596,27 @@ export function GuidedSetup({
                                         </Button>
                                     ) : null}
                                 </div>
-                                <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+                                <div
+                                    className={cn(
+                                        "flex flex-1 items-center justify-end gap-2 sm:flex-none",
+                                        current.id === "players" &&
+                                            "max-sm:flex-col max-sm:items-stretch"
+                                    )}
+                                >
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         className="text-foreground/80 rounded-lg max-sm:h-12 max-sm:rounded-xl max-sm:text-[15px]"
                                         disabled={saving}
                                         onClick={() =>
-                                            view.next && goTo(view.next)
+                                            current.id === "players"
+                                                ? void next()
+                                                : view.next && goTo(view.next)
                                         }
                                     >
-                                        {copy.skip}
+                                        {current.id === "players"
+                                            ? importCopy.none
+                                            : copy.skip}
                                     </Button>
                                     <Button
                                         type="button"
@@ -572,9 +626,11 @@ export function GuidedSetup({
                                     >
                                         {saving
                                             ? copy.saving
-                                            : current.last
-                                              ? copy.finish
-                                              : copy.continue}
+                                            : current.id === "players"
+                                              ? importCopy.done
+                                              : current.last
+                                                ? copy.finish
+                                                : copy.continue}
                                         <ArrowRight
                                             className="size-4"
                                             aria-hidden="true"

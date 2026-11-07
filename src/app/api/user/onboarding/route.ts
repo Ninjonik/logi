@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth"
 
 const onboardingSchema = z.object({
-    milestone: z.enum(["dashboard_setup", "workspace_tour"]),
+    milestone: z.enum(["dashboard_setup", "workspace_tour", "player_import"]),
     workspaceId: z.string().trim().min(1).optional(),
 })
 
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     try {
         const body = onboardingSchema.parse(await request.json())
-        if (body.milestone === "workspace_tour" && !body.workspaceId) {
+        if (body.milestone !== "dashboard_setup" && !body.workspaceId) {
             return NextResponse.json(
                 { error: "A workspace is required for this tour." },
                 { status: 400 }

@@ -6,6 +6,7 @@ import type { SettingsSectionId, SettingsSnapshot } from "./settings-sections"
  * for it instead of a guess.
  */
 export type SettingsOverviewFacts = {
+    playerImportCompleted?: boolean
     botInside: boolean
     profile: { name: boolean; logo: boolean; description: boolean }
     templateCount: number
@@ -22,6 +23,7 @@ export const SETTINGS_SETUP_STEPS = [
     "profile",
     "channels",
     "roles",
+    "players",
     "gameServers",
 ] as const
 export type SettingsSetupStepId = (typeof SETTINGS_SETUP_STEPS)[number]
@@ -50,6 +52,7 @@ const STEP_SECTIONS: Record<
     profile: "profile",
     channels: "channels",
     roles: "roles",
+    players: undefined,
     gameServers: "game-servers",
 }
 
@@ -70,13 +73,15 @@ function stepDone(
             return Boolean(snapshot.announcementsChannelId)
         case "roles":
             return Boolean(snapshot.clanRoleId)
+        case "players":
+            return facts.playerImportCompleted === true
         case "gameServers":
             return (facts.collectingServers ?? 0) > 0
     }
 }
 
 /**
- * The first-setup checklist: six steps in the order they unlock each other,
+ * The first-setup checklist: seven steps in the order they unlock each other,
  * game servers last and optional. The first unfinished step is `next`.
  */
 export function settingsSetupSteps(

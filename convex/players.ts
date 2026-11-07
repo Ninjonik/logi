@@ -1,4 +1,5 @@
 import { getDefaultWorkspaceCandidatesFromMemberships } from "../src/domain/workspaces/default-workspace"
+import { completeOnboardingMilestone } from "../src/domain/onboarding/progress"
 import { gameScoreKey, getGameScore } from "../src/domain/players/game-score"
 import { matchesGameScope, resolveGameScope } from "../src/domain/games/game"
 import { canOpenWorkspace } from "../src/domain/workspaces/workspace-access"
@@ -669,7 +670,8 @@ export const markOnboardingSeen = mutation({
         userId: v.string(),
         milestone: v.union(
             v.literal("dashboard_setup"),
-            v.literal("workspace_tour")
+            v.literal("workspace_tour"),
+            v.literal("player_import")
         ),
         workspaceId: v.optional(v.string()),
     },
@@ -680,21 +682,13 @@ export const markOnboardingSeen = mutation({
 
         const now = new Date().toISOString()
         const current = user.onboarding ?? {}
-        const workspaceTourCompletedAt = {
-            ...(current.workspaceTourCompletedAt ?? {}),
-            ...(args.milestone === "workspace_tour" && args.workspaceId
-                ? { [args.workspaceId]: now }
-                : {}),
-        }
-
         await ctx.db.patch(user._id, {
-            onboarding: {
-                ...current,
-                ...(args.milestone === "dashboard_setup"
-                    ? { dashboardSetupCompletedAt: now }
-                    : {}),
-                workspaceTourCompletedAt,
-            },
+            onboarding: completeOnboardingMilestone(
+                current,
+                args.milestone,
+                args.workspaceId,
+                now
+            ),
             updatedAt: now,
         })
         return { ok: true }

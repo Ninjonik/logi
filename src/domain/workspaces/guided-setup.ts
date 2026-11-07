@@ -5,7 +5,7 @@ import {
 } from "./settings-overview"
 
 /**
- * Where the setup guide stands (design B): one of the six steps, or the
+ * Where the setup guide stands (design B): one of the seven steps, or the
  * closing "Logi is ready" screen after the last one.
  */
 export type GuidedSetupPosition = SettingsSetupStepId | "done"
@@ -56,7 +56,7 @@ export type GuidedSetupMarker = "current" | "done" | "todo"
 
 export type GuidedSetupItem = {
     id: SettingsSetupStepId
-    /** 1-based, as in "Step 4 of 6". */
+    /** 1-based, as in "Step 4 of 7". */
     number: number
     optional: boolean
     marker: GuidedSetupMarker
