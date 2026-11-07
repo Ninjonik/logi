@@ -833,7 +833,7 @@ export function SquadCard({
                                         {allocatedClan?.name ??
                                             player.allocatedGuildId}
                                     </Badge>
-                                    {player.locked ? (
+                                    {player.locked && (!canAdmin || guest) ? (
                                         <LockKeyhole
                                             className="size-3"
                                             aria-label={
@@ -1060,7 +1060,7 @@ export function SquadCard({
                                                 </button>
                                             </PopoverTrigger>
                                             <PopoverContent
-                                                className="w-[320px] p-0"
+                                                className="w-[320px] p-0 data-[state=closed]:hidden data-[state=closed]:animate-none"
                                                 align="start"
                                             >
                                                 {!guest &&
