@@ -5963,6 +5963,7 @@ export const plMessages = {
         noMatchMember:
             "Kiedy twoi menedżerowie planują mecz, zobaczysz go tutaj.",
         waitingTitle: "Czekam na Ciebie",
+        missingResult: "Uzupełnij wynik {name}",
         confirmResult: "Potwierdź wynik {name}",
         resultScore: "{score} · {date}",
         resultNoScore: "Wynik etapowy · {date}",

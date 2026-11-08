@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    matchesMissingResults,
     calendarDayDistance,
     calendarDayKeys,
     eventsByDay,
@@ -188,7 +189,7 @@ test("form lists the last outcomes oldest first and marks unconfirmed ones", () 
             },
         })
     )
-    matches[11] = { ...matches[11], ...reviewed("provisional") }
+    matches[11] = { ...matches[11], side: "Side 0", ...reviewed("provisional") }
     const form = recentForm([
         ...matches,
         event({ id: "no-result" }),
@@ -478,4 +479,77 @@ test("month attendance points are empty with the default rules or no matches", (
         }),
         { leaders: [], events: 0 }
     )
+})
+
+test("form includes reviewed-only Wardogs matches and uses corrected scores", () => {
+    const match = event({
+        gameId: "wardogs",
+        side: "Side 0",
+        ...reviewed("confirmed"),
+        reviewedResultGameId: "wardogs",
+    })
+    assert.equal(recentForm([match]).matches[0]?.outcome, "victory")
+    assert.equal(recentForm([{ ...match, isDraft: true }]).matches.length, 0)
+    assert.equal(recentForm([{ ...match, side: "unknown" }]).matches.length, 0)
+    assert.equal(
+        recentForm([
+            {
+                ...match,
+                ...reviewed("confirmed", [1, 2]),
+                reviewedResultGameId: "wardogs",
+                eventResult: { outcome: "victory" },
+            },
+        ]).matches[0]?.outcome,
+        "defeat"
+    )
+})
+
+test("missing results remain tasks after setup, excluding drafts, training and cancellations", () => {
+    const past = event({ gameEnd: "2026-10-10T20:00:00Z" })
+    assert.deepEqual(
+        matchesMissingResults(
+            [
+                past,
+                event(),
+                { ...past, id: "draft", isDraft: true },
+                { ...past, id: "training", kind: "training" },
+                {
+                    ...past,
+                    id: "cancelled",
+                    concludedAt: "2026-10-01T00:00:00Z",
+                },
+                { ...past, id: "legacy", eventResult: { outcome: "victory" } },
+                { ...past, id: "reviewed", ...reviewed("confirmed") },
+            ],
+            now
+        ).map((match) => match.id),
+        ["event-1"]
+    )
+})
+
+test("monthly points include legacy applied dates but respect explicit skipped resolutions", () => {
+    const result = monthAttendanceLeaders({
+        events: [
+            scoredEvent({
+                id: "legacy",
+                scoreResolution: undefined,
+                scoreAppliedAt: "2026-10-05T00:00:00Z",
+                participants: [{ userId: "u1", status: "attending" }],
+            }),
+            scoredEvent({
+                id: "skipped",
+                scoreResolution: "skipped",
+                scoreAppliedAt: "2026-10-05T00:00:00Z",
+            }),
+        ],
+        rosters: [scoredRoster("legacy", [{ id: "u1", confirmed: true }])],
+        assignments: [{ userId: "u1", paused: false }],
+        settings: scoreRules,
+        monthKey: "2026-10",
+        monthKeyOf,
+    })
+    assert.deepEqual(result, {
+        leaders: [{ userId: "u1", points: 3 }],
+        events: 1,
+    })
 })

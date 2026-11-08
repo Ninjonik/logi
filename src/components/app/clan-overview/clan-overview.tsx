@@ -2,6 +2,7 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 
 import {
+    matchesMissingResults,
     calendarDayKeys,
     eventsByDay,
     nextUpcomingMatch,
@@ -125,11 +126,18 @@ export function ClanOverview({
         calendarDayKeys(todayKey, 7),
         format.dayKey
     )
-    const form = recentForm(events)
+    const form = recentForm(events, 10, server.name)
     const setup = settingsSetupProgress(snapshot)
 
     const applications = pendingApplications(assignments)
     const waiting: WaitingItem[] = [
+        ...matchesMissingResults(events, now).map((event): WaitingItem => ({
+            key: `missing-result:${event.id}`,
+            href: matchHref(event.id),
+            title: fill(text.missingResult, { name: event.name }),
+            detail: format.shortDate(event.gameEnd),
+            tone: "warning",
+        })),
         ...resultsAwaitingConfirmation(events)
             .slice(0, 3)
             .map((result): WaitingItem => ({
