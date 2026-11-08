@@ -111,6 +111,7 @@ export type CalendarItem = {
 }
 
 export type DiscordConfig = {
+    selfAssignableGroupIds?: string[]
     eventDiscussionDefaults?: import("../../src/domain/events/discussion").EventDiscussionSettings
     id: string
     guildId: string
@@ -369,6 +370,7 @@ export type EventRecord = {
     allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     attendeeRoleId?: string
     reserveRoleId?: string
@@ -421,6 +423,7 @@ export type EventRecord = {
     }>
     signUps: Array<{
         userId: string
+        signupPreferences?: string[]
         group?: string | null
     }>
     participants: Array<{
@@ -428,6 +431,7 @@ export type EventRecord = {
         signedUpLateAt?: string
         userId: string
         status: "attending" | "not_attending"
+        signupPreferences?: string[]
         group?: string | null
         /** The full capped group a reserve chose. */
         requestedGroup?: string | null

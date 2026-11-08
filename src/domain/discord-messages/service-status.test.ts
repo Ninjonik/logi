@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    SERVICE_STATUS_INTERVAL_SECONDS,
     formatOutageDuration,
     nextServiceStates,
     serviceChangeView,
@@ -43,7 +44,7 @@ test("all services up reads 'Všechno běží' with a chip per service (L5-34)",
     assert.match(
         rendered,
         new RegExp(
-            `Kontrola každých 30 s · naposledy dnes v <t:${unix(CHECKED)}:t>`
+            `Kontrola každých ${SERVICE_STATUS_INTERVAL_SECONDS} s · naposledy dnes v <t:${unix(CHECKED)}:t>`
         )
     )
     for (const name of ["Dashboard", "Convex", "Discord bot"])

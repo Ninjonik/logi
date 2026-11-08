@@ -9,6 +9,12 @@ import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/upsert-policy"
 import { matchTeamInputsSchema } from "@/domain/teams/match-teams"
 import { z } from "zod"
 
+export const signupPreferencesSchema = z
+    .array(z.string().trim().min(1).max(100))
+    .min(1)
+    .max(25)
+    .refine((choices) => new Set(choices).size === choices.length)
+
 const settingId = z.string().trim().min(1).max(64)
 
 /** Group caps of a match: a full group offers a reserve place instead. */
@@ -111,6 +117,7 @@ export const eventSchema = z
         allowLateSignups: z.boolean().optional(),
         allowNonMembersSignup: z.boolean().default(false),
         useGeneralSignup: z.boolean().default(false),
+        allowRankedSignup: z.boolean().default(false),
         signupReminderStatuses: z
             .array(z.enum(["recruit", "member", "reserve_member"]))
             .default(["member"]),

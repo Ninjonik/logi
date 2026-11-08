@@ -1,4 +1,5 @@
 import type { ServerUserAssignment } from "@/lib/server-user-management"
+import { optimalAssignment } from "@/domain/rosters/optimal-assignment"
 import type { AppUser, Group, Roster } from "@/types/domain"
 import { getUserScoreForGuild } from "@/lib/user-scores"
 
@@ -22,12 +23,31 @@ type CandidateRankingContext = {
     usersById: Map<string, AppUser>
     assignmentsByUserId: Map<string, ServerUserAssignment>
     groupsById: Map<string, Group>
+    signupPreferencesByUserId?: Map<string, string[]>
     signupGroupByUserId: Map<string, string | null>
     participantStatusByUserId: Map<string, ParticipantStatus>
     serverDiscordId: string
 }
 
 const SIGNUP_NOT_ATTENDING = "not_attending"
+
+const LOCALIZED_ROSTER_GROUPS: Readonly<Record<string, RosterPreferenceKey>> = {
+    pěchota: "infantry",
+    piechota: "infantry",
+    infanterie: "infantry",
+    tanky: "armor",
+    panzer: "armor",
+    "wojska pancerne": "armor",
+    průzkum: "recon",
+    aufklärung: "recon",
+    zwiad: "recon",
+    dělostřelectvo: "artillery",
+    artillerie: "artillery",
+    artyleria: "artillery",
+    velení: "command",
+    führung: "command",
+    dowodzenie: "command",
+}
 
 function normalizeText(value?: string | null) {
     return value?.trim().toLowerCase() ?? ""
@@ -37,6 +57,8 @@ export function getRosterPreferenceKey(
     value?: string | null
 ): RosterPreferenceKey {
     const normalized = normalizeText(value)
+    const localized = LOCALIZED_ROSTER_GROUPS[normalized]
+    if (localized) return localized
 
     if (!normalized) {
         return "other"
@@ -218,7 +240,7 @@ function getAttendanceRank(
 
     if (
         participantStatus === "not_attending" ||
-        signupGroup === SIGNUP_NOT_ATTENDING
+        normalizeText(signupGroup) === SIGNUP_NOT_ATTENDING
     ) {
         return 1
     }
@@ -232,86 +254,6 @@ function getKd(user: AppUser) {
 
 function getScore(user: AppUser, serverDiscordId: string) {
     return getUserScoreForGuild(user, serverDiscordId)
-}
-
-function getStatBounds(
-    userIds: string[],
-    usersById: Map<string, AppUser>,
-    getValue: (user: AppUser) => number
-) {
-    let min = Number.POSITIVE_INFINITY
-    let max = Number.NEGATIVE_INFINITY
-
-    for (const userId of userIds) {
-        const user = usersById.get(userId)
-        if (!user) {
-            continue
-        }
-
-        const value = getValue(user)
-        if (value < min) {
-            min = value
-        }
-        if (value > max) {
-            max = value
-        }
-    }
-
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-        return { min: 0, max: 0 }
-    }
-
-    return { min, max }
-}
-
-function normalizeStat(value: number, bounds: { min: number; max: number }) {
-    if (bounds.max === bounds.min) {
-        return 0
-    }
-
-    return (value - bounds.min) / (bounds.max - bounds.min)
-}
-
-function getPrimaryGroupRank(
-    userId: string,
-    squadGroup: string | undefined,
-    assignmentsByUserId: Map<string, ServerUserAssignment>,
-    groupsById: Map<string, Group>
-) {
-    if (!squadGroup) {
-        return 1
-    }
-
-    const assignment = assignmentsByUserId.get(userId)
-    if (!assignment?.primaryGroupId) {
-        return 1
-    }
-
-    return groupsById.get(assignment.primaryGroupId)?.name === squadGroup
-        ? 0
-        : 1
-}
-
-function getSecondaryGroupRank(
-    userId: string,
-    squadGroup: string | undefined,
-    assignmentsByUserId: Map<string, ServerUserAssignment>,
-    groupsById: Map<string, Group>
-) {
-    if (!squadGroup) {
-        return 1
-    }
-
-    const assignment = assignmentsByUserId.get(userId)
-    if (!assignment) {
-        return 1
-    }
-
-    return assignment.secondaryGroupIds.some(
-        (groupId) => groupsById.get(groupId)?.name === squadGroup
-    )
-        ? 0
-        : 1
 }
 
 export function compareRosterCandidates(
@@ -402,212 +344,186 @@ export function compareRosterCandidates(
     return leftUser.name.localeCompare(rightUser.name)
 }
 
-export type AutoFillWeights = {
-    score: number
-    kd: number
+function singleSignupPreference(group?: string | null): string[] {
+    return group &&
+        !["attending", "attend", "general", "not_attending"].includes(
+            normalizeText(group)
+        )
+        ? [group]
+        : []
 }
 
-function compareAutoFillPlayerPriority(
-    leftUserId: string,
-    rightUserId: string,
-    context: CandidateRankingContext,
-    weights: AutoFillWeights,
-    userIds: string[]
-) {
-    const leftUser = context.usersById.get(leftUserId)
-    const rightUser = context.usersById.get(rightUserId)
-
-    if (!leftUser || !rightUser) {
-        return leftUser ? -1 : rightUser ? 1 : 0
+/** Ordered signup choices also retain a capped group's requested preference. */
+export function getSignupPreferencesByUserId(event?: {
+    participants?: Array<{
+        userId: string
+        status: ParticipantStatus
+        group?: string | null
+        requestedGroup?: string | null
+        signupPreferences?: string[]
+    }>
+    signUps?: Array<{
+        userId: string
+        group?: string | null
+        signupPreferences?: string[]
+    }>
+}) {
+    const result = new Map<string, string[]>()
+    for (const person of event?.participants ?? []) {
+        result.set(
+            person.userId,
+            person.status === "not_attending"
+                ? []
+                : person.signupPreferences?.length
+                  ? person.signupPreferences
+                  : singleSignupPreference(
+                        person.requestedGroup ?? person.group
+                    )
+        )
     }
-
-    const scoreBounds = getStatBounds(userIds, context.usersById, (user) =>
-        getScore(user, context.serverDiscordId)
-    )
-    const kdBounds = getStatBounds(userIds, context.usersById, getKd)
-
-    const leftWeightedValue =
-        normalizeStat(
-            getScore(leftUser, context.serverDiscordId),
-            scoreBounds
-        ) *
-            weights.score +
-        normalizeStat(getKd(leftUser), kdBounds) * weights.kd
-    const rightWeightedValue =
-        normalizeStat(
-            getScore(rightUser, context.serverDiscordId),
-            scoreBounds
-        ) *
-            weights.score +
-        normalizeStat(getKd(rightUser), kdBounds) * weights.kd
-
-    if (leftWeightedValue !== rightWeightedValue) {
-        return rightWeightedValue - leftWeightedValue
-    }
-
-    const leftScore = getScore(leftUser, context.serverDiscordId)
-    const rightScore = getScore(rightUser, context.serverDiscordId)
-    if (weights.score > 0 && leftScore !== rightScore) {
-        return rightScore - leftScore
-    }
-
-    const leftKd = getKd(leftUser)
-    const rightKd = getKd(rightUser)
-    if (weights.kd > 0 && leftKd !== rightKd) {
-        return rightKd - leftKd
-    }
-
-    return compareRosterCandidates(leftUserId, rightUserId, context)
-}
-
-function compareSlotsForUser(
-    userId: string,
-    leftSlot: RosterSlot,
-    rightSlot: RosterSlot,
-    context: CandidateRankingContext
-) {
-    const leftSignupRank = getSignupMatchRank(
-        userId,
-        leftSlot,
-        context.signupGroupByUserId
-    )
-    const rightSignupRank = getSignupMatchRank(
-        userId,
-        rightSlot,
-        context.signupGroupByUserId
-    )
-    if (leftSignupRank !== rightSignupRank) {
-        return leftSignupRank - rightSignupRank
-    }
-
-    const leftPrimaryRank = getPrimaryGroupRank(
-        userId,
-        leftSlot.squadGroup,
-        context.assignmentsByUserId,
-        context.groupsById
-    )
-    const rightPrimaryRank = getPrimaryGroupRank(
-        userId,
-        rightSlot.squadGroup,
-        context.assignmentsByUserId,
-        context.groupsById
-    )
-    if (leftPrimaryRank !== rightPrimaryRank) {
-        return leftPrimaryRank - rightPrimaryRank
-    }
-
-    const leftSecondaryRank = getSecondaryGroupRank(
-        userId,
-        leftSlot.squadGroup,
-        context.assignmentsByUserId,
-        context.groupsById
-    )
-    const rightSecondaryRank = getSecondaryGroupRank(
-        userId,
-        rightSlot.squadGroup,
-        context.assignmentsByUserId,
-        context.groupsById
-    )
-    if (leftSecondaryRank !== rightSecondaryRank) {
-        return leftSecondaryRank - rightSecondaryRank
-    }
-
-    if (leftSlot.squadIndex !== rightSlot.squadIndex) {
-        return leftSlot.squadIndex - rightSlot.squadIndex
-    }
-
-    return leftSlot.playerIndex - rightSlot.playerIndex
+    for (const person of event?.signUps ?? [])
+        if (!result.has(person.userId))
+            result.set(
+                person.userId,
+                person.signupPreferences ?? singleSignupPreference(person.group)
+            )
+    return result
 }
 
 export function autoFillRosterAssignments(
     board: Roster,
     context: CandidateRankingContext,
-    weights: AutoFillWeights
+    random: () => number = Math.random
 ) {
     const next = structuredClone(board)
-    const availableUserIds = Array.from(new Set(next.reservePlayerIds || []))
+    const alreadyAssigned = new Set(
+        next.squads.flatMap((squad) =>
+            squad.players.flatMap((player) => (player.id ? [player.id] : []))
+        )
+    )
+    const availableUserIds = Array.from(
+        new Set(next.reservePlayerIds ?? [])
+    ).filter(
+        (id) =>
+            !alreadyAssigned.has(id) &&
+            context.usersById.has(id) &&
+            getAttendanceRank(
+                id,
+                context.participantStatusByUserId,
+                context.signupGroupByUserId
+            ) === 0
+    )
     const emptySlots: RosterSlot[] = []
-
-    next.squads.forEach((squad, squadIndex) => {
+    next.squads.forEach((squad, squadIndex) =>
         squad.players.forEach((player, playerIndex) => {
-            if (player.id || getCustomNameFromSlot(player.customName)) {
+            if (!player.id && !getCustomNameFromSlot(player.customName))
+                emptySlots.push({
+                    squadIndex,
+                    playerIndex,
+                    squadGroup: squad.group,
+                    roleName: player.roleName,
+                    roleIcon: player.roleIcon,
+                })
+        })
+    )
+    const choices: Array<{ player: number; slot: number; rank: number }> = []
+    const catalogueGroupNames = new Set(
+        [...context.groupsById.values()].map((group) =>
+            normalizeText(group.name)
+        )
+    )
+    const fallbackChoices: Array<{
+        player: number
+        slot: number
+        rank: number
+    }> = []
+    availableUserIds.forEach((id, playerIndex) => {
+        const user = context.usersById.get(id)
+        const preference = context.signupGroupByUserId.get(id)
+        const preferences =
+            context.signupPreferencesByUserId?.get(id) ??
+            singleSignupPreference(preference)
+        emptySlots.forEach((slot, slotIndex) => {
+            const allocation =
+                next.squads[slot.squadIndex].players[slot.playerIndex]
+                    .allocatedGuildId
+            if (
+                allocation &&
+                user?.sharedGuildId !== allocation &&
+                !user?.sharedEligibleGuildIds?.includes(allocation)
+            )
                 return
-            }
-
-            emptySlots.push({
-                squadIndex,
-                playerIndex,
-                squadGroup: squad.group,
-                roleName: player.roleName,
-                roleIcon: player.roleIcon,
-            })
+            const rank = preferences.findIndex(
+                (name) =>
+                    normalizeText(name) === normalizeText(slot.squadGroup) ||
+                    (!catalogueGroupNames.has(normalizeText(slot.squadGroup)) &&
+                        getRosterPreferenceKey(name) !== "other" &&
+                        getRosterPreferenceKey(name) ===
+                            getSlotPreferenceKey(slot))
+            )
+            if (!preferences.length || rank >= 0)
+                choices.push({
+                    player: playerIndex,
+                    slot: slotIndex,
+                    rank: Math.max(0, rank),
+                })
+            else
+                fallbackChoices.push({
+                    player: playerIndex,
+                    slot: slotIndex,
+                    rank: 26,
+                })
         })
     })
-
-    const sortedUsers = availableUserIds
-        .slice()
-        .sort((leftUserId, rightUserId) =>
-            compareAutoFillPlayerPriority(
-                leftUserId,
-                rightUserId,
-                context,
-                weights,
-                availableUserIds
-            )
+    const players = availableUserIds.map((id) => {
+        const user = context.usersById.get(id)
+        return {
+            score: user ? getScore(user, context.serverDiscordId) : 0,
+            kd: user ? getKd(user) : -1,
+        }
+    })
+    const matched = optimalAssignment({
+        players,
+        slotCount: emptySlots.length,
+        choices,
+    })
+    // Only a player shortage permits unlisted groups. Shuffle remaining candidates and
+    // slots for those fallback placements; eligibility and existing assignments still apply.
+    if (availableUserIds.length <= emptySlots.length) {
+        const remaining = [...fallbackChoices]
+        for (let index = remaining.length - 1; index > 0; index--) {
+            const target = Math.floor(random() * (index + 1))
+            ;[remaining[index], remaining[target]] = [
+                remaining[target],
+                remaining[index],
+            ]
+        }
+        // Include preferred edges to allow reassignment if a shared-clan allocation
+        // requires moving a preferred player to make room for a fallback player.
+        const all = [...choices, ...remaining]
+        matched.splice(
+            0,
+            matched.length,
+            ...optimalAssignment({
+                players,
+                slotCount: emptySlots.length,
+                choices: all,
+            })
         )
-
-    const unassignedUserIds: string[] = []
-
-    for (const userId of sortedUsers) {
-        if (emptySlots.length === 0) {
-            unassignedUserIds.push(userId)
-            continue
-        }
-
-        const user = context.usersById.get(userId)
-        const eligibleSlots = emptySlots.flatMap((slot, index) => {
-            const clan =
-                next.squads[slot.squadIndex]?.players[slot.playerIndex]
-                    ?.allocatedGuildId
-            return !clan ||
-                user?.sharedEligibleGuildIds?.includes(clan) ||
-                user?.sharedGuildId === clan
-                ? [index]
-                : []
-        })
-        if (!eligibleSlots.length) {
-            unassignedUserIds.push(userId)
-            continue
-        }
-        let bestSlotIndex = eligibleSlots[0]
-
-        for (const index of eligibleSlots.slice(1)) {
-            if (
-                compareSlotsForUser(
-                    userId,
-                    emptySlots[index],
-                    emptySlots[bestSlotIndex],
-                    context
-                ) < 0
-            ) {
-                bestSlotIndex = index
-            }
-        }
-
-        const [slot] = emptySlots.splice(bestSlotIndex, 1)
-        const player = next.squads[slot.squadIndex]?.players[slot.playerIndex]
-        if (!player) {
-            unassignedUserIds.push(userId)
-            continue
-        }
-
-        player.id = userId
+    }
+    const assigned = new Set<string>()
+    for (const match of matched) {
+        const slot = emptySlots[match.slot]
+        const player = next.squads[slot.squadIndex].players[slot.playerIndex]
+        player.id = availableUserIds[match.player]
         player.customName = undefined
         player.ack = false
         player.confirmed = false
+        assigned.add(player.id)
     }
-
-    next.reservePlayerIds = unassignedUserIds
+    next.reservePlayerIds = [...new Set(next.reservePlayerIds ?? [])].filter(
+        (id) => !assigned.has(id) && !alreadyAssigned.has(id)
+    )
     return next
 }
 

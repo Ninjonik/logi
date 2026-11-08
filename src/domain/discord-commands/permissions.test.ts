@@ -123,12 +123,24 @@ test("a channel limit answers where the command works; threads use their parent 
 
 test("/help lists only what the person may use, with a staff part (M1-B05, M2-11)", () => {
     const member = helpCommandsFor(caller([CLAN_ROLE]), config())
-    assert.deepEqual(member.members, ["stats", "player", "link", "notice"])
+    assert.deepEqual(member.members, [
+        "groups",
+        "stats",
+        "player",
+        "link",
+        "notice",
+    ])
     assert.deepEqual(member.staff, [])
     assert.equal(member.staffReason, null)
 
     const admin = helpCommandsFor(caller([ADMIN_ROLE]), config())
-    assert.deepEqual(admin.members, ["stats", "player", "link", "notice"])
+    assert.deepEqual(admin.members, [
+        "groups",
+        "stats",
+        "player",
+        "link",
+        "notice",
+    ])
     assert.deepEqual(admin.staff, [
         "server-status",
         "close_ticket",
@@ -168,7 +180,7 @@ test("switched-off commands and commands restricted to managers move or disappea
         true
     )
     const member = helpCommandsFor(caller([CLAN_ROLE]), config(settings))
-    assert.deepEqual(member.members, ["player", "notice"])
+    assert.deepEqual(member.members, ["groups", "player", "notice"])
     const lead = helpCommandsFor(caller([LEADS]), config(settings))
     assert.deepEqual(lead.staff, ["server-status"])
     assert.equal(lead.staffReason, "role")

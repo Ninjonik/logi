@@ -86,6 +86,7 @@ export type FlowValues = {
     signupGroupIds: string[]
     signupGroupLimits: Array<{ groupId: string; max: number }>
     useGeneralSignup: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses: TemplateReminderStatus[]
     announcementChannelId: string
     eventInfoChannelId: string
@@ -230,6 +231,7 @@ export function applyTemplateValues(
             : [],
         signupGroupLimits: template.signupGroupLimits ?? [],
         useGeneralSignup: template.useGeneralSignup,
+        allowRankedSignup: template.allowRankedSignup,
         signupReminderStatuses: template.signupReminderStatuses,
         pingMode: template.pingMode,
         pingRoleIds: template.pingRoleIds,
@@ -317,6 +319,7 @@ export function newFlowValues(input: {
         ),
         signupGroupLimits: [],
         useGeneralSignup: false,
+        allowRankedSignup: false,
         signupReminderStatuses: ["member"],
         announcementChannelId:
             channelDefaults[gameId]?.announcementChannelId ?? "",
@@ -462,6 +465,7 @@ export function flowValuesFromEvent(
         signupGroupIds: event.signupGroupIds ?? [],
         signupGroupLimits: event.signupGroupLimits ?? [],
         useGeneralSignup: event.useGeneralSignup ?? false,
+        allowRankedSignup: event.allowRankedSignup ?? false,
         signupReminderStatuses: event.signupReminderStatuses ?? ["member"],
         announcementChannelId: event.announcementChannelId ?? "",
         eventInfoChannelId: event.eventInfoChannelId ?? "",
@@ -674,6 +678,7 @@ export function flowEventPayload(values: FlowValues, context: PayloadContext) {
         allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
+        allowRankedSignup: isMatch && values.allowRankedSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],
         signupGroupLimits: isMatch
             ? values.signupGroupLimits.filter((limit) =>
@@ -912,6 +917,7 @@ export function flowEditPayload(
         allowLateSignups: isMatch && values.allowLateSignups !== false,
         allowNonMembersSignup: values.allowNonMembersSignup,
         useGeneralSignup: isMatch && values.useGeneralSignup,
+        allowRankedSignup: isMatch && values.allowRankedSignup,
         signupReminderStatuses: isMatch ? values.signupReminderStatuses : [],
         ...(recurrence ? { recurrence } : {}),
         ...(matchTeams ? { matchTeams } : {}),

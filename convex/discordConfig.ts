@@ -13,6 +13,7 @@ import {
     eventDiscussionDefaults,
     validateEventDiscussion,
 } from "../src/domain/events/discussion"
+import { validateSelfAssignableGroups } from "../src/infrastructure/convex/self-groups"
 import { normalizeMessageStyle } from "../src/domain/discord-messages/message-style"
 import { discordConfigPatch } from "../src/domain/workspaces/discord-config-patch"
 import { eventDiscussionDefaultsValidator } from "./eventDiscussionValidators"
@@ -139,6 +140,7 @@ export const upsertConfig = mutation({
         playerStatsServers: v.optional(v.array(playerStatsServerValidator)),
         ticketSettings: v.optional(ticketSettingsValidator),
         membershipSettings: v.optional(membershipSettingsValidator),
+        selfAssignableGroupIds: v.optional(v.array(v.string())),
         statsSettings: v.optional(statsSettingsValidator),
         gameOverrides: v.optional(gameOverridesValidator),
     },
@@ -150,6 +152,12 @@ export const upsertConfig = mutation({
             throw new Error("Server not found.")
         }
         const guildDiscordId = getGuildDiscordId(guild)
+        if (input.selfAssignableGroupIds !== undefined)
+            await validateSelfAssignableGroups(
+                ctx,
+                guildDiscordId,
+                input.selfAssignableGroupIds
+            )
 
         const now = new Date().toISOString()
         const updates = discordConfigPatch(input)

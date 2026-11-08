@@ -7,7 +7,7 @@ import { Callout } from "nextra/components"
 
 # Discord commands
 
-Logi's bot offers eight slash commands in every Discord server it is in. Every
+Logi's bot offers nine slash commands in every Discord server it is in. Every
 reply is in the **clan language** from **Settings → Channels and language**,
 whatever language a member's Discord app uses. The command names stay the
 same everywhere; their descriptions and options are shown in the clan
@@ -20,6 +20,7 @@ Managers configure the commands in **Settings → Discord → Commands**.
 | Command                               | What it does                                                                                      | Who may use it by default                                 |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `/help`                               | A private list of the commands you can use here, with the channels to use and a link to this page | Everyone; each person sees only the commands they may use |
+| `/groups`                             | Add or remove the secondary Logi groups the clan allows members to choose themselves             | Existing, non-pending, unpaused members for the group's game |
 | `/stats`                              | Your player statistics for Hell Let Loose or Wardogs, privately, with **Share**                   | Everyone                                                  |
 | `/player`                             | A clan player's profile from the clan's imported matches, privately, with **Share**               | Everyone                                                  |
 | `/link`                               | Link or unlink your Steam, Epic, Xbox or PlayStation account, privately                           | Everyone, applicants included                             |
@@ -86,6 +87,10 @@ workspace yet.
 
 ## Configure the commands
 
+`/groups` follows the allowlist in **Settings → Membership**, rather than a
+separate command switch. It always replies privately and preserves primary
+groups and Discord roles. See [self-service groups](./membership-applications#groups-members-can-choose-themselves).
+
 **Settings → Discord → Commands** shows:
 
 1. **Command registration**: when the bot last registered the commands in this
@@ -140,6 +145,12 @@ Logi is not set up yet.
     requests or did not answer.
 </Callout>
 
+Members with memberships for multiple games first choose a game in `/groups`;
+a single game opens directly. The private picker only shows groups for the
+selected game and includes a **Change game** button. Recruits, full members,
+reserve members, and mercenaries can all use this command. Pending applications
+and paused memberships are excluded.
+
 ## API
 
 The command settings are part of `GET/PATCH /api/v1/clan/settings` as the
@@ -148,3 +159,4 @@ The command settings are part of `GET/PATCH /api/v1/clan/settings` as the
 registers the commands again, as a save on the page does. **Register again**
 and **Move to Game servers** are dashboard-only: one is a live Discord action,
 the other handles provider keys.
+

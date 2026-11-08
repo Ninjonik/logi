@@ -70,6 +70,7 @@ export type EventUpsertInput = {
     allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: {
         frequency: "weekly" | "monthly_date" | "monthly_nth_weekday"
@@ -278,6 +279,7 @@ export function buildEventBasePayload(input: EventUpsertInput) {
               : [],
         allowLateSignups: kind === "match" && input.allowLateSignups !== false,
         allowNonMembersSignup: Boolean(input.allowNonMembersSignup),
+        allowRankedSignup: kind === "match" && Boolean(input.allowRankedSignup),
         useGeneralSignup:
             kind === "match" ? Boolean(input.useGeneralSignup) : false,
         signupReminderStatuses:

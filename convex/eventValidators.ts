@@ -45,6 +45,7 @@ export const eventWriteFields = {
     allowLateSignups: v.optional(v.boolean()),
     allowNonMembersSignup: v.optional(v.boolean()),
     useGeneralSignup: v.optional(v.boolean()),
+    allowRankedSignup: v.optional(v.boolean()),
     signupReminderStatuses: v.optional(v.array(reminderStatus)),
     recurrence: v.optional(
         v.object({

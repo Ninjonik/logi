@@ -174,6 +174,7 @@ import type * as rosterSync from "../rosterSync.js";
 import type * as rosterWriterAccess from "../rosterWriterAccess.js";
 import type * as rosters from "../rosters.js";
 import type * as scheduledJobs from "../scheduledJobs.js";
+import type * as selfGroups from "../selfGroups.js";
 import type * as serverContext from "../serverContext.js";
 import type * as serverDashboard from "../serverDashboard.js";
 import type * as serverMetadata from "../serverMetadata.js";
@@ -381,6 +382,7 @@ declare const fullApi: ApiFromModules<{
   rosterWriterAccess: typeof rosterWriterAccess;
   rosters: typeof rosters;
   scheduledJobs: typeof scheduledJobs;
+  selfGroups: typeof selfGroups;
   serverContext: typeof serverContext;
   serverDashboard: typeof serverDashboard;
   serverMetadata: typeof serverMetadata;

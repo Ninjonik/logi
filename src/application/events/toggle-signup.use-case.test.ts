@@ -10,6 +10,93 @@ import { FakeClock } from "@/infrastructure/testing/fake-clock"
 
 import { ToggleSignupUseCase } from "./toggle-signup.use-case"
 
+test("ranked choices survive full-group reserves, edits, and a later single-group signup", async () => {
+    const event = {
+        id: "ranked",
+        guildId: "guild",
+        kind: "match" as const,
+        allowRankedSignup: true,
+        allowNonMembersSignup: true,
+        signupGroupIds: ["inf", "armor"],
+        signupGroupLimits: [{ groupId: "inf", max: 1 }],
+        registrationEnd: "2026-01-01T12:00:00.000Z",
+        meetingStart: "2026-01-01T13:00:00.000Z",
+        gameEnd: "2026-01-01T15:00:00.000Z",
+        participants: [
+            {
+                userId: "existing",
+                status: "attending" as const,
+                group: "Infantry",
+                updatedAt: "2026-01-01T08:00:00.000Z",
+            },
+        ],
+    }
+    const events = new InMemoryEventWorkflowRepository(
+        new Map([["ranked", event]]),
+        new Map(),
+        new Map([
+            ["inf", "Infantry"],
+            ["armor", "Armor"],
+        ])
+    )
+    const sync = new NoopEventWorkflowSyncPort()
+    const useCase = new ToggleSignupUseCase(
+        events,
+        sync,
+        new FakeClock(new Date("2026-01-01T09:00:00.000Z"))
+    )
+    const result = await useCase.execute({
+        eventId: "ranked",
+        userId: "player",
+        group: "Infantry",
+        signupPreferences: ["Infantry", "Armor"],
+    })
+    assert.equal(result.fullGroup, "Infantry")
+    let saved = events.events
+        .get("ranked")
+        ?.participants?.find((person) => person.userId === "player")
+    assert.equal(saved?.group, null)
+    assert.equal(saved?.requestedGroup, "Infantry")
+    assert.deepEqual(saved?.signupPreferences, ["Infantry", "Armor"])
+    assert.deepEqual(
+        result.signUps.find((person) => person.userId === "player")
+            ?.signupPreferences,
+        ["Infantry", "Armor"]
+    )
+    await useCase.execute({
+        eventId: "ranked",
+        userId: "player",
+        group: "Armor",
+        signupPreferences: ["Armor", "Infantry"],
+    })
+    saved = events.events
+        .get("ranked")
+        ?.participants?.find((person) => person.userId === "player")
+    assert.deepEqual(saved?.signupPreferences, ["Armor", "Infantry"])
+    await useCase.execute({
+        eventId: "ranked",
+        userId: "player",
+        group: "Armor",
+    })
+    assert.equal(
+        events.events
+            .get("ranked")
+            ?.participants?.find((person) => person.userId === "player")
+            ?.signupPreferences,
+        undefined
+    )
+    assert.equal(sync.calls.length, 3)
+    await assert.rejects(
+        useCase.execute({
+            eventId: "ranked",
+            userId: "player",
+            group: "Armor",
+            signupPreferences: ["Armor", "Foreign"],
+        })
+    )
+    assert.equal(sync.calls.length, 3)
+})
+
 test("ToggleSignupUseCase persists signups and triggers roster sync", async () => {
     const syncPort = new NoopEventWorkflowSyncPort()
     const events = new InMemoryEventWorkflowRepository(

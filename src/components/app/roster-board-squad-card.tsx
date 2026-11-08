@@ -236,6 +236,7 @@ export function SquadCard({
     assignmentsByUserId,
     groupsById,
     participantStatusByUserId,
+    signupPreferencesByUserId,
     signupGroupByUserId,
     canAdmin,
     setDragState,
@@ -301,6 +302,7 @@ export function SquadCard({
     assignmentsByUserId: Map<string, ServerUserAssignment>
     groupsById: Map<string, Group>
     participantStatusByUserId: Map<string, "attending" | "not_attending">
+    signupPreferencesByUserId: Map<string, string[]>
     signupGroupByUserId: Map<string, string | null>
     canAdmin: boolean
     setDragState: (state: DragState | null) => void
@@ -911,6 +913,13 @@ export function SquadCard({
                                             assignment={assignment}
                                             groupsById={groupsById}
                                             signupRoleLabel={signupRoleLabel}
+                                            signupPreferences={
+                                                slotUser
+                                                    ? signupPreferencesByUserId.get(
+                                                          slotUser.discordId
+                                                      )
+                                                    : undefined
+                                            }
                                             isReserveMember={isReserveMember}
                                             noticeReason={noticeReason}
                                             attendanceStatus={attendanceStatus}
@@ -1584,6 +1593,7 @@ function FilledSlot({
     placeholderName,
     assignment,
     groupsById,
+    signupPreferences,
     signupRoleLabel,
     isReserveMember,
     noticeReason,
@@ -1607,6 +1617,7 @@ function FilledSlot({
     placeholderName?: string
     assignment?: ServerUserAssignment
     groupsById: Map<string, Group>
+    signupPreferences?: string[]
     signupRoleLabel: string | null
     isReserveMember: boolean
     noticeReason?: {
@@ -1681,6 +1692,7 @@ function FilledSlot({
                     assignment={assignment}
                     groupsById={groupsById}
                     signupGroupName={signupRoleLabel}
+                    signupPreferences={signupPreferences}
                 />
             ) : null}
             <div className="min-w-0 flex-1">

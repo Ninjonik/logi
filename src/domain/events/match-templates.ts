@@ -46,6 +46,7 @@ export type MatchTemplate = {
     /** Missing offers every signup group of the event's game. */
     signupGroupIds?: string[]
     useGeneralSignup: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses: TemplateReminderStatus[]
     pingMode: "none" | "clan" | "roles"
     pingRoleIds: string[]
@@ -143,6 +144,7 @@ export function normalizeMatchTemplates(
                     ? unique(template.signupGroupIds)
                     : undefined,
             useGeneralSignup: isMatch && template.useGeneralSignup,
+            allowRankedSignup: isMatch && template.allowRankedSignup,
             signupReminderStatuses: isMatch
                 ? unique(template.signupReminderStatuses)
                 : [],
@@ -242,6 +244,7 @@ export function defaultMatchTemplate(id: string, name: string): MatchTemplate {
         durationMinutes: 90,
         allowedSignupStatuses: [],
         useGeneralSignup: false,
+        allowRankedSignup: false,
         signupReminderStatuses: ["member"],
         pingMode: "clan",
         pingRoleIds: [],

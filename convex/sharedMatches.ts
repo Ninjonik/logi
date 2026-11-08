@@ -471,6 +471,7 @@ export const configureLocal = mutation({
         createParticipantRoles: v.boolean(),
         allowNonMembersSignup: v.boolean(),
         useGeneralSignup: v.boolean(),
+        allowRankedSignup: v.optional(v.boolean()),
         requiredRoleIds: v.array(v.string()),
         signupGroupIds: v.array(v.string()),
         attendanceReminderHours: v.array(v.number()),

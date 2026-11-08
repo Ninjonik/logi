@@ -172,6 +172,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
         },
         registry: {
             descriptions: {
+                groups: "Wybierz swoje grupy klanowe",
                 help: "Dostępne komendy i link do poradnika",
                 stats: "Twoje statystyki Hell Let Loose lub Wardogs",
                 player: "Profil gracza klanowego: wyniki i ostatnie mecze",
@@ -278,6 +279,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
             label: "Logi · Klan {clan}",
             title: "Czego możesz tutaj użyć",
             lines: {
+                groups: "Wybierz swoje grupy klanowe",
                 stats: "Twoje statystyki Hell Let Loose lub Wardogs. Tylko Ty je widzisz, dopóki ich nie udostępnisz.",
                 player: "Profil gracza klanowego: wyniki i ostatnie mecze.",
                 link: "Połącz swoje konta gier, aby Logi rozpoznał Cię w grze.",
@@ -424,6 +426,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
         },
         registry: {
             descriptions: {
+                groups: "Choose your own clan groups",
                 help: "Commands you can use and a link to the guide",
                 stats: "Your Hell Let Loose or Wardogs statistics",
                 player: "A clan player's profile: score and recent matches",
@@ -526,6 +529,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
             label: "Logi commands · Clan {clan}",
             title: "What you can use here",
             lines: {
+                groups: "Choose your own clan groups",
                 stats: "Your Hell Let Loose or Wardogs statistics. Only you see them until you share them.",
                 player: "A clan player's profile: score and recent matches.",
                 link: "Link your game accounts so Logi recognises you in game.",
@@ -666,6 +670,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
         },
         registry: {
             descriptions: {
+                groups: "Vyber si své klanové skupiny",
                 help: "Příkazy, které můžeš použít, a odkaz na návod",
                 stats: "Tvoje statistiky z Hell Let Loose nebo Wardogs",
                 player: "Profil hráče klanu: skóre a poslední zápasy",
@@ -767,6 +772,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
             label: "Příkazy Logi · Klan {clan}",
             title: "Co tady můžeš použít",
             lines: {
+                groups: "Vyber si své klanové skupiny",
                 stats: "Tvoje statistiky z Hell Let Loose nebo Wardogs. Vidíš je jen ty, dokud je nesdílíš.",
                 player: "Profil hráče klanu: skóre a poslední zápasy.",
                 link: "Propoj herní účty, ať tě Logi pozná ve hře.",
@@ -910,6 +916,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
         },
         registry: {
             descriptions: {
+                groups: "Wähle deine Clangruppen",
                 help: "Befehle, die du nutzen kannst, und ein Link zur Anleitung",
                 stats: "Deine Statistiken aus Hell Let Loose oder Wardogs",
                 player: "Profil eines Clan-Spielers: Score und letzte Matches",
@@ -1013,6 +1020,7 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
             label: "Logi-Befehle · Clan {clan}",
             title: "Was du hier nutzen kannst",
             lines: {
+                groups: "Wähle deine Clangruppen",
                 stats: "Deine Statistiken aus Hell Let Loose oder Wardogs. Nur du siehst sie, bis du sie teilst.",
                 player: "Profil eines Clan-Spielers: Score und letzte Matches.",
                 link: "Verknüpfe deine Spielkonten, damit Logi dich im Spiel erkennt.",

@@ -1,7 +1,7 @@
 import test, { afterEach } from "node:test"
 import assert from "node:assert/strict"
 
-import type { ButtonInteraction } from "discord.js"
+import type { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"
 import { ConvexReactClient } from "convex/react"
 import { getFunctionName } from "convex/server"
 
@@ -9,13 +9,114 @@ import {
     handleCheckSignupInteraction,
     handleEventButtonInteraction,
     handleEventSignupPickerInteraction,
+    handleRankedSignupInteraction,
     replyGuildId,
 } from "./event-buttons"
+import {
+    boardConfig,
+    boardEvent,
+    boardGroups,
+} from "../events/board-example.fixture"
+import type { EventInteractionContext } from "../types"
 import { closeConvexClient } from "../convex"
 
 afterEach(closeConvexClient)
 
 const GUILD_ID = "900000000000000123"
+
+test("ranked Discord draft adds, reorders, removes and saves only on request", async (t) => {
+    const userId = "100000000000000001"
+    const guildId = boardConfig.guildId
+    const context: EventInteractionContext = {
+        config: { ...boardConfig, defaultLanguage: "en" },
+        groups: boardGroups,
+        event: boardEvent({
+            allowRankedSignup: true,
+            allowNonMembersSignup: true,
+            participants: [],
+            registrationEnd: "2030-01-01T20:00:00.000Z",
+            meetingStart: "2030-01-01T21:00:00.000Z",
+            gameEnd: "2030-01-01T23:00:00.000Z",
+        }),
+        roster: null,
+    }
+    t.mock.method(ConvexReactClient.prototype, "query", async () => context)
+    const mutations: Array<{ group: string; signupPreferences?: string[] }> = []
+    t.mock.method(
+        ConvexReactClient.prototype,
+        "mutation",
+        async (
+            _reference: unknown,
+            args: { group: string; signupPreferences?: string[] }
+        ) => {
+            mutations.push(args)
+            return { appliedSignupLabel: args.group, removed: false }
+        }
+    )
+    t.mock.method(
+        globalThis,
+        "fetch",
+        async () => new Response("{}", { status: 200 })
+    )
+    const replies: unknown[] = []
+    function click(
+        customId: string,
+        value?: string
+    ): ButtonInteraction | StringSelectMenuInteraction {
+        return {
+            customId,
+            guildId,
+            guild: { id: guildId },
+            member: { roles: { cache: new Map([["555555555555555555", {}]]) } },
+            user: {
+                id: userId,
+                username: "Player",
+                displayAvatarURL: () => "https://example.com/avatar.png",
+            },
+            deferred: false,
+            replied: false,
+            values: value ? [value] : [],
+            isButton: () => !value,
+            isStringSelectMenu: () => Boolean(value),
+            message: { flags: { has: () => true } },
+            update: async (payload: unknown) => {
+                replies.push(payload)
+            },
+            reply: async (payload: unknown) => {
+                replies.push(payload)
+            },
+        } as unknown as ButtonInteraction | StringSelectMenuInteraction
+    }
+    const options = { enqueueEventSync: () => {}, triggerPollSoon: () => {} }
+    await handleEventSignupPickerInteraction(
+        click(`signup-picker:event-1:${guildId}`) as ButtonInteraction
+    )
+    function actionId(action: string) {
+        const match = payloadText(replies.at(-1)).match(
+            new RegExp(`ranked-signup:[a-f0-9-]+:\\d+:${action}`)
+        )
+        assert.ok(match, `missing action ${action}`)
+        return match[0]
+    }
+    await handleRankedSignupInteraction(click(actionId("add"), "inf"), options)
+    assert.equal(mutations.length, 0)
+    await handleRankedSignupInteraction(click(actionId("add"), "tank"), options)
+    await handleRankedSignupInteraction(click(actionId("edit")), options)
+    await handleRankedSignupInteraction(click(actionId("up-1")), options)
+    await handleRankedSignupInteraction(click(actionId("remove-1")), options)
+    await handleRankedSignupInteraction(click(actionId("done")), options)
+    const saveId = actionId("save")
+    await handleRankedSignupInteraction(click(saveId), options)
+    assert.equal(mutations.length, 1)
+    assert.deepEqual(mutations[0].signupPreferences, [boardGroups[1].name])
+    assert.equal(mutations[0].group, boardGroups[1].name)
+    await handleRankedSignupInteraction(click(saveId), options)
+    assert.equal(
+        mutations.length,
+        1,
+        "an expired or replayed editor never saves twice"
+    )
+})
 
 test("a reply takes the clan from the server, else from the button's custom ID (L1-B19)", () => {
     assert.equal(

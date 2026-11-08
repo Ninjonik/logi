@@ -18,6 +18,9 @@ export function normalizeParticipants(
 
     return normalizeOptionalArray(signUps).map((signUp) => ({
         userId: signUp.userId,
+        ...(signUp.signupPreferences
+            ? { signupPreferences: signUp.signupPreferences }
+            : {}),
         status:
             signUp.group === SIGNUP_NOT_ATTENDING
                 ? ("not_attending" as const)
@@ -32,6 +35,9 @@ export function participantsToSignUps(
 ): EventSignup[] {
     return participants.map((participant) => ({
         userId: participant.userId,
+        ...(participant.signupPreferences
+            ? { signupPreferences: participant.signupPreferences }
+            : {}),
         group:
             participant.status === "attending"
                 ? (participant.group ?? SIGNUP_ATTENDING)

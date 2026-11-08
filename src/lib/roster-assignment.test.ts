@@ -4,10 +4,170 @@ import test from "node:test"
 
 import {
     autoFillRosterAssignments,
-    type AutoFillWeights,
+    getSignupPreferencesByUserId,
 } from "./roster-assignment"
 
-const weights: AutoFillWeights = { score: 1, kd: 1 }
+const weights = () => 0.5
+
+function allocationFixture(count: number) {
+    const users: AppUser[] = Array.from({ length: count }, (_, index) => ({
+        id: `player-${index}`,
+        discordId: `player-${index}`,
+        name: `Player ${index}`,
+        scores: { guild: index },
+        avatar: "",
+        hasDiscordLink: true,
+        isStreamer: false,
+        managedGuildIds: [],
+        mercenaryGuildIds: [],
+        platformIds: [],
+        nicknames: {},
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+    }))
+    const context: Parameters<typeof autoFillRosterAssignments>[1] = {
+        usersById: new Map(users.map((user) => [user.discordId, user])),
+        assignmentsByUserId: new Map(),
+        groupsById: new Map(),
+        participantStatusByUserId: new Map(),
+        signupGroupByUserId: new Map(
+            users.map((user) => [user.discordId, "Armor"])
+        ),
+        signupPreferencesByUserId: new Map(
+            users.map((user) => [user.discordId, ["Armor"]])
+        ),
+        serverDiscordId: "guild",
+    }
+    const board: Roster = {
+        id: "roster",
+        eventId: "event",
+        guildId: "guild",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+        squads: ["Armor", "Infantry", "Recon"].map((group, order) => ({
+            name: group,
+            group,
+            order,
+            color: "#ffffff",
+            players: [{ ack: false }],
+        })),
+        reservePlayerIds: users.map((user) => user.discordId),
+        notAttendingPlayerIds: [],
+        published: false,
+    }
+    return { board, context }
+}
+
+test("surplus players stay in reserves rather than taking an unselected group", () => {
+    const { board, context } = allocationFixture(4)
+    const result = autoFillRosterAssignments(board, context, weights)
+    assert.equal(result.squads[0].players[0].id, "player-3")
+    assert.equal(result.squads[1].players[0].id, undefined)
+    assert.equal(result.reservePlayerIds.length, 3)
+})
+
+test("a shortage permits random fallback while preserving preferred and existing placements", () => {
+    const { board, context } = allocationFixture(2)
+    board.squads.push({
+        name: "Fixed",
+        group: "Armor",
+        order: 3,
+        color: "#ffffff",
+        players: [{ id: "fixed", ack: true }],
+    })
+    const result = autoFillRosterAssignments(board, context, () => 0.25)
+    assert.equal(result.squads[0].players[0].id, "player-1")
+    assert.equal(
+        result.squads
+            .flatMap((squad) => squad.players)
+            .filter((player) => player.id).length,
+        3
+    )
+    assert.deepEqual(result.squads[3], board.squads[3])
+    assert.deepEqual(result.reservePlayerIds, [])
+})
+
+test("ranked backups beat score and preserve the best overall fit", () => {
+    const { board, context } = allocationFixture(4)
+    context.signupPreferencesByUserId?.set("player-0", ["Armor", "Infantry"])
+    const result = autoFillRosterAssignments(board, context)
+    assert.equal(result.squads[0].players[0].id, "player-3")
+    assert.equal(result.squads[1].players[0].id, "player-0")
+    assert.equal(result.squads[2].players[0].id, undefined)
+})
+
+test("a declined player is never used as a random fallback", () => {
+    const { board, context } = allocationFixture(1)
+    context.participantStatusByUserId.set("player-0", "not_attending")
+    const result = autoFillRosterAssignments(board, context)
+    assert.equal(
+        result.squads
+            .flatMap((squad) => squad.players)
+            .some((player) => player.id),
+        false
+    )
+})
+
+test("distinct catalogue groups are never conflated by similar role names", () => {
+    const { board, context } = allocationFixture(4)
+    board.squads[0].group = "Armor B"
+    context.groupsById.set("a", {
+        id: "a",
+        guildId: "guild",
+        name: "Armor A",
+        color: "#ffffff",
+        order: 0,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+    })
+    context.groupsById.set("b", {
+        ...context.groupsById.get("a")!,
+        id: "b",
+        name: "Armor B",
+    })
+    for (const id of board.reservePlayerIds)
+        context.signupPreferencesByUserId?.set(id, ["Armor A"])
+    const result = autoFillRosterAssignments(board, context)
+    assert.equal(result.squads[0].players[0].id, undefined)
+    assert.equal(result.reservePlayerIds.length, 4)
+})
+
+test("legacy roster role labels recognize signup groups in every supported language", () => {
+    for (const name of ["Infantry", "Pěchota", "Infanterie", "Piechota"]) {
+        const { board, context } = allocationFixture(4)
+        for (const id of board.reservePlayerIds)
+            context.signupPreferencesByUserId?.set(id, [name])
+        const result = autoFillRosterAssignments(board, context)
+        assert.equal(result.squads[1].players[0].id, "player-3", name)
+        assert.equal(result.squads[0].players[0].id, undefined, name)
+    }
+})
+
+test("preference reader keeps reserve requests and participant precedence over legacy signup data", () => {
+    assert.deepEqual(
+        getSignupPreferencesByUserId({
+            participants: [
+                {
+                    userId: "one",
+                    status: "attending",
+                    group: null,
+                    requestedGroup: "Armor",
+                    signupPreferences: ["Armor", "Infantry"],
+                },
+                {
+                    userId: "declined",
+                    status: "not_attending",
+                    signupPreferences: ["Armor"],
+                },
+            ],
+            signUps: [{ userId: "one", group: "Recon" }],
+        }),
+        new Map([
+            ["one", ["Armor", "Infantry"]],
+            ["declined", []],
+        ])
+    )
+})
 
 test("shared autofill preserves clan allocation even when another clan's player ranks higher", () => {
     const board: Roster = {
@@ -161,7 +321,7 @@ test("autoFillRosterAssignments processes players first and keeps specialists ne
     assert.deepEqual(next.reservePlayerIds, [])
 })
 
-test("autoFillRosterAssignments uses weighted player ordering before slot selection", () => {
+test("autoFillRosterAssignments breaks signup ties by score before K/D", () => {
     const board = {
         id: "roster-1",
         squads: [
@@ -219,14 +379,14 @@ test("autoFillRosterAssignments uses weighted player ordering before slot select
     const scoreFirst = autoFillRosterAssignments(
         board as never,
         context as never,
-        { score: 1, kd: 0 }
+        () => 0.5
     )
     assert.equal(scoreFirst.squads[0]?.players[0]?.id, "high-score")
 
     const kdFirst = autoFillRosterAssignments(
         board as never,
         context as never,
-        { score: 0, kd: 1 }
+        () => 0.5
     )
-    assert.equal(kdFirst.squads[0]?.players[0]?.id, "high-kd")
+    assert.equal(kdFirst.squads[0]?.players[0]?.id, "high-score")
 })

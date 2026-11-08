@@ -89,7 +89,8 @@ export function SharedMatchSettingsForm({
             | "createParticipantRoles"
             | "createSquadVoiceChannels"
             | "allowNonMembersSignup"
-            | "useGeneralSignup",
+            | "useGeneralSignup"
+            | "allowRankedSignup",
         label: string
     ) => (
         <div className="flex items-center gap-3" key={key}>
@@ -320,6 +321,7 @@ export function SharedMatchSettingsForm({
                 <CardContent className="space-y-5">
                     {toggle("allowNonMembersSignup", t.signups.nonMembers)}
                     {toggle("useGeneralSignup", t.signups.general)}
+                    {toggle("allowRankedSignup", t.signups.ranked)}
                     <div className="space-y-2">
                         <Label>{t.signups.who}</Label>
                         <DiscordMultiEntitySelect

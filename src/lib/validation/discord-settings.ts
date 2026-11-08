@@ -1,4 +1,5 @@
 import { discussionSettingsSchema } from "@/domain/api/event-discussions-settings-slice"
+import { selfAssignableGroupIdsSchema } from "@/domain/assignments/self-groups"
 import { z } from "zod"
 
 import {
@@ -490,6 +491,7 @@ export const discordSettingsPatchSchema = z.object({
         .optional(),
     ticketSettings: ticketSettingsSchema.optional(),
     membershipSettings: membershipSettingsSchema.optional(),
+    selfAssignableGroupIds: selfAssignableGroupIdsSchema.optional(),
     statsSettings: statsSettingsSchema.optional(),
     messageStyle: messageStyleSchema.optional(),
     messageSettings: messageSettingsSchema.optional(),

@@ -38,6 +38,13 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
+    autoFillRosterAssignments,
+    compareRosterCandidates,
+    getSignupGroupByUserId,
+    getSignupPreferencesByUserId,
+    getUserSignupLabel,
+} from "@/lib/roster-assignment"
+import {
     Dialog,
     DialogClose,
     DialogContent,
@@ -46,12 +53,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import {
-    autoFillRosterAssignments,
-    compareRosterCandidates,
-    getSignupGroupByUserId,
-    getUserSignupLabel,
-} from "@/lib/roster-assignment"
 import {
     RosterPublishDialog,
     type RosterPublishChoice,
@@ -274,8 +275,6 @@ export function RosterBoard({
         squadIndex: number
         playerIndex: number
     } | null>(null)
-    const [autoFillScoreWeight, setAutoFillScoreWeight] = useState(50)
-    const [autoFillKdWeight, setAutoFillKdWeight] = useState(50)
     const dragPointerYRef = useRef<number | null>(null)
     const autoScrollFrameRef = useRef<number | null>(null)
     const deferredReserveSearch = useDeferredValue(reserveSearch)
@@ -434,12 +433,17 @@ export function RosterBoard({
         () => getSignupGroupByUserId(event),
         [event]
     )
+    const signupPreferencesByUserId = useMemo(
+        () => getSignupPreferencesByUserId(event),
+        [event]
+    )
     const rankingContext = useMemo(
         () => ({
             usersById,
             assignmentsByUserId,
             groupsById,
             signupGroupByUserId,
+            signupPreferencesByUserId,
             participantStatusByUserId,
             serverDiscordId: event?.guildId ?? serverId,
         }),
@@ -450,6 +454,7 @@ export function RosterBoard({
             participantStatusByUserId,
             serverId,
             signupGroupByUserId,
+            signupPreferencesByUserId,
             usersById,
         ]
     )
@@ -1440,10 +1445,7 @@ export function RosterBoard({
         setIsDirty(true)
         setBoard((current) => {
             if (!current) return current
-            return autoFillRosterAssignments(current, rankingContext, {
-                score: autoFillScoreWeight / 100,
-                kd: autoFillKdWeight / 100,
-            })
+            return autoFillRosterAssignments(current, rankingContext)
         })
 
         setAutoFillDialogOpen(false)
@@ -2341,6 +2343,9 @@ export function RosterBoard({
                                 className="min-w-0 self-start xl:sticky xl:top-20 xl:order-last xl:h-[calc(100dvh-6rem)] xl:overflow-hidden"
                             >
                                 <RosterBoardAttendeeLists
+                                    signupPreferencesByUserId={
+                                        signupPreferencesByUserId
+                                    }
                                     assignUserToSlot={assignUserToSlot}
                                     board={board}
                                     users={users}
@@ -2660,6 +2665,9 @@ export function RosterBoard({
                                                     participantStatusByUserId={
                                                         participantStatusByUserId
                                                     }
+                                                    signupPreferencesByUserId={
+                                                        signupPreferencesByUserId
+                                                    }
                                                     signupGroupByUserId={
                                                         signupGroupByUserId
                                                     }
@@ -2859,50 +2867,6 @@ export function RosterBoard({
                             {dictionary.roster.autoFillDescription}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-5">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm font-medium">
-                                <span>
-                                    {dictionary.roster.autoFillScoreWeight}
-                                </span>
-                                <span>{autoFillScoreWeight}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={autoFillScoreWeight}
-                                onChange={(event) =>
-                                    setAutoFillScoreWeight(
-                                        Number(event.target.value)
-                                    )
-                                }
-                                className="accent-primary w-full"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm font-medium">
-                                <span>
-                                    {dictionary.roster.autoFillKdWeight}
-                                </span>
-                                <span>{autoFillKdWeight}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={autoFillKdWeight}
-                                onChange={(event) =>
-                                    setAutoFillKdWeight(
-                                        Number(event.target.value)
-                                    )
-                                }
-                                className="accent-primary w-full"
-                            />
-                        </div>
-                    </div>
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button variant="outline" className="rounded-xl">

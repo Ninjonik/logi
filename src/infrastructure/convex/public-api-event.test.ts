@@ -5,6 +5,7 @@ import test from "node:test"
 
 import { CLAN_SETTINGS_SLICES } from "../../domain/api/clan-settings-slices"
 import * as publicApiReads from "../../../convex/publicApiReads"
+import * as dashboardEvents from "../../../convex/events"
 import * as publicApi from "../../../convex/publicApi"
 
 type Document = Record<string, unknown> & { _id: string }
@@ -1159,4 +1160,106 @@ test("bearer event writes bind optional Wardogs fixture URLs through the shared 
     )
     assert.equal(duplicate?.status, 400)
     assert.match(duplicate?.body ?? "", /already linked/)
+})
+
+test("dashboard and bearer ranked signups share preference validation and persistence", async () => {
+    for (const writer of ["dashboard", "api"] as const) {
+        const db = new FakeDb()
+        const now = Date.now()
+        db.tables.groups.set("inf", {
+            _id: "inf",
+            guildId: "guild-a",
+            name: "Infantry",
+        })
+        db.tables.groups.set("armor", {
+            _id: "armor",
+            guildId: "guild-a",
+            name: "Armor",
+        })
+        db.tables.groups.set("foreign", {
+            _id: "foreign",
+            guildId: "guild-b",
+            name: "Foreign",
+        })
+        db.tables.groups.set("other-game", {
+            _id: "other-game",
+            guildId: "guild-a",
+            gameId: "wardogs",
+            name: "Wardogs",
+        })
+        db.tables.events.set("ranked", {
+            _id: "ranked",
+            guildId: "guild-a",
+            ...event({ kind: "match" }),
+            allowRankedSignup: true,
+            allowNonMembersSignup: true,
+            signupGroupIds: ["inf", "armor", "foreign", "other-game"],
+            registrationEnd: new Date(now + 3_600_000).toISOString(),
+            meetingStart: new Date(now + 7_200_000).toISOString(),
+            gameEnd: new Date(now + 10_800_000).toISOString(),
+            participants: [],
+            signUps: [],
+        })
+        const args = {
+            secret: "dev-internal-auth-secret",
+            eventId: "ranked",
+            userId: "player",
+            group: "Infantry",
+            signupPreferences: ["Infantry", "Armor"],
+        }
+        const execute = async (preferences: string[], key: string) =>
+            writer === "dashboard"
+                ? handler(dashboardEvents.toggleSignUp)(
+                      { db },
+                      { ...args, signupPreferences: preferences }
+                  )
+                : handler(publicApi.mutateClanEventSignup)(
+                      { db },
+                      {
+                          ...args,
+                          signupPreferences: preferences,
+                          keyHash: "key",
+                          idempotencyKey: key,
+                          bodyHash: key,
+                          methodPath: "POST /clan/events/{eventId}/signup",
+                      }
+                  )
+        for (const choices of [
+            ["Infantry", "Foreign"],
+            ["Infantry", "Wardogs"],
+            ["Infantry", "Infantry"],
+        ]) {
+            if (writer === "dashboard")
+                await assert.rejects(execute(choices, choices.join()))
+            else
+                assert.equal(
+                    (await execute(choices, choices.join()))?.status,
+                    400
+                )
+        }
+        const result = await execute(args.signupPreferences, "ranked-valid")
+        if (writer === "api") {
+            assert.equal(result?.status, 200)
+            assert.deepEqual(
+                await execute(args.signupPreferences, "ranked-valid"),
+                result
+            )
+            assert.equal(db.tables.webhookDeliveries.size, 1)
+        }
+        const participants = db.tables.events.get("ranked")
+            ?.participants as Array<{ signupPreferences?: string[] }>
+        assert.deepEqual(participants[0].signupPreferences, [
+            "Infantry",
+            "Armor",
+        ])
+        assert.equal(participants.length, 1)
+        await db.patch("ranked", { allowRankedSignup: false })
+        if (writer === "dashboard")
+            await assert.rejects(execute(args.signupPreferences, "disabled"))
+        else
+            assert.equal(
+                (await execute(args.signupPreferences, "disabled"))?.status,
+                400
+            )
+    }
 })

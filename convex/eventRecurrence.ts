@@ -65,6 +65,7 @@ function seriesInput(source: Doc<"events">) {
         allowLateSignups: source.allowLateSignups,
         allowNonMembersSignup: source.allowNonMembersSignup,
         useGeneralSignup: source.useGeneralSignup,
+        allowRankedSignup: source.allowRankedSignup,
         signupReminderStatuses: source.signupReminderStatuses,
         signupGroupLimits: source.signupGroupLimits,
         attendanceReminderHours: source.attendanceReminderHours,

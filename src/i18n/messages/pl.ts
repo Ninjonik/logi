@@ -4781,7 +4781,7 @@ export const plMessages = {
         unsignedPlayerConfirmAction: "Dodaj do składu",
         autoFill: "Automatycznie uzupełnij skład",
         autoFillDescription:
-            "Gracze są przydzielani od najwyżej ocenianych, do najbliższego wolnego oddziału zgodnie z wyborem przy zapisie, grupą podstawową i grupami dodatkowymi.",
+            "Najpierw preferencje zapisu, potem punkty, na końcu K/D. Inne grupy są używane tylko wtedy, gdy brakuje graczy na wolne miejsca.",
         autoFillScoreWeight: "Waga punktacji",
         autoFillKdWeight: "Waga K/D",
         autoFillConfirm: "Wypełnij automatycznie teraz",
@@ -5002,6 +5002,9 @@ export const plMessages = {
             noGroups:
                 "Ta gra nie ma grup zapisów. Gracze zapisują się bez wyboru grupy.",
             general: "Zarejestruj się bez wybierania grupy",
+            ranked: "Zezwalaj na zapasowe grupy",
+            rankedHint:
+                "Gracze mogą wybrać jedną grupę lub dodać kolejne w kolejności preferencji.",
             lateSignupLabel: "Zapis po terminie",
             lateSignups:
                 "Zezwalaj na późne zapisy do zbiórki (wymagany powód, do rezerwy)",
@@ -5217,6 +5220,9 @@ export const plMessages = {
                 statuses: "Kto może się zapisać",
                 groups: "Grupy i limity",
                 general: "Zapisy bez grupy",
+                ranked: "Zezwalaj na zapasowe grupy",
+                rankedHint:
+                    "Gracze mogą wybrać jedną grupę lub dodać kolejne w kolejności preferencji.",
                 signupReminder: "Przypomnienie o zapisach",
                 attendanceReminders: "Przypomnienia o obecności",
                 squadPreset: "Preset oddziałów",
@@ -5475,6 +5481,9 @@ export const plMessages = {
             groupsAllGames:
                 "Szablon wspólny dla wszystkich gier udostępnia każdą grupę zapisów danego meczu. Wybierz konkretną grę, aby ograniczyć grupy.",
             general: "Zarejestruj się bez wybierania grupy",
+            ranked: "Zezwalaj na zapasowe grupy",
+            rankedHint:
+                "Gracze mogą wybrać jedną grupę lub dodać kolejne w kolejności preferencji.",
             reminder: "Przypomnienie o zapisach",
             noLimit: "bez limitu",
             max: "maks",
@@ -5732,6 +5741,7 @@ export const plMessages = {
             allowedSignupStatuses: "Dozwolone statusy przy zapisach",
             signupReminderStatuses: "Odbiorcy codziennych przypomnień zapis",
             useGeneralSignup: "Włącz zapisy bez grupy",
+            allowRankedSignup: "Zezwalaj na zapasowe grupy",
             pingClan: "Ping klanu",
             pingMode: "Ping ogłoszenia",
             pingRoleIds: "Role do pingowania",

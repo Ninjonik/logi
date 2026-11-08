@@ -1,14 +1,15 @@
 import {
+    handleRankedSignupInteraction,
+    handleCheckSignupInteraction,
+    handleEventButtonInteraction,
+    handleEventSignupPickerInteraction,
+} from "../interactions/event-buttons"
+import {
     ATTENDEES_FILTER_PREFIX,
     ATTENDEES_PAGE_PREFIX,
     ATTENDEES_PREFIX,
     ATTENDEES_REMIND_PREFIX,
 } from "../../../src/domain/discord-messages/match-attendees"
-import {
-    handleCheckSignupInteraction,
-    handleEventButtonInteraction,
-    handleEventSignupPickerInteraction,
-} from "../interactions/event-buttons"
 import {
     handleAttendeesButton,
     handleAttendeesFilter,
@@ -27,6 +28,12 @@ export const matchAnnouncementInteractions: InteractionFeature = {
     name: "match-announcements",
     register(registry, context) {
         registry
+            .button("ranked-signup:", (interaction) =>
+                handleRankedSignupInteraction(interaction, context)
+            )
+            .stringSelect("ranked-signup:", (interaction) =>
+                handleRankedSignupInteraction(interaction, context)
+            )
             .button("signup-picker:", handleEventSignupPickerInteraction)
             .button("check-signup:", handleCheckSignupInteraction)
             .button("signup:", (interaction) =>

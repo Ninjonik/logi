@@ -2,6 +2,7 @@ import { clanMutationResponse } from "@/lib/gateways/clan-write-cache"
 import { handleIntegrationRead } from "@/lib/api/integration-route"
 import { handleMembershipRead } from "@/lib/api/membership-route"
 import { PEOPLE_RESOURCES } from "@/domain/api/people-summaries"
+import { signupPreferencesSchema } from "@/lib/validation/event"
 import { handlePeopleRead } from "@/lib/api/people-route"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
@@ -149,6 +150,16 @@ async function mutateEventSignup(request: Request, eventId: string) {
             400,
             auth.headers
         )
+    const preferences = signupPreferencesSchema
+        .optional()
+        .safeParse(body.signupPreferences)
+    if (!preferences.success)
+        return error(
+            "validation_error",
+            "signupPreferences must contain 1 to 25 unique group names in preference order.",
+            400,
+            auth.headers
+        )
     const idempotencyKey = request.headers.get("idempotency-key")
     const idempotencyError = validateIdempotencyKey(idempotencyKey)
     if (idempotencyError || !idempotencyKey)
@@ -179,6 +190,7 @@ async function mutateEventSignup(request: Request, eventId: string) {
         methodPath: "POST /clan/events/{eventId}/signup",
         userId: body.userId,
         group: body.group,
+        signupPreferences: preferences.data,
         lateSignupReason:
             typeof body.lateSignupReason === "string"
                 ? body.lateSignupReason

@@ -1,5 +1,5 @@
 /**
- * Logi's slash commands (design boards M1 and N3): the eight commands, which
+ * Logi's slash commands (design boards M1 and N3): the nine commands, which
  * of them a clan can configure, who may use each one by design and where it
  * replies. Names are English and identical in every language; descriptions
  * and options follow the clan language (`src/lib/clan-language/commands.ts`).
@@ -10,6 +10,7 @@ export const LOGI_COMMANDS = [
     "close_application",
     "close_ticket",
     "help",
+    "groups",
     "link",
     "notice",
     "player",
@@ -124,6 +125,7 @@ export const COMMAND_OPTION_KEYS = {
     close_application: ["outcome", "reason"],
     "server-status": ["game"],
     help: [],
+    groups: [],
     link: [],
 } as const satisfies Record<LogiCommand, readonly string[]>
 

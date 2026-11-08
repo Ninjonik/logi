@@ -33,6 +33,7 @@ export const matchTemplateSchema = z.strictObject({
     allowedSignupStatuses: z.array(z.enum(SIGNUP_STATUSES)).max(4),
     signupGroupIds: z.array(id).max(50).optional(),
     useGeneralSignup: z.boolean(),
+    allowRankedSignup: z.boolean().optional(),
     signupReminderStatuses: z.array(z.enum(REMINDER_STATUSES)).max(3),
     pingMode: z.enum(["none", "clan", "roles"]),
     pingRoleIds: z.array(z.string().regex(/^\d{1,32}$/)).max(25),

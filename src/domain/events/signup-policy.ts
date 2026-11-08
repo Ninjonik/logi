@@ -70,6 +70,7 @@ export function toggleSignup(input: {
     now: Date
     membershipStatus?: SignupMembershipStatus | null
     /** The full capped group the player chose; they get a reserve place. */
+    signupPreferences?: string[]
     requestedGroup?: string | null
 }) {
     if (!canAcceptSignups(input.event, input.now)) {
@@ -106,6 +107,9 @@ export function toggleSignup(input: {
         ...participants,
         {
             userId: input.userId,
+            ...(nextStatus === "attending" && input.signupPreferences?.length
+                ? { signupPreferences: input.signupPreferences }
+                : {}),
             status: nextStatus,
             group: normalizedNextGroup,
             ...(nextStatus === "attending" &&

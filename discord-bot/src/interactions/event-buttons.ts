@@ -8,6 +8,16 @@ import {
     type GuildMember,
     type StringSelectMenuInteraction,
 } from "discord.js"
+import {
+    rankedSignupView,
+    reorderSignupChoices,
+} from "../../../src/domain/discord-messages/ranked-signup"
+import {
+    errorCard,
+    escapeMarkdownText,
+} from "../../../src/domain/discord-messages/message-view"
+import { getRankedSignupMessages } from "../../../src/lib/clan-language/ranked-signup"
+import { randomUUID } from "node:crypto"
 
 import {
     declineSavedView,
@@ -311,6 +321,10 @@ export async function handleEventSignupPickerInteraction(
         return
     }
     const choices = pickerOptions(context)
+    if (context.event.kind === "match" && context.event.allowRankedSignup) {
+        await openRankedSignup(interaction, context)
+        return
+    }
     await replyToClicker(
         interaction,
         choices.length
@@ -391,6 +405,15 @@ export async function handleCheckSignupInteraction(
         : open
           ? notSignedUpView({ ...reply, declined })
           : signupClosedView(reply)
+    if (signup?.signupPreferences?.length)
+        view.blocks.unshift({
+            kind: "text",
+            markdown: signup.signupPreferences
+                .map(
+                    (name, index) => `${index + 1}. ${escapeMarkdownText(name)}`
+                )
+                .join("\n"),
+        })
     await replyToClicker(interaction, view, {
         ...kitOptions(context),
         replaceCard: true,
@@ -452,13 +475,23 @@ function capOf(context: EventInteractionContext, groupName: string) {
  */
 export async function handleEventButtonInteraction(
     interaction: SignupInteraction,
-    options: InteractionHandlerOptions
+    options: InteractionHandlerOptions,
+    ranked?: {
+        eventId: string
+        guildId: string
+        choices: string[]
+        firstGroupId: string
+    }
 ) {
-    const [, eventId, encodedGroupId, customIdGuildId] =
+    const [, parsedEventId, encodedGroupId, parsedGuildId] =
         interaction.customId.split(":")
-    let requestedGroupId = interaction.isStringSelectMenu()
-        ? (interaction.values[0] ?? "")
-        : decodeURIComponent(encodedGroupId ?? "")
+    const eventId = ranked?.eventId ?? parsedEventId
+    const customIdGuildId = ranked?.guildId ?? parsedGuildId
+    let requestedGroupId =
+        ranked?.firstGroupId ??
+        (interaction.isStringSelectMenu()
+            ? (interaction.values[0] ?? "")
+            : decodeURIComponent(encodedGroupId ?? ""))
 
     if (
         interaction.isButton() &&
@@ -551,6 +584,43 @@ export async function handleEventButtonInteraction(
             return
         }
 
+        if (
+            !ranked &&
+            context.event.kind === "match" &&
+            context.event.allowRankedSignup &&
+            resolved.group &&
+            ![SIGNUP_NOT_ATTENDING, SIGNUP_GENERAL, TRAINING_ATTEND].includes(
+                resolved.group
+            )
+        ) {
+            await openRankedSignup(interaction, context, [resolved.group])
+            return
+        }
+        if (ranked) {
+            for (const name of ranked.choices) {
+                const group = context.groups.find((item) => item.name === name)
+                const check = resolveEventSignupSelection({
+                    event: context.event,
+                    groups: context.groups,
+                    memberRoleIds: member
+                        ? [...member.roles.cache.keys()]
+                        : null,
+                    assignedGroupIds: membership.assignedGroupIds,
+                    membershipStatus: membership.membershipStatus,
+                    actionId: group?.id ?? "",
+                    labels: selectionLabels(context),
+                })
+                if (!check.ok) {
+                    await replyToClicker(
+                        interaction,
+                        refusalView(check, context, guild),
+                        kit
+                    )
+                    return
+                }
+            }
+        }
+
         let lateSignupReason: string | undefined
         let modalReply:
             | Awaited<ReturnType<SignupInteraction["awaitModalSubmit"]>>
@@ -613,6 +683,9 @@ export async function handleEventButtonInteraction(
                 eventId: eventId as never,
                 userId: interaction.user.id,
                 group: resolved.group,
+                signupPreferences: ranked?.choices.length
+                    ? ranked.choices
+                    : undefined,
                 lateSignupReason,
                 profile: {
                     name:
@@ -683,7 +756,19 @@ export async function handleEventButtonInteraction(
                 content: getEventMessages(context.config.defaultLanguage)
                     .lateSignup.saved,
             })
-        else await replyToClicker(interaction, view, kit)
+        else {
+            if (ranked && result.appliedSignupLabel !== SIGNUP_NOT_ATTENDING)
+                view.blocks.unshift({
+                    kind: "text",
+                    markdown: ranked.choices
+                        .map(
+                            (name, index) =>
+                                `${index + 1}. ${escapeMarkdownText(name)}`
+                        )
+                        .join("\n"),
+                })
+            await replyToClicker(interaction, view, kit)
+        }
     } finally {
         releaseLock?.()
         if (signupInteractionLocks.get(lockKey) === current) {
@@ -759,4 +844,214 @@ async function handleAttendanceInteraction(
     await interaction.editReply({
         content: messages.interaction.attendanceAcknowledged,
     })
+}
+
+type RankedDraft = {
+    userId: string
+    eventId: string
+    guildId: string
+    choices: string[]
+    revision: number
+    expires: number
+}
+const rankedDrafts = new Map<string, RankedDraft>()
+const RANKED_DRAFT_TTL = 15 * 60_000
+
+async function eligibleRankedOptions(
+    interaction: SignupInteraction,
+    context: EventInteractionContext
+) {
+    const guild = await eventGuild(interaction, context.event.guildId)
+    const member = await resolveInteractionMember(interaction, guild)
+    const membership = membershipOf(context, interaction.user.id)
+    return pickerOptions(context).filter(
+        (option) =>
+            resolveEventSignupSelection({
+                event: context.event,
+                groups: context.groups,
+                memberRoleIds: member ? [...member.roles.cache.keys()] : null,
+                assignedGroupIds: membership.assignedGroupIds,
+                membershipStatus: membership.membershipStatus,
+                actionId: option.value,
+                labels: selectionLabels(context),
+            }).ok
+    )
+}
+
+async function openRankedSignup(
+    interaction: SignupInteraction,
+    context: EventInteractionContext,
+    choices?: string[]
+) {
+    const now = Date.now()
+    for (const [key, draft] of rankedDrafts)
+        if (
+            draft.expires <= now ||
+            (draft.userId === interaction.user.id &&
+                draft.eventId === context.event.id)
+        )
+            rankedDrafts.delete(key)
+    if (rankedDrafts.size >= 1000) {
+        const oldest = rankedDrafts.keys().next().value
+        if (oldest !== undefined) rankedDrafts.delete(oldest)
+    }
+    const participant = context.event.participants.find(
+        (person) =>
+            person.userId === interaction.user.id &&
+            person.status === "attending"
+    )
+    const initial =
+        choices ??
+        participant?.signupPreferences ??
+        (participant?.group ? [participant.group] : [])
+    const offered = await eligibleRankedOptions(interaction, context)
+    const token = randomUUID()
+    const draft: RankedDraft = {
+        userId: interaction.user.id,
+        eventId: context.event.id,
+        guildId: context.event.guildId,
+        choices: initial.filter((name) =>
+            pickerOptions(context).some(
+                (option) => !option.general && option.name === name
+            )
+        ),
+        revision: 0,
+        expires: now + RANKED_DRAFT_TTL,
+    }
+    rankedDrafts.set(token, draft)
+    await replyToClicker(
+        interaction,
+        rankedSignupView({
+            token,
+            revision: draft.revision,
+            choices: draft.choices,
+            options: offered,
+            copy: getRankedSignupMessages(context.config.defaultLanguage),
+        }),
+        { ...kitOptions(context), replaceCard: true }
+    )
+}
+
+export async function handleRankedSignupInteraction(
+    interaction: SignupInteraction,
+    options: InteractionHandlerOptions
+) {
+    const [, token, revision, action] = interaction.customId.split(":")
+    const draft = rankedDrafts.get(token)
+    const language = await interactionLanguage(
+        interaction.guildId ?? draft?.guildId
+    )
+    const copy = getRankedSignupMessages(language)
+    if (
+        !draft ||
+        draft.expires <= Date.now() ||
+        draft.userId !== interaction.user.id
+    ) {
+        if (draft?.expires && draft.expires <= Date.now())
+            rankedDrafts.delete(token)
+        await replyToClicker(
+            interaction,
+            errorCard({ title: copy.expired, body: copy.hint }),
+            { language }
+        )
+        return
+    }
+    if (String(draft.revision) !== revision) {
+        await replyToClicker(
+            interaction,
+            errorCard({ title: copy.stale, body: copy.hint }),
+            { language }
+        )
+        return
+    }
+    // Claim this revision synchronously before loading fresh permission and event state.
+    draft.revision++
+    const context = await loadSignupContext(
+        interaction,
+        draft.eventId,
+        draft.guildId
+    )
+    if (
+        !context ||
+        !context.event.allowRankedSignup ||
+        !canAcceptSignups(context.event, new Date())
+    ) {
+        rankedDrafts.delete(token)
+        await replyUnavailable(interaction, draft.guildId)
+        return
+    }
+    if (action === "save" && draft.choices.length) {
+        const first = context.groups.find(
+            (group) => group.name === draft.choices[0]
+        )
+        if (!first) {
+            await replyUnavailable(interaction, draft.guildId)
+            return
+        }
+        rankedDrafts.delete(token)
+        await handleEventButtonInteraction(interaction, options, {
+            eventId: draft.eventId,
+            guildId: draft.guildId,
+            firstGroupId: first.id,
+            choices: draft.choices,
+        })
+        return
+    }
+    if (action === "add" && interaction.isStringSelectMenu()) {
+        const selected = (
+            await eligibleRankedOptions(interaction, context)
+        ).find((option) => option.value === interaction.values[0])
+        if (selected?.general && !draft.choices.length) {
+            rankedDrafts.delete(token)
+            await handleEventButtonInteraction(interaction, options, {
+                eventId: draft.eventId,
+                guildId: draft.guildId,
+                firstGroupId: SIGNUP_GENERAL,
+                choices: [],
+            })
+            return
+        }
+        if (
+            selected &&
+            !draft.choices.includes(selected.name) &&
+            draft.choices.length < 25
+        )
+            draft.choices.push(selected.name)
+    }
+    const [move, rawIndex] = action.split("-")
+    if (move === "up" || move === "down" || move === "remove")
+        draft.choices = reorderSignupChoices(
+            draft.choices,
+            move,
+            Number(rawIndex)
+        )
+    draft.expires = Date.now() + RANKED_DRAFT_TTL
+    await replyToClicker(
+        interaction,
+        rankedSignupView({
+            token,
+            revision: draft.revision,
+            choices: draft.choices,
+            options: await eligibleRankedOptions(interaction, context),
+            copy,
+            editing:
+                action === "edit" ||
+                ["up", "down", "remove", "page"].includes(move),
+            page:
+                move === "page"
+                    ? Number(rawIndex)
+                    : Number.isInteger(Number(rawIndex))
+                      ? Math.floor(
+                            (Number(rawIndex) +
+                                (move === "up"
+                                    ? -1
+                                    : move === "down"
+                                      ? 1
+                                      : 0)) /
+                                4
+                        )
+                      : 0,
+        }),
+        { ...kitOptions(context), replaceCard: true }
+    )
 }

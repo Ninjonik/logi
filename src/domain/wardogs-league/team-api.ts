@@ -150,6 +150,7 @@ export function fixtureCommand(
         signupGroupIds: template.signupGroupIds,
         signupGroupLimits: template.signupGroupLimits,
         useGeneralSignup: template.useGeneralSignup,
+        allowRankedSignup: template.allowRankedSignup,
         signupReminderStatuses: template.signupReminderStatuses,
         attendanceReminderHours: template.attendanceReminderHours,
         pingClan: template.pingMode === "clan",

@@ -459,6 +459,7 @@ export type FlowChangeKey =
     | "statuses"
     | "groups"
     | "general"
+    | "ranked"
     | "signupReminder"
     | "attendanceReminders"
     | "squadPreset"
@@ -568,6 +569,7 @@ export function describeFlowValues(
         statuses: isMatch ? statusesText(values, t) : c.none,
         groups: (isMatch ? groupsText(values, context) : "") || c.none,
         general: onOff(isMatch && values.useGeneralSignup),
+        ranked: onOff(isMatch && Boolean(values.allowRankedSignup)),
         signupReminder: (() => {
             const audience = reminderAudience(values.signupReminderStatuses)
             return audience === "off"
@@ -643,6 +645,7 @@ const CHANGE_STEPS: Record<FlowChangeKey, NewMatchStep> = {
     statuses: "signups",
     groups: "signups",
     general: "signups",
+    ranked: "signups",
     allowLateSignups: "signups",
     allowNonMembersSignup: "signups",
     signupReminder: "signups",
@@ -703,6 +706,7 @@ const CHANGE_FIELDS: Record<keyof FlowValues, FlowChangeKey | null> = {
     signupGroupIds: "groups",
     signupGroupLimits: "groups",
     useGeneralSignup: "general",
+    allowRankedSignup: "ranked",
     signupReminderStatuses: "signupReminder",
     pingMode: "ping",
     pingRoleIds: "ping",
@@ -756,6 +760,7 @@ export function flowChanges(
     const { t } = context
     const labels: Record<FlowChangeKey, string> = {
         ...t.edit.fields,
+        ranked: t.signups.ranked,
         activity: t.match.activity,
         activityTarget: t.match.target,
         tacticalPlan: tacticalPlanCopy(context.intl.split("-")[0]).title,

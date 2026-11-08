@@ -25,6 +25,7 @@ export const sharedMatchSettingsSchema = z.strictObject({
     signupGroupLimits: signupGroupLimitsSchema,
     allowNonMembersSignup: eventSchema.shape.allowNonMembersSignup,
     useGeneralSignup: eventSchema.shape.useGeneralSignup,
+    allowRankedSignup: eventSchema.shape.allowRankedSignup,
     createParticipantRoles: z.boolean(),
     createSquadVoiceChannels: eventSchema.shape.createSquadVoiceChannels,
     createForumChannel: eventSchema.shape.createForumChannel,

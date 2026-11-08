@@ -20,6 +20,7 @@ export const DISCORD_CONFIG_VALUE_FIELDS = [
     "playerStatsServers",
     "ticketSettings",
     "membershipSettings",
+    "selfAssignableGroupIds",
     "statsSettings",
     "gameOverrides",
     "eventDiscussionDefaults",
