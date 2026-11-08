@@ -4684,7 +4684,7 @@ export const csMessages = {
         unsignedPlayerConfirmAction: "Přidat do soupisky",
         autoFill: "Automaticky doplnit soupisku",
         autoFillDescription:
-            "Hráči se zpracují od nejsilnějších a pak se přiřadí do nejbližší možné jednotky podle přihlášení, primární skupiny a sekundárních skupin.",
+            "Nejdříve preference přihlášky, poté skóre a nakonec K/D. Jiné skupiny se použijí pouze při nedostatku hráčů na volná místa.",
         autoFillScoreWeight: "Váha skóre",
         autoFillKdWeight: "Váha K/D",
         autoFillConfirm: "Doplnit nyní",
@@ -4897,6 +4897,9 @@ export const csMessages = {
             noGroups:
                 "Tato hra nemá skupiny pro přihlášky; hráči se přihlásí bez volby skupiny.",
             general: "Přihlášení bez volby skupiny",
+            ranked: "Povolit náhradní volby skupin",
+            rankedHint:
+                "Hráči si mohou vybrat jednu skupinu nebo přidat další podle svých preferencí.",
             lateSignupLabel: "Přihlášen po termínu",
             lateSignups:
                 "Povolit pozdní přihlášení do srazu (s důvodem, do záloh)",
@@ -5110,6 +5113,9 @@ export const csMessages = {
                 statuses: "Kdo se může přihlásit",
                 groups: "Skupiny a limity",
                 general: "Přihlášení bez skupiny",
+                ranked: "Povolit náhradní volby skupin",
+                rankedHint:
+                    "Hráči si mohou vybrat jednu skupinu nebo přidat další podle svých preferencí.",
                 signupReminder: "Připomínka přihlášky",
                 attendanceReminders: "Připomínky docházky",
                 squadPreset: "Předvolba čet",
@@ -5363,6 +5369,9 @@ export const csMessages = {
             groupsAllGames:
                 "Šablona pro všechny hry nabídne všechny skupiny hry daného zápasu. Pro výběr skupin zvolte hru.",
             general: "Přihlášení bez volby skupiny",
+            ranked: "Povolit náhradní volby skupin",
+            rankedHint:
+                "Hráči si mohou vybrat jednu skupinu nebo přidat další podle svých preferencí.",
             reminder: "Připomínka přihlášky",
             noLimit: "bez limitu",
             max: "max",
@@ -5611,6 +5620,7 @@ export const csMessages = {
             allowedSignupStatuses: "Povolené signup statusy",
             signupReminderStatuses: "Příjemci denních připomínek přihlášek",
             useGeneralSignup: "Zapnout obecný signup",
+            allowRankedSignup: "Povolit náhradní volby skupin",
             pingClan: "Upozornit klan (Ping)",
             pingMode: "Ping oznámení",
             pingRoleIds: "Role k upozornění",

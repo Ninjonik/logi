@@ -147,7 +147,11 @@ export function isManagerOnlyCommand(
     command: LogiCommand,
     settings: ResolvedCommandSettings
 ) {
-    if (command === "close_ticket" || command === "close_application")
+    if (
+        command === "groups" ||
+        command === "close_ticket" ||
+        command === "close_application"
+    )
         return false
     return settings[command].audience === "logiAdmins"
 }
@@ -180,9 +184,13 @@ export function helpCommandsFor(
     // Commands a clan restricts to its managers move to the staff part.
     const staffOnly = (command: ConfigurableCommand) =>
         config.settings[command].audience === "logiAdmins"
-    const members: LogiCommand[] = MEMBER_COMMANDS.filter(
-        (command) => command !== "help" && may(command) && !staffOnly(command)
-    )
+    const members: LogiCommand[] = [
+        "groups",
+        ...MEMBER_COMMANDS.filter(
+            (command) =>
+                command !== "help" && may(command) && !staffOnly(command)
+        ),
+    ]
     const staff: LogiCommand[] = [
         ...MEMBER_COMMANDS.filter(
             (command) =>

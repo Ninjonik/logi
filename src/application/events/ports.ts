@@ -19,6 +19,7 @@ export type EventWorkflowRecord = {
     allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     /** Unpublished drafts accept no sign-ups. */
     isDraft?: boolean
     /** Group caps by group ID; a full group gives a reserve place instead. */
@@ -50,6 +51,7 @@ export interface EventWorkflowRepository {
         status?: "pending" | "recruit" | "active"
     } | null>
     getGroupNameById(groupId: string): Promise<string | null>
+    getSignupGroupNames?(event: EventWorkflowRecord): Promise<string[]>
     getReservePlayerIds(eventId: string): Promise<string[]>
     ensureDiscordProfile?(input: {
         userId: string

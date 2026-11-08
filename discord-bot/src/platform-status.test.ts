@@ -105,7 +105,7 @@ test("the status message is edited in place in Czech with the grey bar (L5-33, L
     assert.match(card.text, /-# \*\*SLUŽBY LOGI\*\*\n### Všechno běží/)
     assert.match(
         card.text,
-        /Kontrola každých 30 s · naposledy dnes v <t:\d+:t>/
+        /Kontrola každých 300 s · naposledy dnes v <t:\d+:t>/
     )
     assert.match(card.text, /\*\*Discord bot\*\* · 🟢 \*\*V provozu\*\*/)
     assert.match(card.text, /Změny stavu jsou ve vlákně · Spravováno v Logi/)

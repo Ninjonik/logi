@@ -13,6 +13,7 @@ import {
     type ServiceState,
 } from "../../src/domain/discord-messages/service-status"
 import { getSystemMessages } from "../../src/lib/clan-language/system"
+import { createStatusReader } from "../../src/lib/status-reader"
 import { clanLanguageForGuild } from "./runtime/clan-language"
 import { editPayload, messagePayload } from "./ui/message-kit"
 import { convex, references } from "./convex"
@@ -31,20 +32,16 @@ type Settings = {
 /** The Logi services group of the status API; game servers are not in it (L5-B07). */
 const LOGI_SERVICES_GROUP = 2
 
+const readServices = createStatusReader<Service>(env.statusApiUrl)
+
 async function getServices() {
-    try {
-        const response = await fetch(env.statusApiUrl)
-        if (!response.ok) return null
-        const services = (await response.json()) as Service[]
-        const logiServices = services.filter(
-            (service) => service.group_id === LOGI_SERVICES_GROUP
-        )
-        return logiServices.length
-            ? logiServices.map(({ name, online }) => ({ name, online }))
-            : null
-    } catch {
-        return null
-    }
+    const services = await readServices()
+    const logiServices = services?.filter(
+        (service) => service.group_id === LOGI_SERVICES_GROUP
+    )
+    return logiServices?.length
+        ? logiServices.map(({ name, online }) => ({ name, online }))
+        : null
 }
 
 type StatusMessage = { edit(options: MessageEditOptions): Promise<unknown> }
@@ -215,7 +212,7 @@ export async function syncPlatformStatus(client: Client) {
         })
 }
 
-/** Checks the Logi services every 30 s (L5-B06). */
+/** Checks the Logi services every 5 minutes (L5-B06). */
 export function startPlatformStatusMonitor(client: Client) {
     const run = () =>
         syncPlatformStatus(client).catch((error) =>

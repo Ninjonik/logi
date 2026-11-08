@@ -176,6 +176,7 @@ export function normalizeEventDoc<
         rewardRoleIds?: string[]
         signupGroupIds?: string[]
         useGeneralSignup?: boolean
+        allowRankedSignup?: boolean
         stratmapIds?: string[]
         createForumChannel?: boolean
         status?: "registration" | "closed" | "starting" | "concluded"
@@ -206,6 +207,8 @@ export function normalizeEventDoc<
         participants?: Array<{
             userId: string
             status: "attending" | "not_attending"
+            signupPreferences?: string[]
+            requestedGroup?: string | null
             group?: string | null
             completed?: "passed" | "failed"
             updatedAt: string

@@ -1,9 +1,13 @@
 import { SyncRosterMembershipForUserUseCase } from "@/application/rosters/sync-roster-membership.use-case"
+import {
+    matchesGameScope,
+    resolveGameScope,
+    type GameId,
+} from "@/domain/games/game"
 import { rosterRevisionTimestamp } from "../../domain/rosters/shared-roster"
 import { sharedMatchMembers, sharedMatchPeople } from "./shared-match-store"
 import { syncRosterMembershipForUser } from "../../domain/rosters/sync"
 import type { MutationCtx } from "../../../convex/_generated/server"
-import { matchesGameScope, type GameId } from "@/domain/games/game"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { getUserByDiscordId } from "../../../convex/identity"
 import { systemClock } from "@/domain/shared/clock"
@@ -68,6 +72,7 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             allowLateSignups: event.allowLateSignups,
             allowNonMembersSignup: event.allowNonMembersSignup,
             useGeneralSignup: event.useGeneralSignup,
+            allowRankedSignup: event.allowRankedSignup,
             signupGroupLimits: event.signupGroupLimits,
             isDraft: event.isDraft,
             registrationStart: event.registrationStart,
@@ -106,6 +111,8 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
                   primaryGroupId: assignment.primaryGroupId
                       ? String(assignment.primaryGroupId)
                       : undefined,
+                  secondaryGroupIds:
+                      assignment.secondaryGroupIds?.map(String) ?? [],
                   type: assignment.type,
                   status: assignment.status,
               }
@@ -115,6 +122,24 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
     async getGroupNameById(groupId: string) {
         const group = await this.ctx.db.get(groupId as Id<"groups">)
         return group?.name ?? null
+    }
+
+    async getSignupGroupNames(event: EventWorkflowRecord) {
+        const groups = await this.ctx.db
+            .query("groups")
+            .withIndex("guildId", (q) => q.eq("guildId", event.guildId))
+            .collect()
+        return groups
+            .filter(
+                (group) =>
+                    matchesGameScope(
+                        group.gameId,
+                        resolveGameScope(event.gameId)
+                    ) &&
+                    (!event.signupGroupIds ||
+                        event.signupGroupIds.includes(String(group._id)))
+            )
+            .map((group) => group.name)
     }
 
     async getReservePlayerIds(eventId: string) {

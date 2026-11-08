@@ -178,6 +178,7 @@ const squadPresetSquad = v.object({
 })
 
 const signUp = v.object({
+    signupPreferences: v.optional(v.array(v.string())),
     userId: v.string(),
     group: v.optional(v.union(v.string(), v.null())),
 })
@@ -200,6 +201,7 @@ const signupActivity = v.object({
 })
 
 const eventParticipant = v.object({
+    signupPreferences: v.optional(v.array(v.string())),
     userId: v.string(),
     status: v.union(v.literal("attending"), v.literal("not_attending")),
     group: v.optional(v.union(v.string(), v.null())),
@@ -865,6 +867,7 @@ export default defineSchema({
         .index("id", ["id"])
         .searchIndex("name", { searchField: "name" }),
     discordConfigs: defineTable({
+        selfAssignableGroupIds: v.optional(v.array(v.string())),
         eventDiscussionDefaults: v.optional(eventDiscussionDefaultsValidator),
         guildId: v.string(),
         timezone: v.string(),
@@ -1010,6 +1013,7 @@ export default defineSchema({
         allowLateSignups: v.optional(v.boolean()),
         allowNonMembersSignup: v.optional(v.boolean()),
         useGeneralSignup: v.optional(v.boolean()),
+        allowRankedSignup: v.optional(v.boolean()),
         signupReminderStatuses: v.optional(
             v.array(
                 v.union(

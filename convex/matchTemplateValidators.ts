@@ -24,6 +24,7 @@ const matchTemplateFields = {
     ),
     signupGroupIds: v.optional(v.array(v.string())),
     useGeneralSignup: v.boolean(),
+    allowRankedSignup: v.optional(v.boolean()),
     signupReminderStatuses: v.array(
         v.union(
             v.literal("member"),

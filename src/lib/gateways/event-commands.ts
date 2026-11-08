@@ -72,6 +72,7 @@ export async function saveServerEventCommand(input: {
     allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: {
         frequency: "weekly" | "monthly_date" | "monthly_nth_weekday"
@@ -140,6 +141,7 @@ export async function saveServerEventCommand(input: {
         allowLateSignups: input.allowLateSignups,
         allowNonMembersSignup: input.allowNonMembersSignup,
         useGeneralSignup: input.useGeneralSignup,
+        allowRankedSignup: input.allowRankedSignup,
         signupReminderStatuses: input.signupReminderStatuses,
         recurrence: input.recurrence,
         server: input.server,
@@ -241,6 +243,7 @@ export async function toggleServerEventSignupCommand(input: {
     eventId: string
     userId: string
     group: string | null
+    signupPreferences?: string[]
     lateSignupReason?: string
 }) {
     const result = await fetchMutation(toggleSignupReference, {
@@ -248,6 +251,7 @@ export async function toggleServerEventSignupCommand(input: {
         eventId: input.eventId as never,
         userId: input.userId,
         group: input.group,
+        signupPreferences: input.signupPreferences,
         lateSignupReason: input.lateSignupReason,
     })
     await invalidateSharedMatchCaches(input.eventId)

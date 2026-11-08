@@ -923,6 +923,15 @@ paths["/clan/events/{eventId}/signup"] = {
                         properties: {
                             userId: { type: "string" },
                             group: { type: ["string", "null"] },
+                            signupPreferences: {
+                                type: "array",
+                                minItems: 1,
+                                maxItems: 25,
+                                uniqueItems: true,
+                                items: { type: "string" },
+                                description:
+                                    "Offered group names in preference order; first must equal group. Multiple choices require allowRankedSignup on the match. A single choice is always sufficient. Preserved when a full or late signup starts in reserves.",
+                            },
                             lateSignupReason: {
                                 type: "string",
                                 minLength: 1,

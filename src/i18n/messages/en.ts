@@ -4705,7 +4705,7 @@ export const enMessages = {
         unsignedPlayerConfirmAction: "Add to roster",
         autoFill: "Auto-fill roster",
         autoFillDescription:
-            "Players are assigned strongest-first, then placed into the closest available squad by signup preference, primary group, and secondary groups.",
+            "Signup preferences first, then score, then K/D. Unlisted groups are used only when there are not enough players to fill the empty slots.",
         autoFillScoreWeight: "Score weight",
         autoFillKdWeight: "K/D weight",
         autoFillConfirm: "Auto-fill now",
@@ -4920,6 +4920,9 @@ export const enMessages = {
             noGroups:
                 "This game has no sign-up groups; players sign up without choosing one.",
             general: "Sign-up without choosing a group",
+            ranked: "Allow backup group choices",
+            rankedHint:
+                "Players can choose one group or add alternatives in preference order.",
             lateSignupLabel: "Signed up late",
             lateSignups:
                 "Allow late signups until meeting time (reason required; placed in reserves)",
@@ -5137,6 +5140,9 @@ export const enMessages = {
                 statuses: "Who can sign up",
                 groups: "Groups and caps",
                 general: "Sign-up without a group",
+                ranked: "Allow backup group choices",
+                rankedHint:
+                    "Players can choose one group or add alternatives in preference order.",
                 signupReminder: "Sign-up reminder",
                 attendanceReminders: "Attendance reminders",
                 squadPreset: "Squad preset",
@@ -5390,6 +5396,9 @@ export const enMessages = {
             groupsAllGames:
                 "A template for all games offers every signup group of the match's game. Choose a game to pick groups.",
             general: "Sign up without choosing a group",
+            ranked: "Allow backup group choices",
+            rankedHint:
+                "Players can choose one group or add alternatives in preference order.",
             reminder: "Sign-up reminder",
             noLimit: "no limit",
             max: "max",
@@ -5644,6 +5653,7 @@ export const enMessages = {
             allowedSignupStatuses: "Allowed signup statuses",
             signupReminderStatuses: "Daily signup reminder recipients",
             useGeneralSignup: "Enable general signup",
+            allowRankedSignup: "Allow backup group choices",
             pingClan: "Ping clan",
             pingMode: "Announcement ping",
             pingRoleIds: "Roles to ping",

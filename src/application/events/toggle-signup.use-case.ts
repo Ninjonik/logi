@@ -1,3 +1,4 @@
+import { validateSignupPreferences } from "@/domain/events/signup-preferences"
 import { SIGNUP_GENERAL, SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
 import { getResolvedMemberStatus } from "@/domain/assignments/policy"
 import { normalizeEventRecord } from "@/domain/events/normalization"
@@ -20,6 +21,7 @@ export class ToggleSignupUseCase {
         eventId: string
         userId: string
         group: string | null
+        signupPreferences?: string[]
         lateSignupReason?: string
         profile?: { name: string; avatar: string }
     }) {
@@ -36,6 +38,25 @@ export class ToggleSignupUseCase {
             (participant) => participant.userId === input.userId
         )
         let nextGroup = input.group
+        const offeredNames =
+            input.signupPreferences === undefined
+                ? []
+                : this.events.getSignupGroupNames
+                  ? await this.events.getSignupGroupNames(event)
+                  : (
+                        await Promise.all(
+                            (event.signupGroupIds ?? []).map((id) =>
+                                this.events.getGroupNameById(id)
+                            )
+                        )
+                    ).filter((name): name is string => name !== null)
+        const signupPreferences = validateSignupPreferences({
+            preferences: input.signupPreferences,
+            group: input.group,
+            enabled: event.allowRankedSignup,
+            kind: event.kind ?? "match",
+            offeredNames,
+        })
         const assignment = await this.events.getAssignmentForUser(
             normalizedEvent.guildId,
             input.userId,
@@ -111,6 +132,7 @@ export class ToggleSignupUseCase {
             now,
             membershipStatus,
             requestedGroup: fullGroup,
+            signupPreferences,
             lateSignupReason: input.lateSignupReason,
         })
 

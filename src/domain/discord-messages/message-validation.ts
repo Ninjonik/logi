@@ -208,7 +208,7 @@ export function validateMessageView(
             code: "too-many-primary",
             detail: `${primary} primary buttons`,
         })
-    if (buttonRows > LIMITS.buttonRows)
+    if (buttonRows > (view.buttonRowLimit ?? LIMITS.buttonRows))
         issues.push({
             code: "too-many-button-rows",
             detail: `${buttonRows} rows of buttons`,

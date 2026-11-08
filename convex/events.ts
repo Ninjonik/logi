@@ -124,6 +124,7 @@ export const upsert = mutation({
         allowLateSignups: v.optional(v.boolean()),
         allowNonMembersSignup: v.optional(v.boolean()),
         useGeneralSignup: v.optional(v.boolean()),
+        allowRankedSignup: v.optional(v.boolean()),
         signupReminderStatuses: v.optional(
             v.array(
                 v.union(
@@ -370,6 +371,7 @@ export const toggleSignUp = mutation({
         eventId: v.id("events"),
         userId: v.string(),
         group: v.union(v.string(), v.null()),
+        signupPreferences: v.optional(v.array(v.string())),
         lateSignupReason: v.optional(v.string()),
         profile: v.optional(v.object({ name: v.string(), avatar: v.string() })),
     },
@@ -382,6 +384,7 @@ export const toggleSignUp = mutation({
                 userId: args.userId,
                 group: args.group,
                 profile: args.profile,
+                signupPreferences: args.signupPreferences,
                 lateSignupReason: args.lateSignupReason,
             },
             createUseCase: () =>

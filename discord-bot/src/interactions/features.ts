@@ -7,6 +7,7 @@ import { matchRecapInteractions } from "./match-recap-preference"
 import { rosterInteractions } from "./roster-assignment"
 import { seedInteractions } from "../seed/interactions"
 import { commandFeatures } from "../commands/features"
+import { selfGroupsInteractions } from "./self-groups"
 import type { InteractionFeature } from "./registry"
 import { closeTicketFeature } from "./close-ticket"
 import { ticketsFeature } from "./tickets"
@@ -21,6 +22,7 @@ import { linkFeature } from "./link"
 export const interactionFeatures: readonly InteractionFeature[] = [
     // /help, /stats, /player, /notice, /server-status (commands workstream).
     ...commandFeatures,
+    selfGroupsInteractions,
     // Announcement buttons, the group picker and "Zobrazit přihlášené".
     matchAnnouncementInteractions,
     rosterInteractions,

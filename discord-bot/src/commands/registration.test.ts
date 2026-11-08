@@ -97,8 +97,8 @@ test("on ready every server gets its commands in its own language, recorded for 
     assert.deepEqual(
         f.sets.map((set) => [set.guildId, set.commands.length]),
         [
-            [GUILD, 8],
-            [OTHER, 8],
+            [GUILD, 9],
+            [OTHER, 9],
         ]
     )
     assert.equal(
@@ -115,7 +115,7 @@ test("on ready every server gets its commands in its own language, recorded for 
     assert.equal(f.records.length, 1, "only connected servers are recorded")
     assert.deepEqual(f.records[0]!.result, {
         ok: true,
-        commandCount: 8,
+        commandCount: 9,
         language: "cs",
         signature: f.records[0]!.result.ok
             ? f.records[0]!.result.signature
@@ -198,7 +198,7 @@ test("every save is recorded; Discord is called only when the commands changed (
     assert.equal(f.records.length, recorded + 1, "but the time is recorded")
     const record = f.records.at(-1)!
     assert.equal(record.handledRequestAt, 5_000)
-    assert.ok(record.result.ok && record.result.commandCount === 8)
+    assert.ok(record.result.ok && record.result.commandCount === 9)
     assert.ok(record.at > f.records[0]!.at, "the card's time moves")
     // The same request is not answered twice.
     f.push([

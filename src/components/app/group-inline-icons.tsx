@@ -67,10 +67,12 @@ export function GroupInlineIcons({
     assignment,
     groupsById,
     signupGroupName,
+    signupPreferences,
 }: {
     assignment?: ServerUserAssignment
     groupsById: Map<string, Group>
     signupGroupName?: string | null
+    signupPreferences?: string[]
 }) {
     const primaryGroup = assignment?.primaryGroupId
         ? groupsById.get(assignment.primaryGroupId)
@@ -78,6 +80,7 @@ export function GroupInlineIcons({
     const secondaryGroups = (assignment?.secondaryGroupIds ?? [])
         .map((groupId) => groupsById.get(groupId))
         .filter((group): group is Group => Boolean(group))
+    signupGroupName = signupPreferences?.[0] ?? signupGroupName
     const signupGroup = findGroupByName(groupsById, signupGroupName)
     const hasDistinctSignupGroup =
         Boolean(primaryGroup) &&
@@ -89,17 +92,41 @@ export function GroupInlineIcons({
         return null
     }
 
+    const signupIcon = signupGroupName ? (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span
+                    role="img"
+                    tabIndex={0}
+                    className="inline-flex cursor-help items-center"
+                    aria-label={(signupPreferences ?? [signupGroupName])
+                        .map((name, index) => `${index + 1}. ${name}`)
+                        .join(", ")}
+                >
+                    <GroupIcon
+                        group={signupGroup}
+                        fallbackLabel={signupGroupName}
+                    />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent>
+                <ol className="list-inside list-decimal space-y-1">
+                    {(signupPreferences?.length
+                        ? signupPreferences
+                        : [signupGroupName]
+                    ).map((name) => (
+                        <li key={name}>{name}</li>
+                    ))}
+                </ol>
+            </TooltipContent>
+        </Tooltip>
+    ) : null
     return (
-        <div
-            className="inline-flex shrink-0 items-center gap-1"
-            aria-label="Player roles"
-        >
-            {hasDistinctSignupGroup ? (
-                <GroupIcon
-                    group={signupGroup}
-                    fallbackLabel={signupGroupName}
-                />
-            ) : null}
+        <div className="inline-flex shrink-0 items-center gap-1">
+            {hasDistinctSignupGroup ||
+            (primaryGroup && (signupPreferences?.length ?? 0) > 1)
+                ? signupIcon
+                : null}
             {primaryGroup ? (
                 secondaryGroups.length ? (
                     <Tooltip>
@@ -120,12 +147,7 @@ export function GroupInlineIcons({
                     <GroupIcon group={primaryGroup} />
                 )
             ) : null}
-            {!primaryGroup && signupGroupName ? (
-                <GroupIcon
-                    group={signupGroup}
-                    fallbackLabel={signupGroupName}
-                />
-            ) : null}
+            {!primaryGroup && signupGroupName ? signupIcon : null}
         </div>
     )
 }

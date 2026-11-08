@@ -170,6 +170,7 @@ const fieldEdits: Record<keyof FlowValues, Partial<FlowValues> | null> = {
     signupGroupIds: { signupGroupIds: ["g-inf"] },
     signupGroupLimits: { signupGroupLimits: [{ groupId: "g-tank", max: 3 }] },
     useGeneralSignup: { useGeneralSignup: true },
+    allowRankedSignup: { allowRankedSignup: true },
     signupReminderStatuses: { signupReminderStatuses: [] },
     pingMode: { pingMode: "none" },
     pingRoleIds: { pingRoleIds: ["another-role"] },

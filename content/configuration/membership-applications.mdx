@@ -7,6 +7,28 @@ import { Callout, Steps } from "nextra/components"
 
 # Clan applications
 
+## Groups members can choose themselves
+
+At the top of **Settings → Membership**, select the groups existing members may
+add or remove using `/groups` in Discord, then **Save groups**. An empty selection
+disables self-service. This list is independent of application categories and
+the recruitment switch. Group names show their game; when viewing one game,
+saving preserves the choices for other games.
+
+`/groups` opens a private picker in the clan language. Select a group to add it,
+or select a checked group to remove it. Changes save immediately; reopen the
+command at any time. Only allowlisted groups for the person's existing,
+non-pending, unpaused game membership are offered. Primary groups are managed by
+clan staff and cannot be changed here. Staff-managed groups outside the allowlist
+are preserved. These are secondary **Logi groups**: the command does not grant
+Discord roles or create or upgrade a membership.
+
+Members with memberships for multiple games first choose a game in `/groups`;
+a single game opens directly. The private picker only shows groups for the
+selected game and includes a **Change game** button. Recruits, full members,
+reserve members, and mercenaries can all use this command. Pending applications
+and paused memberships are excluded.
+
 ## Applications handled by an external Discord bot
 
 An external bot can run its own application form, thread and moderator decisions
@@ -243,3 +265,4 @@ actions and have no API operation; images are uploaded in the dashboard.
    the buttons or `/close_application`.
 3. Use a disposable recruit and final role first and confirm the role changes
    on **Role changes** before using production roles.
+

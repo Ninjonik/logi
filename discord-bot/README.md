@@ -28,7 +28,7 @@ See [Discord installation](../content/discord-bot-setup.mdx) for application set
 - Membership observations and queued role changes with current actor, target, and hierarchy checks.
 - Personal recaps with current account binding and opt-out checks.
 
-The registered commands are `/close_application`, `/close_ticket`, `/help`, `/link`, `/notice`, `/player`, `/server-status`, and `/stats`. Names are stable; descriptions and options use the workspace's Discord language. Settings determine configurable command access and reply behavior. Permission is checked when a command is used.
+The registered commands are `/close_application`, `/close_ticket`, `/help`, `/groups`, `/link`, `/notice`, `/player`, `/server-status`, and `/stats`. Names are stable; descriptions and options use the workspace's Discord language. Settings determine configurable command access and reply behavior. Permission is checked when a command is used. `/groups` uses the Membership settings' self-service allowlist and changes only the caller's secondary Logi groups on an existing game membership; it does not grant Discord roles.
 
 ## Source layout
 

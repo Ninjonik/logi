@@ -19,6 +19,7 @@ import {
 import { ConvexStratmapRepository } from "../src/infrastructure/convex/stratmap-repository"
 import { CalendarItemCommands } from "../src/application/calendar/calendar-item-commands"
 import { ConvexArticleRepository } from "../src/infrastructure/convex/article-repository"
+import { validateSelfAssignableGroups } from "../src/infrastructure/convex/self-groups"
 import { ConvexGroupRepository } from "../src/infrastructure/convex/group-repository"
 import { ArticleCommands } from "../src/application/articles/article-commands"
 import { CLAN_SETTINGS_SLICES } from "../src/domain/api/clan-settings-slices"
@@ -510,6 +511,7 @@ export const mutateClanEventSignup = mutation({
         methodPath: v.string(),
         userId: v.string(),
         group: v.union(v.string(), v.null()),
+        signupPreferences: v.optional(v.array(v.string())),
         lateSignupReason: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
@@ -544,6 +546,7 @@ export const mutateClanEventSignup = mutation({
                     eventId: String(args.eventId),
                     userId: args.userId.trim(),
                     group: args.group,
+                    signupPreferences: args.signupPreferences,
                     lateSignupReason: args.lateSignupReason,
                 })
                 response = {
@@ -1276,6 +1279,27 @@ export const mutateClanSettings = mutation({
                         code: "validation_error",
                         message: slicePatch.error,
                     },
+                }
+            }
+            if (
+                slicePatch.ok &&
+                slicePatch.patch.selfAssignableGroupIds !== undefined
+            ) {
+                try {
+                    await validateSelfAssignableGroups(
+                        ctx,
+                        key.guildId,
+                        slicePatch.patch.selfAssignableGroupIds
+                    )
+                } catch {
+                    status = 400
+                    response = {
+                        error: {
+                            code: "validation_error",
+                            message:
+                                "Self-assignable groups must belong to this clan.",
+                        },
+                    }
                 }
             }
             // Slices in their own table are checked against the database

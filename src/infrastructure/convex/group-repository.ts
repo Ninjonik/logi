@@ -59,6 +59,20 @@ export class ConvexGroupRepository implements GroupRepository {
         })
     }
     async delete(id: string) {
+        const group = await this.ctx.db.get(id as Id<"groups">)
+        if (group) {
+            const config = await this.ctx.db
+                .query("discordConfigs")
+                .withIndex("guildId", (q) => q.eq("guildId", group.guildId))
+                .unique()
+            if (config?.selfAssignableGroupIds?.includes(id))
+                await this.ctx.db.patch(config._id, {
+                    selfAssignableGroupIds:
+                        config.selfAssignableGroupIds.filter(
+                            (groupId) => groupId !== id
+                        ),
+                })
+        }
         await this.ctx.db.delete(id as Id<"groups">)
     }
 }

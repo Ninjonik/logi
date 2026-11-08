@@ -1,3 +1,4 @@
+import { signupPreferencesSchema } from "@/lib/validation/event"
 import { SIGNUP_NOT_ATTENDING } from "@/domain/events/types"
 import { isLateSignupWindow } from "@/domain/events/status"
 import { logRouteError } from "@/lib/server-route-errors"
@@ -34,6 +35,7 @@ export async function POST(
     }
 
     const body = (await request.json()) as {
+        signupPreferences?: unknown
         actionId?: unknown
         lateSignupReason?: unknown
     }
@@ -79,6 +81,43 @@ export async function POST(
         return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
+    const preferences = signupPreferencesSchema
+        .optional()
+        .safeParse(body.signupPreferences)
+    if (!preferences.success)
+        return NextResponse.json(
+            { error: messages.interaction.invalidSignupButton },
+            { status: 400 }
+        )
+    for (const name of preferences.data ?? []) {
+        const group = context.groups.find((item) => item.name === name)
+        const choice = resolveEventSignupSelection({
+            event,
+            groups: context.groups,
+            memberRoleIds: context.memberRoleIds,
+            assignedGroupIds: assignment
+                ? [
+                      assignment.primaryGroupId,
+                      ...assignment.secondaryGroupIds,
+                  ].filter((id): id is string => Boolean(id))
+                : [],
+            membershipStatus,
+            actionId: group?.id ?? "",
+            labels: {
+                registrationClosed: messages.interaction.registrationClosed,
+                invalidSignupButton: messages.interaction.invalidSignupButton,
+                unableToResolveMembership:
+                    messages.interaction.unableToResolveMembership,
+                missingRequiredRole: messages.interaction.missingRequiredRole,
+                membershipStatusNotAllowed:
+                    messages.interaction.membershipStatusNotAllowed,
+                signupUpdated: messages.interaction.signupUpdated,
+                markedNotAttending: messages.interaction.markedNotAttending,
+            },
+        })
+        if (!choice.ok)
+            return NextResponse.json({ error: choice.error }, { status: 400 })
+    }
     const lateSignupReason =
         typeof body.lateSignupReason === "string"
             ? body.lateSignupReason.trim()
@@ -97,6 +136,7 @@ export async function POST(
         eventId,
         userId: user.discordId,
         group: resolved.group,
+        signupPreferences: preferences.data,
         lateSignupReason,
     })
 

@@ -137,6 +137,9 @@ export const generatedOpenApiSchemas = {
             useGeneralSignup: {
                 type: "boolean",
             },
+            allowRankedSignup: {
+                type: "boolean",
+            },
             signupReminderStatuses: {
                 type: "array",
                 items: {
@@ -548,6 +551,12 @@ export const generatedOpenApiSchemas = {
                 items: {
                     type: "object",
                     properties: {
+                        signupPreferences: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                            },
+                        },
                         userId: {
                             type: "string",
                         },
@@ -609,6 +618,12 @@ export const generatedOpenApiSchemas = {
                 items: {
                     type: "object",
                     properties: {
+                        signupPreferences: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                            },
+                        },
                         userId: {
                             type: "string",
                         },
@@ -810,6 +825,7 @@ export const generatedOpenApiSchemas = {
             allowLateSignups: true,
             allowNonMembersSignup: true,
             useGeneralSignup: true,
+            allowRankedSignup: true,
             signupReminderStatuses: ["recruit"],
             recurrence: {
                 frequency: "weekly",
@@ -905,6 +921,7 @@ export const generatedOpenApiSchemas = {
             signupReminderClaimedAt: "string",
             participants: [
                 {
+                    signupPreferences: ["string"],
                     userId: "string",
                     status: "attending",
                     group: "string",
@@ -917,6 +934,7 @@ export const generatedOpenApiSchemas = {
             ],
             signUps: [
                 {
+                    signupPreferences: ["string"],
                     userId: "string",
                     group: "string",
                 },

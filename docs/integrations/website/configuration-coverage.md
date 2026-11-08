@@ -4,6 +4,26 @@ Workspace settings, their backing controls, and API boundaries.
 
 ## Available in Logi UI
 
+Ranked match signup is controlled by the event/template `allowRankedSignup`
+boolean (missing means false). `POST /api/v1/clan/events/{eventId}/signup`
+accepts optional `signupPreferences`: 1–25 unique offered group names, in
+preference order, with the first equal to `group`. Multiple choices require the
+match switch. Membership, registration, tenant and game checks apply; capped
+or late signups retain their choices while starting in reserves. The ordered
+field is returned in participant and signup records. Local settings of shared
+matches expose the same switch independently for each clan.
+
+`GET/PATCH /api/v1/clan/settings` includes the `selfGroups` slice:
+`{ "groupIds": ["<group-id>"] }`. The list replaces the allowlist, accepts at
+most 100 unique groups owned by the clan, and defaults to empty. Dashboard saves
+and API patches use the same ownership validation. Removing a group also removes
+it from the allowlist. `/groups` changes only the invoking member's secondary
+groups on an existing, non-pending, unpaused membership for that group's game.
+Primary groups, membership category/status and actual Discord roles are preserved.
+Self-service identity is obtained from a live Discord interaction, so there is
+deliberately no bearer-key endpoint impersonating `/groups`. Administrative
+assignment writes remain available through the existing assignments API.
+
 | Feature                                                                                     | Location and controls                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Qualification                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Discord panels (live server, Naše servery, results, WD League, calendar, competition table) | Settings → Discord → **Panely v Discordu**: list with bot heartbeat and version, data sources, every panel's state, timing, last error with its fix and the live actions; editor per panel (type, server(s), channel with "Ověřit", content switches, join details and encrypted password, title, description, banner, bar colour, style A/B/C, footer timing), rendered preview from the test read, "Načíst data ze serveru", source and delivery timeline; every panel refreshes every 60 s                                                                                                                                                                                                                      | Panels start as not sent until "Odeslat do kanálu". The password is only for a live server's own panel in a channel `@everyone` cannot view. Results require reviewed results; they are not live scores. Banners must be this workspace's uploads. The old per-panel faction emoji are gone (fixed signs). Settings in `/api/v1` slice `discordPanels`; live actions excluded (below).                                                                                                                   |
@@ -367,3 +387,9 @@ Values snapshot into new events, with per-event overrides available through the
 actor-backed [event commands](event-commands.md#match-forums-and-debriefs).
 `event_forum` requires an enabled, retained event forum; `results_thread` waits
 for published results; `debrief_forum` requires a configured forum channel.
+
+Members with memberships for multiple games first choose a game in `/groups`;
+a single game opens directly. The private picker only shows groups for the
+selected game and includes a **Change game** button. Recruits, full members,
+reserve members, and mercenaries can all use this command. Pending applications
+and paused memberships are excluded.

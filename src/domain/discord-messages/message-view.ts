@@ -183,6 +183,8 @@ export type DirectMessageFooter = {
 export type MessageFooter = ManagedFooter | DirectMessageFooter
 
 export type MessageView = {
+    /** Private list editors may use up to five button rows within the V2 component budget. */
+    buttonRowLimit?: 5
     accent: MessageAccent
     /**
      * A full-width image above the header: the style A score image or the

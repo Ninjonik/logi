@@ -23,7 +23,7 @@ import { describeCommand } from "../../../src/domain/discord-commands/descriptio
 import { resolveClanLanguage } from "../../../src/lib/clan-language/core"
 
 /**
- * The definitions of Logi's eight slash commands for one Discord server
+ * The definitions of Logi's nine slash commands for one Discord server
  * (boards M1 and N3). Names are English and the same everywhere. The
  * descriptions, option names and choices are the clan language's, for the
  * whole server (M1-B02): the descriptions and choices are registered in it
@@ -118,6 +118,7 @@ export function buildCommandDefinitions(input: {
                         .setRequired(false)
             ),
         help: () => command("help", describe("help")),
+        groups: () => command("groups", describe("groups")),
         link: () => command("link", describe("link")),
         notice: () =>
             command("notice", describe("notice")).addStringOption((option) =>

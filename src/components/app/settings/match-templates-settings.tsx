@@ -966,6 +966,25 @@ export function MatchTemplatesSettings({
                                             {text.signup.general}
                                         </Label>
                                     </div>
+                                    <div className="flex min-h-9 items-center gap-3 text-sm">
+                                        <Switch
+                                            id="tpl-ranked"
+                                            checked={Boolean(
+                                                selected.allowRankedSignup
+                                            )}
+                                            onCheckedChange={(value) =>
+                                                update({
+                                                    allowRankedSignup: value,
+                                                })
+                                            }
+                                        />
+                                        <Label
+                                            htmlFor="tpl-ranked"
+                                            className="text-sm font-normal"
+                                        >
+                                            {text.signup.ranked}
+                                        </Label>
+                                    </div>
                                 </div>
                             </Row>
                             <Row

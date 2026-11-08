@@ -4835,7 +4835,7 @@ export const deMessages = {
         unsignedPlayerConfirmAction: "Zum Roster hinzufügen",
         autoFill: "Roster automatisch füllen",
         autoFillDescription:
-            "Spieler werden stärkste-zuerst zugewiesen und dann nach Anmeldepräferenz, primärer Gruppe und sekundären Gruppen in den nächstgelegenen verfügbaren Squad platziert.",
+            "Zuerst Anmeldewünsche, dann Punkte, dann K/D. Andere Gruppen werden nur bei zu wenigen Spielern für die freien Plätze verwendet.",
         autoFillScoreWeight: "Score-Gewichtung",
         autoFillKdWeight: "K/D-Gewichtung",
         autoFillConfirm: "Jetzt automatisch füllen",
@@ -5051,6 +5051,9 @@ export const deMessages = {
             noGroups:
                 "Dieses Spiel hat keine Anmeldegruppen; Spieler melden sich ohne Gruppe an.",
             general: "Anmeldung ohne Gruppenwahl",
+            ranked: "Alternative Gruppen erlauben",
+            rankedHint:
+                "Spieler können eine Gruppe wählen oder weitere Gruppen nach Wunsch ordnen.",
             lateSignupLabel: "Verspätet angemeldet",
             lateSignups:
                 "Verspätete Anmeldung bis zum Treffpunkt erlauben (mit Grund, zur Reserve)",
@@ -5271,6 +5274,9 @@ export const deMessages = {
                 statuses: "Wer sich anmelden kann",
                 groups: "Gruppen und Limits",
                 general: "Anmeldung ohne Gruppe",
+                ranked: "Alternative Gruppen erlauben",
+                rankedHint:
+                    "Spieler können eine Gruppe wählen oder weitere Gruppen nach Wunsch ordnen.",
                 signupReminder: "Anmeldeerinnerung",
                 attendanceReminders: "Anwesenheitserinnerungen",
                 squadPreset: "Trupp-Vorlage",
@@ -5527,6 +5533,9 @@ export const deMessages = {
             groupsAllGames:
                 "Eine Vorlage für alle Spiele bietet alle Anmeldegruppen des Spiels des Matches an. Wähle ein Spiel, um Gruppen auszuwählen.",
             general: "Anmeldung ohne Gruppenwahl",
+            ranked: "Alternative Gruppen erlauben",
+            rankedHint:
+                "Spieler können eine Gruppe wählen oder weitere Gruppen nach Wunsch ordnen.",
             reminder: "Anmeldeerinnerung",
             noLimit: "ohne Limit",
             max: "max.",
@@ -5788,6 +5797,7 @@ export const deMessages = {
             allowedSignupStatuses: "Erlaubte Anmeldestatus",
             signupReminderStatuses: "Empfänger täglicher Anmeldeerinnerungen",
             useGeneralSignup: "Allgemeine Anmeldung aktivieren",
+            allowRankedSignup: "Alternative Gruppen erlauben",
             pingClan: "Clan pingen",
             pingMode: "Ankündigungs-Ping",
             pingRoleIds: "Zu pingende Rollen",

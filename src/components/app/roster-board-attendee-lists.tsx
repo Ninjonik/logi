@@ -69,6 +69,7 @@ export function RosterBoardAttendeeLists({
     groupedNotAttendingUsers,
     allUsersSorted,
     assignmentsByUserId,
+    signupPreferencesByUserId,
     groupsById,
     dictionary,
     reserveSearch,
@@ -99,6 +100,7 @@ export function RosterBoardAttendeeLists({
     groupedNotAttendingUsers: RosterUser[]
     allUsersSorted: AppUser[]
     assignmentsByUserId: Map<string, ServerUserAssignment>
+    signupPreferencesByUserId: Map<string, string[]>
     groupsById: Map<string, Group>
     dictionary: Dictionary
     reserveSearch: string
@@ -284,6 +286,9 @@ export function RosterBoardAttendeeLists({
                             dictionary={dictionary}
                             assignmentsByUserId={assignmentsByUserId}
                             groupsById={groupsById}
+                            signupPreferencesByUserId={
+                                signupPreferencesByUserId
+                            }
                             isAssignmentMode={isAssignmentMode}
                             canAdmin={canAdmin}
                             focusedGroup={focusedGroup}
@@ -436,6 +441,9 @@ export function RosterBoardAttendeeLists({
                             dictionary={dictionary}
                             assignmentsByUserId={assignmentsByUserId}
                             groupsById={groupsById}
+                            signupPreferencesByUserId={
+                                signupPreferencesByUserId
+                            }
                             isAssignmentMode={isAssignmentMode}
                             canAdmin={canAdmin}
                             emptyLabel={dictionary.shared.nothingCreatedYet}
@@ -457,6 +465,7 @@ export function RosterBoardAttendeeLists({
 }
 
 function GroupedUserList({
+    signupPreferencesByUserId,
     users,
     dictionary,
     assignmentsByUserId,
@@ -476,6 +485,7 @@ function GroupedUserList({
     assignUserToSlot,
 }: {
     users: RosterUser[]
+    signupPreferencesByUserId: Map<string, string[]>
     dictionary: Dictionary
     assignmentsByUserId: Map<string, ServerUserAssignment>
     groupsById: Map<string, Group>
@@ -610,6 +620,9 @@ function GroupedUserList({
                                             </AvatarFallback>
                                         </Avatar>
                                         <GroupInlineIcons
+                                            signupPreferences={signupPreferencesByUserId.get(
+                                                user.discordId
+                                            )}
                                             assignment={assignment}
                                             groupsById={groupsById}
                                             signupGroupName={

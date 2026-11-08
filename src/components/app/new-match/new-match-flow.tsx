@@ -628,6 +628,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         if (
             field.startsWith("signup") ||
             field === "allowedSignupStatuses" ||
+            field === "allowRankedSignup" ||
             field === "useGeneralSignup"
         )
             return "signups"
@@ -3014,6 +3015,24 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             {t.signups.noGroups}
                                         </p>
                                     )}
+                                    <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
+                                        <Label
+                                            htmlFor="nm-ranked-signups"
+                                            className="text-sm font-normal"
+                                        >
+                                            {t.signups.ranked}
+                                        </Label>
+                                        <Switch
+                                            id="nm-ranked-signups"
+                                            checked={Boolean(
+                                                values.allowRankedSignup
+                                            )}
+                                            onCheckedChange={(
+                                                allowRankedSignup
+                                            ) => update({ allowRankedSignup })}
+                                        />
+                                    </div>
+                                    <Hint>{t.signups.rankedHint}</Hint>
                                     <div className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-1.5 text-sm">
                                         <Label
                                             htmlFor="nm-late-signups"

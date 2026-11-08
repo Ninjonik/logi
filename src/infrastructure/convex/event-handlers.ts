@@ -105,6 +105,7 @@ export async function handleToggleSignup(input: {
         eventId: string
         userId: string
         group: string | null
+        signupPreferences?: string[]
         lateSignupReason?: string
         profile?: { name: string; avatar: string }
     }
@@ -113,6 +114,7 @@ export async function handleToggleSignup(input: {
             eventId: string
             userId: string
             group: string | null
+            signupPreferences?: string[]
             lateSignupReason?: string
             profile?: { name: string; avatar: string }
         },

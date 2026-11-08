@@ -1,4 +1,5 @@
 import { LeagueAutoImportSettings } from "@/components/app/league-auto-import-settings"
+import { SelfGroupsSettings } from "@/components/app/settings/self-groups-settings"
 import { notFound, redirect } from "next/navigation"
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
@@ -414,17 +415,30 @@ export default async function ServerSettingsSectionPage({
         }
         case "membership":
             content = (
-                <MembershipSettingsForm
-                    serverId={serverId}
-                    guildId={server.discordId}
-                    config={discordConfig}
-                    dictionary={dictionary}
-                    rolesHref={settingsHref(locale, serverId, "roles", gameId)}
-                    clanName={server.name}
-                    siteUrl={getSiteUrl()}
-                    now={new Date().getTime()}
-                    locale={locale}
-                />
+                <div className="space-y-6">
+                    <SelfGroupsSettings
+                        serverId={serverId}
+                        groups={context.groups}
+                        selected={discordConfig?.selfAssignableGroupIds ?? []}
+                        locale={locale}
+                    />
+                    <MembershipSettingsForm
+                        serverId={serverId}
+                        guildId={server.discordId}
+                        config={discordConfig}
+                        dictionary={dictionary}
+                        rolesHref={settingsHref(
+                            locale,
+                            serverId,
+                            "roles",
+                            gameId
+                        )}
+                        clanName={server.name}
+                        siteUrl={getSiteUrl()}
+                        now={new Date().getTime()}
+                        locale={locale}
+                    />
+                </div>
             )
             break
         case "tickets":

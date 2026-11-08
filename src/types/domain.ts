@@ -236,6 +236,7 @@ export type PlayerStatsServer = {
 }
 
 export type DiscordConfig = {
+    selfAssignableGroupIds?: string[]
     eventDiscussionDefaults?: import("@/domain/events/discussion").EventDiscussionSettings
     id: string
     guildId: string
@@ -396,6 +397,7 @@ export type EventRecord = {
     allowLateSignups?: boolean
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     recurrence?: MatchRecurrence
     /** Generated weekly occurrence: the event that carries the recurrence. */
@@ -441,12 +443,15 @@ export type EventRecord = {
         signedUpLateAt?: string
         userId: string
         status: "attending" | "not_attending"
+        signupPreferences?: string[]
+        requestedGroup?: string | null
         group?: string | null
         completed?: "passed" | "failed"
         updatedAt: Timestamp
     }[]
     signUps: {
         userId: string
+        signupPreferences?: string[]
         group?: string | null
     }[]
     scoreAppliedAt?: Timestamp

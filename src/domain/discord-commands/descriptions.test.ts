@@ -13,6 +13,7 @@ import { LOGI_COMMANDS } from "./catalog"
 /** The descriptions of board M1 1.3 in cs, en and de, word for word. */
 const BOARD: Record<string, Record<string, string>> = {
     cs: {
+        groups: "Vyber si své klanové skupiny",
         help: "Příkazy, které můžeš použít, a odkaz na návod",
         stats: "Tvoje statistiky z Hell Let Loose nebo Wardogs",
         player: "Profil hráče klanu: skóre a poslední zápasy",
@@ -23,6 +24,7 @@ const BOARD: Record<string, Record<string, string>> = {
         close_application: "Rozhodne o přihlášce v tomto vlákně a uzavře ji",
     },
     en: {
+        groups: "Choose your own clan groups",
         help: "Commands you can use and a link to the guide",
         stats: "Your Hell Let Loose or Wardogs statistics",
         player: "A clan player's profile: score and recent matches",
@@ -33,6 +35,7 @@ const BOARD: Record<string, Record<string, string>> = {
         close_application: "Decide the application in this thread and close it",
     },
     de: {
+        groups: "Wähle deine Clangruppen",
         help: "Befehle, die du nutzen kannst, und ein Link zur Anleitung",
         stats: "Deine Statistiken aus Hell Let Loose oder Wardogs",
         player: "Profil eines Clan-Spielers: Score und letzte Matches",

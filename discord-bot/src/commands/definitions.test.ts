@@ -34,7 +34,7 @@ const byName = (language: string, settings = DEFAULT_COMMAND_SETTINGS) =>
         ])
     )
 
-test("eight English command names, guild-only, visible to everyone (M1-05, M1-B03, M1-06)", () => {
+test("nine English command names, guild-only, visible to everyone (M1-05, M1-B03, M1-06)", () => {
     const definitions = buildCommandDefinitions({
         language: "cs",
         settings: DEFAULT_COMMAND_SETTINGS,
@@ -45,6 +45,7 @@ test("eight English command names, guild-only, visible to everyone (M1-05, M1-B0
             "close_application",
             "close_ticket",
             "help",
+            "groups",
             "link",
             "notice",
             "player",

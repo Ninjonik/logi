@@ -17,7 +17,7 @@ import type { MessageView } from "./message-view"
 import { joinWithAnd } from "./bot-errors"
 
 /** How often the bot checks the services (L5-34, L5-B06). */
-export const SERVICE_STATUS_INTERVAL_SECONDS = 30
+export const SERVICE_STATUS_INTERVAL_SECONDS = 300
 
 /** One service as the bot stores it between checks. */
 export type ServiceState = {

@@ -177,6 +177,12 @@ hand-written ↗ (Discord draws it), unique custom IDs, select and gallery
 limits, 4,000 characters of text and 40 components. Add your own checks to
 tests with `validateMessageView(view, messageKitLayoutOptions({ language }))`.
 
+Private ranked-signup list editors set `buttonRowLimit: 5`: four choices per
+page, with up/down/remove buttons, plus a Done/paging row. This also works in
+the private DM reminder flow. Other cards retain the two-row default, and every
+editor still obeys the five-buttons-per-row, single-primary-action, 4,000-text
+and 40-component budgets.
+
 Managed messages no longer carry the "Automatic updates" button:
 ownership is the stored message ID, and an uncertain create is recovered by an
 invisible component `id` (`discord-bot/src/sync/publication-marker.ts`).

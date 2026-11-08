@@ -16,6 +16,7 @@ export const TRAINING_ATTEND = "ATTEND"
 export type EventParticipant = {
     userId: string
     status: ParticipantStatus
+    signupPreferences?: string[]
     group?: string | null
     /** Required explanation and original timestamp for a signup after registration closes. */
     lateSignupReason?: string
@@ -31,6 +32,7 @@ export type EventParticipant = {
 
 export type EventSignup = {
     userId: string
+    signupPreferences?: string[]
     group?: string | null
 }
 
@@ -130,6 +132,7 @@ export type EventLike = {
     /** Lets Discord users without a workspace assignment sign up for a match. */
     allowNonMembersSignup?: boolean
     useGeneralSignup?: boolean
+    allowRankedSignup?: boolean
     signupReminderStatuses?: Array<"recruit" | "member" | "reserve_member">
     pingClan?: boolean
     pingMode?: "none" | "clan" | "roles"
