@@ -5842,6 +5842,7 @@ export const csMessages = {
         noMatchManager: "Naplánujte další zápas a bot ho ohlásí v Discordu.",
         noMatchMember: "Až správci naplánují zápas, uvidíte ho tady.",
         waitingTitle: "Čeká na vás",
+        missingResult: "Doplnit výsledek {name}",
         confirmResult: "Potvrdit výsledek {name}",
         resultScore: "{score} · {date}",
         resultNoScore: "Připravený výsledek · {date}",

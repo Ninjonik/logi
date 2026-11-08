@@ -5868,6 +5868,7 @@ export const enMessages = {
             "Plan the next match and the bot announces it in Discord.",
         noMatchMember: "When your managers plan a match, you will see it here.",
         waitingTitle: "Waiting for you",
+        missingResult: "Add the result of {name}",
         confirmResult: "Confirm the result of {name}",
         resultScore: "{score} · {date}",
         resultNoScore: "Staged result · {date}",

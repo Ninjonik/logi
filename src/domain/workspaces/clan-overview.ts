@@ -6,6 +6,8 @@ import {
 import { matchesGameScope, resolveGameScope, type GameId } from "../games/game"
 import { resultSummaryPayloadSchema } from "../api/result-summaries"
 import { isSignupMembershipAllowed } from "../events/signup-policy"
+import { resolveTeamResult } from "../match-results/team-result"
+import { isEventCancelledBeforeMeeting } from "../events/status"
 import { getResolvedMemberStatus } from "../assignments/policy"
 import type { SignupMembershipStatus } from "../events/types"
 import { currentEventStatus } from "../events/status"
@@ -15,6 +17,10 @@ export type OverviewEvent = {
     id: string
     name: string
     gameId?: GameId
+    isDraft?: boolean
+    concludedAt?: string
+    side?: string
+    matchTeams?: Parameters<typeof resolveTeamResult>[0]["teams"]
     kind?: "match" | "training"
     status?: "registration" | "closed" | "starting" | "concluded"
     registrationEnd: string
@@ -30,6 +36,7 @@ export type OverviewEvent = {
     eventResult?: {
         endedAt?: string
         outcome: "victory" | "defeat" | "draw"
+        score?: { sideA: number; sideB: number }
     }
     /** Storage head of the reviewed result; validated before it is trusted. */
     reviewedResult?: unknown
@@ -157,22 +164,52 @@ function reviewedResult(event: OverviewEvent) {
  * The clan's last matches with a known outcome, oldest first. A match whose
  * reviewed result still waits for confirmation is marked `pending`.
  */
-export function recentForm(events: readonly OverviewEvent[], limit = 10) {
+export function recentForm(
+    events: readonly OverviewEvent[],
+    limit = 10,
+    clanName = ""
+) {
     const matches = events
-        .flatMap((event) =>
-            (event.kind ?? "match") === "match" && event.eventResult
-                ? [
-                      {
-                          eventId: event.id,
-                          name: event.name,
-                          outcome: event.eventResult.outcome,
-                          endedAt: event.eventResult.endedAt ?? event.gameEnd,
-                          pending:
-                              reviewedResult(event)?.status === "provisional",
-                      },
-                  ]
-                : []
-        )
+        .flatMap((event) => {
+            if (event.isDraft || (event.kind ?? "match") !== "match") return []
+            const reviewed = reviewedResult(event)
+            const resolved = reviewed
+                ? resolveTeamResult({
+                      participants: reviewed.participants,
+                      teams: event.matchTeams,
+                      clanName,
+                      clanSide: event.side,
+                      imported: event.eventResult?.score
+                          ? {
+                                outcome: event.eventResult.outcome,
+                                score: event.eventResult.score,
+                            }
+                          : undefined,
+                  })
+                : null
+            const outcome = reviewed
+                ? resolved?.outcome === "win"
+                    ? "victory"
+                    : resolved?.outcome === "loss"
+                      ? "defeat"
+                      : resolved?.outcome === "draw"
+                        ? "draw"
+                        : null
+                : event.eventResult?.outcome
+            if (!outcome) return []
+            return [
+                {
+                    eventId: event.id,
+                    name: event.name,
+                    outcome,
+                    endedAt:
+                        event.eventResult?.endedAt ??
+                        reviewed?.reviewedAt ??
+                        event.gameEnd,
+                    pending: reviewed?.status === "provisional",
+                },
+            ]
+        })
         .filter((match) => Number.isFinite(time(match.endedAt)))
         .sort((a, b) => time(b.endedAt) - time(a.endedAt))
         .slice(0, limit)
@@ -183,12 +220,35 @@ export function recentForm(events: readonly OverviewEvent[], limit = 10) {
     }
 }
 
+/** Played matches still needing a result, independent of clan setup progress. */
+export function matchesMissingResults(
+    events: readonly OverviewEvent[],
+    now: Date
+) {
+    return events
+        .filter(
+            (event) =>
+                !event.isDraft &&
+                (event.kind ?? "match") === "match" &&
+                currentEventStatus(event, now) === "concluded" &&
+                !isEventCancelledBeforeMeeting(event) &&
+                !event.eventResult &&
+                !reviewedResult(event)
+        )
+        .sort((a, b) => time(b.gameEnd) - time(a.gameEnd))
+}
+
 /** Matches whose staged result waits for a manager's confirmation, newest first. */
 export function resultsAwaitingConfirmation(events: readonly OverviewEvent[]) {
     return events
         .flatMap((event) => {
             const result = reviewedResult(event)
-            if (result?.status !== "provisional") return []
+            if (
+                event.isDraft ||
+                (event.kind ?? "match") !== "match" ||
+                result?.status !== "provisional"
+            )
+                return []
             const [first, second, ...others] = result.participants
             return [
                 {
@@ -265,6 +325,7 @@ export type ScoredEvent = {
     id: string
     gameStart: string
     status?: "registration" | "closed" | "starting" | "concluded"
+    scoreAppliedAt?: string
     scoreResolution?: "applied" | "skipped"
     participants: Array<{
         userId: string
@@ -304,7 +365,9 @@ export function monthAttendanceLeaders(input: {
     const scored = input.events.filter(
         (event) =>
             event.status === "concluded" &&
-            event.scoreResolution === "applied" &&
+            (event.scoreResolution === "applied" ||
+                (!event.scoreResolution &&
+                    Number.isFinite(time(event.scoreAppliedAt)))) &&
             Number.isFinite(time(event.gameStart)) &&
             input.monthKeyOf(event.gameStart) === input.monthKey
     )

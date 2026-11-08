@@ -6021,6 +6021,7 @@ export const deMessages = {
         noMatchMember:
             "Sobald deine Verwaltung ein Match plant, siehst du es hier.",
         waitingTitle: "Wartet auf dich",
+        missingResult: "Ergebnis für {name} eintragen",
         confirmResult: "Ergebnis von {name} bestätigen",
         resultScore: "{score} · {date}",
         resultNoScore: "Vorbereitetes Ergebnis · {date}",
