@@ -71,3 +71,23 @@ Meeting attendance checks read only the requested roster's assigned and reserve 
 - [Player statistics](../docs/integrations/website/discord-player-stats.md)
 - [Managed membership roles](../docs/integrations/website/v0.8/README.md)
 - [Events and reminders](../content/operations/events.mdx)
+
+## Interaction acknowledgements
+
+The gateway runs every interaction through `interactions/acknowledgement.ts`.
+Handlers keep their existing reply/update/defer calls. If none starts within one
+second, the shared guard acknowledges first and routes the eventual response to
+its intended destination. Component updates still edit their source message;
+private replies remain separate from public cards. Explicit early deferrals are
+still preferred when a handler knows it will perform slow work.
+
+If preparing a modal exceeds that window, a private **Open form** button opens
+the prepared modal with a fresh interaction. It belongs to the original user,
+is single-use, and expires after five minutes. Modal submission handlers still
+perform their normal authorization and state checks. Slow autocomplete requests
+return an empty result instead of attempting an expired response. This changes
+Discord delivery only; dashboard and `/api/v1` contracts are unchanged.
+
+The guard cannot recover an interaction already expired before receipt, a stalled
+event loop, or a Discord/network outage. Keep handler work bounded: Discord's
+acknowledgement extends the response window but does not make it unlimited.
