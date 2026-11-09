@@ -9,6 +9,12 @@ import { useId, useState } from "react"
 import { z } from "zod"
 
 const copy = {
+    fr: {
+        conflict: "Cette rencontre ou ce match est déjà associé. Ouvrez le match existant plutôt que d’en créer un autre.",
+        label: "Lien de la rencontre Wardogs (facultatif)", load: "Remplir depuis l’API Wardogs",
+        help: "Associe ce match à sa rencontre de ligue pour éviter les imports en double. Les détails sont chargés avec la clé API d’équipe définie dans les paramètres de ligue ; seules les rencontres à venir ou récentes proposées par l’API sont accessibles.",
+        failed: "Impossible de charger cette rencontre. Vérifiez le lien, la clé API et le code d’équipe. La rencontre doit figurer parmi celles à venir ou récentes de l’API. Vous pouvez enregistrer le lien sans charger les détails.",
+    },
     en: {
         conflict:
             "This fixture or match is already linked. Open the existing match instead of creating another.",

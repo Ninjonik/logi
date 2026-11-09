@@ -7,7 +7,7 @@ import type { HllLighting, HllMode } from "./panel-graphics"
  * language. Czech follows the P7 board verbatim; English and German use the
  * same keys and the informal tone of bot messages.
  */
-export const PANEL_IMAGE_LANGUAGES = ["cs", "en", "de", "pl"] as const
+export const PANEL_IMAGE_LANGUAGES = ["cs", "en", "de", "pl", "fr"] as const
 export type PanelImageLanguage = (typeof PANEL_IMAGE_LANGUAGES)[number]
 
 export type PanelImageCopy = {
@@ -254,6 +254,83 @@ const pl: PanelImageCopy = {
     },
 }
 
+const fr: PanelImageCopy = {
+    ...shared,
+    locale: "fr-FR",
+    state: {
+        live: "En direct",
+        seeding: "Seeding",
+        empty: "Vide",
+        offline: "Hors ligne",
+    },
+    online: "En ligne",
+    newMap: "Nouvelle carte",
+    players: (count, capacity) => `${count} / ${capacity} joueurs`,
+    queue: (count) => `file d’attente ${count}`,
+    gauge: (count, capacity, extra) =>
+        gauge(count, capacity, extra, "file d’attente", "seeding jusqu’à"),
+    timeLeft: (minutes) => `${minutes} min restantes`,
+    seedTo: (target) => `seeding jusqu’à ${target}`,
+    seedCaption: (target) => `partie active à partir de ${target} joueurs`,
+    emptyTitle: "Personne ne joue sur le serveur pour le moment.",
+    statusPlayers: "joueurs sur le serveur",
+    joinCode: (code) => `code d’accès ${code}`,
+    topKills: "Le plus de kills",
+    allies: "Alliés",
+    axis: "Axe",
+    sectors: "secteurs",
+    score: "score",
+    nextMap: (name) => `prochaine carte ${name}`,
+    factionPoints: "points de faction",
+    topCashNow: (name, value) => `le plus d’argent actuellement : ${name} · ${value}`,
+    lighting: {
+        day: "Jour",
+        night: "Nuit",
+        dawn: "Aube",
+        dusk: "Crépuscule",
+        morning: "Matin",
+        evening: "Soir",
+        rain: "Pluie",
+        overcast: "Couvert",
+    },
+    nationShort: {
+        us: "États-Unis",
+        gb: "Grande-Bretagne",
+        sov: "URSS",
+        cw: "Commonwealth",
+        ger: "Allemagne",
+        dak: "Afrikakorps",
+        allies: "Alliés",
+        axis: "Axe",
+    },
+    nation: {
+        us: "États-Unis",
+        gb: "Grande-Bretagne",
+        sov: "Union soviétique",
+        cw: "Commonwealth",
+        ger: "Allemagne",
+        dak: "Afrikakorps",
+        allies: "Alliés",
+        axis: "Axe",
+    },
+    wardogs: {
+        valkyra: "Valkyra",
+        manticore: "Manticore",
+        lonestar: "Lonestar",
+        wardogs: "Wardogs",
+    },
+    alt: {
+        score: (parts) => `Image du score : ${parts.join(", ")}.`,
+        banner: (name) => `Bannière du serveur ${name}`,
+        map: (name) => `Carte ${name}`,
+        minutes: (n) => `${n} ${n === 1 ? "minute" : "minutes"} restantes`,
+        playersOf: (count, capacity) => `${count} sur ${capacity} joueurs`,
+        queue: (count) => `file d’attente ${count}`,
+        topKills: (players) => `le plus de kills ${players}`,
+        points: (value) => `${value} points`,
+    },
+}
+
 const en: PanelImageCopy = {
     ...shared,
     locale: "en-GB",
@@ -408,7 +485,7 @@ const de: PanelImageCopy = {
     },
 }
 
-const copies: Record<PanelImageLanguage, PanelImageCopy> = { cs, en, de, pl }
+const copies: Record<PanelImageLanguage, PanelImageCopy> = { cs, en, de, pl, fr }
 export function panelImageCopy(
     language: string | null | undefined
 ): PanelImageCopy {

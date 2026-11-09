@@ -285,6 +285,151 @@ const pl: StatsCopy = {
     },
 }
 
+const fr: StatsCopy = {
+    periodChoices: {
+        "7d": "7 jours",
+        "30d": "30 jours",
+        "90d": "90 jours",
+        all: "Tout l’historique",
+    },
+    periodLabels: {
+        "7d": "7 derniers jours",
+        "30d": "30 derniers jours",
+        "90d": "90 derniers jours",
+        all: "Tout l’historique",
+    },
+    periodPhrases: {
+        "7d": "les 7 derniers jours",
+        "30d": "les 30 derniers jours",
+        "90d": "les 90 derniers jours",
+        all: "tout l’historique",
+    },
+    games: { hll: "Hell Let Loose", wardogs: "Wardogs" },
+    kills: "Kills",
+    deaths: "Morts",
+    kd: "K/D",
+    wins: "Victoires",
+    matches: "Jeux",
+    winRate: "Taux de victoire : {rate} %",
+    playtime: "{hours} h jouées",
+    cash: "variation d’argent : {cash}",
+    coverage: "Nous disposons de {metrics} pour {known} parties sur {total}.",
+    coverageNames: {
+        killsKd: "les kills et le K/D",
+        kills: "kills",
+        deaths: "morts",
+        cashDelta: "la variation d’argent",
+        seconds: "le temps de jeu",
+    },
+    hllDetail: "{hours} h jouées · ELO infanterie {elo} · kills alliés {tk}",
+    form: "Forme : {rate} % de victoires sur les 100 dernières parties de plus de 20 min",
+    stale: "Les dernières données lues sont affichées ; la source n’a pas pu être actualisée pour le moment.",
+    recentTitle: "{name} · parties récentes",
+    factionsTitle: "{name} · factions",
+    weaponsTitle: "{name} · armes",
+    mapsTitle: "{name} · cartes",
+    results: { win: "Victoire", loss: "Défaite", draw: "Match nul", unknown: "Sans résultat" },
+    recentRow: "{map} · {day} · {kills} kills, {deaths} morts",
+    factionRow: "{wins} victoires sur {matches} matchs · {kills} kills",
+    noItems: "Aucun détail pour le moment.",
+    overview: "Vue d’ensemble",
+    recent: "Parties récentes",
+    factions: "Factions",
+    weapons: "Armes",
+    maps: "Cartes",
+    share: "Partager",
+    hllProfile: "Profil HLL Records",
+    addSteam: "Ajouter Steam",
+    chooseSteam: "Choisir Steam",
+    sourceWarcon: "Source : Warcon du clan",
+    sourceGames: "{games} sur les serveurs du clan",
+    dataAt: "données de {time}",
+    gamesCount: { one: "{count} partie", other: "{count} parties" },
+    sourceHll:
+        "Source : HLL Records · serveurs communautaires suivis uniquement · + signifie au moins",
+    sharedBy: "Partagé par {user} · données au {time}",
+    sharedWarcon: "Warcon du clan",
+    sharedHll: "HLL Records",
+    missingTitle: "Tu n’as pas ajouté de compte Steam",
+    missingBody:
+        "Nous recherchons les statistiques par identifiant Steam. Ajoute-le pour les charger immédiatement.",
+    declared:
+        "Cette déclaration sert aux statistiques publiques et ne vérifie pas ton compte. Pour associer un compte Steam vérifié, ouvre Logi → Mon compte.",
+    ambiguousTitle: "Tu as plusieurs comptes Steam associés",
+    ambiguousBody: "Choisis celui à utiliser pour les statistiques.",
+    otherMissingTitle: "{name} n’a pas de compte Steam associé",
+    otherMissingBody: "Ce joueur peut l’ajouter avec /stats.",
+    otherAmbiguousTitle: "{name} a plusieurs comptes Steam associés",
+    otherAmbiguousBody: "Ce joueur doit en choisir un avec /stats.",
+    otherFallbackName: "Ce joueur",
+    emptySelf: "Tu n’as joué aucune partie sur les serveurs du clan sur la période : {period}.",
+    emptyOther: "Aucune partie sur les serveurs du clan sur la période : {period}.",
+    emptyNext: "Essaie une période plus longue : /stats game: {game} period: {next}.",
+    emptyHll: "HLL Records ne contient aucune partie sur la période : {period}.",
+    modalTitle: "Associer Steam",
+    modalLabel: "Steam ID ou lien du profil",
+    modalPlaceholder: "76561198… ou steamcommunity.com/profiles/…",
+    retry: "Saisir à nouveau",
+    errors: {
+        unavailableTitle: "Impossible de charger les statistiques pour le moment",
+        unavailableWarcon:
+            "Le Warcon du clan ne répond pas. Ton compte Steam reste enregistré ; réessaie dans quelques minutes.",
+        unavailableHll:
+            "HLL Records ne répond pas. Ton compte Steam reste enregistré ; réessaie dans quelques minutes.",
+        blockedTitle: "HLL Records bloque l’accès du bot pour le moment",
+        blockedBody: "Ouvre le profil directement. Ton compte Steam reste enregistré.",
+        gameDisabledTitle: "Les statistiques {game} sont désactivées ici",
+        gameDisabledBody:
+            "Un responsable peut les activer dans Logi → Paramètres → Commandes.",
+        invalidTitle: "Choisis un seul joueur",
+        invalidBody:
+            "Un membre du serveur ou un joueur Wardogs parmi les suggestions.",
+        hllOnlyTitle: "Cette option fonctionne uniquement pour Wardogs",
+        hllOnlyBody:
+            "La recherche de joueurs et le filtre de serveur concernent Wardogs. Pour Hell Let Loose, choisis un membre du serveur.",
+        busyTitle: "Patiente un instant",
+        busyBody:
+            "Ta demande précédente est encore en cours. Réessaie dans quelques secondes.",
+        expiredTitle: "Cette proposition n’est plus valide",
+        expiredBody: "Relance /stats.",
+        ownOnlyTitle: "Ces boutons appartiennent à quelqu’un d’autre",
+        ownOnlyBody: "Seule la personne qui a lancé /stats peut les utiliser.",
+        forbiddenTitle: "Ce n’est pas possible pour le moment",
+        forbiddenBody: "Relance /stats sur un serveur dont tu es membre.",
+        incompleteTitle: "L’historique n’a pas pu être lu entièrement",
+        incompleteBody: "Réessaie ou choisis une période plus courte.",
+        notConfiguredTitle: "Logi n’est pas encore configuré ici",
+        notConfiguredBody:
+            "Un responsable du serveur doit associer Discord à Logi sur le site.",
+        linkChangedTitle: "L’association a changé entre-temps",
+        linkChangedBody: "Relance /stats.",
+        alreadyLinkedTitle: "Ce compte Steam est déjà associé à un autre joueur",
+        alreadyLinkedBody: "Demande aux responsables du clan de vérifier l’association.",
+        invalidSteamTitle: "Cela ne ressemble pas à un identifiant Steam",
+        invalidSteamBody:
+            "Il comporte 17 chiffres et commence par 7656119, ou prend la forme d’un lien steamcommunity.com/profiles/….",
+        linkErrorTitle: "L’enregistrement n’a pas pu être confirmé",
+        linkErrorBody:
+            "Lance /stats pour vérifier si ton compte Steam est associé. Un responsable peut t’aider.",
+    },
+    shareFlow: {
+        promptTitle: "Où publier la fiche ?",
+        selectChannel: "Choisir un salon",
+        back: "Retour",
+        sharedTitle: "Partagé dans {channel}",
+        viewMessage: "Voir le message",
+        deniedTitle: "Tu ne peux pas partager dans {channel} pour le moment",
+        deniedBody:
+            "Le bot et toi devez pouvoir envoyer des messages et intégrer des liens dans ce salon. Choisis un autre salon.",
+        chooseOther: "Choisis un autre salon",
+        failedTitle: "Impossible de confirmer le partage",
+        failedBody:
+            "Vérifie le salon avant de partager à nouveau : la fiche s’y trouve peut-être déjà.",
+        alreadyTitle: "Cette fiche a déjà été partagée",
+        alreadyBody: "Relance /stats pour générer une nouvelle fiche.",
+    },
+}
+
 const en: StatsCopy = {
     periodChoices: {
         "7d": "7 days",
@@ -744,5 +889,5 @@ export function statsCopy(language: string | null | undefined): StatsCopy {
           ? de
           : value.startsWith("pl")
             ? pl
-            : en
+            : value.startsWith("fr") ? fr : en
 }

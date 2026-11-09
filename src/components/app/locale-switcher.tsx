@@ -18,6 +18,7 @@ const localeOptions: Record<Locale, { flag: string; label: string }> = {
     en: { flag: "🇬🇧", label: "English" },
     cs: { flag: "🇨🇿", label: "Čeština" },
     de: { flag: "🇩🇪", label: "Deutsch" },
+    fr: { flag: "🇫🇷", label: "Français" },
     pl: { flag: "🇵🇱", label: "Polski" },
 }
 

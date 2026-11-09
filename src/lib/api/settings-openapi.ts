@@ -45,7 +45,7 @@ export function clanSettingsOpenApiSchemas(
                 },
                 defaultLanguage: {
                     type: "string",
-                    enum: ["en", "cs", "de", "pl"],
+                    enum: ["en", "cs", "de", "pl", "fr"],
                 },
                 ...Object.fromEntries(
                     SETTINGS_DISCORD_FIELDS.map((field) => [field, discordId])

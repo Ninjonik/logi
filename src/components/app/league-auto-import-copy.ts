@@ -1,3 +1,49 @@
+const fr = {
+    title: "Matchs Wardogs automatiques",
+    ambiguous_game_start:
+        "Plusieurs matchs commencent à cet horaire ; associez la rencontre manuellement.",
+    kickoff_already_linked:
+        "Le match à cet horaire est associé à une autre rencontre.",
+    matching_scan_limit:
+        "Trop de matchs à vérifier de manière fiable ; associez la rencontre manuellement.",
+    configure: "Configurer les imports automatiques",
+    enabled: "Créer automatiquement les rencontres de mon équipe",
+    intro: "Connectez la clé API Wardogs League de votre équipe. Les prochaines rencontres programmées deviennent des matchs Logi ; par défaut, les inscriptions ouvrent 7 jours avant le début.",
+    key: "Clé API Wardogs",
+    keySaved:
+        "Clé enregistrée. Laissez vide pour la conserver ; saisissez une nouvelle clé pour la remplacer.",
+    teamCode: "Code de votre équipe dans Wardogs League",
+    team_not_in_fixture: "Le code d’équipe configuré ne figure pas dans cette rencontre",
+    template: "Modèle de match par défaut",
+    noTemplates:
+        "Créez d’abord un modèle de match Wardogs dans Paramètres → Modèles de match.",
+    hours: "Ouvrir les inscriptions avant le début (heures)",
+    announcement: "Salon d’annonces",
+    info: "Salon d’informations / de composition",
+    results: "Salon des résultats (facultatif)",
+    server: "Nom du serveur de jeu (facultatif)",
+    save: "Enregistrer",
+    saving: "Enregistrement…",
+    failed: "Impossible d’enregistrer. Vérifiez la clé API, le modèle, les horaires d’inscription, l’accès aux salons et la configuration du chiffrement des identifiants.",
+    loadFailed: "Impossible de charger les paramètres d’import.",
+    saved: "Paramètres d’import enregistrés.",
+    select: "Sélectionner…",
+    never: "Aucun import réussi pour le moment",
+    last: "Dernier import réussi",
+    importFailed:
+        "Le dernier import a échoué. Vérifiez la clé et le modèle ; Logi réessaiera automatiquement.",
+    sync: "Les changements de l’API mettent à jour les champs non modifiés localement. Les modifications locales, inscriptions, compositions et résultats validés sont conservés. Les rencontres annulées sont signalées pour vérification. Les équipes manquantes utilisent les noms de l’API jusqu’à leur association au catalogue.",
+    templateDetails:
+        "Le modèle fournit le rassemblement, la clôture des inscriptions, la durée, les groupes, rappels, mentions et paramètres de forum et de salons vocaux. Les changements des valeurs par défaut s’appliquent aux nouveaux imports.",
+    issues: "Rencontres à vérifier",
+    match: "Ouvrir le match",
+    team_matching_required: "Associer les équipes de l’API au catalogue",
+    cancelled_or_postponed: "Annulé ou reporté — vérifiez le match",
+    missing_kickoff: "En attente de l’horaire de début",
+    manually_managed: "Géré manuellement ou ignoré",
+    match_deleted: "Le match importé a été supprimé ; il ne sera pas recréé",
+}
+
 const en = {
     title: "Automatic Wardogs matches",
     ambiguous_game_start:
@@ -182,5 +228,5 @@ const pl: AutoImportCopy = {
         "Zaimportowany mecz został usunięty; nie zostanie odtworzony",
 }
 export function autoImportCopy(locale: string): AutoImportCopy {
-    return ({ en, cs, de, pl } as Record<string, AutoImportCopy>)[locale] ?? en
+    return ({ en, cs, de, pl, fr } as Record<string, AutoImportCopy>)[locale] ?? en
 }

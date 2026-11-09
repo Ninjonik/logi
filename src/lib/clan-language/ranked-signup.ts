@@ -1,6 +1,23 @@
 import { clanCopy } from "./core"
 
 export const getRankedSignupMessages = clanCopy({
+    fr: {
+        title: "Tes préférences de groupe",
+        edit: "Modifier l’ordre",
+        add: "Ajouter un autre groupe",
+        hint: "Classe les groupes par ordre de préférence. Un seul choix suffit. Tu ne joueras que dans un groupe.",
+        remove: "Retirer",
+        up: "Monter",
+        down: "Descendre",
+        done: "Terminé",
+        save: "Enregistrer l’inscription",
+        previous: "Précédent",
+        next: "Suivant",
+        expired: "Cet éditeur a expiré. Ouvre à nouveau S’inscrire ou Modifier l’inscription.",
+        saved: "Préférences de groupe enregistrées",
+        empty: "Choisis ton premier groupe",
+        stale: "Les choix ont changé. Utilise la fiche la plus récente.",
+    },
     en: {
         title: "Your group choices",
         edit: "Change order",

@@ -31,7 +31,7 @@ export function EventSignupActions({
     serverId: string
     event: EventRecord
     groups: Group[]
-    signupLanguage: "en" | "cs" | "de" | "pl"
+    signupLanguage: "en" | "cs" | "de" | "pl" | "fr"
     className?: string
 }) {
     const router = useRouter()

@@ -8,6 +8,7 @@ import {
 import type { ServerUserAssignment } from "@/lib/server-user-management"
 import { parseDiscordCustomEmoji } from "@/lib/discord-emoji"
 import type { Group } from "@/types/domain"
+import { Ellipsis } from "lucide-react"
 
 function findGroupByName(groupsById: Map<string, Group>, name?: string | null) {
     if (!name) {
@@ -92,6 +93,7 @@ export function GroupInlineIcons({
         return null
     }
 
+    const hasMultipleSignupPreferences = (signupPreferences?.length ?? 0) > 1
     const signupIcon = signupGroupName ? (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -103,10 +105,20 @@ export function GroupInlineIcons({
                         .map((name, index) => `${index + 1}. ${name}`)
                         .join(", ")}
                 >
-                    <GroupIcon
-                        group={signupGroup}
-                        fallbackLabel={signupGroupName}
-                    />
+                    <span className="relative inline-flex size-4 items-center justify-center">
+                        <GroupIcon
+                            group={signupGroup}
+                            fallbackLabel={signupGroupName}
+                        />
+                        {hasMultipleSignupPreferences ? (
+                            <span
+                                aria-hidden="true"
+                                className="bg-background text-foreground ring-border absolute -top-1 -right-1 inline-flex size-2.5 items-center justify-center rounded-full ring-1"
+                            >
+                                <Ellipsis className="size-2" strokeWidth={3} />
+                            </span>
+                        ) : null}
+                    </span>
                 </span>
             </TooltipTrigger>
             <TooltipContent>

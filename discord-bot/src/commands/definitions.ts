@@ -207,7 +207,7 @@ export function fallbackGuildLanguage(
         ? "cs"
         : value.startsWith("de")
           ? "de"
-          : value.startsWith("pl")
+          : value.startsWith("fr") ? "fr" : value.startsWith("pl")
             ? "pl"
             : "en"
 }

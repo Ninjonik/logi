@@ -260,7 +260,7 @@ export function panelScoreImageAlt(model: PanelScoreImage): string {
         )
         parts.push(
             model.players.queue
-                ? `${players} ${model.language === "cs" ? "a" : model.language === "de" ? "und" : model.language === "pl" ? "i" : "and"} ${copy.alt.queue(model.players.queue)}`
+                ? `${players} ${model.language === "cs" ? "a" : model.language === "de" ? "und" : model.language === "pl" ? "i" : model.language === "fr" ? "et" : "and"} ${copy.alt.queue(model.players.queue)}`
                 : players
         )
     }

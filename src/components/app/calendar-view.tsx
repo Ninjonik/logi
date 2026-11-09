@@ -53,7 +53,7 @@ export function CalendarView({
     rosters: Roster[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs" | "de" | "pl"
+    signupLanguage: "en" | "cs" | "de" | "pl" | "fr"
     currentUserId?: string
     canAdmin?: boolean
 }) {

@@ -81,7 +81,7 @@ export async function EventOverview({
                 ? "cs-CZ"
                 : locale === "de"
                   ? "de-DE"
-                  : locale === "pl"
+                  : locale === "fr" ? "fr-FR" : locale === "pl"
                     ? "pl-PL"
                     : "en-GB",
         timezone,

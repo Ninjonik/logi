@@ -162,6 +162,164 @@ const pl: ChapterCopy = {
     ],
 }
 
+const fr: ChapterCopy = {
+    history: [
+        "Parties enregistrées",
+        "Parcourez les parties collectées sur les serveurs, consultez les tableaux de scores et choisissez leur durée de conservation.",
+        "Paramètres du clan → Serveurs de jeu → Conservation de l’historique",
+    ],
+    tracking: [
+        "Suivi Wardogs League",
+        "Suivez les équipes de ligue, importez les rencontres dans Logi et publiez les actualités de la ligue sur Discord.",
+        "Paramètres du clan → Wardogs League",
+    ],
+    commands: [
+        "Commandes du bot",
+        "Choisissez les commandes disponibles, leurs utilisateurs autorisés et leurs salons. Les joueurs peuvent consulter leurs statistiques avec /stats.",
+        "Paramètres du clan → Commandes",
+    ],
+    welcome: [
+        "Visite de Logi",
+        "Découvrez les rubriques et des exemples avec un clan fictif.",
+        "Tableau de bord",
+    ],
+    workspace: [
+        "Choisissez votre clan",
+        "Utilisez le sélecteur de clan pour passer d’une communauté à l’autre parmi celles que vous rejoignez ou gérez.",
+        "Barre latérale → Sélecteur de clan",
+    ],
+    mode: [
+        "Choisissez les fonctions dont vous avez besoin",
+        "Logi complet inclut les événements et les outils Discord. Le mode Compétition conserve les équipes, les joueurs et les inscriptions aux ligues.",
+        "Paramètres du clan → Mode de l’espace de travail",
+    ],
+    bot: [
+        "Inviter le bot",
+        "Invitez Logi sur votre serveur Discord. Placez son rôle au-dessus de ceux qu’il doit gérer, puis actualisez l’état du bot.",
+        "Tableau de bord → Inviter le bot",
+    ],
+    overview: [
+        "Le tableau de bord de votre clan",
+        "Consultez le prochain match, les tâches en attente, les résultats récents et les performances.",
+        "Espace de travail → Tableau de bord",
+    ],
+    calendar: [
+        "Calendrier",
+        "Parcourez les matchs, entraînements et dates personnalisées. Ouvrez un élément pour en voir les détails.",
+        "Espace de travail → Calendrier",
+    ],
+    articles: [
+        "Articles",
+        "Publiez les actualités, guides et règles du clan avec des images et des pièces jointes.",
+        "Espace de travail → Articles",
+    ],
+    players: [
+        "Joueurs",
+        "Gérez les membres, mercenaires, groupes et comptes de jeu. Ouvrez la fiche d’un joueur pour consulter ses performances enregistrées.",
+        "Configuration → Joueurs",
+    ],
+    performance: [
+        "Performances",
+        "Comparez les parties enregistrées et les statistiques des joueurs. Connectez un serveur de jeu pour collecter les données.",
+        "Tableau de bord · Profil du joueur",
+    ],
+    match: [
+        "Créer un match",
+        "Choisissez un modèle, les adversaires, la carte et les horaires. Regardez l’exemple se remplir.",
+        "Opérations → Matchs → Nouveau match",
+    ],
+    signups: [
+        "Inscriptions Discord",
+        "Les joueurs choisissent un groupe ou indiquent leur indisponibilité sur Discord. Au-delà des limites de groupe, les inscriptions vont en réserve.",
+        "Opérations → Matchs",
+    ],
+    roster: [
+        "Préparer la composition",
+        "Affectez les joueurs aux escouades et aux rôles, gardez des réservistes, puis publiez sur Discord.",
+        "Matchs → Compositions",
+    ],
+    attendance: [
+        "Présence",
+        "Les joueurs confirment leur affectation sur Discord. Vérifiez les présences et les signalements de retard ou d’absence avant de clôturer le match.",
+        "Match → Présence",
+    ],
+    results: [
+        "Résultats",
+        "Importez une partie enregistrée, vérifiez les scores et confirmez le résultat. Toute correction nécessite un motif.",
+        "Match → Résultat",
+    ],
+    training: [
+        "Entraînements",
+        "Planifiez une séance, recueillez les inscriptions et indiquez la réussite ou l’échec de chaque participant.",
+        "Opérations → Entraînements",
+    ],
+    presets: [
+        "Modèles et configurations",
+        "Réutilisez les horaires et règles d’inscription, les structures d’escouades et les sujets de briefing.",
+        "Paramètres du clan → Modèles d’escouades et de sujets",
+    ],
+    maps: [
+        "Cartes tactiques",
+        "Marquez des positions, tracez des itinéraires et préparez des diapositives pour le briefing du match.",
+        "Matchs → Cartes tactiques",
+    ],
+    membership: [
+        "Candidatures au clan",
+        "Configurez le formulaire, examinez les candidatures et attribuez les rôles de recrue ou de membre.",
+        "Paramètres du clan → Adhésion",
+    ],
+    tickets: [
+        "Tickets",
+        "Permettez aux joueurs d’ouvrir des fils privés de support depuis un panneau Discord. Définissez les catégories, questions et rôles de l’équipe de support.",
+        "Configuration → Tickets",
+    ],
+    competitions: [
+        "Compétitions",
+        "Inscrivez une équipe, vérifiez sa validation et suivez les divisions, rencontres et résultats.",
+        "Compétitions → Compétitions",
+    ],
+    teams: [
+        "Équipes",
+        "Associez les équipes de votre clan depuis le catalogue. Demandez l’ajout d’une équipe manquante ou proposez des modifications.",
+        "Compétitions → Équipes",
+    ],
+    panels: [
+        "Panneaux Discord",
+        "Publiez les serveurs en direct, résultats, classements de ligue et calendrier. Choisissez les salons et les styles de message.",
+        "Bot · Paramètres du clan → Panneaux Discord",
+    ],
+    seeding: [
+        "Seeding des serveurs",
+        "Appelez les joueurs pour remplir un serveur. Définissez un programme, un seuil de joueurs et un rôle de notification.",
+        "Paramètres du clan → Seeding des serveurs",
+    ],
+    servers: [
+        "Serveurs de jeu",
+        "Connectez CRCON ou Warcon pour collecter les résultats et statistiques des joueurs. Vérifiez ici l’état des connexions.",
+        "Paramètres du clan → Serveurs de jeu",
+    ],
+    settings: [
+        "Paramètres du clan",
+        "Définissez les jeux, salons, rôles et accès. Les étapes de configuration obligatoires indiquent les éléments manquants.",
+        "Configuration → Paramètres du clan",
+    ],
+    integrations: [
+        "Site et intégrations",
+        "Créez des clés API aux accès limités, configurez la connexion au site, abonnez-vous au calendrier ou envoyez des webhooks.",
+        "Paramètres du clan → Site et intégrations",
+    ],
+    account: [
+        "Votre compte",
+        "Réglez la langue, le thème, les comptes de jeu et les notifications depuis le menu du compte.",
+        "Barre latérale → Mon compte",
+    ],
+    finish: [
+        "Prêt à commencer",
+        "Rouvrez cette visite depuis le pied de page quand vous le souhaitez.",
+        "Pied de page → Relancer la visite",
+    ],
+}
+
 const en: ChapterCopy = {
     history: [
         "Recorded games",
@@ -675,6 +833,48 @@ const labels = {
         botPresent: "Bot podłączony",
         guide: "Poradnik konfiguracji",
     },
+    fr: {
+        memberOverview:
+            "Consultez les prochains matchs, résultats récents et compositions publiées.",
+        memberRoster:
+            "Retrouvez votre escouade et votre rôle dans la composition publiée sur Discord.",
+        memberAttendance:
+            "Confirmez votre affectation sur Discord. Prévenez le clan si vous serez en retard ou ne pourrez pas venir.",
+        memberArticles: "Lisez les actualités, guides et règles du clan.",
+        memberRosterLocation: "Discord → Mon affectation",
+        memberAttendanceLocation: "Discord → Rappel de présence",
+
+        demo: "Données d’exemple",
+        tour: "Visite de l’application",
+        chapters: "Chapitres",
+        location: "Où trouver cette fonction",
+        open: "Ouvrir cette page",
+        pause: "Mettre l’exemple en pause",
+        play: "Lancer l’exemple",
+        replay: "Rejouer l’exemple",
+        start: "Commencer la visite",
+        resume: "Reprendre la visite",
+        invite: "Inviter le bot",
+        setup: "Ouvrir la configuration",
+        saved: "Exemple créé",
+        welcome: "Première connexion",
+        manager: "Visite complète du clan",
+        competitions: "Mode Compétition",
+        member: "Visite membre",
+        "competition-member": "Mode Compétition",
+        limitedOverview:
+            "Suivez les équipes et compétitions de votre clan depuis cet espace.",
+        limitedSettings:
+            "Choisissez Logi complet ici pour accéder aux événements et aux outils Discord.",
+        limitedMember:
+            "Utilisez le menu de votre compte pour gérer les comptes de jeu et les notifications. Demandez à un responsable du clan d’inscrire les équipes.",
+        sample: "NOVA · Clan d’exemple",
+        done: "Visite terminée",
+        finish: "Commencer à utiliser Logi",
+        retry: "Réessayer l’enregistrement",
+        botPresent: "Bot connecté",
+        guide: "Guide de configuration",
+    },
     en: {
         memberOverview:
             "See upcoming matches, recent results and published rosters.",
@@ -810,7 +1010,7 @@ export function getOnboardingCopy(locale: Locale) {
                   ? de
                   : locale === "pl"
                     ? pl
-                    : en,
+                    : locale === "fr" ? fr : en,
         labels: labels[locale],
     }
 }

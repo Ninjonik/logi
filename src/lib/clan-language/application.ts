@@ -720,6 +720,361 @@ const pl: Copy = {
     },
 }
 
+const fr: Copy = {
+    listAnd: "et",
+    defaultForm: {
+        source: {
+            label: "Comment nous as-tu connus ?",
+            options: [
+                "Par un ami du clan",
+                "Sur le serveur du clan",
+                "Sur Discord",
+                "Autre",
+            ],
+        },
+        age: { label: "Âge", placeholder: "Ex. : 24" },
+        hours: {
+            label: "Combien d’heures joues-tu par semaine ?",
+            placeholder: "Ex. : 10 à 15 heures",
+        },
+        why: {
+            label: "Pourquoi souhaites-tu jouer avec nous ?",
+            placeholder: "Quelques phrases suffisent.",
+        },
+        specialization: {
+            label: "Spécialité",
+            help: "Hell Let Loose uniquement.",
+            options: ["Infanterie", "Blindés", "Reconnaissance"],
+        },
+        when: {
+            label: "Quand joues-tu habituellement ?",
+            help: "Tu peux sélectionner plusieurs réponses.",
+            options: ["En semaine, le soir", "Le week-end"],
+        },
+        microphone: { label: "As-tu un micro ?" },
+        previousClan: {
+            label: "Dans quel clan jouais-tu auparavant ?",
+            placeholder: "Facultatif",
+        },
+        referrer: {
+            label: "Qui t’a invité ?",
+            help: "Un membre de ce serveur.",
+        },
+    },
+    panel: {
+        apply: "Postuler",
+        applyOnWeb: "Remplir la candidature sur le site",
+        windowsNote: {
+            two: "La candidature comporte deux courts formulaires et prend environ 2 minutes.",
+            three: "La candidature comporte trois courts formulaires et prend environ 3 minutes.",
+        },
+        defaultTitle: "Rejoindre le clan {clan}",
+        defaultTitleNoClan: "Rejoins-nous",
+        defaultText: {
+            two: "Choisis comment tu souhaites jouer avec nous. La candidature comporte deux courts formulaires et prend quelques minutes.",
+            three: "Choisis comment tu souhaites jouer avec nous. La candidature comporte trois courts formulaires et prend quelques minutes.",
+        },
+    },
+    label: "Candidature auprès de {clan}",
+    step: "Étape {step} sur {total}",
+    reviewStep: "Vérification",
+    windowTitle: "Candidature · {step} sur {total} · {name}",
+    windowTitleExtra: "Candidature · {step}{suffix} · {name}",
+    windowNames: {
+        about: "À propos de toi",
+        accounts: "Comptes de jeu",
+        questions: "Questions du clan",
+    },
+    fields: {
+        games: {
+            label: "Jeux",
+            help: "Choisis un ou deux jeux.",
+            placeholder: "Choisir les jeux",
+        },
+        category: {
+            label: "Catégorie",
+            help: "La façon dont tu souhaites jouer avec nous.",
+            placeholder: "Choisir une catégorie",
+        },
+        name: { label: "Pseudo en jeu", help: "Exactement tel qu’il apparaît en jeu." },
+        previous: {
+            label: "T’avons-nous trouvé sur les serveurs du clan ?",
+            help: "À partir du pseudo {name} saisi dans le premier formulaire.",
+            none: "Aucun de ces comptes",
+            noneHelp: "Je saisirai mon compte ci-dessous",
+            seen: "{platform} · vu pour la dernière fois {date} sur {server}",
+            seenNoServer: "{platform} · vu pour la dernière fois {date}",
+        },
+        steam: {
+            label: "Steam ID ou lien du profil",
+            help: "17 chiffres commençant par 7656119, ou un lien steamcommunity.com/profiles/…",
+        },
+        epic: { label: "Epic Account ID", placeholder: "Facultatif" },
+        xbox: { label: "Xbox", placeholder: "Facultatif" },
+        playstation: { label: "PlayStation", placeholder: "Facultatif" },
+        selectPlaceholder: "Choisir une option",
+        memberPlaceholder: "Choisir un membre",
+        optional: "Facultatif",
+        yes: "Oui",
+        no: "Non",
+    },
+    platforms: {
+        steam: "Steam",
+        epic: "Epic",
+        xbox: "Xbox",
+        playstation: "PlayStation",
+        other: "Compte",
+    },
+    progress: {
+        intro: {
+            about: "Le premier formulaire demande les jeux, la catégorie et le pseudo en jeu.",
+            accounts:
+                "Le formulaire suivant demande un compte Steam, Epic ou console. Un seul compte suffit.",
+            questions: "Le formulaire suivant contient les questions du clan.",
+            questionsMore:
+                "Le formulaire suivant contient la suite des questions du clan.",
+        },
+        done: "terminé",
+        fix: "à corriger",
+        steamVerified: "✓ Steam vérifié",
+        accountsPending:
+            "Tu peux vérifier ton compte Steam sur le site. Tu n’auras alors pas à le saisir dans le formulaire.",
+        accountsVerified: "Steam {id} · déjà renseigné dans le formulaire",
+        accountsLocked:
+            "Vérifie ton compte Steam sur le site ; la saisie manuelle d’un Steam ID n’est pas acceptée ici. Renseigne ton compte console ou Epic dans le formulaire.",
+        questionsCount: {
+            one: "{count} question, puis vérification",
+            other: "{count} questions, puis vérification",
+        },
+        ageValue: "{value} ans",
+        continue: "Continuer",
+        edit: "Modifier",
+        cancel: "Annuler",
+        verifySteam: "Vérifier Steam sur le site (recommandé)",
+        verifySteamRequired: "Vérifier Steam sur le site",
+        findAccount: "Trouver mon identifiant de compte",
+        keepNote: "Nous conservons une candidature inachevée pendant 24 h.",
+    },
+    review: {
+        title: "Vérifier et envoyer",
+        submit: "Envoyer la candidature",
+        cancel: "Annuler",
+        note: "Nous conservons une candidature inachevée pendant 24 h, puis elle est supprimée. Les recruteurs ne la voient qu’après son envoi.",
+        games: "Jeux",
+        category: "Catégorie",
+        name: "Pseudo en jeu",
+    },
+    summaryLabels: {
+        source: "Origine",
+        age: "Âge",
+        referrer: "Invité par",
+        specialization: "Spécialité",
+    },
+    fixTitle: {
+        about: "Corriger tes informations",
+        accounts: "Corriger tes comptes de jeu",
+        questions: "Corriger tes réponses",
+    },
+    fixButton: {
+        about: "Corriger tes informations",
+        accounts: "Corriger les comptes de jeu",
+        questions: "Corriger les réponses",
+    },
+    issues: {
+        required: "{field} : ce champ est obligatoire.",
+        number: "{field} : saisis un nombre.",
+        tooLong: "{field} : la réponse est trop longue.",
+        choice: "{field} : choisis l’une des options proposées.",
+        tooFew: "{field} : sélectionne davantage d’options.",
+        tooMany: "{field} : sélectionne moins d’options.",
+        member: "{field} : choisis un membre de ce serveur.",
+        steam: "Le Steam ID semble incorrect. Il doit comporter 17 chiffres et commencer par 7656119.",
+        accountMissing: "Renseigne au moins un compte de jeu.",
+        unknown:
+            "Le formulaire a changé entre-temps. Remplis-le à nouveau.",
+    },
+    sent: {
+        title: "Candidature envoyée",
+        body: "Les recruteurs te répondront dans {thread}. Tu recevras également leur décision en message privé.",
+        openThread: "Ouvrir le fil",
+    },
+    cancelled: {
+        title: "Candidature annulée",
+        body: "Rien n’a été envoyé. Pour recommencer, clique sur Postuler dans {channel}.",
+    },
+    expired: {
+        title: "Cette candidature a expiré",
+        body: "Les réponses inachevées n’ont pas été enregistrées. Recommence en cliquant sur Postuler dans {channel}.",
+    },
+    windowExpired: {
+        title: "Le formulaire a été fermé avant l’envoi",
+        body: "Tes étapes enregistrées sont conservées : {steps}. Reprends où tu en étais et remplis à nouveau {window}.",
+        bodyNothing: "Rien n’a encore été enregistré. Commence par {window}.",
+        continue: "Continuer",
+    },
+    alreadyInClan: {
+        title: "Tu fais déjà partie de {clan}",
+        body: "Pour changer de rôle ou de catégorie, contacte les administrateurs en ouvrant un ticket dans {tickets}.",
+        bodyNoTickets:
+            "Pour changer de rôle ou de catégorie, contacte les administrateurs du clan.",
+    },
+    openApplication: {
+        title: "Ta candidature nº {number} est déjà en cours",
+        body: "Attends la décision des recruteurs. Tu la recevras en message privé.",
+        open: "Ouvrir le fil",
+    },
+    closed: {
+        title: "Les candidatures sont actuellement fermées",
+        body: "Réessaie plus tard ou contacte les administrateurs dans {channel}.",
+        bodyNoChannel: "Réessaie plus tard ou contacte les administrateurs du clan.",
+    },
+    sendFailed: {
+        title: "Impossible d’envoyer la candidature",
+        body: "Rien n’a été enregistré. Les administrateurs ont été informés ; réessaie dans un instant.",
+    },
+    threadName: "candidature-{name}",
+    closedThreadName: "fermée · {name}",
+    welcome: {
+        withRoles:
+            "Salut {applicant}, merci pour ta candidature. {support_roles} te répondront bientôt.",
+        withoutRoles:
+            "Salut {applicant}, merci pour ta candidature. Les recruteurs te répondront bientôt.",
+    },
+    card: {
+        label: "Candidature nº {number} · {games}",
+        closedLabel: "Candidature nº {number} · fermée",
+        title: "{name} · {category}",
+        pending: "En attente de décision",
+        submitted: "envoyée {time}",
+        inGameName: "pseudo en jeu : {name}",
+        accounts: "Comptes",
+        source: "Comment tu nous as connus",
+        invitedBy: "invité par {member}",
+        undecided: "Décision en attente · {name}, {time}",
+        undecidedNote:
+            "Le fil reste ouvert et rien n’est envoyé au candidat. Les boutons restent disponibles.",
+        deciders: "{roles} et les administrateurs Logi peuvent décider",
+        decidersAdmins: "Les administrateurs Logi peuvent décider",
+        accept: {
+            member: "Accepter comme membre",
+            recruit: "Accepter comme recrue",
+            mercenary: "Accepter comme mercenaire",
+        },
+        reject: "Refuser…",
+        undecidedButton: "Décision en attente",
+        mercenaryUnavailable:
+            "Impossible d’accepter un mercenaire pour le moment : le clan n’a pas de catégorie Mercenaire.",
+        decidedTitle: {
+            member: "{name} est accepté comme membre",
+            recruit: "{name} est accepté comme recrue",
+            mercenary: "{name} est accepté comme mercenaire",
+            pending: "La candidature de {name} est en attente de décision",
+            denied: "La candidature de {name} n’a pas été retenue",
+        },
+        outcome: {
+            member: "Membre",
+            recruit: "Recrue",
+            mercenary: "Mercenaire",
+            pending: "En attente de décision",
+            denied: "Refusée",
+        },
+        rolesPending: "Attribution des rôles en cours",
+        decidedBy: "Décision de {member} · {time}",
+        rolesAdd: {
+            one: "Logi ajoutera le rôle {roles} dans la minute.",
+            other: "Logi ajoutera les rôles {roles} dans la minute.",
+        },
+        rolesRemove: {
+            one: "Logi retirera le rôle {roles} dans la minute.",
+            other: "Logi retirera les rôles {roles} dans la minute.",
+        },
+        closedFooter: "Le fil est verrouillé et archivé",
+    },
+    rejectModal: {
+        title: "Refuser la candidature nº {number}",
+        body: "{name} recevra le motif en message privé. Le fil sera ensuite verrouillé et archivé.",
+        reason: "Motif",
+        reasonHelp: "Le candidat pourra le lire.",
+        reasonPlaceholder:
+            "Ex. : nous ne recrutons pas de remplaçants actuellement, reviens en novembre.",
+    },
+    decision: {
+        notAllowed: {
+            title: "Les recruteurs statuent sur les candidatures",
+            body: "Les candidatures de la catégorie {category} sont traitées par {roles} ou les administrateurs Logi.",
+            bodyAdmins:
+                "Les candidatures de la catégorie {category} sont traitées par les administrateurs Logi.",
+        },
+        unverifiable: {
+            title: "Impossible de vérifier tes rôles pour le moment",
+            body: "Discord n’a pas répondu. Réessaie dans un instant.",
+        },
+        alreadyDecided: {
+            title: "La candidature nº {number} a déjà été traitée",
+            body: "Décision de {member} : {outcome}. Pour modifier l’adhésion, ouvre Membres sur le site.",
+            members: "Membres dans Logi",
+        },
+        notTracked: {
+            title: "Ce fil ne correspond pas à une candidature",
+            body: "Les décisions se prennent dans le fil créé à partir d’une candidature.",
+        },
+        noMercenaryCategory: {
+            title: "Le clan n’a pas de catégorie Mercenaire",
+            body: "Un administrateur doit en ajouter une dans Logi, sous Paramètres → Recrutement → Catégories. Tu pourras alors accepter un mercenaire.",
+        },
+        dmFailed:
+            "Le candidat ne peut pas recevoir de messages privés. Il trouvera la décision dans le fil de candidature.",
+    },
+    dm: {
+        label: "Clan {clan} · Candidature nº {number}",
+        accepted: {
+            member: "Bienvenue dans le clan, tu es membre",
+            recruit: "Bienvenue dans le clan, tu es recrue",
+            mercenary: "Bienvenue dans le clan, tu es mercenaire",
+        },
+        acceptedBody: "Les recruteurs ont accepté ta candidature pour {game}.",
+        roles: {
+            one: "Le rôle {roles} te sera attribué sur le serveur dans la minute.",
+            other: "Les rôles {roles} te seront attribués sur le serveur dans la minute.",
+        },
+        rejectedTitle: "Ta candidature n’a pas été retenue",
+        rejectedHelp:
+            "Si tu as une question, ouvre un ticket sur le serveur {clan}, dans le salon {channel}.",
+        rejectedHelpNoTickets:
+            "Si tu as une question, contacte les administrateurs du serveur {clan}.",
+        pendingTitle: "Ta candidature est en attente de décision",
+        pendingBody:
+            "Les recruteurs ont mis ta candidature en attente. Nous te préviendrons dès qu’ils auront pris leur décision.",
+        openThread: "Ouvrir le fil",
+        confirmationTitle: "La candidature nº {number} a été envoyée",
+        confirmationBody:
+            "Les recruteurs te répondront dans le fil de candidature. Tu recevras aussi leur décision ici, en message privé.",
+    },
+    command: {
+        closedTitle: "Candidature nº {number} fermée : {outcome}",
+        rejectedTitle: "Candidature nº {number} refusée",
+        roles: {
+            one: "{name} recevra le rôle {roles} dans la minute.",
+            other: "{name} recevra les rôles {roles} dans la minute.",
+        },
+        delivered:
+            "La décision a été publiée dans le fil et envoyée au candidat en message privé.",
+        notDelivered:
+            "La décision a été publiée dans le fil. Le candidat ne peut pas recevoir de messages privés et pourra la consulter là-bas.",
+        dmOff: "La décision a été publiée dans le fil. Le clan a désactivé les décisions par message privé dans les paramètres des messages.",
+        wrongPlace: {
+            title: "/close_application fonctionne uniquement dans un fil de candidature",
+            body: "Ouvre le fil de candidature et lance la commande dedans.",
+        },
+        alreadyClosed: {
+            title: "La candidature nº {number} est déjà fermée",
+            body: "Décision : {outcome}. Pour modifier l’adhésion, ouvre Membres sur le site.",
+            members: "Membres dans Logi",
+        },
+        notAllowedTitle: "Les recruteurs statuent sur cette candidature",
+    },
+}
+
 const en: Copy = {
     listAnd: "and",
     defaultForm: {
@@ -1434,7 +1789,7 @@ const de: Copy = {
     },
 }
 
-const applicationMessages: Record<ClanLanguage, Copy> = { cs, en, de, pl }
+const applicationMessages: Record<ClanLanguage, Copy> = { cs, en, de, pl, fr }
 
 export const getApplicationMessages: (
     language?: string | null
@@ -1446,4 +1801,5 @@ export const applicationPanelDefaults: readonly PanelDefaultCopy[] = [
     en.panel,
     de.panel,
     pl.panel,
+    fr.panel,
 ]

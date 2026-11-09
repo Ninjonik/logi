@@ -41,6 +41,48 @@ const pl: Messages = {
     teamCreated: "Drużyna został utworzony i przesłano rejestrację.",
 }
 
+const fr = {
+    title: "Profil de l’équipe",
+    clanAdministrator: "Administrateur du clan",
+    uploadRateLimit:
+        "Trop d’envois d’avatar. Patientez quelques minutes et réessayez.",
+    description:
+        "Gérez votre équipe, vos joueurs, vos inscriptions aux compétitions et votre connexion Discord.",
+    edit: "Modifier le profil",
+    avatar: "Avatar de l’équipe",
+    removeAvatar: "Supprimer l’avatar",
+    avatarHint:
+        "PNG, JPEG ou WebP, 2 Mio maximum. Enregistrez le profil pour appliquer l’avatar.",
+    cancel: "Annuler",
+    connection: "Connexion Discord",
+    connectionHint:
+        "Associez cette équipe pour la gérer avec votre clan. Aucune installation de bot n’est nécessaire.",
+    createAndEnroll: "Créer et inscrire l’équipe",
+    createAndEnrollHint:
+        "Le jeu est défini par cette compétition. Votre équipe peut également participer à d’autres compétitions du même jeu.",
+    createdNeedsPlayers:
+        "Équipe créée. Invitez assez de joueurs pour atteindre le minimum requis, puis inscrivez l’équipe ici.",
+    createdRegistrationFailed:
+        "Équipe créée, mais l’inscription n’a pas abouti. Vérifiez les conditions et inscrivez votre équipe existante ci-dessous.",
+    createAndConnect: "Créer et associer l’équipe",
+    noClanTeam:
+        "Votre clan n’a pas encore d’équipe associée. Créez-en une ou associez ci-dessous une équipe dont vous êtes déjà propriétaire.",
+    entries: "Inscriptions aux compétitions",
+    noEntries:
+        "Aucune inscription pour le moment. Choisissez une compétition et inscrivez cette équipe.",
+    yourCompetitions: "Vos compétitions",
+    browseCompetitions: "Rejoindre une compétition",
+    history: "Anciennes candidatures et désistements",
+    noCurrent: "Votre clan n’est encore inscrit à aucune compétition.",
+    noAvailable: "Aucune autre compétition n’est disponible pour le jeu de votre équipe.",
+    manageFixtures: "Gérer l’inscription et les rencontres",
+    stale: "Cette équipe a changé pendant vos modifications. Actualisez et réessayez.",
+    uploadError:
+        "Impossible d’envoyer l’avatar. Utilisez un fichier PNG, JPEG ou WebP de 2 Mio maximum et réessayez.",
+    selectTeam: "Utiliser une équipe existante",
+    teamCreated: "Équipe créée et inscription envoyée.",
+}
+
 const en = {
     title: "Team profile",
     clanAdministrator: "Clan administrator",
@@ -166,4 +208,4 @@ const de: Messages = {
     teamCreated: "Team erstellt und Anmeldung eingereicht.",
 }
 export const getTeamManagementMessages = (locale: Locale): Messages =>
-    locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : en
+    locale === "cs" ? cs : locale === "de" ? de : locale === "pl" ? pl : locale === "fr" ? fr : en

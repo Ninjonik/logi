@@ -50,7 +50,7 @@ export function CalendarEntryDialog({
     groups: Group[]
     timezone?: string
     dictionary: Dictionary
-    signupLanguage: "en" | "cs" | "de" | "pl"
+    signupLanguage: "en" | "cs" | "de" | "pl" | "fr"
     currentUserId?: string
     canAdmin?: boolean
 }) {

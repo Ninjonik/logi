@@ -39,3 +39,15 @@ test("a player without a primary group sees their sign-up group icon once", () =
 
     assert.equal((markup.match(/title="Infantry"/g) ?? []).length, 1)
 })
+
+test("ranked signup preferences mark the displayed signup icon", () => {
+    const markup = renderToStaticMarkup(
+        createElement(GroupInlineIcons, {
+            groupsById: new Map(),
+            signupPreferences: ["Infantry", "Armour"],
+        })
+    )
+
+    assert.match(markup, /aria-hidden="true"/)
+    assert.match(markup, /aria-label="1\. Infantry, 2\. Armour"/)
+})

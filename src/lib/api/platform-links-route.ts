@@ -50,7 +50,7 @@ export function platformLinksHandlers(ports: Ports) {
                     return json({ error: "Forbidden." }, 403)
                 const { locale } = z
                     .object({
-                        locale: z.enum(["en", "cs", "de", "pl"]).default("en"),
+                        locale: z.enum(["en", "cs", "de", "pl", "fr"]).default("en"),
                     })
                     .strict()
                     .parse(await request.json())
