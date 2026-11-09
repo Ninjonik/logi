@@ -41,6 +41,7 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
         roster: null,
     }
     t.mock.method(ConvexReactClient.prototype, "query", async () => context)
+    let activeClick: ButtonInteraction | StringSelectMenuInteraction
     const mutations: Array<{ group: string; signupPreferences?: string[] }> = []
     t.mock.method(
         ConvexReactClient.prototype,
@@ -49,6 +50,11 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
             _reference: unknown,
             args: { group: string; signupPreferences?: string[] }
         ) => {
+            assert.equal(
+                activeClick.deferred,
+                true,
+                "acknowledge before saving"
+            )
             mutations.push(args)
             return { appliedSignupLabel: args.group, removed: false }
         }
@@ -59,11 +65,13 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
         async () => new Response("{}", { status: 200 })
     )
     const replies: unknown[] = []
+    let privateCard = true
+    let openedModal = false
     function click(
         customId: string,
         value?: string
     ): ButtonInteraction | StringSelectMenuInteraction {
-        return {
+        activeClick = {
             customId,
             guildId,
             guild: { id: guildId },
@@ -78,7 +86,33 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
             values: value ? [value] : [],
             isButton: () => !value,
             isStringSelectMenu: () => Boolean(value),
-            message: { flags: { has: () => true } },
+            message: { flags: { has: () => privateCard } },
+            async deferUpdate(this: { deferred: boolean }) {
+                assert.equal(privateCard, true)
+                assert.equal(this.deferred, false)
+                this.deferred = true
+            },
+            async deferReply(
+                this: { deferred: boolean },
+                options: { ephemeral: boolean }
+            ) {
+                assert.equal(privateCard, false)
+                assert.equal(options.ephemeral, true)
+                assert.equal(this.deferred, false)
+                this.deferred = true
+            },
+            async showModal(this: { deferred: boolean }) {
+                assert.equal(
+                    this.deferred,
+                    false,
+                    "a modal must be the initial response"
+                )
+                openedModal = true
+            },
+            awaitModalSubmit: async () => undefined,
+            editReply: async (payload: unknown) => {
+                replies.push(payload)
+            },
             update: async (payload: unknown) => {
                 replies.push(payload)
             },
@@ -86,6 +120,7 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
                 replies.push(payload)
             },
         } as unknown as ButtonInteraction | StringSelectMenuInteraction
+        return activeClick
     }
     const options = { enqueueEventSync: () => {}, triggerPollSoon: () => {} }
     await handleEventSignupPickerInteraction(
@@ -115,6 +150,35 @@ test("ranked Discord draft adds, reorders, removes and saves only on request", a
         mutations.length,
         1,
         "an expired or replayed editor never saves twice"
+    )
+    // Legacy matches without the ranked setting may repeatedly choose any group.
+    delete context.event.allowRankedSignup
+    for (const groupId of ["tank", "tank", "inf", "inf", "tank"]) {
+        privateCard = !privateCard
+        const before: number = mutations.length
+        await handleEventButtonInteraction(
+            click(`signup:event-1:${groupId}:${guildId}`),
+            options
+        )
+        assert.equal(mutations.length, before + 1)
+        assert.equal(
+            mutations.at(-1)?.group,
+            boardGroups.find((group) => group.id === groupId)?.name
+        )
+        assert.equal(mutations.at(-1)?.signupPreferences, undefined)
+    }
+    context.event.registrationEnd = new Date(Date.now() - 60_000).toISOString()
+    context.event.meetingStart = new Date(Date.now() + 60_000).toISOString()
+    const beforeModal = mutations.length
+    await handleEventButtonInteraction(
+        click(`signup:event-1:inf:${guildId}`),
+        options
+    )
+    assert.equal(openedModal, true)
+    assert.equal(
+        mutations.length,
+        beforeModal,
+        "no save before the reason is submitted"
     )
 })
 

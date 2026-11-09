@@ -4,9 +4,9 @@ import type {
     ParticipantStatus,
     SignupMembershipStatus,
 } from "./types"
+import { resolveGameScope, matchesGameScope, type GameId } from "../games/game"
 import { DEFAULT_ALLOWED_SIGNUP_STATUSES } from "./signup-policy"
 import { getResolvedMemberStatus } from "../assignments/policy"
-import { matchesGameScope, type GameId } from "../games/game"
 import { canAcceptSignups } from "./status"
 
 /**
@@ -107,7 +107,10 @@ function unansweredUserIds(
         )
             continue
         if (assignment.paused || answered.has(assignment.userId)) continue
-        if (!matchesGameScope(assignment.gameId, event.gameId)) continue
+        if (
+            !matchesGameScope(assignment.gameId, resolveGameScope(event.gameId))
+        )
+            continue
         const status = getResolvedMemberStatus(
             assignment.type,
             assignment.status

@@ -26,6 +26,7 @@ import type {
     StringSelectMenuInteraction,
 } from "discord.js"
 
+import { protectInteraction, PreparedModalExpired } from "./acknowledgement"
 import { interactionLanguage, replyUnknownError } from "../ui/replies"
 import { logError, logWarn } from "../log"
 
@@ -252,13 +253,16 @@ const defaultFailureDeps: InteractionFailureDeps = {
  * clan language (M3-08); nothing internal reaches the person.
  */
 export async function runInteraction(
-    interaction: Interaction,
-    handle: () => Promise<unknown>,
+    source: Interaction,
+    handle: (interaction: Interaction) => Promise<unknown>,
     deps: InteractionFailureDeps = defaultFailureDeps
 ) {
+    const guarded = protectInteraction(source)
+    const interaction = guarded.interaction
     try {
-        await handle()
+        await handle(interaction)
     } catch (error) {
+        if (error instanceof PreparedModalExpired) return
         deps.logError("interaction", "Discord interaction failed", {
             type: interaction.type,
             customId:
@@ -281,6 +285,16 @@ export async function runInteraction(
                     guildId: interaction.guildId,
                     error: replyError,
                 })
+            )
+    } finally {
+        await guarded
+            .finish()
+            .catch((error) =>
+                deps.logWarn(
+                    "interaction",
+                    "Interaction acknowledgement failed",
+                    { guildId: source.guildId, error }
+                )
             )
     }
 }

@@ -356,7 +356,11 @@ with `{"audience": "unanswered" | "unconfirmed"}`, answering `{queued}`) and
 post-match admin excuses (`POST .../events/{eventId}/excuses`) are dashboard
 only. A reminder sends Discord DMs to clan members, so an API key must not be
 able to trigger it; excuses only change scoring, which the API does not do.
-Both are deliberately excluded from `/api/v1`. The match page's reminder
+Both are deliberately excluded from `/api/v1`. Scheduled and manual signup
+reminders use eligible memberships in the match’s game; missing legacy game
+values resolve to Hell Let Loose, never an all-games audience. Dual-game
+members are eligible for each matching game, with one DM per reminder run.
+The match page's reminder
 delivery notice (which players a manual or scheduled sign-up or attendance
 reminder did not reach because their Discord DMs are closed)
 is excluded with them: it names members' DM settings for the clan's managers

@@ -8,11 +8,14 @@ import {
 import { isRegistrationAnnouncementDue } from "../../../src/domain/events/registration-announcement"
 import { resolveSignupReminderStatuses } from "../../../src/domain/events/scheduled-job-policy"
 import { signupReminderView } from "../../../src/domain/discord-messages/direct-message-views"
+import {
+    resolveGameScope,
+    matchesGameScope,
+} from "../../../src/domain/games/game"
 import { getDirectMessages } from "../../../src/lib/clan-language/direct-messages"
 import { dmFrame, eventCategory, eventMapLabel } from "../events/match-context"
 import { matchTitle } from "../../../src/domain/discord-messages/match-text"
 import { getRosterMessages } from "../../../src/lib/clan-language/rosters"
-import { matchesGameScope } from "../../../src/domain/games/game"
 import { makeFunctionReference } from "convex/server"
 import { SIGNUP_NOT_ATTENDING } from "../constants"
 import { messagePayload } from "../ui/message-kit"
@@ -59,7 +62,10 @@ export function isSignupReminderRecipient(input: {
 }) {
     const status = getRecipientStatus(input.assignment)
     return (
-        matchesGameScope(input.assignment.gameId, input.eventGameId) &&
+        matchesGameScope(
+            input.assignment.gameId,
+            resolveGameScope(input.eventGameId)
+        ) &&
         status !== null &&
         input.recipientStatuses.has(status) &&
         !input.respondedUserIds.has(input.assignment.userId)

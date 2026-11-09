@@ -30,7 +30,13 @@ const context: InteractionFeatureContext = {
     enqueueEventSync: () => {},
     triggerPollSoon: () => {},
 }
-const fake = <T>(value: Record<string, unknown>) => value as unknown as T
+const fake = <T>(value: Record<string, unknown>) =>
+    ({
+        isMessageComponent: () => false,
+        isModalSubmit: () => false,
+        isAutocomplete: () => false,
+        ...value,
+    }) as unknown as T
 
 test("a feature registers a button prefix and a slash command and both are routed", async () => {
     const seen: string[] = []

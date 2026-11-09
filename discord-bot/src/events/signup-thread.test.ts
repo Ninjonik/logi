@@ -7,6 +7,7 @@ test("replaces a public discussion and applies signups and explicit declines wit
     const calls: string[] = []
     const thread = {
         id: "private",
+        name: "Match",
         type: ChannelType.PrivateThread,
         parentId: "channel",
         isThread: () => true,
@@ -29,9 +30,11 @@ test("replaces a public discussion and applies signups and explicit declines wit
         threads: {
             fetchActive: async () => ({ threads: new Map() }),
             create: async (options: {
+                name: string
                 type: ChannelType
                 invitable: boolean
             }) => {
+                assert.equal(options.name, "Match")
                 assert.equal(options.type, ChannelType.PrivateThread)
                 assert.equal(options.invitable, false)
                 calls.push("create")
@@ -76,3 +79,53 @@ test("replaces a public discussion and applies signups and explicit declines wit
         "add current",
     ])
 })
+
+for (const stored of [true, false]) {
+    test(`renames a legacy discussion recovered by ${stored ? "stored ID" : "legacy title"}`, async () => {
+        const renamed: string[] = []
+        const thread = {
+            id: "private",
+            name: "Match · event",
+            type: ChannelType.PrivateThread,
+            parentId: "channel",
+            isThread: () => true,
+            setName: async (name: string) => {
+                renamed.push(name)
+            },
+            setInvitable: async () => {},
+        }
+        const parent = {
+            id: "channel",
+            type: ChannelType.GuildText,
+            threads: {
+                fetchActive: async () => ({
+                    threads: new Map([["private", thread]]),
+                }),
+                create: async () => {
+                    throw new Error("Must reuse the legacy thread")
+                },
+            },
+        }
+        assert.equal(
+            await syncSignupThread({
+                guild: {
+                    channels: {
+                        fetch: async (id: string) =>
+                            id === "channel" ? parent : thread,
+                    },
+                } as never,
+                event: {
+                    id: "event",
+                    name: "Match",
+                    createSignupThread: true,
+                    participants: [],
+                } as never,
+                announcementMessageId: "message",
+                announcementChannelId: "channel",
+                existingThreadId: stored ? "private" : undefined,
+            }),
+            "private"
+        )
+        assert.deepEqual(renamed, ["Match"])
+    })
+}

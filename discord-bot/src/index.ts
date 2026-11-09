@@ -15,6 +15,7 @@ import {
     startCommandRegistration,
 } from "./commands/runtime"
 import { RosterChangeRequestService } from "./rosters/roster-change-service"
+import { handlePreparedModalButton } from "./interactions/acknowledgement"
 import { MeetingAttendanceRequestService } from "./meeting-attendance"
 import { ManualReminderRequestService } from "./manual-reminders"
 import { startPlatformStatusMonitor } from "./platform-status"
@@ -226,9 +227,14 @@ client.once(Events.ClientReady, async (readyClient) => {
     }
 })
 
-client.on(Events.InteractionCreate, (interaction) =>
+client.on(Events.InteractionCreate, (source) =>
     // Any failure ends in the private "Tohle se nepovedlo" card (M3-08).
-    runInteraction(interaction, async () => {
+    runInteraction(source, async (interaction) => {
+        if (
+            interaction.isButton() &&
+            (await handlePreparedModalButton(interaction))
+        )
+            return
         if (interaction.isButton()) {
             // Panel buttons route through the registry (public-panels/interactions.ts).
             await interactionHandler.handleButtonInteraction(interaction)
