@@ -41,6 +41,7 @@ test("a copy getter returns the language entry with its locale and falls back to
         cs: { hello: "Ahoj" },
         de: { hello: "Hallo" },
         pl: { hello: "Cześć" },
+        fr: { hello: "Bonjour" },
     })
     assert.deepEqual(get("cs"), { locale: "cs-CZ", hello: "Ahoj" })
     assert.deepEqual(get("unknown"), { locale: "en-GB", hello: "Hello" })
