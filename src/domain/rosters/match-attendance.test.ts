@@ -4,10 +4,33 @@ import test from "node:test"
 import {
     applyAttendanceExcuses,
     buildMatchAttendance,
+    matchAttendanceMemberIds,
     planAttendanceChanges,
     setRosterPresence,
 } from "./match-attendance"
 import type { RosterLike } from "./types"
+
+test("unanswered attendance counts only active members of the match game", () => {
+    const assignments = [
+        { userId: "legacy" },
+        { userId: "hll", gameId: "hell_let_loose" },
+        { userId: "hll", gameId: "hell_let_loose" },
+        { userId: "other", gameId: "wardogs" },
+        { userId: "paused", gameId: "hell_let_loose", paused: true },
+    ]
+    const attendance = buildMatchAttendance({
+        roster: null,
+        participants: [{ userId: "hll", status: "attending" }],
+        notices: [],
+        memberIds: matchAttendanceMemberIds(assignments),
+    })
+    assert.deepEqual(attendance.noResponseUserIds, ["legacy"])
+    assert.equal(attendance.counts.noResponse, 1)
+    assert.deepEqual(matchAttendanceMemberIds(assignments, "wardogs"), [
+        "other",
+    ])
+    assert.deepEqual(matchAttendanceMemberIds(assignments, "empty"), [])
+})
 
 const roster: RosterLike = {
     squads: [
