@@ -421,12 +421,15 @@ export function buildAnnouncementCard(
         event: card,
         state,
         lateSignupsOpen: isLateSignupWindow(event, options.now),
-        counts: announcementCountsOf(event, payload.groups),
+        counts: announcementCountsOf(
+            event,
+            event.sharedGroups ?? payload.groups
+        ),
         signupRoster: options.hideSignupRoster
             ? null
             : announcementSignupRosterOf(
                   event,
-                  payload.groups,
+                  event.sharedGroups ?? payload.groups,
                   payload.userDisplayNames,
                   card.locale
               ),

@@ -4,9 +4,14 @@ import {
     resolveGameScope,
     type GameId,
 } from "@/domain/games/game"
+import {
+    sharedMatchGroups,
+    sharedInvitationGroups,
+} from "./shared-match-groups"
 import { rosterRevisionTimestamp } from "../../domain/rosters/shared-roster"
 import { sharedMatchMembers, sharedMatchPeople } from "./shared-match-store"
 import { syncRosterMembershipForUser } from "../../domain/rosters/sync"
+import { sharedSignupLimits } from "../../domain/events/shared-match"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { getUserByDiscordId } from "../../../convex/identity"
@@ -61,19 +66,42 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
             return null
         }
 
+        const allowed = event.hostEventId
+            ? await sharedInvitationGroups(this.ctx, event)
+            : undefined
+        const signupGroupIds = allowed
+            ? (
+                  event.signupGroupIds ?? allowed.map((group) => group.groupId)
+              ).filter((id) => allowed.some((group) => group.groupId === id))
+            : event.signupGroupIds
+        const signupGroupLimits = allowed
+            ? sharedSignupLimits(
+                  allowed,
+                  signupGroupIds ?? [],
+                  (event.signupGroupLimits ?? []).filter((limit) =>
+                      signupGroupIds?.includes(limit.groupId)
+                  )
+              )
+            : event.signupGroupLimits
         return {
+            hostEventId: event.hostEventId,
             id: String(event._id),
             guildId: event.guildId,
             name: event.name,
             kind: event.kind,
             gameId: event.gameId,
-            signupGroupIds: event.signupGroupIds,
+            signupGroupIds,
             allowedSignupStatuses: event.allowedSignupStatuses,
             allowLateSignups: event.allowLateSignups,
             allowNonMembersSignup: event.allowNonMembersSignup,
-            useGeneralSignup: event.useGeneralSignup,
+            useGeneralSignup:
+                event.hostEventId &&
+                event.signupGroupIds === undefined &&
+                allowed?.length
+                    ? false
+                    : event.useGeneralSignup,
             allowRankedSignup: event.allowRankedSignup,
-            signupGroupLimits: event.signupGroupLimits,
+            signupGroupLimits,
             isDraft: event.isDraft,
             registrationStart: event.registrationStart,
             registrationEnd: event.registrationEnd,
@@ -125,10 +153,8 @@ export class ConvexEventWorkflowRepository implements EventWorkflowRepository {
     }
 
     async getSignupGroupNames(event: EventWorkflowRecord) {
-        const groups = await this.ctx.db
-            .query("groups")
-            .withIndex("guildId", (q) => q.eq("guildId", event.guildId))
-            .collect()
+        const stored = await this.ctx.db.get(event.id as Id<"events">)
+        const groups = stored ? await sharedMatchGroups(this.ctx, stored) : []
         return groups
             .filter(
                 (group) =>

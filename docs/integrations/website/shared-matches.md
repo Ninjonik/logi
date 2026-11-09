@@ -37,9 +37,27 @@ registration opening time (`registrationStart`, before the host deadline),
 signup eligibility/groups/caps, reminder choices, discussions and temporary
 Discord resources are local. Host-controlled match fields are rejected.
 
-Acceptance asks for the local registration opening time and then opens local
-settings for review. Scheduled signup/roster publication waits until that time;
-host synchronization preserves it.
+Acceptance opens the five-step event setup before creating the local event.
+Match facts and host times are prefilled and read-only. The invited manager
+configures local registration opening, eligibility, group selection, reminders,
+channels, pings, discussions and Discord resources, then reviews and accepts.
+Acceptance saves that configuration and the local event in one transaction.
+Leaving setup does not accept the invitation or publish anything. Scheduled
+signup/roster publication waits until the local opening time.
+
+Hosts select actual event signup groups for each invitation and may set a
+per-group upper bound. An omitted bound means unlimited. Guests select from those
+host group IDs; local membership groups and roles are not imported or rewritten.
+Native event API reads include `sharedGroups` (the sanitized host catalogue) and
+`sharedSignupGroups` (offered group IDs with optional host ceilings). These are
+read-only projections; the clan groups API continues to serve local groups.
+Local caps may be lower but cannot exceed invitation ceilings; omitting a local
+cap inherits its invitation ceiling. These checks also apply to the existing
+local-settings API and signup writes. Full groups use the existing reserve-place
+behavior. Custom host Discord emoji and role references are stripped in foreign
+clans, leaving Unicode emoji or the group's color. Rosters use the full host group
+catalogue, including its hierarchy. Legacy invitations inherit the host's offered
+groups. Accepted invitations must be revoked before their group offer changes.
 
 Invitation creation, acceptance and revocation intentionally require a live
 dashboard manager. They grant or remove cross-workspace access; a bearer service

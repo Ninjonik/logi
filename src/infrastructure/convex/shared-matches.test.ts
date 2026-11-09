@@ -4,6 +4,7 @@ import * as announcements from "../../../convex/eventAnnouncements"
 import * as discordRosters from "../../../convex/discordRosters"
 import { seedDashboardActor } from "./testing/dashboard-actor"
 import * as sharedApi from "../../../convex/sharedMatchApi"
+import * as apiReads from "../../../convex/publicApiReads"
 import * as discordSync from "../../../convex/discordSync"
 import { invoke, testContext } from "./testing/database"
 import * as shared from "../../../convex/sharedMatches"
@@ -50,7 +51,10 @@ test("each roster image receives foreign clan logos and its canonical host ident
     ])
 })
 
-async function fixture(registrationStart?: string) {
+async function fixture(
+    registrationStart?: string,
+    options: { groups?: boolean; pending?: boolean } = {}
+) {
     process.env.INTERNAL_AUTH_SECRET = secret
     const ctx = testContext()
     const actor = seedDashboardActor(ctx.db, hostGuild)
@@ -133,20 +137,51 @@ async function fixture(registrationStart?: string) {
         createdAt: now,
         updatedAt: now,
     })
+    if (options.groups) {
+        for (const [id, name, discordEmoji] of [
+            ["inf", "Infantry", "<:infantry:12345>"],
+            ["armor", "Armor", "🛡️"],
+        ]) {
+            ctx.db.seed("groups", {
+                _id: `groups:${id}`,
+                guildId: hostGuild,
+                name,
+                discordEmoji,
+                discordRoleId: "host-role",
+                color: "#112233",
+                order: 0,
+                createdAt: now,
+                updatedAt: now,
+            })
+        }
+        await ctx.db.patch("events:host", {
+            signupGroupIds: ["groups:inf", "groups:armor"],
+        })
+    }
     const scope = { secret, actor, guildId: hostGuild }
     const invitationId = await invoke(shared.invite, ctx, {
         ...scope,
         eventId: "events:host",
         guestGuildId: guestGuild,
         requestedRoles: [{ role: "Infantry", count: 1 }],
+        ...(options.groups
+            ? {
+                  signupGroups: [
+                      { groupId: "groups:inf", max: 1 },
+                      { groupId: "groups:armor" },
+                  ],
+              }
+            : {}),
     })
-    const localId = await invoke(shared.respond, ctx, {
-        ...scope,
-        guildId: guestGuild,
-        invitationId,
-        accept: true,
-        registrationStart,
-    })
+    const localId = options.pending
+        ? undefined
+        : await invoke(shared.respond, ctx, {
+              ...scope,
+              guildId: guestGuild,
+              invitationId,
+              accept: true,
+              registrationStart,
+          })
     return { ctx, actor, scope, invitationId, localId }
 }
 
@@ -846,5 +881,255 @@ test("guest roster badges identify visible foreign players without exposing the 
             (user: { discordId: string }) => user.discordId === "host-reserve"
         ),
         false
+    )
+})
+
+test("invitation setup previews host facts and group ceilings without accepting, then saves local choices atomically", async () => {
+    const { ctx, scope, invitationId } = await fixture(undefined, {
+        groups: true,
+        pending: true,
+    })
+    const args = { ...scope, guildId: guestGuild, invitationId }
+    const before = ctx.db.tables.events.length
+    const preview = await invoke(shared.acceptanceContext, ctx, args)
+    assert.equal((await ctx.db.get(invitationId))?.status, "pending")
+    assert.equal(ctx.db.tables.events.length, before)
+    assert.deepEqual(preview.event.signupGroupIds, [
+        "groups:inf",
+        "groups:armor",
+    ])
+    assert.equal(preview.event.useGeneralSignup, false)
+    assert.equal(
+        preview.event.gameStart,
+        (await ctx.db.get("events:host"))?.gameStart
+    )
+    assert.equal(preview.groups[0].discordEmoji, undefined)
+    assert.equal(preview.groups[0].discordRoleId, undefined)
+    assert.equal(preview.groups[1].discordEmoji, "🛡️")
+    const settings = sharedMatchSettingsSchema.parse({
+        createParticipantRoles: true,
+        attendanceReminderHours: [6],
+        signupGroupIds: ["groups:inf"],
+        signupGroupLimits: [],
+        registrationStart: new Date(Date.now() - 60_000).toISOString(),
+        announcementChannelId: "guest-announcements",
+        useGeneralSignup: false,
+    })
+    const localId = await invoke(shared.respond, ctx, {
+        ...args,
+        accept: true,
+        settings,
+    })
+    const local = await ctx.db.get(localId)
+    assert.equal(local?.announcementChannelId, "guest-announcements")
+    assert.deepEqual(local?.attendanceReminderHours, [6])
+    assert.deepEqual(local?.signupGroupLimits, [
+        { groupId: "groups:inf", max: 1 },
+    ])
+    assert.deepEqual(local?.signupGroupIds, ["groups:inf"])
+    assert.equal((await ctx.db.get(invitationId))?.status, "accepted")
+    await invoke(events.toggleSignUp, ctx, {
+        secret,
+        eventId: localId,
+        userId: guestPlayer,
+        group: "Infantry",
+    })
+    assert.equal((await ctx.db.get(localId))?.participants[0].group, "Infantry")
+    assert.ok(
+        (await ctx.db.get("rosters:host"))?.reservePlayerIds.includes(
+            guestPlayer
+        )
+    )
+    await assert.rejects(
+        invoke(events.toggleSignUp, ctx, {
+            secret,
+            eventId: localId,
+            userId: guestPlayer,
+            group: "Armor",
+        }),
+        /not offered/
+    )
+})
+
+test("dashboard and API enforce host group ceilings and API reads expose sanitized host groups", async () => {
+    const { ctx, scope, localId } = await fixture(undefined, { groups: true })
+    const settings = sharedMatchSettingsSchema.parse({
+        createParticipantRoles: true,
+        attendanceReminderHours: [],
+        signupGroupIds: ["groups:inf", "groups:armor"],
+        signupGroupLimits: [],
+    })
+    await invoke(shared.configureLocal, ctx, {
+        ...scope,
+        guildId: guestGuild,
+        eventId: localId,
+        ...settings,
+    })
+    assert.deepEqual((await ctx.db.get(localId))?.signupGroupLimits, [
+        { groupId: "groups:inf", max: 1 },
+    ])
+    const invalid = {
+        ...settings,
+        signupGroupLimits: [{ groupId: "groups:inf", max: 2 }],
+    }
+    await assert.rejects(
+        invoke(shared.configureLocal, ctx, {
+            ...scope,
+            guildId: guestGuild,
+            eventId: localId,
+            ...invalid,
+        }),
+        /exceeds/
+    )
+    ctx.db.seed("apiKeys", {
+        _id: "apiKeys:guest",
+        guildId: guestGuild,
+        keyHash: "guest-key",
+    })
+    const args = {
+        secret,
+        keyHash: "guest-key",
+        eventId: localId,
+        idempotencyKey: "host-groups",
+        bodyHash: "host-groups",
+        methodPath: "PATCH /local-settings",
+        settings,
+    }
+    const valid = await invoke(sharedApi.configureLocal, ctx, args)
+    assert.equal(valid.status, 200)
+    assert.deepEqual(await invoke(sharedApi.configureLocal, ctx, args), valid)
+    const rejected = await invoke(sharedApi.configureLocal, ctx, {
+        ...args,
+        idempotencyKey: "too-many",
+        settings: invalid,
+    })
+    assert.equal(rejected.status, 400)
+    assert.match(rejected.body, /exceeds/)
+    const event = await invoke(apiReads.getClanResource, ctx, {
+        secret,
+        keyHash: "guest-key",
+        resource: "events",
+        id: localId,
+    })
+    assert.equal(event.sharedGroups[0].id, "groups:inf")
+    assert.equal(event.sharedGroups[0].discordEmoji, undefined)
+    assert.equal(event.sharedGroups[0].discordRoleId, undefined)
+    assert.deepEqual(event.sharedSignupGroups, [
+        { groupId: "groups:inf", max: 1 },
+        { groupId: "groups:armor" },
+    ])
+})
+
+test("invitations reject unrelated and duplicate host groups and cannot change accepted offers", async () => {
+    const { ctx, scope } = await fixture(undefined, { groups: true })
+    await assert.rejects(
+        invoke(shared.invite, ctx, {
+            ...scope,
+            eventId: "events:host",
+            guestGuildId: guestGuild,
+            requestedRoles: [],
+            signupGroups: [{ groupId: "groups:foreign" }],
+        }),
+        /offered/
+    )
+    await assert.rejects(
+        invoke(shared.invite, ctx, {
+            ...scope,
+            eventId: "events:host",
+            guestGuildId: guestGuild,
+            requestedRoles: [],
+            signupGroups: [
+                { groupId: "groups:inf" },
+                { groupId: "groups:inf" },
+            ],
+        }),
+        /distinct/
+    )
+    await assert.rejects(
+        invoke(shared.invite, ctx, {
+            ...scope,
+            eventId: "events:host",
+            guestGuildId: guestGuild,
+            requestedRoles: [],
+            signupGroups: [{ groupId: "groups:inf" }],
+        }),
+        /Revoke/
+    )
+})
+
+test("full invitation groups keep the upper bound and offer reserves without widening it", async () => {
+    const { ctx, localId } = await fixture(undefined, { groups: true })
+    const second = "100000000000000202"
+    ctx.db.seed("users", {
+        _id: `users:${second}`,
+        discordId: second,
+        guildId: guestGuild,
+        name: "Second guest",
+        nicknames: {},
+    })
+    ctx.db.seed("userAssignments", {
+        _id: `userAssignments:${second}`,
+        serverId: guestGuild,
+        userId: second,
+        type: "member",
+        status: "active",
+        createdAt: "2020-01-01T00:00:00Z",
+        updatedAt: new Date().toISOString(),
+    })
+    await invoke(events.toggleSignUp, ctx, {
+        secret,
+        eventId: localId,
+        userId: guestPlayer,
+        group: "Infantry",
+    })
+    await invoke(events.toggleSignUp, ctx, {
+        secret,
+        eventId: localId,
+        userId: second,
+        group: "Infantry",
+    })
+    const local = await ctx.db.get(localId)
+    assert.equal(
+        local?.participants.filter(
+            (person: { group?: string }) => person.group === "Infantry"
+        ).length,
+        1
+    )
+    const reserve = local?.participants.find(
+        (person: { userId: string }) => person.userId === second
+    )
+    assert.equal(reserve.group, null)
+    assert.equal(reserve.requestedGroup, "Infantry")
+})
+
+test("legacy accepted matches infer offered host groups and render them through Discord and API reads", async () => {
+    const { ctx, scope, localId, invitationId } = await fixture(undefined, {
+        groups: true,
+    })
+    await ctx.db.patch(invitationId, { signupGroups: undefined })
+    await ctx.db.patch(localId, {
+        signupGroupIds: undefined,
+        signupGroupLimits: undefined,
+        useGeneralSignup: true,
+    })
+    const context = await invoke(discordSync.getEventSyncContext, ctx, {
+        secret,
+        eventId: localId,
+    })
+    assert.deepEqual(context.event.signupGroupIds, [
+        "groups:inf",
+        "groups:armor",
+    ])
+    assert.equal(context.event.useGeneralSignup, false)
+    assert.equal(context.event.sharedGroups[0].discordEmoji, undefined)
+    assert.equal(context.event.sharedGroups[0].color, "#112233")
+    const roster = await invoke(shared.rosterContext, ctx, {
+        ...scope,
+        guildId: guestGuild,
+        eventId: localId,
+    })
+    assert.deepEqual(
+        roster.groups.map((group: { id: string }) => group.id),
+        ["groups:inf", "groups:armor"]
     )
 })

@@ -206,7 +206,7 @@ export async function deliverRosterChanges(input: {
                 config: payload.config,
                 eventId: event.id,
                 names,
-                groups: payload.groups,
+                groups: event.sharedGroups ?? payload.groups,
                 now: input.now,
             }),
         })

@@ -439,3 +439,20 @@ test("an unlinked local clan still appears beside its opponent in the matchup te
     assert.ok(text.includes(payload.guild.name))
     assert.ok(text.includes(event.matchTeams![0]!.snapshot.shortCode!))
 })
+
+test("shared announcements render the event's host groups even when the local cache has different groups", () => {
+    const event = boardEvent({ sharedGroups: boardGroups })
+    const payload = {
+        ...boardPayload(event),
+        groups: [
+            { ...boardGroups[0], id: "local-only", name: "Local clan group" },
+        ],
+    }
+    const actual = buildAnnouncementCard(payload, event, {
+        now: BOARD_NOW,
+    }).view
+    const expected = buildAnnouncementCard(boardPayload(event), event, {
+        now: BOARD_NOW,
+    }).view
+    assert.deepEqual(actual, expected)
+})

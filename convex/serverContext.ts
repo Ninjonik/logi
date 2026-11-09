@@ -13,6 +13,7 @@ import {
     sharedMatchMembers,
     sharedMatchPeople,
 } from "../src/infrastructure/convex/shared-match-store"
+import { sharedGroupProjection } from "../src/infrastructure/convex/shared-match-groups"
 import { canReadSharedRosterPassword } from "../src/domain/rosters/local-audience"
 import { filterByGameScope, type GameScope } from "../src/domain/games/game"
 import { getGuildDiscordId, getUserByDiscordId } from "./identity"
@@ -154,6 +155,11 @@ async function buildServerContext(
     const normalizedServer = normalizeGuildDoc(server)
     const displayEvents = await Promise.all(
         scopedEvents.map(async (event) => {
+            if (event.hostEventId && !event.sharedAccessRevoked)
+                return normalizeEventDoc({
+                    ...event,
+                    ...(await sharedGroupProjection(ctx, event)),
+                })
             if (!canAdmin || event.hostEventId) return normalizeEventDoc(event)
             const { events: shared } = await sharedMatchMembers(ctx, event)
             if (shared.length === 1) return normalizeEventDoc(event)

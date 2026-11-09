@@ -1,3 +1,5 @@
+export const MAX_SIGNUP_GROUP_LIMIT = 100
+
 import type { EventParticipant } from "./types"
 
 export type SignupGroupLimit = { groupId: string; max: number }

@@ -56,7 +56,7 @@ export function buildRosterMessage(input: {
             config: payload.config,
             eventId: event.id,
             names: input.names,
-            groups: payload.groups,
+            groups: event.sharedGroups ?? payload.groups,
             now: input.now,
         }),
         messageKitLayoutOptions(options)

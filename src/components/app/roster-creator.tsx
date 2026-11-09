@@ -347,7 +347,7 @@ export function RosterCreator({
                     event={selectedEvent}
                     users={rosterUsers}
                     userAssignments={userAssignments}
-                    groups={groups}
+                    groups={selectedEvent?.sharedGroups ?? groups}
                     squadPresets={squadPresets}
                     canAdmin={canAdmin}
                     dictionary={dictionary}

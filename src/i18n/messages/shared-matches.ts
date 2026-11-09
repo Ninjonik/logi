@@ -1,5 +1,7 @@
 export const sharedMatchCopy = {
     fr: {
+        signupGroupsHelp:
+            "Choisissez les groupes de l’organisateur proposés au clan invité. Les limites par groupe sont facultatives ; vide signifie illimité.",
         title: "Clans participants",
         searchRoster: "Rechercher des joueurs ou des clans…",
         slotHelp:
@@ -37,10 +39,13 @@ export const sharedMatchCopy = {
         hostHelp:
             "Recherchez un clan dans un emplacement vide pour le lui attribuer. La publication envoie la composition partagée sur le Discord de chaque clan participant.",
         localSettings: "Paramètres de votre clan",
-        sharedDetails: "Les détails et résultats du match sont gérés par l’organisateur.",
+        sharedDetails:
+            "Les détails et résultats du match sont gérés par l’organisateur.",
         remove: "Retirer le clan",
     },
     en: {
+        signupGroupsHelp:
+            "Choose the host groups this clan can sign up for. Each group can have an optional upper limit; leave it empty for unlimited.",
         title: "Participating clans",
         searchRoster: "Search players or clans…",
         slotHelp:
@@ -82,6 +87,8 @@ export const sharedMatchCopy = {
         remove: "Remove clan",
     },
     cs: {
+        signupGroupsHelp:
+            "Vyberte skupiny pořadatele, do kterých se může pozvaný klan hlásit. Horní limit je volitelný; prázdné pole znamená bez omezení.",
         title: "Zúčastněné klany",
         searchRoster: "Hledat hráče nebo klany…",
         slotHelp:
@@ -123,6 +130,8 @@ export const sharedMatchCopy = {
         remove: "Odebrat klan",
     },
     de: {
+        signupGroupsHelp:
+            "Wähle die Gruppen des Gastgebers für diesen Clan. Eine Obergrenze je Gruppe ist optional; leer bedeutet unbegrenzt.",
         title: "Teilnehmende Clans",
         searchRoster: "Spieler oder Clans suchen…",
         slotHelp:
@@ -164,6 +173,8 @@ export const sharedMatchCopy = {
         remove: "Clan entfernen",
     },
     pl: {
+        signupGroupsHelp:
+            "Wybierz grupy organizatora dostępne dla zaproszonego klanu. Limit dla każdej grupy jest opcjonalny; puste pole oznacza brak limitu.",
         title: "Uczestniczące klany",
         searchRoster: "Szukaj graczy lub klanów…",
         slotHelp:

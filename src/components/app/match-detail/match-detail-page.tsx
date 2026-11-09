@@ -422,6 +422,16 @@ export async function MatchDetailPage({
                             <SharedMatchPanel
                                 serverId={serverId}
                                 eventId={event.id}
+                                groups={context.groups.filter(
+                                    (group) =>
+                                        (group.gameId ?? "hell_let_loose") ===
+                                            (event.gameId ??
+                                                "hell_let_loose") &&
+                                        (!event.signupGroupIds ||
+                                            event.signupGroupIds.includes(
+                                                group.id
+                                            ))
+                                )}
                                 invitations={
                                     (
                                         await sharedInvitations(
@@ -478,7 +488,7 @@ export async function MatchDetailPage({
                         initialEvent={event}
                         initialUsers={users}
                         initialAssignments={context.assignments}
-                        initialGroups={context.groups}
+                        initialGroups={event.sharedGroups ?? context.groups}
                         initialSquadPresets={context.squadPresets}
                         initialCanAdmin={canAdmin}
                         initialDiscordConfig={

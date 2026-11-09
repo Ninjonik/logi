@@ -1,8 +1,12 @@
+import {
+    sharedSignupLimits,
+    sharedRegistrationStart,
+} from "../../domain/events/shared-match"
 import { sharedMatchSettingsSchema } from "../../lib/validation/shared-match-settings"
-import { sharedRegistrationStart } from "../../domain/events/shared-match"
 import { validateEventDiscussion } from "../../domain/events/discussion"
 import type { MutationCtx } from "../../../convex/_generated/server"
 import type { Id } from "../../../convex/_generated/dataModel"
+import { sharedInvitationGroups } from "./shared-match-groups"
 import { resolveGameScope } from "../../domain/games/game"
 import { sharedMatchMembers } from "./shared-match-store"
 import { refreshEventSchedule } from "./event-scheduling"
@@ -22,6 +26,14 @@ export async function configureSharedMatchLocal(
     if (fields.registrationStart !== undefined)
         sharedRegistrationStart(fields.registrationStart, event.registrationEnd)
     validateEventDiscussion(fields)
+    const allowedGroups = await sharedInvitationGroups(ctx, event)
+    fields.signupGroupLimits = sharedSignupLimits(
+        allowedGroups,
+        fields.signupGroupIds,
+        fields.signupGroupLimits
+    )
+    const host = await ctx.db.get(event.hostEventId)
+    if (!host) throw new Error("Host match not found.")
     for (const id of [
         ...fields.signupGroupIds,
         ...fields.signupGroupLimits.map((item) => item.groupId),
@@ -30,7 +42,7 @@ export async function configureSharedMatchLocal(
         const group = normalized ? await ctx.db.get(normalized) : null
         if (
             !group ||
-            group.guildId !== guildId ||
+            group.guildId !== host.guildId ||
             resolveGameScope(group.gameId) !== resolveGameScope(event.gameId)
         )
             throw new Error("Group not found for this clan and game.")

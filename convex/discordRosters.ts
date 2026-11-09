@@ -5,6 +5,7 @@ import {
     normalizeEventDoc,
     normalizeUserDoc,
 } from "./discord_shared"
+import { sharedMatchGroups } from "../src/infrastructure/convex/shared-match-groups"
 import { localRosterLists } from "../src/domain/rosters/local-audience"
 import { mutation } from "./integrationMutation"
 import { getUserByDiscordId } from "./identity"
@@ -22,10 +23,7 @@ export const getRosterImageContext = query({
                 .query("rosters")
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
                 .unique(),
-            ctx.db
-                .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", event.guildId))
-                .collect(),
+            sharedMatchGroups(ctx, event),
             ctx.db
                 .query("userAssignments")
                 .withIndex("serverId", (q) => q.eq("serverId", event.guildId))

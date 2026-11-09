@@ -1,3 +1,7 @@
+import {
+    sharedMatchGroups,
+    sharedGroupProjection,
+} from "../src/infrastructure/convex/shared-match-groups"
 import { sharedMatchLogos } from "../src/infrastructure/convex/shared-match-logos"
 import { buildMatchImage } from "../src/domain/events/match-image"
 import { assetPublicUrl } from "./imageAssetStore"
@@ -433,10 +437,7 @@ export const getAttendees = query({
                     .withIndex("guildId", (q) => q.eq("guildId", guildId))
                     .unique(),
                 getGuildByDiscordId(ctx, guildId),
-                ctx.db
-                    .query("groups")
-                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                    .collect(),
+                sharedMatchGroups(ctx, event),
                 ctx.db
                     .query("rosters")
                     .withIndex("eventId", (q) => q.eq("eventId", event._id))
@@ -453,7 +454,10 @@ export const getAttendees = query({
                     .collect(),
             ])
         if (!config) return null
-        const normalized = normalizeEventDoc(event)
+        const normalized = normalizeEventDoc({
+            ...event,
+            ...(await sharedGroupProjection(ctx, event)),
+        })
         const gameAssignments = assignments.filter((assignment) =>
             matchesGameScope(assignment.gameId, event.gameId)
         )

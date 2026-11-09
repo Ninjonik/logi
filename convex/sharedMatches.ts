@@ -4,9 +4,20 @@ import {
     sharedMatchPeople,
     synchronizeSharedMatch,
 } from "../src/infrastructure/convex/shared-match-store"
+import {
+    validateSharedSignupGroups,
+    sharedGroupPresentation,
+    type SharedSignupGroup,
+} from "../src/domain/events/shared-match"
+import {
+    normalizeEventDoc,
+    normalizeDoc,
+} from "../src/infrastructure/convex/server-read-model"
 import { refreshSharedMatchPresentation } from "../src/infrastructure/convex/shared-match-logos"
 import { configureSharedMatchLocal } from "../src/infrastructure/convex/configure-shared-match"
 import { syncEventAssetReferences } from "../src/infrastructure/convex/event-asset-references"
+import { sharedMatchSettingsSchema } from "../src/lib/validation/shared-match-settings"
+import { sharedMatchGroups } from "../src/infrastructure/convex/shared-match-groups"
 import { refreshEventSchedule } from "../src/infrastructure/convex/event-scheduling"
 import { normalizeUserDoc } from "../src/infrastructure/convex/server-read-model"
 import { withGameOverrides, resolveGameScope } from "../src/domain/games/game"
@@ -116,6 +127,21 @@ export const list = query({
                 guestName: guest?.name ?? item.guestGuildId,
                 matchName: match?.name ?? "",
                 gameStart: match?.gameStart,
+                signupGroups: item.signupGroups
+                    ? await Promise.all(
+                          item.signupGroups.map(async (entry) => {
+                              const id = ctx.db.normalizeId(
+                                  "groups",
+                                  entry.groupId
+                              )
+                              const group = id ? await ctx.db.get(id) : null
+                              return {
+                                  ...entry,
+                                  name: group?.name ?? entry.groupId,
+                              }
+                          })
+                      )
+                    : undefined,
             }
         }
         return {
@@ -153,6 +179,11 @@ export const invite = mutation({
         eventId: v.id("events"),
         guestGuildId: v.string(),
         requestedRoles: v.array(requestedRole),
+        signupGroups: v.optional(
+            v.array(
+                v.object({ groupId: v.string(), max: v.optional(v.number()) })
+            )
+        ),
     },
     handler: async (ctx, args) => {
         await authorizeDashboardAdmin(ctx, args)
@@ -169,6 +200,22 @@ export const invite = mutation({
                 "Only the host can invite clans to an active published match."
             )
         const roles = validateRequestedRoles(args.requestedRoles)
+        const hostGroups = await sharedMatchGroups(ctx, event)
+        const signupGroups =
+            args.signupGroups === undefined
+                ? undefined
+                : validateSharedSignupGroups(
+                      args.signupGroups,
+                      hostGroups
+                          .filter(
+                              (group) =>
+                                  !event.signupGroupIds ||
+                                  event.signupGroupIds.includes(
+                                      String(group._id)
+                                  )
+                          )
+                          .map((group) => String(group._id))
+                  )
         const guest = await getGuildByDiscordId(ctx, args.guestGuildId)
         if (!guest || args.guestGuildId === args.guildId)
             throw new Error("Choose another clan using Logi.")
@@ -195,10 +242,15 @@ export const invite = mutation({
         if (!existing && all.length >= 20)
             throw new Error("A match can invite up to 20 clans.")
         const now = new Date().toISOString()
+        if (existing?.status === "accepted")
+            throw new Error(
+                "Revoke the accepted invitation before changing its signup groups."
+            )
         if (existing) {
             await ctx.db.patch(existing._id, {
+                signupGroups,
                 requestedRoles: roles,
-                status: existing.status === "accepted" ? "accepted" : "pending",
+                status: "pending",
                 updatedAt: now,
             })
             return String(existing._id)
@@ -208,6 +260,7 @@ export const invite = mutation({
                 hostEventId: event._id,
                 hostGuildId: args.guildId,
                 guestGuildId: args.guestGuildId,
+                signupGroups,
                 requestedRoles: roles,
                 status: "pending",
                 createdAt: now,
@@ -222,6 +275,7 @@ export const respond = mutation({
         ...scope,
         invitationId: v.id("sharedMatchInvitations"),
         accept: v.boolean(),
+        settings: v.optional(v.any()),
         registrationStart: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
@@ -268,6 +322,20 @@ export const respond = mutation({
         const local = config
             ? withGameOverrides(config, config.gameOverrides, host.gameId)
             : null
+        const hostGroups = await sharedMatchGroups(ctx, host)
+        const offered: SharedSignupGroup[] =
+            invitation.signupGroups ??
+            hostGroups
+                .filter(
+                    (group) =>
+                        !host.signupGroupIds ||
+                        host.signupGroupIds.includes(String(group._id))
+                )
+                .map((group) => ({ groupId: String(group._id) }))
+        const settings =
+            args.settings === undefined
+                ? undefined
+                : sharedMatchSettingsSchema.parse(args.settings)
         const localEventId = await ctx.db.insert("events", {
             name: host.name,
             registrationEnd: host.registrationEnd,
@@ -291,7 +359,13 @@ export const respond = mutation({
             eventResultsChannelId: local?.eventResultsChannelId,
             meetingChannelId: local?.meetingChannelId,
             squadVoiceCategoryId: local?.squadVoiceCategoryId,
-            useGeneralSignup: true,
+            signupGroupIds: offered.map((group) => group.groupId),
+            signupGroupLimits: offered.flatMap((group) =>
+                group.max === undefined
+                    ? []
+                    : [{ groupId: group.groupId, max: group.max }]
+            ),
+            useGeneralSignup: offered.length === 0,
             ...eventDiscussionDefaults(config, resolveGameScope(host.gameId)),
         })
         await ctx.db.patch(invitation._id, {
@@ -299,6 +373,13 @@ export const respond = mutation({
             localEventId,
             updatedAt: now,
         })
+        if (settings)
+            await configureSharedMatchLocal(
+                ctx,
+                args.guildId,
+                localEventId,
+                settings
+            )
         await refreshSharedMatchPresentation(ctx, host, now)
         const createdEvent = await ctx.db.get(localEventId)
         if (createdEvent) await syncEventAssetReferences(ctx, createdEvent)
@@ -371,6 +452,7 @@ export const rosterContext = query({
         )
         return {
             hostGuildId: host.guildId,
+            groups: (await sharedMatchGroups(ctx, event)).map(normalizeDoc),
             clans,
             users: users.filter((item) => item !== null),
         }
@@ -511,5 +593,107 @@ export const configureLocal = mutation({
             args.eventId,
             fields
         )
+    },
+})
+
+export const acceptanceContext = query({
+    args: { ...scope, invitationId: v.id("sharedMatchInvitations") },
+    handler: async (ctx, args) => {
+        await authorizeDashboardAdmin(ctx, args)
+        const invitation = await ctx.db.get(args.invitationId)
+        if (
+            !invitation ||
+            invitation.guestGuildId !== args.guildId ||
+            invitation.status !== "pending"
+        )
+            throw new Error("Invitation unavailable.")
+        const host = await ctx.db.get(invitation.hostEventId)
+        if (
+            !host ||
+            host.hostEventId ||
+            host.isDraft ||
+            currentEventStatus(host) === "concluded"
+        )
+            throw new Error("Host match unavailable.")
+        const [config, clan, hostGroups] = await Promise.all([
+            ctx.db
+                .query("discordConfigs")
+                .withIndex("guildId", (q) => q.eq("guildId", args.guildId))
+                .unique(),
+            getGuildByDiscordId(ctx, host.guildId),
+            sharedMatchGroups(ctx, host),
+        ])
+        const local = config
+            ? withGameOverrides(config, config.gameOverrides, host.gameId)
+            : null
+        const offered: SharedSignupGroup[] =
+            invitation.signupGroups ??
+            hostGroups
+                .filter(
+                    (group) =>
+                        !host.signupGroupIds ||
+                        host.signupGroupIds.includes(String(group._id))
+                )
+                .map((group) => ({ groupId: String(group._id) }))
+        return {
+            event: normalizeEventDoc({
+                _id: host._id,
+                _creationTime: host._creationTime,
+                ...sharedMatchPatch(host),
+                name: host.name,
+                kind: host.kind,
+                gameId: host.gameId,
+                createdAt: host.createdAt,
+                updatedAt: host.updatedAt,
+                registrationEnd: host.registrationEnd,
+                meetingStart: host.meetingStart,
+                gameStart: host.gameStart,
+                gameEnd: host.gameEnd,
+                guildId: args.guildId,
+                hostEventId: host._id,
+                hostClanName: clan?.name ?? host.guildId,
+                serverPassword: undefined,
+                registrationStart: undefined,
+                participants: [],
+                signUps: [],
+                absenceNotices: [],
+                pingClan: false,
+                pingMode: "none" as const,
+                pingRoleIds: [],
+                requiredRoleIds: [],
+                rewardRoleIds: [],
+                announcementChannelId: local?.announcementsChannelId,
+                eventInfoChannelId: local?.eventInfoChannelId,
+                eventResultsChannelId: local?.eventResultsChannelId,
+                meetingChannelId: local?.meetingChannelId,
+                squadVoiceCategoryId: local?.squadVoiceCategoryId,
+                sharedSignupGroups: offered,
+                signupGroupIds: offered.map((group) => group.groupId),
+                signupGroupLimits: offered.flatMap((group) =>
+                    group.max === undefined
+                        ? []
+                        : [{ groupId: group.groupId, max: group.max }]
+                ),
+                useGeneralSignup: offered.length === 0,
+                allowedSignupStatuses: undefined,
+                signupReminderStatuses: undefined,
+                attendanceReminderHours: [24, 18, 12, 6],
+                allowNonMembersSignup: false,
+                allowRankedSignup: false,
+                createParticipantRoles: true,
+                createSquadVoiceChannels: false,
+                createSignupThread: false,
+                topicPresetId: undefined,
+                ...eventDiscussionDefaults(
+                    config,
+                    resolveGameScope(host.gameId)
+                ),
+            }),
+            groups: hostGroups
+                .filter((group) =>
+                    offered.some((entry) => entry.groupId === String(group._id))
+                )
+                .map((group) => normalizeDoc(sharedGroupPresentation(group))),
+        }
     },
 })

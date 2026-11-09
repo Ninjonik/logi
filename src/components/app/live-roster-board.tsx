@@ -80,7 +80,8 @@ export function LiveRosterBoard(props: LiveRosterBoardProps) {
         ).values(),
     ]
     const userAssignments = liveData?.assignments ?? props.initialAssignments
-    const groups = liveData?.groups ?? props.initialGroups
+    const groups =
+        liveData?.groups ?? event?.sharedGroups ?? props.initialGroups
     // Keep server-rendered admin access while the live query resolves. This also
     // preserves superadmin access, which is intentionally granted server-side.
     const canAdmin = props.initialCanAdmin || Boolean(liveData?.canAdmin)
