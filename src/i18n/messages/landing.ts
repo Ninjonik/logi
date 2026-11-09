@@ -290,6 +290,209 @@ export const plLanding: LandingMessages = {
     },
 }
 
+export const frLanding: LandingMessages = {
+    metaTitle: "Logi — événements, compositions et Discord pour votre clan",
+    metaDescription:
+        "Planifiez vos matchs et entraînements, recueillez les inscriptions sur Discord, publiez vos compositions et suivez les progrès de votre équipe. Gérez votre clan avec Logi, un outil open source.",
+    nav: {
+        workflow: "Comment ça marche",
+        setup: "Premiers pas",
+        features: "Et aussi dans Logi",
+        source: "GitHub",
+    },
+    hero: {
+        title: "L’outil complet",
+        accent: "pour gérer votre clan.",
+        description: "Vous organisez dans Logi. Vos joueurs répondent sur Discord.",
+        primary: "Commencer avec Discord",
+        secondary: "Découvrir le fonctionnement",
+        proof: ["Open source", "Toutes les fonctionnalités gratuites", "Auto-hébergement possible"],
+    },
+    screens: {
+        overview: "Le tableau de bord de votre clan",
+        event: "L’éditeur de match et son aperçu Discord",
+        roster: "Une composition d’escouades publiée",
+        performance: "Les performances du clan sur les derniers matchs",
+        calendar: "Le calendrier de la communauté",
+        zoom: "Agrandir la capture",
+        caption:
+            "Captures réelles de la communauté Valkyria. Les captures sont en anglais ; Logi est disponible en français, anglais, tchèque, allemand et polonais.",
+        close: "Fermer la capture",
+    },
+    setup: {
+        eyebrow: "DÉMARREZ SIMPLEMENT",
+        title: "Une seule configuration. Prêt pour chaque semaine.",
+        description:
+            "Connectez-vous, ajoutez votre clan et connectez le bot. Choisissez les salons, groupes et rôles dont votre clan a besoin.",
+        steps: [
+            {
+                title: "Se connecter avec Discord",
+                text: "Utilisez votre compte existant pour ouvrir l’espace de travail de votre clan.",
+            },
+            {
+                title: "Connectez votre serveur",
+                text: "Invitez le bot, accordez-lui les permissions nécessaires et choisissez où envoyer les annonces et les compositions.",
+            },
+            {
+                title: "Configurez votre clan",
+                text: "Sélectionnez vos jeux, créez les groupes de joueurs et configurez les rôles Discord et les autorisations d’inscription.",
+            },
+        ],
+        guide: "Lire le guide de configuration",
+    },
+    workflow: {
+        eyebrow: "DU MATCH PLANIFIÉ À L’ÉQUIPE PRÊTE À JOUER",
+        title: "Des détails du match à la composition publiée.",
+        description:
+            "Votre routine hebdomadaire : créer l’événement, recueillir les réponses et publier la composition.",
+        steps: [
+            {
+                short: "Planifier",
+                title: "Renseignez les détails en toute simplicité.",
+                text: "Choisissez le jeu, les équipes, la carte et les horaires.",
+                bullets: [
+                    "Partez d’un modèle d’événement",
+                    "Fixez le rassemblement et la clôture des inscriptions",
+                    "Vérifiez l’annonce avant de la publier",
+                ],
+            },
+            {
+                short: "Recueillir les inscriptions",
+                title: "Les joueurs répondent sur Discord.",
+                text: "Logi publie l’annonce. Les joueurs choisissent un groupe ou indiquent leur indisponibilité.",
+                bullets: [
+                    "Choix des groupes et limites de places",
+                    "Inscription sans ouvrir le tableau de bord",
+                    "Rappels aux personnes n’ayant pas répondu",
+                ],
+            },
+            {
+                short: "Publier la composition",
+                title: "Préparez vos compositions sans effort.",
+                text: "Glissez les joueurs dans les escouades, attribuez leurs rôles et publiez la composition sur Discord en quelques clics.",
+                bullets: [
+                    "Modèles d’escouades réutilisables",
+                    "Placement des joueurs par glisser-déposer",
+                    "Confirmations de présence et rappels",
+                ],
+            },
+        ],
+        example: "Aperçu Discord · joueurs et match fictifs",
+        channel: "inscriptions-match",
+    },
+    roster: {
+        eyebrow: "QUAND LA COMPOSITION CHANGE",
+        title: "Mises à jour et notifications automatiques.",
+        description:
+            "Publiez vos modifications et Logi met à jour la composition sur Discord. Si les notifications de changement sont activées, les joueurs concernés reçoivent automatiquement leur nouvelle escouade et leur rôle par MP.",
+        points: [
+            "Escouades, rôles et réserve sur un même tableau",
+            "Affectations publiées consultables dans Discord",
+            "Disponibilité, confirmation et présence suivies séparément",
+        ],
+        guide: "Découvrir les compositions",
+    },
+    discord: {
+        eyebrow: "POUR LES JOUEURS",
+        title: "Les informations arrivent jusqu’à vos joueurs.",
+        description:
+            "Annonces, inscriptions et rappels de présence : tout se passe sur Discord.",
+        labels: ["L’annonce", "Le rappel d’un joueur"],
+        note: "Affiché avec le simulateur de messages Discord de Logi. Données d’exemple ; aucun message n’est envoyé.",
+    },
+    performance: {
+        eyebrow: "APRÈS LE MATCH",
+        title: "Suivez les progrès de votre équipe.",
+        description:
+            "Consultez les résultats, parcourez les parties enregistrées et comparez les performances d’un match à l’autre.",
+        points: [
+            "Historique des matchs et statistiques des joueurs",
+            "Graphiques de performance sur les dernières parties",
+            "Données propres à chaque jeu",
+        ],
+        guide: "Explorer l’historique des matchs",
+    },
+    explore: {
+        eyebrow: "AUTOUR DES MATCHS",
+        title: "Tout le reste de la vie du clan.",
+        description: "Utilisez les fonctions dont votre communauté a besoin.",
+        cards: [
+            {
+                title: "Entraînements et calendrier",
+                text: "Programmez des séances récurrentes et rassemblez matchs, entraînements et rendez-vous de la communauté.",
+            },
+            {
+                title: "Membres et candidatures",
+                text: "Gérez les adhésions, candidatures, groupes et rôles Discord.",
+            },
+            {
+                title: "Ligues et compétitions",
+                text: "Suivez les rencontres de Wardogs League et gérez vos équipes et inscriptions aux compétitions.",
+            },
+            {
+                title: "Briefings et plans tactiques",
+                text: "Gardez les consignes, cartes et plans d’escouade avec l’événement concerné.",
+            },
+            {
+                title: "Tickets et demandes",
+                text: "Traitez les questions des joueurs et les demandes d’assistance avec les tickets Discord.",
+            },
+            {
+                title: "Votre site et vos outils",
+                text: "Connectez-les via l’API, les webhooks et le SSO facultatif.",
+            },
+            {
+                title: "Articles et annonces",
+                text: "Publiez les actualités du clan, guides, règles et briefings pour vos membres.",
+            },
+        ],
+        guide: "Explorer le wiki",
+    },
+    ownership: {
+        eyebrow: "OPEN SOURCE",
+        title: "Utilisez-le. Hébergez-le. Contribuez.",
+        description:
+            "Logi est sous licence MIT. Utilisez l’application hébergée ou hébergez vous-même le tableau de bord, le backend Convex et le bot Discord. Signalements, idées et contributions au code sont les bienvenus.",
+        source: "Voir le code source",
+        contribute: "Guide de contribution",
+        host: "Guide d’auto-hébergement",
+    },
+    faq: {
+        title: "Quelques réponses à vos questions.",
+        items: [
+            {
+                question: "Tous les joueurs doivent-ils utiliser le tableau de bord ?",
+                answer: "Les joueurs peuvent s’inscrire et répondre aux rappels de présence sur Discord. Le tableau de bord permet aux organisateurs de préparer les événements, créer les compositions et gérer le clan.",
+            },
+            {
+                question:
+                    "Peut-on garder nos groupes et salons Discord actuels ?",
+                answer: "Oui. Configurez Logi autour des salons, rôles et groupes de votre serveur. Le guide de configuration explique les permissions et connexions nécessaires au bot.",
+            },
+            {
+                question: "Quels jeux Logi prend-il en charge ?",
+                answer: "Logi propose des fonctions adaptées à Hell Let Loose et Wardogs, ainsi que des espaces pour d’autres jeux. Les cartes, statistiques et intégrations disponibles dépendent du jeu sélectionné.",
+            },
+            {
+                question: "Combien coûte Logi et peut-on l’héberger soi-même ?",
+                answer: "L’application et toutes ses fonctionnalités sont gratuites. Le code est sous licence MIT. Le guide d’auto-hébergement couvre le tableau de bord, Convex et le bot Discord ; vous fournissez l’infrastructure et l’application Discord.",
+            },
+        ],
+    },
+    comms: {
+        title: "Besoin d’outils vocaux pour vos escouades ?",
+        description:
+            "LogiComms est une application Windows complémentaire pour les communications d’escouade. Elle est disponible séparément du tableau de bord du clan.",
+        download: "Télécharger LogiComms",
+    },
+    closing: {
+        title: "Organisez votre prochain match.",
+        description:
+            "Commencez avec votre compte Discord. Le guide de configuration vous accompagne pour la suite.",
+        action: "Ouvrir Logi",
+    },
+}
+
 export const enLanding: LandingMessages = {
     metaTitle: "Logi — events, rosters and Discord for your clan",
     metaDescription:

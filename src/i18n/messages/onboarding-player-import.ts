@@ -1,5 +1,11 @@
 ﻿import type { Locale } from "../config"
 const copy = {
+    fr: {
+        title: "Importer des joueurs",
+        body: "Choisissez un rôle Discord et importez ses joueurs comme membres, recrues, réservistes ou mercenaires. Répétez pour les autres rôles, puis confirmez que tout le monde a été importé.",
+        none: "Je n’ai aucun joueur",
+        done: "J’ai importé tout le monde",
+    },
     en: {
         title: "Import players",
         body: "Choose a Discord role and import its players as members, recruits, reserve members or mercenaries. Repeat for other roles, then confirm that you have imported everyone.",

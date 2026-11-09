@@ -225,6 +225,9 @@ const EN_DAYS = [
     "Fridays",
     "Saturdays",
 ]
+const frPlayers = (count: string) =>
+    Number(count.replace(/[\s,]/g, "")) === 1 ? "joueur" : "joueurs"
+
 const enPlayers = (count: string) =>
     Number(count.replace(/[\s,]/g, "")) === 1 ? "player" : "players"
 function enCooldown(minutes: number) {
@@ -399,6 +402,162 @@ const pl: SeedMessages = {
         panelNotSentBody:
             "Otwórz Panele Discord w Logi i użyj przycisku Wyślij na kanał.",
         openInLogi: "Otwórz w Logi",
+    },
+}
+
+const fr: SeedMessages = {
+    labels: { seed: "Seeding", control: "Gestion du serveur" },
+    game: { hell_let_loose: "Hell Let Loose", wardogs: "Wardogs" },
+    weekdays: ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."],
+    units: { hours: "h", minutes: "min" },
+    chips: {
+        seeding: "Seeding",
+        live: "En direct",
+        ended: "Seeding terminé",
+        empty: "Vide",
+        filling: "En cours de remplissage",
+        offline: "Indisponible",
+        unknown: "Aucune donnée",
+    },
+    call: {
+        title: (server) => `Seeding de ${server}`,
+        liveTitle: "Le serveur est lancé",
+        endedTitle: (server) => `Le seeding sur ${server} est terminé`,
+        status: (players, capacity, liveFrom) =>
+            `${players}${capacity ? ` / ${capacity}` : ""} ${frPlayers(capacity ?? players)} · partie active à partir de ${liveFrom}`,
+        liveStatus: (players, capacity, seeders) =>
+            `${players}${capacity ? ` / ${capacity}` : ""} ${frPlayers(capacity ?? players)}${
+                seeders
+                    ? ` · grâce à ${seeders} ${seeders === 1 ? "seeder" : "seeders"}`
+                    : ""
+            }`,
+        startingText: (liveFrom) =>
+            `Rejoins-nous pour aider à lancer le serveur. À partir de ${liveFrom} joueurs, la partie démarre vraiment.`,
+        closeText: (missing) =>
+            `Plus que ${missing} ${missing === 1 ? "joueur" : "joueurs"} à réunir. Viens nous aider à atteindre l’objectif.`,
+        missingLine: (missing) =>
+            `${missing} ${missing === 1 ? "joueur" : "joueurs"} manquants pour lancer la partie`,
+        startedBy: {
+            manual: (name) => `seeding lancé par ${name}`,
+            schedule: (slot) => `seeding lancé par le créneau ${slot}`,
+            auto: "seeding lancé automatiquement",
+        },
+        liveText: (time) =>
+            `Le seeding s’est terminé à ${time}. Merci à tous les participants. Le serveur tourne désormais tout seul.`,
+        endedText: {
+            admin: (name) =>
+                name
+                    ? `${name} a arrêté le seeding. Aucune autre mention ne sera envoyée.`
+                    : "Un administrateur a arrêté le seeding. Aucune autre mention ne sera envoyée.",
+            timeout: (liveFrom, duration) =>
+                `Le serveur n’a pas atteint ${liveFrom} joueurs en ${duration}. Le seeding est terminé ; personne d’autre ne sera mentionné.`,
+            failed: "Le seeding s’est arrêté car le serveur ne répondait plus.",
+        },
+        duration: (duration) => `Le seeding a duré ${duration}`,
+        buttons: { join: "Rejoindre", role: "Me prévenir des seedings" },
+    },
+    intro: {
+        title: (clan) => `Seeding des serveurs de ${clan}`,
+        body: "Lorsqu’un serveur est vide, les administrateurs lancent un appel au seeding ici. Active le rôle Seeding pour recevoir une mention. Le même bouton permet de le désactiver.",
+        usually: (servers, when) =>
+            when
+                ? `Nous faisons principalement du seeding sur ${servers}, généralement ${when}`
+                : `Nous faisons principalement du seeding sur ${servers}`,
+        days: (days) => {
+            if (same(days, [0, 1, 2, 3, 4, 5, 6])) return "tous les jours"
+            if (same(days, [1, 2, 3, 4, 5])) return "en semaine"
+            if (same(days, [0, 6])) return "le week-end"
+            return `le ${joinList(
+                sorted(days).map((day) => FR_DAYS[day]!),
+                "et"
+            )}`
+        },
+        partOfDay: (minutes) =>
+            minutes < 12 * 60
+                ? "le matin"
+                : minutes < 18 * 60
+                  ? "l’après-midi"
+                  : "le soir",
+        list: (items) => joinList(items, "et"),
+        button: "Me prévenir des seedings",
+    },
+    role: {
+        onTitle: "Le rôle Seeding est activé",
+        onBody: "Tu recevras une mention au prochain seeding. Le même bouton permet de la désactiver.",
+        offTitle: "Le rôle Seeding est désactivé",
+        offBody: (channel) =>
+            `Tu ne recevras plus de mentions de seeding. Les appels restent visibles dans ${channel}.`,
+        unavailableTitle: "Ce bouton ne fonctionne plus",
+        unavailableBody:
+            "Les administrateurs ont désactivé ou remplacé le rôle Seeding. Utilise le bouton du dernier appel ou du message d’accueil du salon.",
+        failedTitle: "Impossible de modifier le rôle Seeding pour le moment",
+    },
+    control: {
+        status: (players, capacity, map) =>
+            [
+                `${players ?? "?"}${capacity ? ` / ${capacity}` : ""} ${frPlayers(capacity ?? players ?? "0")}`,
+                map,
+            ]
+                .filter(Boolean)
+                .join(" · "),
+        seedingStatus: (players, capacity, liveFrom) =>
+            `${players ?? "?"}${capacity ? ` / ${capacity}` : ""} ${frPlayers(capacity ?? players ?? "0")} · partie active à partir de ${liveFrom}`,
+        footer: "Administrateurs uniquement",
+        buttons: {
+            start: "Lancer le seeding",
+            stop: "Arrêter le seeding",
+            refresh: "Actualiser le panneau",
+            pause: "Mettre le panneau en pause",
+            resume: "Reprendre",
+        },
+    },
+    replies: {
+        startedTitle: (server) => `Le seeding sur ${server} est en cours`,
+        startedBody: (seedChannel, pinged, panelChannel) =>
+            `L’appel est dans ${seedChannel}${
+                pinged
+                    ? " et le rôle Seeding a été mentionné."
+                    : ", cette fois sans mention : le rôle Seeding a déjà été mentionné récemment."
+            }${panelChannel ? ` Le panneau dans ${panelChannel} affiche la progression.` : ""}`,
+        openCall: "Ouvrir l’appel",
+        cooldownTitle: "Impossible de lancer un seeding pour le moment",
+        cooldownBody: (remaining, at, cooldownMinutes) =>
+            `Le prochain seeding pourra commencer dans ${remaining}, à ${at}. Les seedings sont espacés d’au moins ${frCooldown(cooldownMinutes)} pour éviter de mentionner le rôle Seeding trop souvent.`,
+        schedule: "Planification dans Logi",
+        runningTitle: (server) => `Le seeding sur ${server} est déjà en cours`,
+        runningBody:
+            "L’appel est dans le salon de seeding. Utilise le bouton Arrêter le seeding pour l’interrompre.",
+        alreadyLiveTitle: "Le serveur est déjà lancé",
+        alreadyLiveBody: (liveFrom) =>
+            `Le serveur compte au moins ${liveFrom} joueurs, un seeding n’est donc pas nécessaire actuellement.`,
+        offlineTitle: "Le serveur ne répond pas",
+        offlineBody: "Tu pourras lancer un seeding lorsque le serveur sera à nouveau en ligne.",
+        notConfiguredTitle: "Le seeding n’est pas configuré",
+        notConfiguredBody:
+            "Choisis le salon des appels dans Logi, sous Seeding des serveurs.",
+        stoppedTitle: (server) => `Le seeding sur ${server} est terminé`,
+        stoppedBody:
+            "L’appel indique désormais Seeding terminé et le panneau a retrouvé son affichage normal.",
+        notRunningTitle: "Aucun seeding en cours",
+        notRunningBody: "Aucun seeding n’est en cours sur ce serveur.",
+        forbiddenTitle: "Tu n’as pas l’autorisation d’effectuer cette action",
+        forbiddenBody:
+            "Seuls les administrateurs Logi peuvent utiliser les boutons Seeding, Actualiser et Pause.",
+        panelPausedTitle: (server) => `Le ${server} panneau est en pause`,
+        panelPausedBody: (channel) =>
+            `Dans ${channel} il affiche la mention En pause et les dernières données. Le bouton est devenu Reprendre.`,
+        panelResumedTitle: (server) => `Le ${server} panneau a repris`,
+        panelResumedBody: (channel) =>
+            `Dans ${channel} il s’actualise à nouveau toutes les 60 s. Le bouton est devenu Mettre le panneau en pause.`,
+        panelRefreshedTitle: (server) => `Le ${server} panneau va être redessiné`,
+        panelRefreshedBody:
+            "Le bot le redessine immédiatement, sans attendre 60 s.",
+        noPanelTitle: "Ce serveur n’a pas de panneau",
+        noPanelBody: "Ajoute le panneau du serveur dans Logi, sous Panneaux Discord.",
+        panelNotSentTitle: "Le panneau n’est pas encore sur Discord",
+        panelNotSentBody:
+            "Envoie-le depuis Logi, sous Panneaux Discord, avec Envoyer dans le salon.",
+        openInLogi: "Ouvrir dans Logi",
     },
 }
 
@@ -735,6 +894,12 @@ const de: SeedMessages = {
     },
 }
 
-const seedMessages: Record<ClanLanguage, SeedMessages> = { en, cs, de, pl }
+const seedMessages: Record<ClanLanguage, SeedMessages> = { en, cs, de, pl, fr }
 
 export const getSeedMessages = clanCopy(seedMessages)
+
+const FR_DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"]
+function frCooldown(minutes: number) {
+ const n = minutes % 60 === 0 ? minutes / 60 : minutes
+ return `${n} ${minutes % 60 === 0 ? (n > 1 ? "heures" : "heure") : (n > 1 ? "minutes" : "minute")}`
+}

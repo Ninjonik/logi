@@ -236,7 +236,7 @@ export function previewBannerModel(
               first.facts.serverName ||
               "Logi"
             : draft.title.trim() || copy.combinedTitle
-    const language = ["cs", "en", "de", "pl"].includes(input.language)
+    const language = ["cs", "en", "de", "pl", "fr"].includes(input.language)
         ? (input.language as PanelBannerImage["language"])
         : "en"
     return {

@@ -437,7 +437,7 @@ export function MatchTemplatesSettings({
             ? "cs-CZ"
             : locale === "de"
               ? "de-DE"
-              : locale === "pl"
+              : locale === "fr" ? "fr-FR" : locale === "pl"
                 ? "pl-PL"
                 : "en-GB"
     const exampleFormat = new Intl.DateTimeFormat(intl, {

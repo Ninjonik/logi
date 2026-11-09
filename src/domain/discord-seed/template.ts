@@ -7,9 +7,10 @@ export type SeedTemplateKey = "server" | "players" | "missing" | "threshold"
 
 /** The placeholder spelling offered by the editor in each clan language. */
 export const SEED_TEMPLATE_TOKENS: Record<
-    "cs" | "en" | "de" | "pl",
+    "cs" | "en" | "de" | "pl" | "fr",
     Record<SeedTemplateKey, string>
 > = {
+    fr: { server: "{serveur}", players: "{joueurs}", missing: "{manquants}", threshold: "{seuil}" },
     cs: {
         server: "{server}",
         players: "{hráči}",

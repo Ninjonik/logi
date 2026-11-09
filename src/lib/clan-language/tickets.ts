@@ -197,6 +197,97 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
             alreadyClosedBody: "Nic więcej nie jest potrzebne.",
         },
     },
+    fr: {
+        panel: {
+            selectPlaceholder: "Choisis le sujet de ta demande",
+        },
+        form: { fallbackTitle: "Ticket" },
+        opened: {
+            title: "Le ticket nº {number} est ouvert",
+            body: "Continue dans le fil {thread}. Le support te répondra là-bas.",
+            openThread: "Ouvrir le fil",
+        },
+        failed: {
+            title: "Impossible d’ouvrir le ticket",
+            body: "Rien n’a été enregistré. Les administrateurs ont été informés ; réessaie dans un instant.",
+        },
+        disabled: {
+            title: "Les tickets sont actuellement désactivés",
+            body: "Contacte directement les administrateurs ou réessaie plus tard.",
+        },
+        staleCategory: {
+            title: "Cette option a expiré",
+            body: "Choisis à nouveau la catégorie dans le panneau de tickets actuel.",
+        },
+        thread: {
+            name: "{category} nº {number}",
+            closedName: "fermé · {category} nº {number}",
+            label: "Ticket nº {number} · {category}",
+            title: "{author} · {category}",
+            openChip: "Ouvert",
+            openedAt: "Ouvert {time}",
+            footer: "Le support ferme le ticket avec /close_ticket",
+        },
+        closed: {
+            label: "Ticket nº {number} · fermé",
+            title: "Résolu",
+            chip: "Fermé",
+            closedBy: "Fermé par {closer} · {time}",
+            footer: "Le fil est verrouillé et archivé",
+            auditReason: "Ticket fermé",
+        },
+        dm: {
+            label: "Clan {clan} · Ticket nº {number}",
+            title: "Ton ticket est résolu",
+            closedBy: "{category} · fermé par {closer}",
+            openThread: "Ouvrir le fil",
+        },
+        close: {
+            successTitle: "Le ticket nº {number} est fermé",
+            successBody:
+                "Le résumé a été publié dans le fil et envoyé à l’auteur en message privé. Le fil est verrouillé et archivé.",
+            dmFailedBody:
+                "L’auteur ne peut pas recevoir de messages privés ; il trouvera le résumé dans le fil.",
+            dmOffBody:
+                "Le résumé a été publié dans le fil. Le clan a désactivé les messages privés de fermeture de ticket. Le fil est verrouillé et archivé.",
+            summary: {
+                posted: {
+                    sent: "Le résumé a été publié dans le fil et envoyé à l’auteur en message privé.",
+                    failed: "L’auteur ne peut pas recevoir de messages privés ; il trouvera le résumé dans le fil.",
+                    off: "Le résumé a été publié dans le fil. Le clan a désactivé les messages privés de fermeture de ticket.",
+                },
+                notPosted: {
+                    sent: "Le résumé n’a pas pu être publié dans le fil ; l’auteur l’a reçu en message privé.",
+                    failed: "Le résumé n’a pas pu être publié dans le fil et l’auteur ne peut pas recevoir de messages privés.",
+                    off: "Le résumé n’a pas pu être publié dans le fil. Le clan a désactivé les messages privés de fermeture de ticket.",
+                },
+            },
+            threadDone: "Le fil est verrouillé et archivé.",
+            threadFailed: "Le fil n’a pas pu être {steps}.",
+            threadSteps: {
+                rename: "renommé",
+                lock: "verrouillé",
+                archive: "archivé",
+            },
+            threadStepsOr: " ou ",
+            adminNotified: "Les administrateurs ont été informés.",
+            notAllowedTitle: "Seuls le support et les administrateurs peuvent fermer ce ticket",
+            notAllowedBody:
+                "Les tickets de la catégorie {category} sont fermés par {roles} ou les administrateurs Logi. Si ton problème est résolu, indique-le ici dans le fil.",
+            notAllowedAdminsBody:
+                "Les tickets de la catégorie {category} sont fermés par les administrateurs Logi. Si ton problème est résolu, indique-le ici dans le fil.",
+            or: " ou ",
+            unverifiableTitle: "Impossible de vérifier tes rôles pour le moment",
+            unverifiableBody: "Discord n’a pas répondu. Réessaie dans un instant.",
+            outsideTitle: "/close_ticket fonctionne uniquement dans un fil de ticket",
+            outsideBody: "Ouvre le fil du ticket et lance la commande dedans.",
+            notTicketTitle: "Ce fil ne correspond pas à un ticket",
+            notTicketBody:
+                "Seul un fil ouvert depuis le panneau des tickets peut être fermé.",
+            alreadyClosedTitle: "Le ticket nº {number} est déjà fermé",
+            alreadyClosedBody: "Aucune autre action n’est nécessaire.",
+        },
+    },
     en: {
         panel: {
             selectPlaceholder: "Choose what you need help with",

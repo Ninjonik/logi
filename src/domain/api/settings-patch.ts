@@ -43,7 +43,7 @@ export type ClanSettingsPatch = {
     avatar?: string
     description?: string | null
     timezone?: string
-    defaultLanguage?: "en" | "cs" | "de" | "pl"
+    defaultLanguage?: "en" | "cs" | "de" | "pl" | "fr"
     /** Validated patches of feature slices, by slice key. */
     slices?: Record<string, unknown>
 } & Partial<Record<DiscordField, string | null>>
@@ -107,7 +107,7 @@ export function parseClanSettingsPatch(
             return { ok: false, error: "timezone is not supported." }
         if (
             field === "defaultLanguage" &&
-            !["en", "cs", "de", "pl"].includes(trimmed)
+            !["en", "cs", "de", "pl", "fr"].includes(trimmed)
         )
             return { ok: false, error: "defaultLanguage is not supported." }
         if (
@@ -116,7 +116,7 @@ export function parseClanSettingsPatch(
         )
             return { ok: false, error: "Discord IDs must contain only digits." }
         if (field === "defaultLanguage")
-            patch.defaultLanguage = trimmed as "en" | "cs" | "de" | "pl"
+            patch.defaultLanguage = trimmed as "en" | "cs" | "de" | "pl" | "fr"
         else if (field === "timezone") patch.timezone = trimmed
         else if (field === "name") patch.name = trimmed
         else if (field === "avatar") patch.avatar = trimmed

@@ -155,7 +155,7 @@ export function buildCalendarPanelView(
         calendarEntriesFromPayload(payload, input.now),
         { now: input.now, categories: input.categories }
     )
-    const locale = ["cs", "de", "pl"].includes(language) ? language : "en"
+    const locale = ["cs", "de", "pl", "fr"].includes(language) ? language : "en"
     let calendarUrl: string | null = null
     try {
         calendarUrl = new URL(

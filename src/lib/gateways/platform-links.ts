@@ -37,7 +37,7 @@ const challengeSchema = z
         discordUserId: z.string(),
         sessionHash: z.string(),
         returnOrigin: z.string(),
-        locale: z.enum(["en", "cs", "de", "pl"]),
+        locale: z.enum(["en", "cs", "de", "pl", "fr"]),
         expiresAt: z.number(),
         status: z.literal("verifying"),
     })

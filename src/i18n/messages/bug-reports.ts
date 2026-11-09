@@ -1,4 +1,49 @@
 import type { Locale } from "../config"
+const fr = {
+    report: "Signaler un bug",
+    inbox: "Signalements de bugs",
+    intro: "Décrivez le problème. Les captures d’écran et les journaux nous aident à l’analyser. Le texte du signalement et le contexte du serveur peuvent être transmis à notre suivi des problèmes sur GitHub ; n’incluez aucune donnée secrète.",
+    title: "Titre",
+    titleHint: "Décrivez brièvement le problème",
+    message: "Que s’est-il passé ?",
+    messageHint:
+        "Que faisiez-vous ? Quel résultat attendiez-vous, et que s’est-il passé ? Précisez si possible les étapes permettant de reproduire le problème.",
+    server: "Serveur (facultatif)",
+    serverHint: "Choisissez un serveur ou saisissez son nom ou son identifiant",
+    time: "Quand cela s’est-il produit ? (facultatif)",
+    timeHint:
+        "Votre heure locale ; la date ne peut pas être dans le futur. Laissez vide en cas de doute.",
+    invalidTimeError:
+        "Saisissez une date et une heure valides pour l’incident, ou laissez vide.",
+    futureTimeError:
+        "La date et l’heure de l’incident ne peuvent pas être dans le futur. Vérifiez vos date et heure locales, ou laissez vide.",
+    files: "Pièces jointes (facultatif)",
+    filesHint:
+        "Jusqu’à 5 fichiers de 5 Mio chacun : captures d’écran (PNG, JPG, WebP, GIF), journaux TXT/LOG, JSON, CSV ou ZIP. Retirez les mots de passe et jetons avant l’envoi.",
+    submit: "Envoyer le signalement",
+    sending: "Envoi en cours…",
+    success: "Merci ! Votre signalement a été envoyé aux administrateurs Logi.",
+    another: "Signaler un autre bug",
+    error: "Impossible d’envoyer le signalement. Vérifiez les champs et les pièces jointes, ou réessayez plus tard (10 signalements par heure maximum).",
+    fileError: "Sélectionnez jusqu’à 5 fichiers pris en charge, de 5 Mio maximum chacun.",
+    remove: "Retirer",
+    empty: "Aucun bug signalé pour le moment.",
+    more: "Charger la suite",
+    loading: "Chargement…",
+    loadError: "Impossible de charger les signalements. Réessayez.",
+    retry: "Réessayer",
+    status: "Statut",
+    new: "Nouveau",
+    investigating: "En cours d’analyse",
+    resolved: "Résolu",
+    reporter: "Auteur du signalement",
+    submitted: "Envoyé",
+    occurred: "Date de l’incident",
+    updateError: "Impossible de modifier le statut. Réessayez.",
+    inboxIntro:
+        "Consultez les signalements et téléchargez les pièces jointes. Réservé aux superadministrateurs Logi.",
+}
+
 const en = {
     report: "Report a bug",
     inbox: "Bug reports",
@@ -180,5 +225,5 @@ const pl: Messages = {
         "Przeglądaj zgłoszenia i pobieraj załączniki. Dostępne tylko dla superadministratorów Logi.",
 }
 export function getBugReportMessages(locale: Locale): Messages {
-    return { en, cs, de, pl }[locale]
+    return { en, cs, de, pl, fr }[locale]
 }

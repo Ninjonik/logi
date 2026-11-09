@@ -200,6 +200,89 @@ const plPreviews: SettingsPreviewSamples = {
     teamRequest: { game: "Hell Let Loose", team: "Wilki", code: "VLK" },
 }
 
+const frPreviews: SettingsPreviewSamples = {
+    clan: "Les Loups",
+    clanCode: "VLK",
+    opponentCode: "ROG",
+    category: "Amical",
+    map: "Foy · jour",
+    recapMap: "Carentan",
+    players: [
+        "Joueur 17",
+        "Joueur 21",
+        "Joueur 23",
+        "Joueur 02",
+        "Joueur 05",
+        "Joueur 31",
+    ],
+    leader: "Joueur 02",
+    squads: ["Able", "Baker"],
+    role: "Médecin",
+    meetingChannel: "Rassemblement",
+    trainingTitle: "Entraînement · communication et jeu d’équipe",
+    rewardRole: "Infanterie",
+    memberRole: "Membre",
+    clanRole: "Clan",
+    announcement: {
+        mention: "@Clan",
+        groups: [
+            ["Infanterie", 15, null],
+            ["Blindés", 6, 6],
+            ["Reconnaissance", 2, 2],
+        ],
+    },
+    recruitmentPanel: {
+        title: "Rejoindre le clan {clan}",
+        body: "Choisis comment tu souhaites jouer avec nous. La candidature prend quelques minutes ; si ton compte de jeu n’est pas encore associé, nous te guiderons.",
+        categories: [
+            ["Membre titulaire", "hell_let_loose", "des matchs chaque semaine"],
+            ["Remplaçant", "hell_let_loose", "tu joues lorsqu’une place se libère"],
+            ["Mercenaire", "wardogs", "renfort sur des matchs ponctuels"],
+        ],
+    },
+    application: {
+        category: "Membre titulaire",
+        answers: [
+            ["Spécialité", "Infanterie"],
+            ["Combien d’heures joues-tu par semaine ?", "10 à 15 heures"],
+            [
+                "Pourquoi souhaites-tu jouer avec nous ?",
+                "Je cherche un clan qui organise régulièrement des matchs.",
+            ],
+        ],
+    },
+    applicationClose: { reason: "L’entretien s’est bien passé, bienvenue parmi nous." },
+    ticketPanel: {
+        title: "Besoin d’aide ?",
+        body: "Choisis le sujet de ta demande. Un fil privé s’ouvrira, visible uniquement par toi et les administrateurs.",
+        categories: [
+            ["Signaler un joueur", "comportement sur le serveur"],
+            ["Demande de rôle", "blindés, reconnaissance, commandement"],
+            ["Problème avec le bot", "quelque chose ne fonctionne pas"],
+            ["Autre", "tout autre sujet"],
+        ],
+    },
+    ticket: {
+        category: "Signaler un joueur",
+        title: "{author} signale un joueur",
+        answers: [
+            ["Qui ? Pseudo en jeu", "xX_Sniper_Xx"],
+            ["Où et quand ?", "Les Loups nº 1, vers 20 h 20"],
+            ["Que s’est-il passé ?", "Tue ses coéquipiers en boucle au spawn."],
+        ],
+    },
+    ticketClose: {
+        reason: "Le joueur a été banni pendant 7 jours. Merci pour le signalement.",
+    },
+    playerReport: {
+        player: "Hans_88",
+        side: "Axe",
+        reporter: "Nut",
+        reason: "Tue ses coéquipiers en boucle au spawn.",
+    },
+    teamRequest: { game: "Hell Let Loose", team: "Les Loups", code: "VLK" },
+}
+
 const enPreviews: SettingsPreviewSamples = {
     clan: "Wolves",
     clanCode: "VLK",
@@ -673,6 +756,290 @@ const systemMessages: Record<ClanLanguage, SystemMessages> = {
             and: "i",
         },
         previews: plPreviews,
+    },
+    fr: {
+        teamRequests: {
+            label: "Catalogue des équipes Logi · {game}",
+            approvedTitle: "L’équipe figure dans le catalogue",
+            mergedTitle: "L’équipe figurait déjà dans le catalogue",
+            rejectedTitle: "La demande concernant l’équipe n’a pas été acceptée",
+            approvedChip: "Approuvée",
+            mergedChip: "Fusionnée",
+            rejectedChip: "Refusée",
+            newTeam: "nouvelle équipe",
+            changedTeam: "équipe modifiée",
+            requested: "tu avais demandé « {name} »",
+            approvedCreateBody: "Tu peux maintenant sélectionner cette équipe pour les matchs.",
+            approvedUpdateBody: "Les modifications sont désormais visibles dans tes matchs.",
+            mergedBody:
+                "Ta demande a été rattachée à l’équipe existante. Sélectionne cette équipe pour tes matchs.",
+            kindCreate: "Demande de nouvelle équipe",
+            kindUpdate: "Demande de modification",
+            requestLine: "{kind} · équipe {name}",
+            rejectedNext: "Envoie une demande corrigée dans Logi → Équipes.",
+            openTeam: "Ouvrir l’équipe dans Logi",
+            openTeams: "Ouvrir les équipes dans Logi",
+        },
+        kit: {
+            updated: "Mis à jour {time}",
+            refreshEvery: "actualisation toutes les {seconds} s",
+            managed: "Géré dans Logi",
+            dmClan: "Clan {clan}",
+            dmSettings: "Paramètres des messages",
+            page: "Page {page} sur {pages}",
+            paused: "En pause",
+            lastData: "dernières données {time}",
+        },
+        paging: { previous: "Précédent", next: "Suivant" },
+        errors: {
+            unknownTitle: "L’action a échoué",
+            unknownBody:
+                "Réessaie dans un instant. Si le problème persiste, contacte les administrateurs du clan.",
+            adminNotified: "Les administrateurs ont été informés.",
+        },
+        publication: {
+            deliveryFailed:
+                "Le message n’a pas pu être envoyé sur Discord. Vérifie que le bot peut voir le salon, y envoyer des messages et lire l’historique. Logi réessaiera automatiquement.",
+            deliveryUncertain:
+                "Impossible de savoir si le message a atteint Discord. Pour éviter un doublon, Logi ne le renvoie pas. Vérifie le salon et contacte le support Logi.",
+        },
+        errorsChannel: {
+            label: "Erreur du bot",
+            labelWithArea: "Erreur du bot · {area}",
+            areas: {
+                match: "Match",
+                forum: "Forum de l’événement",
+                eventRoles: "Rôles d’événement",
+                scheduledEvent: "Événement Discord",
+                memberRoles: "Rôles des membres",
+                panels: "Panneaux",
+                reminders: "Rappels de présence",
+                tickets: "Tickets",
+                applications: "Candidatures",
+                playerReports: "Signalements de joueurs",
+                seed: "Seeding",
+            },
+            titles: {
+                announcement: "L’annonce du match n’a pas été envoyée",
+                roster: "La composition n’a pas été publiée",
+                forumCreate: "Impossible de créer le forum du match",
+                forumUpdate: "Impossible de mettre à jour le forum du match",
+                forumAccess: "Impossible de donner aux joueurs accès au forum",
+                eventRoles: "Impossible d’attribuer les rôles des joueurs du match",
+                scheduledEventCreate: "Impossible de créer l’événement Discord",
+                scheduledEventUpdate: "Impossible de mettre à jour l’événement Discord",
+                scheduledEventCancel:
+                    "Impossible d’annuler l’événement Discord",
+                adminAccess: "Impossible de vérifier les accès administrateur",
+                ticketPanel: "Le panneau des tickets n’a pas été mis à jour",
+                applicationPanel: "Le panneau des candidatures n’a pas été mis à jour",
+                calendarPanel: "Le calendrier n’a pas été mis à jour",
+                publicPanel: "Le panneau n’a pas été mis à jour",
+                attendanceReminders: "Les rappels de présence n’ont pas été envoyés",
+                ticketOpen: "Le ticket n’a pas été ouvert",
+                ticketSupport: "Impossible d’ajouter le support au ticket",
+                ticketIntro: "Le message d’accueil du ticket n’a pas été envoyé",
+                ticketRename: "Impossible de renommer le ticket",
+                ticketCloseCard:
+                    "Le résumé du ticket fermé n’a pas été publié dans son fil",
+                ticketCloseThread:
+                    "Impossible de renommer, verrouiller ou archiver le fil du ticket fermé",
+                applicationOpen: "La candidature n’a pas été ouverte",
+                applicationRecruiters:
+                    "Impossible d’ajouter les recruteurs à la candidature",
+                applicationIntro: "Le message d’accueil de la candidature n’a pas été envoyé",
+                applicationRename: "Impossible de renommer la candidature",
+                playerReport: "Le signalement de joueur n’a pas été ouvert",
+                panelPassword: "Le mot de passe du serveur a été retiré du panneau",
+                seedControl: "Les commandes du serveur n’ont pas été publiées",
+                general: "Le bot n’a pas pu terminer une action",
+            },
+            memberRolesTitle: {
+                one: "Impossible de modifier les rôles de {count} membre",
+                other: "Impossible de modifier les rôles de {count} membres",
+            },
+            reasonHeading: "Cause",
+            fixHeading: "Marche à suivre",
+            retry: {
+                afterFix: "Nouvelle tentative après correction",
+                byItself: "Nouvelle tentative automatique",
+                playerTold: "Le joueur a été invité à réessayer plus tard",
+                notRetried: "Aucune nouvelle tentative",
+            },
+            reasons: {
+                missingPermission:
+                    "Le bot n’a pas la permission {permissions} dans le salon {channel}.",
+                missingPermissionServer:
+                    "Le rôle Logi n’a pas la permission {permissions} sur le serveur.",
+                missingPermissionUnknown:
+                    "Il manque une permission nécessaire au bot.",
+                privateThreads:
+                    "Le bot ne peut pas créer de fils privés dans le salon {channel}.",
+                missingAccess: "Le bot ne peut pas voir le salon {channel}.",
+                unknownChannel:
+                    "Le salon {channel} n’existe plus sur le serveur.",
+                unknownRole: "Le rôle {role} n’existe plus.",
+                roleAbove:
+                    "Le rôle {role} est placé au-dessus du rôle Logi ; le bot ne peut donc ni l’attribuer ni le retirer.",
+                fullCategory:
+                    "La catégorie {category} contient déjà 50 salons, la limite autorisée par Discord pour une catégorie.",
+                fullServer:
+                    "Le serveur contient déjà 500 salons, la limite autorisée par Discord.",
+                wrongChannelType:
+                    "Le salon {channel} n’est pas un salon textuel.",
+                panelPasswordPublic:
+                    "Tout le monde (@everyone) peut désormais voir le salon {channel}. Le mot de passe n’est affiché que dans un salon invisible pour @everyone.",
+                seedControlPublic:
+                    "Tout le monde (@everyone) peut voir le salon {channel}, alors que les commandes du serveur sont réservées aux administrateurs.",
+                timeout: "Discord n’a pas répondu à temps.",
+                other: "Discord a refusé l’action.",
+            },
+            fixes: {
+                missingPermissionSync:
+                    "Dans Discord, ouvre {channel} → Modifier le salon → Permissions → Logi et autorise {permissions}.",
+                missingPermissionInteraction:
+                    "Autorise {permissions} pour le rôle Logi dans {channel}.",
+                missingPermissionServer:
+                    "Dans Discord → Paramètres du serveur → Rôles → Logi, autorise {permissions}.",
+                missingPermissionGeneric:
+                    "Autorise {permissions} pour le rôle Logi dans les paramètres du salon.",
+                missingPermissionUnknown:
+                    "Vérifie les permissions du rôle Logi dans le salon et dans les paramètres du serveur.",
+                missingAccess:
+                    "Ajoute le rôle Logi au salon ou sélectionne un autre salon dans Logi.",
+                unknownChannel:
+                    "Choisis un nouveau salon dans Logi → Salons et langue.",
+                unknownRole: "Choisis un autre rôle dans Logi → Rôles et accès.",
+                roleAbove:
+                    "Dans Discord → Paramètres du serveur → Rôles, déplace le rôle Logi au-dessus de {role}.",
+                fullCategoryForum:
+                    "Supprime les salons d’anciens événements ou choisis une autre catégorie pour les forums dans Logi → Salons et langue.",
+                fullCategory: "Supprime d’anciens salons ou choisis une autre catégorie.",
+                fullServer: "Supprime d’anciens salons sur le serveur.",
+                wrongChannelType:
+                    "Choisis un salon textuel dans Logi → Salons et langue.",
+                panelPasswordPublic:
+                    "Dans Discord, ouvre {channel} → Modifier le salon → Permissions → @everyone et refuse Voir le salon.",
+                seedControlPublic:
+                    "Rends {channel} privé ou choisis un autre salon de gestion dans Logi → Seeding des serveurs.",
+                timeoutSync:
+                    "Rien à faire. Le bot réessaiera à la prochaine synchronisation. Si le problème dure plus d’une heure, contacte le support Logi.",
+                timeoutInteraction:
+                    "Rien à faire, le joueur peut réessayer. Si le problème dure plus d’une heure, contacte le support Logi.",
+                other: "Réessaie. Si le problème persiste, contacte le support Logi en indiquant l’heure de l’erreur.",
+                timeoutBackground:
+                    "Si le problème dure plus d’une heure, contacte le support Logi.",
+                otherBackground:
+                    "Si le problème persiste, contacte le support Logi en indiquant l’heure de l’erreur.",
+            },
+            followUps: {
+                announcement:
+                    "L’annonce sera envoyée automatiquement à la prochaine synchronisation, sous 5 minutes.",
+                roster: "La composition sera publiée automatiquement à la prochaine synchronisation, sous 5 minutes.",
+                forum: "Le forum sera complété automatiquement à la prochaine synchronisation, sous 5 minutes.",
+                eventRoles: "Les rôles seront attribués à la prochaine synchronisation.",
+                scheduledEvent:
+                    "L’événement sera mis à jour automatiquement à la prochaine synchronisation.",
+                memberRoles: "Les rôles seront complétés à la prochaine synchronisation.",
+                panel: "Le panneau sera actualisé automatiquement à la prochaine synchronisation.",
+                reminders: "Le prochain rappel sera envoyé comme prévu.",
+                ticket: "Demande ensuite au joueur d’ouvrir à nouveau le ticket.",
+                ticketClose:
+                    "Le ticket est fermé dans Logi ; termine manuellement son fil dans Discord.",
+                application:
+                    "Demande ensuite au candidat de renvoyer sa candidature.",
+                playerReport: "Demande ensuite au joueur de refaire son signalement.",
+                ticketSupport:
+                    "Ajoute ensuite le support au ticket manuellement ; le bot ne réessaiera pas.",
+                ticketIntro:
+                    "Le ticket est ouvert sans message d’accueil ; réponds directement au joueur dans le fil.",
+                ticketRename:
+                    "Le ticket fonctionne toujours sous son ancien nom ; tu peux le renommer manuellement.",
+                applicationRecruiters:
+                    "Ajoute ensuite les recruteurs à la candidature manuellement ; le bot ne réessaiera pas.",
+                applicationIntro:
+                    "La candidature est ouverte sans message d’accueil ; réponds directement au candidat dans le fil.",
+                applicationRename:
+                    "La candidature fonctionne toujours sous son ancien nom ; tu peux la renommer manuellement.",
+                panelPassword:
+                    "Le mot de passe réapparaîtra automatiquement dans le panneau à la prochaine actualisation, sous une minute.",
+                seedControl: "Les commandes seront ensuite publiées automatiquement.",
+            },
+            context: {
+                channel: "Salon {channel}",
+                category: "Catégorie {category}",
+                role: "Rôle {role}",
+                meetingChannel: "salon de rassemblement {channel}",
+                tried: "tentative de {user}",
+                author: "auteur {user}",
+                applicant: "candidat {user}",
+                ticketNumber: "ticket nº {number}",
+                applicationNumber: "candidature nº {number}",
+                panel: "Panneau {panel}",
+                moreMembers: "et {count} autres",
+                players: { one: "{count} joueur", other: "{count} joueurs" },
+            },
+            unnamed: {
+                channel: "défini dans Logi",
+                category: "défini dans Logi",
+                role: "défini dans Logi",
+            },
+            and: "et",
+            links: {
+                match: "Ouvrir le match",
+                channels: "Salons dans Logi",
+                tickets: "Tickets dans Logi",
+                roles: "Rôles et accès dans Logi",
+                membership: "Recrutement dans Logi",
+                panels: "Panneaux dans Logi",
+                seed: "Seeding des serveurs dans Logi",
+            },
+            permissions: {
+                ViewChannel: "Voir le salon",
+                SendMessages: "Envoyer des messages",
+                SendMessagesInThreads: "Envoyer des messages dans les fils",
+                EmbedLinks: "Intégrer des liens",
+                AttachFiles: "Joindre des fichiers",
+                ReadMessageHistory: "Voir les anciens messages",
+                ManageChannels: "Gérer les salons",
+                ManageRoles: "Gérer les rôles",
+                ManageThreads: "Gérer les fils",
+                ManageMessages: "Gérer les messages",
+                CreatePublicThreads: "Créer des fils publics",
+                CreatePrivateThreads: "Créer des fils privés",
+                ManageEvents: "Gérer les événements",
+                Connect: "Se connecter",
+            },
+        },
+        serviceStatus: {
+            label: "Services Logi",
+            allRunning: "Tous les services sont opérationnels",
+            oneDown: "{service} est indisponible",
+            manyDown: "{services} sont indisponibles",
+            unknownTitle: "État actuellement inconnu",
+            unknownChip: "La supervision ne répond pas",
+            unknownBody:
+                "Les services peuvent fonctionner normalement. Leur état s’affichera dès que la supervision répondra à nouveau.",
+            checked: "Vérification toutes les {seconds} s · dernière aujourd’hui à {time}",
+            up: "Opérationnel",
+            down: "Indisponible",
+            threadNote: "Les changements d’état sont dans le fil",
+            threadName: "Changements d’état",
+            changeDownTitle: "{service} est indisponible",
+            changeDownBody: "La panne a commencé à {time}.",
+            changeUpTitle: "{service} est à nouveau opérationnel",
+            changeUpBody: "La panne a duré {duration}.",
+            changeUpBodyUnknown: "La durée de la panne est inconnue.",
+            duration: {
+                lessThanMinute: "moins d’une minute",
+                minutes: { one: "{count} minute", other: "{count} minutes" },
+                hours: { one: "{count} heure", other: "{count} heures" },
+                days: { one: "{count} jour", other: "{count} jours" },
+                pair: "{first} et {second}",
+            },
+            and: "et",
+        },
+        previews: frPreviews,
     },
     en: {
         teamRequests: {

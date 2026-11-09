@@ -6,7 +6,7 @@ export function intlLocale(locale: string) {
         ? "cs-CZ"
         : locale === "de"
           ? "de-DE"
-          : locale === "pl"
+          : locale === "fr" ? "fr-FR" : locale === "pl"
             ? "pl-PL"
             : "en-GB"
 }

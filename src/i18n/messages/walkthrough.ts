@@ -33,6 +33,38 @@ const pl: Copy = {
     resume: "Wznów samouczek",
 }
 
+const fr = {
+    playersNav: "Cliquez sur Joueurs dans la barre latérale pour ouvrir la liste des joueurs du clan.",
+    playerOpen: "Ouvrez Atlas pour consulter les performances du joueur.",
+    playerTrends:
+        "Ce sont les mêmes indicateurs d’évolution et graphiques que sur les profils des joueurs. Survolez un indicateur pour savoir ce qu’il mesure.",
+    newMatch: "Cliquez sur Nouveau match pour ouvrir le formulaire de création.",
+    matchWatch:
+        "Regardez le formulaire remplir les équipes, la carte et le nom du match. Ces modifications restent limitées à la visite.",
+    matchContinue: "Cliquez sur Continuer dans le formulaire pour passer à l’étape suivante.",
+    matchTime:
+        "Définissez ici le début de la partie, le rassemblement et la clôture des inscriptions. L’aperçu utilise les mêmes horaires.",
+    matchSignups:
+        "Choisissez qui peut s’inscrire, les groupes proposés et leurs limites de places.",
+    matchDiscord:
+        "Choisissez les salons Discord, le forum et les options des salons vocaux. L’aperçu de l’annonce s’actualise avec le formulaire.",
+    matchReview:
+        "Vérifiez les horaires, inscriptions et paramètres Discord avant de publier.",
+    matchPublish:
+        "Cliquez sur Publier pour simuler la création du match. La visite n’enregistre aucun match et n’envoie aucun message Discord.",
+    loading: "Ouverture de la page suivante…",
+    exit: "Quitter la visite",
+    leave: "Terminez la visite pour utiliser les données réelles de cette page.",
+    example: "Visite · Données d’exemple",
+    missing:
+        "Cette partie de la page est indisponible. Vous pouvez passer à l’étape suivante.",
+    nextPage: "Suivant",
+    pause: "Mettre en pause",
+    play: "Lancer",
+    replay: "Rejouer",
+    resume: "Reprendre la visite",
+}
+
 const en = {
     playersNav: "Click Players in the sidebar to open the clan's player list.",
     playerOpen: "Open Atlas to see the player's performance records.",
@@ -135,5 +167,5 @@ export function getWalkthroughCopy(locale: Locale): Copy {
           ? de
           : locale === "pl"
             ? pl
-            : en
+            : locale === "fr" ? fr : en
 }

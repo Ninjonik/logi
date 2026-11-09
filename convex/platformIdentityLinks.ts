@@ -34,7 +34,8 @@ export const begin = mutation({
             v.literal("en"),
             v.literal("cs"),
             v.literal("de"),
-            v.literal("pl")
+            v.literal("pl"),
+                v.literal("fr")
         ),
         expiresAt: v.number(),
     },

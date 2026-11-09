@@ -12,7 +12,7 @@ export const verifiedPlatformLinkSchema = z
     .strict()
 export type VerifiedPlatformLink = z.infer<typeof verifiedPlatformLinkSchema>
 export type LinkActorSession = { discordUserId: string; sessionHash: string }
-export type LinkLocale = "en" | "cs" | "de" | "pl"
+export type LinkLocale = "en" | "cs" | "de" | "pl" | "fr"
 export type LinkChallenge = LinkActorSession & {
     id: string
     returnOrigin: string

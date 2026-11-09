@@ -1,6 +1,34 @@
 import { clanCopy } from "./core"
 
 export const getSelfGroupMessages = clanCopy({
+    fr: {
+        gameTitle: "Choisir un jeu",
+        gameHint: "Choisis le jeu dont tu souhaites gérer les groupes.",
+        gamePlaceholder: "Choisir un jeu",
+        changeGame: "Changer de jeu",
+
+        title: "Choisis tes groupes",
+        settingsTitle: "Groupes accessibles en libre-service",
+        settingsHint:
+            "Choisis les groupes que les membres actuels peuvent ajouter ou retirer avec /groups. Ce sont des groupes secondaires dans Logi. Le groupe principal, le statut d’adhésion et les rôles Discord restent inchangés. Si aucun groupe n’est sélectionné, le libre-service est désactivé.",
+        hint: "Choisis un groupe à ajouter ou à retirer. Ton groupe principal est géré par les responsables du clan.",
+        placeholder: "Choisis un groupe",
+        add: "Ajouter",
+        remove: "Retirer",
+        previous: "Précédent",
+        next: "Suivant",
+        empty: "Aucun groupe n’est disponible pour toi. Demande à un responsable du clan d’activer les groupes pour ton adhésion à ce jeu.",
+        saved: "Groupes mis à jour",
+        failed: "Impossible de modifier les groupes. Relance /groups et réessaie.",
+        primary: "Seul un responsable du clan peut modifier ton groupe principal.",
+        membership:
+            "Une adhésion active au clan pour ce jeu est nécessaire pour accéder à ses groupes.",
+        notAllowed: "Ce groupe n’est plus accessible en libre-service.",
+        save: "Enregistrer les groupes",
+        savedSettings: "Groupes en libre-service enregistrés",
+        settingsFailed: "Impossible d’enregistrer les groupes en libre-service. Réessaie.",
+        noGroups: "Crée des groupes dans Membres avant d’activer le libre-service.",
+    },
     en: {
         gameTitle: "Choose a game",
         gameHint: "Choose the game whose groups you want to manage.",

@@ -284,7 +284,7 @@ export default async function ServerUserDetailPage({
                                                 ? "cs-CZ"
                                                 : safeLocale === "de"
                                                   ? "de-DE"
-                                                  : safeLocale === "pl"
+                                                  : safeLocale === "fr" ? "fr-FR" : safeLocale === "pl"
                                                     ? "pl-PL"
                                                     : "en-GB"
                                         ),

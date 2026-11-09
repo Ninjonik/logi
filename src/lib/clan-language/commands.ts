@@ -416,6 +416,250 @@ const commandsMessages: Record<ClanLanguage, CommandMessages> = {
             unnamed: "Serwer gier",
         },
     },
+    fr: {
+        commands: {
+            outcomeDenied: "Refusé",
+            outcomePending: "Toujours en attente",
+            outcomeRecruit: "Recrue",
+            outcomeMember: "Membre",
+            outcomeMercenary: "Mercenaire",
+        },
+        registry: {
+            descriptions: {
+                groups: "Choisis tes groupes du clan",
+                help: "Les commandes disponibles et un lien vers le guide",
+                stats: "Tes statistiques Hell Let Loose ou Wardogs",
+                player: "Profil d’un joueur du clan : score et derniers matchs",
+                link: "Associe tes comptes de jeu : Steam, Epic, Xbox, PlayStation",
+                notice: "Préviens le commandement de ton retard à un événement",
+                "server-status": "Dernier état enregistré des serveurs de jeu du clan",
+                close_ticket: "Ferme ce ticket et envoie un résumé à son auteur",
+                close_application:
+                    "Statue sur la candidature de ce fil et ferme-la",
+            },
+            managerSuffix: " (responsables)",
+            options: {
+                statsGame: {
+                    name: "jeu",
+                    description: "Hell Let Loose ou Wardogs",
+                },
+                statsMember: {
+                    name: "membre",
+                    description:
+                        "Un membre du serveur avec un compte Steam associé (toi par défaut)",
+                },
+                statsPlayer: {
+                    name: "joueur",
+                    description: "Wardogs uniquement : recherche par pseudo ou Steam ID",
+                },
+                statsPeriod: {
+                    name: "période",
+                    description:
+                        "7, 30 ou 90 jours, ou tout l’historique (30 jours par défaut)",
+                },
+                statsServer: {
+                    name: "serveur",
+                    description: "Wardogs uniquement : l’un des serveurs du clan",
+                },
+                statsChannel: {
+                    name: "salon",
+                    description: "Salon de publication du bouton Partager",
+                },
+                playerPlayer: {
+                    name: "joueur",
+                    description: "Un joueur du clan à choisir dans la liste",
+                },
+                noticeEvent: {
+                    name: "événement",
+                    description:
+                        "Un événement auquel tu es inscrit et qui n’a pas commencé",
+                },
+                closeTicketReason: {
+                    name: "motif",
+                    description: "L’auteur le verra dans le fil et en message privé",
+                },
+                closeApplicationOutcome: {
+                    name: "décision",
+                    description: "Le statut attribué au candidat",
+                },
+                closeApplicationReason: {
+                    name: "motif",
+                    description:
+                        "Le candidat le verra dans le fil et en message privé",
+                },
+                serverStatusGame: {
+                    name: "jeu",
+                    description: "Le jeu dont afficher les serveurs",
+                },
+            },
+            periods: {
+                "7d": "7 jours",
+                "30d": "30 jours",
+                "90d": "90 jours",
+                all: "Tout l’historique",
+            },
+        },
+        access: {
+            disabledTitle: "{command} est désactivée ici",
+            disabledBody:
+                "Un responsable peut l’activer dans Logi → Paramètres → Commandes.",
+            notAllowedTitle: {
+                clanMembers: "Seuls les membres du clan peuvent utiliser {command}",
+                logiAdmins: "Seuls les responsables Logi peuvent utiliser {command}",
+            },
+            notAllowedBody: {
+                clanMembers:
+                    "Les membres du clan possèdent le rôle configuré dans Logi. Si tu devrais l’avoir, contacte les responsables.",
+                logiAdmins:
+                    "Les responsables disposent de la permission Administrateur de Discord ou du rôle des responsables.",
+            },
+            extraRoles: "{roles} peuvent également l’utiliser.",
+            wrongChannelTitle: "{command} ne fonctionne pas ici",
+            wrongChannelBody: "Utilise-la dans {channels}.",
+            verifyFailedTitle: "Impossible de vérifier tes rôles pour le moment",
+            verifyFailedBody: "Discord n’a pas répondu. Réessaie dans un instant.",
+            notConnectedTitle: "Logi n’est pas encore configuré ici",
+            notConnectedBody:
+                "Un responsable du serveur doit le connecter à Logi sur le site. Tu verras ensuite les commandes ici.",
+            aboutLogi: "Découvrir Logi",
+            and: " et ",
+            or: " ou ",
+        },
+        help: {
+            label: "Commandes Logi · Clan {clan}",
+            title: "Ce que tu peux utiliser ici",
+            lines: {
+                groups: "Choisis tes groupes du clan",
+                stats: "Tes statistiques Hell Let Loose ou Wardogs. Tu es le seul à les voir tant que tu ne les partages pas.",
+                player: "Le profil d’un joueur du clan : score et derniers matchs.",
+                link: "Associe tes comptes de jeu pour que Logi te reconnaisse en jeu.",
+                notice: "Préviens le commandement de ton retard à un événement.",
+                "server-status": "Le dernier état enregistré des serveurs de jeu du clan.",
+                close_ticket:
+                    "Dans un fil de ticket, ferme le ticket et envoie un résumé à son auteur.",
+                close_application:
+                    "Dans un fil de candidature, statue sur le candidat et attribue les rôles.",
+            },
+            channelsAll:
+                "Les candidatures, les tickets et les inscriptions aux matchs se font avec les boutons dans {recruitment}, {tickets} et {announcements}.",
+            recruitmentLine:
+                "Pour postuler au clan, utilise le bouton dans {channel}.",
+            ticketsLine: "Pour ouvrir un ticket, utilise le bouton dans {channel}.",
+            signupLine:
+                "Pour t’inscrire aux matchs, utilise les boutons dans {channel}.",
+            staffTitle: "Pour les responsables",
+            staffReason: {
+                administrator:
+                    "Tu vois ces commandes parce que tu disposes de la permission Administrateur de Discord.",
+                adminRole:
+                    "Tu vois ces commandes parce que tu possèdes le rôle des responsables Logi.",
+                support:
+                    "Tu vois ces commandes parce que tu fais partie du support d’une catégorie de tickets ou de candidatures.",
+                role: "Tu vois ces commandes parce que les responsables ont autorisé ton rôle.",
+            },
+            guide: "Guide sur le site",
+            nothing: "Aucune commande n’est disponible pour toi ici pour le moment.",
+        },
+        player: {
+            label: "{game} · Profil du joueur",
+            statuses: {
+                member: "Membre",
+                reserve_member: "Remplaçant",
+                mercenary: "Mercenaire",
+                recruit: "Recrue",
+                pending: "Candidat",
+                active: "actif",
+                paused: "en pause",
+            },
+            score: "Score dans le clan",
+            matches: "Matchs",
+            kd: "K/D",
+            averages:
+                "Moyenne par match : {kills} kills · {deaths} morts · attaque {offense} · défense {defense} · soutien {support}",
+            recentTitle: "Derniers matchs",
+            recentRow:
+                "{day} · {map} · {kills} kills, {deaths} morts · K/D {kd}",
+            share: "Partager",
+            source: "Source : matchs importés du clan",
+            sourceSince: "{count} depuis le {date}",
+            matchCount: { one: "{count} match", other: "{count} matchs" },
+            sharedBy: "Partagé par {user} · données au {time}",
+            sharedSource: "Matchs importés du clan",
+            noMatches:
+                "Aucun match importé pour le moment : rien à afficher ou à partager.",
+            notFoundTitle: "Ce joueur est introuvable dans le clan",
+            notFoundBody:
+                "Choisis le joueur dans la liste qui apparaît lorsque tu saisis son pseudo.",
+            loadFailedTitle: "Impossible de charger le profil pour le moment",
+            loadFailedBody: "Réessaie dans un instant.",
+            sharedTitle: "Partagé dans {channel}",
+            viewMessage: "Voir le message",
+            shareDeniedTitle: "Tu ne peux pas partager dans {channel} pour le moment",
+            shareDeniedBody:
+                "Le bot et toi devez pouvoir envoyer des messages et intégrer des liens dans ce salon.",
+            shareFailedTitle: "Impossible de confirmer le partage",
+            shareFailedBody:
+                "Vérifie le salon avant de partager à nouveau : le profil y a peut-être déjà été publié.",
+            avatar: "Avatar de {name}",
+        },
+        notice: {
+            modalTitle: "Retard · {event}",
+            modalNote: "Seuls les responsables du match le verront.",
+            reasonLabel: "À quelle heure arriveras-tu et pour quelle raison ?",
+            reasonPlaceholder: "Ex. : vers 20 h 30, je termine le travail tard.",
+            savedTitle: "Le commandement est informé de ton retard",
+            savedNote:
+                "Tu ne recevras plus de rappels de présence pour ce match. Tu peux modifier ta réponse avec un nouveau /notice.",
+            notSignedUpTitle: "Tu n’es inscrit à aucun événement à venir",
+            notSignedUpBody:
+                "Tu peux signaler ton retard uniquement pour un événement auquel tu es inscrit et qui n’a pas commencé.",
+            signupWhere: "Les inscriptions se font dans {channel}.",
+            startedTitle: "{event} a déjà commencé",
+            startedBody: "Contacte directement le commandement dans le salon du match.",
+            multipleTitle: "Plusieurs événements correspondent",
+            multipleBody:
+                "Choisis-en un dans la liste ; le jour et l’heure y figurent aussi.",
+            eventFallback: "l’événement",
+        },
+        serverStatus: {
+            label: "État des serveurs de jeu · {game}",
+            title: {
+                one: "{count} serveur du clan",
+                other: "{count} serveurs du clan",
+            },
+            intro: "Dernier état enregistré par la collecte des données, sans vérification en direct.",
+            online: "En ligne",
+            offline: "Hors ligne",
+            stale: "périmé",
+            staleOnly: "Périmé",
+            noData: "Aucune donnée",
+            disabled: "Collecte désactivée",
+            disabledHint: "Active-la dans Serveurs de jeu",
+            players: "{players} / {capacity} joueurs",
+            link: "Serveurs de jeu dans Logi",
+            shown: {
+                one: "Affichage de {shown} sur {total} {servers}. Limité à 5 ; la liste complète est dans Logi.",
+                other: "Affichage de {shown} sur {total} {servers}. Limité à 5 ; la liste complète est dans Logi.",
+            },
+            serversOf: { one: "serveur", other: "serveurs" },
+            notAllowedTitle: "Seuls les responsables Logi peuvent consulter l’état des serveurs",
+            notAllowedBody:
+                "Les responsables disposent de la permission Administrateur de Discord ou du rôle des responsables.",
+            liveScoreWhere: "Le score en direct est dans {channel}.",
+            noConnectionsTitle: "Le clan n’a aucun serveur {game} connecté",
+            noConnectionsBody: "Connecte-en un dans Logi → Serveurs de jeu.",
+            unavailableTitle: "Impossible de charger l’état des serveurs pour le moment",
+            unavailableBody:
+                "Réessaie dans une minute. Cela n’affecte pas les serveurs de jeu.",
+            providers: {
+                hll_crcon: "CRCON",
+                wardogs_rcon: "RCON",
+                wardogs_warcon: "Warcon",
+                wardogs_public_directory: "Wardog Servers",
+            },
+            unnamed: "Serveur de jeu",
+        },
+    },
     en: {
         commands: {
             outcomeDenied: "Denied",

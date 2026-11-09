@@ -736,7 +736,8 @@ export default defineSchema({
             v.literal("en"),
             v.literal("cs"),
             v.literal("de"),
-            v.literal("pl")
+            v.literal("pl"),
+                v.literal("fr")
         ),
         createdAt: v.number(),
         expiresAt: v.number(),
@@ -875,7 +876,8 @@ export default defineSchema({
             v.literal("en"),
             v.literal("cs"),
             v.literal("de"),
-            v.literal("pl")
+            v.literal("pl"),
+                v.literal("fr")
         ),
         announcementsChannelId: v.optional(v.string()),
         eventInfoChannelId: v.optional(v.string()),

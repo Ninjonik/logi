@@ -22,6 +22,15 @@ const copy = {
         empty: "Wybierz mapę, aby przygotować strefy i pozycje drużyn.",
         download: "Pobierz mapę (SVG)",
     },
+    fr: {
+        title: "Plan tactique", tbd: "À définir / non sélectionné",
+        layout: "Configuration / repère de zone", layoutPlaceholder: "ex. : configuration convenue du serveur ou coordonnées de grille",
+        generate: "Créer un plan tactique", clear: "Retirer le plan", controlZone: "Control Zone", hotZone: "Hot Zone", team: "Équipe", marker: "Placer sur la carte",
+        hint: "Sélectionnez un marqueur et cliquez sur la carte, ou saisissez X/Y ci-dessous. Les coordonnées et le rayon sont exprimés en pourcentage de l’image.",
+        planned: "Plan de match manuel. L’organisateur choisit la position et la taille des zones ; elles ne reflètent pas la configuration en direct du serveur. Les bases des factions proviennent du catalogue des cartes.",
+        radius: "Rayon (%)", halfWidth: "Demi-largeur (%)", downloading: "Préparation de l’image…", downloadError: "Impossible d’exporter la carte. Réessayez.",
+        removeMarker: "Retirer le marqueur", empty: "Choisissez une carte pour préparer les zones et les positions des équipes.", download: "Télécharger la carte (SVG)",
+    },
     en: {
         title: "Tactical plan",
         tbd: "TBD / not selected",
@@ -96,7 +105,7 @@ export function tacticalPlanCopy(locale: string) {
             ? "cs"
             : locale === "de"
               ? "de"
-              : locale === "pl"
+              : locale === "fr" ? "fr" : locale === "pl"
                 ? "pl"
                 : "en"
     ]

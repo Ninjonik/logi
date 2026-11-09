@@ -165,7 +165,7 @@ export function createMatchImageRenderer(ports: {
                 ? "cs-CZ"
                 : model.language === "de"
                   ? "de-DE"
-                  : model.language === "pl"
+                  : model.language === "fr" ? "fr-FR" : model.language === "pl"
                     ? "pl-PL"
                     : "en-GB"
         const date = new Intl.DateTimeFormat(locale, {
