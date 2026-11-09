@@ -5,7 +5,8 @@ export const frMessages = {
     sharedMatches: sharedMatchCopy.fr,
     competitionEnrollment: {
         title: "Compétitions",
-        description: "Inscrivez les équipes de votre clan ou gérez leurs candidatures.",
+        description:
+            "Inscrivez les équipes de votre clan ou gérez leurs candidatures.",
         noTeams:
             "Aucune équipe n’est associée à ce clan. Demandez la création d’une équipe ou demandez à un administrateur Logi d’associer votre équipe existante.",
         teamsLink: "Gérer les équipes",
@@ -24,7 +25,8 @@ export const frMessages = {
         withdrawn: "Retirée",
         saved: "Enregistré",
         error: "Impossible d’enregistrer. Réessayez.",
-        registration_closed: "Les inscriptions à cette compétition sont closes.",
+        registration_closed:
+            "Les inscriptions à cette compétition sont closes.",
         minimum_players:
             "Votre clan ne compte pas assez de joueurs ayant ouvert une session dans Logi.",
         team_not_owned: "Cette équipe n’est pas associée à votre clan.",
@@ -71,7 +73,8 @@ export const frMessages = {
         suggestion: "Est-ce votre match ?",
         openReport: "Voir les détails du match",
         reviewResult: "Vérifier le résultat",
-        otherSource: "Ce n’est pas la bonne partie ? Choisissez une autre source.",
+        otherSource:
+            "Ce n’est pas la bonne partie ? Choisissez une autre source.",
     },
     gameHistory: {
         title: "Historique des parties Warcon",
@@ -189,10 +192,12 @@ export const frMessages = {
                 "Sans bannière, l’image de la carte en cours est affichée : actuellement {map}.",
             withoutBannerUnknownMap:
                 "Sans bannière, l’image de la carte en cours est affichée.",
-            withoutBannerOff: "Sans bannière, aucune image n’apparaît en haut du panneau.",
+            withoutBannerOff:
+                "Sans bannière, aucune image n’apparaît en haut du panneau.",
             crop: "Recadrage",
             crops: { top: "Haut", center: "Centre", bottom: "Bas" },
-            useMapImage: "Utiliser l’image de la carte en l’absence de bannière",
+            useMapImage:
+                "Utiliser l’image de la carte en l’absence de bannière",
             barColor: "Couleur de la barre",
             barColorInput: "Couleur de la barre en hexadécimal",
             clanColor: "Couleur du clan",
@@ -243,7 +248,10 @@ export const frMessages = {
                     name: "Alliés",
                     side: "lorsque le serveur ne précise pas la nation",
                 },
-                axis: { name: "Axe", side: "lorsque le serveur ne précise pas la nation" },
+                axis: {
+                    name: "Axe",
+                    side: "lorsque le serveur ne précise pas la nation",
+                },
             },
             wardogsTitle: "Wardogs · factions",
             wardogsChip: "Icônes Wardogs, licence MIT",
@@ -262,7 +270,10 @@ export const frMessages = {
             description:
                 "Également fixes ; le bot les importe avec les icônes des factions. Un libellé accompagne toujours l’icône.",
             states: {
-                live: { name: "En direct", hint: "une partie est en cours sur le serveur" },
+                live: {
+                    name: "En direct",
+                    hint: "une partie est en cours sur le serveur",
+                },
                 seeding: {
                     name: "Seeding",
                     hint: "moins de 40 joueurs, seeding en cours",
@@ -283,7 +294,8 @@ export const frMessages = {
             },
             sample: "Exemple dans un panneau",
             sampleQueue: "{count} / {capacity} joueurs, file d’attente {queue}",
-            sampleSeed: "{count} / {capacity} joueurs, objectif de seeding {target}",
+            sampleSeed:
+                "{count} / {capacity} joueurs, objectif de seeding {target}",
         },
         saveNote:
             "les bannières et le style seront appliqués à la prochaine actualisation du panneau, sous 60 s",
@@ -297,12 +309,15 @@ export const frMessages = {
             unknown_server:
                 "Le serveur de jeu n’existe plus. Rechargez la page.",
             invalid_request: "Une valeur n’est pas valide.",
-            forbidden: "Vous n’avez pas l’autorisation de modifier l’habillage des panneaux.",
+            forbidden:
+                "Vous n’avez pas l’autorisation de modifier l’habillage des panneaux.",
             unavailable: "Échec de l’enregistrement. Réessayez.",
         },
         uploadErrors: {
-            unsupported_type: "Seules les images PNG, JPG et WebP sont acceptées.",
-            type_mismatch: "Le contenu du fichier ne correspond pas à son type d’image.",
+            unsupported_type:
+                "Seules les images PNG, JPG et WebP sont acceptées.",
+            type_mismatch:
+                "Le contenu du fichier ne correspond pas à son type d’image.",
             bad_dimensions:
                 "L’image est trop petite ou trop grande. Une image de carte doit faire au moins 160 × 160 pixels ; aucune image ne peut dépasser 4 096 × 4 096.",
             animated: "Les images animées ne sont pas prises en charge.",
@@ -375,7 +390,8 @@ export const frMessages = {
         save: "Enregistrer la politique",
         saved: "Politique d’adhésion enregistrée.",
         error: "Impossible de charger ou d’enregistrer les politiques d’adhésion. Actualisez et réessayez.",
-        invalid: "Utilisez des identifiants de rôles Discord valides, avec au maximum 100 rôles par jeu.",
+        invalid:
+            "Utilisez des identifiants de rôles Discord valides, avec au maximum 100 rôles par jeu.",
     },
     websiteEventPolicies: {
         title: "Commandes d’événement du site",
@@ -432,8 +448,10 @@ export const frMessages = {
         bannerPreview: "Aperçu de la bannière",
         bannerNone:
             "Sans bannière. Le panneau affiche l’illustration de la carte si elle est activée.",
-        bannerUploaded: "Bannière importée. Enregistrez le panneau pour la publier.",
-        bannerSelected: "Bannière sélectionnée. Enregistrez le panneau pour la publier.",
+        bannerUploaded:
+            "Bannière importée. Enregistrez le panneau pour la publier.",
+        bannerSelected:
+            "Bannière sélectionnée. Enregistrez le panneau pour la publier.",
         bannerLibrary: "Bannières importées",
         bannerLibraryShow: "Choisir une bannière importée",
         bannerLibraryHide: "Masquer les bannières importées",
@@ -442,7 +460,8 @@ export const frMessages = {
             "Aucune bannière n’a encore été importée dans cet espace de travail.",
         bannerLibraryError:
             "Impossible de charger les bannières importées. Réessayez plus tard.",
-        bannerLibraryItem: "Utiliser la bannière de {width} × {height} px importée le {date}",
+        bannerLibraryItem:
+            "Utiliser la bannière de {width} × {height} px importée le {date}",
         factionEmoji: "Émojis des factions",
         factionEmojiHelp:
             "Un émoji Unicode ou un émoji Discord personnalisé au format <:name:id> (animé : <a:name:id>). Les émojis personnalisés doivent appartenir à un serveur où se trouve le bot ou à son application. Laissez vide pour conserver la valeur par défaut affichée en exemple.",
@@ -455,21 +474,27 @@ export const frMessages = {
             manticore: "Manticore",
             lonestar: "Lonestar",
         },
-        invalid: "Corrigez les paramètres d’apparence signalés avant d’enregistrer.",
+        invalid:
+            "Corrigez les paramètres d’apparence signalés avant d’enregistrer.",
         errors: {
-            invalid_kind: "Ce type d’image ne peut pas être utilisé comme bannière.",
+            invalid_kind:
+                "Ce type d’image ne peut pas être utilisé comme bannière.",
             unsupported_type: "Utilisez une image PNG, JPEG ou WebP.",
             type_mismatch:
                 "Le contenu du fichier ne correspond pas à son type. Exportez-le à nouveau en PNG, JPEG ou WebP.",
-            bad_dimensions: "L’image ne doit pas dépasser 4 096 × 4 096 pixels.",
+            bad_dimensions:
+                "L’image ne doit pas dépasser 4 096 × 4 096 pixels.",
             animated: "Les images animées ne sont pas prises en charge.",
             undecodable:
                 "Impossible de lire l’image. Exportez-la à nouveau et réessayez.",
-            invalid_asset: "Impossible de stocker l’image. Réessayez l’importation.",
-            forbidden: "Seuls les administrateurs de l’espace de travail peuvent importer des bannières.",
+            invalid_asset:
+                "Impossible de stocker l’image. Réessayez l’importation.",
+            forbidden:
+                "Seuls les administrateurs de l’espace de travail peuvent importer des bannières.",
             too_large: "L’image dépasse 2 Mio.",
             upload_limited: "Trop d’importations. Réessayez dans {seconds} s.",
-            unavailable: "L’importation d’images est indisponible. Réessayez plus tard.",
+            unavailable:
+                "L’importation d’images est indisponible. Réessayez plus tard.",
             asset_unavailable:
                 "La bannière n’est plus disponible pour cet espace de travail. Importez-la à nouveau ou retirez-la, puis enregistrez.",
         },
@@ -527,12 +552,15 @@ export const frMessages = {
                     hll_crcon: "Numéro du serveur dans CRCON",
                     wardogs_warcon: "Identifiant du serveur dans Warcon",
                     wardogs_rcon: "Identifiant du serveur dans RCON",
-                    wardogs_public_directory: "Identifiant du serveur dans la liste",
+                    wardogs_public_directory:
+                        "Identifiant du serveur dans la liste",
                 },
                 keyPlaceholder: "Coller la clé",
                 help: "Le jeu est déterminé par le type de serveur. La clé est testée avant d’être enregistrée.",
-                testFirst: "L’enregistrement est possible après un test réussi.",
-                testPassed: "Le test a réussi. Vous pouvez enregistrer le serveur.",
+                testFirst:
+                    "L’enregistrement est possible après un test réussi.",
+                testPassed:
+                    "Le test a réussi. Vous pouvez enregistrer le serveur.",
                 saveAndCollect: "Enregistrer et lancer la collecte",
             },
             keyLabel: "Clé API",
@@ -578,7 +606,8 @@ export const frMessages = {
                     hll_crcon: "Le numéro du serveur CRCON, généralement 1.",
                     wardogs_warcon:
                         "L’UUID du serveur affiché dans le panneau Warcon.",
-                    wardogs_rcon: "L’identifiant du serveur renvoyé par votre API RCON.",
+                    wardogs_rcon:
+                        "L’identifiant du serveur renvoyé par votre API RCON.",
                     wardogs_public_directory:
                         "L’identifiant du serveur dans l’annuaire Wardog Servers.",
                 },
@@ -624,7 +653,8 @@ export const frMessages = {
             },
             keyChanged: "Clé modifiée le {date}",
             verified: "La clé a réussi son dernier test",
-            unverified: "Clé non vérifiée : testez-la avant de lancer la collecte",
+            unverified:
+                "Clé non vérifiée : testez-la avant de lancer la collecte",
             failure: {
                 key_unavailable:
                     "La clé stockée est inutilisable car la clé de chiffrement de l’exploitant est indisponible. Contactez l’exploitant de Logi.",
@@ -656,14 +686,16 @@ export const frMessages = {
                 unauthorized: "Le fournisseur a refusé la clé.",
                 server_mismatch:
                     "Le fournisseur a répondu, mais pas pour cet identifiant de serveur.",
-                rate_limited: "Le fournisseur limite le nombre de requêtes. Réessayez plus tard.",
+                rate_limited:
+                    "Le fournisseur limite le nombre de requêtes. Réessayez plus tard.",
                 timeout: "Le fournisseur n’a pas répondu à temps.",
                 network: "Impossible de joindre le fournisseur.",
                 invalid_response:
                     "Le fournisseur a envoyé une réponse inattendue. Vérifiez l’adresse et le fournisseur.",
                 configuration:
                     "Cette adresse n’est pas autorisée (adresses HTTPS publiques uniquement) ou la configuration du serveur est incomplète.",
-                unsupported: "Le fournisseur ne prend pas en charge cette vérification.",
+                unsupported:
+                    "Le fournisseur ne prend pas en charge cette vérification.",
                 key_unavailable:
                     "La clé stockée est inutilisable. Saisissez-la à nouveau ou contactez l’exploitant de Logi.",
             },
@@ -701,7 +733,8 @@ export const frMessages = {
         scoreboardError:
             "Le tableau des scores en direct est indisponible. Réessayez lorsque le fournisseur sera rétabli.",
         scoreboardEmpty: "Aucun joueur dans le dernier relevé.",
-        scoreboardUnavailable: "Aucun relevé récent des joueurs n’est disponible.",
+        scoreboardUnavailable:
+            "Aucun relevé récent des joueurs n’est disponible.",
         playerObservation: "Relevé des joueurs",
         joinCode: "Code de connexion à la partie",
         player: "Joueur",
@@ -741,12 +774,15 @@ export const frMessages = {
             unavailable: "Indisponible",
         },
         errors: {
-            not_listed: "Le serveur n’est pas répertorié ; son état est inconnu.",
+            not_listed:
+                "Le serveur n’est pas répertorié ; son état est inconnu.",
             timeout: "Le fournisseur n’a pas répondu à temps.",
             network: "Le fournisseur est injoignable.",
-            rate_limited: "En attente de la levée de la limite de requêtes du fournisseur.",
+            rate_limited:
+                "En attente de la levée de la limite de requêtes du fournisseur.",
             unauthorized: "Collecte en pause : accès au fournisseur refusé.",
-            invalid_response: "Le fournisseur a renvoyé une réponse non prise en charge.",
+            invalid_response:
+                "Le fournisseur a renvoyé une réponse non prise en charge.",
             unsupported:
                 "Collecte en pause : la fonctionnalité requise est indisponible.",
             configuration:
@@ -839,7 +875,8 @@ export const frMessages = {
             "Impossible d’actualiser les clés. Les permissions affichées peuvent être obsolètes.",
         retry: "Réessayer",
         empty: "Aucune clé API n’a été créée.",
-        invalidPolicy: "Restrictions non reconnues ; l’accès au backend est refusé.",
+        invalidPolicy:
+            "Restrictions non reconnues ; l’accès au backend est refusé.",
         resourceLabels: {
             "server-game-history":
                 "Parties de serveur conservées (pseudos et Steam ID)",
@@ -847,10 +884,10 @@ export const frMessages = {
             "league-fixtures": "Matchs Wardogs League suivis",
             "hll-live":
                 "Tableau des scores HLL en direct (pseudos et identifiants de plateforme inclus)",
-            "warcon-data":
-                "Données de jeu Warcon (pseudos et Steam ID inclus)",
+            "warcon-data": "Données de jeu Warcon (pseudos et Steam ID inclus)",
             "member-summaries": "Annuaire des membres (lecture seule)",
-            "roster-summaries": "Compositions publiées et présences (lecture seule)",
+            "roster-summaries":
+                "Compositions publiées et présences (lecture seule)",
             "player-stat-summaries":
                 "Données vérifiées des joueurs issues des sessions collectées",
             "membership-summaries":
@@ -922,7 +959,8 @@ export const frMessages = {
     app: {
         name: "Logi",
         tagline: "Organisation d’événements compétitifs",
-        description: "Gérez les événements du clan, les compositions et les annonces Discord.",
+        description:
+            "Gérez les événements du clan, les compositions et les annonces Discord.",
     },
     games: {
         filterLabel: "Filtrer par jeu",
@@ -994,7 +1032,8 @@ export const frMessages = {
         commsDescription:
             "LogiComms est une application de bureau pour les communications vocales en escouade.",
         commsDownload: "Télécharger pour Windows",
-        commsUnavailable: "Le téléchargement Windows est temporairement indisponible.",
+        commsUnavailable:
+            "Le téléchargement Windows est temporairement indisponible.",
         freeToUse: "Utilisation gratuite",
         sourceAvailable: "Code source disponible sur GitHub",
         contributionsWelcome: "Contributions bienvenues",
@@ -1032,15 +1071,19 @@ export const frMessages = {
         featureRostersBody:
             "Publiez des compositions avec postes attribués, remplaçants et confirmations de présence.",
         featureBriefingsTitle: "Briefings",
-        featureBriefingsBody: "Ajoutez des notes, des cartes et des pièces jointes aux événements.",
+        featureBriefingsBody:
+            "Ajoutez des notes, des cartes et des pièces jointes aux événements.",
         featureDiscordTitle: "Prêt pour Discord",
-        featureDiscordBody: "Publiez les annonces et les compositions sur Discord.",
+        featureDiscordBody:
+            "Publiez les annonces et les compositions sur Discord.",
         englishEnabled: "Français activé",
         discordAccessOnly: "Connexion via Discord uniquement",
         discordOauth: "Discord OAuth",
-        discordOauthBody: "Connexion unique pour les clans, les membres et les mercenaires.",
+        discordOauthBody:
+            "Connexion unique pour les clans, les membres et les mercenaires.",
         plannedBackendHooks: "Accès au compte et aux clans",
-        plannedBackendHooksBody: "Connectez-vous avec Discord pour accéder à vos clans.",
+        plannedBackendHooksBody:
+            "Connectez-vous avec Discord pour accéder à vos clans.",
     },
     dashboard: {
         title: "Vos clans",
@@ -1099,7 +1142,8 @@ export const frMessages = {
         platformChannelsRetry: "Réessayer",
         platformChooseWorkspaceFirst:
             "Choisissez d’abord un espace de travail pour afficher ses salons.",
-        platformSaveError: "Impossible d’enregistrer les paramètres de la plateforme.",
+        platformSaveError:
+            "Impossible d’enregistrer les paramètres de la plateforme.",
         totalLogs: "Total des entrées",
         totalErrors: "Total des erreurs",
         errorsToday: "Erreurs aujourd’hui",
@@ -1251,12 +1295,16 @@ export const frMessages = {
                 "Ce serveur Discord est déjà associé à une équipe.",
             invalid_merge: "Ces équipes ne peuvent pas être fusionnées.",
             forbidden: "Vous n’avez pas accès au catalogue des équipes ici.",
-            unavailable: "Le catalogue des équipes est temporairement indisponible.",
-            rate_limited: "Trop de demandes ; patientez un instant et réessayez.",
+            unavailable:
+                "Le catalogue des équipes est temporairement indisponible.",
+            rate_limited:
+                "Trop de demandes ; patientez un instant et réessayez.",
         },
         uploadErrors: {
-            unsupported_type: "Seules les images PNG, JPEG et WebP sont acceptées.",
-            type_mismatch: "Le contenu du fichier ne correspond pas à son type d’image.",
+            unsupported_type:
+                "Seules les images PNG, JPEG et WebP sont acceptées.",
+            type_mismatch:
+                "Le contenu du fichier ne correspond pas à son type d’image.",
             bad_dimensions:
                 "L’image doit mesurer entre 1 × 1 et 4 096 × 4 096 pixels.",
             animated: "Les images animées ne sont pas prises en charge.",
@@ -1265,7 +1313,8 @@ export const frMessages = {
             invalid_asset: "Impossible de stocker l’image importée.",
             too_large: "L’image dépasse 2 Mio.",
             upload_limited: "Trop d’importations. Réessayez dans {seconds} s.",
-            forbidden: "Vous n’avez pas l’autorisation d’importer des logos ici.",
+            forbidden:
+                "Vous n’avez pas l’autorisation d’importer des logos ici.",
             unavailable: "Les importations sont temporairement indisponibles.",
         },
         picker: {
@@ -1289,24 +1338,33 @@ export const frMessages = {
                 "Demande envoyée. Vous pourrez sélectionner l’équipe ici après approbation par un administrateur Logi ; l’auteur recevra la décision en message privé Discord.",
             refreshSnapshot: "Actualiser les informations",
             refreshing: "Actualisation…",
-            snapshotRefreshed: "Informations actualisées depuis le catalogue des équipes.",
+            snapshotRefreshed:
+                "Informations actualisées depuis le catalogue des équipes.",
             archivedSelection:
                 "Équipe archivée ; les informations enregistrées sont conservées pour ce match.",
             mergedBadge: "Fusionnée",
             mergedSelection:
                 "Fusionnée avec une autre équipe du catalogue. Actualisez les informations pour utiliser cette équipe dans le match.",
-            duplicateTeam: "Chaque équipe ne peut occuper qu’un seul emplacement.",
-            duplicateSide: "Chaque camp ne peut être attribué qu’à une seule équipe.",
+            duplicateTeam:
+                "Chaque équipe ne peut occuper qu’un seul emplacement.",
+            duplicateSide:
+                "Chaque camp ne peut être attribué qu’à une seule équipe.",
             errors: {
                 invalid_match_teams: "L’affectation de l’équipe est invalide.",
                 team_not_found: "L’équipe n’existe plus dans le catalogue.",
-                team_archived: "L’équipe est archivée ; choisissez-en une autre.",
+                team_archived:
+                    "L’équipe est archivée ; choisissez-en une autre.",
                 team_game_mismatch: "L’équipe appartient à un autre jeu.",
-                match_concluded: "Les matchs terminés conservent les informations d’équipe enregistrées.",
-                training_event: "Les entraînements n’ont pas d’équipes de match.",
-                forbidden: "Vous n’avez pas l’autorisation de modifier les équipes du match.",
-                unavailable: "Le catalogue des équipes est temporairement indisponible.",
-                rate_limited: "Trop de demandes ; patientez un instant et réessayez.",
+                match_concluded:
+                    "Les matchs terminés conservent les informations d’équipe enregistrées.",
+                training_event:
+                    "Les entraînements n’ont pas d’équipes de match.",
+                forbidden:
+                    "Vous n’avez pas l’autorisation de modifier les équipes du match.",
+                unavailable:
+                    "Le catalogue des équipes est temporairement indisponible.",
+                rate_limited:
+                    "Trop de demandes ; patientez un instant et réessayez.",
             },
         },
     },
@@ -1359,7 +1417,8 @@ export const frMessages = {
             submit: "Envoyer la demande",
             submitting: "Envoi en cours…",
             cancel: "Annuler",
-            unchanged: "Modifiez au moins une information de l’équipe avant l’envoi.",
+            unchanged:
+                "Modifiez au moins une information de l’équipe avant l’envoi.",
             duplicate:
                 "{name} figure déjà dans le catalogue pour ce jeu. Sélectionnez cette équipe ou proposez une modification.",
         },
@@ -1377,7 +1436,8 @@ export const frMessages = {
             invalid: "Vérifiez les informations de la demande et réessayez.",
         },
         errors: {
-            invalid_request: "Vérifiez les informations de la demande et réessayez.",
+            invalid_request:
+                "Vérifiez les informations de la demande et réessayez.",
             not_found: "La demande ou son équipe n’existe plus.",
             not_pending: "Cette demande a déjà été traitée ou annulée.",
             limit_reached:
@@ -1387,10 +1447,14 @@ export const frMessages = {
             team_archived:
                 "L’équipe est archivée ; aucune modification ne peut plus être demandée.",
             team_game_mismatch: "L’équipe appartient à un autre jeu.",
-            invalid_decision: "Cette décision n’est pas applicable à la demande.",
-            forbidden: "Vous n’avez pas l’autorisation de gérer les demandes d’équipes ici.",
-            rate_limited: "Trop de demandes ; patientez un instant et réessayez.",
-            unavailable: "Les demandes d’équipes sont temporairement indisponibles.",
+            invalid_decision:
+                "Cette décision n’est pas applicable à la demande.",
+            forbidden:
+                "Vous n’avez pas l’autorisation de gérer les demandes d’équipes ici.",
+            rate_limited:
+                "Trop de demandes ; patientez un instant et réessayez.",
+            unavailable:
+                "Les demandes d’équipes sont temporairement indisponibles.",
         },
     },
     signupActivity: {
@@ -1464,8 +1528,10 @@ export const frMessages = {
         saveShort: "Enregistrer",
         endTitle: "Doublon ou fin d’activité de l’équipe",
         mergeIntoOther: "Fusionner avec une autre équipe",
-        endHelp: "Les deux actions demandent une confirmation et expliquent ce qui changera.",
-        selectTeam: "Sélectionnez une équipe dans la liste pour voir ses informations.",
+        endHelp:
+            "Les deux actions demandent une confirmation et expliquent ce qui changera.",
+        selectTeam:
+            "Sélectionnez une équipe dans la liste pour voir ses informations.",
         archivedHelp:
             "Une équipe archivée n’est plus proposée aux clans ni aux compétitions. La restaurer permet de la sélectionner à nouveau.",
         mergedHelp:
@@ -1521,7 +1587,8 @@ export const frMessages = {
         saving: "Enregistrement…",
         cancel: "Annuler",
         saved: "Équipe enregistrée.",
-        archivedNotice: "Équipe archivée. Les matchs enregistrés conservent leurs informations d’équipe.",
+        archivedNotice:
+            "Équipe archivée. Les matchs enregistrés conservent leurs informations d’équipe.",
         archiveConfirmTitle: "Archiver {name} ?",
         archiveConfirmDescription:
             "L’archivage prend effet immédiatement. Ce qui change :",
@@ -1544,8 +1611,10 @@ export const frMessages = {
             "Choisissez l’équipe à conserver. {name} sera archivée et renverra vers elle.",
         mergeTarget: "Équipe à conserver",
         mergeSearch: "Rechercher des équipes actives…",
-        mergeSearchHint: "Saisissez du texte pour rechercher les équipes actives de ce jeu.",
-        mergeNoResults: "Aucune autre équipe active ne correspond à cette recherche.",
+        mergeSearchHint:
+            "Saisissez du texte pour rechercher les équipes actives de ce jeu.",
+        mergeNoResults:
+            "Aucune autre équipe active ne correspond à cette recherche.",
         mergeLoading: "Recherche…",
         mergeChooseTarget: "Choisissez l’équipe à conserver.",
         mergeMovesTitle: "Conséquences",
@@ -1568,9 +1637,9 @@ export const frMessages = {
         },
         errors: {
             invalid_team: "Vérifiez les informations de l’équipe et réessayez.",
-            invalid_query:
-                "Impossible de lire le catalogue avec ces filtres.",
-            game_disabled: "Ce jeu n’est pas disponible dans le catalogue des équipes.",
+            invalid_query: "Impossible de lire le catalogue avec ces filtres.",
+            game_disabled:
+                "Ce jeu n’est pas disponible dans le catalogue des équipes.",
             duplicate_name:
                 "Une autre équipe de ce jeu utilise déjà ce nom. Recherchez-la dans le catalogue, y compris parmi les équipes archivées, puis modifiez-la, restaurez-la ou fusionnez-la.",
             revision_conflict:
@@ -1578,7 +1647,8 @@ export const frMessages = {
             idempotency_conflict:
                 "Cet enregistrement a déjà été utilisé pour d’autres valeurs. Fermez la fenêtre et réessayez.",
             not_found: "Cette équipe n’existe plus.",
-            archived: "Cette équipe est archivée. Restaurez-la avant de la modifier.",
+            archived:
+                "Cette équipe est archivée. Restaurez-la avant de la modifier.",
             not_archived: "Cette équipe n’est pas archivée.",
             asset_unavailable:
                 "Le logo n’est plus disponible. Importez-le à nouveau.",
@@ -1593,8 +1663,10 @@ export const frMessages = {
                 "Le catalogue des équipes est actuellement indisponible. Réessayez.",
         },
         uploadErrors: {
-            unsupported_type: "Seules les images PNG, JPEG et WebP sont acceptées.",
-            type_mismatch: "Le contenu du fichier ne correspond pas à son type d’image.",
+            unsupported_type:
+                "Seules les images PNG, JPEG et WebP sont acceptées.",
+            type_mismatch:
+                "Le contenu du fichier ne correspond pas à son type d’image.",
             bad_dimensions:
                 "L’image doit mesurer entre 1 × 1 et 4 096 × 4 096 pixels.",
             animated: "Les images animées ne sont pas prises en charge.",
@@ -1603,7 +1675,8 @@ export const frMessages = {
             invalid_asset: "Impossible de stocker l’image importée.",
             too_large: "L’image dépasse 2 Mio.",
             upload_limited: "Trop d’importations. Réessayez dans {seconds} s.",
-            forbidden: "Seuls les administrateurs globaux peuvent importer les logos du catalogue.",
+            forbidden:
+                "Seuls les administrateurs globaux peuvent importer les logos du catalogue.",
             unavailable: "Les importations sont temporairement indisponibles.",
         },
     },
@@ -1627,8 +1700,10 @@ export const frMessages = {
         snapshotsKept: "Les matchs enregistrés conservent l’ancien logo.",
         approveDirectTitle: "Approuver la demande pour {name} ?",
         approveDirectCreate: "{name} est ajoutée au catalogue {game}.",
-        approveDirectUpdate: "Les informations proposées sont appliquées à {name}.",
-        approveDirectDm: "L’auteur reçoit la décision en message privé Discord.",
+        approveDirectUpdate:
+            "Les informations proposées sont appliquées à {name}.",
+        approveDirectDm:
+            "L’auteur reçoit la décision en message privé Discord.",
         discordUser: "Discord {id}",
         mergeShort: "Fusionner avec une équipe existante",
         title: "Demandes d’équipes",
@@ -1711,7 +1786,8 @@ export const frMessages = {
         approveConfirm: "Approuver la demande",
         approving: "Approbation…",
         merge: "Fusionner avec une équipe existante",
-        mergeRequest: "Fusionner la demande pour {name} avec une équipe existante",
+        mergeRequest:
+            "Fusionner la demande pour {name} avec une équipe existante",
         mergeTitle: "Fusionner avec une équipe existante",
         mergeDescription:
             "Aucune nouvelle équipe n’est créée. L’auteur est informé de l’équipe {game} existante à utiliser.",
@@ -1742,7 +1818,8 @@ export const frMessages = {
         errors: {
             invalid_request: "Cette demande est invalide.",
             invalid_decision: "Vérifiez la décision et réessayez.",
-            invalid_query: "Impossible de lire la file d’attente avec ces filtres.",
+            invalid_query:
+                "Impossible de lire la file d’attente avec ces filtres.",
             not_found: "Cette demande ou cette équipe n’existe plus.",
             not_pending: "Cette demande a déjà été traitée ou retirée.",
             limit_reached: "Le catalogue de ce jeu est complet.",
@@ -1761,10 +1838,14 @@ export const frMessages = {
             invalid_team: "Vérifiez les informations de l’équipe et réessayez.",
             guild_already_linked:
                 "Ce serveur Discord est déjà associé à une équipe.",
-            invalid_merge: "La demande ne peut pas être fusionnée avec cette équipe.",
-            game_disabled: "Ce jeu n’est pas disponible dans le catalogue des équipes.",
-            forbidden: "Seuls les administrateurs globaux peuvent statuer sur les demandes d’équipes.",
-            unavailable: "Les demandes d’équipes sont actuellement indisponibles. Réessayez.",
+            invalid_merge:
+                "La demande ne peut pas être fusionnée avec cette équipe.",
+            game_disabled:
+                "Ce jeu n’est pas disponible dans le catalogue des équipes.",
+            forbidden:
+                "Seuls les administrateurs globaux peuvent statuer sur les demandes d’équipes.",
+            unavailable:
+                "Les demandes d’équipes sont actuellement indisponibles. Réessayez.",
         },
     },
     publicSite: {
@@ -1927,10 +2008,12 @@ export const frMessages = {
 
         breadcrumb: "Fil d’Ariane",
         round: "Journée",
-        roundHelp: "Facultatif, de 1 à 99. Les matchs sont regroupés par journée.",
+        roundHelp:
+            "Facultatif, de 1 à 99. Les matchs sont regroupés par journée.",
         roundHeading: "Journée {round}",
         noRound: "Sans journée",
-        noFixturesInView: "Aucun match dans cette division et cette phase pour le moment.",
+        noFixturesInView:
+            "Aucun match dans cette division et cette phase pour le moment.",
         linkWithMatch: "Associer à un match",
         clanMatch: "Match de {clan}",
         clanMatchUnknown: "Match de clan associé",
@@ -2078,7 +2161,8 @@ export const frMessages = {
         linked: "Actuellement associé à {name}.",
         candidates: "Matchs des espaces de travail associés aux équipes",
         loadingCandidates: "Chargement des matchs…",
-        noCandidates: "Aucun match trouvé dans les espaces de travail associés aux équipes.",
+        noCandidates:
+            "Aucun match trouvé dans les espaces de travail associés aux équipes.",
         teamsMatch: "les deux équipes sont affectées",
         teamsUnassigned: "camps non attribués",
         hasResult: "Résultat importé",
@@ -2094,15 +2178,15 @@ export const frMessages = {
             duplicate_slug: "Une autre compétition utilise déjà cette adresse.",
             duplicate_division:
                 "Cette compétition possède déjà une division portant ce nom.",
-            division_not_found:
-                "La division n’existe plus. Rechargez la page.",
+            division_not_found: "La division n’existe plus. Rechargez la page.",
             division_not_empty:
                 "Déplacez ou supprimez ses équipes et ses rencontres avant de supprimer la division.",
             invalid_order:
                 "Les divisions ont changé entre-temps. Rechargez la page et réessayez.",
             limit_reached: "Cette compétition a atteint sa limite de taille.",
             team_not_found: "L’équipe n’existe plus dans le catalogue.",
-            team_archived: "Les équipes archivées ou fusionnées ne peuvent pas être inscrites.",
+            team_archived:
+                "Les équipes archivées ou fusionnées ne peuvent pas être inscrites.",
             team_game_mismatch:
                 "L’équipe appartient à un autre jeu que la compétition.",
             already_registered:
@@ -2126,7 +2210,8 @@ export const frMessages = {
                 "Les anciennes fiches doivent d’abord être migrées vers les équipes globales.",
             forbidden:
                 "Seuls les administrateurs globaux Logi peuvent gérer les compétitions.",
-            unavailable: "Le service des compétitions est indisponible. Réessayez.",
+            unavailable:
+                "Le service des compétitions est indisponible. Réessayez.",
         },
     },
     articles: {
@@ -2238,7 +2323,8 @@ export const frMessages = {
     },
     resultReview: {
         title: "Vérifier le résultat",
-        dialogHelp: "Vérifiez les scores et les sources de l’événement avant de confirmer.",
+        dialogHelp:
+            "Vérifiez les scores et les sources de l’événement avant de confirmer.",
         description:
             "Les imports restent provisoires jusqu’à la confirmation de cette version par un responsable. Les corrections conservent le résultat précédent et nécessitent un motif.",
         loading: "Chargement…",
@@ -2330,7 +2416,8 @@ export const frMessages = {
         requestErasure: "Demander la suppression du compte",
         erasureWarning:
             "La suppression retire aussi vos affectations de clan, inscriptions, places dans les compositions et autres données liées au compte. Certaines données peuvent être conservées lorsque la loi l’exige.",
-        requestSubmitted: "Votre demande relative aux données personnelles a été envoyée.",
+        requestSubmitted:
+            "Votre demande relative aux données personnelles a été envoyée.",
         title: "Paramètres utilisateur",
         description: "Modifiez votre profil et vos comptes de jeu.",
         profile: "Profil",
@@ -2422,7 +2509,8 @@ export const frMessages = {
     },
     serverSettings: {
         title: "Paramètres du clan",
-        description: "Gérez l’apparence du clan et les personnes autorisées à organiser les opérations.",
+        description:
+            "Gérez l’apparence du clan et les personnes autorisées à organiser les opérations.",
         pageDescription:
             "Modifiez le profil du clan, les automatisations Discord et les droits d’accès de votre espace de travail.",
         frontendOnlyDescription: "Profil du clan et paramètres Discord.",
@@ -2437,14 +2525,16 @@ export const frMessages = {
         languageGerman: "Allemand",
         languagePolish: "Polonais",
         announcementsChannelId: "Identifiant du salon des annonces",
-        eventInfoChannelId: "Identifiant du salon d’informations des événements",
+        eventInfoChannelId:
+            "Identifiant du salon d’informations des événements",
         errorsChannelId: "Identifiant du salon des erreurs",
         calendarChannelId: "Identifiant du salon du calendrier",
         forumCategoryId: "Identifiant de la catégorie des forums",
         squadVoiceCategoryId: "Catégorie vocale des escouades par défaut",
         meetingChannelId: "Identifiant du salon vocal de rassemblement",
         clanRoleId: "Identifiant du rôle du clan",
-        dashboardAdminRoleId: "Identifiant du rôle administrateur du tableau de bord",
+        dashboardAdminRoleId:
+            "Identifiant du rôle administrateur du tableau de bord",
         playerStatsServersTitle: "Connexions aux statistiques des serveurs",
         playerStatsServersDescription:
             "Ajoutez une ou plusieurs connexions API de statistiques. La recherche de joueurs interrogera tous les serveurs configurés.",
@@ -2521,7 +2611,8 @@ export const frMessages = {
         noGroupRole: "Aucun rôle requis",
         saveDiscordSettings: "Enregistrer les paramètres Discord",
         discordSettingsSaved: "Paramètres Discord enregistrés.",
-        discordSettingsSaveError: "Impossible d’enregistrer les paramètres Discord.",
+        discordSettingsSaveError:
+            "Impossible d’enregistrer les paramètres Discord.",
         botRequiredNotice:
             "Le bot doit déjà être présent sur le serveur pour que l’espace de travail complet soit accessible.",
         accessModel: "Modèle d’accès",
@@ -2581,7 +2672,8 @@ export const frMessages = {
             deleteDescription:
                 "Logi cessera immédiatement d’envoyer les changements à {url} et son secret de signature sera invalidé. Cette action est irréversible.",
             deleteConfirm: "Supprimer le webhook",
-            loadFailed: "Impossible de charger les webhooks. Actualisez et réessayez.",
+            loadFailed:
+                "Impossible de charger les webhooks. Actualisez et réessayez.",
             createFailed:
                 "Impossible de créer le webhook. Vérifiez l’adresse et réessayez.",
             actionFailed: "La modification n’a pas été enregistrée. Réessayez.",
@@ -2621,7 +2713,8 @@ export const frMessages = {
             loadFailed: "Impossible de charger les paramètres de suivi.",
             lastScan: "Dernière recherche réussie",
             nextScan: "Prochaine recherche",
-            incomplete: "La liste est incomplète ; ajoutez manuellement les matchs manquants.",
+            incomplete:
+                "La liste est incomplète ; ajoutez manuellement les matchs manquants.",
             queueFull:
                 "La découverte automatique a atteint sa limite. Les matchs existants restent actualisés ; les places restantes sont réservées aux ajouts manuels.",
             sourceError:
@@ -2664,8 +2757,7 @@ export const frMessages = {
         requiredShort: "obligatoire",
         optionalShort: "facultatif",
         untitledQuestion: "Question sans titre",
-        noQuestionsShort:
-            "Aucune question : le fil s’ouvre dès le clic.",
+        noQuestionsShort: "Aucune question : le fil s’ouvre dès le clic.",
         enabledLabel: "Activé",
         enabledAria: "Tickets activés",
         flowLabel: "Fonctionnement d’un ticket",
@@ -2678,18 +2770,20 @@ export const frMessages = {
         panelSection: "Panneau",
         panelChannel: "Salon du panneau",
         threadChannel: "Emplacement des fils",
-        threadChannelHint:
-            "Le bot doit pouvoir créer des fils privés ici.",
+        threadChannelHint: "Le bot doit pouvoir créer des fils privés ici.",
         threadChannelOk: "Le bot peut ouvrir des fils privés ici",
         categoriesShort: "Catégories",
-        categoriesEditorNote: "Chaque catégorie correspond à un bouton du panneau.",
+        categoriesEditorNote:
+            "Chaque catégorie correspond à un bouton du panneau.",
         headingLabel: "Titre",
         textLabel: "Texte",
         imageOptional: "facultatif",
         previewTitle: "Aperçu Discord",
         panelColor: "Couleur du panneau",
-        panelColorHint: "Vide = couleur du clan. Format hexadécimal, ex. : #E8A33D.",
-        panelColorInvalid: "La couleur doit être en hexadécimal, ex. : #E8A33D.",
+        panelColorHint:
+            "Vide = couleur du clan. Format hexadécimal, ex. : #E8A33D.",
+        panelColorInvalid:
+            "La couleur doit être en hexadécimal, ex. : #E8A33D.",
         threadTitle: "Titre de la fiche du fil",
         threadTitlePlaceholder: "{author} signale un joueur",
         threadTitleHint:
@@ -2757,7 +2851,8 @@ export const frMessages = {
         defaultPanelTitle: "Besoin d’aide ?",
         defaultPanelDescription:
             "Choisissez le sujet de votre demande. Un fil privé s’ouvrira, visible uniquement par vous et les administrateurs.",
-        incompleteTitle: "La configuration du panneau de tickets est incomplète",
+        incompleteTitle:
+            "La configuration du panneau de tickets est incomplète",
         incompleteDescription:
             "Les tickets sont activés, mais le panneau Discord ne sera pas publié et les fils ne pourront pas être ouverts tant que ces éléments ne seront pas configurés : {items}.",
         routingInfoTitle: "Attribution des tickets au support",
@@ -2798,9 +2893,9 @@ export const frMessages = {
             rollback: "Annulation de candidature",
         },
         hint: {
-            pending: "Le bot vérifiera les permissions avant de modifier les rôles.",
-            running:
-                "Le bot vérifie Discord et applique la demande actuelle.",
+            pending:
+                "Le bot vérifiera les permissions avant de modifier les rôles.",
+            running: "Le bot vérifie Discord et applique la demande actuelle.",
             retry_scheduled:
                 "Le bot réessaiera automatiquement après le délai d’attente.",
             applied:
@@ -2824,7 +2919,8 @@ export const frMessages = {
         roleSyncOff: "Désactivé",
         roleSyncSwitchDescription:
             "Logi attribue et retire les rôles selon le statut du membre, même lorsque les candidatures sont désactivées.",
-        skipPendingCategoryTitle: "Passer l’attente et ajouter directement comme recrue",
+        skipPendingCategoryTitle:
+            "Passer l’attente et ajouter directement comme recrue",
         skipPendingCategoryHelp: "Membres titulaires uniquement.",
         categoryDescriptionHelp:
             "Dans le panneau, ce texte suit le nom et le jeu ; dans le premier formulaire, il figure sous le nom de la catégorie.",
@@ -2919,7 +3015,8 @@ export const frMessages = {
         embedFieldUsage: "Utilisation du champ de l’encart : {length} / {max}",
         embedFieldTooLong:
             "(trop long, raccourcissez les descriptions des catégories avant d’enregistrer)",
-        incompleteTitle: "La configuration du panneau de recrutement est incomplète",
+        incompleteTitle:
+            "La configuration du panneau de recrutement est incomplète",
         incompleteDescription:
             "Les candidatures sont activées, mais le panneau Discord ne sera pas publié et les fils ne pourront pas être ouverts tant que vous n’aurez pas défini {items}.",
         roleSyncTitle: "Synchronisation des rôles des membres",
@@ -2958,14 +3055,16 @@ export const frMessages = {
         grantAdminAccess: "Nommer administrateur",
         removeAdminAccess: "Retirer les droits d’administration",
         adminAccessGranted: "Le joueur est désormais administrateur.",
-        adminAccessRemoved: "Les droits d’administration du joueur ont été retirés.",
+        adminAccessRemoved:
+            "Les droits d’administration du joueur ont été retirés.",
         recheckDisplayName: "Actualiser le nom affiché",
         recheckingDisplayName: "Vérification du nom affiché…",
         displayNameUpdated: "Nom affiché mis à jour.",
         displayNameUnchanged: "Le nom affiché est déjà à jour.",
         displayNameRecheckFailed:
             "Impossible d’actualiser le nom affiché. Vérifiez que le joueur est présent sur le serveur Discord et que le bot peut accéder à son profil.",
-        adminAccessUpdateFailed: "Impossible de modifier les droits d’administration du joueur.",
+        adminAccessUpdateFailed:
+            "Impossible de modifier les droits d’administration du joueur.",
         title: "Joueurs",
         description: "Gérez les membres et les mercenaires du clan.",
         addMember: "Ajouter comme membre",
@@ -2979,14 +3078,16 @@ export const frMessages = {
         eligibleMembers: "Peut devenir membre",
         eligibleMercs: "Peut devenir mercenaire",
         blocked: "Non admissible",
-        searchPlaceholder: "Nom Discord, nom affiché sur le serveur ou identifiant Discord",
+        searchPlaceholder:
+            "Nom Discord, nom affiché sur le serveur ou identifiant Discord",
         noResults: "Aucun joueur correspondant dans Logi.",
         rulesTitle: "Règles d’affectation",
         rulesMember:
             "Un joueur peut devenir membre principal uniquement s’il n’appartient pas déjà à un autre clan principal.",
         rulesMerc:
             "Un joueur peut être mercenaire dans d’autres clans, mais ne peut pas être à la fois membre et mercenaire du même clan.",
-        rulesSystem: "La recherche porte sur les joueurs disposant déjà d’un compte Logi.",
+        rulesSystem:
+            "La recherche porte sur les joueurs disposant déjà d’un compte Logi.",
         tablePlayer: "Joueur",
         tableType: "Type",
         tableGroup: "Groupe",
@@ -2996,7 +3097,8 @@ export const frMessages = {
         playerNote: "Note du joueur",
         platformNotConnected: "Identifiant de plateforme non renseigné",
         platformConnectedAs: "Identifiant de plateforme défini : {platformId}",
-        platformIdNoSpaces: "L’identifiant de plateforme ne peut pas contenir d’espaces.",
+        platformIdNoSpaces:
+            "L’identifiant de plateforme ne peut pas contenir d’espaces.",
         platformAlreadyLinked:
             "Cet identifiant de plateforme est déjà lié à un autre joueur.",
         paused: "En pause",
@@ -3005,7 +3107,8 @@ export const frMessages = {
         pendingLabel: "En attente",
         recruitLabel: "Recrue",
         addPlayer: "Ajouter un joueur",
-        autoLinkPlatformIds: "Associer automatiquement les identifiants de plateforme",
+        autoLinkPlatformIds:
+            "Associer automatiquement les identifiants de plateforme",
         autoLinkPlatformIdsDescription:
             "Analysez les tableaux de scores importés, retirez le tag du clan des noms des joueurs et renseignez automatiquement les identifiants de plateforme correspondants.",
         autoLinkPlatformIdsHint:
@@ -3021,8 +3124,10 @@ export const frMessages = {
             "Cette opération concerne uniquement les statistiques importées des événements de ce clan. Les matchs des autres clans ne sont pas modifiés.",
         dedupePlayerStatsSuccess:
             "{matches} lignes de match en double supprimées pour {users} joueurs.",
-        refreshPerformanceHistory: "Actualiser les statistiques du clan et des joueurs",
-        refreshPerformanceHistorySuccess: "Statistiques du clan et des joueurs actualisées.",
+        refreshPerformanceHistory:
+            "Actualiser les statistiques du clan et des joueurs",
+        refreshPerformanceHistorySuccess:
+            "Statistiques du clan et des joueurs actualisées.",
         refreshPerformanceHistoryError:
             "Impossible d’actualiser les statistiques du clan et des joueurs.",
         mergeUsers: "Fusionner des comptes",
@@ -3031,7 +3136,8 @@ export const frMessages = {
         mergeUsersPrimary: "Compte principal",
         mergeUsersSecondary: "Compte secondaire",
         mergeUsersPickPrimary: "Choisissez le compte à conserver",
-        mergeUsersPickSecondary: "Choisissez le compte à fusionner avec celui-ci",
+        mergeUsersPickSecondary:
+            "Choisissez le compte à fusionner avec celui-ci",
         mergeUsersHint:
             "Les statistiques, matchs importés, affectations, compositions et références intégrées aux événements seront rattachés au compte principal.",
         mergeUsersConfirm: "Fusionner les comptes",
@@ -3049,7 +3155,8 @@ export const frMessages = {
         membershipMigrationTarget: "Statut d’adhésion cible",
         membershipMigrationHint:
             "Seuls les joueurs déjà affectés à ce clan sont mis à jour. Les membres Discord sans affectation sont ignorés.",
-        membershipMigrationSuccess: "{updated} joueur(s) ont désormais le statut {status}.",
+        membershipMigrationSuccess:
+            "{updated} joueur(s) ont désormais le statut {status}.",
         membershipMigrationSkippedUnassigned:
             "{count} membre(s) Discord sans affectation au clan ignoré(s).",
         membershipMigrationSkippedUnchanged:
@@ -3079,7 +3186,8 @@ export const frMessages = {
         pauseHelp: "À utiliser en cas d’inactivité ou d’absence temporaire.",
         pauseNote: "Motif de la pause",
         pauseNoteRequired: "Ajoutez un motif lorsque l’adhésion est en pause.",
-        pickPlayerFirst: "Choisissez d’abord un joueur dans les résultats de recherche de Logi.",
+        pickPlayerFirst:
+            "Choisissez d’abord un joueur dans les résultats de recherche de Logi.",
         currentAssignment: "Affectation actuelle",
         mainClan: "Clan principal",
         none: "Aucun",
@@ -3113,7 +3221,8 @@ export const frMessages = {
         assignmentSaved: "Affectation du joueur enregistrée.",
         assignmentCreated: "Affectation du joueur créée.",
         assignmentDeleted: "Affectation du joueur supprimée.",
-        primaryGroupRequired: "Choisissez un groupe principal avant d’enregistrer.",
+        primaryGroupRequired:
+            "Choisissez un groupe principal avant d’enregistrer.",
         alreadyAssigned: "Ce joueur est déjà affecté à ce clan.",
         mercenaryRecruitStatusError:
             "Les mercenaires ne peuvent pas avoir le statut de recrue.",
@@ -3129,7 +3238,8 @@ export const frMessages = {
             "Cette affectation n’est liée à aucune catégorie d’adhésion",
         missingMembershipCategoryDescription:
             "Les rôles de recrue et de membre confirmé ne peuvent pas être synchronisés pour les affectations manuelles sans catégorie de candidature associée. Seuls le rôle du clan et les rôles liés aux groupes peuvent être appliqués sur Discord.",
-        missingCategoryRolesTitle: "Les rôles de la catégorie d’adhésion sont incomplets",
+        missingCategoryRolesTitle:
+            "Les rôles de la catégorie d’adhésion sont incomplets",
         missingRecruitRoleDescription:
             "Aucun rôle de recrue n’est configuré pour cette catégorie. ",
         missingFinalRoleDescription:
@@ -3138,7 +3248,8 @@ export const frMessages = {
             "Logi conservera le statut d’adhésion, mais le rôle Discord correspondant à cette étape ne sera pas attribué.",
         platformIdsHint:
             "Séparez les identifiants par des virgules. Un identifiant Steam comporte 17 chiffres et commence par 7656119 ; indiquez les identifiants Xbox et PlayStation sous la forme xbox:… ou psn:….",
-        platformIdsInvalid: "Corrigez les identifiants de plateforme signalés avant d’enregistrer.",
+        platformIdsInvalid:
+            "Corrigez les identifiants de plateforme signalés avant d’enregistrer.",
         platformIssues: {
             steam_format:
                 "Identifiant Steam invalide : il doit comporter 17 chiffres et commencer par 7656119.",
@@ -3185,7 +3296,8 @@ export const frMessages = {
     },
     calendarPage: {
         title: "Calendrier",
-        description: "Ouvrez un événement pour consulter ses détails ou sa composition.",
+        description:
+            "Ouvrez un événement pour consulter ses détails ou sa composition.",
         monthView: "Vue mensuelle des événements",
         moreEvents: "autres événements",
         allDay: "Toute la journée",
@@ -3198,7 +3310,8 @@ export const frMessages = {
         emptyMonth: "Aucun événement prévu ce mois-ci.",
         previousMonth: "Mois précédent",
         nextMonth: "Mois suivant",
-        timezoneHint: "Les horaires sont indiqués dans le fuseau horaire du clan ({timezone}).",
+        timezoneHint:
+            "Les horaires sont indiqués dans le fuseau horaire du clan ({timezone}).",
         start: "Début",
         end: "Fin",
         category: "Catégorie",
@@ -3209,11 +3322,14 @@ export const frMessages = {
         deleteItemTitle: "Supprimer « {title} » ?",
         deleteItemDescription:
             "Cet élément disparaîtra du calendrier et du flux de calendrier pour tout le monde. Cette action est irréversible.",
-        deleteRecurringNote: "Toutes les occurrences de cet élément seront également supprimées.",
+        deleteRecurringNote:
+            "Toutes les occurrences de cet élément seront également supprimées.",
         itemDeleted: "Élément du calendrier supprimé.",
-        itemDeleteFailed: "Impossible de supprimer cet élément du calendrier. Réessayez.",
+        itemDeleteFailed:
+            "Impossible de supprimer cet élément du calendrier. Réessayez.",
         itemCreated: "Élément ajouté au calendrier.",
-        itemCreateFailed: "Impossible d’enregistrer cet élément du calendrier. Réessayez.",
+        itemCreateFailed:
+            "Impossible d’enregistrer cet élément du calendrier. Réessayez.",
         titleRequired: "Saisissez un titre.",
         startRequired: "Choisissez une date et une heure de début.",
         endRequired: "Choisissez une date et une heure de fin.",
@@ -3221,7 +3337,8 @@ export const frMessages = {
     },
     settingsHub: {
         title: "Paramètres du clan",
-        description: "Configurez votre clan, le bot Discord et les intégrations.",
+        description:
+            "Configurez votre clan, le bot Discord et les intégrations.",
         setupTitle: "Configuration initiale",
         setupProgress: "{done} paramètres obligatoires sur {total} configurés",
         setupNext: "Étape suivante : {item}",
@@ -3239,12 +3356,14 @@ export const frMessages = {
             textTitle: "Salons textuels",
             voiceTitle: "Salons vocaux",
             timezone: "Fuseau horaire",
-            timezoneHelp: "Le bot l’utilise pour afficher les horaires des événements.",
+            timezoneHelp:
+                "Le bot l’utilise pour afficher les horaires des événements.",
             language: "Langue du bot",
             languageHelp: "Messages, embeds et réponses aux commandes.",
             announcements: "Annonces",
             required: "obligatoire",
-            announcementsHelp: "Nouveaux événements et modifications des compositions.",
+            announcementsHelp:
+                "Nouveaux événements et modifications des compositions.",
             eventResults: "Résultats des événements",
             eventResultsHelp:
                 "Résultats de matchs confirmés avec scores, résultat du clan et statistiques disponibles. Un seul salon pour tous les jeux.",
@@ -3260,7 +3379,8 @@ export const frMessages = {
             squadVoiceHelp:
                 "Chaque match dispose de sa propre catégorie de salons d’escouade, placée juste en dessous de celle-ci et avec les mêmes permissions.",
             meeting: "Salon de rassemblement",
-            meetingHelp: "Le salon où les joueurs se retrouvent avant un événement.",
+            meetingHelp:
+                "Le salon où les joueurs se retrouvent avant un événement.",
             addChannelException: "Salon différent pour un jeu",
             addCategoryException: "Catégorie différente pour un jeu",
             selectChannel: "Choisir un salon",
@@ -3282,7 +3402,8 @@ export const frMessages = {
                 "Essayez un autre mot, comme salon, rôle ou clé.",
             groupHints: {
                 clan: "S’applique à tous les jeux",
-                matches: "Valeurs par défaut des nouveaux matchs et de leurs messages",
+                matches:
+                    "Valeurs par défaut des nouveaux matchs et de leurs messages",
                 discord: "Bot, salons, rôles et panneaux",
                 gameData: "Serveurs dont Logi récupère les résultats",
                 web: "Facultatif : site du clan, connexion et autres services",
@@ -3376,8 +3497,7 @@ export const frMessages = {
                 },
                 roles: {
                     title: "Rôles et accès",
-                    description:
-                        "Rôle du clan et rôle autorisé à gérer Logi.",
+                    description: "Rôle du clan et rôle autorisé à gérer Logi.",
                 },
                 commands: {
                     title: "Commandes",
@@ -3400,7 +3520,8 @@ export const frMessages = {
                 },
                 history: {
                     title: "Conservation de l’historique",
-                    description: "Durée de conservation des parties jouées dans Logi.",
+                    description:
+                        "Durée de conservation des parties jouées dans Logi.",
                 },
                 league: {
                     title: "Wardogs League",
@@ -3409,7 +3530,8 @@ export const frMessages = {
                 },
                 apiKeys: {
                     title: "Clés API",
-                    description: "Clés pour le site du clan et les autres applications.",
+                    description:
+                        "Clés pour le site du clan et les autres applications.",
                 },
                 login: {
                     title: "Connexion au site",
@@ -3529,7 +3651,8 @@ export const frMessages = {
             checkAccess: "vérifier l’accès",
             noCategory: "Aucune catégorie",
             unsupportedType: "type non pris en charge",
-            manualHelp: "Utilisez l’identifiant d’un salon de ce serveur Discord.",
+            manualHelp:
+                "Utilisez l’identifiant d’un salon de ce serveur Discord.",
         },
         saveBar: {
             none: "Aucune modification non enregistrée",
@@ -3557,8 +3680,10 @@ export const frMessages = {
             noResults: "Aucun rôle correspondant.",
             rolesUnavailable:
                 "Impossible de charger les rôles Discord. Vos paramètres n’ont pas été modifiés ; actualisez la page pour réessayer.",
-            resyncHelp: "À utiliser lorsque des rôles ont changé et que Logi n’est pas encore à jour.",
-            resyncNeedsRole: "Choisissez et enregistrez d’abord un rôle de responsable.",
+            resyncHelp:
+                "À utiliser lorsque des rôles ont changé et que Logi n’est pas encore à jour.",
+            resyncNeedsRole:
+                "Choisissez et enregistrez d’abord un rôle de responsable.",
             resync: "Actualiser depuis Discord",
             resynced: "Accès des responsables actualisés depuis Discord.",
             resyncError: "Impossible d’actualiser les accès des responsables.",
@@ -3596,14 +3721,14 @@ export const frMessages = {
                 yesterday: "hier à {time}",
                 neverTitle: "Les commandes ne sont pas encore enregistrées",
                 never: "Le bot les enregistre dès qu’il est en ligne et qu’il voit ce serveur. Il les réenregistre automatiquement après chaque modification de vos paramètres.",
-                pending:
-                    "Le bot réenregistrera les commandes dans la minute.",
+                pending: "Le bot réenregistrera les commandes dans la minute.",
                 failedTitle: "Échec de l’enregistrement des commandes",
                 failed: "{reason} Vérifiez que le bot est présent sur le serveur et qu’il peut gérer les commandes, puis réessayez.",
                 failures: {
                     forbidden:
                         "Discord n’a pas autorisé le bot à les enregistrer.",
-                    rate_limited: "Discord a temporairement limité les requêtes.",
+                    rate_limited:
+                        "Discord a temporairement limité les requêtes.",
                     unavailable: "Discord n’a pas répondu.",
                 },
                 reregister: "Réenregistrer",
@@ -3645,15 +3770,19 @@ export const frMessages = {
                     },
                     clanMembers: {
                         label: "Membres du clan",
-                        description: "Personnes ayant le rôle du clan défini dans Rôles et accès",
+                        description:
+                            "Personnes ayant le rôle du clan défini dans Rôles et accès",
                     },
                     logiAdmins: {
                         label: "Responsables Logi",
-                        description: "Administrateurs ou personnes ayant le rôle de responsable",
+                        description:
+                            "Administrateurs ou personnes ayant le rôle de responsable",
                     },
                 },
-                rolesHint: "Vous pouvez également autoriser des rôles spécifiques.",
-                audienceWithRoles: "{group}, ainsi que les personnes ayant le rôle {roles}.",
+                rolesHint:
+                    "Vous pouvez également autoriser des rôles spécifiques.",
+                audienceWithRoles:
+                    "{group}, ainsi que les personnes ayant le rôle {roles}.",
                 addRole: "Rôle",
                 addRoleAria: "Ajouter un rôle à {command}",
                 removeRole: "Retirer le rôle {role}",
@@ -3661,7 +3790,8 @@ export const frMessages = {
                 noRoles: "Aucun autre rôle",
                 replies: {
                     private: "Uniquement l’auteur",
-                    privateShare: "Uniquement l’auteur, avec un bouton Partager",
+                    privateShare:
+                        "Uniquement l’auteur, avec un bouton Partager",
                 },
                 fixedWho: {
                     help: "Tout le serveur · chacun ne voit que ses commandes",
@@ -3675,7 +3805,8 @@ export const frMessages = {
                 removeChannel: "Retirer le salon {channel}",
                 searchChannels: "Rechercher un salon",
                 noChannels: "Aucun autre salon",
-                channelsHint: "Ailleurs, le bot indique dans quels salons la commande est disponible.",
+                channelsHint:
+                    "Ailleurs, le bot indique dans quels salons la commande est disponible.",
                 playerShareHint:
                     "Partager publie le profil dans le salon où la commande a été utilisée.",
                 whoLabel: "Qui peut utiliser {command}",
@@ -3719,6 +3850,7 @@ export const frMessages = {
                     en: "Anglais",
                     de: "Allemand",
                     pl: "Polonais",
+                    fr: "Français",
                 },
                 command: "Commandement",
                 clanLanguage: "langue du clan",
@@ -3727,9 +3859,11 @@ export const frMessages = {
                     en: "Anglais",
                     de: "Deutsch",
                     pl: "Polski",
+                    fr: "Français",
                 },
             },
-            saveNote: "Après l’enregistrement, le bot réenregistre les commandes.",
+            saveNote:
+                "Après l’enregistrement, le bot réenregistre les commandes.",
             saved: "Paramètres des commandes enregistrés. Le bot réenregistre les commandes.",
             saveError: "Impossible d’enregistrer les paramètres des commandes.",
         },
@@ -3767,10 +3901,11 @@ export const frMessages = {
             factionsChange: "Modifier les symboles",
             language: "Langue",
             languages: {
-                en: "Anglais",
                 cs: "Tchèque",
+                en: "Anglais",
                 de: "Allemand",
                 pl: "Polonais",
+                fr: "Français",
             },
             languageFrom: "Origine",
             languageLink: "Salons et langue",
@@ -3833,7 +3968,8 @@ export const frMessages = {
                     title: "Modifications de la composition",
                     detail: "À la prochaine publication · choix par défaut dans la fenêtre Publier",
                     target: "dans le salon de la composition",
-                    switchLabel: "Présélectionner les modifications de la composition",
+                    switchLabel:
+                        "Présélectionner les modifications de la composition",
                 },
                 forum: {
                     title: "Forum du match",
@@ -3849,8 +3985,7 @@ export const frMessages = {
                     title: "Absences et retards dans le fil du match",
                     detail: "Après /notice, En retard ou Je ne pourrai pas venir : joueur, retard ou absence et heure d’arrivée · seuls les responsables voient le motif, sur le site",
                     target: "fil du forum du match",
-                    switchLabel:
-                        "Absences et retards dans le fil du match",
+                    switchLabel: "Absences et retards dans le fil du match",
                 },
                 scheduledEvent: {
                     title: "Événement Discord",
@@ -3893,7 +4028,8 @@ export const frMessages = {
                     title: "Changement d’affectation",
                     detail: "Aux joueurs dont l’escouade ou le rôle a changé · choix par défaut dans la fenêtre Publier",
                     target: "MP aux joueurs",
-                    switchLabel: "Présélectionner les changements d’affectation",
+                    switchLabel:
+                        "Présélectionner les changements d’affectation",
                 },
                 teamRequest: {
                     title: "Demande d’équipe",
@@ -3952,7 +4088,8 @@ export const frMessages = {
             panels: {
                 intro: "Gérez chaque panneau sur la page {link}. Cette section présente uniquement un aperçu.",
                 add: "Ajouter un panneau",
-                liveDetail: "Serveur en direct · actualisation toutes les {seconds} s",
+                liveDetail:
+                    "Serveur en direct · actualisation toutes les {seconds} s",
                 liveButtons: "{buttons} boutons",
                 buttonNames: {
                     join: "Rejoindre",
@@ -3965,7 +4102,8 @@ export const frMessages = {
                 combinedTitle: "Nos serveurs",
                 combinedDetail: "{servers} dans un seul message",
                 controlTitle: "Gestion du serveur",
-                controlDetail: "Seed, Actualiser et Pause · responsables Logi uniquement",
+                controlDetail:
+                    "Seed, Actualiser et Pause · responsables Logi uniquement",
                 resultsTitle: "Résultats {game}",
                 resultsDetail:
                     "Après confirmation d’un résultat dans Logi · publie les 5 derniers résultats confirmés à la création",
@@ -3992,7 +4130,8 @@ export const frMessages = {
                 controlSwitch: "Gestion du serveur",
                 leagueSwitch: "Panneaux WD League",
                 calendarSwitch: "Panneau du calendrier",
-                calendarHint: "Le salon du calendrier se définit dans Panneaux Discord.",
+                calendarHint:
+                    "Le salon du calendrier se définit dans Panneaux Discord.",
                 errorFallback: "Le dernier envoi a échoué.",
                 loading: "Chargement des panneaux…",
                 unavailable: "Impossible de charger les panneaux.",
@@ -4132,7 +4271,8 @@ export const frMessages = {
             },
             webhooks: {
                 title: "Webhooks",
-                description: "Envoyez les événements de Logi à vos propres services.",
+                description:
+                    "Envoyez les événements de Logi à vos propres services.",
             },
             imports: {
                 title: "Imports et corrections des données",
@@ -4174,13 +4314,15 @@ export const frMessages = {
                     checking:
                         "Le bot est présent sur le serveur. Vérification de ses accès…",
                     blind: "Le bot est présent sur le serveur, mais ne voit pas les salons et les rôles. Accordez-lui les permissions Voir les salons et Gérer les rôles sur Discord.",
-                    missing: "Le bot n’est pas encore sur le serveur de votre clan.",
+                    missing:
+                        "Le bot n’est pas encore sur le serveur de votre clan.",
                     invite: "Inviter le bot",
                     checkAgain: "Vérifier à nouveau",
                 },
                 games: {
                     heading: "À quels jeux votre clan joue-t-il ?",
-                    description: "Sélectionnez les jeux pratiqués par votre clan.",
+                    description:
+                        "Sélectionnez les jeux pratiqués par votre clan.",
                     groupLabel: "Jeux du clan",
                     required: "Choisissez au moins un jeu.",
                 },
@@ -4205,14 +4347,16 @@ export const frMessages = {
                     description:
                         "Choisissez les salons de votre Discord. Vous pourrez définir des salons différents pour chaque jeu ultérieurement.",
                     announcements: "Annonces",
-                    announcementsHelp: "Nouveaux événements et modifications des compositions.",
+                    announcementsHelp:
+                        "Nouveaux événements et modifications des compositions.",
                     eventResults: "Résultats des événements",
                     eventResultsHelp:
                         "Scores confirmés et liens vers les statistiques des matchs. Facultatif ; commun à tous les jeux.",
                     eventInfo: "Informations sur les événements",
                     eventInfoHelp: "Détails des événements et inscriptions.",
                     errors: "Erreurs du bot",
-                    errorsHelp: "Réservé aux administrateurs, lorsqu’un problème survient.",
+                    errorsHelp:
+                        "Réservé aux administrateurs, lorsqu’un problème survient.",
                     choose: "Choisir un salon",
                     none: "Aucun",
                 },
@@ -4249,9 +4393,11 @@ export const frMessages = {
     },
     configurationScope: {
         clanWide: "Configuration commune au clan",
-        clanWideDescription: "Les modifications s’appliquent à tous les jeux actifs de ce clan.",
+        clanWideDescription:
+            "Les modifications s’appliquent à tous les jeux actifs de ce clan.",
         singleGame: "Configuration propre au jeu",
-        singleGameDescription: "Les modifications s’appliquent uniquement au jeu sélectionné.",
+        singleGameDescription:
+            "Les modifications s’appliquent uniquement au jeu sélectionné.",
     },
     calendarCards: {
         eventCalendar: "Calendrier des événements",
@@ -4428,7 +4574,8 @@ export const frMessages = {
             save: "Enregistrer les présences",
             saved: "Présences enregistrées.",
             saveFirst: "Enregistrez les présences avant de clôturer le match.",
-            closedApplied: "Le match est clôturé et les points ont été attribués.",
+            closedApplied:
+                "Le match est clôturé et les points ont été attribués.",
             closedSkipped:
                 "Le match est clôturé sans attribution de points : il a été annulé avant le rassemblement.",
             closedPending:
@@ -4437,7 +4584,8 @@ export const frMessages = {
             noRosterDescription:
                 "Les présences sont enregistrées dans la composition. Créez-la d’abord.",
             empty: "Cette liste est vide.",
-            lastLoaded: "Dernière lecture à {time} : {count} joueurs dans {channel}",
+            lastLoaded:
+                "Dernière lecture à {time} : {count} joueurs dans {channel}",
             fromVoice: "depuis le salon vocal",
             noResponseHint:
                 "{count} joueurs n’ont pas encore répondu à l’inscription.",
@@ -4528,10 +4676,12 @@ export const frMessages = {
                 "Un résultat confirmé ne peut être corrigé qu’avec un motif. La correction est consignée ici.",
             unknownMap: "carte inconnue",
             stats: "Statistiques du match",
-            statsDescription: "Statistiques des joueurs importées pour ce match.",
+            statsDescription:
+                "Statistiques des joueurs importées pour ce match.",
             openStats: "Ouvrir les statistiques",
             importTitle: "Importer depuis un lien",
-            membersOnly: "Seuls les administrateurs du clan voient et valident le résultat.",
+            membersOnly:
+                "Seuls les administrateurs du clan voient et valident le résultat.",
             notYetTitle: "Aucun résultat pour le moment",
             notYetDescription:
                 "Le résultat sera vérifié ici une fois le match joué.",
@@ -4572,11 +4722,13 @@ export const frMessages = {
             },
             badges: {
                 blade: "Au corps à corps",
-                bladeDescription: "A éliminé un adversaire avec une arme de mêlée.",
+                bladeDescription:
+                    "A éliminé un adversaire avec une arme de mêlée.",
                 miner: "Poseur de mines",
                 minerDescription: "A éliminé un adversaire avec une mine.",
                 artillery: "Artillerie",
-                artilleryDescription: "A réalisé au moins 3 kills à l’artillerie.",
+                artilleryDescription:
+                    "A réalisé au moins 3 kills à l’artillerie.",
                 streak: "Série",
                 streakDescription: "A réalisé une série d’au moins 8 kills.",
                 friendlyFire: "Tir allié",
@@ -4628,7 +4780,8 @@ export const frMessages = {
         },
     },
     roster: {
-        noPresets: "Créez un modèle d’escouades pour commencer cette composition.",
+        noPresets:
+            "Créez un modèle d’escouades pour commencer cette composition.",
         createPreset: "Créer un modèle d’escouades",
 
         dragSection: "Déplacer la section",
@@ -4666,7 +4819,8 @@ export const frMessages = {
         changeSquadTemplateTitle: "Changer de modèle d’escouades ?",
         changeSquadTemplateDescription:
             "Cette action remplace la structure des escouades et réinitialise toutes les affectations manuelles. Les joueurs actuellement affectés retourneront en réserve.",
-        changeSquadTemplateAction: "Changer de modèle et réinitialiser les affectations",
+        changeSquadTemplateAction:
+            "Changer de modèle et réinitialiser les affectations",
         squadTemplateChanged:
             "Modèle d’escouades modifié. Enregistrez la composition pour l’appliquer.",
         setupRoster: "Préparer la composition",
@@ -4693,7 +4847,8 @@ export const frMessages = {
         defaultSquadGroup: "Escouade d’infanterie",
         defaultSquadLeadRole: "Chef d’escouade",
         versusDelimiter: "vs",
-        rosterNotAssigned: "La composition n’est pas encore associée à un événement.",
+        rosterNotAssigned:
+            "La composition n’est pas encore associée à un événement.",
         rosterNotCreated: "La composition n’a pas encore été créée.",
         rosterNotAvailable: "Composition pas encore disponible.",
         notAttending: "Absent",
@@ -4713,7 +4868,8 @@ export const frMessages = {
         confirmFromMeetingChannel: "Confirmer depuis le vocal de rassemblement",
         confirmFromMeetingChannelHelp:
             "Définissez un salon vocal de rassemblement dans les paramètres du clan pour activer cette action.",
-        confirmingFromMeetingChannel: "Confirmation depuis le vocal de rassemblement…",
+        confirmingFromMeetingChannel:
+            "Confirmation depuis le vocal de rassemblement…",
         confirmedFromMeetingChannel:
             "{count} joueur(s) de la composition confirmé(s) depuis le vocal de rassemblement.",
         noRosterPlayersInMeetingChannel:
@@ -4734,7 +4890,8 @@ export const frMessages = {
         addGame: "Ajouter un jeu",
         newGameName: "Nouveau jeu",
         gameId: "Identifiant du jeu",
-        managedIconAssetId: "Identifiant de la ressource d’icône gérée (facultatif)",
+        managedIconAssetId:
+            "Identifiant de la ressource d’icône gérée (facultatif)",
         displayName: "Nom affiché",
         eventSelectionLabel: "Libellé du sélecteur d’événement",
         optionsOnePerLine: "Options (une par ligne)",
@@ -4800,9 +4957,11 @@ export const frMessages = {
         publish: "Publier",
         draftSaved: "Brouillon enregistré.",
         published: "Match enregistré ; en attente d’envoi sur Discord.",
-        publishedTraining: "Entraînement enregistré ; en attente d’envoi sur Discord.",
+        publishedTraining:
+            "Entraînement enregistré ; en attente d’envoi sur Discord.",
         errors: {
-            invalid_event: "Vérifiez les informations de ces étapes : {fields}.",
+            invalid_event:
+                "Vérifiez les informations de ces étapes : {fields}.",
             not_found:
                 "Ce brouillon n’existe plus. Quelqu’un l’a peut-être supprimé.",
             not_draft: "Ce match a déjà été publié.",
@@ -4820,9 +4979,11 @@ export const frMessages = {
             targetPlaceholder: "ex. : Sommet d’Hyjal",
             game: "Jeu",
             template: "Modèle",
-            noTemplates: "Aucun modèle pour le moment ; les valeurs par défaut sont utilisées.",
+            noTemplates:
+                "Aucun modèle pour le moment ; les valeurs par défaut sont utilisées.",
             manageTemplates: "Modifier les modèles",
-            templateRegistration: "Les inscriptions ferment {hours} h avant le rassemblement",
+            templateRegistration:
+                "Les inscriptions ferment {hours} h avant le rassemblement",
             templateTraining: "Sans adversaire ni carte",
             teams: "Équipes",
             yourClan: "Votre clan",
@@ -4873,7 +5034,8 @@ export const frMessages = {
                 skirmish: "Skirmish",
                 koth: "King of the Hill",
             },
-            storedMap: "Carte enregistrée : {map}. Choisissez une carte uniquement pour la remplacer.",
+            storedMap:
+                "Carte enregistrée : {map}. Choisissez une carte uniquement pour la remplacer.",
             otherTeam: "Autre équipe",
             addTeam: "Ajouter une autre équipe",
             otherSide: "Camp de l’autre équipe",
@@ -5005,7 +5167,8 @@ export const frMessages = {
             server: "Serveur",
             serverPlaceholder: "Nom du serveur",
             password: "Mot de passe",
-            passwordHint: "Seuls les joueurs de la composition voient le mot de passe.",
+            passwordHint:
+                "Seuls les joueurs de la composition voient le mot de passe.",
             defaultChannel: "Salon par défaut",
             channelsLocked:
                 "Les salons restent ceux définis lors de la publication du match ; le bot y gère ses messages.",
@@ -5104,9 +5267,11 @@ export const frMessages = {
             save: "Enregistrer les modifications",
             saved: "Modifications enregistrées.",
             leaveTitle: "Abandonner les modifications non enregistrées ?",
-            leaveDescription: "Vos modifications de ce match ne seront pas enregistrées.",
+            leaveDescription:
+                "Vos modifications de ce match ne seront pas enregistrées.",
             leaveConfirm: "Abandonner les modifications",
-            leavePrompt: "Des modifications ne sont pas enregistrées. Quitter quand même ?",
+            leavePrompt:
+                "Des modifications ne sont pas enregistrées. Quitter quand même ?",
             series: "Ce match appartient à une série hebdomadaire. Les modifications s’appliquent uniquement à cette date.",
             seriesEdit: "Modifier la série",
             seriesSource:
@@ -5177,9 +5342,11 @@ export const frMessages = {
         overview: {
             title: "Vue d’ensemble",
             description: "Détails du match et annonce Discord.",
-            descriptionTraining: "Détails de l’entraînement et annonce Discord.",
+            descriptionTraining:
+                "Détails de l’entraînement et annonce Discord.",
             edit: "Modifier",
-            readOnly: "Seuls les responsables du clan peuvent modifier le match.",
+            readOnly:
+                "Seuls les responsables du clan peuvent modifier le match.",
             stratmaps: "Cartes tactiques",
             previewHint: "Ce que voient les joueurs actuellement",
         },
@@ -5327,7 +5494,8 @@ export const frMessages = {
             ],
         },
         recurringTitle: "Matchs récurrents",
-        recurringDescription: "Séries de matchs suivant un calendrier récurrent.",
+        recurringDescription:
+            "Séries de matchs suivant un calendrier récurrent.",
         recurringStopHint:
             "Pour modifier ou arrêter une série, ouvrez son match et modifiez les paramètres de répétition.",
         editSeries: "Modifier la série",
@@ -5348,7 +5516,8 @@ export const frMessages = {
         saved: "Modèles enregistrés.",
         errors: {
             too_many: "Un clan peut avoir jusqu’à 20 modèles.",
-            duplicate_id: "Deux modèles ont le même identifiant. Actualisez la page.",
+            duplicate_id:
+                "Deux modèles ont le même identifiant. Actualisez la page.",
             missing_name: "Donnez un nom au modèle.",
             invalid_times:
                 "Les horaires doivent être des nombres entiers et la durée d’au moins une minute.",
@@ -5434,10 +5603,10 @@ export const frMessages = {
             pingClan: "Rôle du clan",
             pingRoles: "Rôles choisis",
             password: "Mot de passe du serveur",
-            passwordHint: "Les messages publics n’affichent jamais le mot de passe.",
+            passwordHint:
+                "Les messages publics n’affichent jamais le mot de passe.",
             passwordRoster: "Uniquement aux joueurs de la composition",
-            passwordRosterHint:
-                "Bouton Mon affectation et rappel de présence",
+            passwordRosterHint: "Bouton Mon affectation et rappel de présence",
         },
         roster: {
             title: "Composition",
@@ -5445,9 +5614,11 @@ export const frMessages = {
             presetHint:
                 "Après la clôture des inscriptions, vous créez la composition à partir de ce modèle.",
             presetNone: "Aucun modèle",
-            presetAllGames: "Choisissez un jeu pour pouvoir sélectionner un modèle d’escouades.",
+            presetAllGames:
+                "Choisissez un jeu pour pouvoir sélectionner un modèle d’escouades.",
             attendance: "Rappels de présence",
-            attendanceHint: "MP aux joueurs de la composition n’ayant pas confirmé.",
+            attendanceHint:
+                "MP aux joueurs de la composition n’ayant pas confirmé.",
             hours: "{count} h",
             beforeMeeting: "avant le rassemblement",
         },
@@ -5482,13 +5653,15 @@ export const frMessages = {
             note: "Généré à partir des mêmes champs que l’annonce du bot. Les joueurs inscrits et le lien du forum apparaîtront une fois le match créé.",
             today: "Aujourd’hui",
         },
-        createDescription: "Définissez les valeurs par défaut des nouveaux matchs.",
+        createDescription:
+            "Définissez les valeurs par défaut des nouveaux matchs.",
     },
     event: {
         signupStatusSignedUpAs: "Vous êtes inscrit en tant que : {type}.",
         signupStatusGeneral: "participant sans groupe",
         signupStatusDeclined: "Vous avez indiqué votre indisponibilité.",
-        signupStatusNotSignedUp: "Vous n’êtes pas encore inscrit à cet événement.",
+        signupStatusNotSignedUp:
+            "Vous n’êtes pas encore inscrit à cet événement.",
         infoTitle: "Informations sur les événements",
         infoDescription: "Horaires, inscriptions et paramètres Discord.",
         listDescription: "Événements du clan à venir et passés.",
@@ -5513,7 +5686,8 @@ export const frMessages = {
         topicPresetCompleteMatch: "Match complet",
         topicPresetPartialMatch: "Match partiel",
         resyncTopicThread: "Resynchroniser le fil de sujet",
-        topicThreadResyncQueued: "Resynchronisation du fil de sujet en attente.",
+        topicThreadResyncQueued:
+            "Resynchronisation du fil de sujet en attente.",
         generalSignupDescription:
             "Activer un bouton d’inscription général qui affecte les joueurs à leur groupe principal s’il est disponible pour ce match, sinon à la réserve.",
         signupGroupsDescription:
@@ -5523,7 +5697,8 @@ export const frMessages = {
         allowedSignupStatusesAll: "Tous les statuts de membre du clan",
         signupReminderStatusesDescription:
             "Envoyer le message complet d’inscription au match par MP toutes les 24 heures, à partir de 24 heures après sa création et jusqu’à la clôture des inscriptions. Ne sélectionnez aucun statut pour désactiver cette fonction.",
-        signupReminderDisabled: "Les rappels quotidiens d’inscription sont désactivés.",
+        signupReminderDisabled:
+            "Les rappels quotidiens d’inscription sont désactivés.",
         createForumChannelDescription:
             "Créer le salon forum Discord et les sujets de briefing de cet événement.",
         conclude: "Clôturer l’événement",
@@ -5567,7 +5742,8 @@ export const frMessages = {
         playersTab: "Joueurs",
         weaponsTab: "Armes",
         killsByTypeTab: "Kills par type",
-        noMatchLinked: "Aucun match importé n’est encore associé à cet événement.",
+        noMatchLinked:
+            "Aucun match importé n’est encore associé à cet événement.",
         alliedTeam: "Alliés",
         axisTeam: "Axe",
         teamUnknown: "Inconnu",
@@ -5611,7 +5787,8 @@ export const frMessages = {
             forumTitle: "La catégorie de forum n’est pas définie",
             forumDescription:
                 "Cet événement prévoit la création d’un salon forum Discord, mais aucune catégorie n’est configurée. Le forum et les sujets de briefing ne seront pas créés tant que ce paramètre restera vide.",
-            meetingAutomationTitle: "L’automatisation du vocal de rassemblement est désactivée",
+            meetingAutomationTitle:
+                "L’automatisation du vocal de rassemblement est désactivée",
             meetingAutomationDescription:
                 "Les événements Discord programmés et la confirmation des présences depuis le vocal de rassemblement nécessitent tous deux un salon vocal de rassemblement défini pour le clan.",
             openClanSettings: "Ouvrir les paramètres du clan",
@@ -5651,7 +5828,8 @@ export const frMessages = {
             rewardRoleIds: "Identifiants des rôles de récompense",
             signupGroupIds: "Groupes d’inscription visibles",
             allowedSignupStatuses: "Statuts autorisés à s’inscrire",
-            signupReminderStatuses: "Destinataires des rappels quotidiens d’inscription",
+            signupReminderStatuses:
+                "Destinataires des rappels quotidiens d’inscription",
             useGeneralSignup: "Activer l’inscription générale",
             allowRankedSignup: "Autoriser des groupes de secours",
             pingClan: "Mentionner le clan",
@@ -5677,7 +5855,8 @@ export const frMessages = {
         quickScheduleTitle: "Planification rapide",
         quickScheduleDescription:
             "Définissez les quatre horaires clés de ce match. Vous pouvez modifier la chronologie générée à tout moment.",
-        registrationHoursBefore: "Heures avant le rassemblement pour fermer les inscriptions",
+        registrationHoursBefore:
+            "Heures avant le rassemblement pour fermer les inscriptions",
         meetingMinutesBefore: "Minutes avant le début pour le rassemblement",
         durationHours: "Durée (heures)",
         durationMinutes: "Durée du match (minutes)",
@@ -5706,7 +5885,8 @@ export const frMessages = {
         wizardNext: "Suivant",
         discordPreview: "Aperçu Discord",
         previewUntitled: "Événement sans titre",
-        previewNoDescription: "La description de votre événement apparaîtra ici.",
+        previewNoDescription:
+            "La description de votre événement apparaîtra ici.",
         createMatchAction: "Créer le match",
         createTrainingAction: "Créer l’entraînement",
         recurrenceEditHelp:
@@ -5717,16 +5897,20 @@ export const frMessages = {
         topicDescription:
             "Sujets de briefing réutilisables. Modifier un modèle ne change pas les matchs existants.",
         squadTitle: "Modèles d’escouades",
-        squadDescription: "Escouades, rôles et emplacements réutilisables pour les nouvelles compositions.",
+        squadDescription:
+            "Escouades, rôles et emplacements réutilisables pour les nouvelles compositions.",
         createTopicTitle: "Créer un modèle de sujets",
-        createTopicDescription: "Ajoutez les sujets du briefing et leur contenu.",
+        createTopicDescription:
+            "Ajoutez les sujets du briefing et leur contenu.",
         createSquadTitle: "Créer un modèle d’escouades",
-        createSquadDescription: "Ajoutez des escouades, des rôles et des emplacements.",
+        createSquadDescription:
+            "Ajoutez des escouades, des rôles et des emplacements.",
         presetDetails: "Détails du modèle",
         presetCreateMode: "La création ouvre directement le mode édition.",
         squadPresetPageDescription:
             "Escouades et rôles prédéfinis pouvant être copiés dans les compositions d’événements.",
-        squadPresetMetaDescription: "Structure d’escouades prédéfinie pour les nouvelles compositions.",
+        squadPresetMetaDescription:
+            "Structure d’escouades prédéfinie pour les nouvelles compositions.",
         topicPresetMetaDescription:
             "Modèles de briefing réutilisables, copiés dans les événements au besoin.",
         topics: "Sujets",
@@ -5751,7 +5935,8 @@ export const frMessages = {
         shortNote: "Note",
         untitledPreset: "Modèle sans titre",
         topicPresetMetaFallback: "Modèle de sujets",
-        topicPresetPageDescription: "Sujets de briefing réutilisables dans les matchs.",
+        topicPresetPageDescription:
+            "Sujets de briefing réutilisables dans les matchs.",
         squadPresetMetaFallback: "Modèle d’escouades",
         fields: {
             name: "Nom",
@@ -5773,7 +5958,8 @@ export const frMessages = {
         emptyTopicTitle: "Aucun modèle de sujets pour le moment",
         emptyTopicAdmin:
             "Un modèle de sujets contient les briefings qu’un match copie dans son forum Discord.",
-        emptyMember: "Les administrateurs de votre clan n’ont pas encore créé de modèles.",
+        emptyMember:
+            "Les administrateurs de votre clan n’ont pas encore créé de modèles.",
         delete: {
             action: "Supprimer le modèle",
             title: "Supprimer le modèle {name} ?",
@@ -5876,15 +6062,18 @@ export const frMessages = {
         noMatchTitle: "Aucun match prévu",
         noMatchManager:
             "Planifiez le prochain match et le bot l’annoncera sur Discord.",
-        noMatchMember: "Les matchs planifiés par vos responsables apparaîtront ici.",
+        noMatchMember:
+            "Les matchs planifiés par vos responsables apparaîtront ici.",
         waitingTitle: "À traiter",
         missingResult: "Ajouter le résultat de {name}",
         confirmResult: "Confirmer le résultat de {name}",
         resultScore: "{score} · {date}",
         resultNoScore: "Résultat à valider · {date}",
         requirementHints: {
-            enabledGames: "Logi affiche les matchs et les paramètres de ces jeux.",
-            announcements: "Sans ce salon, le bot ne peut pas annoncer les nouveaux événements.",
+            enabledGames:
+                "Logi affiche les matchs et les paramètres de ces jeux.",
+            announcements:
+                "Sans ce salon, le bot ne peut pas annoncer les nouveaux événements.",
             clanRole: "Logi l’utilise pour identifier les membres du clan.",
         },
         applications: {
@@ -5936,11 +6125,13 @@ export const frMessages = {
             },
             nobody: "Tout le monde a déjà répondu ; aucun rappel n’était nécessaire.",
             failed: "Impossible d’envoyer le rappel. Réessayez.",
-            rateLimited: "Un rappel a été envoyé récemment. Réessayez plus tard.",
+            rateLimited:
+                "Un rappel a été envoyé récemment. Réessayez plus tard.",
             done: "Rappel envoyé",
         },
         pointsTitle: "Meilleurs scores de présence · {month}",
-        pointsEmpty: "Personne n’a encore gagné de points de présence ce mois-ci.",
+        pointsEmpty:
+            "Personne n’a encore gagné de points de présence ce mois-ci.",
         pointsUnknownMember: "Membre sans compte Logi",
         statsTitle: "Statistiques du clan",
     },
@@ -5960,7 +6151,8 @@ export const frMessages = {
         noRecentGames: "Aucun résultat de match enregistré pour le moment.",
         topPlayers: "Meilleurs joueurs",
         matchesPlayed: "matchs joués",
-        noPlayerStats: "Aucune statistique de joueur n’a été importée pour ces matchs.",
+        noPlayerStats:
+            "Aucune statistique de joueur n’a été importée pour ces matchs.",
         performanceTrend: "Évolution des performances du clan",
         statsForGame: "Statistiques {game}",
         playerPerformanceTrend: "Évolution des performances",
@@ -5989,9 +6181,11 @@ export const frMessages = {
         backendTitle: "Données",
         backendBody: "Événements, membres et compositions du clan.",
         languageTitle: "Langue",
-        languageBody: "Choisissez la langue de l’application dans les paramètres de votre compte.",
+        languageBody:
+            "Choisissez la langue de l’application dans les paramètres de votre compte.",
         importsTitle: "Imports",
-        importsBody: "Importez des événements, des joueurs et des identifiants de plateforme.",
+        importsBody:
+            "Importez des événements, des joueurs et des identifiants de plateforme.",
         helperDataTitle: "Données de référence",
         helperDataBody:
             "Les groupes et les modèles d’escouades et de sujets servent uniquement de sources de copie. Leur réinitialisation ne modifie jamais les anciens événements ni les anciennes compositions.",
@@ -5999,14 +6193,15 @@ export const frMessages = {
         systemBody: "Clés API du clan et outils de maintenance.",
         websiteApi: "API du site",
         webhooksTitle: "Webhooks",
-        webhooksBody: "Configurez les notifications signées des changements du clan.",
+        webhooksBody:
+            "Configurez les notifications signées des changements du clan.",
         webhookDelivery: "Envoi des webhooks",
         webhookDocumentation: "Lire la documentation des webhooks",
         webhookPayloadTitle: "Corps et en-têtes des requêtes",
         webhookPayloadBody:
             "Logi envoie une requête POST. Vérifiez la signature sur les octets JSON bruts, sans modification, avant d’analyser le corps.",
         webhookHeadersBody:
-            "La signature est le HMAC-SHA256 de X-Logi-Timestamp + \".\" + le corps brut de la requête, calculé avec le secret de signature du webhook. X-Logi-Delivery identifie la tentative d’envoi et diffère du champ id du corps.",
+            'La signature est le HMAC-SHA256 de X-Logi-Timestamp + "." + le corps brut de la requête, calculé avec le secret de signature du webhook. X-Logi-Delivery identifie la tentative d’envoi et diffère du champ id du corps.',
         webhookApiReference: "Schéma de l’API",
         webhookEventsTitle: "Événements que votre endpoint peut recevoir",
         webhookEventsBody:
@@ -6070,7 +6265,8 @@ export const frMessages = {
         title: "Cartes tactiques",
         createTitle: "Créer une carte tactique",
         pageDescription: "Cartes tactiques pour les briefings de match.",
-        createDescription: "Choisissez une carte et ajoutez votre plan tactique.",
+        createDescription:
+            "Choisissez une carte et ajoutez votre plan tactique.",
         detailDescription:
             "Planifiez vos matchs ensemble sur une carte tactique en temps réel.",
         viewMap: "Consultez la carte interactive et le plan tactique.",
@@ -6089,16 +6285,19 @@ export const frMessages = {
         side: "Camp",
         saveDetails: "Enregistrer les détails",
         detailsSaved: "Détails de la carte tactique enregistrés.",
-        saveDetailsError: "Impossible d’enregistrer les détails de la carte tactique.",
+        saveDetailsError:
+            "Impossible d’enregistrer les détails de la carte tactique.",
         saveStateError: "Impossible d’enregistrer l’état de la carte tactique.",
         createError: "Impossible de créer la carte tactique.",
         titleRequired: "Le titre est obligatoire.",
         importLabel: "Importer depuis Maps Let Loose (facultatif)",
         importHint:
             "Importez le fichier mll_config.json extrait d’un export Maps Let Loose. Sélectionnez les détails de la carte ci-dessous avant de créer.",
-        importInvalid: "Ce fichier n’est pas un export JSON Maps Let Loose valide.",
+        importInvalid:
+            "Ce fichier n’est pas un export JSON Maps Let Loose valide.",
         importSummary: "{slides} diapositive(s) importée(s){skipped}.",
-        liveAccess: "Les administrateurs peuvent modifier cette carte tactique. Les autres voient les modifications en direct.",
+        liveAccess:
+            "Les administrateurs peuvent modifier cette carte tactique. Les autres voient les modifications en direct.",
         slides: "Diapositives",
         createSlideTitle: "Créer une diapositive",
         createSlideDescription:
@@ -6205,7 +6404,8 @@ export const frMessages = {
         next: "Suivant",
         finish: "Terminer",
         skip: "Passer la visite",
-        saveError: "Impossible d’enregistrer votre progression dans la visite. Réessayez.",
+        saveError:
+            "Impossible d’enregistrer votre progression dans la visite. Réessayez.",
         setupWelcome: {
             title: "Configurer Logi",
             description: "Choisissez votre clan pour commencer.",
@@ -6224,7 +6424,8 @@ export const frMessages = {
             "Le bot a besoin des permissions correspondant aux fonctions activées. Placez son rôle Discord au-dessus de tous les rôles qu’il doit gérer.",
         setupNext: {
             title: "Ouvrir la visite de votre espace de travail",
-            description: "Ouvrez la visite membre ou responsable de votre espace de travail.",
+            description:
+                "Ouvrez la visite membre ou responsable de votre espace de travail.",
         },
         memberWelcome: {
             title: "Voici votre espace de travail",
@@ -6259,7 +6460,8 @@ export const frMessages = {
     },
     shared: {
         openColumn: "Ouvert",
-        nothingCreatedYet: "Aucun élément n’a encore été créé dans cette rubrique.",
+        nothingCreatedYet:
+            "Aucun élément n’a encore été créé dans cette rubrique.",
         notSet: "-",
         detectedPlatformId: "Détecté : {platform}",
         platformSteam: "Steam",
@@ -6335,7 +6537,8 @@ export const frMessages = {
         changesTitle: "Changements depuis la dernière version",
         changesMoved: "{count} déplacements",
         changesAgainst: "Par rapport à la version publiée {time}.",
-        noChanges: "Aucun joueur n’a changé d’affectation depuis la dernière version.",
+        noChanges:
+            "Aucun joueur n’a changé d’affectation depuis la dernière version.",
         toReserves: "vers la réserve",
         previewTitle: "Aperçu dans {channel}",
         previewCaption: "Aperçu simplifié du message.",
@@ -6361,13 +6564,13 @@ export const frMessages = {
         body: "{names} ont désactivé les messages privés des membres du serveur dans Discord. Contactez-les autrement ou demandez-leur d’autoriser les messages du serveur {clan}.",
         bodyOne:
             "{names} a désactivé les messages privés des membres du serveur dans Discord. Contactez cette personne autrement ou demandez-lui d’autoriser les messages du serveur {clan}.",
-        failedAll:
-            "Impossible d’envoyer le rappel. Réessayez dans un instant.",
+        failedAll: "Impossible d’envoyer le rappel. Réessayez dans un instant.",
         copyNames: "Copier les noms",
         copied: "Noms copiés",
         howTo: "Comment autoriser les messages d’un serveur",
         meta: "{kind} · envoyé {time} · par {name}",
-        metaAutomatic: "{kind} · envoyé {time} · automatiquement, selon la programmation",
+        metaAutomatic:
+            "{kind} · envoyé {time} · automatiquement, selon la programmation",
         kindUnanswered: "Rappel d’inscription",
         kindUnconfirmed: "Rappel de présence",
         unknownSender: "un administrateur",
@@ -6395,20 +6598,25 @@ export const frMessages = {
         opening: "Ouverture de {game}…",
         players: "{players} / {capacity} joueurs",
         queue: "file d’attente {queue}",
-        steamPrompt: "Steam demande s’il faut ouvrir le lien. Confirmez avec Ouvrir.",
+        steamPrompt:
+            "Steam demande s’il faut ouvrir le lien. Confirmez avec Ouvrir.",
         manualTitle: "Rejoindre manuellement",
         addressLabel: "Adresse du serveur",
         copy: "Copier",
         copied: "Copié",
-        copyFailed: "Échec de la copie. Sélectionnez l’adresse et copiez-la manuellement.",
+        copyFailed:
+            "Échec de la copie. Sélectionnez l’adresse et copiez-la manuellement.",
         steamInstructions:
             "Dans Steam : Afficher → Serveurs de jeu → Favoris → Ajouter un serveur, puis collez l’adresse.",
         backToDiscord: "Retour à Discord",
         joinCodeTitle: "Code de connexion",
         joinCodeLabel: "Code pour rejoindre la partie",
-        joinCodeHelp: "Dans le jeu, ouvrez l’option pour rejoindre une partie et saisissez ce code.",
-        noAddress: "L’adresse du serveur n’est pas encore définie. Contactez un administrateur du clan.",
-        noJoinCode: "Le code d’accès n’est pas encore défini. Contactez un administrateur du clan.",
+        joinCodeHelp:
+            "Dans le jeu, ouvrez l’option pour rejoindre une partie et saisissez ce code.",
+        noAddress:
+            "L’adresse du serveur n’est pas encore définie. Contactez un administrateur du clan.",
+        noJoinCode:
+            "Le code d’accès n’est pas encore défini. Contactez un administrateur du clan.",
         notFoundTitle: "Serveur introuvable",
     },
     discordPanelStatus: {
@@ -6606,7 +6814,10 @@ export const frMessages = {
             loadFailed:
                 "Impossible de charger les panneaux. Vérifiez votre connexion et actualisez la page.",
             groups: {
-                live: { title: "Serveurs en direct", hint: "un panneau par serveur" },
+                live: {
+                    title: "Serveurs en direct",
+                    hint: "un panneau par serveur",
+                },
                 combined: {
                     title: "Nos serveurs",
                     hint: "plusieurs serveurs dans un message",
@@ -6642,7 +6853,8 @@ export const frMessages = {
                 privateWithPassword: "salon privé, avec mot de passe",
                 unknownChannel: "salon inconnu",
                 results: "matchs confirmés du clan",
-                leagueTable: "ligue entière, points selon les règles de la ligue",
+                leagueTable:
+                    "ligue entière, points selon les règles de la ligue",
                 leagueFixtures: {
                     one: "{count} prochain match et résultats récents",
                     few: "{count} prochains matchs et résultats récents",
@@ -6657,7 +6869,8 @@ export const frMessages = {
                 },
                 leagueRecentOnly: "résultats récents",
                 calendarAll: "événements du clan, toutes catégories",
-                calendarCategories: "événements du clan, catégories {categories}",
+                calendarCategories:
+                    "événements du clan, catégories {categories}",
                 and: "et",
                 control: "administrateurs Logi uniquement",
                 competition: "compétition {name}",
@@ -6670,7 +6883,8 @@ export const frMessages = {
                 notInDiscord: "le message n’est pas encore sur Discord",
                 requested: "Publication demandée {ago}",
                 pickup: "le bot la prend en charge sous 15 s",
-                firstPass: "Le bot la prend en charge à son prochain passage, sous 15 s",
+                firstPass:
+                    "Le bot la prend en charge à son prochain passage, sous 15 s",
                 saved: "Enregistré {when}",
                 notSentYet: "pas encore envoyé sur Discord",
                 pausedBy: "Mis en pause par {name} · {when}",
@@ -6689,7 +6903,8 @@ export const frMessages = {
                 controlButtons: "Boutons Seed, Actualiser et Pause",
                 calendarSetting:
                     "salon issu de l’ancien paramètre ; Modifier le transforme en panneau",
-                leagueBoth: "les boutons s’appliquent aux deux messages de la ligue",
+                leagueBoth:
+                    "les boutons s’appliquent aux deux messages de la ligue",
                 open: "Ouvrir le message",
             },
             buttons: {
@@ -6786,7 +7001,8 @@ export const frMessages = {
                 healthNoData: "Collecte active · aucune donnée pour le moment",
                 healthNotCollecting: "Collecte arrêtée",
                 liveOk: "Données en direct ✓",
-                liveLimited: "données en direct actuellement limitées, voir Données du serveur",
+                liveLimited:
+                    "données en direct actuellement limitées, voir Données du serveur",
             },
             servers: {
                 order: "Affichés dans cet ordre dans le message. Glissez-les pour changer l’ordre.",
@@ -6818,7 +7034,8 @@ export const frMessages = {
                     "Sans cette permission, le panneau contient uniquement du texte, sans image de carte.",
                 public: "Tout le monde (@everyone) peut voir ce salon. Le mot de passe du serveur ne peut pas y être affiché.",
                 private: "Le salon est privé ✓",
-                privateRoles: "· seuls {roles} et les administrateurs peuvent le voir.",
+                privateRoles:
+                    "· seuls {roles} et les administrateurs peuvent le voir.",
                 privateAdmins: "· seuls les administrateurs peuvent le voir.",
                 privatePassword:
                     "· @everyone ne peut pas le voir, le mot de passe sera affiché.",
@@ -6853,7 +7070,8 @@ export const frMessages = {
                     help: "Le panneau affiche {address}. Saisissez l’adresse ici ; elle s’applique à tous les panneaux de ce serveur.",
                     helpCombined:
                         "Pour les serveurs HLL. Saisissez les adresses ici ; chacune s’applique à tous les panneaux de son serveur.",
-                    missing: "Aucune adresse de serveur enregistrée. Saisissez-la ici.",
+                    missing:
+                        "Aucune adresse de serveur enregistrée. Saisissez-la ici.",
                     field: "IP:port · {server}",
                     placeholder: "203.0.113.24:7777",
                     clear: "Retirer",
@@ -6870,7 +7088,8 @@ export const frMessages = {
                     label: "Bouton Rejoindre (via Logi)",
                     help: "Ouvre {url}, qui lance Steam.",
                     helpWardogs: "Ouvre {url} avec le code d’accès.",
-                    helpCombined: "Pour les serveurs HLL ; Wardogs utilise un code d’accès.",
+                    helpCombined:
+                        "Pour les serveurs HLL ; Wardogs utilise un code d’accès.",
                 },
                 password: {
                     label: "Afficher le mot de passe du serveur",
@@ -6900,19 +7119,22 @@ export const frMessages = {
                     note: "Définissez le salon et le support dans",
                     noCategories:
                         "Aucune catégorie de tickets ne possède encore de salon privé. Configurez-en une dans",
-                    provider: "Les signalements fonctionnent uniquement avec les serveurs CRCON et Warcon.",
+                    provider:
+                        "Les signalements fonctionnent uniquement avec les serveurs CRCON et Warcon.",
                 },
                 ticketsLink: "Tickets",
                 seed: "Seeding",
                 seedProgress: {
                     label: "Afficher la progression du seeding",
                     help: "Pendant le seeding, le panneau indique le nombre de joueurs manquants pour lancer la partie.",
-                    helpCombined: "Pour le serveur dont le seeding est en cours.",
+                    helpCombined:
+                        "Pour le serveur dont le seeding est en cours.",
                 },
                 seedNote:
                     "Le bouton Seed figure uniquement dans le message de contrôle du serveur réservé aux administrateurs.",
                 seedPlan: "Programme de seeding",
-                noContent: "Ce type de panneau ne propose aucune autre option de contenu.",
+                noContent:
+                    "Ce type de panneau ne propose aucune autre option de contenu.",
             },
             league: {
                 table: {
@@ -6956,9 +7178,11 @@ export const frMessages = {
                     selected: "Bannière sélectionnée.",
                     libraryLoading: "Chargement des bannières importées…",
                     libraryEmpty: "Aucune bannière importée pour le moment.",
-                    libraryError: "Impossible de charger les bannières importées.",
+                    libraryError:
+                        "Impossible de charger les bannières importées.",
                     library: "Bannières importées",
-                    libraryItem: "Bannière {width} × {height}, importée le {date}",
+                    libraryItem:
+                        "Bannière {width} × {height}, importée le {date}",
                     preview: "Aperçu de la bannière",
                 },
                 accent: {
@@ -7002,19 +7226,20 @@ export const frMessages = {
                 title: "Aperçu dans {channel} · données réelles de {server}",
                 titleCombined:
                     "Aperçu dans {channel} · données réelles de {count} serveurs",
-                titleLeague:
-                    "Aperçu dans {channel} · deux messages superposés",
+                titleLeague: "Aperçu dans {channel} · deux messages superposés",
                 titlePlain: "Aperçu dans {channel}",
                 noChannel: "le salon",
                 author: "aujourd’hui à {time}",
-                pending: "L’aperçu apparaît une fois les données du serveur chargées.",
+                pending:
+                    "L’aperçu apparaît une fois les données du serveur chargées.",
                 noServer: "Choisissez un serveur pour afficher l’aperçu.",
                 loading: "Chargement des données du serveur…",
                 leagueLoading: "Chargement des données de la ligue…",
                 leagueFailed: "Impossible de charger les données de la ligue.",
                 resultsEmpty:
                     "La fiche apparaît après le premier résultat confirmé. L’aperçu affiche le dernier match ayant un résultat.",
-                resultsNone: "Le clan n’a pas encore de match avec un résultat.",
+                resultsNone:
+                    "Le clan n’a pas encore de match avec un résultat.",
                 calendarNote:
                     "Aperçu des événements de Logi ; le bot ajoute les liens vers les annonces.",
                 competitionNote:
@@ -7070,9 +7295,11 @@ export const frMessages = {
                 },
                 snapshot:
                     "Ce serveur n’a pas de lecture en direct ; les données collectées sont affichées.",
-                notCollecting: "Logi ne collecte pas les données de ce serveur.",
+                notCollecting:
+                    "Logi ne collecte pas les données de ce serveur.",
                 requestFailed: "Impossible de charger les données. Réessayez.",
-                notServerKind: "Les données du serveur sont lues uniquement pour les panneaux de serveur.",
+                notServerKind:
+                    "Les données du serveur sont lues uniquement pour les panneaux de serveur.",
             },
             source: {
                 title: "Source · {server}",
@@ -7105,7 +7332,8 @@ export const frMessages = {
                 refreshValue: "{ago} · suivant {in}",
                 hint: "Après Envoyer dans le salon, les étapes se cochent, généralement sous 15 s. La page s’actualise automatiquement.",
                 lastError: "Dernière erreur :",
-                recovered: "La tentative suivante, {after} plus tard, a réussi.",
+                recovered:
+                    "La tentative suivante, {after} plus tard, a réussi.",
                 recoveredAfter: {
                     second: {
                         one: "une seconde",
@@ -7144,7 +7372,8 @@ export const frMessages = {
                 editsMessage:
                     "L’enregistrement modifie le message dans {channel} sans en envoyer un nouveau.",
                 notInDiscord: "Le panneau n’est pas encore sur Discord.",
-                pausedNote: "Le panneau est en pause ; l’enregistrement ne le réactive pas.",
+                pausedNote:
+                    "Le panneau est en pause ; l’enregistrement ne le réactive pas.",
                 delete: "Supprimer le message",
                 deleteConfirm:
                     "Supprimer le message de Discord ? Le panneau restera enregistré comme non envoyé.",
@@ -7170,7 +7399,8 @@ export const frMessages = {
                 reportCategory: "Choisissez une catégorie de ticket.",
                 accentColor: "Saisissez une couleur au format #RRGGBB.",
                 competition: "Choisissez une compétition.",
-                fixtureCount: "Le nombre de matchs doit être compris entre 1 et 10.",
+                fixtureCount:
+                    "Le nombre de matchs doit être compris entre 1 et 10.",
             },
             errors: {
                 not_found: "Le panneau n’existe plus.",
@@ -7189,7 +7419,8 @@ export const frMessages = {
                     "Ce serveur possède déjà un panneau dans ce salon.",
                 results_exists: "Ce jeu possède déjà un panneau de résultats.",
                 league_exists: "Le clan possède déjà un panneau WD League.",
-                calendar_exists: "Le clan possède déjà un panneau de calendrier.",
+                calendar_exists:
+                    "Le clan possède déjà un panneau de calendrier.",
                 competition_not_found: "La compétition n’existe plus.",
                 panel_limit: "Un clan peut avoir jusqu’à 20 panneaux.",
                 asset_unavailable:
@@ -7217,7 +7448,8 @@ export const frMessages = {
         noServers:
             "Le clan n’a pas encore de serveur de jeu. Ajoutez-en un dans Serveurs de jeu, puis configurez le seeding ici.",
         gameServersLink: "Serveurs de jeu",
-        unavailable: "Impossible de charger le seeding pour le moment. Actualisez la page.",
+        unavailable:
+            "Impossible de charger le seeding pour le moment. Actualisez la page.",
         games: { hell_let_loose: "HLL", wardogs: "Wardogs" },
         status: {
             now: "Actuellement : {players} / {capacity} joueurs",
@@ -7243,16 +7475,20 @@ export const frMessages = {
             stopped: "Le seeding est terminé.",
         },
         actionErrors: {
-            cooldown: "Impossible de lancer un seeding maintenant. Le prochain pourra commencer {time}.",
+            cooldown:
+                "Impossible de lancer un seeding maintenant. Le prochain pourra commencer {time}.",
             running: "Un seeding est déjà en cours.",
             duplicate: "Ce seeding est déjà en cours.",
-            not_configured: "Choisissez le salon d’appel et enregistrez d’abord le programme.",
+            not_configured:
+                "Choisissez le salon d’appel et enregistrez d’abord le programme.",
             offline:
                 "Le serveur ne répond pas. Lancez le seeding lorsqu’il sera en ligne.",
-            already_live: "Le serveur a déjà assez de joueurs ; aucun seeding n’est nécessaire.",
+            already_live:
+                "Le serveur a déjà assez de joueurs ; aucun seeding n’est nécessaire.",
             not_running: "Aucun seeding n’est en cours.",
             not_found: "Serveur introuvable.",
-            forbidden: "Vous n’avez pas l’autorisation d’effectuer cette action.",
+            forbidden:
+                "Vous n’avez pas l’autorisation d’effectuer cette action.",
             unsaved: "Enregistrez d’abord les modifications du programme.",
             unavailable: "L’opération a échoué. Réessayez.",
         },
@@ -7271,7 +7507,8 @@ export const frMessages = {
             liveFromHint: "Le seeding se termine alors.",
             startBelow: "Le seeding démarre en dessous de",
             startBelowUnit: "joueurs",
-            startBelowHint: "Au-dessus de ce seuil, le programme n’envoie rien.",
+            startBelowHint:
+                "Au-dessus de ce seuil, le programme n’envoie rien.",
             when: "Quand",
             manual: "Manuellement",
             manualText:
@@ -7313,7 +7550,8 @@ export const frMessages = {
                 many: "{count} membres",
                 other: "{count} membres",
             },
-            selfService: "Les joueurs activent eux-mêmes le rôle avec un bouton",
+            selfService:
+                "Les joueurs activent eux-mêmes le rôle avec un bouton",
             selfServiceHint:
                 "L’appel comporte un bouton Me prévenir des seedings ; un nouveau clic retire le rôle.",
             protection: "Protection",
@@ -7328,7 +7566,8 @@ export const frMessages = {
             insert: "Insérer :",
             templateHint:
                 "Logi ajoute automatiquement le titre, la progression et les boutons.",
-            templateDefault: "Un champ vide utilise le texte d’appel par défaut.",
+            templateDefault:
+                "Un champ vide utilise le texte d’appel par défaut.",
             atThreshold: "Au seuil prévu",
             endEdit:
                 "Modifier le message en « La partie est lancée » et terminer le seeding",
@@ -7387,8 +7626,10 @@ export const frMessages = {
                 "La plage horaire doit commencer et se terminer à des heures différentes.",
             schedule_without_slots: "Ajoutez au moins un horaire au programme.",
             duplicate_day: "Un jour apparaît deux fois dans le programme.",
-            duplicate_slot: "Ce jour et cet horaire figurent déjà dans le programme.",
-            seed_channel_required: "Un programme activé nécessite un salon d’appel.",
+            duplicate_slot:
+                "Ce jour et cet horaire figurent déjà dans le programme.",
+            seed_channel_required:
+                "Un programme activé nécessite un salon d’appel.",
             control_channel_same_as_seed:
                 "Le salon de contrôle doit être différent du salon d’appel.",
             unknown_placeholder:
@@ -7489,7 +7730,8 @@ export const frMessages = {
                 "Impossible de vérifier les permissions du bot pour le moment. Réessayez dans un instant.",
             heading: "Titre",
             text: "Texte",
-            textHelp: "Les catégories s’affichent automatiquement sous le texte.",
+            textHelp:
+                "Les catégories s’affichent automatiquement sous le texte.",
             image: "Image",
             upload: "Importer une image",
             uploading: "Importation…",
@@ -7498,13 +7740,15 @@ export const frMessages = {
             pickDescription:
                 "Images déjà importées par le clan pour ses panneaux Discord.",
             pickEmpty: "Aucune image importée pour le moment.",
-            pickUnavailable: "Impossible de charger les images importées pour le moment.",
+            pickUnavailable:
+                "Impossible de charger les images importées pour le moment.",
             pickImage: "Utiliser l’image {number}",
             removeImage: "Retirer l’image",
             imageHelp:
                 "Facultatif, au-dessus du titre du panneau. PNG, JPEG ou WebP, 2 Mio maximum.",
             color: "Couleur du panneau",
-            colorHint: "Vide = couleur du clan. Format hexadécimal, ex. : #E8A33D.",
+            colorHint:
+                "Vide = couleur du clan. Format hexadécimal, ex. : #E8A33D.",
             colorInvalid: "La couleur doit être en hexadécimal, ex. : #E8A33D.",
             imageAlt: "Image du panneau de candidature",
             attachFailed: "Impossible d’utiliser l’image. Réessayez.",
@@ -7517,11 +7761,14 @@ export const frMessages = {
                     "L’image doit mesurer entre 1 × 1 et 4 096 × 4 096 pixels.",
                 animated: "Les images animées ne sont pas prises en charge.",
                 undecodable: "Impossible de lire l’image.",
-                invalid_kind: "Ce fichier ne peut pas servir d’image de panneau.",
+                invalid_kind:
+                    "Ce fichier ne peut pas servir d’image de panneau.",
                 invalid_asset: "Impossible d’enregistrer l’image importée.",
                 too_large: "L’image dépasse 2 Mio.",
-                upload_limited: "Trop d’importations. Réessayez dans {seconds} s.",
-                forbidden: "Vous n’avez pas l’autorisation d’importer des images ici.",
+                upload_limited:
+                    "Trop d’importations. Réessayez dans {seconds} s.",
+                forbidden:
+                    "Vous n’avez pas l’autorisation d’importer des images ici.",
                 unavailable: "L’importation est temporairement indisponible.",
             },
             preview: "Aperçu dans #{channel}",
@@ -7565,7 +7812,8 @@ export const frMessages = {
             editAria: "Modifier la question {name}",
             close: "Fermer",
             move: "Déplacer la question {name}",
-            moveHint: "Glissez avec la souris ou utilisez les flèches haut et bas du clavier.",
+            moveHint:
+                "Glissez avec la souris ou utilisez les flèches haut et bas du clavier.",
             remove: "Supprimer la question {name}",
             windowFull: "La fenêtre est pleine.",
             windowFullText:
@@ -7600,7 +7848,8 @@ export const frMessages = {
                 typeFixed: "Le type de cette question est fixe.",
                 required: "Obligatoire",
                 label: "Libellé",
-                labelCount: "{count} / 45 caractères · limite imposée par Discord.",
+                labelCount:
+                    "{count} / 45 caractères · limite imposée par Discord.",
                 help: "Aide",
                 helpHint: "Sous le libellé, 100 caractères maximum.",
                 placeholder: "Texte indicatif",
@@ -7616,7 +7865,8 @@ export const frMessages = {
                 gameBoth: "Les deux",
                 gameAll: "Tous",
                 category: "Uniquement pour la catégorie",
-                categoryHint: "Aucune case cochée signifie toutes les catégories.",
+                categoryHint:
+                    "Aucune case cochée signifie toutes les catégories.",
                 categoryOtherGame:
                     "{game} · la question concerne uniquement {questionGame}",
                 specializationNote:
@@ -7635,14 +7885,17 @@ export const frMessages = {
                 "help-too-long": "Le texte d’aide dépasse 100 caractères.",
                 "placeholder-too-long":
                     "Le texte indicatif dépasse 100 caractères.",
-                "options-missing": "Un champ de sélection nécessite au moins une option.",
-                "options-too-many": "Le champ de sélection contient plus de 25 options.",
+                "options-missing":
+                    "Un champ de sélection nécessite au moins une option.",
+                "options-too-many":
+                    "Le champ de sélection contient plus de 25 options.",
                 "option-empty": "Chaque option doit avoir un texte.",
                 "option-too-long": "Une option dépasse 100 caractères.",
                 "option-duplicate": "Deux options portent le même nom.",
                 "values-range":
                     "Les limites de sélection ne correspondent pas au nombre d’options.",
-                "duplicate-id": "La question figure deux fois dans le formulaire.",
+                "duplicate-id":
+                    "La question figure deux fois dans le formulaire.",
                 "type-invalid": "Ce type ne convient pas à cette question.",
                 "category-unknown":
                     "La question est limitée à une catégorie qui n’existe plus.",
@@ -7652,17 +7905,20 @@ export const frMessages = {
             issuesTitle: "Le formulaire ne peut pas encore être enregistré",
             windowPreview:
                 "Aperçu de la fenêtre {number} dans Discord · candidature pour {game}, {category}",
-            windowPreviewNoCategory: "Aperçu de la fenêtre {number} dans Discord",
+            windowPreviewNoCategory:
+                "Aperçu de la fenêtre {number} dans Discord",
             previewWindowPick: "Fenêtre de l’aperçu",
             modalLabel: "Fenêtre de candidature dans Discord",
             modalClose: "Fermer la fenêtre",
             modalCancel: "Annuler",
             modalSubmit: "Envoyer",
-            reviewPreview: "Vérification avant envoi · visible uniquement par le candidat",
+            reviewPreview:
+                "Vérification avant envoi · visible uniquement par le candidat",
             sample: {
                 name: "Joueur 17",
                 shortText: "Réponse du candidat",
-                longText: "Je cherche une équipe pour jouer régulièrement des matchs…",
+                longText:
+                    "Je cherche une équipe pour jouer régulièrement des matchs…",
             },
         },
         categories: {
@@ -7697,7 +7953,8 @@ export const frMessages = {
             threadNoChannel: "Créer un fil privé",
             threadHelp:
                 "Toujours. Il s’ouvre avec les réponses et le message d’accueil ci-dessous.",
-            mention: "Mentionner les rôles de support de la catégorie dans le fil",
+            mention:
+                "Mentionner les rôles de support de la catégorie dans le fil",
             mentionHelp:
                 "Par exemple @Recrutement ; personne d’autre ne voit le fil.",
             recruit: "Attribuer le rôle Recrue dès l’envoi",
@@ -7800,7 +8057,8 @@ export const frMessages = {
         member: "Vous faites déjà partie du clan. Vous n’avez pas besoin de postuler.",
         steamLocked:
             "Le compte Steam provient uniquement de la vérification Steam sur le site Logi.",
-        memberHint: "Identifiant du compte Discord du membre qui vous a invité.",
+        memberHint:
+            "Identifiant du compte Discord du membre qui vous a invité.",
         fixErrors: "Corrigez les champs signalés.",
     },
 } as const

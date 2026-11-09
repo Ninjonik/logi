@@ -3834,6 +3834,7 @@ export const deMessages = {
                     en: "Englisch",
                     de: "Deutsch",
                     pl: "Polnisch",
+                    fr: "Französisch",
                 },
                 command: "Befehl",
                 clanLanguage: "Clan-Sprache",
@@ -3842,6 +3843,7 @@ export const deMessages = {
                     en: "English",
                     de: "Deutsch",
                     pl: "Polski",
+                    fr: "Französisch",
                 },
             },
             saveNote:
@@ -3884,10 +3886,11 @@ export const deMessages = {
             factionsChange: "Zeichen ändern",
             language: "Sprache",
             languages: {
-                en: "Englisch",
                 cs: "Tschechisch",
+                en: "Englisch",
                 de: "Deutsch",
                 pl: "Polnisch",
+                fr: "Französisch",
             },
             languageFrom: "Aus",
             languageLink: "Kanäle und Sprache",

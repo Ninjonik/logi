@@ -85,7 +85,7 @@ export function MessagesLook({
         accentColor?: string
         iconDensity?: MessageIconDensity
     }): void
-    language: "en" | "cs" | "de" | "pl"
+    language: "en" | "cs" | "de" | "pl" | "fr"
     timeZone: string
     siteUrl: string
     hrefs: { channels: string; factionSigns: string }
