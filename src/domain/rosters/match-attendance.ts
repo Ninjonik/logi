@@ -1,5 +1,31 @@
+import { matchesGameScope, resolveGameScope, type GameId } from "../games/game"
 import { setRosterAttendanceStatus } from "./attendance-policy"
 import type { RosterLike } from "./types"
+
+/** Active clan members belonging to the match's game, counted once per player. */
+export function matchAttendanceMemberIds(
+    assignments: readonly {
+        userId: string
+        gameId?: GameId
+        paused?: boolean
+    }[],
+    gameId?: GameId
+) {
+    return [
+        ...new Set(
+            assignments
+                .filter(
+                    (assignment) =>
+                        !assignment.paused &&
+                        matchesGameScope(
+                            assignment.gameId,
+                            resolveGameScope(gameId)
+                        )
+                )
+                .map((assignment) => assignment.userId)
+        ),
+    ]
+}
 
 /** Attendance of one player as an admin records it after the match. */
 export type AttendanceMark = "present" | "excused" | "absent"
@@ -56,7 +82,7 @@ export function buildMatchAttendance(input: {
         status: "attending" | "not_attending"
     }>
     notices: Array<{ userId: string; reason: string; excusedBy?: string }>
-    /** Members whose points change when the match closes. */
+    /** Active clan members belonging to this match's game. */
     memberIds: readonly string[]
 }): MatchAttendance {
     // A player's own late notice; an admin's excuse has no reason to show.
