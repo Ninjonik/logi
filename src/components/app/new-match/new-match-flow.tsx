@@ -1,5 +1,19 @@
 "use client"
 
+import { GroupInlineIcons } from "@/components/app/group-inline-icons"
+import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/signup-limits"
+
+import {
+    fromDateTimeLocalInTimeZone,
+    toDateTimeLocalInTimeZone,
+} from "@/lib/timezone-datetime"
+import {
+    configureSharedMatch,
+    respondSharedInvitation,
+} from "@/lib/gateways/shared-matches"
+import { sharedMatchSettingsSchema } from "@/lib/validation/shared-match-settings"
+import { SHARED_INVITATIONS_CHANGED } from "@/hooks/use-pending-match-invitations"
+
 import {
     WardogsFixtureInput,
     fixtureConflictMessage,
@@ -192,6 +206,7 @@ export type NewMatchFlowProps = {
     messageStyle?: MessageStyle
     draft: EventRecord | null
     /** Edit mode: the published event to change. */
+    shared?: { invitationId?: string }
     edit?: NewMatchEditContext
 }
 
@@ -375,6 +390,11 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     } = props
     const edit = props.edit ?? null
     const isEdit = edit !== null
+    const [sharedRegistration, setSharedRegistration] = useState(() =>
+        edit?.event.registrationStart
+            ? toDateTimeLocalInTimeZone(edit.event.registrationStart, timezone)
+            : ""
+    )
     const t = dictionary.newMatch
     const router = useRouter()
     const [initial, setInitial] = useState<FlowValues>(() =>
@@ -438,6 +458,12 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
 
     const update = useCallback(
         (patch: Partial<FlowValues>) => {
+            if (props.shared)
+                patch = Object.fromEntries(
+                    Object.entries(patch).filter(
+                        ([key]) => key in sharedMatchSettingsSchema.shape
+                    )
+                )
             setValues((current) => ({
                 ...current,
                 ...patch,
@@ -448,7 +474,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             }))
             markDirty()
         },
-        [markDirty]
+        [markDirty, props.shared]
     )
 
     const receiveGroups = useCallback(
@@ -520,9 +546,11 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             ? "cs-CZ"
             : locale === "de"
               ? "de-DE"
-              : locale === "fr" ? "fr-FR" : locale === "pl"
-                ? "pl-PL"
-                : "en-GB"
+              : locale === "fr"
+                ? "fr-FR"
+                : locale === "pl"
+                  ? "pl-PL"
+                  : "en-GB"
 
     const textChannels = (metadata?.channels ?? []).filter(
         (channel) => channel.type === 0 || channel.type === 5
@@ -562,7 +590,21 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     }
     const facts = flowFacts(values, summaryContext)
     const { ownCode, name, map: selectedMap } = facts
-    const schedule = flowSchedule(values, timezone)
+    const schedule =
+        props.shared && edit
+            ? {
+                  registrationStart: sharedRegistration
+                      ? (fromDateTimeLocalInTimeZone(
+                            sharedRegistration,
+                            timezone
+                        ) ?? undefined)
+                      : undefined,
+                  registrationEnd: edit.event.registrationEnd,
+                  meetingStart: edit.event.meetingStart,
+                  gameStart: edit.event.gameStart,
+                  gameEnd: edit.event.gameEnd,
+              }
+            : flowSchedule(values, timezone)
 
     // Map choices.
     const maps = getStratmapMaps(values.gameId)
@@ -589,6 +631,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
               edit.event.map)
             : null
 
+    const hostLimitOf = (groupId: string) =>
+        edit?.event.sharedSignupGroups?.find(
+            (group) => group.groupId === groupId
+        )?.max
     const limitOf = (groupId: string) =>
         values.signupGroupLimits.find((limit) => limit.groupId === groupId)?.max
 
@@ -609,7 +655,20 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [isEdit, initial, values, metadata]
     )
-    const unsaved = isEdit && changes.length > 0
+    const unsaved =
+        isEdit &&
+        (changes.length > 0 ||
+            Boolean(props.shared?.invitationId) ||
+            Boolean(
+                props.shared &&
+                sharedRegistration !==
+                    (edit?.event.registrationStart
+                        ? toDateTimeLocalInTimeZone(
+                              edit.event.registrationStart,
+                              timezone
+                          )
+                        : "")
+            ))
     useLeaveGuard(unsaved && busy !== "save", t.edit.leavePrompt)
 
     const stepOfField = (field: string): NewMatchStep => {
@@ -821,13 +880,61 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             setStep("match")
             return
         }
-        if (!scheduleIsCoherent(schedule)) {
+        if (
+            !scheduleIsCoherent(schedule) ||
+            (props.shared?.invitationId && !sharedRegistration)
+        ) {
             toast.error(t.edit.invalidSchedule)
             setStep("time")
             return
         }
         setBusy("save")
         try {
+            if (props.shared) {
+                const payload = {
+                    ...flowEventPayload(values, {
+                        timezone,
+                        name,
+                        ownTeamId: ownTeam?.id ?? null,
+                    }),
+                    registrationStart: schedule?.registrationStart,
+                    createParticipantRoles:
+                        values.createParticipantRoles !== false,
+                    attendanceReminderHours: values.attendanceReminderHours ?? [
+                        24, 18, 12, 6,
+                    ],
+                }
+                const settings = sharedMatchSettingsSchema.parse(
+                    Object.fromEntries(
+                        Object.keys(sharedMatchSettingsSchema.shape).map(
+                            (key) => [key, payload[key as keyof typeof payload]]
+                        )
+                    )
+                )
+                const localId = props.shared.invitationId
+                    ? await respondSharedInvitation(
+                          serverId,
+                          props.shared.invitationId,
+                          true,
+                          settings.registrationStart,
+                          settings
+                      )
+                    : (await configureSharedMatch(
+                          serverId,
+                          edit.event.id,
+                          settings
+                      ),
+                      edit.event.id)
+                window.dispatchEvent(new Event(SHARED_INVITATIONS_CHANGED))
+                toast.success(dictionary.sharedMatches.saved)
+                router.push(
+                    localId
+                        ? `/${locale}/dashboard/servers/${serverId}/matches/${localId}`
+                        : edit.listHref
+                )
+                router.refresh()
+                return
+            }
             const response = await fetch(
                 `/api/servers/${serverId}/events/${edit.event.id}`,
                 {
@@ -869,8 +976,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             toast.success(t.edit.saved)
             router.push(edit.detailHref)
             router.refresh()
-        } catch {
-            toast.error(t.errors.save_failed)
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : t.errors.save_failed
+            )
             setBusy(null)
         }
     }
@@ -1031,7 +1140,18 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
     }
 
     function setGroupOffered(groupId: string, offered: boolean) {
+        const max = props.shared ? hostLimitOf(groupId) : undefined
         update({
+            ...(offered &&
+            max !== undefined &&
+            !values.signupGroupLimits.some((limit) => limit.groupId === groupId)
+                ? {
+                      signupGroupLimits: [
+                          ...values.signupGroupLimits,
+                          { groupId, max },
+                      ],
+                  }
+                : {}),
             signupGroupIds: offered
                 ? groupsOfGame
                       .map((group) => group.id)
@@ -1050,10 +1170,18 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
         )
         const max = Number(raw)
         if (raw.trim() === "") {
-            update({ signupGroupLimits: others })
+            const max = hostLimitOf(groupId)
+            update({
+                signupGroupLimits:
+                    max === undefined ? others : [...others, { groupId, max }],
+            })
             return
         }
-        if (Number.isInteger(max) && max >= 1 && max <= 100)
+        if (
+            Number.isInteger(max) &&
+            max >= 1 &&
+            max <= (hostLimitOf(groupId) ?? MAX_SIGNUP_GROUP_LIMIT)
+        )
             update({ signupGroupLimits: [...others, { groupId, max }] })
     }
 
@@ -1325,11 +1453,17 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             </Button>
             <Button
                 type="button"
-                disabled={busy !== null || !unsaved}
+                disabled={
+                    busy !== null ||
+                    !unsaved ||
+                    Boolean(props.shared?.invitationId && step !== "review")
+                }
                 onClick={() => void saveChanges()}
             >
                 <Check aria-hidden />
-                {t.edit.save}
+                {props.shared?.invitationId
+                    ? dictionary.sharedMatches.accept
+                    : t.edit.save}
             </Button>
         </>
     ) : null
@@ -1360,20 +1494,24 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-2xl leading-8 font-semibold tracking-tight">
-                        {isEdit
-                            ? isMatch
-                                ? t.edit.title
-                                : t.edit.titleTraining
-                            : isMatch
-                              ? t.title
-                              : t.titleTraining}
+                        {props.shared?.invitationId
+                            ? dictionary.sharedMatches.accept
+                            : isEdit
+                              ? isMatch
+                                  ? t.edit.title
+                                  : t.edit.titleTraining
+                              : isMatch
+                                ? t.title
+                                : t.titleTraining}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        {isEdit
-                            ? t.edit.description
-                            : isMatch
-                              ? t.description
-                              : t.descriptionTraining}
+                        {props.shared
+                            ? dictionary.sharedMatches.sharedDetails
+                            : isEdit
+                              ? t.edit.description
+                              : isMatch
+                                ? t.description
+                                : t.descriptionTraining}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1492,7 +1630,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                     className="bg-card text-card-foreground border-border flex min-w-0 flex-[999_1_440px] flex-col gap-[22px] rounded-[14px] border p-5 shadow-xs sm:p-7"
                 >
                     {step === "match" ? (
-                        <div className="flex flex-col gap-[22px]">
+                        <fieldset
+                            disabled={Boolean(props.shared)}
+                            className="flex min-w-0 flex-col gap-[22px]"
+                        >
                             <h2
                                 id="new-match-step"
                                 className="text-lg leading-[26px] font-semibold"
@@ -2503,10 +2644,61 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     ) : null}
                                 </div>
                             ) : null}
-                        </div>
+                        </fieldset>
                     ) : null}
 
-                    {step === "time" ? (
+                    {step === "time" && props.shared && edit ? (
+                        <div className="flex flex-col gap-5">
+                            <h2
+                                id="new-match-step"
+                                className="text-lg font-semibold"
+                            >
+                                {t.steps.time}
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                {dictionary.sharedMatches.sharedDetails}
+                            </p>
+                            <Label htmlFor="shared-registration-start">
+                                {dictionary.sharedMatches.registrationStart} (
+                                {timezone})
+                            </Label>
+                            <Input
+                                id="shared-registration-start"
+                                type="datetime-local"
+                                required
+                                value={sharedRegistration}
+                                onChange={(event) =>
+                                    setSharedRegistration(event.target.value)
+                                }
+                            />
+                            <dl className="grid gap-3 text-sm">
+                                {[
+                                    [
+                                        t.time.registrationEnd,
+                                        edit.event.registrationEnd,
+                                    ],
+                                    [t.time.meeting, edit.event.meetingStart],
+                                    [t.time.time, edit.event.gameStart],
+                                    [t.time.end, edit.event.gameEnd],
+                                ].map(([label, value]) => (
+                                    <div
+                                        key={label}
+                                        className="flex justify-between gap-3"
+                                    >
+                                        <dt>{label}</dt>
+                                        <dd>
+                                            {new Intl.DateTimeFormat(locale, {
+                                                dateStyle: "medium",
+                                                timeStyle: "short",
+                                                timeZone: timezone,
+                                            }).format(new Date(value))}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </div>
+                    ) : null}
+                    {step === "time" && !props.shared ? (
                         <div className="flex flex-col gap-[22px]">
                             <h2
                                 id="new-match-step"
@@ -2868,13 +3060,15 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                             />
                                         </div>
                                     }
-                                    <ManageGroupsLink
-                                        serverId={serverId}
-                                        locale={locale}
-                                        gameId={values.gameId}
-                                        dictionary={dictionary}
-                                        onGroupsUpdated={receiveGroups}
-                                    />
+                                    {!props.shared ? (
+                                        <ManageGroupsLink
+                                            serverId={serverId}
+                                            locale={locale}
+                                            gameId={values.gameId}
+                                            dictionary={dictionary}
+                                            onGroupsUpdated={receiveGroups}
+                                        />
+                                    ) : null}
                                     {groupsOfGame.length ? (
                                         <div className="flex flex-col gap-2">
                                             <div className="border-border flex flex-col rounded-[10px] border">
@@ -2916,6 +3110,21 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                                             }
                                                                         )}
                                                                     />
+                                                                    <GroupInlineIcons
+                                                                        groupsById={
+                                                                            new Map(
+                                                                                [
+                                                                                    [
+                                                                                        group.id,
+                                                                                        group,
+                                                                                    ],
+                                                                                ]
+                                                                            )
+                                                                        }
+                                                                        signupGroupName={
+                                                                            group.name
+                                                                        }
+                                                                    />
                                                                     <span
                                                                         className={cn(
                                                                             "truncate",
@@ -2947,7 +3156,10 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                                                                 1
                                                                             }
                                                                             max={
-                                                                                100
+                                                                                hostLimitOf(
+                                                                                    group.id
+                                                                                ) ??
+                                                                                500
                                                                             }
                                                                             aria-label={fill(
                                                                                 t
@@ -3042,6 +3254,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                         </Label>
                                         <Switch
                                             id="nm-late-signups"
+                                            disabled={Boolean(props.shared)}
                                             checked={
                                                 values.allowLateSignups !==
                                                 false
@@ -3633,6 +3846,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                 <div className="flex flex-wrap gap-2">
                                     <Input
                                         aria-label={t.discord.server}
+                                        disabled={Boolean(props.shared)}
                                         placeholder={
                                             t.discord.serverPlaceholder
                                         }
@@ -3647,6 +3861,7 @@ export function NewMatchFlow(props: NewMatchFlowProps) {
                                     />
                                     <Input
                                         id="nm-pass"
+                                        disabled={Boolean(props.shared)}
                                         type="password"
                                         autoComplete="off"
                                         placeholder={t.discord.password}

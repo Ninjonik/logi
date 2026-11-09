@@ -737,7 +737,7 @@ export default defineSchema({
             v.literal("cs"),
             v.literal("de"),
             v.literal("pl"),
-                v.literal("fr")
+            v.literal("fr")
         ),
         createdAt: v.number(),
         expiresAt: v.number(),
@@ -877,7 +877,7 @@ export default defineSchema({
             v.literal("cs"),
             v.literal("de"),
             v.literal("pl"),
-                v.literal("fr")
+            v.literal("fr")
         ),
         announcementsChannelId: v.optional(v.string()),
         eventInfoChannelId: v.optional(v.string()),
@@ -1145,6 +1145,11 @@ export default defineSchema({
             v.literal("accepted"),
             v.literal("declined"),
             v.literal("revoked")
+        ),
+        signupGroups: v.optional(
+            v.array(
+                v.object({ groupId: v.string(), max: v.optional(v.number()) })
+            )
         ),
         requestedRoles: v.array(
             v.object({ role: v.string(), count: v.number() })

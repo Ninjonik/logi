@@ -8,6 +8,10 @@ import {
     normalizeUserDoc,
 } from "./discord_shared"
 import {
+    sharedMatchGroups,
+    sharedGroupProjection,
+} from "../src/infrastructure/convex/shared-match-groups"
+import {
     syncDashboardAdminOverrides,
     upsertDiscordMemberCache,
 } from "./discordMemberAccessStore"
@@ -277,7 +281,13 @@ export const listSyncPayloads = query({
                 )
                 const guildEvents = await Promise.all(
                     clanEvents.map(async (event) => ({
-                        ...withCompetitionRound(event, rounds),
+                        ...withCompetitionRound(
+                            {
+                                ...event,
+                                ...(await sharedGroupProjection(ctx, event)),
+                            },
+                            rounds
+                        ),
                         sharedClans: await sharedMatchLogos(ctx, event),
                     }))
                 )
@@ -487,7 +497,7 @@ export const getEventSyncContext = query({
         return {
             event: {
                 ...withCompetitionRound(
-                    event,
+                    { ...event, ...(await sharedGroupProjection(ctx, event)) },
                     new Map(
                         typeof fixture?.round === "number"
                             ? [[String(event._id), fixture.round]]
@@ -536,10 +546,7 @@ export const getEventSignupContext = query({
                     .query("discordConfigs")
                     .withIndex("guildId", (q) => q.eq("guildId", guildId))
                     .unique(),
-                ctx.db
-                    .query("groups")
-                    .withIndex("guildId", (q) => q.eq("guildId", guildId))
-                    .collect(),
+                sharedMatchGroups(ctx, event),
                 ctx.db
                     .query("rosters")
                     .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
@@ -562,7 +569,10 @@ export const getEventSignupContext = query({
             config: normalizeConfigDoc(
                 withGameOverrides(config, config.gameOverrides, event.gameId)
             ),
-            event: normalizeEventDoc(event),
+            event: normalizeEventDoc({
+                ...event,
+                ...(await sharedGroupProjection(ctx, event)),
+            }),
             groups: groups.map(normalizeDoc),
             assignments: assignments
                 .filter((assignment) =>
@@ -600,10 +610,7 @@ export const getEventInteractionContext = query({
                 .query("discordConfigs")
                 .withIndex("guildId", (q) => q.eq("guildId", event.guildId))
                 .unique(),
-            ctx.db
-                .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", event.guildId))
-                .collect(),
+            sharedMatchGroups(ctx, event),
             ctx.db
                 .query("rosters")
                 .withIndex("eventId", (q) => q.eq("eventId", args.eventId))
@@ -627,7 +634,10 @@ export const getEventInteractionContext = query({
             config: normalizeConfigDoc(
                 withGameOverrides(config, config.gameOverrides, event.gameId)
             ),
-            event: normalizeEventDoc(event),
+            event: normalizeEventDoc({
+                ...event,
+                ...(await sharedGroupProjection(ctx, event)),
+            }),
             groups: groups.map(normalizeDoc),
             roster: roster ? normalizeDoc(localRosterLists(roster)) : null,
             categoryColor,

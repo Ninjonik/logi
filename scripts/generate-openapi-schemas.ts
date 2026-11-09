@@ -159,6 +159,33 @@ const components = Object.fromEntries(
             id: "string",
         }
         if (table === "events") {
+            properties.sharedGroups = {
+                type: "array",
+                description:
+                    "Read-only host group catalogue for an external shared match. Custom Discord emoji and role references are removed.",
+                items: {
+                    ...toJsonSchema(schema.tables.groups!.validator),
+                    properties: {
+                        ...(toJsonSchema(schema.tables.groups!.validator)
+                            .properties as object),
+                        id: { type: "string" },
+                    },
+                },
+            }
+            properties.sharedSignupGroups = {
+                type: "array",
+                description:
+                    "Read-only invitation groups and optional host ceilings. Local caps cannot exceed these values.",
+                items: {
+                    type: "object",
+                    properties: {
+                        groupId: { type: "string" },
+                        max: { type: "integer", minimum: 1, maximum: 100 },
+                    },
+                    required: ["groupId"],
+                },
+            }
+
             document.properties = omitResultStorage(properties)
             document.example = omitResultStorage(document.example as object)
             document.required = [...required].filter(

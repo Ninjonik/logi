@@ -81,9 +81,11 @@ export async function EventOverview({
                 ? "cs-CZ"
                 : locale === "de"
                   ? "de-DE"
-                  : locale === "fr" ? "fr-FR" : locale === "pl"
-                    ? "pl-PL"
-                    : "en-GB",
+                  : locale === "fr"
+                    ? "fr-FR"
+                    : locale === "pl"
+                      ? "pl-PL"
+                      : "en-GB",
         timezone,
         clanName: context.server.name,
         ownTeam: storedOwn
@@ -95,7 +97,7 @@ export async function EventOverview({
               ? { name: linked.name, shortCode: linked.shortCode }
               : null,
         templateName: null,
-        groups: context.groups,
+        groups: event.sharedGroups ?? context.groups,
         categories: context.server.eventCategories ?? [],
         squadPresets: context.squadPresets,
         topicPresets: context.topicPresets,

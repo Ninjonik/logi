@@ -782,6 +782,80 @@ export const generatedOpenApiSchemas = {
                 type: "string",
                 description: "Opaque resource ID.",
             },
+            sharedGroups: {
+                type: "array",
+                description:
+                    "Read-only host group catalogue for an external shared match. Custom Discord emoji and role references are removed.",
+                items: {
+                    type: "object",
+                    properties: {
+                        guildId: {
+                            type: "string",
+                        },
+                        gameId: {
+                            type: "string",
+                        },
+                        name: {
+                            type: "string",
+                        },
+                        color: {
+                            type: "string",
+                        },
+                        order: {
+                            type: "number",
+                        },
+                        parentId: {
+                            type: "string",
+                            description: "Convex ID for groups",
+                        },
+                        description: {
+                            type: "string",
+                        },
+                        discordRoleId: {
+                            type: "string",
+                        },
+                        discordEmoji: {
+                            type: "string",
+                        },
+                        createdAt: {
+                            type: "string",
+                        },
+                        updatedAt: {
+                            type: "string",
+                        },
+                        id: {
+                            type: "string",
+                        },
+                    },
+                    required: [
+                        "guildId",
+                        "name",
+                        "color",
+                        "order",
+                        "createdAt",
+                        "updatedAt",
+                    ],
+                },
+            },
+            sharedSignupGroups: {
+                type: "array",
+                description:
+                    "Read-only invitation groups and optional host ceilings. Local caps cannot exceed these values.",
+                items: {
+                    type: "object",
+                    properties: {
+                        groupId: {
+                            type: "string",
+                        },
+                        max: {
+                            type: "integer",
+                            minimum: 1,
+                            maximum: 100,
+                        },
+                    },
+                    required: ["groupId"],
+                },
+            },
         },
         required: [
             "guildId",

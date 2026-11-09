@@ -1,6 +1,7 @@
 import { DEFAULT_TRAINING_ALLOWED_SIGNUP_STATUSES } from "./signup-policy"
 import { normalizeFixtureLink } from "../wardogs-league/fixture-link"
 import { normalizeOptionalArray } from "@/domain/shared/collections"
+import { MAX_SIGNUP_GROUP_LIMIT } from "./signup-limits"
 import { validateEventDiscussion } from "./discussion"
 
 import {
@@ -94,7 +95,7 @@ export type EventUpsertInput = {
     squadPresetId?: string
 }
 
-export const MAX_SIGNUP_GROUP_LIMIT = 100
+export { MAX_SIGNUP_GROUP_LIMIT } from "./signup-limits"
 
 /**
  * The creation-only settings, tidied: caps only for offered groups of a

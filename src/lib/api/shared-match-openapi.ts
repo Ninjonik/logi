@@ -8,7 +8,7 @@ export const sharedMatchPaths = {
             summary:
                 "Configure the clan's external-match delivery and signup settings",
             description:
-                "Requires an unrestricted clan key and an accepted invitation. Replaces the local settings using the same validation as the dashboard. registrationStart sets this clan's registration opening and must precede the host's registration deadline. Shared match facts, results, slot allocation, locks and publication are host-controlled. Invitation acceptance and revocation require a live dashboard manager because they grant or remove another workspace's access; service keys deliberately cannot perform that lifecycle. Successful writes and idempotent replays invalidate affected dashboard views.",
+                "Requires an unrestricted clan key and an accepted invitation. Replaces the local settings using the same validation as the dashboard. registrationStart sets this clan's registration opening and must precede the host's registration deadline. signupGroupIds are host group IDs offered by the invitation, not local membership groups. signupGroupLimits cannot exceed invitation ceilings; an omitted local cap inherits the host ceiling. A full group offers a reserve place. Foreign custom Discord emoji fall back to group colors. Shared match facts, results, slot allocation, locks and publication are host-controlled. Invitation acceptance and revocation require a live dashboard manager because they grant or remove another workspace's access; service keys deliberately cannot perform that lifecycle. Successful writes and idempotent replays invalidate affected dashboard views.",
             security: [{ clanApiKey: [] }],
             parameters: [
                 {

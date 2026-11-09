@@ -34,6 +34,7 @@ export async function POST(
         return NextResponse.json({ error: "Event not found." }, { status: 404 })
     }
 
+    const groups = event.sharedGroups ?? context.groups
     const body = (await request.json()) as {
         signupPreferences?: unknown
         actionId?: unknown
@@ -54,7 +55,7 @@ export async function POST(
             : null
     const resolved = resolveEventSignupSelection({
         event,
-        groups: context.groups,
+        groups: groups,
         memberRoleIds: context.memberRoleIds,
         assignedGroupIds: assignment
             ? [
@@ -90,10 +91,10 @@ export async function POST(
             { status: 400 }
         )
     for (const name of preferences.data ?? []) {
-        const group = context.groups.find((item) => item.name === name)
+        const group = groups.find((item) => item.name === name)
         const choice = resolveEventSignupSelection({
             event,
-            groups: context.groups,
+            groups: groups,
             memberRoleIds: context.memberRoleIds,
             assignedGroupIds: assignment
                 ? [
@@ -159,11 +160,7 @@ export async function POST(
         appliedSignupLabel: string
         removed: boolean
     }
-    const actions = buildEventSignupActions(
-        event,
-        context.groups,
-        messages.buttons
-    )
+    const actions = buildEventSignupActions(event, groups, messages.buttons)
     const selectedAction = actions.find(
         (action) => action.id === String(body.actionId ?? "")
     )

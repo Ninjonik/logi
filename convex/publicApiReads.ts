@@ -12,6 +12,7 @@ import {
     matchesGameScope,
     resolveGameScope,
 } from "../src/domain/games/game"
+import { sharedGroupProjection } from "../src/infrastructure/convex/shared-match-groups"
 import { sharedMatchMembers } from "../src/infrastructure/convex/shared-match-store"
 import { isClanApiResourceDocument } from "../src/domain/api/resource-document"
 import { projectHealth, projectSnapshot } from "../src/domain/game-data/policy"
@@ -369,26 +370,49 @@ export const getClanResourcePage = query({
         }) => {
             const result = await query.paginate(options)
             return {
-                items: result.page
-                    .filter(
-                        (item) =>
-                            belongsToGame(item as never, args.game) &&
-                            // Unpublished drafts are left out of `/api/v1`.
-                            !(args.resource === "events" && isDraftEvent(item))
-                    )
-                    .map((item) =>
-                        [
-                            "events",
-                            "groups",
-                            "rosters",
-                            "assignments",
-                            "stratmaps",
-                            "matches",
-                            "squad-presets",
-                        ].includes(args.resource)
-                            ? apiGameDocument(item as never)
-                            : apiDocument(item as never)
-                    ),
+                items: await Promise.all(
+                    result.page
+                        .filter(
+                            (item) =>
+                                belongsToGame(item as never, args.game) &&
+                                // Unpublished drafts are left out of `/api/v1`.
+                                !(
+                                    args.resource === "events" &&
+                                    isDraftEvent(item)
+                                )
+                        )
+                        .map(async (item) => {
+                            if (
+                                args.resource === "events" &&
+                                typeof item.hostEventId === "string"
+                            ) {
+                                const id = ctx.db.normalizeId(
+                                    "events",
+                                    String(item._id)
+                                )
+                                const event = id ? await ctx.db.get(id) : null
+                                if (event)
+                                    return {
+                                        ...apiGameDocument(item as never),
+                                        ...(await sharedGroupProjection(
+                                            ctx,
+                                            event
+                                        )),
+                                    }
+                            }
+                            return [
+                                "events",
+                                "groups",
+                                "rosters",
+                                "assignments",
+                                "stratmaps",
+                                "matches",
+                                "squad-presets",
+                            ].includes(args.resource)
+                                ? apiGameDocument(item as never)
+                                : apiDocument(item as never)
+                        })
+                ),
                 nextCursor: result.isDone ? null : result.continueCursor,
                 limit: args.limit,
             }
@@ -810,6 +834,18 @@ export const getClanResource = query({
                     .first()
                 if (!assignment) return null
             } else return null
+        }
+        if (
+            args.resource === "events" &&
+            typeof item.hostEventId === "string"
+        ) {
+            const id = ctx.db.normalizeId("events", String(item._id))
+            const event = id ? await ctx.db.get(id) : null
+            if (event)
+                return {
+                    ...apiGameDocument(item as never),
+                    ...(await sharedGroupProjection(ctx, event)),
+                }
         }
         return [
             "events",

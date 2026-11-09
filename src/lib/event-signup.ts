@@ -120,9 +120,12 @@ export type EventSignupAction =
       }
 
 export function getVisibleSignupGroups(
-    event: Pick<EventRecord, "signupGroupIds">,
+    event: Pick<EventRecord, "signupGroupIds"> & {
+        sharedGroups?: SignupGroupLike[]
+    },
     groups: SignupGroupLike[]
 ) {
+    groups = event.sharedGroups ?? groups
     if (!event.signupGroupIds) {
         return groups
     }
@@ -132,7 +135,9 @@ export function getVisibleSignupGroups(
 }
 
 export function buildEventSignupActions(
-    event: Pick<EventRecord, "kind" | "signupGroupIds" | "useGeneralSignup">,
+    event: Pick<EventRecord, "kind" | "signupGroupIds" | "useGeneralSignup"> & {
+        sharedGroups?: SignupGroupLike[]
+    },
     groups: SignupGroupLike[],
     labels: Pick<SignupLanguageLabels, "attend" | "generalSignup" | "decline">
 ): EventSignupAction[] {
@@ -185,7 +190,7 @@ export function resolveEventSignupSelection(input: {
         | "registrationEnd"
         | "allowLateSignups"
         | "status"
-    > & { meetingStart?: string }
+    > & { meetingStart?: string; sharedGroups?: SignupGroupLike[] }
     groups: SignupGroupLike[]
     memberRoleIds?: string[] | null
     assignedGroupIds?: string[]

@@ -338,6 +338,7 @@ export type MatchTeamAssignment = {
 }
 
 export type EventRecord = {
+    sharedGroups?: Group[]
     sharedLocalPlayerIds?: string[]
     id: string
     guildId: string

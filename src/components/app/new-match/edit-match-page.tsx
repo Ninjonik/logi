@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button"
 import { fetchQuery } from "convex/nextjs"
 import { isLocale } from "@/i18n/config"
 
-import { SharedMatchSettingsForm } from "../shared-match-settings"
 import { clanFlowProps } from "./new-match-page"
 import { NewMatchFlow } from "./new-match-flow"
 
@@ -83,22 +82,6 @@ export async function EditMatchPage({
             </div>
         )
     const isTraining = event.kind === "training"
-    if (event.hostEventId)
-        return (
-            <SharedMatchSettingsForm
-                timeZone={context.discordConfig?.timezone ?? "UTC"}
-                serverId={serverId}
-                event={event}
-                dictionary={dictionary}
-                groups={context.groups.filter(
-                    (group) =>
-                        (group.gameId ?? "hell_let_loose") ===
-                        (event.gameId ?? "hell_let_loose")
-                )}
-                topicPresets={context.topicPresets}
-                backHref={`${base}/${section}/${event.id}`}
-            />
-        )
     const query = isStep(step) ? `?step=${step}` : ""
     const editability = eventEditability(event, new Date())
     if (editability === "draft")
@@ -121,6 +104,34 @@ export async function EditMatchPage({
         serverId,
         linkedTeams,
     })
+    if (event.hostEventId) {
+        shared.groups = (event.sharedGroups ?? []).filter(
+            (group) =>
+                !event.sharedSignupGroups ||
+                event.sharedSignupGroups.some(
+                    (allowed) => allowed.groupId === group.id
+                )
+        )
+        return (
+            <NewMatchFlow
+                {...shared}
+                shared={{}}
+                gameCatalogue={gameCatalogue}
+                initialKind="match"
+                initialGameId={event.gameId ?? "hell_let_loose"}
+                draft={null}
+                edit={{
+                    event,
+                    detailHref,
+                    listHref,
+                    initialStep: isStep(step) ? step : "match",
+                    series: null,
+                    rosterExists: true,
+                    signups: signupCounts(event.participants),
+                }}
+            />
+        )
+    }
     const role = eventSeriesRole(event)
     const source =
         role?.kind === "occurrence"

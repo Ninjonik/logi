@@ -6,6 +6,10 @@ import {
     normalizeEventDoc,
     normalizeUserDoc,
 } from "../src/infrastructure/convex/server-read-model"
+import {
+    sharedMatchGroups,
+    sharedGroupProjection,
+} from "../src/infrastructure/convex/shared-match-groups"
 import { sharedDashboardEvent } from "../src/infrastructure/convex/shared-match-store"
 import { canReadSharedRosterPassword } from "../src/domain/rosters/local-audience"
 import { sharedRosterUser } from "../src/domain/rosters/shared-roster-user"
@@ -85,10 +89,7 @@ export const getRosterDetail = query({
         // Members see a roster only after it is published.
         if (!canAdmin && !roster.published) return null
         const [groups, assignments, discordConfig] = await Promise.all([
-            ctx.db
-                .query("groups")
-                .withIndex("guildId", (q) => q.eq("guildId", serverDiscordId))
-                .collect(),
+            sharedMatchGroups(ctx, event),
             ctx.db
                 .query("userAssignments")
                 .withIndex("serverId", (q) => q.eq("serverId", serverDiscordId))
@@ -129,6 +130,7 @@ export const getRosterDetail = query({
             canAdmin,
             event: normalizeEventDoc({
                 ...displayEvent,
+                ...(await sharedGroupProjection(ctx, event)),
                 serverPassword: canReadSharedRosterPassword({
                     hostAdmin: !event.hostEventId && canAdmin,
                     userId,

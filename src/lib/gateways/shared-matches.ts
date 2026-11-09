@@ -4,17 +4,21 @@ import {
     sharedMatchSettingsSchema,
     type SharedMatchSettings,
 } from "../validation/shared-match-settings"
-import type { RequestedMatchRole } from "@/domain/events/shared-match"
+import type {
+    SharedSignupGroup,
+    RequestedMatchRole,
+} from "@/domain/events/shared-match"
 import { appCacheTags, revalidateCacheEntries } from "../cache-tags"
 import { invalidateSharedMatchCaches } from "./shared-match-cache"
+import type { EventRecord, Group, AppUser } from "@/types/domain"
 import { currentDashboardActor } from "./dashboard-actor"
 import { fetchMutation, fetchQuery } from "convex/nextjs"
 import { makeFunctionReference } from "convex/server"
 import { getServerContext } from "../server-context"
 import { getInternalAuthSecret } from "../env"
-import type { AppUser } from "@/types/domain"
 
 export type SharedRosterContext = {
+    groups: Group[]
     hostGuildId: string
     clans: { guildId: string; name: string; avatar?: string }[]
     users: (AppUser & { sharedGuildId: string })[]
@@ -29,6 +33,7 @@ export type SharedInvitation = {
     guestName: string
     matchName: string
     requestedRoles: RequestedMatchRole[]
+    signupGroups?: (SharedSignupGroup & { name: string })[]
 }
 
 async function scope(serverId: string) {
@@ -85,11 +90,18 @@ export async function inviteSharedClan(
     serverId: string,
     eventId: string,
     guestGuildId: string,
-    requestedRoles: RequestedMatchRole[]
+    requestedRoles: RequestedMatchRole[],
+    signupGroups?: SharedSignupGroup[]
 ) {
     await fetchMutation(
         makeFunctionReference<"mutation">("sharedMatches:invite"),
-        { ...(await scope(serverId)), eventId, guestGuildId, requestedRoles }
+        {
+            ...(await scope(serverId)),
+            eventId,
+            guestGuildId,
+            requestedRoles,
+            signupGroups,
+        }
     )
     revalidateCacheEntries([
         appCacheTags.serverContext(serverId),
@@ -101,17 +113,27 @@ export async function respondSharedInvitation(
     serverId: string,
     invitationId: string,
     accept: boolean,
-    registrationStart?: string
+    registrationStart?: string,
+    settings?: SharedMatchSettings
 ): Promise<string | null> {
     const id = await fetchMutation(
         makeFunctionReference<"mutation">("sharedMatches:respond"),
-        { ...(await scope(serverId)), invitationId, accept, registrationStart }
+        {
+            ...(await scope(serverId)),
+            invitationId,
+            accept,
+            registrationStart,
+            settings: settings
+                ? sharedMatchSettingsSchema.parse(settings)
+                : undefined,
+        }
     )
     revalidateCacheEntries([
         appCacheTags.serverContext(serverId),
         appCacheTags.events(serverId),
         appCacheTags.rosters(serverId),
     ])
+    if (id) await invalidateSharedMatchCaches(id)
     return id
 }
 
@@ -128,6 +150,7 @@ export async function configureSharedMatch(
             ...sharedMatchSettingsSchema.parse(settings),
         }
     )
+    await invalidateSharedMatchCaches(eventId)
     revalidateCacheEntries([
         appCacheTags.serverContext(serverId),
         appCacheTags.event(eventId),
@@ -145,4 +168,14 @@ export async function revokeSharedInvitation(
         { ...(await scope(serverId)), invitationId }
     )
     await invalidateSharedMatchCaches(eventId)
+}
+
+export async function sharedAcceptanceContext(
+    serverId: string,
+    invitationId: string
+): Promise<{ event: EventRecord; groups: Group[] }> {
+    return fetchQuery(
+        makeFunctionReference<"query">("sharedMatches:acceptanceContext"),
+        { ...(await scope(serverId)), invitationId }
+    )
 }

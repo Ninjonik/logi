@@ -166,3 +166,36 @@ test("refusals name their reason so Discord can explain the next step", () => {
         "required_role"
     )
 })
+
+test("dashboard signup buttons and prechecks use the shared host catalogue instead of local membership groups", () => {
+    const shared = {
+        ...event,
+        sharedGroups: [
+            { id: "group-1", name: "Host infantry", color: "#112233" },
+        ],
+    }
+    const local = [
+        {
+            id: "local",
+            name: "Local membership group",
+            color: "#ffffff",
+            discordRoleId: "local-role",
+        },
+    ]
+    const actions = buildEventSignupActions(shared, local, labels)
+    assert.deepEqual(
+        actions.map((action) => action.id),
+        ["group-1", SIGNUP_NOT_ATTENDING]
+    )
+    assert.equal(actions[0].label, "Host infantry")
+    const selected = resolveEventSignupSelection({
+        event: shared,
+        groups: local,
+        memberRoleIds: [],
+        membershipStatus: "member",
+        actionId: "group-1",
+        labels: signupLabels,
+    })
+    assert.equal(selected.ok, true)
+    if (selected.ok) assert.equal(selected.group, "Host infantry")
+})

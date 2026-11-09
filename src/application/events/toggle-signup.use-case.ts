@@ -39,7 +39,7 @@ export class ToggleSignupUseCase {
         )
         let nextGroup = input.group
         const offeredNames =
-            input.signupPreferences === undefined
+            input.signupPreferences === undefined && !event.hostEventId
                 ? []
                 : this.events.getSignupGroupNames
                   ? await this.events.getSignupGroupNames(event)
@@ -50,6 +50,14 @@ export class ToggleSignupUseCase {
                             )
                         )
                     ).filter((name): name is string => name !== null)
+        if (
+            event.hostEventId &&
+            input.group &&
+            input.group !== SIGNUP_NOT_ATTENDING &&
+            input.group !== SIGNUP_GENERAL &&
+            !offeredNames.includes(input.group)
+        )
+            throw new Error("This signup group is not offered to your clan.")
         const signupPreferences = validateSignupPreferences({
             preferences: input.signupPreferences,
             group: input.group,

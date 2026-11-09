@@ -1,5 +1,7 @@
 "use client"
 
+import { MAX_SIGNUP_GROUP_LIMIT } from "@/domain/events/signup-limits"
+
 import { SHARED_INVITATIONS_CHANGED } from "@/hooks/use-pending-match-invitations"
 
 import {
@@ -25,13 +27,17 @@ import {
     CommandEmpty,
 } from "@/components/ui/command"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { SharedSignupGroup } from "@/domain/events/shared-match"
 import { useEffect, useState, useTransition } from "react"
+import { GroupInlineIcons } from "./group-inline-icons"
 import type { Dictionary } from "@/i18n/dictionaries"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
+import type { Group } from "@/types/domain"
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
 
@@ -40,6 +46,7 @@ export function SharedMatchPanel({
     eventId,
     invitations,
     incoming = false,
+    groups = [],
     dictionary,
     locale,
 }: {
@@ -47,14 +54,13 @@ export function SharedMatchPanel({
     eventId?: string
     invitations: SharedInvitation[]
     incoming?: boolean
+    groups?: Group[]
     dictionary: Dictionary
     locale: string
 }) {
     const t = dictionary.sharedMatches
     const router = useRouter()
     const [pending, start] = useTransition()
-    const [accepting, setAccepting] = useState<SharedInvitation | null>(null)
-    const [registrationStart, setRegistrationStart] = useState("")
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState("")
     const [clans, setClans] = useState<{ guildId: string; name: string }[]>([])
@@ -62,7 +68,9 @@ export function SharedMatchPanel({
         guildId: string
         name: string
     } | null>(null)
-    const [roles, setRoles] = useState([{ role: "", count: 1 }])
+    const [signupGroups, setSignupGroups] = useState<SharedSignupGroup[]>(() =>
+        groups.map((group) => ({ groupId: group.id }))
+    )
     useEffect(() => {
         let active = true
         const timer = setTimeout(() => {
@@ -106,10 +114,12 @@ export function SharedMatchPanel({
                                 {t.invite}
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-h-[85vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>{t.invite}</DialogTitle>
-                                <DialogDescription>{t.roles}</DialogDescription>
+                                <DialogDescription>
+                                    {t.signupGroupsHelp}
+                                </DialogDescription>
                             </DialogHeader>
                             <Command shouldFilter={false}>
                                 <CommandInput
@@ -146,81 +156,101 @@ export function SharedMatchPanel({
                                     {selected.name}
                                 </Badge>
                             ) : null}
-                            <p className="text-sm font-medium">{t.roles}</p>
-                            {roles.map((role, index) => (
-                                <div key={index} className="flex gap-2">
-                                    <Input
-                                        aria-label={t.role}
-                                        placeholder={t.role}
-                                        value={role.role}
-                                        onChange={(event) =>
-                                            setRoles((current) =>
-                                                current.map((item, i) =>
-                                                    i === index
-                                                        ? {
-                                                              ...item,
-                                                              role: event.target
-                                                                  .value,
-                                                          }
-                                                        : item
-                                                )
-                                            )
-                                        }
-                                    />
-                                    <Input
-                                        aria-label={t.count}
-                                        type="number"
-                                        min={1}
-                                        max={500}
-                                        className="w-24"
-                                        value={role.count}
-                                        onChange={(event) =>
-                                            setRoles((current) =>
-                                                current.map((item, i) =>
-                                                    i === index
-                                                        ? {
-                                                              ...item,
-                                                              count: Number(
-                                                                  event.target
-                                                                      .value
-                                                              ),
-                                                          }
-                                                        : item
-                                                )
-                                            )
-                                        }
-                                    />
-                                    <Button
-                                        variant="ghost"
-                                        aria-label={
-                                            dictionary.sharedMatches.remove
-                                        }
-                                        onClick={() =>
-                                            setRoles((current) =>
-                                                current.filter(
-                                                    (_, i) => i !== index
-                                                )
-                                            )
-                                        }
+                            <p className="text-sm font-medium">
+                                {dictionary.event.fields.signupGroupIds}
+                            </p>
+                            {groups.map((group) => {
+                                const selectedGroup = signupGroups.find(
+                                    (entry) => entry.groupId === group.id
+                                )
+                                return (
+                                    <div
+                                        key={group.id}
+                                        className="flex items-center gap-3"
                                     >
-                                        ×
-                                    </Button>
-                                </div>
-                            ))}
+                                        <Checkbox
+                                            id={`invite-group-${group.id}`}
+                                            checked={Boolean(selectedGroup)}
+                                            onCheckedChange={(checked) =>
+                                                setSignupGroups((current) =>
+                                                    checked
+                                                        ? [
+                                                              ...current,
+                                                              {
+                                                                  groupId:
+                                                                      group.id,
+                                                              },
+                                                          ]
+                                                        : current.filter(
+                                                              (entry) =>
+                                                                  entry.groupId !==
+                                                                  group.id
+                                                          )
+                                                )
+                                            }
+                                        />
+                                        <Label
+                                            htmlFor={`invite-group-${group.id}`}
+                                            className="flex flex-1 items-center gap-2"
+                                        >
+                                            <GroupInlineIcons
+                                                groupsById={
+                                                    new Map([[group.id, group]])
+                                                }
+                                                signupGroupName={group.name}
+                                            />
+                                            {group.name}
+                                        </Label>
+                                        {selectedGroup ? (
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                max={MAX_SIGNUP_GROUP_LIMIT}
+                                                className="w-28"
+                                                aria-label={dictionary.newMatch.signups.capLabel.replace(
+                                                    "{name}",
+                                                    group.name
+                                                )}
+                                                placeholder={
+                                                    dictionary.newMatch.signups
+                                                        .noLimit
+                                                }
+                                                value={selectedGroup.max ?? ""}
+                                                onChange={(event) =>
+                                                    setSignupGroups((current) =>
+                                                        current.map((entry) =>
+                                                            entry.groupId ===
+                                                            group.id
+                                                                ? {
+                                                                      groupId:
+                                                                          entry.groupId,
+                                                                      ...(event
+                                                                          .target
+                                                                          .value
+                                                                          ? {
+                                                                                max: Number(
+                                                                                    event
+                                                                                        .target
+                                                                                        .value
+                                                                                ),
+                                                                            }
+                                                                          : {}),
+                                                                  }
+                                                                : entry
+                                                        )
+                                                    )
+                                                }
+                                            />
+                                        ) : null}
+                                    </div>
+                                )
+                            })}
                             <Button
-                                variant="outline"
-                                disabled={roles.length >= 32}
-                                onClick={() =>
-                                    setRoles((current) => [
-                                        ...current,
-                                        { role: "", count: 1 },
-                                    ])
+                                disabled={
+                                    pending ||
+                                    !selected ||
+                                    (groups.length > 0 && !signupGroups.length)
                                 }
-                            >
-                                {t.addRole}
-                            </Button>
-                            <Button
-                                disabled={pending || !selected}
                                 onClick={() =>
                                     act(async () => {
                                         if (!selected) return
@@ -228,9 +258,8 @@ export function SharedMatchPanel({
                                             serverId,
                                             eventId,
                                             selected.guildId,
-                                            roles.filter((role) =>
-                                                role.role.trim()
-                                            )
+                                            [],
+                                            signupGroups
                                         )
                                         setOpen(false)
                                     })
@@ -258,12 +287,18 @@ export function SharedMatchPanel({
                                         : item.guestName}
                                 </p>
                                 <p className="text-muted-foreground text-sm">
-                                    {item.requestedRoles
-                                        .map(
-                                            (role) =>
-                                                `${role.role} × ${role.count}`
+                                    {item.signupGroups
+                                        ?.map(
+                                            (group) =>
+                                                `${group.name}${group.max === undefined ? "" : ` × ${group.max}`}`
                                         )
-                                        .join(" · ")}
+                                        .join(" · ") ||
+                                        item.requestedRoles
+                                            .map(
+                                                (role) =>
+                                                    `${role.role} × ${role.count}`
+                                            )
+                                            .join(" · ")}
                                 </p>
                             </div>
                             {incoming ? (
@@ -286,8 +321,9 @@ export function SharedMatchPanel({
                                     <Button
                                         disabled={pending}
                                         onClick={() => {
-                                            setRegistrationStart("")
-                                            setAccepting(item)
+                                            router.push(
+                                                `/${locale}/dashboard/servers/${serverId}/matches/accept/${item.id}`
+                                            )
                                         }}
                                     >
                                         {t.accept}
@@ -322,62 +358,6 @@ export function SharedMatchPanel({
                     ))
                 )}
             </CardContent>
-            <Dialog
-                open={accepting !== null}
-                onOpenChange={(open) => {
-                    if (!pending && !open) setAccepting(null)
-                }}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{t.accept}</DialogTitle>
-                        <DialogDescription>
-                            {t.registrationStartHelp}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form
-                        className="space-y-4"
-                        onSubmit={(e) => {
-                            e.preventDefault()
-                            if (!accepting || !registrationStart) return
-                            act(async () => {
-                                const id = await respondSharedInvitation(
-                                    serverId,
-                                    accepting.id,
-                                    true,
-                                    new Date(registrationStart).toISOString()
-                                )
-                                setAccepting(null)
-                                if (id)
-                                    router.push(
-                                        `/${locale}/dashboard/servers/${serverId}/matches/${id}/edit`
-                                    )
-                            })
-                        }}
-                    >
-                        <Label htmlFor="shared-registration-start">
-                            {t.registrationStart} (
-                            {Intl.DateTimeFormat().resolvedOptions().timeZone})
-                        </Label>
-                        <Input
-                            id="shared-registration-start"
-                            type="datetime-local"
-                            required
-                            value={registrationStart}
-                            onChange={(e) =>
-                                setRegistrationStart(e.target.value)
-                            }
-                            disabled={pending}
-                        />
-                        <Button
-                            type="submit"
-                            disabled={pending || !registrationStart}
-                        >
-                            {t.accept}
-                        </Button>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </Card>
     )
 }

@@ -7,6 +7,7 @@ import type {
 import type { GameId } from "@/domain/games/game"
 
 export type EventWorkflowRecord = {
+    hostEventId?: string
     id: string
     guildId: string
     name?: string

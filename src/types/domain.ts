@@ -338,6 +338,9 @@ export type Group = {
 }
 
 export type EventRecord = {
+    /** Host catalogue for this external match only; never local membership groups. */
+    sharedGroups?: Group[]
+    sharedSignupGroups?: import("@/domain/events/shared-match").SharedSignupGroup[]
     reviewedResult?: import("@/domain/api/result-summaries").ResultSummaryPayload
     hostEventId?: string
     hostClanName?: string
