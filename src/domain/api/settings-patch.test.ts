@@ -29,7 +29,7 @@ test("settings patches reject unsafe fields and invalid safe values", () => {
         { playerStatsServers: [] },
         { gameOverrides: {} },
         { timezone: "Mars/Olympus" },
-        { defaultLanguage: "fr" },
+        { defaultLanguage: "es" },
         { clanRoleId: "role" },
         { avatar: "  " },
     ])
@@ -51,9 +51,11 @@ test("event results routing is a clan-wide, clearable API setting", () => {
     )
 })
 
-test("Polish is a supported clan language in the integration settings contract", () => {
-    assert.deepEqual(parseClanSettingsPatch({ defaultLanguage: "pl" }), {
-        ok: true,
-        value: { defaultLanguage: "pl" },
-    })
+test("every clan language is supported in the integration settings contract", () => {
+    for (const defaultLanguage of ["en", "cs", "de", "pl", "fr"]) {
+        assert.deepEqual(parseClanSettingsPatch({ defaultLanguage }), {
+            ok: true,
+            value: { defaultLanguage },
+        })
+    }
 })

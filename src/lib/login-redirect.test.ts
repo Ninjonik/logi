@@ -17,10 +17,15 @@ test("the login error keeps the language the sign-in started from", () => {
         loginErrorPath("/de/dashboard/servers/abc?tab=1", "discord-login"),
         "/de/login?error=discord-login&redirectTo=%2Fde%2Fdashboard%2Fservers%2Fabc%3Ftab%3D1"
     )
+    assert.equal(localeOfPath("/fr/dashboard"), "fr")
+    assert.equal(
+        loginErrorPath("/fr/dashboard", "oauth-state"),
+        "/fr/login?error=oauth-state&redirectTo=%2Ffr%2Fdashboard"
+    )
 })
 
 test("paths without a known locale fall back to the default", () => {
-    assert.equal(localeOfPath("/fr/dashboard"), "en")
+    assert.equal(localeOfPath("/es/dashboard"), "en")
     assert.equal(localeOfPath("/"), "en")
     assert.equal(localeOfPath("/cs"), "cs")
     assert.equal(localeOfPath("/cs?x=1"), "cs")
@@ -43,6 +48,7 @@ test("login destinations preserve dashboard entry and exact protected URLs", () 
         "/en/dashboard",
         "/cs/dashboard/servers/abc/events?game=hll&tab=upcoming",
         "/pl/league-teams?invite=abc",
+        "/fr/dashboard",
     ]) {
         const url = new URL(loginPath(destination), "https://logi.example")
         assert.equal(url.pathname, `/${localeOfPath(destination)}/login`)

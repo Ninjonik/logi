@@ -174,6 +174,20 @@ when appropriate without dropping authorization, scoping, or field redaction.
 
 - No intentional compatibility shim should be preserved just to keep an old Convex module namespace alive. Update the callers instead.
 
+## Dashboard translations
+
+Dashboard dictionaries are composed in `src/i18n/messages/{en,cs,de,fr,pl}.ts`.
+Edit the feature modules in the matching locale directory, for example
+`src/i18n/messages/en/match-editor.ts`, rather than adding copy to the composition
+files. Each locale uses the same module layout. Larger settings and Discord
+panel sections have their own modules. Existing shared translation modules
+(such as `landing.ts` and `shared-matches.ts`) remain alongside the locale
+directories.
+
+Keep the existing translation namespace and key paths when moving copy. Update
+all five locales when adding or changing messages; consumers continue to use
+`getDictionary` or the locale's exported dictionary.
+
 ## Notes For Frontend Changes
 
 Frontend components should:
