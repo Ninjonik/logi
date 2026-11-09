@@ -120,7 +120,7 @@ test("the page shows the board's sections and rows in Czech (N1-02..44)", () => 
         "Znaky frakcí",
         "Výchozí znaky Logi",
         "Změnit znaky",
-        "Čeština",
+        "čeština",
         "Živý náhled",
         "Ohlášení zápasu se střídmými ikonami. Mění se s barvou a ikonami vlevo.",
         "Co bot posílá",

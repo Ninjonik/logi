@@ -17,8 +17,8 @@ import { getPanelMessages } from "./panels"
 import { getEventMessages } from "./events"
 
 test("unknown, missing and empty languages resolve to English", () => {
-    assert.deepEqual(supportedClanLanguages, ["en", "cs", "de", "pl"])
-    for (const language of ["en", "cs", "de", "pl"] as const) {
+    assert.deepEqual(supportedClanLanguages, ["en", "cs", "de", "pl", "fr"])
+    for (const language of ["en", "cs", "de", "pl", "fr"] as const) {
         assert.equal(isClanLanguage(language), true)
         assert.equal(resolveClanLanguage(language), language)
     }
@@ -32,7 +32,9 @@ test("each clan language has its Intl locale", () => {
     assert.equal(getIntlLocaleForClanLanguage("cs"), "cs-CZ")
     assert.equal(getIntlLocaleForClanLanguage("de"), "de-DE")
     assert.equal(getIntlLocaleForClanLanguage("en"), "en-GB")
-    assert.equal(getIntlLocaleForClanLanguage("fr"), "en-GB")
+    assert.equal(getIntlLocaleForClanLanguage("pl"), "pl-PL")
+    assert.equal(getIntlLocaleForClanLanguage("fr"), "fr-FR")
+    assert.equal(getIntlLocaleForClanLanguage("unknown"), "en-GB")
 })
 
 test("a copy getter returns the language entry with its locale and falls back to English", () => {
@@ -44,6 +46,7 @@ test("a copy getter returns the language entry with its locale and falls back to
         fr: { hello: "Bonjour" },
     })
     assert.deepEqual(get("cs"), { locale: "cs-CZ", hello: "Ahoj" })
+    assert.deepEqual(get("fr"), { locale: "fr-FR", hello: "Bonjour" })
     assert.deepEqual(get("unknown"), { locale: "en-GB", hello: "Hello" })
     assert.equal(get("de"), get("de"), "entries are built once per language")
 })

@@ -1,0 +1,265 @@
+export const settingsHub_messagesPage = {
+    title: "Messages et panneaux Discord",
+    description:
+        "Choisissez les messages envoyés par le bot et leur apparence.",
+    lookTitle: "Apparence de tous les messages",
+    lookIntro:
+        "S’applique aux annonces, panneaux, MP et réponses aux commandes. Les erreurs du bot destinées aux responsables ont une barre grise.",
+    clanColor: "Couleur du clan",
+    clanColorHelp:
+        "La barre de chaque message. Un panneau peut avoir sa propre couleur, définie dans son éditeur.",
+    clanColorPicker: "Choisir une couleur",
+    clanColorInvalid: "Saisissez la couleur au format #E8A33D.",
+    clanColorDefault:
+        "Couleur par défaut de Logi. La catégorie d’événement apparaît sous forme de libellé et ne modifie pas la barre.",
+    clanColorCustom:
+        "La catégorie d’événement apparaît sous forme de libellé et ne modifie pas la barre.",
+    icons: "Icônes dans les messages",
+    iconsHelp: "Dans tous les messages, pas seulement les annonces.",
+    iconsSparse: "Discrètes",
+    iconsRich: "Un émoji par ligne",
+    factions: "Symboles des factions",
+    factionsHelp: "Les mêmes dans les annonces, résultats, panneaux et /stats.",
+    factionNames: {
+        allies: "Alliés",
+        axis: "Axe",
+        valkyra: "Valkyra",
+        manticore: "Manticore",
+        lonestar: "Lonestar",
+    },
+    factionsDefault: "Symboles par défaut de Logi",
+    factionsChange: "Modifier les symboles",
+    language: "Langue",
+    languages: {
+        cs: "Tchèque",
+        en: "Anglais",
+        de: "Allemand",
+        pl: "Polonais",
+        fr: "Français",
+    },
+    languageFrom: "Origine",
+    languageLink: "Salons et langue",
+    languageScope:
+        "Tous les messages et réponses aux commandes, quelle que soit la langue de l’application des membres.",
+    livePreview: "Aperçu en direct",
+    livePreviewLabel: "Aperçu de l’apparence en direct",
+    livePreviewSparse:
+        "Annonce de match avec des icônes discrètes. L’aperçu suit les couleurs et icônes choisies à gauche.",
+    livePreviewRich:
+        "Annonce de match avec un émoji par ligne. L’aperçu suit les couleurs et icônes choisies à gauche.",
+    previewTime: "aujourd’hui à 18:02",
+    listTitle: "Messages envoyés par le bot",
+    listIntro:
+        "Les salons verrouillés se configurent sur la page de paramètres indiquée.",
+    groups: {
+        matches: "Matchs",
+        direct: "Messages privés",
+        directNote: "MP et réponses visibles par une seule personne",
+        panels: "Panneaux",
+        membership: "Adhésions et tickets",
+        system: "Système",
+    },
+    preview: "Aperçu",
+    close: "Fermer",
+    edit: "Modifier",
+    fromPage: "de",
+    newChip: "Nouveau",
+    previewRegion: "Aperçu : {message}",
+    channelUnknown: "salon défini",
+    notSet: "non défini",
+    category: "catégorie {name}",
+    threadsUnder: "fils dans {channel}",
+    pages: {
+        channels: "Salons et langue",
+        matchTemplates: "Modèles de match",
+        commands: "Commandes",
+        membership: "Adhésion",
+        tickets: "Tickets",
+        panels: "Panneaux Discord",
+        league: "Wardogs League",
+    },
+    rows: {
+        announcement: {
+            title: "Annonce de match",
+            detail: "Nouveau match ou entraînement · inscriptions et mention du rôle définies par le modèle",
+        },
+        roster: {
+            title: "Composition",
+            detail: "Image de la composition sous l’en-tête avec Voir mon affectation et Ouvrir la composition · seul le joueur voit son affectation et le mot de passe",
+            variantLabel: "Apparence par défaut",
+            variants: {
+                photo_text: "Image et texte",
+                photo: "Image uniquement",
+            },
+            variantNote: "Modifiable lors de la publication. Sinon : {other}.",
+        },
+        rosterChanges: {
+            title: "Modifications de la composition",
+            detail: "À la prochaine publication · choix par défaut dans la fenêtre Publier",
+            target: "dans le salon de la composition",
+            switchLabel: "Présélectionner les modifications de la composition",
+        },
+        forum: {
+            title: "Forum du match",
+            detail: "Fil contenant les informations et les sujets du briefing · activé par le modèle de match",
+        },
+        debrief: {
+            title: "Débriefing",
+            detail: "Après le match, à l’emplacement choisi pour le débriefing",
+            target: "emplacement choisi pour le débriefing",
+            switchLabel: "Créer les débriefings",
+        },
+        notices: {
+            title: "Absences et retards dans le fil du match",
+            detail: "Après /notice, En retard ou Je ne pourrai pas venir : joueur, retard ou absence et heure d’arrivée · seuls les responsables voient le motif, sur le site",
+            target: "fil du forum du match",
+            switchLabel: "Absences et retards dans le fil du match",
+        },
+        scheduledEvent: {
+            title: "Événement Discord",
+            detail: "Événement Discord programmé avec le rassemblement et un lien vers le match",
+            switchLabel: "Événement Discord",
+        },
+        squadRoles: {
+            title: "Rôles d’escouade et salons vocaux",
+            detail: "Rôles Joueurs et Réservistes pour chaque match, salons d’escouade créés d’après la composition · activés par le modèle",
+        },
+        signupReminder: {
+            title: "Rappel d’inscription",
+            detail: "Aux personnes n’ayant pas répondu · chaque jour jusqu’à la clôture des inscriptions · destinataires définis par le modèle",
+            target: "MP aux membres",
+        },
+        attendanceReminder: {
+            title: "Rappel de présence",
+            detail: "Aux joueurs de la composition n’ayant pas confirmé · délai en heures avant le match défini dans celui-ci",
+            target: "MP aux joueurs",
+        },
+        recap: {
+            title: "Bilan du match",
+            detail: "Statistiques personnelles après un match confirmé · le joueur peut les désactiver",
+            target: "MP aux joueurs",
+            switchLabel: "Bilan du match",
+            previewTitle:
+                "Aperçu · MP envoyé à un joueur après le match · données d’exemple",
+            whoTitle: "Destinataires",
+            who: "Joueurs de la composition dont le compte Logi est associé aux statistiques du match.",
+            whoOff: "Un joueur peut désactiver ce récapitulatif avec le bouton du message ou dans {link}.",
+            whoLink: "Mon compte → MP du bot",
+        },
+        trainingResult: {
+            title: "Résultat de l’entraînement",
+            detail: "Aux participants après la clôture de l’entraînement",
+            target: "MP aux participants",
+            switchLabel: "Résultat de l’entraînement",
+        },
+        rosterChangeDm: {
+            title: "Changement d’affectation",
+            detail: "Aux joueurs dont l’escouade ou le rôle a changé · choix par défaut dans la fenêtre Publier",
+            target: "MP aux joueurs",
+            switchLabel: "Présélectionner les changements d’affectation",
+        },
+        teamRequest: {
+            title: "Demande d’équipe",
+            detail: "Décision des administrateurs globaux de Logi : approbation, fusion ou refus",
+            target: "MP au demandeur",
+        },
+        buttonReplies: {
+            title: "Réponses aux boutons",
+            detail: "S’inscrire, Modifier mon inscription, Voir mon affectation, En retard, Je ne pourrai pas venir · seul l’auteur du clic voit la réponse",
+            target: "réponse privée",
+        },
+        commandReplies: {
+            title: "Réponses aux commandes",
+            detail: "/help, /stats, /player, /link, /notice, /server-status · /stats partage dans #statistiky, /player dans le salon où la commande est utilisée",
+        },
+        recruitmentPanel: {
+            title: "Panneau de recrutement",
+            detail: "Le bouton Postuler",
+        },
+        application: {
+            title: "Candidature au clan",
+            detail: "Parcours de candidature et fil privé avec les recruteurs",
+        },
+        applicationClose: {
+            title: "Candidature clôturée",
+            detail: "Fiche de décision dans le fil · MP au candidat avec le résultat et le motif",
+            target: "fil et MP au candidat",
+            switchLabel: "MP au candidat à la clôture de sa candidature",
+        },
+        ticketPanel: {
+            title: "Panneau de tickets",
+            detail: "Boutons des catégories de tickets",
+        },
+        ticket: {
+            title: "Ticket",
+            detail: "Formulaire et fil privé avec le support",
+        },
+        ticketClose: {
+            title: "Ticket fermé",
+            detail: "Fiche dans le fil · MP à l’auteur avec le motif",
+            target: "fil et MP à l’auteur",
+            switchLabel: "MP à l’auteur à la clôture du ticket",
+        },
+        playerReport: {
+            title: "Signalement de joueur",
+            detail: "Depuis le bouton du score en direct · fil privé pour les responsables",
+        },
+        errors: {
+            title: "Erreurs du bot",
+            detail: "Action que le bot n’a pas pu effectuer et solution · responsables uniquement · barre grise",
+            selectLabel: "Salon des erreurs du bot",
+            noChannel: "Aucun salon",
+        },
+    },
+    panels: {
+        intro: "Gérez chaque panneau sur la page {link}. Cette section présente uniquement un aperçu.",
+        add: "Ajouter un panneau",
+        liveDetail: "Serveur en direct · actualisation toutes les {seconds} s",
+        liveButtons: "{buttons} boutons",
+        buttonNames: {
+            join: "Rejoindre",
+            players: "Voir les joueurs",
+            report: "Signaler un joueur",
+        },
+        and: "et",
+        privateDetail:
+            "Serveur en direct dans un salon privé · affiche aussi le mot de passe du serveur",
+        combinedTitle: "Nos serveurs",
+        combinedDetail: "{servers} dans un seul message",
+        controlTitle: "Gestion du serveur",
+        controlDetail:
+            "Seed, Actualiser et Pause · responsables Logi uniquement",
+        resultsTitle: "Résultats {game}",
+        resultsDetail:
+            "Après confirmation d’un résultat dans Logi · publie les 5 derniers résultats confirmés à la création",
+        leagueTitle: "WD League",
+        leagueDetail:
+            "Deux messages : classement et prochains matchs de la ligue · actualisation toutes les 60 s",
+        calendarTitle: "Calendrier",
+        calendarDetail: "Événements à venir du clan, catégories {categories}",
+        calendarAll: "toutes",
+        competitionTitle: "Classement de la compétition",
+        competitionDetail:
+            "Classement de poule de la compétition {name} · après chaque résultat confirmé",
+        competitionDetailAny:
+            "Classement de poule de la compétition · après chaque résultat confirmé",
+        pausedBy: "en pause par {name}",
+        chips: {
+            error: "Erreur",
+            waiting: "En attente du bot",
+            unsent: "Non envoyé",
+            paused: "En pause",
+        },
+        switchLabel: "Panneau {name}",
+        controlSwitch: "Gestion du serveur",
+        leagueSwitch: "Panneaux WD League",
+        calendarSwitch: "Panneau du calendrier",
+        calendarHint:
+            "Le salon du calendrier se définit dans Panneaux Discord.",
+        errorFallback: "Le dernier envoi a échoué.",
+        loading: "Chargement des panneaux…",
+        unavailable: "Impossible de charger les panneaux.",
+        none: "Aucun panneau pour le moment.",
+        editorTitle: "Panneaux",
+    },
+} as const
