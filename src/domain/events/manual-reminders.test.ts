@@ -337,3 +337,47 @@ test("a reminder sent 59 minutes ago still blocks, one sent an hour ago does not
         { kind: "queue" }
     )
 })
+
+for (const gameId of ["hell_let_loose", undefined, "wardogs"]) {
+    test(`manual reminders isolate game memberships for ${gameId ?? "legacy HLL"} matches`, () => {
+        const memberships: ManualReminderAssignment[] = [
+            {
+                userId: "hll",
+                gameId: "hell_let_loose",
+                type: "member",
+                status: "active",
+            },
+            {
+                userId: "wardogs",
+                gameId: "wardogs",
+                type: "member",
+                status: "active",
+            },
+            {
+                userId: "both",
+                gameId: "wardogs",
+                type: "member",
+                status: "active",
+            },
+            {
+                userId: "both",
+                gameId: "hell_let_loose",
+                type: "member",
+                status: "active",
+            },
+        ]
+        assert.deepEqual(
+            resolveManualReminderRecipients({
+                audience: "unanswered",
+                event: { ...event, gameId },
+                roster: null,
+                assignments: memberships,
+                now,
+            }),
+            {
+                ok: true,
+                userIds: [gameId === "wardogs" ? "wardogs" : "hll", "both"],
+            }
+        )
+    })
+}

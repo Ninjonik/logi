@@ -50,6 +50,8 @@ test("who a scheduled sign-up reminder reached is recorded for the match page (L
             member("100000000000000001"),
             member("100000000000000002"),
             member("100000000000000003"),
+            { ...member("wardogs-only"), gameId: "wardogs" },
+            { ...member("100000000000000001"), gameId: "wardogs" },
         ],
     } as unknown as SyncPayload
     const client = {
@@ -133,3 +135,24 @@ test("signup reminders exclude legacy memberships from non-HLL events", () => {
         false
     )
 })
+
+for (const eventGameId of ["hell_let_loose", undefined, "wardogs"] as const) {
+    test(`scheduled reminders isolate memberships for ${eventGameId ?? "legacy HLL"} matches`, () => {
+        for (const gameId of ["hell_let_loose", "wardogs"] as const) {
+            assert.equal(
+                isSignupReminderRecipient({
+                    assignment: {
+                        userId: "member",
+                        gameId,
+                        type: "member",
+                        status: "active",
+                    },
+                    eventGameId,
+                    recipientStatuses: new Set(["member"]),
+                    respondedUserIds: new Set(),
+                }),
+                gameId === (eventGameId ?? "hell_let_loose")
+            )
+        }
+    })
+}

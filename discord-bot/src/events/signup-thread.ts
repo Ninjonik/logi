@@ -70,18 +70,15 @@ export async function syncSignupThread(input: {
     }
     if (thread && (!thread.isThread() || thread.parentId !== channel.id))
         throw new Error("Invalid event discussion parent")
-    const name =
-        `${threadName(input.event).slice(0, 70)} · ${input.event.id}`.slice(
-            0,
-            100
-        )
+    const name = threadName(input.event)
+    const legacyName = `${name.slice(0, 70)} · ${input.event.id}`.slice(0, 100)
     if (!thread) {
         const active = await channel.threads.fetchActive()
         thread =
             [...active.threads.values()].find(
                 (candidate) =>
                     candidate.type === ChannelType.PrivateThread &&
-                    candidate.name === name
+                    candidate.name === legacyName
             ) ??
             (await channel.threads.create({
                 name,
@@ -92,6 +89,7 @@ export async function syncSignupThread(input: {
     }
     if (!thread.isThread()) throw new Error("Invalid event discussion")
     if (thread.archived) await thread.setArchived(false)
+    if (thread.name !== name) await thread.setName(name)
     await thread.setInvitable(false)
     for (const participant of input.event.participants) {
         if (participant.status === "not_attending")

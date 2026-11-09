@@ -61,11 +61,11 @@ import type { MessageView } from "../../../src/domain/discord-messages/message-v
 import { getResolvedMemberStatus } from "../../../src/domain/assignments/policy"
 import { announcementCountsOf, matchCardEventOf } from "../events/announcement"
 import { getEventMessages } from "../../../src/lib/clan-language/events"
+import { fromPrivateCard, replyToClicker } from "../events/replies"
 import { syncSignupThreadMember } from "../events/signup-thread"
 import { buildRosterAssignmentReply } from "./roster-assignment"
 import type { EventInteractionContext } from "../types"
 import { interactionLanguage } from "../ui/replies"
-import { replyToClicker } from "../events/replies"
 import { convex, references } from "../convex"
 import { revalidateAppData } from "../cache"
 import { env } from "../environment"
@@ -455,6 +455,15 @@ export async function handleRosterAssignmentInteraction(
     })
 }
 
+async function deferSignupReply(interaction: SignupInteraction) {
+    if (interaction.deferred || interaction.replied) return
+    if (fromPrivateCard(interaction)) await interaction.deferUpdate()
+    else
+        await interaction.deferReply({
+            ephemeral: Boolean(interaction.guildId),
+        })
+}
+
 const signupInteractionLocks = new Map<string, Promise<void>>()
 
 /** The cap of a group named by the sign-up (6 of "Tanky jsou plné (6/6)"). */
@@ -532,6 +541,15 @@ export async function handleEventButtonInteraction(
     if (!context) {
         await replyUnavailable(interaction, customIdGuildId)
         return
+    }
+
+    // Keep the initial response available for a late-signup modal. All other
+    // saves acknowledge before lock waits, membership reads and network writes.
+    if (
+        requestedGroupId === SIGNUP_NOT_ATTENDING ||
+        !isLateSignupWindow(context.event)
+    ) {
+        await deferSignupReply(interaction)
     }
 
     const lockKey = `${context.event.guildId}:${eventId}:${interaction.user.id}`
@@ -979,6 +997,13 @@ export async function handleRankedSignupInteraction(
         rankedDrafts.delete(token)
         await replyUnavailable(interaction, draft.guildId)
         return
+    }
+    // Editing never opens a modal; saving can require a late-signup reason.
+    if (
+        (action !== "save" && action !== "add") ||
+        !isLateSignupWindow(context.event)
+    ) {
+        await deferSignupReply(interaction)
     }
     if (action === "save" && draft.choices.length) {
         const first = context.groups.find(

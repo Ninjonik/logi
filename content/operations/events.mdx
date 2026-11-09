@@ -175,7 +175,7 @@ linked Discord role or has the group assigned in Logi. The optional **general
 signup** avoids choosing a group; when the member has a primary group that is
 visible on the event, Logi records that primary group instead.
 
-For matches, managers can opt in to a private discussion thread in the Discord sign-up channel. Logi invites people when they sign up and removes them when they select **not attending**. It does not enumerate server members or remove other thread members. Discord administrators and members with Manage Threads can also access private threads. The channel must be a regular text channel with private-thread permissions for Logi. Existing matches keep this option off until a manager enables it.
+For matches, managers can opt in to a private discussion thread in the Discord sign-up channel. The thread title uses the event name without its internal match ID. Logi invites people when they sign up and removes them when they select **not attending**. It does not enumerate server members or remove other thread members. Discord administrators and members with Manage Threads can also access private threads. The channel must be a regular text channel with private-thread permissions for Logi. Existing matches keep this option off until a manager enables it.
 
 Selecting **not attending** records a decline; it does not erase the person's
 participation record. A later response replaces the old one. A sign-up says
@@ -339,6 +339,11 @@ their own time zone.
   choice card. One group is enough; add alternatives if wanted, use **Change
   order** for up/down/remove buttons, then **Save sign-up**. Full-group reserves
   retain their preferences. See [match sign-ups](./matches#sign-ups).
+  During registration, you can select the same group again or return to a
+  previously selected group, including on matches created before preferential
+  sign-ups were introduced. Normal and preferential saves acknowledge the click
+  before saving and refreshing the dashboard; the private card then shows the
+  saved response. Late sign-ups still ask for a reason before saving.
   When a player saves a sign-up, changes group, or marks that they cannot
   attend, the announcement count updates immediately while the bot is idle.
   Concurrent changes are briefly grouped into one refresh.
@@ -437,6 +442,8 @@ and they decide who takes the place. Pressing it again with the same reason
 changes nothing.
 
 ### Daily match signup reminders
+
+Both scheduled and manual signup reminders only reach eligible clan members of the match’s game. A Wardogs-only member receives no Hell Let Loose signup reminder; a member of both games can receive reminders for either. Older matches and memberships without a game are treated as Hell Let Loose. Attendance reminders target players and reserves on the match’s published roster.
 
 For matches, managers can choose which membership categories receive a direct
 message reminder to sign up. The default is active regular members only;
