@@ -245,16 +245,78 @@ test("operator inspection omits private recovery input and resume never erases s
     )
 })
 
-test("a fresh opt-out records an untouched DM as skipped without settling an uncertain send", async t => {
+test("a fresh opt-out records an untouched DM as skipped without settling an uncertain send", async (t) => {
     const ctx = fixture(t)
-    ctx.db.seed("discordConfigs", { _id: "discordConfigs:one", guildId: "guild", applicationCloseDmEnabled: false })
-    const operationId = await invoke(journal.open, ctx, { secret, key: "application-close:one", kind: "application-close", guildId: "guild", subjectId: "one", actorId: "actor", expectedKeys: ["dm:user"] })
-    assert.deepEqual(await invoke(journal.skip, ctx, { secret, operationId, key: "dm:user" }), { state: "skipped" })
-    assert.equal(await invoke(journal.complete, ctx, { secret, operationId }), true)
-    const uncertainId = await invoke(journal.open, ctx, { secret, key: "application-close:two", kind: "application-close", guildId: "guild", subjectId: "two", actorId: "actor", expectedKeys: ["dm:user"] })
-    ctx.db.seed("discordMembershipEffects", { _id: "discordMembershipEffects:uncertain", operationId: uncertainId, key: "dm:user", mode: "send", state: "uncertain", attempts: 1, token: "old", leaseUntil: 0, retryAt: 0 })
-    assert.deepEqual(await invoke(journal.skip, ctx, { secret, operationId: uncertainId, key: "dm:user" }), { state: "uncertain" })
-    assert.equal(await invoke(journal.complete, ctx, { secret, operationId: uncertainId }), false)
-    await ctx.db.patch("discordConfigs:one", { applicationCloseDmEnabled: true })
-    await assert.rejects(invoke(journal.skip, ctx, { secret, operationId: uncertainId, key: "dm:user" }), /not disabled/)
+    ctx.db.seed("discordConfigs", {
+        _id: "discordConfigs:one",
+        guildId: "guild",
+        applicationCloseDmEnabled: false,
+    })
+    const operationId = await invoke(journal.open, ctx, {
+        secret,
+        key: "application-close:one",
+        kind: "application-close",
+        guildId: "guild",
+        subjectId: "one",
+        actorId: "actor",
+        expectedKeys: ["dm:user"],
+    })
+    assert.deepEqual(
+        await invoke(journal.skip, ctx, {
+            secret,
+            operationId,
+            key: "dm:user",
+        }),
+        { state: "skipped" }
+    )
+    assert.equal(
+        await invoke(journal.complete, ctx, { secret, operationId }),
+        true
+    )
+    const uncertainId = await invoke(journal.open, ctx, {
+        secret,
+        key: "application-close:two",
+        kind: "application-close",
+        guildId: "guild",
+        subjectId: "two",
+        actorId: "actor",
+        expectedKeys: ["dm:user"],
+    })
+    ctx.db.seed("discordMembershipEffects", {
+        _id: "discordMembershipEffects:uncertain",
+        operationId: uncertainId,
+        key: "dm:user",
+        mode: "send",
+        state: "uncertain",
+        attempts: 1,
+        token: "old",
+        leaseUntil: 0,
+        retryAt: 0,
+    })
+    assert.deepEqual(
+        await invoke(journal.skip, ctx, {
+            secret,
+            operationId: uncertainId,
+            key: "dm:user",
+        }),
+        { state: "uncertain" }
+    )
+    assert.equal(
+        await invoke(journal.complete, ctx, {
+            secret,
+            operationId: uncertainId,
+        }),
+        false
+    )
+    await ctx.db.patch("discordConfigs:one", {
+        applicationCloseDmEnabled: true,
+    })
+    await assert.rejects(
+        invoke(journal.skip, ctx, {
+            secret,
+            operationId: uncertainId,
+            key: "dm:user",
+        }),
+        /not disabled/
+    )
 })

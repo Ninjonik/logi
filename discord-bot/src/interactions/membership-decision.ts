@@ -279,11 +279,18 @@ async function runDecision(
             },
             sendDm: async (roles) => {
                 // "DM po rozhodnutí o přihlášce" in Zprávy a panely (N1-39).
-                if (!isMessageEnabled(context.config, "applicationCloseDm"))
-                    {
-                        const receipt = await effects.skip(`dm:${application.creatorId}`)
-                        return receipt.state === "uncertain" ? "uncertain" : receipt.state === "confirmed" ? "sent" : receipt.state === "refused" ? "failed" : "off"
-                    }
+                if (!isMessageEnabled(context.config, "applicationCloseDm")) {
+                    const receipt = await effects.skip(
+                        `dm:${application.creatorId}`
+                    )
+                    return receipt.state === "uncertain"
+                        ? "uncertain"
+                        : receipt.state === "confirmed"
+                          ? "sent"
+                          : receipt.state === "refused"
+                            ? "failed"
+                            : "off"
+                }
                 const creator = await guild.client.users.fetch(
                     application.creatorId
                 )
@@ -317,7 +324,11 @@ async function runDecision(
                         ),
                     true
                 )
-                return receipt.state === "confirmed" ? "sent" : receipt.state === "skipped" ? "off" : "failed"
+                return receipt.state === "confirmed"
+                    ? "sent"
+                    : receipt.state === "skipped"
+                      ? "off"
+                      : "failed"
             },
             finishThread: async () => {
                 const auditReason = reason ?? copy.card.closedFooter

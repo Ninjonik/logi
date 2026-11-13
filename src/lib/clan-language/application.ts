@@ -219,7 +219,7 @@ const cs: Copy = {
     },
     sendFailed: {
         title: "Přihlášku se nepodařilo odeslat",
-        body: "Nic se neuložilo. Správci dostali upozornění; zkus to prosím za chvíli znovu.",
+        body: "Část kroků už může být uložená. Před dalším pokusem zkontroluj Discord se správcem.",
     },
     threadName: "přihláška-{name}",
     closedThreadName: "uzavřeno · {name}",
@@ -578,7 +578,7 @@ const pl: Copy = {
     },
     sendFailed: {
         title: "Nie można wysłać zgłoszenia",
-        body: "Nic nie zostało zapisane. Administratorzy zostali powiadomieni; spróbuj ponownie za chwilę.",
+        body: "Część kroków mogła już zostać zapisana. Przed ponowną próbą sprawdź Discord z administratorem.",
     },
     threadName: "zgłoszenie · {name}",
     closedThreadName: "zamknięte · {name}",
@@ -937,7 +937,7 @@ const fr: Copy = {
     },
     sendFailed: {
         title: "Impossible d’envoyer la candidature",
-        body: "Rien n’a été enregistré. Les administrateurs ont été informés ; réessaie dans un instant.",
+        body: "Certaines étapes peuvent déjà être enregistrées. Vérifie Discord avec un administrateur avant de réessayer.",
     },
     threadName: "candidature-{name}",
     closedThreadName: "fermée · {name}",
@@ -1294,7 +1294,7 @@ const en: Copy = {
     },
     sendFailed: {
         title: "The application could not be sent",
-        body: "Nothing was saved. The admins have been notified; please try again in a moment.",
+        body: "Some steps may already be saved. Check Discord with an admin before trying again.",
     },
     threadName: "application-{name}",
     closedThreadName: "closed · {name}",
@@ -1654,7 +1654,7 @@ const de: Copy = {
     },
     sendFailed: {
         title: "Die Bewerbung konnte nicht abgeschickt werden",
-        body: "Es wurde nichts gespeichert. Die Admins wurden benachrichtigt; versuch es bitte gleich noch einmal.",
+        body: "Einige Schritte können bereits gespeichert sein. Prüfe Discord mit einem Admin, bevor du es erneut versuchst.",
     },
     threadName: "bewerbung-{name}",
     closedThreadName: "geschlossen · {name}",

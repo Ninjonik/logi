@@ -273,10 +273,18 @@ export async function deliverTicketClose(input: {
     const options = { language, style: context.config.messageStyle }
 
     const threadUrl = `https://discord.com/channels/${guildId}/${threadId}`
-    const skipped = !isMessageEnabled(context.config, "ticketCloseDm") ? await effects.skip(`dm:${ticket.creatorId}`) : null
+    const skipped = !isMessageEnabled(context.config, "ticketCloseDm")
+        ? await effects.skip(`dm:${ticket.creatorId}`)
+        : null
     // The "DM o uzavření ticketu" switch on the messages page (N1-42).
     const dmDelivered = !isMessageEnabled(context.config, "ticketCloseDm")
-        ? (skipped?.state === "uncertain" ? "uncertain" as const : skipped?.state === "confirmed" ? true : skipped?.state === "refused" ? false : "off" as const)
+        ? skipped?.state === "uncertain"
+            ? ("uncertain" as const)
+            : skipped?.state === "confirmed"
+              ? true
+              : skipped?.state === "refused"
+                ? false
+                : ("off" as const)
         : await client.users
               .fetch(ticket.creatorId)
               .then(async (author) => {
@@ -301,7 +309,9 @@ export async function deliverTicketClose(input: {
                           ),
                       true
                   )
-                  return receipt.state === "skipped" ? "off" as const : receipt.state === "confirmed"
+                  return receipt.state === "skipped"
+                      ? ("off" as const)
+                      : receipt.state === "confirmed"
               })
               // Closed DMs are reported to the closer, not to the errors channel (L2-63).
               .catch((error) => {

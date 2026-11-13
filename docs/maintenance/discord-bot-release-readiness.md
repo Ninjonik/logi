@@ -9,8 +9,25 @@ record responses and distinguishes uncertain DM delivery from confirmed refusal.
 New protocol claims cannot be taken by old bots; legacy ticket close calls do not
 create resumable intents that could replay their unrecorded sends.
 
-Validation and final Convex rollout results are pending the current run's final
-checks. Live Discord crash tests and host shutdown-grace verification were skipped
+Final validation passed: the full suite had **4,115 passes, zero failures and four
+skips** (57.88 seconds). The four gateway socket tests are explicitly skipped for
+the installed Node runtime's socket-abort incompatibility. Ten focused recovery
+tests, including the operator CLI entrypoint regression, passed separately.
+Non-incremental typecheck, changed-file ESLint/Prettier, production Next build,
+Convex bundles (193 V8 / 12 Node modules) and both Node 20 ESM bot bundles passed.
+The build used synthetic localhost backend configuration; it does not certify live
+backend connectivity. An offline CLI check caught and fixed unsupported top-level
+await before rollout. Disabled notifications now get explicit skipped receipts;
+an opt-out never rewrites an uncertain send as a confirmed refusal.
+
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13.
+Schema validation and generated bindings succeeded; fourteen indexes were added
+and none deleted. Deploy the updated bot only after draining the old process;
+do not run old and new workers concurrently. Keep the additive schema and receipts
+on rollback, because older bots cannot safely resume upgraded application work.
+No bot runtime restart was performed.
+
+Live Discord crash tests and host shutdown-grace verification were skipped
 at the user's explicit request. This does not certify the broader D00-D12 audit
 program or every secondary effect family. See the current progress register and
 the bot README's operator reconciliation procedure.

@@ -94,7 +94,11 @@ export class MembershipEffects {
             mode,
             repair,
         })) as Begin
-        if (prior.state === "confirmed" || prior.state === "refused" || prior.state === "skipped")
+        if (
+            prior.state === "confirmed" ||
+            prior.state === "refused" ||
+            prior.state === "skipped"
+        )
             return prior
         if (prior.state !== "execute")
             throw new Error(
@@ -177,10 +181,18 @@ export class MembershipEffects {
         await this.assertAuthority()
         return this.call("complete", { operationId: await this.id() })
     }
-    async skip(key: string): Promise<MembershipReceipt | { state: "uncertain" }> {
-        if (this.authorityLost) throw new MembershipEffectLeaseLost("Membership operation authority was lost")
+    async skip(
+        key: string
+    ): Promise<MembershipReceipt | { state: "uncertain" }> {
+        if (this.authorityLost)
+            throw new MembershipEffectLeaseLost(
+                "Membership operation authority was lost"
+            )
         await this.assertAuthority()
-        return this.call("skip", { operationId: await this.id(), key }) as Promise<MembershipReceipt | { state: "uncertain" }>
+        return this.call("skip", {
+            operationId: await this.id(),
+            key,
+        }) as Promise<MembershipReceipt | { state: "uncertain" }>
     }
 }
 

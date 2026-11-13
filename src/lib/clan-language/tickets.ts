@@ -24,7 +24,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Ticket se nepodařilo otevřít",
-            body: "Nic se neuložilo. Správci dostali upozornění; zkus to prosím za chvíli znovu.",
+            body: "Část kroků už může být uložená. Před dalším pokusem zkontroluj Discord se správcem.",
         },
         disabled: {
             title: "Tickety jsou teď vypnuté",
@@ -116,7 +116,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Nie można otworzyć zgłoszenia",
-            body: "Nic nie zostało zapisane. Administratorzy zostali powiadomieni; spróbuj ponownie za chwilę.",
+            body: "Część kroków mogła już zostać zapisana. Przed ponowną próbą sprawdź Discord z administratorem.",
         },
         disabled: {
             title: "Zgłoszenia pomocy są teraz wyłączone",
@@ -213,7 +213,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Impossible d’ouvrir le ticket",
-            body: "Rien n’a été enregistré. Les administrateurs ont été informés ; réessaie dans un instant.",
+            body: "Certaines étapes peuvent déjà être enregistrées. Vérifie Discord avec un administrateur avant de réessayer.",
         },
         disabled: {
             title: "Les tickets sont actuellement désactivés",
@@ -310,7 +310,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "The ticket couldn't be opened",
-            body: "Nothing was saved. The admins have been notified; please try again in a moment.",
+            body: "Some steps may already be saved. Check Discord with an admin before trying again.",
         },
         disabled: {
             title: "Tickets are switched off right now",
@@ -403,7 +403,7 @@ const ticketMessages: Record<ClanLanguage, TicketMessages> = {
         },
         failed: {
             title: "Das Ticket konnte nicht geöffnet werden",
-            body: "Es wurde nichts gespeichert. Die Admins wurden benachrichtigt; versuch es bitte gleich noch einmal.",
+            body: "Einige Schritte können bereits gespeichert sein. Prüfe Discord mit einem Admin, bevor du es erneut versuchst.",
         },
         disabled: {
             title: "Tickets sind gerade ausgeschaltet",

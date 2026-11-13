@@ -446,7 +446,7 @@ test("failures an admin must fix: the person reads one card, the errors channel 
         assert.match(text, /Ticket se nepodařilo otevřít/)
         assert.match(
             text,
-            /Nic se neuložilo\. Správci dostali upozornění; zkus to prosím za chvíli znovu\./
+            /Část kroků už může být uložená\. Před dalším pokusem zkontroluj Discord se správcem\./
         )
         assert.doesNotMatch(text, /oprávnění bota|Missing Permissions/)
         // The entry names the category and who tried (L5-12).

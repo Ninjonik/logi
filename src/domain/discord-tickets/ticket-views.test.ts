@@ -122,7 +122,7 @@ test("opened, failed and disabled replies (L4-39..41)", () => {
     assert.match(failed, /### Ticket se nepodařilo otevřít/)
     assert.match(
         failed,
-        /Nic se neuložilo\. Správci dostali upozornění; zkus to prosím za chvíli znovu\./
+        /Část kroků už může být uložená\. Před dalším pokusem zkontroluj Discord se správcem\./
     )
     assert.doesNotMatch(failed, /oprávnění bota/)
     const disabled = viewText(ticketsDisabledCard(cs))

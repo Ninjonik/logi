@@ -1,8 +1,8 @@
+import { isMessageEnabled } from "../src/domain/discord-messages/notification-settings"
 import { mutation, query, type MutationCtx } from "./_generated/server"
 import { assertInternalSecret } from "./discord_shared"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
-import { isMessageEnabled } from "../src/domain/discord-messages/notification-settings"
 
 export const membershipOperationKind = v.union(
     v.literal("application-open"),
@@ -143,7 +143,11 @@ export const begin = mutation({
         if (prior) {
             if (prior.mode !== args.mode)
                 throw new Error("Effect mode mismatch")
-            if (prior.state === "confirmed" || prior.state === "refused" || prior.state === "skipped")
+            if (
+                prior.state === "confirmed" ||
+                prior.state === "refused" ||
+                prior.state === "skipped"
+            )
                 return { state: prior.state, resourceId: prior.resourceId }
             if (prior.state === "started" && prior.leaseUntil > now)
                 return { state: "busy" as const }
@@ -267,7 +271,9 @@ export const complete = mutation({
                 .unique()
             if (
                 !effect ||
-                (effect.state !== "confirmed" && effect.state !== "refused" && effect.state !== "skipped")
+                (effect.state !== "confirmed" &&
+                    effect.state !== "refused" &&
+                    effect.state !== "skipped")
             )
                 return false
         }
@@ -328,20 +334,67 @@ export const heartbeat = mutation({
 
 /** Opt-outs skip untouched DMs without claiming that an uncertain send was refused. */
 export const skip = mutation({
-    args: { secret: v.string(), operationId: v.id("discordMembershipOperations"), key: v.string() },
+    args: {
+        secret: v.string(),
+        operationId: v.id("discordMembershipOperations"),
+        key: v.string(),
+    },
     handler: async (ctx, args) => {
         assertInternalSecret(args.secret)
         const operation = await ctx.db.get(args.operationId)
-        if (!operation || !/^(dm|confirmation-dm):/.test(args.key)) throw new Error("Invalid notification skip")
-        const config = await ctx.db.query("discordConfigs").withIndex("guildId", q => q.eq("guildId", operation.guildId)).unique()
-        const disabled = config && (args.key.startsWith("confirmation-dm:") ? config.membershipSettings?.sendConfirmationDm === false : !isMessageEnabled(config, operation.kind === "ticket-close" ? "ticketCloseDm" : "applicationCloseDm"))
+        if (!operation || !/^(dm|confirmation-dm):/.test(args.key))
+            throw new Error("Invalid notification skip")
+        const config = await ctx.db
+            .query("discordConfigs")
+            .withIndex("guildId", (q) => q.eq("guildId", operation.guildId))
+            .unique()
+        const disabled =
+            config &&
+            (args.key.startsWith("confirmation-dm:")
+                ? config.membershipSettings?.sendConfirmationDm === false
+                : !isMessageEnabled(
+                      config,
+                      operation.kind === "ticket-close"
+                          ? "ticketCloseDm"
+                          : "applicationCloseDm"
+                  ))
         if (!disabled) throw new Error("Notification is not disabled")
-        const effect = await ctx.db.query("discordMembershipEffects").withIndex("operation_key", q => q.eq("operationId", operation._id).eq("key", args.key)).unique()
-        if (effect && (effect.state === "confirmed" || effect.state === "refused" || effect.state === "skipped")) return { state: effect.state, resourceId: effect.resourceId }
-        if (effect && (effect.state === "started" || effect.state === "uncertain" || effect.state === "failed")) return { state: "uncertain" as const }
+        const effect = await ctx.db
+            .query("discordMembershipEffects")
+            .withIndex("operation_key", (q) =>
+                q.eq("operationId", operation._id).eq("key", args.key)
+            )
+            .unique()
+        if (
+            effect &&
+            (effect.state === "confirmed" ||
+                effect.state === "refused" ||
+                effect.state === "skipped")
+        )
+            return { state: effect.state, resourceId: effect.resourceId }
+        if (
+            effect &&
+            (effect.state === "started" ||
+                effect.state === "uncertain" ||
+                effect.state === "failed")
+        )
+            return { state: "uncertain" as const }
         const now = Date.now()
-        if (effect) await ctx.db.patch(effect._id, { state: "skipped", updatedAt: now })
-        else await ctx.db.insert("discordMembershipEffects", { operationId: operation._id, key: args.key, mode: "send", state: "skipped", attempts: 0, token: "notification-disabled", leaseUntil: 0, retryAt: 0, createdAt: now, updatedAt: now })
+        if (effect)
+            await ctx.db.patch(effect._id, { state: "skipped", updatedAt: now })
+        else
+            await ctx.db.insert("discordMembershipEffects", {
+                operationId: operation._id,
+                key: args.key,
+                mode: "send",
+                state: "skipped",
+                attempts: 0,
+                token: "notification-disabled",
+                leaseUntil: 0,
+                retryAt: 0,
+                createdAt: now,
+                updatedAt: now,
+            })
         return { state: "skipped" as const }
     },
 })

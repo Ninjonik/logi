@@ -38,8 +38,12 @@ evidence is protected from retention cleanup. DM uncertainty has explicit copy i
 all five supported bot languages. Scheduled retry-write failures are now logged.
 
 Live test-guild crash testing and host shutdown-grace verification were skipped at
-the user's request. Local validation and backend rollout results will be recorded
-after the final checks; no bot host restart is performed by a Convex deploy.
+the user's request. The full suite passed with 4,115 passes, zero failures and
+four runtime-incompatible gateway socket tests skipped. Ten focused recovery/CLI
+tests also passed. Typecheck, changed-file lint/formatting, production build,
+Convex bundles (193 V8 / 12 Node) and both bot ESM bundles passed.
+Final `bunx convex deploy` succeeded on `https://convex.igportals.eu` on 2026-11-13,
+adding fourteen indexes and deleting none. No bot host restart was performed.
 
 Implemented in this focused pass:
 
@@ -70,8 +74,9 @@ Implemented in this focused pass:
 
 ### Remaining release work
 
-1. Verify and deploy this application/ticket recovery continuation, then replace
-   the bot runtime without overlapping old and new workers.
+1. Replace the bot runtime without overlapping old and new workers. The backend
+   application/ticket continuation is validated and deployed; the bot host rollout
+   remains outstanding.
 2. Broader secondary Discord effect reconciliation outside applications/tickets,
    including legacy nested handlers that
    report some failures without propagating them. The durable acknowledgment proves
